@@ -1,0 +1,526 @@
+#+TITLE: 10.53 S0 Source, Dependency, Build and Recovery Baseline
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.53
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+TODO: AUDITED DESIGN SPECIFIED | QUALIFIED
+#+FILETAGS: :design:baseline:source:build:loader:recovery:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.52-contract-consistency-and-implementation-order.org::#consistency-implementation-order][S0-S9]] | [[file:10.41-workflow-gap-audit.org::#integrated-refactoring-dependency-order][WP00-WP10]] | [[file:10.42-library-types-and-contracts.org][S1 Types]] | [[file:10.43-library-objects-and-publication.org][S2 publication]] | [[file:10.51-case-joint-acceptance-plan.org][Joint qualification]] | [[file:10.23-native-aitia-backpressure-content-review.org::#two-gib-recovery-observation][Historical recovery boundary]]
+
+* AUDITED S0 finding and observation boundary
+:PROPERTIES:
+:CUSTOM_ID: source-build-recovery-baseline
+:OBSERVED_DATE: 2026-10-21
+:STATUS: Read-only source/artifact/record inventory; no build or acceptance execution
+:END:
+
+S0 identifies the live dirty checkout, linked dependency roots, selected current
+implementation bytes, existing compiled artifacts, retained build records and
+historical actual-loading observations. It does not qualify a new execution or
+assert that all dependencies currently load from those live sources.
+
+The key findings are: package descriptions match the inspected dependency HEAD
+labels but all inspected repositories are dirty; current recipes default to an
+older owner/source route than the q34 runner; three primary Rust Library files
+differ from the q34 frozen workspace; retained q34 artifacts remain byte-consistent
+at their named paths; the full current compiled/loading closure is not established;
+and ordinary restart-two remains a watchdog failure. Historical compiler success
+and present artifact integrity do not close the recovery or current-load gates.
+
+Only file/symlink/metadata/hash and existing log/record inspection is used. No
+Gerbil/Gambit VM, gxi/gxc/gxtest, package build/install, Rust/QNT/Lean/SysML method,
+independent qualification script, historical finalizer or recovery runner is
+started. Static document lint/export/render checks are separate documentation work.
+
+* AUDITED Live checkout and dependency identity
+:PROPERTIES:
+:CUSTOM_ID: s0-checkout-and-dependencies
+:END:
+
+The project root is /Users/guangtao/ghq/github.com/tao3k/deterministic-engineering,
+branch main, HEAD 8044732d505f84e373119a70f947df00e1767300. At the initial inventory,
+Git status had 290 staged additions, 21 staged additions with further worktree
+changes and 42 untracked entries. Counts use normal Git untracked-directory
+reporting, not a recursive file total, and precede this task's document edits.
+They are context, not content identity or a clean-release assertion. No staging,
+reset, cleanup, commit or push occurs.
+
+All paths below are resolved from .gerbil/pkg/github.com/tao3k except Aitia's
+explicit nested repository. Each Git top-level was checked independently; the
+outer POO Flow commit is not the Core or Aitia commit.
+
+#+NAME: s0-dependency-checkout-table
+| Owner / resolved root | Actual HEAD and branch | Observed dirty status; meaning |
+|------------------------+------------------------+--------------------------------|
+| poo-flow-core / /Users/guangtao/ghq/github.com/tao3k/poo-flow/core | 52130d2d338b09622a3f55e37987ddc0375b6187; refactor/module-feature-ownership | 'M '=1, ' M'=78, '??'=273; actual dirty content remains a separate input |
+| gerbil-poo / /Users/guangtao/ghq/github.com/tao3k/poo-flow/.gerbil/pkg/github.com/tao3k/gerbil-poo | fdeadfa40ca5cee5fe20308985aef1577f2eb49b; detached HEAD | 'M '=1, ' M'=6, '??'=3; actual dirty content remains a separate input |
+| gerbil-ascent / /Users/guangtao/ghq/github.com/tao3k/gerbil-ascent | e119827e588ea7b6d8a3195ac8e0ee8f61de6c11; feature/ascent-scheme-syntax | 'M '=1, ' M'=8, '??'=1; actual dirty content remains a separate input |
+| asp-gerbil-scheme / /Users/guangtao/ghq/github.com/tao3k/asp-gerbil-scheme | f5b7c009d2cab61144a8af18008a0bfba3056584; main | 'M '=1, '??'=1; actual dirty content remains a separate input |
+| poo-flow / /Users/guangtao/ghq/github.com/tao3k/poo-flow | a74fc2fd63437252175b5a67649ee54b886d3bf4; research/ascent-poo-flow | 'M '=144, 'MM'=5, ' M'=13, 'D '=44, 'A '=4, 'R '=3, '??'=1; actual dirty content remains a separate input |
+| lambda-aitia / /Users/guangtao/ghq/github.com/tao3k/poo-flow/packages/lambda-aitia | cbf3f6861ef7cf66d8d02aaf71b1c89630eaf7fc; agent/software-engineering-mainline | 'M '=1, ' M'=5, '??'=1; actual dirty content remains a separate input |
+
+The gerbil-poo registration traverses the outer POO Flow .gerbil package path;
+its own resolved Git root/HEAD is retained above. Core is a separate repository
+at poo-flow/core; lambda-aitia is a separate repository at
+poo-flow/packages/lambda-aitia. Outer repository dirty entries can include nested
+source context; do not collapse their identities or overwrite concurrent work.
+
+[[file:../../../gerbil.pkg][gerbil.pkg]] declares Core, ASCENT and POO dependencies. Existing package
+.manifest files and [[file:../../../manifest.ss][manifest.ss]] describe Core 52130d2, POO fdeadfa,
+ASCENT archive/20261017/ascent-release-build-control-75-ge119827e and transitive
+ASP v0.1.2.2, matching the current Git describe labels inspected statically.
+Gerbil/Gambit labels in that manifest are 1cfb032 / ea114fc. Those strings describe
+package/runtime metadata; they are not a current byte/ABI/loaded-runtime proof,
+not the Library declaration generation and not authority to ignore dirty files.
+No manifest-generation or package-metadata test is run here. The historical
+missing ASP manifest in [[file:../../00-09-project/00-documentation/00.03-scheme-package-bootstrap.org][00.03]] is not reported as a current missing file:
+all four inspected package .manifest files now exist.
+
+The following dependency working-tree maps additionally identify Git-listed
+tracked and untracked non-ignored paths, rather than treating HEAD as the source.
+Each map sorts unique Git paths and records ordinary file SHA-256/executable bit,
+symlink text/resolved path, absent tracked paths and directory entries. Its hash
+is SHA-256 over UTF-8 JSON with sorted object keys, ensure_ascii=true and compact
+comma/colon separators. Directory entries are not recursively fingerprinted;
+ignored binaries/runtime/build outputs and transitive dynamic inputs are outside
+this source-map scope. The maps are observation fingerprints, not immutable
+source retention, package metadata, a capture C or executed compatibility proof.
+
+| Dependency working-tree map | Entries / kinds | SHA-256 |
+|-----------------------------+-----------------+---------|
+| poo-flow-core | 2473 / file=2473 | 13aa69f42114bb7c602e4c06bb7b7f9591c1d627f0661a6301c491d1912d4fb6 |
+| gerbil-poo | 393 / file=393 | f23cdb8aaa2ce979a1d34efe8751c0424422ee1c09d7b237d04c047cf711d891 |
+| gerbil-ascent | 2345 / file=2345 | 292c92d18d138655e90f7c6fe51fbbd64d8cfbe4ae0f5ecff1ea7e37b95fcae4 |
+| asp-gerbil-scheme | 1151 / file=1151 | 9c82116dfc07a0689cca388563c78ba93308ec383d9c26a71ada984b248f2663 |
+| poo-flow | 2681 / file=2674, directory-entry=7 | 3df52d66314e7b28394d718cf87e8419287f1c4794351ba2f009fb0eb6386ba2 |
+| lambda-aitia | 235 / file=235 | d69ed3fc0cc4e2e3d17c3cc80bab2bd376dfe9ddb12c30a8f529e99b67213cd2 |
+
+* AUDITED Selected current source and source-cut differences
+:PROPERTIES:
+:CUSTOM_ID: s0-selected-source-baseline
+:END:
+
+The appendix records 75 selected implementation/build/package/runner files:
+.ss/.pkg/.qnt/.lean/.rs/.toml/.lock files below library, profiles, scenarios,
+modules, examples and t, excluding target directories, plus init.ss, build.ss,
+gerbil.pkg, manifest.ss and Justfile. The sorted relative-path/TAB/SHA-256/LF map
+has digest b0f09d2f2bf7c9b45e0f18c9c160bb293e2da0b9863657a36da4fed7638bdfaf.
+This is a static byte inventory and change guard, not a second capture C, issuer,
+version registry or complete runtime footprint. Native-style names in existing
+paths/schema tokens are preserved only as their existing source identities.
+
+Comparing the 301 entries in q34's retained workspace-inventory.json with their
+original primary paths gives 291 equal / 10 different at this observation:
+
+| Difference category | Primary files differing from q34 |
+|---------------------+----------------------------------|
+| Implementation / 3 | library/concurrency/resource-control/backpressure-memory/rust/func.ss, methods.ss and types.ss |
+| Documentation/views / 7 | README.org; docs/00-09-project/00-documentation/00.01-index.org; docs/10-19-design/10-architecture/10.23-native-aitia-backpressure-content-review.org and 10.25-rust-sysml-quint-lean-evidence-integration.org; docs/90-99-views/90-architecture-views/90.01-index.org, 90.85-explicit-prefix-repair.d2 and .svg |
+
+The old 301-entry inventory predates later untracked design documents; agreement
+for its listed paths does not enumerate everything now in this checkout. The
+three implementation differences are a real cut difference; this audit does not
+attribute their authorship or treat q34 results as tests of those current bytes.
+The seven review-owner source files recorded by build-13 and six test source
+files recorded by tests-5 still match their respective recorded build source
+hashes. Those 13 file comparisons do not qualify the rest of the current source.
+
+This q34 comparison and the older 10.34 dossier's 138-entry/19-drift comparison
+are different inventories. Keep both original catalogs unchanged; no digest is
+refreshed to make either historical candidate appear current.
+
+* AUDITED Compilation inventory and available build provenance
+:PROPERTIES:
+:CUSTOM_ID: s0-build-artifact-baseline
+:END:
+
+| Artifact area / record | Static observation | Evidence limit |
+|------------------------+--------------------+----------------|
+| .gerbil/lib/core | Ordinary directory; 260 .ssi, 558 .o1 files recursively | Existence/count only; no full source-to-build-to-loaded association established |
+| .gerbil/lib/clan | Ordinary directory; 183 .ssi, 424 .o1 | Does not prove current POO dirty source was compiled or imported |
+| .gerbil/lib/asp-gerbil-scheme | Ordinary directory; 207 .ssi, 416 .o1 | Transitive metadata/current ABI remains independently required |
+| .gerbil/lib/gerbil-ascent | Ordinary directory; 141 .ssi, 340 .o1 | Current Session source identity alone does not prove the loaded engine/foreign closure |
+| .gerbil/lib/deterministic-engineering | Ordinary directory; 53 .ssi, 110 .o1 | Includes residual modules/rust-resources outputs although that source directory no longer exists; no claim these residuals were actually loaded |
+| [[file:../../../.data/aitia-capacity-20261020/native-build-13/artifacts.json][build-13 artifact record]] | 3 newly compiled owner sources, 4 reused sources, 64 listed artifacts; all listed artifact hashes and 276 build-input hashes match at inspection | Historical compiler exits 0; reuse includes build-12 provenance, not a fresh compile of every owner/dependency |
+| [[file:../../../.data/aitia-capacity-20261020/native-tests-5/artifacts.json][tests-5 artifact record]] | 3 newly compiled tests, 3 reused tests, 59 listed artifacts; all listed artifact hashes and 340 build-input hashes match | Includes tests-4 provenance. A compiled handover/cross-intake test is not a completed runtime acceptance |
+| [[file:../../../build.ss][build.ss]] / package-roots | init, examples/gateway-evidence, profiles/resource-lifecycle, examples/resource-lifecycle-evidence | Current root list does not itself include integration example, review owners, every test, future content/recipient adapters or all linked dependencies |
+
+Artifact counts include the named suffixes recursively; they are not counts of
+unique semantic modules or a compatibility result. Residual numbered/image/source
+outputs need owner-qualified selection and exclusion; this task deletes none.
+A future repair should bind exact intended output inventory and actual loader
+selection through existing Core build/source owners, not globally remove caches.
+Never use gxpkg uninstall to resolve this workspace's registration or tag state.
+
+Build-13 records reassessment, cross-intake and interface compile exits zero at
+40.491, 48.842 and 26.541 seconds; tests-5 records recovery, handover and cross-intake
+compile exits zero at 83.699, 44.313 and 46.005 seconds. Their commands used fixed
+2 GiB Gerbil maximum heap and 180-second process limits. This inspection reads
+those retained records; it executes no compiler and establishes no fresh build.
+Reused artifacts and preserved public export names do not imply identical SSI;
+actual new interface images have their own recorded identities.
+
+* AUDITED Actual-loading evidence and host resolution
+:PROPERTIES:
+:CUSTOM_ID: s0-loading-and-host-resolution
+:END:
+
+Use four evidence levels: file present; route configured; actual process loaded
+path observed; complete scoped qualification. A stronger level cannot be inferred
+from the preceding one. No new Gerbil process is observed in this task.
+
+| Source of selection/loading evidence | Exact observation and limitation |
+|--------------------------------------+----------------------------------|
+| [[file:../../../Justfile][Current Justfile]] review/recovery recipes | Default owner library is .data/aitia-capacity-20261020/native-build-10/lib and default source manifest is q21/runtime-sources.json. Optional BACKPRESSURE_NATIVE_TEST_LIB selects compiled tests. Recipe text is a configured route, not an actual current loaded image |
+| [[file:../../../.data/aitia-prefix-repair-20261020/qualification-34/remaining-runner-native-host.py][Historical q34 runner]] | Explicit testlib=tests-5/lib and owner lib=build-13/lib, q34 runtime manifest, frozen workspace acceptance/runs; cwd is q34/workspace. This overrides older recipe-style defaults |
+| q34 configured GERBIL_LOADPATH | tests-5/lib -> build-13/lib -> q34/workspace/.data/qualification-20261019 -> actual outer POO Flow/packages/lambda-aitia -> outer POO Flow -> project .gerbil/lib -> q34/workspace |
+| [[file:../../../.data/aitia-prefix-repair-20261020/qualification-34/native-host-restart-two.log][q34 restart-two log]] | PID 70274 printed NATIVE-TEST for deterministic-engineering/t/backpressure-owner-recovery-test~0 at tests-5/lib/.../backpressure-owner-recovery-test~0.o1; source test checks the loaded path against its expected prefix and manifest/hash. This directly covers that loaded test image, not every transitive owner |
+| [[file:../../../.data/aitia-prefix-repair-20261020/qualification-34/native-host-producer.log][q34 producer log]] | PID 53951 has the same actual test image path observation and full normal harness markers; these are historical process observations, not live handles |
+| q34 source/artifact guards | Configured complete owner/test file-set equality and per-entry byte guards are valuable custody checks; configured paths and source guards still do not enumerate an actual loaded module path for every dependency |
+| Current inspection shell | GERBIL_PATH, GERBIL_HOME, GERBIL_LOADPATH, BACKPRESSURE_REVIEW_LIB, BACKPRESSURE_NATIVE_TEST_LIB and RESOURCE_INTEGRATION_LOADPATH are unset here. This does not prove the environment of a future recipe/package invocation |
+
+The current PATH resolves gerbil/gxi/gxc/gxtest through /opt/homebrew/bin into
+Homebrew wrappers under gerbil-scheme@0.19/0.19.20261009110849.1cfb032.patch618d76f9eb72.
+The wrappers set GERBIL_HOME through current and add GAMBOPT runtime locations;
+resolving their inner executables gives 1cfb032/bin/gerbil for gerbil/gxi/gxc
+and 1cfb032/bin/gxtest for gxtest. Inner file SHA-256 values are respectively
+9326ad2d248692b94a83cea1e9c7f3240c31fd7c258006ef918ac6af37db68f0 and
+bd61116a001ec511da131d96cc1de64c27508e32ca562e67fb3960425e9e619e.
+No version command or VM is run; these file identities do not close dynamic
+libraries, actual selected compiler/VM options or runtime ABI.
+
+Quint resolves to the Homebrew 0.33.0 CLI JavaScript file; Lean resolves to an elan
+proxy; OpenSSL resolves to /nix/store/fvxzw0b4nzrf1rrg40cipn9r4ghdifvc-openssl-3.6.1-bin/bin/openssl.
+Cargo/rustc are absent from this inspection shell's PATH; existing recipes resolve
+them through rustup or RESOURCE_CARGO/RESOURCE_RUSTC. This is an unresolved future
+invocation/toolchain selection, not proof Rust is uninstalled. SysML is an explicit
+caller-selected executable in the integration recipe and is not selected here.
+Do not infer a concrete Lean toolchain/backend or effective Quint Node/JVM/TLC
+closure merely from these launcher paths.
+
+The q34 top-level runtime manifest has no core/clan/gerbil-poo/module-system paths
+and no resolved inner Gerbil/Gambit binary or OpenSSL binary entry; it does include
+the gxtest wrapper, loader source, selected project/native/Aitia/outer-Flow/ASCENT
+files and other references. Build-input lists inspected here also do not enumerate
+core/clan paths. Other leaf records may retain further scope-specific inputs;
+these top-level lists alone are not full current Core/POO/runtime/foreign-library
+closure proof. WP00 must establish that closure at actual build/load owners before
+a broader compiled or end-to-end qualification claim. No missing-runtime cause
+for the historical timeout is inferred from this inventory limitation.
+
+* AUDITED Retained q34 evidence and recovery blocker
+:PROPERTIES:
+:CUSTOM_ID: s0-recovery-evidence-and-blocker
+:END:
+
+| Existing immutable evidence / locator | Observed retained association |
+|---------------------------------------+-------------------------------|
+| [[file:../../../.data/aitia-prefix-repair-20261020/qualification-34/source-snapshot.json][q34 source-snapshot.json]] | 380 listed original-path hashes and saved blob hashes match at inspection; digest 6153d2aac95447a8d3232fc23adea166e84328a12adc908134c79e9596fc2a27 |
+| [[file:../../../.data/aitia-prefix-repair-20261020/qualification-34/runtime-sources.json][q34 runtime-sources.json]] | 223 named references match; digest d73890842b9035be15c5b2dacf8a02de29b1f17f5fb8cdf58c0c4509ac0e5167 |
+| [[file:../../../.data/aitia-prefix-repair-20261020/qualification-34/host-processes.json][q34 host-processes.json]] | Nine attempted process records, eight recorded boundary passes and restart-two failure; digest 9476dd412363add667670fcbf8dc914f383b1250855c1fdcc86cd373087febf2 |
+| [[file:../../../.data/aitia-prefix-repair-20261020/qualification-34/receipt.json][q34 receipt.json]] | qualified=false; digest cf169096dc61c0a6f2391dd2d7847920f09f8e33c4bd30539d72f2bc650c492b. Preserve original schema/revision token and recorded budget; no re-signing or new authority |
+| Execution-state narrative | The maintained execution-state narrative is actually [[file:../../../.data/aitia-capacity-20261020/CURRENT.org][capacity CURRENT.org]]; its final stopped-state update supersedes earlier active-run notes, not the exact original process records |
+
+The CURRENT narrative records no acceptance runner remaining at its final update;
+this is historical status, not a fresh process inventory. Earlier sections contain
+obsolete active-session instructions and must not be treated as live commands.
+This task reads the final stopped-state and actual retained records only.
+
+| Historical phase | Actual recorded exit / elapsed | Meaning |
+|------------------+--------------------------------+---------|
+| intake-producer / intake-recover / intake-partial | -9 at 117.235 / 128.129 / 111.441 seconds, controlledSigkill=true | Planned killed boundaries at their old cut; not ordinary process success |
+| intake-pending | 0 / 100.660 seconds | Old pending-replay boundary passed |
+| repair-checks / repair-replay | 0 / 113.537 / 127.948 seconds | Old explicit-prefix repair/replay boundaries passed |
+| ordinary producer | 0 / 127.161 seconds | Original producer branch passed |
+| restart-one | 0 / 179.777 seconds | Original restart passed close to the fixed limit; no stable speed claim |
+| restart-two | -9 / 185.059 seconds, controlledSigkill=false | Watchdog failure including termination grace; DR07-DR14 printed, no final complete suite/harness success |
+
+The q34 receipt retains 30 completed independent gold steps: durable intake 13
+and explicit repair 17. These are saved historical oracle results; no independent
+oracle is executed here. Restart-two timed regions were history-group 47.269 s,
+mechanical-build 9.700 s and mechanical-credentials 26.430 s. The last printed
+DR14 is a location observation, not proof of the next operation's cause or a
+GC/allocator/IO/sandbox/host-contention diagnosis. maxRssBytes is null in these
+process rows, so no measured total resident-memory claim is available there.
+
+Full later restart-two assertions, restart-three, handover, affected fresh
+cross-intake/reassessment and complete joint source/compiled/recovery coverage
+remain open. Do not execute the prepared finalizer, rerun the unchanged failed
+route, widen 2 GiB/180-second limits, relabel watchdog kill as planned SIGKILL,
+or restore old selected heads/receipts to manufacture a pass.
+
+* SPECIFIED WP00 blockers, repair entry points and owners
+:PROPERTIES:
+:CUSTOM_ID: s0-blockers-and-repair-owners
+:END:
+
+These are concrete future repair/investigation entries, not changes applied here.
+A missing observation is kept distinct from a demonstrated source defect.
+
+| Blocker / evidence class | Specific entry and accountable responsibility | Required future closure |
+|--------------------------+----------------------------------------------+-------------------------|
+| BS01 / current-versus-historical cut mismatch | Project source/qualification owner: current Rust func/methods/types, q34 workspace-inventory/origin and selected source appendix | Choose actual intended source basis, retain all dirty/old bytes and bind every relevant new input; old q34 method evidence stays at its original subject/cut |
+| BS02 / metadata insufficient for dirty dependency/ABI identity | Package/build and actual Core/POO/ASCENT/Aitia/ASP owners: gerbil.pkg, manifest.ss, registered package metadata and real dependency roots | Source/dirty/compiled/tool/runtime closure for the selected route; matching describe/tag labels alone cannot admit compatibility |
+| BS03 / stale default build/source route | Project runner/build owner: Justfile review/recovery exports; q34 runner's explicit env and cwd | One explicit coherent source/owner/test/manifest/loadpath association, with expected actual images. Blindly changing build-10 to build-13 without its matching full basis is not a fix |
+| BS04 / incomplete compiled selection/provenance | Core building/artifacts.ss and actual package build owners; build.ss roots; .gerbil/lib residual images | Qualify full needed compilation/output/loader inventory and compatible dependency imports; no ambient source fallback or legacy-image selection. Historical artifact success remains scoped |
+| BS05 / incomplete actual loaded-closure observation | Gerbil loader/runtime + test/qualification owners: loader.ss, list-modules checks in recovery/cross/handover tests and actual foreign-runtime owner | Bind actual loaded path/bytes to selected compiled/source provenance across all required units and dependencies. Existing q34 test-image observation is retained, not extrapolated |
+| BS06 / ordinary restart-two watchdog failure | Project history/custody + Aitia verification/runtime owners: t/backpressure-owner-recovery-test.ss history-group/mechanical-build/mechanical-credentials, reassessment.ss constructors, cross-intake.ss group/frame/gate, archive.ss capture/read guards | Concrete bounded diagnostic attribution at exact inputs/real clock/byte guards before selecting repair; then actual source/compiled repair and full affected recovery acceptance under fixed limits. No speculative unchecked cache or dropped assertions |
+| BS07 / remaining acceptance not performed at current cut | Respective existing cross-intake, reassessment, handover, archive/batch/custody owners and joint qualification owner | Fresh required cases/phases, independent actual oracles and natural/intentional exits at their declared cuts after repair; preserve failed/unrun status until then |
+| BS08 / demonstrated target Scope handoff gap | Actual linked Core module-system/source/link.ss owner: required-edge bindings read provider.scope; final linked record retains raw scope-value rather than Scope admission's normalized candidate | WP02 checks retain each admitted returned required/final candidate with guards; positive/negative owner controls. This is a known refactoring prerequisite, not an asserted cause of q34 timeout |
+| BS09 / target Types and future method/content/recipient support | Actual Library/Aitia semantic owners per S1 and WP01-WP09 | Complete effective Contract/purpose/role/Scope/callable shapes, supported domains and finite budgets; no permissive placeholder published because WP00 remains open |
+
+No fresh whole-project build was attempted, so this audit diagnoses no current
+compiler exit failure. BS02-BS05 are source/ABI/selection/provenance readiness gaps,
+not evidence of a new failed compile; the old missing-manifest attempt is already
+distinguished above. BS06 is the retained observed runtime failure and BS08 is
+the inspected target handoff defect. Keep these evidence classes separate.
+
+The concrete recovery investigation seams are narrow: group construction in
+[[file:../../../scenarios/resource-lifecycle/review/cross-intake.ss][cross-intake.ss]] / open-cross-intake-group; captured baseline/dependency work in
+[[file:../../../scenarios/resource-lifecycle/review/reassessment.ss][reassessment.ss]] / open-backpressure-histories; actual verification source/clock
+and content audit in [[file:../../../scenarios/resource-lifecycle/review/func.ss][func.ss]] and the linked Aitia/Core owners; frame/gate and
+archive verification/status in [[file:../../../scenarios/resource-lifecycle/review/archive.ss][archive.ss]]. Preserve independence of owners,
+full entry/return/current-use byte checks, real signatures and accepted negatives.
+If later measurements implicate ASCENT/POO/Core work, repair its actual owner;
+these timed regions alone do not authorize a guessed engine/runtime rewrite.
+
+* SPECIFIED Repair dependency order and S1 entry conditions
+:PROPERTIES:
+:CUSTOM_ID: s0-repair-order-and-s1-entry
+:END:
+
+| Order / boundary | Permitted future work and required prerequisite |
+|------------------+------------------------------------------------|
+| Preserve and distinguish | Keep q34 false receipt, actual process/log/input/artifact bytes and old selections unchanged; identify dirty project/dependency sources separately. No historical finalizer/runner re-execution |
+| Bind intended source and tool route | Resolve BS01-BS03/BS09 target source/expected Contract scope and required dependency/tool/runtime inputs; record unsupported/unobserved pieces and who owns them |
+| Qualify build and actual load route | BS02-BS05: actual build/output inventory, expected .ssi/.oN/source selection and loaded image closure; fix actual owner/recipe boundaries rather than metadata labels or arbitrary cache cleanup |
+| Attribute and repair recovery defect | BS06: narrow supported diagnostics on the new explicitly identified basis only when execution is authorized; select a concrete repair preserving invariants, then qualify actual changed source/compiled/cold/recovery stages. No unchanged-route lottery |
+| Close remaining required runtime cases | BS07 plus the required repaired source/load basis: complete every required recovery/handover/current review/recipient lane from 10.51; retain unrun and negative findings until actual evidence exists |
+
+S1 Types design/refactoring does not wait for a fabricated WP00 all-green result.
+Its necessary entry conditions are:
+
+- Actual target checkout and dependency owners are identified and dirty bytes are
+  preserved; source associations and current implementation baseline are explicit.
+- S1 consumes 10.42's effective Types plus 10.52's reconciled policy/Scope/Config/
+  purpose/lifetime requirements. The generation owner remains the Library
+  declaration Contract; package tags/Git/Org revisions cannot supply it.
+- Actual lower-level POO/Core Type/Function/normalized-return mechanisms and the
+  known BS08 handoff prerequisite are allocated to their real owners. Unknown
+  compiled compatibility is not silently used as proof that a Type change works.
+- Definitions can be authored as a dependency-coherent unit without a Types ->
+  methods/objects/Scenario import cycle or a fake callable/validator. Public Scope
+  exposure still requires real complete implementations and admission at S2.
+- WP00's unresolved source/load/recovery obligations and fixed limits stay visible;
+  S1 work may begin with them open, but source/compiled/runtime acceptance claims
+  require the actual later controls. Actual authority/recipient roles are not
+  appointed merely to construct Types.
+
+This S0 read-only inventory supplies those documentary prerequisites and identifies
+unresolved execution gaps; it is not permission to alter code in this task, nor
+completion of S1, WP00 or any operational acceptance. A later source change needs
+its own current baseline/affected qualification rather than editing this historic
+observation into a success.
+
+* AUDITED Selected current implementation byte appendix
+:PROPERTIES:
+:CUSTOM_ID: s0-source-byte-appendix
+:END:
+
+SHA-256 entries below identify the selected live files at the initial S0 observation.
+They are preserved byte observations, not Library declaration/revision authority.
+The path map includes only the selection defined above; external/runtime/dynamic
+closure gaps remain explicit. Justfile uses the actual repository spelling.
+
+| Current relative path | SHA-256 |
+|-----------------------+---------|
+| Justfile | d040e15e316729ee8d000cca68826ebd4ce695f5a3f25b2d4623269816b32fbd |
+| build.ss | a9843e77a1b66e0a85fa37bca5b896d16d1c2415b39a933ab855a59ace768f1e |
+| examples/backpressure-aitia-review.ss | ab1ae9054507173e6c095914eab471995330c97b2cb1b8c52e961ec41bcbe271 |
+| examples/backpressure-reassessment-evidence.ss | 77169f282abe231af47bd7ada214b082612647c8075c88287234efdcd6b1d7eb |
+| examples/gateway-evidence.ss | a309279d0748b41df70477fc79447dbfd5deda4370d255fe33a791d01f8ca421 |
+| examples/resource-integration-evidence.ss | 44c3c200da5caff7aa26c8d58bb25c6b10d51db2849277ac38c3d5d1304c4acc |
+| examples/resource-lifecycle-evidence.ss | f0ae1a7356476e8f7d99b9036568b207a75fd8133a3c51df3e8061e592a3cd17 |
+| gerbil.pkg | 458c6310a790713998095e07de6ce676c520e9bc83bbf65c3dc452fb70aacd88 |
+| init.ss | 6e2f06520a44147192cc922ee121df0975711db9073110e21d6e55b5fa15c9c1 |
+| library/concurrency/resource-control/backpressure-memory/abstract/config.ss | 65298f013d5261cea976cf9bc6fc1bfe57862ce05e7f9744aeb6aa85eb1e6798 |
+| library/concurrency/resource-control/backpressure-memory/abstract/interface.ss | c29728126bb751bb42748101e1b1dd2f72dfbc857242c70ed04b1cfddd1b1495 |
+| library/concurrency/resource-control/backpressure-memory/abstract/objects.ss | 3f74600e5cc82dbe4c38ebd057d0ee8a619e24b44d1826434c5d12cb39ef0f4c |
+| library/concurrency/resource-control/backpressure-memory/abstract/types.ss | 3644d17767c3552751e1f729b546210d46a0b0b86fdce485375a1394d4e58672 |
+| library/concurrency/resource-control/backpressure-memory/budget.lean | b4b5dabbef5c6e928a8cd556337e2bad0b36c86ca16f7745ec18e3811444b483 |
+| library/concurrency/resource-control/backpressure-memory/model.qnt | f018b2385342488de907cb2d967310b4e08c51102def1c4c5b784dc7d1b2d92b |
+| library/concurrency/resource-control/backpressure-memory/rust/config.ss | d674afe3f2af4d9977ac3987430e66ec773298800d2bd8e10c4111284fb99e44 |
+| library/concurrency/resource-control/backpressure-memory/rust/correspondence.ss | e966e8b99c5bbb36a7eebeee226f65011a01b1982fb7fbd32ff89df2d35c21fb |
+| library/concurrency/resource-control/backpressure-memory/rust/func.ss | 5ffb56183b9d29641bff848017a8b30d40ee13d4af57891ed5f4bdc57c165be0 |
+| library/concurrency/resource-control/backpressure-memory/rust/interface.ss | ec62ea8a3d60d946c7b6c29dcc435c2c098a7f8f2a56618a2fa588b9975af017 |
+| library/concurrency/resource-control/backpressure-memory/rust/methods.ss | 58f5fb8690a8c3f35431c2c35fcc95e5bac0fca1d9cd3a732302b9b71205eca2 |
+| library/concurrency/resource-control/backpressure-memory/rust/native/Cargo.lock | a6d997311be40a94abe3f52e7b790e7bf2d7ee246b237737709e1f73e91929d6 |
+| library/concurrency/resource-control/backpressure-memory/rust/native/Cargo.toml | ceac26d1b3a94c2215999e71370a5ccc9fd2a761c6ccd5de536f11547d65bfa4 |
+| library/concurrency/resource-control/backpressure-memory/rust/native/src/main.rs | 81b26458ee7c788cef03356f2a1a246e38681f2f81734b0de102524c3b87ee30 |
+| library/concurrency/resource-control/backpressure-memory/rust/objects.ss | de4d91a0963f4513a41f16e318a7f74e58453febde5851646edc589608abbce0 |
+| library/concurrency/resource-control/backpressure-memory/rust/oracle.ss | 0bf8e32c2cfbfcd3378f6e5e6cf0b0871e45c1553c7b23f102a775ab8b16e5c4 |
+| library/concurrency/resource-control/backpressure-memory/rust/reassessment-oracle.ss | 451e6a77117f924724044843ed6c4b82b6c2bd45ff26c0d2c5d621687560e5bc |
+| library/concurrency/resource-control/backpressure-memory/rust/types.ss | a5a6d2c52bde1d0d6c96e30188fe6510ca44f00e45dca76011a58c219ea48acb |
+| library/gerbil.pkg | 5067a3e7c12cfd26a1e3e011f99de933dec978b484863b00cc9e3f06236d38da |
+| manifest.ss | 6c488c1f2cfc59abb028896c72ad9aad54af43bfe5d862b6dcee33b119196055 |
+| modules/gerbil.pkg | 90c6c52dd4fb67f2c1ab32da1b7893cf9c20b9d10289b349f33bdd4292021095 |
+| modules/resource-evidence/config.ss | 452e46cc8a635d402fbcd5188124c6553df88c7faa75519caa06a9bb47462131 |
+| modules/resource-evidence/func.ss | be07ef6aba411c3fc6cac9cbbe12ae9587b09f6a875c89537a92627f9b817d0a |
+| modules/resource-evidence/interface.ss | 8ea35a93e6c8de564209b90052dbc33988b12c34e64f2f88eb3d8032257de38f |
+| modules/resource-evidence/objects.ss | 75dc5e7c5fa3ad9a7a447514e5197b13cca17d74407bf4838386eadbe551b715 |
+| modules/resource-evidence/types.ss | ea475d33cf89845f6e3f8976053331a3ca75de3e85ec2f476e860ed7b1fe0c8f |
+| profiles/gateway.ss | 13d3df646777efd617f45cfeeb752fcfc168fbc61049b62e9fd99e29179a8c21 |
+| profiles/gerbil.pkg | eac4e6e66e89890eee782499c9c789bb49a090350db47127a6664ebb5506b2d5 |
+| profiles/resource-lifecycle.ss | d43bf8170d8568975548d97556dfacdc1366f6705def054b58651de1e1ee15e3 |
+| scenarios/gateway-review/config.ss | b0e3661c077f6baac4fcb0d9a66cb595ef90ce699ebd5f510f325cadf789723b |
+| scenarios/gateway-review/func.ss | 73ad3a9f1834234e384351ac7f3cd411d20dc088335c2dc7127ff16723afb26c |
+| scenarios/gateway-review/interface.ss | 9a9540ea7b33f66e4c7ca5888841dbaeafcbb5240c8f2676c1bf1855bf9a041b |
+| scenarios/gateway-review/objects.ss | aac54f4346a67ae26903a3436d6f89fbabef25c50c7ec37b343df7e4cccfcf40 |
+| scenarios/gateway-review/types.ss | fd53c15290dfdf344ae431367b32669eac733730500e0e531760a9ff46d36bbf |
+| scenarios/gerbil.pkg | cc72925186f196942580e56b2b03194063dfd28c8ba54a3018dd19ed909c5c74 |
+| scenarios/resource-lifecycle/config.ss | 9fa19068bae3f2db2791c1102fd3f81ce5140512173ed65587a472a9b0b826df |
+| scenarios/resource-lifecycle/func.ss | cf5b8b38895a1cf41f084774d3c0276a4848767e5c6141f30e082c494898597c |
+| scenarios/resource-lifecycle/interface.ss | 1274b3d64678f112edea0308eef1e4ce43651e8f585407af476128a9f32f258a |
+| scenarios/resource-lifecycle/objects.ss | 4f89e674451169bb35e19ce92b20198ec445d8a323931444d6362ea7ae24fd9e |
+| scenarios/resource-lifecycle/review/archive.ss | 63e626c41250fa98aea9a88f7ead521845a920c04d373a031446ef51ab30b521 |
+| scenarios/resource-lifecycle/review/cross-intake.ss | 20d0b7ba91de384cb3130685db0ab2ab52b18e1c7c01a181ca106b25e71851d7 |
+| scenarios/resource-lifecycle/review/func.ss | 6ea08043edea5d21e68a064aecada4ca0cc248ffd56125aa16ba947d0eb55b4e |
+| scenarios/resource-lifecycle/review/gerbil.pkg | 7f8cbff30ebcc39946de95094a2c45be086c9045370abdf23e9f712d1f4ded39 |
+| scenarios/resource-lifecycle/review/interface.ss | 4b65444dc22838ba70d7029e8f5fb2fb970c3dcd7ad3b956ec7ffd40e086a77e |
+| scenarios/resource-lifecycle/review/profile.ss | f1250adad732e1c91065016dd41309ddc8b8b850d256d09a7260dbd657b2586e |
+| scenarios/resource-lifecycle/review/reassessment.ss | 4ba50f63becc3810e386768a0c334934b74c6556dc3566a40bad99179ec7fa39 |
+| scenarios/resource-lifecycle/review/signatures.ss | 6ee9a1fcb2ae09b96bc9f1bc0bb47eb417f74bad7e63d09a058ef15e6ffb8c6d |
+| scenarios/resource-lifecycle/types.ss | e7333b7b25f2abcfe32096682276c22e1402112507173f0632afabc5dec5afe1 |
+| t/backpressure-archive-cache-test.ss | 493a62a7f73e6c5b48053a8899406d09f0c906e5de3b3c2c2da67366a410d7ad |
+| t/backpressure-cross-intake-test.ss | 6ee5b1fd804c123a28b146b1b303f564ae1c129d014f6d258dbc4cdadd7ca14f |
+| t/backpressure-owner-handover-test.ss | e8adcbd59bc5a20d919eb46a2109344ffbb14d52de5cdab0c5812c07e5de9284 |
+| t/backpressure-owner-recovery-test.ss | 2c1b365634092aab9d8661cfddc590259e68610c1cb037eb437d9c125290fcb5 |
+| t/backpressure-reassessment-test.ss | 4bd17e75f3507f1c04cc6bf3f8a691d9fcd1f51046e87cc650bb33b7fb843207 |
+| t/backpressure-registration-batch-test.ss | 172a5d8226c0121407385106e01b2323073a678b13d81f473954dfb6f860c587 |
+| t/backpressure-review-test.ss | 0c81dfa82edd7f794fe22772031daff68ab7e351de49db45b613d8509aa9dfb4 |
+| t/dependency-compatibility-test.ss | 854622ad1fe480744f4f620257f287ab19ff616dd1f32dc20573c066e9bc7d3b |
+| t/gateway-library-test.ss | 60642ab3144125b99923fcc3500ef76bc7c9671a8af94cd3e680cb41c5807792 |
+| t/gateway-real-results-test.ss | 1bd3a71f63229b408740f76f3e6a9444cbba0e0515bfc8827d3b1589e32626c4 |
+| t/library-owner-test.ss | d2038710b5252ae1782997bad4400521bf762e01848060bc18f6cb3e67e19488 |
+| t/library-selection-test.ss | 2ed32a1836a56398a3b3466c6e118d2f87c7cd8f8d73887da8817cac00dc0e22 |
+| t/module-design-test.ss | 6ec922c3d491b397de69c57bffb0a8813b3ba20dc1c0024ce333f63d8b03a6f1 |
+| t/native-context-test.ss | cef0bb0c5ead25d252f2a57e522d2eab52338ce40f1f8ac9119ba5dd953a6d98 |
+| t/package-metadata-test.ss | 399275d3a1d5a82acc7a4b5a71d7ecac222e50611025522bbd9d41b255ded882 |
+| t/producer-source-custody-test.ss | f39792eb43aa900f7c9c595765ac2a9cf4c40ecb0fa28e870c52ace9028e2179 |
+| t/resource-integration-test.ss | 1a007a0ec9d68f377e917702c2ca95317dc65af962cabcc450d1f6146b850b06 |
+| t/resource-lifecycle-test.ss | 05433b4bd2afd63abbb9893bc0af522cae8eaf97b5fa45c39256301d3683e4cc |
+
+Selected source seams below pinpoint the current dependency implementation inputs
+relevant to S1/WP00; they are inspected source bytes, not observed loaded images.
+
+| Resolved dependency source seam | SHA-256 |
+|---------------------------------+---------|
+| /Users/guangtao/ghq/github.com/tao3k/poo-flow/core/module-system/source/link.ss | a69bd83f24f591ff4f273832e1d17529725e4eab952bb9b06755067ae6bc047c |
+| /Users/guangtao/ghq/github.com/tao3k/poo-flow/core/module-system/building/artifacts.ss | 87d19998239025696bbd1a40bed76982423550699d26aa97f9400871d91c7eb3 |
+| /Users/guangtao/ghq/github.com/tao3k/poo-flow/core/contribution/verification.ss | e190bcb2d426f9d730d172facd417011b669c0c647e15b7db3056bf0b5b8456c |
+| /Users/guangtao/ghq/github.com/tao3k/gerbil-ascent/program/session.ss | 636b733141b4a69df912b06d38ee9b2e1076c944b3176cb91cd26b29db0ba859 |
+| /Users/guangtao/ghq/github.com/tao3k/poo-flow/packages/lambda-aitia/modules/sdlc/review-authority.ss | 8983778cae4e2e5613fbaca41189783cbdf7395ae28ef2f2ab48f1a08ce5cd5e |
+| /Users/guangtao/ghq/github.com/tao3k/poo-flow/packages/lambda-aitia/modules/assurance/host.ss | ee63da1f76681d84a48a6f7c4878b8fff91e3a63e6a9d6c62ea2c1b69a0a2c58 |
+
+* DESIGN Documentation status
+:PROPERTIES:
+:CUSTOM_ID: s0-baseline-design-status
+:END:
+
+The static observations are dated 2026-10-21 Asia/Shanghai. Current metadata,
+selected byte equality and retained historical loaded-image statements are kept
+separate from future build/runtime/authority qualification. No new contract
+version, Namespace suffix, package metadata or alternative capture is introduced.
+
+Only Org and paired D2/SVG change. No implementation/directory/runner/package
+mutation, compilation, method/content/model/ASCENT/Aitia/acceptance execution,
+independent historical oracle/finalizer run, signing, authority act, review
+submission, recipient adoption or actual delivery occurs. Exact historical
+catalogs and retained receipts remain unchanged.
+
+[[file:10.54-library-and-aitia-types-contracts.org::#library-aitia-types-contracts][10.54 details coordinated S1]]: complete Library/Aitia effective fields and
+inheritance, both policy/Scope associations, single declaration-generation read,
+the twelve-purpose domain with fixed expected facts and operation allowlists,
+closed Aitia payload checks and TY01-TY32 acceptance refinements. No source or
+acceptance change is performed.
+
+[[file:10.55-library-construction-and-scope-handoff.org::#library-construction-scope-handoff][10.55 details S2]]: complete checked object/parent/policy graph, Config and
+sole mapping/delta construction, exact exports/callables, separate provider/edge/
+final Scope candidate retention and SX01-SX32 future controls. No source change,
+acceptance execution or actual delivery occurs.
+
+#+CAPTION: S0 live dirty sources, registered dependencies, existing build/artifact and historical load evidence; explicit WP00 blockers and S1 entry boundary.
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.svg]]
+
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][Editable D2 source]]. Static baseline and future repair/qualification design only.
+
+[[file:10.56-profile-selection-and-scenario-capture.org::#s3-profile-scenario-capture][10.56 details S3]]: checked Scope/parent/policy selection, complete Profile and
+project input Contracts, owner-separated acquisition and unique C; direct caller
+migration and CX01-CX32 future controls. Normalized values and actual origin/use
+associations are retained; missing governance stays explicit. No implementation,
+acceptance execution, review submission or actual delivery occurs.
+
+[[file:10.57-method-execution-and-evidence-issuance.org::#s4a-method-execution-issuance][10.57 details S4a]]: actual same-C applications/attempts/run groups, complete
+acquired/derived/execution/validation footprints, Core launch/environment boundary,
+method-specific semantics, private W and fresh use, failure retention and selective
+reuse. EX01-EX36 refine existing controls; no implementation, acceptance execution,
+review submission or actual delivery occurs.
+
+[[file:10.58-content-observers-and-reference-closure.org::#s4b-content-observers][10.58 details S4b]]: same-C product/criterion/locator fields and actual owner
+boundaries, independent finite demand closure, architecture/Org/decision/view
+claims, historical/current evidence, semantic attribution and A/E/W/use association.
+OX01-OX36 refine existing controls; missing/conflicting/stale inputs and fresh reuse
+remain explicit. No implementation, acceptance execution or actual delivery occurs.
+
+[[file:10.59-ascent-projection-and-query-view.org::#s5-ascent-projection-query][10.59 details S5]]: complete C/D/K/A/E/G/W/U/basis relations, actual producer/use
+and independent duty projection, missing/counter/conflict/coverage semantics,
+existing Session prospective acceptance/rollback and postcommit failure boundary,
+owned determinate Q and exact Aitia handoff. QX01-QX40 are future controls;
+no implementation, acceptance execution, review submission or delivery occurs.
+
+[[file:10.60-aitia-review-adaptation.org::#s6-aitia-review-adaptation][10.60 details S6]]: exact C/Q to inert R, adopted policy/project revision/roles/
+products, purpose-specific context/inventory/criterion checks and lossless negative
+assessment, actual common Host/Core receipt/current-use/replay boundaries.
+Causal Software Engineering is the research object for critical comparison of
+claim/assumption/identification/uncertainty handling. Framework mappings are
+proposals to test, not paper authority, demonstrated superiority or an estimator. RX01-RX40 remain future controls;
+no implementation, acceptance execution or review submission occurs.
+
+[[file:10.61-history-authority-and-reassessment.org::#s7-history-authority-reassessment][10.61 details S7]]: exact C/Q/R/H, independently required history, scoped
+principal/grant/action checks, accepted inclusion/current use, immutable negatives,
+repair/exception/supersession/withdrawal and qualified custody. Assumption failure
+triggers scoped reassessment without false zero-effect or authority inference.
+The paper is critically studied through competing designs/falsifiable RQ1-RQ6,
+not treated as a normative source or demonstrated improvement. AX01-AX44 are
+future controls; no implementation, acceptance execution or review submission.
+
+[[file:10.62-library-delivery-and-recipient-use.org::#s8-library-delivery-recipient-use][10.62 details S8]]: exact producer C/Q/R/authority and finalized manifest,
+product/reference/access closure, actual arrival and receiver-owned verification,
+new receiver C/Q/R/adoption/current use. Missing/withdrawn/replayed status and
+claim-specific causal applicability remain explicit; selective reuse is a research
+hypothesis compared against full revalidation. DX01-DX44 are future controls;
+no implementation, acceptance execution, review submission or actual delivery.
+
+[[file:10.63-case-joint-acceptance-plan.org::#s9-case-joint-acceptance][10.63 details S9]]: actual file/entry/lane and owner-artifact matrix, G0-G8
+source/compiled/load/cold/recovery/receiver through-gates, exact finite budgets,
+negative/assumption-change correctness and separate critical research comparison.
+Original 248 rows and stage refinements retain identity; JX01-JX44 are future
+joint controls. OJ01-OJ12/BS01-BS09 remain open until actual owner evidence;
+no implementation, acceptance/research execution or actual delivery occurs.
+
+[[file:10.64-contract-consistency-and-implementation-order.org::#audit-dependency-drift][10.64 dependency observations]]: ASCENT advanced during this audit, first
+39679ae2 then b03efb55; evidence/interface.ss, program/clue-exchange.ss and
+program/trajectory.ss are absent while project imports remain. Core types.ss
+also changed at unchanged HEAD. Earlier 19 drifts remain historical; current
+EXT01/EXT02 are unavailable and EXT08 changed, giving 22 differences at recheck
+(21 at first pass). No stable whole-run dependency cut is claimed; no historical
+digest/receipt is rewritten, replacement API inferred or acceptance executed.
+
+* SPECIFIED P0 later dependency observation
+:PROPERTIES:
+:CUSTOM_ID: p0-later-dependency-observation
+:END:
+
+[[file:10.65-ascent-migration-and-contract-handoff.org::#p0-ascent-migration][10.65]] records the later 2026-10-21 dependency cut and [[file:10.65-ascent-migration-and-contract-handoff.org::#p0-build-and-load][build/load plan]]. Flow now contains transferred Clue/ledger/application assessment sources. This does not rewrite the historical missing-path observation or qualify their installed interfaces. Core HEAD bytes, S9 bytes and current dirty types.ss differ; use the explicit comparisons there, not HEAD alone. WP00 and ordinary recovery remain open.

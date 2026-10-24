@@ -1,0 +1,14 @@
+# org-target: docs/10-19-design/10-architecture/10.10-backpressure-capacity-stall-and-retry-trajectories.org::#retry-holder-packet
+direction: down
+classes: {
+  input: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; border-radius: 10; font-size: 17}}
+  state: {style: {fill: "#E6F5F3"; stroke: "#19756C"; border-radius: 10; font-size: 17}}
+  gate: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; border-radius: 10; font-size: 17}}
+}
+new: "RT00 / RT01 W-E independent W-A reset\nOriginal op1 / a1 timeout; candidate a2\nNew retry body / timers / correlation / dedup\nOld effect unknown; no automatic retry authority" {class: input}
+gap: "RT02 holder inventory incomplete\nUnknown global / tenant / retained-byte bounds\nOld auxiliary label32 is not complete coverage\nBP-R01 / R05 / R07 / R08 derive missing work" {class: gate}
+retry: "RT03 bounded retry candidate\nRetry bodies128 x128 KiB =16 MiB\nLate slots64 x128 KiB =8 MiB\nAll remaining timers / metadata / telemetry8 MiB\nTotal32 only with actual complete accounting" {class: input}
+effect: "RT04 / RT05 independent effect scope\nResource slot is not operational permission\nActual original reply binds op1 / a1\nLate-slot bytes do not replace old-task charge\nOnly covered retention release frees late slot\nNew snapshot cannot rewrite old unknown gold" {class: gate}
+union: "RT06 compose cleanup and retry\nCleanup16 + retry16 + late8 + remaining8 =48 MiB\nJoint modeled plan1904 -32 +48 =1920 MiB\nOnly if actual common-domain partition established\nUnknown overlap stays pending; no double-spent budget" {class: gate}
+reuse: "RT07 current review and evidence reuse\nRule / generic theorem knowledge may reuse\nChanged holder / model / source / intake uses rechecked\nOld runs and results remain exact-scoped history\nNew method / performance / argument / authority separate" {class: state}
+new -> gap -> retry -> effect -> union -> reuse

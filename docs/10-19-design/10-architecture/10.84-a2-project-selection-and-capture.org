@@ -1,0 +1,366 @@
+#+TITLE: 10.84 A2 Declarative Project Composition, Checked Selection and One Capture
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.84
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+FILETAGS: :design:project:profile:scenario:capture:provenance:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.81-declarative-chain-audit.org::#chain-audit-order][10.81 A2]] | [[file:10.82-a0-dependencies-and-normalized-handoff.org][A0 source and handoff]] | [[file:10.83-a1-effective-declarations-and-contracts.org][A1 effective declarations]] | [[file:10.68-profile-selection-scenario-binding-and-capture.org][Earlier complete capture design]] | [[file:10.77-effective-types-contracts-and-origin-lifetime.org][Origin lifetime]] | [[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][D2]]
+
+* Result, scope and actual source boundary
+:PROPERTIES:
+:CUSTOM_ID: a2-scope
+:END:
+
+A2 consumes actual admitted provider Scopes, binds one effective Profile and explicit
+project request, acquires their required real inputs at their supported owners, and
+returns one Scenario-owned capture C for that acquisition occurrence. Reporting,
+application reasoning and SysML materialization consume that same captured meaning
+and original provenance. They do not separately reconstruct it from Profile data.
+One capture does not mean one global snapshot forever: a genuinely new acquisition,
+changed captured meaning or different selection requires an appropriate new C.
+
+This chapter unifies 10.82--10.83 with 10.68/10.77 for the current Library repo. All
+new field/call boundaries are proposed, not implemented exports. Only Org and D2
+are updated. No code, package, generated SysML, runtime acceptance, capture operation,
+review or automatic orchestration is run. No Source/receipt/clock/authority registry,
+Profile loader or new Project manager is proposed.
+
+Read-only observation on 2026-10-21: Project HEAD
+8044732d505f84e373119a70f947df00e1767300 with existing working-tree formation source;
+adjacent Core 1107677e53b0c3096958edc83429ddf9f1e1257e; ASCENT
+18751d5c513fd7ae6e768f580866b9e1fb34d2d3; isolated Core
+44a99d45396d1a23e850105ffe8af442a61b2780 and POO
+0df023fd9e15192156935c971f0f1940028c5277. A0's dependency/API/build/load and three
+normalized-return prerequisites remain open. These source observations do not
+establish that either cohort implements the full capture protocol below.
+
+| Current source | Observed behavior / A2 disposition |
+|----------------+-----------------------------------|
+| [[file:../../../projects/library-formation/init.ss][Project init.ss]] | One source root and three literal provider locations via poo-flow!; keep declarative selection and native linking, extend only the explicitly supported publication being designed |
+| [[file:../../../profiles/library-formation.ss][Formation Profile]] | Candidate project/basis duplicates outer intent; layout/catalog refs are strings; replace independent context copies with admitted intent/selection/plan associations |
+| [[file:../../../scenarios/project-formation/func.ss][formation-inputs / project-formation-scope]] | Copies Profile/Library string rows; inputs and run prepare separately; render accepts any result. Replace caller separation with one captured occurrence and coherent result/plan association |
+| [[file:../../../examples/library-formation.ss][Project runner]] / [[file:../../../examples/library-formation-output.ss][output helper]] | Runner records one prepared batch, executes a second and writes an investigation report/model; migrate to the same C for report and execution; keep historical receipts |
+| [[file:../../../scenarios/resource-lifecycle/interface.ss][Resource Scenario]] / [[file:../../../scenarios/resource-lifecycle/func.ss][func.ss]] | Requires Domain/Evidence only, fixes Domain.entry, accepts flat capture arguments, discards validate return and flattens Context into review fields. Directly migrate to checked selection/C consumption for the supported full route |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/methods.ss][resource-native-context / resource-context-current!]] | Computes selected file/env/scope digests, discards Profile/Context normalization and reconstructs Context during current! comparison. Retain useful bounded read algorithms; remove a second authoritative acquisition and recapture-based recognition |
+
+* Project composition and admitted Scope consumption
+:PROPERTIES:
+:CUSTOM_ID: a2-project-scopes
+:END:
+
+| Owner / existing file | Complete target boundary |
+|-----------------------+--------------------------|
+| projects/library-formation/init.ss | Native explicit declaration names supported organization Library, application Module and formation Scenario, with one source root and source locations. No LLM-supplied path-to-import dispatch. The root legacy init.ss remains a separately labelled entry until a coordinated migration qualifies it |
+| Core selection/init and source/link owners | Lower literal declarations, resolve required providers, admit publication/Context/edges/final Scope, preserve A0's K1/SD/S1 and currentness. Core owns disabled/unsupported/cycle/missing-provider refusal and lazy demand |
+| Library interfaces | Publish actual organization/family/model/catalog/policy/method declarations and expected Contracts through checked Config/exports. A2 consumes their returned Scopes; it does not import Config behind them to rebuild providers |
+| Module interface | Publish actual bound LR program/reasoning and SysML projection operations, expected input/result/plan Contracts and source associations. Profile cannot substitute an arbitrary callback or a second program |
+| Scenario interface | Explicit typed requires aliases capture the actual returned Library and Engine Scopes; bind the admitted Config identity/purpose/demand to those operations. If full Rust/Integration selection is supported, declare its actual Generic/Domain dependencies and expected Contracts too; Evidence belongs to the route that actually needs it |
+| Examples / Justfile / build.ss | Explicitly choose the declared entry and supported Profile/request, acquire one Scenario Scope and call its operations. Reuse existing Core build/test projections; no discovery loop, fallback provider resolver or second orchestration layer |
+
+Core's literal profile/extends and user-profile composition mechanisms express Core
+settings and provider composition; the domain LibraryFormationProfile expresses
+engineering selections and candidate intent. Keep their meanings distinct. Use the
+supported native entry/profile mechanisms where appropriate; do not pretend the
+current literal Module selection already resolves arbitrary domain Library choices.
+The domain operation selects only capabilities published by the admitted provider set.
+
+For this slice, choose the Profile explicitly. FormationCase/Config remains the
+consumed Scenario declaration, with design-reasoning fixed by its expected Contract;
+it does not become a second Profile registry. The target project-formation-scope
+factory closes over the admitted Config as well as Library and Engine, and
+interface.ss supplies these through existing core.exports/deferred linking. Do not
+add a handwritten core.link alongside generated exports or leave Config unused.
+
+An all-role Scenario must resolve every declared required edge before binding. A
+Generic-only request cannot suppress a failed required Domain or silently switch to
+raw Generic Config. A genuinely narrower Generic-only publication may share pure
+selection/acquisition helpers with a declared narrower dependency set; it is not an
+exception fallback. Do not eagerly demand unrelated sibling Scopes or discover tests
+merely to select an allowed Profile.
+
+A0's edge candidate can be a consumer-specific checked wrapper. Retain it rather
+than returning to provider.scope or mutating that provider. Corroborate actual
+Generic and Domain.Parent through supported source/subject/family/normalization
+associations; neither raw eq? across wrapped views nor matching printed identities
+is the general rule. If the chosen Core/Library interface cannot supply the necessary
+qualified association, record the upstream binding gap and refuse the full route;
+do not read a private receipt table or synthesize an application-owned provenance map.
+
+* Profile request, effective selection and parent/policy/model/method closure
+:PROPERTIES:
+:CUSTOM_ID: a2-selection
+:END:
+
+| Profile or bound-selection field group | Required contents / owner |
+|----------------------------------------+---------------------------|
+| identity / intent-ref | Authored Profile identity and exact user-confirmed project goal occurrence with proposal basis/source. Confirmation of Library design is not an appointed role, institutional mandate or delivery permission |
+| selection | Supported organization/model/family/Generic/Rust/Integration/catalog, policy set and investigation/method choices. Resolve through fixed advertised exports and trusted expected descriptors, not a candidate-selected Type |
+| parameters | One inherited/refined parameter child admitted under the selected model/method Contract. Keep the returned normalized child; never copy its numeric/runtime/worker values into outer authoritative fields |
+| candidates / plan-selection | All LLM-authored alternatives retain their original confirmed-intent basis and proposal occurrence. Each has a candidate-bound plan or explicit common-plan applicability, with selected Library mapping refinements and materialization policy |
+| products / investigations / project-constraints | Requested additions, supported claim/domain/mode/limits and explicit repo/worktree/subject/read restrictions. Mandatory duties/inputs derive independently from selected definitions/policies; request fields cannot delete them |
+| bound selection | Actual consumed Scopes, checked Profile/parameter, selected expected descriptors/definitions, complete immediate parents, policy/model/method/catalog/program/mapping refs, source/semantic revisions and independent demand. This is a checked binding result, not actual acquired project content or C |
+
+Current LifecycleProfile and LargerPayloadProfile retain their authored 64/128 intent
+while refining that one parameter child. Formation Profile retains LIB-C01--C03 as
+proposals, not a finite privileged name list. A valid conflicting alternative remains
+input to ASCENT; malformed shape, unsupported provider or incoherent selection refuses
+before acquisition. Adding a known supported role/model concern is a declaration
+change; new semantic meaning requires its own reviewed supported method/Type extension.
+
+| Selected definition | Required bound association |
+|---------------------+----------------------------|
+| Organization | Actual admitted organization family/model, owner-role constraints, product/content/duty requirements, selected catalog/mapping and method declarations |
+| Generic | Returned explicit Generic entry/expected Contract, parent=false, declared capabilities and parameters |
+| Rust | Returned Domain.entry; its immediate parent is the checked Generic from its own admitted Parent edge, compatible with the Scenario's qualified Generic association |
+| Integration | Returned Domain.integration-entry with parent equal to the admitted Rust meaning in that Domain Scope; never methods.integration-entry or a separately rebuilt slice |
+| Policies | Source-qualified applicable coding/design definitions and expected Contracts, distinct identity and semantic revision, parent=false. Full Rust/design DE-CASE-01 activity needs both; formation-only reasoning establishes no coding evidence or review adoption |
+| Models and methods | Actual supported claim/mode, same model/Integration/policy associations, input/output Contracts, bound implementation owner/source, LR program or SysML catalog/mapping/validator as applicable |
+
+A1's sole generation read is Scope -> expected role descriptor -> admitted family
+declaration -> inherited LibraryDeclarationContract V1 in library/project-organization/
+types.ss. Profile, C, Config and package manifest do not copy or choose that field.
+Semantic revision, project source revision and dependency/build/load cut remain distinct.
+No version Namespace or new generation is introduced.
+
+Selection records policy applicability independently from actual project adoption:
+a recognized adoption/mandate input, explicit unverified claim, or typed missing input
+must remain visible. Selecting a definition does not appoint reviewers, sign grants
+or skip required review. If default Profile selection is supported by actual Config,
+resolve one explicit effective request with declared override semantics before binding;
+ambiguous defaults/overrides refuse, and ambient cwd/tools never supply hidden defaults.
+
+* Explicit project request and real input acquisition
+:PROPERTIES:
+:CUSTOM_ID: a2-acquisition
+:END:
+
+The runner supplies a project request distinct from Profile: requested repo/worktree,
+subject and source/include/exclusion/alias restrictions; logical Library/reference/
+project/product roles; selected operation/purpose; permitted bounded reads; output
+intent and prior mandate references where needed. A requested path, revision, URL or
+tool name is a constraint, not an observation or permission to fetch/install/build/run.
+The trusted Scenario operation binds expected readers, source/Host/clock/lease policy
+and validators. Callers do not supply current! lambdas, seal functions or trust roots.
+
+Derive complete required input roles/occurrences/multiplicities and adequacy first
+from the admitted selection, claims, parameters, policy, plan and operation. Acquire
+an observed binding or explicit typed gap for every demanded unit. Never remove a
+required unit merely because its input or check capability is missing.
+
+| Logical input role | Concrete DE-CASE-01 acquisition example / required recorded basis |
+|--------------------+------------------------------------------------------------------|
+| Confirmed intent / proposals | Retain the actual confirmation and proposal content/source occurrence where supported, including what was confirmed and what remains unverified. 10.79's authored account and Profile strings are claims, not a substitute for an unavailable original acquisition channel |
+| Library and methods | Actual admitted Scope/parent/policy/model/catalog/Contract/method/program/mapping definitions and selected source/semantic revisions; required dirty/build/load associations from A0 or explicit gaps |
+| Current repo implementation | Explicit worktree/subject, observed HEAD plus included dirty/untracked bytes, relevant source/build/package/config inputs and file/enumeration/negative dependencies. HEAD alone does not capture the current formation implementation |
+| Architecture/model products | Current project.sysml and selected companion/catalog bytes, base, element selectors, actual/target classifications and demanded references. These are captured baseline inputs, not future generated output |
+| Org and decisions | Selected product/section/decision requirements, actual Org bytes, selectors, references/access and current/historical/missing classifications. 10.82--10.84 are examples of selected products; obligation-driven selectors, not another hardcoded file inventory, determine the actual closure |
+| Reference workload | Separate Library-owned six-case crate/lock/oracle/protocol when selected; retain its own subject/source and intended claim domain. It cannot stand in for an unrelated receiving repo implementation |
+| Tools/environment | Selected executable/ABI/config/environment and resource identities through supported reads; tool labels and old manifest versions are requested/historical inputs until observed. Reading identity is not executing Rust/QNT/Lean/SysML |
+| Premise/data/mandate/history intent | Required causal/model/data/measurement/applicability/transport inputs and actual policy/role/mandate source associations or explicit gaps; preserve uncertainty. C creates no result, causal finding, authority or future history decision |
+
+For this self-hosted case, Library and project roles may point to identical physical
+bytes; their subject, demand, dependency and provenance roles remain distinct. Storage
+may deduplicate bytes. It must not merge evidence meaning or relabel target/project
+code as the reference workload. Adding output to its own input closure is forbidden:
+newly generated project.sysml belongs to a later result; baseline root bytes already
+captured in C remain historical inputs for that run.
+
+Readers preserve actual operation/input/result/source-cut/limits and owned immutable
+bytes or supported immutable retained source domains. File reads require owning base,
+symlink/alias/relocation rules, content/enumeration/negative observations, dependency
+closure and supported stability checks. Changes during acquisition refuse/reacquire
+under declared limits or become an explicit unstable gap in a supported partial
+variant; do not combine old metadata and new bytes into a claimed stable cut.
+A digest then reopening a mutable path during execution is not consuming C's inputs.
+Any permitted staging must record original-to-copy and actual byte acquisition.
+
+POO issued reads authenticate their actual producer/token/root observation domain;
+Core Module SourceRef authenticates its qualified module source boundary. Neither is
+a universal arbitrary-repo or tool reader. Forward actual supported issued tokens;
+never fabricate token-shaped records or an always-true checker. Unsupported required
+reader/provenance support blocks complete acquisition. Actual OS/Host reader support
+must be qualified at that owner; no generic snapshot authority is assumed available.
+
+* Capture basis, original origin and C
+:PROPERTIES:
+:CUSTOM_ID: a2-one-capture
+:END:
+
+| Value / boundary | Required retained fields and meaning |
+|------------------+--------------------------------------|
+| Acquisition occurrence | New Scenario-owned occurrence-ref, expected producer/operation/source-generation, actual selection/request, acquisition attempts/results and guard/read associations. A caller reuse token or content digest cannot choose this occurrence |
+| Normalized basis | occurrence-ref; admitted Profile/parameter/selection/Scopes/parents/policies/model/method/catalog/plan; confirmed intent and all candidate bases; actual project/source/product/tool/environment/mandate/premise inputs, independently required demand and explicit gaps/limits; canonical owned basis and acquisition associations |
+| Original origin assertion | Exact normalized basis/occurrence and actual producer/reader operation/source/retained acquisition; precise claim that this operation acquired this basis under its declared limits. Does not claim architecture validity, true premises or policy approval |
+| Original receipt association | Actual expected source-bound adapter/operation, genuine receipt and interval, assertion/basis refs and trusted clock/lease limitations. Never serialize a private issuer table or accept matching public fields as issuance |
+| Final C | Returned checked immutable basis-ref plus original origin association, expected declaration/operation and provenance/lease limits. No future A/E/W/Q/R/decision/generated model or later verification result is appended |
+| Later current-origin use | Separate actual target operation/request/assertion, same C/basis/occurrence/origin, fresh verification observation if supported and live source/premise/status/role/clock findings. Does not mutate or renew the original C |
+
+Canonicalization follows the expected Types: preserve symbol versus string,
+ordered acquisition/trace sequences, declared set semantics and every meaning-changing
+negative/gap/limit/role/source association. Qualified operation/function references
+retain actual source binding and supported live guards; do not serialize closures or
+silently omit their meaning because they are not JSON. A digest is an integrity aid,
+not an issuer or a substitute for the actual retained acquisition association.
+
+The implementation boundary is normalize basis -> actual origin verification ->
+retain genuine original association -> final C admission. The receipt is not in its
+own basis snapshot. Final normalization must preserve the already-attested meaning;
+if it changes that meaning, refuse/reverify under the supported owner, never patch
+receipt data or re-run normalization merely to recreate a lost receiver.
+
+Current Core's real API is [[file:../../../../poo-flow/core/contribution/verification.ss][contribution/verification.ss]], exported as
+:yuanxu/contribution/verification. The isolated cohort has the same file under
+:core/contribution/verification and poo-flow-* names. The current API provides
+yuanxu-verification-adapter, yuanxu-verify, yuanxu-verification-valid?,
+yuanxu-verification-admission, yuanxu-verification-admission-valid? and revocation.
+These are existing mechanisms, not a newly implemented Scenario capture service.
+
+The actual source-bound operation must recognize the retained acquisition, expected
+producer/selection/reader and allowed gaps and return exactly #t. Core copies the
+snapshot string, requires matching pre/post snapshots and privately binds a genuine
+receipt to snapshot/issuer/interval. The interval is [issued-at,expires-at), with
+exact nonnegative integers and issued-at < expires-at. Valid? checks the exact
+issued receipt/adapter association and snapshot at the supplied instant. The trusted
+Host supplies the actual clock/lease policy; a caller-provided now/until is not a
+trusted clock. Snapshot equality proves neither historical IO truth nor universal
+ABA absence; actual read/source stability requires its qualified owner guards.
+
+Anyone can construct an adapter around a trivial operation. Therefore registration,
+adapter name or successful generic valid? is insufficient: the consuming Scenario/
+method must bind the expected actual producer/source operation independently. A
+forged/copied/modified receipt or adapter cannot replace the original private
+association. Core admission objects index a supplied fixed instant, not a moving
+clock; fresh use still needs the operation's actual current instant and conditions.
+
+Two kinds of failure are distinct. A recognized acquisition of a missing document
+can form a valid gap-bearing C only if its selected partial variant permits that
+gap; no complete/readiness claim follows. Missing qualified acquisition/origin
+recognition produces an unrecognized draft or refusal, never an authentic C with a
+fabricated receipt. If final admission fails after issuance, retain the attempt and
+any actual receipt in its owner diagnostics; do not claim issuance rolled back or
+return a partially recognized C.
+
+A later supported re-verification may preserve the same original occurrence only
+when actual retained provenance and unchanged meaning are independently checkable.
+It creates a new observation/receipt with a real new interval, not an edited old
+receipt or second C. If that is unavailable, expired/revoked/process-lost origin
+stays unestablished for current use. Actual reacquisition creates a new occurrence/C.
+JSON, hashes, restored files or copied Scope/C objects cannot reconstruct private
+issuance. No portable/restart origin protocol is assumed implemented by this design.
+
+* Existing file and operation migration
+:PROPERTIES:
+:CUSTOM_ID: a2-calls-files
+:END:
+
+The operation names below are target responsibilities at existing interfaces, not
+an instruction to add every stage as a public API. Only bind/capture and coherent
+same-C consumers need public Contracts; pure helpers stay named functions. No public
+raw tuple configuration protocol or generic workflow transaction is introduced.
+
+| Existing owner / call seam | Target input -> output and responsibilities |
+|----------------------------+---------------------------------------------|
+| Project runner -> declared Scenario Scope | Demand actual checked Scope once. Pass selected Profile and explicit project request to its bound operation; never pass arbitrary Library/Engine/validator callbacks in the request |
+| Scenario bind, in func/interface | Consumes already-closed-over admitted Library/Engine plus Profile/request; retain normalized Profile/request/parameter, resolve advertised selection/parent/policy/method/catalog closure and independent demand -> admitted bound selection. No actual project content or receipt is invented here |
+| Scenario capture, in func/interface | Bound selection -> one actual acquisition occurrence, normalized basis, recognized origin, admitted C or explicit refusal/draft. Config purpose/demand is consumed; actual OS/Host acquisition remains its supported owner |
+| formation-inputs, private projection helper | C -> deterministic source rows with declared complete demand/coverage, no second acquisition or ambient read. Public inputs, if retained, returns an inspection view of that C's captured basis, not a second Profile-to-authoritative-batch path |
+| Scenario run -> Module reason | Same C and expected operation/current-origin use -> bound application projection/reasoning. Retain C/program/source/result association and all alternatives/negative consequences; A3 specifies execution further |
+| Scenario render -> Module projection | Checked C/result/candidate/plan/materialization-policy request -> validated model candidate/status. No arbitrary rows-of result, renderer-side Library selection or hardcoded project identity; later materialization work completes the method |
+| output helper / runner | Report actual C/occurrence/basis and consumed input/result associations from the same run. Do not call inputs(Profile) and run(Profile) independently. Keep failed/candidate artifacts, do not treat a partial directory as root promotion |
+| Resource lifecycle / Rust methods | Scope-bound selection and Scenario acquisition replace authoritative native-context recapture; shared read algorithms remain at actual qualified owners. open-review consumes checked C and required current-use association rather than flattening entry/Profile/usage/snapshot/scopes into another truth source |
+| Pure consequences probe | Keep explicitly labelled unqualified algorithm probe where it intentionally lacks C origin. A synthetic prepared batch cannot be reported as captured Project execution even when rows/model bytes match |
+
+The unique capture contains the candidate set and applicable plans so alternatives
+can be compared over one declared input basis. If an investigation needs incompatible
+model/policy/method selections, declare separate captures or a supported common demand
+and source association; do not compare unrelated results as if they shared C. New
+intent, parameter, candidate meaning, plan or required source meaning changes create
+new captured meaning. Status-only checks, later results and origin observations stay
+separate. Append-only provenance/history links connect old and new occurrences.
+
+* Refactoring dependencies and proposed acceptance
+:PROPERTIES:
+:CUSTOM_ID: a2-controls
+:END:
+
+| Step / existing file owners | Positive acceptance design | Matched negative control |
+|-----------------------------+----------------------------+--------------------------|
+| A2.1 declared providers and entry / Project init, Core link, interfaces | Same admitted provider set supports two allowed Profile choices without rule/renderer edits; returned K1/SD/S1 and lazy sibling demand preserved | Unknown/disabled/cyclic provider, wrong dependency Contract, failed declared Domain, raw Config fallback or LLM path-to-import refuses; Generic choice cannot prune a required failed edge |
+| A2.2 bound selection / Library Types, Profile and Scenario func | Normalize once, retain one parameter child, actual parent graph, applicable policies and real model/method/catalog bindings; original proposal basis remains explicit | Skipped Rust parent, foreign Scope/family/program/catalog, copied generation, swapped policy, candidate-selected validator, incompatible mode or silently rewritten intent refuses |
+| A2.3 demand and real reads / Scenario and actual Core/Host reader owners | Every required role has actual source-bound acquisition or permitted typed gap; observed dirty/untracked/project/reference/product/tool domains remain distinct | HEAD-only snapshot, deleted required role, fake SourceRef/token, caller current! closure, hidden dependency, disallowed symlink/alias or metadata/byte drift cannot form complete acquisition |
+| A2.4 basis and original C / Scenario Types/operation and Core verification | One owner occurrence, complete normalized owned basis, actual expected verification operation, genuine original receipt and final returned C; recognized missing-product partial variant retains gaps | Hash-only/caller occurrence, trivial foreign adapter, copied/mutated receipt, changed basis during verification, origin receipt in its own snapshot or final normalization changing attested meaning refuses recognition |
+| A2.5 same-C consumers / runner, Scenario, Module and output helper | Report/reason/render consume one occurrence/basis and bound plans; multiple methods/candidates preserve C, with outputs associated separately | inputs/run recapture, foreign result/plan, reopening mutable inputs after hash check, output added to its own basis or synthetic probe presented as Project capture fails |
+| A2.6 current use / actual source/clock/verification owner | Valid original interval and fresh source guards permit exact supported use; genuine same-occurrence re-verification creates separate observation when actually supported | Before issued-at, at expires-at, revocation, stale source/policy/premise/status, caller-selected time, fixed admission reused as moving now or missing original provenance blocks use; no receipt editing or Context reconstruction repairs it |
+| A2.7 failure and process boundary / existing capture and Core owners | Preserve acquisition/refusal/issuance/final-admission failures and old C history; explicit supported reacquisition creates new occurrence | Partial C exposure, lost private state reconstructed from JSON, implicit new adapter on restart, fake rollback of issued receipt or silent same-C claim after real reacquisition refuses |
+| A2.8 complete declared slice / existing tests and bounded runners | Source/Scope/selection/acquisition/origin/current-use and planned downstream associations align under one qualified route; retain independent semantic witnesses | A0 gaps, shared-code probe parity alone, logging-enabled pass generalized to other routes, partial build/timeout or unobserved recovery cannot close runtime acceptance |
+
+Allocate future tests to existing t/library-selection-test.ss for selections,
+t/native-context-test.ss for source/basis/current-use controls, t/project-formation-test.ss
+for declared consequences and t/project-formation-entry-test.ss for the real entry.
+Core's t/contribution-verification-test.ss covers generic receipt boundaries; a
+Scenario capture test must additionally exercise its actual expected operation and
+real acquisition source. Native POO read tests remain producer-owned. These mappings
+are design allocations, not claims of present coverage or newly executed tests.
+
+A2 source design may proceed with A0/A1 work, but actual publication/capture depends
+on their qualified source/API/normalized Scope and effective Contract exits. Keep
+existing 2 GiB limits, 120-second focused invocation and 180-second build gate;
+preserve old successful, failed and partial receipts. No unchanged failed route is
+rerun or watchdog widened here.
+
+* Open inputs and advance conditions
+:PROPERTIES:
+:CUSTOM_ID: a2-open
+:END:
+
+Still required before implementation: real publication of A1 model/policy/method/
+catalog revisions and bindings; the chosen Core cohort's supported Scope/source
+association; actual bounded arbitrary-project/product/tool acquisition support;
+trusted clock/lease rules; precise complete/partial capture variants; and genuine
+Scenario origin-operation ownership. Native Core verification exists, but it is not
+the missing domain acquisition/recognition implementation. Missing supported origin
+recovery/portability remains an explicit limitation, not a reason to add a local
+receipt manager. The original confirmed-intent acquisition channel also needs an
+explicit supported binding or honest unverified claim; no institutional authority
+is inferred from the conversation.
+
+A2 is ready for later A3 implementation only after declared entry and effective
+selection bindings, actual input ownership, one recognized basis/origin/C and explicit
+current-use gates are reviewable together, with A0/A1 runtime prerequisites qualified.
+No review submission, root-model promotion, delivery or automatic LLM iteration is
+part of this design task. Correctness of capture/binding and negative preservation
+is separate from research claims about better architecture, causal reasoning or cost.
+
+* A3 consumption of the same C
+:PROPERTIES:
+:CUSTOM_ID: a2-a3-consumption
+:END:
+
+[[file:10.85-a3-application-projection-and-ascent.org][10.85]] specifies the subsequent checked projection/reasoning operation: retain
+this C and original acquisition, project complete independent demand and recognized
+later use/findings, bind the real selected program, and expose only a complete bound
+accepted consequence view. It neither recaptures project inputs nor makes declaration
+assertions evidence. Actual execution and acceptance remain outside this design update.
+
+* Scope-before-capture and current-use consistency
+:PROPERTIES:
+:CUSTOM_ID: a2-coherence-followup
+:END:
+
+Admitted K1/SD/S1 and Library/Engine Scopes precede C; capture retains their qualified selection lineage, never supplies its own upstream admission premise. Program construction precedes capture while fact projection consumes C afterward. Later status/evidence/use records bind the immutable original C; genuine reacquisition is a new occurrence, not reconstructed original provenance.
+
+See [[file:10.88-declarative-slice-consistency-and-order.org::#coherence-findings][10.88 consistency findings]], [[file:10.88-declarative-slice-consistency-and-order.org::#coherence-controls][joint controls]] and
+[[file:10.88-declarative-slice-consistency-and-order.org::#coherence-order][implementation prerequisites and ownership]]. These are target commitments, not executed acceptance.
+
+* I3 Project, selection and capture follow-up
+:PROPERTIES:
+:CUSTOM_ID: a2-i3-followup
+:END:
+
+[[file:10.92-i3-project-profile-scenario-and-capture.org::#i3-project][10.92]] unifies declared provider/Scope consumption and [[file:10.92-i3-project-profile-scenario-and-capture.org::#i3-selection][effective selection]]
+with I2's separate declaration/model/catalog offerings. Its [[file:10.92-i3-project-profile-scenario-and-capture.org::#i3-acquisition][actual acquisition]] and
+[[file:10.92-i3-project-profile-scenario-and-capture.org::#i3-capture][origin/C lifecycle]] require genuine expected producer, immutable basis and separate
+current use; no generic snapshot or private-issuer recovery is presumed. [[file:10.92-i3-project-profile-scenario-and-capture.org::#i3-calls][Same-C calls]]
+replace independent Profile-to-batch preparation; [[file:10.92-i3-project-profile-scenario-and-capture.org::#i3-controls][controls]] remain unexecuted.

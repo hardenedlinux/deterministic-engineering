@@ -1,0 +1,319 @@
+#+TITLE: 10.82 A0 Dependency, Build/Load Sources and Normalized Scope Handoff
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.82
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+FILETAGS: :design:audit:dependencies:core:poo:ascent:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.81-declarative-chain-audit.org::#chain-audit-order][10.81 A0]] | [[file:10.76-dependency-build-load-and-normalized-handoff.org][Earlier P0 design]] | [[file:10.77-effective-types-contracts-and-origin-lifetime.org][Effective Contracts]] | [[file:10.80-declarative-project-formation.org][Formation receipts]] | [[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][D2]]
+
+* Scope and source observation
+:PROPERTIES:
+:CUSTOM_ID: a0-scope-observation
+:END:
+
+A0 establishes one explicitly selected dependency cohort and preserves each accepted
+normalized value across Core linking. It does not make the Project a package
+manager, change Library generation, or infer loaded code from a filesystem path.
+This chapter refines 10.81 A0 against actual current source and artifact files.
+All repairs and acceptance controls below are proposed. No implementation, package
+operation, compiler, Gerbil process, runtime acceptance, recovery or orchestration
+is executed here. D2 rendering and Org checks are documentation operations only.
+
+Observation date: 2026-10-21. Repository HEAD remains
+8044732d505f84e373119a70f947df00e1767300, with the pre-existing staged/working-tree
+formation source; HEAD alone does not identify that source. The adjacent Core is
+now 1107677e53b0c3096958edc83429ddf9f1e1257e, clean at observation, later than the
+Core observation in 10.81. The isolated formation Core remains unchanged. These
+reads describe filesystem/source cuts, not an atomic multi-repository snapshot or
+a newly observed running process. Historical observations are not rewritten.
+
+* Dependency declarations versus actual resolution
+:PROPERTIES:
+:CUSTOM_ID: a0-dependency-cohorts
+:END:
+
+| Owner / declaration | Actual source observation | Meaning and required action |
+|---------------------+---------------------------+-----------------------------|
+| Project [[file:../../../gerbil.pkg][gerbil.pkg]] | Unpinned poo-flow-core, gerbil-ascent and gerbil-poo; package links resolve to adjacent Core, adjacent ASCENT and Flow's shared POO checkout | Current declarations do not define the isolated formation cohort or a reproducible migrated cohort. Project owns its direct dependency declarations; update only to jointly qualified real revisions |
+| ASCENT [[file:../../../../gerbil-ascent/gerbil.pkg][gerbil.pkg]] | HEAD 18751d5c513fd7ae6e768f580866b9e1fb34d2d3 declares yuanxu@44a99d45396d1a23e850105ffe8af442a61b2780; working tree has a modified migration-audit document and untracked _apalache-out | The package pin is not the adjacent Core checkout. Relevant source must be observed separately from unrelated dirty documentation. Do not assert a clean whole checkout |
+| Isolated Core [[file:../../../.data/formation-core/gerbil.pkg][gerbil.pkg]] | .data/formation-core at clean 44a99d45396d1a23e850105ffe8af442a61b2780; package core; POO pin 0df023fd9e15192156935c971f0f1940028c5277 | Formation source uses :core and poo-flow-* APIs. This is the recorded reproduction cohort, not the newly migrated public API |
+| Isolated POO | .data/formation-gerbil-poo at clean 0df023fd9e15192156935c971f0f1940028c5277 | Satisfies that isolated Core source pin. Source pin satisfaction is not complete build/load qualification |
+| Adjacent Core [[file:../../../../poo-flow/core/gerbil.pkg][gerbil.pkg]] | Clean 1107677e53b0c3096958edc83429ddf9f1e1257e; package yuanxu, prelude :tao3k/yuanxu/prelude; POO pin f956f4c68d7d996ef860a2633f4fb9b4e745bd0b | Exposes :yuanxu, YuanxuContract., yuanxu-contract-* and yuanxu! rather than the formation cohort's identities. The old nested yuanxu/gerbil.pkg location no longer exists here. Core owns its migration and POO compatibility |
+| Shared POO through both Project and adjacent Core package links | Flow .gerbil/pkg/github.com/tao3k/gerbil-poo at fdeadfa40ca5cee5fe20308985aef1577f2eb49b, ten dirty/untracked entries at observation, including build/object/mop/slot-observation source changes | Satisfies neither observed Core pin by checkout identity. Do not use this mutable source or its artifacts as evidence for either declared pin |
+| Flow [[file:../../../../poo-flow/gerbil.pkg][gerbil.pkg]] | HEAD e20e93236ca7a04275d1293cdc9ce770401efd7f with extensive existing changes; still declares POO 0df023fd and ASCENT 0f99da9e3a3baf1a272ba58fe0769ed8278ae746 | Flow/Aitia consumers must be included only when selected imports actually require them, then qualified with their complete actual dependency closure. Do not sweep unrelated Flow changes into this repair |
+| Project [[file:../../../manifest.ss][manifest.ss]] | Records old Core 52130d2, POO fdeadfa and an ASCENT archive identity | Historical realization metadata, not dependency resolution or current Library version authority. Regenerate via its owner only after real qualification, retaining historical receipts |
+
+The Project poo-flow-core link resolves to ../poo-flow/core even though its current
+package declares yuanxu; no Project yuanxu package link exists at observation.
+Package URL identity, source module prefix and prelude identity are distinct. The
+old isolated Core also has a nested tao3k/yuanxu prelude package while its source
+modules remain :core. This explains the recorded mount/copy route; it does not
+license creating aliases to conceal incompatible API cohorts.
+
+ASCENT's [[file:../../../../gerbil-ascent/program/types.ss][program/types.ss]], operator.ss and operator-change.ss still import
+:core/types and PooFlowNativeObjectContract./poo-flow-predicate-contract. The
+application's Project/Types/build imports do too. A pointer to the latest Core
+cannot satisfy those imports by itself. For the full target, qualify the supported
+Yuanxu migration across Core, ASCENT and the Project together, and Flow where used.
+Keep the old isolated route as explicitly labelled reproduction evidence. No final
+pin is chosen merely because it is today's HEAD; repaired, committed and qualified
+sources must determine those pins. No hypothetical future SHA is specified here.
+
+* Compilation, artifacts and actual loading
+:PROPERTIES:
+:CUSTOM_ID: a0-build-load-sources
+:END:
+
+| Existing surface | Actual behavior / gap | Target boundary and owner |
+|------------------+-----------------------+---------------------------|
+| [[file:../../../build.ss][Project build.ss]] | Uses root init.build-spec/init.build-run and current-build-output-directory; four explicit old roots omit the formation Project/probe/entry tests | Retain Core build projection. Project declares the intended formation build/test closure through its actual selected entry, without making an eager import of every owner necessary |
+| [[file:../../../projects/library-formation/init.ss][formation init.ss]] | poo-flow! declares three source locations, exposes init build/test projections; runner demands Scenario Scope | Preserve declarative selection and lazy demand. Linking source successfully does not prove all compiler/test roots were included |
+| [[file:../../../Justfile][formation-runtime]] | Checks clean isolated Core/POO pins, binds source symlinks, copies/compares prelude and package metadata | An explicit local reproduction lane. Replace duplicated generic resolution/issuance with supported package/Core build ownership when implementing; Just launches the selected bounded route |
+| formation-test-file and investigate-* | GERBIL_PATH=.data/formation-cohort/runtime; GERBIL_LOADPATH=runtime/lib followed by formation-cohort/source; direct gxi/gxtest | This is a mixed compiled/source route. The comment calling it source-only is inaccurate. Record actual ordered paths, selected units and compiler/runtime closure; do not rename it into qualification |
+| build-formation-dependency / kernel | Direct POO build.ss or gxc object/mop compilation into runtime/lib | Historical full build timed out; focused kernel units passed. No complete Core-issued artifact/source association for this lane is established. Keep failed and partial results; do not rerun unchanged failure or adopt partial files as a complete build |
+| General Project recipes / .gerbil/lib | Different environment and old compiled Core/POO artifacts coexist | General and isolated routes need distinct explicit qualification. Do not silently fall back between them or clear shared artifacts belonging to other work |
+| Core [[file:../../../../poo-flow/core/module-system/building/artifacts.ss][building/artifacts.ss]] and [[file:../../../../poo-flow/core/module-system/building/interface.ss][building/interface.ss]] | Already own issuance, selected artifact enumeration, source/compiler/currentness checks, invalidation, bounded child handoff and explicitly selected recovery | Reuse this owner; a new project manifest/registry must not pretend to issue a build. Installed Gerbil owns native loading; Core deliberately does not intercept its module cache |
+
+At observation, gerbil/gxi/gxc/gxtest resolve under /opt/homebrew/bin. Their presence
+and manifest's old tool identifiers do not identify the actual running compiler,
+Gambit/runtime binary or SDK used by an earlier build. Future build evidence must
+bind actual executable targets/bytes, toolchain settings and external inputs using
+the existing compiler/build owner. No Gerbil executable is started for this audit.
+
+The source mounts currently point to the isolated Core/POO and adjacent ASCENT as
+10.80 records. Prelude/package copies are regular files in the cohort source root.
+They require exact content and intended package/module identity checks; mere presence
+or matching a directory name is insufficient. The .data prerequisites are local,
+not committed dependency resolution or a qualified empty-machine bootstrap route.
+
+The artifact observation exposes why checking a top-level .o1 is insufficient:
+
+| File / lane | Bytes | SHA-256 |
+|-------------+-------+---------|
+| Isolated clan/poo/object.o1 | 34216 | 1cab71d8c826983fd6b99da6f5912596b1b632361d642e68c4e0e454ab6d5765 |
+| General .gerbil/lib clan/poo/object.o1 | 34216 | 1cab71d8c826983fd6b99da6f5912596b1b632361d642e68c4e0e454ab6d5765 |
+| Isolated clan/poo/object~0.o1 | 316088 | 010e555fa53f953d08af9e391d1bc5876eb5a2e71f947670aafb22bfeb33b4f7 |
+| General .gerbil/lib clan/poo/object~0.o1 | 250104 | 4a4e003993e32e9c1bd8bf6b95b4d1887ff33f2a5a590a08848f22ec284c5c0f |
+| Isolated clan/poo/mop~0.o1 | 232840 | 3673232830ccf5a23738fe40b10e810f7481bc259574544337552e3c42979a3e |
+| General .gerbil/lib clan/poo/mop~0.o1 | 216248 | 3ff53655b524f5735221df6c334f7320a608d7ee5c4c5431bbfa4aabadab5aeb |
+
+The object.scm wrapper loads imports and clan/poo/object~0. Identical wrapper bytes
+therefore coexist with different runtime sections and different .ssi files. None
+of these hashes proves a pin association or which file a process actually loaded.
+The old .gerbil/lib also contains core/module-system/source/link artifacts; the
+narrow isolated artifact inventory found no corresponding compiled Core link unit.
+That is a file observation, not proof that only interpreted Core is used at runtime.
+Include all selected runtime sections, interfaces and imported phase dependencies
+in the real build/load closure, not just object.o1 and mop.o1.
+
+Core's artifact implementation already enumerates named ~ sections, checks regular
+files and records their digests. Its retained issued-build belongs to an exact Graph
+receiver and includes source inputs, generation, compiler/approval/package guards and
+artifact/record digests. run-build-artifact-process sends retained parent issuance
+through its owned child pipe; accept-build-artifact-handoff! checks selected identities,
+inputs and libdir. This is not a disk-record import or arbitrary replay credential.
+A build record copied from another directory cannot manufacture that authority.
+
+Recovery is explicit: admit-build-artifacts! may invoke only a selected build-publication
+.restore-build; recursive/failed recovery refuses and invalidates. Without issuance,
+ordinary source publication remains possible, but must not satisfy a compiled-route
+claim. A missing or rejected compiled build must not be silently reclassified as a
+successful compiled run because Gerbil can find source elsewhere. Planned evidence
+must separate declared resolution, observed artifacts, configured load precedence,
+actual process loading and Core publication admission; none substitutes for another.
+
+* Value normalization and the three broken handoffs
+:PROPERTIES:
+:CUSTOM_ID: a0-normalized-handoffs
+:END:
+
+Both Core checkouts have the same relevant control-flow shape despite renamed APIs.
+POO owns ordinary value Type validation. In isolated POO, mop.ss provides validate
+and ObjectContract./object-contract-validation.ss preserve checked receivers and
+wrapped fields; type-validation.ss returns complete normalized containers. Core
+owns evidence-bearing contextual admission, not another copy of those field rules.
+
+Current Core types.ss contract-admit-evidence first calls validate on value-contract,
+then classifies that normalized candidate and checks responsibilities/obligations.
+yuanxu-contract-validate returns accepted evidence.candidate. Isolated Core has the
+same protocol under poo-flow-* names. admit-module-value! returns accepted evidence,
+not the normalized subject directly. Callers must extract its candidate deliberately.
+
+Use these design symbols only as prose, not a new public protocol: K0 raw Context,
+EK Context evidence, K1=EK.candidate; SP provider's admitted Scope; SX effective
+Scope after optional package realization; ED consumer-edge evidence; SD=ED.candidate;
+S0 linked/export-bound Scope; ES final Scope evidence; S1=ES.candidate.
+
+| Boundary / current source | Current behavior | Required target handoff |
+|---------------------------+------------------+-------------------------|
+| Context: Core source/link.ss link-module-context, context-admission stage | Calls admit-module-value!(ModuleScopeContextContract,K0,K0), discards evidence, then closes over K0 and its generation, selected IDs, current?/locate/read callbacks and namespace | Retain EK and use K1 for subsequent Context reads, guards, graph selection, admission context, recursive build relinking and returned context. Preserve the actual origin/currentness association; normalization cannot silently grant new provider or source authority |
+| Publication: source/admission.ss admit-module-publication! and link.ss publication/eligible | Already extracts accepted publication candidate before identity/source-owner checking and linked-publication construction | Keep this correct pattern, SourceRef ownership/currentness checks and native read issuance. Do not regress it into a boolean check or rebuild a publication from raw input |
+| Dependency: link.ss link, requirements -> records -> bindings | Computes SX from base record and optional dependency-scope realization; admits the consumer requirement; stores requirement-evidence, but bindings reads provider.scope=SX | Keep ED with provider provenance and make only that consumer alias bind SD. Do not replace or mutate provider's globally cached SP with a consumer-specific wrapper; two consumers can have different normalized views |
+| Final Scope: link.ss scope-factory/scope-admission -> record -> cache -> resolve-scope | Admits S0, stores ES, but record.scope=S0; callers and future dependents receive S0 | Store record.scope=S1 paired with ES; namespace/resolve/dependency consumers must receive S1. Keep publication and dependency records alongside it, run current! before publishing the cache entry, and preserve failure/refusal behavior |
+
+The current default ModuleScopeContextContract is predicate-only and normally
+identity-preserving. The discarded Context return is a protocol/extensibility gap;
+this audit does not claim an observed nonidentity default-Context failure. Scope
+Contracts can use value-contract normalization, so retaining a successful predicate
+or an accepted? boolean cannot justify retaining their original receiver.
+
+A precise dependency record can retain its provider, requirement-evidence and
+consumer checked scope, or derive the checked scope from requirement-evidence at
+the bindings boundary. The implementation must choose one coherent representation;
+this design does not require another global cache. Never normalize the alias again
+just to reconstruct SD: a second validation may make another function wrapper or
+invoke callbacks twice. Exactly once means once for each actual admission boundary,
+not once for the entire graph or no future currentness recheck.
+
+For Context, merely rebinding a local variable is insufficient if callbacks, original-graph,
+realization or source read guards still describe K0 while K1 changes generation or
+selection. Core must preserve compatible provenance or reject/reprepare under the
+original owner. Capture source reads and Contract policy dependencies using existing
+observation/issuance mechanisms; do not certify copied callbacks with field equality.
+Context admission bootstrap uses the original expected owner association; later
+admissions use K1 without fabricating fresh authorization. Keep EK's original
+candidate/context association intact; do not edit an already-issued receipt to make
+it appear issued under K1. Subsequent edge/final admissions carry their actual K1
+context and their own accepted candidates. Expose no new arbitrary
+runtime Contract replacement or authority hook to make a test pass.
+
+For dependency realization, validate the actual SX selected for that alias, not the
+pre-realization SP, then pass SD to the consumer's link function. Keep realized
+package/source guards and raw provider provenance distinct from the consumer receipt.
+A rejection at any boundary cannot publish an accepted record, poison another
+consumer's provider view or leave a partially successful Scope accessible. Preserve
+upstream session poisoning/cache refusal and lazy sibling behavior.
+
+* File ownership and coordinated adjustment plan
+:PROPERTIES:
+:CUSTOM_ID: a0-file-owners
+:END:
+
+| Owner | Existing files / call boundary | Responsibility when implementation is authorized |
+|-------+--------------------------------+-----------------------------------------------|
+| POO | mop.ss, object-contract.ss, object-contract-validation.ss, validation-rebinding.ss, type-validation.ss, slot-observation.ss | Own value validation, persistent receiver/wrapper behavior and producer-owned read observations. Repair a demonstrated primitive gap here; do not move Module linkage, package policy or domain duties into POO |
+| Core/Yuanxu | types.ss, source/admission.ss, publication.ss and link.ss | Retain normalization once, expected Contract evidence and correct K1/SD/S1 handoffs. Keep Context/source/owner/currentness guards and consumer-edge isolation. Predicate shape checks do not authenticate origin |
+| Core build/source owners | building/interface.ss, artifacts.ss, build-projection.ss and source build/package/publication guards | Own declared build graph, compiler inputs, output closure, issuance, supervised child use, explicit recovery and invalidation. Do not intercept installed Gerbil's cache or trust imported disk records |
+| ASCENT | gerbil.pkg; program/types.ss, operator.ss, operator-change.ss; rules/interface.ss, declaration.ss; program/session.ss | Declare the qualified Core dependency and use its actual API identities. Keep rule/row semantics and native Session commit/rollback; do not duplicate Core Contract or loader machinery |
+| Project | gerbil.pkg, build.ss, root/formation init.ss, Library/Module/Scenario types/interface, examples and Justfile | Declare the chosen coherent imports and build roots, consume normalized Scopes, preserve explicit entry labels and bounded launches. Do not select provider sources inside the renderer or use Profile as dependency resolver |
+| Flow/Aitia, when selected | Flow gerbil.pkg, actual selected collection/build imports | Align only dependencies needed by the selected consumer; preserve unrelated source and old receipts. Aitia review authority remains separate from A0 source/build admission |
+| Documentation | 10.80--10.82, README/indexes and paired D2/SVG | Record exact observations, target bindings, failure and qualification status. Never own Library versions, package resolution or executable issuance |
+
+An ASCENT batch is downstream of normalized Project/Scenario Scopes; it does not
+repair their provenance retrospectively. program/session.ss already stages prospective
+sources, checks rows, evaluates a fresh engine, requires finished, calls optional
+accept-result before adoption and commits only on success. Keep that existing
+transaction boundary; A0 API migration must not introduce an application-owned
+replacement transaction or turn source/provider admission into an inferred fact.
+
+* Implementation dependencies and proposed acceptance controls
+:PROPERTIES:
+:CUSTOM_ID: a0-order-controls
+:END:
+
+No controls in this section are executed. Qualification requires complete process
+exit and route-labelled evidence, not just assertions printed before a timeout.
+Retain the 2 GiB limit, 120-second focused invocation and 180-second build cap from
+the existing lanes, with their recorded termination grace. No unchanged failing
+route is rerun or timeout widened under this design-only task.
+
+| Order / prerequisite | Concrete adjustment and deliverable | Positive acceptance design | Negative acceptance design |
+|----------------------+-------------------------------------+----------------------------+----------------------------|
+| A0.1 identify the source/API cohort | Package owners record actual declaration -> checkout + source bytes -> compiler inputs, direct import identities and transitive closure; choose qualified migration candidates | Each selected source is attributable, with dirty inputs explicitly bounded during development and real clean commits before reproducible pins; old and target lanes distinguished | New HEAD alone, wrong package prefix/prelude, mismatched POO pin, mutable link target or unrecorded dirty source cannot satisfy the cohort |
+| A0.2 repair value handoffs in that Core line | Core types/admission/link owners preserve EK/K1, ED/SD and ES/S1 without duplicate validators or provider mutation; publication path retained | Nonidentity Context fixture, consumer function wrappers and final Scope normalizer are observed by downstream calls; evidence.candidate is the exact admitted subject passed onward; unchanged values retain their ordinary path | Downstream use of K0/SX/S0 fails an independent sentinel/behavior check; two consumers with different edge Contracts cannot contaminate each other; malformed/refused result never enters cache |
+| A0.3 align actual API consumers, after A0.1 and required POO/Core repairs | ASCENT and Project adjust package declarations/imports together; selected Flow consumer follows if needed | Fresh supported :yuanxu route uses its declared public APIs; old :core reproduction remains clearly separate; rule meanings and native Session transactions unchanged | Old import hidden by aliases or stale .ssi, mixed old/new Contract objects, ad hoc compatibility facade, incorrect realized dependency or absent method binding refuses |
+| A0.4 declare/build complete closure, after A0.2--A0.3 | Project entry/build owner uses Core graph/issuance; Just remains launcher; include selected formation methods, probes and test roots at their owners | Exact selected compiler identities and all runtime sections/interfaces/source/toolchain inputs are bound to completed build issuance; unused sibling remains cold | Partial compiler output, wrapper-only hash comparison, source change after build, altered named ~ section, foreign libdir/record, symlinked output or timeout cannot grant completed-build status |
+| A0.5 qualify load and current use, after A0.4 | Core build supervisor and installed Gerbil route establish actual selected process closure and fresh source/package checks | Expected process loads admitted phase/runtime units; retained handoff and pre/post execution guards agree; independent effect boundaries recheck currentness | Earlier path shadows selected source, stale macro interface wraps wrong behavior, artifact/Contract edit during callback, wrong child inputs or a failed handoff cannot fall back to a successful compiled claim |
+| A0.6 qualify restart/recovery and entry, after A0.5 | Existing explicit Project runner/entry test and Core-owned selected recovery produce separate receipts | Empty-artifact bootstrap, warm use and fresh-process recovery each complete under their own declared bounded route; restored generation/inputs/artifacts verified before Scope use | Missing issuance, forged disk record, recursive/failed restore, withdrawn selection, stale source or replay from another source/libdir refuses; no loader-cache state alone authenticates recovery |
+
+A0.2 tests belong at Core's existing t/module-scope-link-test.ss and Contract tests;
+POO wrapper/receiver tests remain with POO. The present link tests use predicate
+Contracts and do not establish nonidentity handoff. A Context normalization fixture
+must exercise the owner-controlled Context admission path or a factored private
+helper with the real Contract algebra. Do not add a generic public replace-Contract
+switch or patch production policy from the Project merely for test injection.
+
+Required normalization controls include: one transforming provider Scope Contract;
+a distinct consumer requirement normalizer; two aliases/consumers with different
+wrappers; identity-preserving control; Context normalization with origin-compatible
+callbacks and a conflicting-origin refusal; final-Scope normalized callable behavior;
+selected package realization before edge admission; and rejection before consumer
+factory execution. Verify semantic behavior, retained subject and admission counts
+at each boundary. Rechecks of currentness must still occur after effects. The controls
+must distinguish different objects with equal visible fields, rather than allowing
+structural equality to hide a discarded checked receiver.
+
+Existing Project t/project-formation-entry-test.ss exercises real Scope linking;
+t/project-formation-test.ss checks application consequences. Preserve both, and keep
+the pure module probe labelled separately. Matching rows from their shared code is
+route parity, not the independent witness for normalization or ASCENT semantics.
+No test implementation is added here. Source/API static checks may inform planning
+but cannot close runtime, compiled-load or restart acceptance.
+
+* A0 exit evidence and open blockers
+:PROPERTIES:
+:CUSTOM_ID: a0-exit-open
+:END:
+
+| Exit item | Required evidence / current status |
+|-----------+------------------------------------|
+| Cohort closure | Exact qualified POO/Core/ASCENT and selected consumer commits, actual source observations and public API compatibility. Open: current package links and declarations disagree |
+| Handoff closure | Nonidentity and refusal controls for K1/SD/S1, publication owner checks, edge isolation and currentness. Open: three source-level discarded-return paths remain in both observed Core versions |
+| Build/load closure | Complete selected outputs and phase dependencies bound to real compiler/source inputs, actual load route and Core-issued publication. Open: formation lane has partial local artifacts; general lane has different old artifacts |
+| Cold/recovery closure | Explicit selected bootstrap and recovery completion under fixed gates, including negative controls and full process termination. Open: prior full build timeout and unobserved entry timeouts remain historical failures |
+| Downstream admission | Project obtains actual checked Scopes through its declared entry; A1 can design against the identified API cohort, but later runtime claims wait for these A0 exits |
+
+The Library contract generation still comes only from its declaration, remains V1,
+and is unrelated to dependency SHAs, native protocol wire tags or document numbers.
+Keep the namespace free of contract-version suffixes. Source hashes below identify
+this inspection's relevant bytes; they are neither Library revisions nor credentials:
+
+| Observed source | SHA-256 |
+|-----------------+---------|
+| Isolated Core types.ss | 9030a06d06fc495afd9343ad3b2085b8c569997fbf81fa23af3397731c49ee24 |
+| Adjacent Core types.ss | 1559423111a660c47fbc42a74a6f707b8c2268ea7b24f93e0679f6926fb56a5a |
+| Isolated Core module-system/source/link.ss | a69bd83f24f591ff4f273832e1d17529725e4eab952bb9b06755067ae6bc047c |
+| Adjacent Core module-system/source/link.ss | 606b1b044c379d1f16ee8174217693c05af08a1949becadf2687124a5c3230ac |
+| Isolated Core module-system/source/admission.ss | 0f0ec3700b058f5c499a95befe3e01c14039666e04f0dca0422a3a1b7cbdb0ad |
+| Adjacent Core module-system/source/admission.ss | 1fdfced268e777b51ed02ac49894eb3c4a34317eb03854eea32997bd0a06c8c8 |
+| Isolated Core module-system/building/artifacts.ss | 87d19998239025696bbd1a40bed76982423550699d26aa97f9400871d91c7eb3 |
+| Adjacent Core module-system/building/artifacts.ss | da155979dca8670624f27c469ebd7266cb07b9d171c316a91923760bc6cacfb2 |
+
+Recheck these source cuts before implementation; an upstream change requires a new
+labelled observation and impact assessment, not replacement of older dossier hashes.
+No A0 exit is claimed by this documentation update.
+
+* Cohort and provider ownership follow-up
+:PROPERTIES:
+:CUSTOM_ID: a0-coherence-followup
+:END:
+
+The later read-only cut observes dirty adjacent Core/Flow provider and test migration despite unchanged HEADs. Core generic handoff files retain the earlier inspected bytes; K1/SD/S1 remain open. Future recovery qualification must distinguish Core generic issuance from Flow Nix product restoration and coordinate package-* observation vocabulary. Prior observations and source hashes remain historical.
+
+See [[file:10.88-declarative-slice-consistency-and-order.org::#coherence-findings][10.88 consistency findings]], [[file:10.88-declarative-slice-consistency-and-order.org::#coherence-controls][joint controls]] and
+[[file:10.88-declarative-slice-consistency-and-order.org::#coherence-order][implementation prerequisites and ownership]]. These are target commitments, not executed acceptance.
+
+* I0 source-cohort follow-up
+:PROPERTIES:
+:CUSTOM_ID: a0-i0-followup
+:END:
+
+[[file:10.89-i0-source-cohort-dependencies-and-load-boundaries.org::#i0-dependencies][10.89]] re-observes the actual nested package checkouts as well as the Project
+links, records migrated owner APIs and distinguishes the mixed formation load route
+from source-only claims. Its [[file:10.89-i0-source-cohort-dependencies-and-load-boundaries.org::#i0-order][I0 order]] and [[file:10.89-i0-source-cohort-dependencies-and-load-boundaries.org::#i0-controls][controls]] refine the source-selection
+handoff; no compatible production tuple, actual load or normalized-return acceptance
+is established. Earlier source observations and historical receipts remain unchanged.
+
+* I1 normalized-value handoff follow-up
+:PROPERTIES:
+:CUSTOM_ID: a0-i1-followup
+:END:
+
+[[file:10.90-i1-normalized-context-and-scope-handoffs.org::#i1-values][10.90]] assigns exact K1/SD/S1 retention to existing Core fields and calls.
+Bindings derive SD from existing requirement-evidence; the provider cache stays
+consumer-independent, while final record.scope retains ES.candidate. Its
+[[file:10.90-i1-normalized-context-and-scope-handoffs.org::#i1-context][Context plan]] preserves actual paired-reader/package provenance and explicitly
+leaves the nonidentity Context fixture arrangement open. [[file:10.90-i1-normalized-context-and-scope-handoffs.org::#i1-lanes][Lane qualification]] and
+[[file:10.90-i1-normalized-context-and-scope-handoffs.org::#i1-controls][positive/negative controls]] remain unexecuted; earlier observations are historical.

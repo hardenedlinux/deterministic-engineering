@@ -1,0 +1,36 @@
+# org-target: docs/10-19-design/10-architecture/10.17-domain-libraries-and-atomic-specialization.org::#backpressure-broadcast-parent-models
+# render-layout: elk; theme: 0; pad: 24; timeout: 30
+direction: down
+classes: {
+  view: {style.fill: "#EAF2FF"; style.stroke: "#315B8A"; style.border-radius: 10}
+  proposed: {style.fill: "#FFF2DD"; style.stroke: "#9B6C25"; style.border-radius: 10}
+  existing: {style.fill: "#E6F5F3"; style.stroke: "#19756C"; style.border-radius: 10}
+}
+status: "DESIGN DISCUSSION ONLY\nProposed parent factorization; no extraction or migration\nExisting resource artifacts and broadcast source inspection keep their own scope" {class: proposed}
+views: "Discovery views\nConcurrency / resource control / communication\nRust / Tokio / performance / cancellation\nCategory membership does not imply a shared model" {class: view}
+bp: "Backpressure and retained resources" {
+  parent: "PROPOSED semantic parents\nReservation conservation + conditional budget\nOwn premises, rules and obligations" {class: proposed}
+  actual: "EXISTING artifact content\nQNT: admitted = union of queued / running / returned / cleanup\nLean: conditional accounting and monotonicity\nGeneric parent extraction is not implemented" {class: existing}
+  child: "PROPOSED POO specialization contract\nPreserve parent obligations and model references\nAdd Rust / Tokio / Rayon holder and permit mapping\nActual source / lock / failures / cleanup inventory" {class: proposed}
+  limits: "Review boundary\nAbort does not imply resource release\nArithmetic units need an allocation mapping\nA resource result is not broadcast evidence" {class: view}
+  parent -> child
+  actual -> parent: "grounds proposed extraction"
+  child -> limits
+}
+bc: "Broadcast close and wake" {
+  parent: "PROPOSED semantic parent\nSeparate final sender and current receiver predicates\nRegistration / notification / node and waker ownership" {class: proposed}
+  actual: "INSPECTED source / 10.16 contract\nCount and flag stages; protected enrollment\nDetached generations; Notified birth epoch\nNo accepted broadcast model or native result" {class: existing}
+  child: "PROPOSED POO specialization contract\nPreserve parent obligations and model references\nAdd Rust / Tokio source and lifetime mapping\nCallbacks / batch / selected property closure" {class: proposed}
+  limits: "Review boundary\nAn owned waker may run after cancellation\nWake is not ready or fair re-poll\nSmall safety scope is not full progress coverage" {class: view}
+  parent -> child
+  actual -> child: "source-mapping questions"
+  child -> limits
+}
+compose: "Scenario composition\nBroadcast receive -> admission -> CPU work -> result / cleanup\nAdd boundary obligations: waiting payloads, shared allocation, lag policy\nNo copied Library and no universal cancellation state machine" {class: proposed}
+evidence: "EXISTING Core / POO / ASCENT owners\nSelected definitions and exact rule/dependency closure\nActual methods required for support; unresolved questions stay pending\nNo new loader, acceptance engine or compulsory Agent sequence" {class: existing}
+status -> views
+views -> bp.parent: "discovery only" {style.stroke-dash: 5}
+views -> bc.parent: "discovery only" {style.stroke-dash: 5}
+bp.child -> compose
+bc.child -> compose
+compose -> evidence

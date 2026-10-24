@@ -1,0 +1,13 @@
+# org-target: docs/10-19-design/10-architecture/10.10-backpressure-capacity-stall-and-retry-trajectories.org::#capacity-adjustment-packet
+direction: down
+classes: {
+  input: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; border-radius: 10; font-size: 17}}
+  state: {style: {fill: "#E6F5F3"; stroke: "#19756C"; border-radius: 10; font-size: 17}}
+  gate: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; border-radius: 10; font-size: 17}}
+}
+old: "CA00 W-B original scope\nNq2048 / Nw128 / Na256\nResident coefficients4 / 4 / 8 MiB\nPlan12320 cannot certify8192 fit\nNo inferred actual memory violation" {class: input}
+new: "CA01 / CA02 explicit W-B2 Profile\nNq512 / Nw32 / Na64, fixed proposed coefficients\nCold separate occurrence; no implicit live migration\nPlan4256: conditional numeric fit only" {class: input}
+query: "CA rule / dependency query\nChanged counts -> CountUse / ModelUse / SumUse\nThen MemoryUse / ArgumentUse / PerfUse\nGeneric conditional theorem artifact retained\nActual correspondence and policy still required" {class: state}
+life: "CA03 / CA04 lifecycle and overflow\nActual retained waiting / queued / active ownership\nAt wait cap32, no uncovered retained producer\nPre-admission connection/buffer scope included\nSmaller queue may relocate backpressure" {class: gate}
+reuse: "CA05 / CA06 / CA07 required evidence\nGeneric arithmetic reuse only under matching premises\nOld finite model/run result remains old-scoped\nNew capacity/source application and performance checked\nLive q700 does not become512 by selection" {class: gate}
+old -> new -> query -> life -> reuse

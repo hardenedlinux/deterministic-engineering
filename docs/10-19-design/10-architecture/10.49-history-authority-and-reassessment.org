@@ -1,0 +1,509 @@
+#+TITLE: 10.49 History Discovery, Decision Authority and Reassessment: WP08 Detailed Design
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.49
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+TODO: AUDITED DESIGN SPECIFIED | QUALIFIED
+#+FILETAGS: :design:aitia:history:authority:reassessment:revocation:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.41-workflow-gap-audit.org::#integrated-refactoring-dependency-order][Work packages]] | [[file:10.42-library-types-and-contracts.org][Types]] | [[file:10.43-library-objects-and-publication.org][Publication]] | [[file:10.44-profile-selection-and-scenario-capture.org][C]] | [[file:10.45-method-execution-and-evidence-issuance.org][A/E/W/use]] | [[file:10.46-content-observers-and-reference-closure.org][Content]] | [[file:10.47-ascent-projection-and-query-view.org][Q]] | [[file:10.48-aitia-review-adaptation.org][R and verification]] | [[file:10.40-aitia-review-and-recipient-delivery.org::#review-history-and-revocation][History/authority architecture]]
+
+* DESIGN WP08 objective and retained owners
+:PROPERTIES:
+:CUSTOM_ID: history-authority-and-reassessment
+:STATUS: Target file/field/call/history design only; no implementation, authority act or review submission
+:END:
+
+WP08 takes the actual C/Q/R and current WP07 technical verification basis, discovers
+the required authoritative history cut H, verifies actual roles/mandates, and
+admits scoped decision records under the adopted policy. It preserves original
+counter evidence and denials while supporting explicit repair, exception,
+reconsideration, replacement and withdrawal. A decision can govern a declared
+review purpose; it cannot change a false property into a true one.
+
+Aitia's existing review/history/authority owners retain the domain meaning.
+Core retains local receipt issuance/revocation, POO/Core owns Types and graph
+algorithms, existing source/custody owners publish and recover accepted history,
+and ASCENT projects accepted facts under WP06. There is no second ledger,
+authorization engine, key directory, consensus service or generation registry.
+WP09 owns recipient distribution/adoption/use; Runtime authorization and effects
+remain separate even when a review is admitted.
+
+The policy and permitted actions are published Library meaning, selected by
+Profile and captured with project inputs in C. Actual project authority adopts
+them and appoints people through real sources. This design does not appoint the
+currently unassigned DE-CASE-01 roles or create their missing decisions.
+
+* AUDITED Existing mechanisms and limits
+:PROPERTIES:
+:CUSTOM_ID: history-authority-source-audit
+:END:
+
+The audit uses HEAD 8044732d505f84e373119a70f947df00e1767300 plus the active dirty
+checkout and linked Aitia/Core sources. Inspection is not executed qualification.
+
+| Existing file / operation | Retain; target gap |
+|---------------------------+--------------------|
+| [[file:../../../scenarios/resource-lifecycle/review/cross-intake.ss][cross-intake-from / sync!]] | Finite required intake set, refreshed source views, conflict checks and refusal when intake disappearance would erase aggregate history. Required bindings are host-supplied, not globally discovered; generalize to actual mandated technical/decision/grant/predecessor/status sources |
+| cross-intake.ss / open-cross-intake-approval | Pins real predecessor, root directory/key references, exact mechanical packet/subject/revision/scope and append-only accepted decisions. Current target/basis interpretation is a SWE-061 fixture; it does not bind the full C/Q/R/product/role/exception meaning |
+| cross-intake.ss / authorized-document? | Verifies root-selected directory, exact target, approved/rejected record, explicit known denial IDs and test-reviewer-a or narrowly delegated test-reviewer-b. Retain actual signatures/scope checks; remove fixed test identities from the project route and enforce real grant/action/quorum/independence/validity semantics |
+| cross-intake.ss / frame, discovery-current?, gate | Exact required sources/policy/source views/handover/current accepted decision inventory are checked. New accepted records invalidate old frames. Keep actual guards; replace fixture packet equivalence and public technical flags with actual WP07 owner-bound R/assessment/use |
+| cross-intake.ss / submit!, persist-prefix!, seal-history! | Accepted negatives survive; ambiguous persistence makes the owner unavailable. Trusted publisher receives expected prior selection; sealed/live predecessor retirement is explicit. Qualify actual serialization/selection/durability; this is not an automatic distributed compare-and-swap or crash-atomic receipt/files transaction |
+| [[file:../../../scenarios/resource-lifecycle/review/reassessment.ss][failure/repair matching]] | Retains failures; bounded same-case/payload/changed-source matching and current evidence/history are checked. It does not prove a fix by changed source alone, define every domain repair or authorize an exception/denial replacement |
+| [[file:../../../scenarios/resource-lifecycle/review/archive.ss][archive/read/repair/activation]] | Selected signed heads, exact accepted prefix/origins/references, fresh reader identity, actual activation and storage repair exist. Archive parse/hash/signature consistency is data custody, not revived review authority; storage repair changes no project claim |
+| [[file:../../../scenarios/resource-lifecycle/review/signatures.ss][signature tools]] | Actual OpenSSL commands through Core Ops and binary freshness checks. Test key generation/signature validity does not appoint principals or establish current grant/record semantics; actual tool/runtime/key/status custody must be qualified |
+| [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/review-authority.ss][Aitia history/authority]] | Expected discovery sources, Core-backed request verification, current-policy approval and unresolved denials gate exist; negatives persist across policy changes. Supersedes list membership is not general scope/acyclicity/quorum/exception authority, and technical.admitted? alone is not authenticated technical input |
+| [[file:../../../../poo-flow/packages/lambda-aitia/modules/assurance/host.ss][Assurance Host]] | Current source/support, Decision preflight/revocation and typed Cedar handoff exist. Preflight/Cedar request is not an accepted review decision or Runtime effect permission; use only its actual qualified subject/operation mapping |
+| [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/contribution/verification.ss][Core verification]] | Private adapter/receipt association, sealed requests, intervals and local revocation. WP07's fresh-time/source/use checks still apply; a valid seal does not discover later decisions, revoked grants or missing authoritative sources |
+
+Preserve original persisted format tokens, signatures, accepted origins and source
+identities. Their historical schemas/revisions are not the Library declaration
+generation, and this design invents no new version literal or namespace suffix.
+The remaining cold/recovery gate in [[file:10.23-native-aitia-backpressure-content-review.org::#two-gib-recovery-observation][10.23]] remains open; no new run occurs here.
+
+* SPECIFIED File and trust responsibility
+:PROPERTIES:
+:CUSTOM_ID: history-authority-file-ownership
+:END:
+
+| Existing owner / file | Full target responsibility |
+|-----------------------+----------------------------|
+| Library abstract/types.ss / objects.ss and rust/types.ss / objects.ss | Extend selected design-review policy meaning with relevant history/source coverage, permitted decision/repair/exception/supersession/withdrawal rules, role/action/quorum/independence and freshness constraints. Definitions grant nobody a role or permission |
+| Profile and Scenario types/func/interface | Select permitted purpose and bind actual adopted policy/mandate/project/role/source inputs in C; pass actual Q/R and technical use. Define consumer authority-input Contract by composition, not another project snapshot or free root/key directory argument |
+| Aitia modules/sdlc/types.ss and objects.ss | Common policy-neutral history/decision/reassessment/exception/withdrawal binding Types and owned constructors. Keep one definition of shared history classes; if extracted from review-authority.ss, migrate imports directly rather than duplicate CLOS class identities |
+| Aitia modules/sdlc/review-authority.ss | Generalize exact C/Q/R/technical/discovery/role/action binding, verified negative retention, accepted decision/exception/supersession/withdrawal and current-use assessment. It consumes actual trust/verification, not arbitrary admitted?/approved flags |
+| Aitia modules/sdlc/review.ss and WP07 review-verification.ss / shared verification-host factoring | Preserve technical/context/content findings and actual current-time/source/receipt checks. Authority adds its own required discovery/actions; no all-purpose verification or second Host/receipt table |
+| scenarios/resource-lifecycle/review/cross-intake.ss | Thin project source/adoption/credential/actual predecessor/publication adapter. Extract reusable discovery/authority semantics to the actual Aitia owner; keep real host capability/required-source binding and accepted record custody. No legacy SWE/test-person fallback |
+| review/reassessment.ss | Case-to-current-C/Q/R impact and repair-input adapter. Actual method/content producers establish repair claims, Aitia policy assesses scope/authority. Do not combine source comparison with an approval engine |
+| review/archive.ss | Exact historical custody, qualified head/reader/activation/retirement and storage-prefix repair, through existing host-selected publication. It never creates repaired property evidence or decision authority by parsing an archive |
+| review/signatures.ss | Actual bounded signature-tool operations and qualified verifier/key references. Root/credential policy belongs to the actual adopted authority; keep test key generation in the fixture path |
+| Aitia design/implementation/verification and Core graph algorithms | Reuse bounded design/replacement/source-support checks and declared acyclic supersession analysis. Do not recode graph traversal or treat source-bound support as independence/decision authorization |
+| modules/resource-evidence | Project accepted H/decision/status/repair/exception references in later Q when required; Session remains sole project fact store. Rules cannot appoint a reviewer, accept a signature or mint a decision |
+| WP09 recipient and actual Runtime owners | Consume current scoped authority through their own genuine verification/admission/authorization. Review approval does not perform distribution, deployment or an external effect |
+
+Aitia must remain independent of DE-specific filenames and model classes. Reuse
+the existing authority owner and the WP07 common Host refactoring; additional
+pure normalization/coverage/graph functions stay ordinary named functions in
+that owner. Source readers, keys, publishers and current-status operations are
+bound from actual trusted host/publication sources, not selected from request
+JSON or a caller-supplied current! callback. Function/Type validation retains its
+returned checked values; class shape alone does not authenticate an authority.
+
+* SPECIFIED History, mandate and decision fields
+:PROPERTIES:
+:CUSTOM_ID: history-authority-binding-fields
+:END:
+
+C/Q/R and original A/E/W/U remain immutable. H identifies an actual observed
+vector of authoritative source cuts for this project/review family. A decision
+record has its own identity/origin; it is not a mutation of R, a document decision
+such as DE-D04, a property W, or the discovery cut itself.
+
+| Value / target expected Type | Required fields / invariant |
+|------------------------------+-----------------------------|
+| Authority input / Scenario Contract | Actual C/Q/R and current WP07 technical assessment/use; actual selected policy/project mandate/roles/source inventory. No replacement Profile/subject/revision/root/key/policy/technical flag |
+| SdlcHistorySource / existing class refined | Stable source/owner/kind and project relevance; actual acquisition/reader authority; selected head/prefix/cut/artifact references and origin; expected availability/freshness/status/access; predecessor/lineage links or explicit boundary. No name-only source authenticity |
+| SdlcHistoryDiscovery / existing class refined, H | Exact C/Q/R/project/policy/family/purpose, trusted mandate/directory/current selection, independently required source set versus actual source cuts and accepted record inventories; missing/conflicting/unverified findings; actual discovery/verification/source/clock basis and scope limits |
+| Authority/role binding | Actual principal/credential, role/action/project/family/scope, authentic grant/delegation/appointment references, trust-root/rotation/status source, validity/effective scope and required independence/quorum. This binding references genuine project grant records; it is not another grant service |
+| SdlcReviewDecision / policy-neutral record | Stable record identity; exact C/Q/R and technical assertion, adopted policy/source/revision, intended operation/purpose/scope, predecision H/expected prior prefix; actual signer/principal/grant/authorization basis; approved/rejected/deferred conclusion, reasons/findings/limits/conditions, prior decision/denial/exception links and reconsideration/validity/status rules |
+| Repair / existing method/content finding association | Exact original failed claim/A/E/W and basis, actual changed inputs and new A/E/W/U, domain/correspondence/strength and independent repair rationale. A changed digest/case name is not proof of semantic repair |
+| SdlcReviewException / scoped binding | Exact unmet duty/criterion/property and retained counter/gap, permitted bounded operation/scope, actual risk owner/exception authority, rationale/mitigation/conditions/expiry/review trigger, required approvals and status source. It cannot rewrite the original conclusion |
+| SdlcReassessment / relation record | Predecessor R/decision/H, actual changed basis and impact allocation, retained failure/denial IDs, new C/Q/R/technical/repair/exception inputs as required, actual review/authority findings and explicit supersession proposal/result |
+| SdlcReviewWithdrawal / status record | Actual targeted receipt/grant/decision/use/owner record and kind; authorized issuer/action/scope, reason/effective conditions, current source/status and authenticated origin. Different target kinds invoke different owners; no generic public status toggle |
+| Authority current-use assessment | Actual R/H/accepted decision/technical use and required role/status/receipt inputs at current trusted instant; applicability, coverage, denials/conflicts/exceptions/withdrawals and limitations. Public result is explanatory, not a portable authority token |
+
+Policy-neutral review records reuse SdlcBoundFact/SdlcIdentified and the existing
+Aitia class/model validation. Do not force a Library policy into NASA standard/
+requirement slots. Retain SdlcAuthorityAttestation's actual standard-specific
+meaning for its genuine route. Shared field responsibilities are composed from
+WP07 and actual history/authority classes, not copied C/Q/R/body schemas.
+
+Reuse existing history-discovery and disposition-approval request purposes at
+their actual Aitia owner. Expected typed fact refinements bind exact R/H/action/
+target/conditions/grant/source meaning. Disposition request action distinguishes
+review acceptance/rejection/defer, exception authorization, denial replacement and
+withdrawal when supported; one action cannot authorize another. The trusted
+operation selects the expected action/fact Type. A receipt authenticating a
+rejection/deferred record does not count as an approval. Unsupported actions
+explicitly refuse, including in legacy standard snapshots; no wider subclass
+can bypass an inherited CLOS enum/slot restriction.
+
+Snapshots and signatures bind all semantic fields and exact authoritative content
+references under their qualified typed encoding. Issuer labels, schema/version
+text, key possession or public approved?/admitted? fields are not authority.
+Any eventual wire-format migration needs its actual owner/reader decision;
+original signed bytes and historical meanings remain exact.
+
+* SPECIFIED Authoritative discovery and negative preservation
+:PROPERTIES:
+:CUSTOM_ID: authoritative-history-discovery
+:END:
+
+Required source demand comes from actual adopted project mandate/custody and
+applicable policy: relevant technical/counter/failure sources, accepted decision/
+denial/exception/withdrawal sources, role/grant/key-status sources and predecessor/
+handover lineage. The submitter cannot choose only favorable intakes, directory,
+root key or apparently empty record files. A genuine initial baseline needs an
+authenticated no-predecessor/source mandate, not an absent directory interpreted
+as a clean history.
+
+Discovery performs these bounded operations at the existing owners:
+
+1. Validate actual C/Q/R/technical use and trusted mandate/current directory/root
+   selection. Determine the full required source inventory, project/family/scope
+   relevance and status/continuity requirements independently of supplied records.
+2. Obtain actual selected source heads/cuts, owned accepted record inventories,
+   original origins/signatures/grants and predecessor closure. Resolve by actual
+   source/custody context; no directory crawl, lexical latest-version selection
+   or serialized reader capability substitutes for the selected source operation.
+3. Check each required source's availability/currentness/accepted prefix and all
+   relevant record/role/status references. Duplicate identities with incompatible
+   content, forked heads, missing predecessor or an unavailable required source
+   refuse complete discovery. Retain both offending candidates/known history.
+4. Bind H to that exact source vector, required-versus-observed inventory, actual
+   verifier/source/clock/limits and remaining findings. Recheck source selection
+   and relevant status at receipt issuance and authority use; a reused query or
+   cached signature still requires its actual full dependencies/currentness.
+
+| Input state | Required interpretation |
+|-------------+-------------------------|
+| Authenticated accepted denial/counter in relevant history | Retain original scope/claim/policy/revision/origin, regardless of changed current policy or favorable new results |
+| Accepted inventory names a negative record whose proof/artifact is unavailable | Discovery/authority remains incomplete or blocked; do not omit it or infer approval from failed verification |
+| Arbitrary malformed/forged untrusted rejection submission | Retain rejection diagnostic at its actual intake; it is not an accepted authority denial merely because text says rejected |
+| New policy or project revision excludes a formerly relevant scope | Require explicit authenticated lineage/impact/applicability reasoning under policy; preserve original decision/counter and exclusion rationale. New label alone does not clean history |
+| Source disappears or returns an older/smaller accepted prefix | No silent shrink/reset. Verify genuine authorized continuity/retirement/replacement or block current use; prior negatives remain known |
+| Sources expose incomparable concurrent heads | Retain conflict and refuse a unique current authority cut until actual authorized continuity resolves it; never choose the newest timestamp/hash |
+
+Completeness is bounded to the independently mandated source universe, accepted
+prefixes and declared freshness at H. It is not proof that no future or undiscovered
+global event exists. A vector of observed remote/local cuts is not automatically
+an atomic distributed instant. Unsupported freshness/consistency at the required
+strength remains a gap; offline use needs actual explicitly adopted bounded
+policy, not a guessed grace period.
+
+* SPECIFIED Role checks, decisions and call boundaries
+:PROPERTIES:
+:CUSTOM_ID: decision-authorization-call-boundaries
+:END:
+
+| Operation / actual owner | Input -> output | Mandatory boundary |
+|--------------------------+-----------------+--------------------|
+| Discover / trusted project source adapter + Aitia | Actual C/Q/R/mandate and required source operations -> H and diagnostics | No raw directory/key/source list override; missing required source remains blocking |
+| Verify discovery / Aitia through Core | Exact typed H request and actual current source/root/lineage checks -> real scoped receipt or diagnostic | Complete required coverage and actual current selection, not merely every supplied file passing a signature check |
+| Prepare decision/reconsideration / actual project principal | Exact R/H/technical/findings and supported proposed action -> inert typed record/request | Proposal/Agent drafting is not a signed accepted decision, role appointment or authority receipt |
+| Verify action / selected Aitia authority operation | Exact proposal/H/technical/grant/status/conditions and actual credential proof -> verified action finding/receipt or refusal | Check actual principal, scoped permission, policy authority, delegation, quorum and independence; no signature-only or public technical.admitted? acceptance |
+| Accept record / existing authority/custody owner | Verified exact action and expected prior selection -> accepted immutable record/prefix or refused/unknown publication | Recheck actual source/grant/current technical basis and source head; serialize under genuine host custody; preserve all known accepted negatives on ambiguity |
+| Evaluate current use / actual Aitia owner | R, current H, original accepted decisions and fresh technical/authority/status verification -> scoped admission assessment or blockers | Validate decision applicability and every relevant denial/conflict/condition; old frame/receipt cannot answer changed accepted inventory |
+| Reassess / project adapter + existing method/content/Aitia owners | Retained old basis/failures/denials plus actual changed inputs/new evidence -> new scoped technical/review/authority associations | Repair verification and decision replacement are separate acts; no implicit deletion or reinterpretation of original evidence |
+| Withdraw/revoke / target's actual owner | Authenticated targeted withdrawal or actual local revocation request -> retained status change and current-use effect | Root/grant/decision/Core-receipt/evidence-use/owner have distinct owners; do not mutate unrelated historical records |
+
+Preconditions are action-specific. An authorized rejection or deferral of a
+recognized truthful R with pending/counter/conflict, or a targeted withdrawal,
+does not require the positive technical result that it denies or withdraws.
+Otherwise the protocol could suppress precisely the negative records it must
+preserve. Require valid target/provenance and actual authority for that action,
+retain the incomplete technical basis, and grant no positive use permission.
+Positive review admission separately needs the policy's actual technical/
+context/content/role conditions and any genuinely permitted current exceptions.
+Neither an arbitrary malformed intake nor an unauthorized rejection becomes an
+accepted denial through this distinction.
+
+For each action verify the principal and credential against trusted roots/current
+status; authentic appointment and grant/delegation chain; project/family/R/purpose/
+action/scope and conditions; actual validity and permitted delegation depth;
+required risk/decision roles, distinct-principal quorum and independence. A child
+grant cannot widen its parent or delegate an ungranted action. Delegation cycles,
+ambiguous root rotation and contradictory grants block that action. Two keys or
+signatures from one principal do not fill a two-principal requirement. C1's Agent
+cannot appoint itself independent reviewer or decision authority.
+
+The actual policy states whether prior valid decisions survive ordinary grant
+expiry/role retirement and which later revocations affect current use. Preserve
+historical validity at acceptance separately from current eligibility: expired
+or rotated credentials do not erase an old denial. Conversely, a historical
+signature cannot bypass an effective targeted withdrawal/compromise/use restriction.
+No arbitrary caller may backdate a grant or turn its own key into a trust root.
+
+The native gate must receive actual current WP07 technical assessment/use through
+the trusted producer, with the matching R/C/Q/policy/project basis. For positive admission it additionally
+requires the actual policy-defined context/content/semantic/role coverage and
+conditions; negative/defer/withdraw actions use their own legitimate preconditions. A caller-created object with admitted?=#t
+cannot replace it. Core receipts are checked through the actual selected adapter
+and WP07 fresh-time/source rules. Reuse actual Assurance Decision preflight or
+Cedar/Runtime handoff only where its real claim/action mapping is qualified;
+preflight or a permit-shaped request is not review acceptance or an effect grant.
+
+* SPECIFIED Repair, exception and authorized replacement
+:PROPERTIES:
+:CUSTOM_ID: repair-exception-decision-replacement
+:END:
+
+| Kind of change | Required evidence/authority | Retained fact and limit |
+|----------------+-----------------------------+-------------------------|
+| Property repair | Actual changed semantic inputs, new method/content A/E/W/U, old-to-new claim/domain/correspondence and independent repair interpretation under declared policy | Original counter/failed attempt stays historical. Same case/payload or changed source digest alone cannot prove repair |
+| Missing evidence supplied | Actual new qualified method/content output/use and full required coverage, with new Q/R as needed | Old missing/timeout record remains history; a new observation is not a rewrite of its completion |
+| Accepted bounded exception | Policy must permit that particular exception; authentic risk/decision authority, exact unmet duty/counter, use scope, rationale, mitigation, expiry and reopen trigger, plus actual required approvals | False remains false and the duty remains visibly excepted/unmet as defined. No waiver of truth, identity, real authority or mandatory non-exceptable conditions |
+| Denial supersession | Exact original accepted denial IDs, genuine reconsideration/impact basis, actual authority for that denial/scope and current policy, correct lineage/conditions and explicit new record | Denial is retained, not deleted. A favorable technical finding, new policy string or an approval not naming it cannot supersede it |
+| Decision replacement | Explicit predecessor records, scope/lineage/impact rationale, real replacement authority and complete coverage | New decision does not silently rewrite project revisions, product state, W or earlier record bytes |
+| Withdrawal or loss of a resolution's current eligibility | Authenticated target/status or genuine local receipt revocation, current-policy/coverage reassessment and other live qualifying resolutions if any | Formerly covered denial/duty becomes blocking again unless another genuinely eligible scoped resolution covers it; no permanent erase bit |
+
+A repair finding explains a technical claim, not permission to override a prior
+rejection. An accepted exception can permit a specified risk-bearing review/use
+only under the actual adopted policy; it is not support for the violated property
+or permission to deploy. Exception requested, exception authorized and exception
+currently usable remain distinct. Expired conditions/mitigations or an unsupported
+risk authority prevent current use; no generic ignore-counter option is exposed.
+
+Replacement/supersession edges must reference actual accepted records, be scope-
+and action-correct, unambiguous and acyclic. Reuse Core graph/DAG analysis for the
+declared relation; it does not itself authenticate the edges. A replacement can
+cross policies/revisions only through explicit verified project lineage and actual
+permission to address the old decision. No lexical revision/timestamp ordering,
+last-file-wins, green majority or unsigned forward-reference closes a denial.
+Concurrent independent rejection and approval stay retained; current denial blocks
+until genuinely authorized resolution under the relevant policy. Repair/exception/
+supersession coverage must include every affected required case/criterion; a fix
+for M04 cannot silently dispose of M06 or an unrelated rationale requirement.
+
+* SPECIFIED C/Q/R, history and acceptance ordering
+:PROPERTIES:
+:CUSTOM_ID: history-decision-acceptance-order
+:END:
+
+A decision refers to its finalized C/Q/R, technical basis and predecision history
+H0. It is then appended to the actual accepted prefix, yielding H1. Do not require
+its signature to hash the future H1 containing itself. Current-use discovery of
+H1/H2 verifies the original H0 lineage, record inclusion and every subsequent
+relevant decision/withdrawal; it does not rewrite the original signature to name
+a newer cut. Fresh Core request receipts can bind that current frame with the
+original record as an input, preserving both origins.
+
+Before append, action verification establishes the exact proposed record's
+authentication/permission at its predecision basis. It is not proof that the
+record was accepted. After actual append/publication, a current authority frame
+verifies accepted-record inclusion, original authorization and current policy/
+status/denial coverage against H1/H2. Any Core request/receipt must distinguish
+these assertions and include its exact action, stage and target. A proposal or
+preflight receipt cannot be replayed as an accepted decision merely because
+its record bytes match; the actual accepted source owner establishes inclusion.
+
+A history-only authority update can create a new authority frame H/use for the
+same technical R when its technical meaning remains unchanged. If new history
+changes required technical evidence, comparison/coverage or Q facts, obtain the
+appropriate new Q/R; changed captured products/adoption/grants/policy inputs need
+new C. Do not rerun unrelated Rust/QNT/Lean/SysML just to rediscover an authority
+record. Any later ASCENT history/status projection follows actual accepted native
+records into a subsequent identified Q; it cannot create or certify the decision
+that was its own input.
+
+The existing authority owner/custody publisher serializes expected prior selection
+-> verified action -> accepted record/prefix publication -> current selected head.
+Qualify what that host actually guarantees about exclusivity, fencing, ordered
+write/close/sign/head selection and durable observation. A before/after head hash
+is not by itself cross-process compare-and-swap, and file rename is not universal
+distributed durability. Missing stronger guarantees leave that route unsupported;
+this design does not create a consensus service to paper over them.
+
+| Boundary / failure | Required result |
+|--------------------+-----------------|
+| Proposed action malformed/unauthorized or unsupported | Reject diagnostic; not an accepted decision/denial and no durable authorization |
+| Source head/grant/technical basis changed before acceptance | Refuse/reprepare current frame; no favorable stale commit |
+| Accepted negative known but prefix publication fails/is ambiguous | Retain the accepted negative/actual attempt; make that owner unusable for positive admission until genuine current custody/recovery qualifies. Never rewind to an older favorable frame |
+| Receipt or decision accepted but later export/acknowledgement fails | Preserve the real accepted/issued state and uncertainty of export; do not claim a rollback across owners or invent a successful publication |
+| Process loss or incomplete writing state | Unknown/unusable current authority until actual selected-head/accepted-prefix and reader activation/repair qualify; files alone cannot reconstruct private Core receipts |
+| Required source advances after a successful frame | Old frame stays historical; current operation must use a new current discovery/verification basis or block |
+
+Signature/exchange/Session/file/publisher operations are distinct owners. Failure
+in one does not erase a genuine earlier action in another. Preserve actual
+attempts, partial outputs and accepted origins. All discovery, graph checks,
+credential verification, publication and rechecks use declared finite budgets/
+footprints and retain real timeout/unknown outcomes; no timeout widening or
+synthetic heartbeat turns incomplete authority into an admission.
+
+* SPECIFIED Revocation, current use and custody recovery
+:PROPERTIES:
+:CUSTOM_ID: authority-withdrawal-and-recovery
+:END:
+
+| Target/status change | Correct owner and exact consequence |
+|----------------------+-------------------------------------|
+| Core verification receipt | Actual issuer calls poo-flow-revoke-verification!; subsequent real admissions fail for it. This does not erase original evidence/decision records or automatically publish a project withdrawal |
+| Evidence/qualified use | Actual method/content producer and WP06 source adapter withdraw current eligibility; W/E and counters remain. Affected Q/R/technical/decision use is reassessed |
+| Role/grant/credential/root | Actual project trust/status authority authenticates the effective action/target/scope, rotation/delegation lineage and impact. Preserve prior records; derive current eligibility from actual policy/status, not deleted key files or labels |
+| Accepted review decision/exception | Actual authorized decision/status owner records targeted withdrawal/expiry/conditions. Keep the original acceptance and reasons; re-evaluate dependent denial coverage and uses |
+| Owner/reader retirement or head rollback/fork | Existing custody owner closes the live capability and checks actual selection/lineage/fencing; no old frame/reader resumes current authority by restoring a file |
+| Required status source unavailable | Currentness/discovery is unestablished at the required strength; cached old positive state is not a fresh permission |
+
+Revoking a decision-verification receipt, revoking a grant, withdrawing a decision,
+repairing a property and replacing a denial are different operations. A revoked
+resolution receipt or status can reopen the original denial for current use;
+it cannot expunge that denial, authenticate a forged new rejection, or fabricate
+a different principal's revocation authority.
+
+Reuse WP07's actual trusted clock/lease/source-currentness mechanism and fresh
+Core admission at each use. An old indexed admission does not track a moving
+clock; a still-valid request seal does not discover current role/decision/status
+changes. Observed invalidation remains recorded; old bytes returning cannot
+resurrect revoked private receipts or retirements. Where policy permits restored
+unchanged-basis verification, it is a genuine fresh operation with its actual
+origin, not resurrection of the old authorization.
+
+Recovery/handover uses actual closed source/predecessor identity, expected accepted
+prefix/original origins and grants, selected signed current head, fresh actual
+reader/activation and retirement of known old live owners. Archive integrity is
+only a custody fact; successor verifies original decisions and role/status scope
+again, including every retained denial. A storage-prefix repair only completes
+the exact authorized interrupted byte prefix under its expected selection; it
+cannot approve a project, drop a denial or rewrite an original signature. Later
+activated/current heads reject replay of an old repair/activation/handover grant.
+Fresh local reader bookkeeping is not a global single-reader proof across hosts;
+the actual source/host selection guarantee must be qualified at its stated scope.
+
+Local revocation and accepted withdrawal discovery are distinct from propagation
+to recipients. WP09 needs actual recipient/use/status associations and fresh
+verification. There is no instantaneous global revocation over disconnected
+hosts, and this design neither sends notifications nor performs an external
+revocation action. Any permitted offline window must be explicitly authorized
+and bounded by the adopted policy; otherwise unavailable current status blocks.
+
+* SPECIFIED DE-CASE-01 walkthrough and retained artifacts
+:PROPERTIES:
+:CUSTOM_ID: case-history-authority-artifacts
+:END:
+
+The actual design-review policy and project adoption/role/authority sources are
+prerequisites, not the old test root/directory or fabricated appointments. For
+the E06/I04 -> T03 -> DE-D04 chain, start with C/Q/R and its actual product/criterion
+findings. Discover all mandated technical/counter/decision/predecessor/status
+sources into H, including known unsafe alternatives and unfinished qualifications.
+Missing semantic reviewer/authority, required source or complete technical finding
+still blocks the corresponding action. DE-D01-D05 remain authored design choices,
+not authenticated Aitia decisions merely because this document describes them.
+
+| Artifact / purpose | Inputs -> retained output |
+|--------------------+---------------------------|
+| Discovery report | R and real mandate/source operations -> H/required-versus-actual source and accepted record inventory, receipts/findings/gaps |
+| Proposal/action verification | R/H/technical/roles/grants/limits -> inert proposal, actual verified action or refusal/timeout diagnostics |
+| Decision/exception/withdrawal publication | Actual qualified authorized action and expected prior selection -> exact accepted record/prefix/head or explicit unknown/failure state |
+| Reassessment record | Old R/decision/failures plus actual changed basis/repair -> impact links, new qualified C/use/Q/R as required and scoped resolution/remaining blockers |
+| Current authority-use report | Current H, genuine technical/authority verification and accepted records/status -> bounded admitted/blocked/unknown explanation with original counters/denials retained |
+| Recovery/handover/repair observations | Actual source custody and authorized expected prefix/reader/head -> actual current source observation or refusal; no revived receipt or fabricated decision |
+
+D07/D08 retain evidence/failure/repair history; D09 explains exact current technical
+and authority findings; D10 references prepared R and any actually produced later
+records. Historical 20-result/22-record subjects and existing failures remain
+historical. This task produces only design documentation, not these runtime
+artifacts, a signed directory, accepted repair, exception or decision.
+
+Whole-chain lifetime rule: captured governance content belongs to C; technical
+query facts belong to Q; required authoritative current heads/accepted prefixes,
+grant/decision/status observations belong to H/current use. An unchanged technical
+Q/R can remain the basis of a new H assessment only if its selected technical
+inputs/duties/output meaning remain unchanged. Acceptance/withdrawal never edits
+old C/Q/R. A changed history fact exposed by a technical query requires new Q/R;
+changed captured policy/grant/product/project inputs require new C as applicable.
+These are impact-dependent transitions, not three independent freshness flags.
+
+* SPECIFIED Positive/negative acceptance and work order
+:PROPERTIES:
+:CUSTOM_ID: history-authority-acceptance
+:END:
+
+These HA01-HA31 are future matched controls, not tests executed here.
+
+| ID / positive scenario | Required result | Matched negative / required boundary |
+|------------------------+-----------------+---------------------------------------|
+| HA01 / actual technical binding | Source-recognized current C/Q/R and WP07 assessment/use bind authority input | Foreign revision/scope/policy, caller technical.admitted? or forged receipts cannot authorize |
+| HA02 / independent source demand | Genuine mandate derives complete technical/decision/grant/status/predecessor demand | Favorable supplied sources, disappeared intake, absent directory or invented clean baseline cannot yield complete H |
+| HA03 / current source lineage | Exact selected heads/prefixes/origins and authentic continuity bind H | Older/smaller prefix, fork, missing predecessor or unverified required source blocks; no latest-hash rule |
+| HA04 / authentic principal/action | Actual grant chain covers principal/action/R/project/scope and conditions | Same-named signer, self-selected root, key possession or signature over wrong target cannot grant authority |
+| HA05 / delegation | Valid bounded delegation respects parent actions/scope/validity and status | Widened grant, delegation cycle, missing chain or unauthorized redelegation refuses |
+| HA06 / quorum and independence | Actual required distinct principals/roles and methodology constraints met | Repeated signature, two keys for one principal or Agent author as independent reviewer cannot fill missing roles |
+| HA07 / precise request/action seal | Full C/Q/R/H/policy/action/target/conditions/grants and actual expected snapshot bound | Copied public approved flag, swapped action/exception/target or omitted semantic field cannot issue usable receipt |
+| HA08 / accepted negative retention | Prior authenticated denials/counters retained across policy/revision changes | New policy label, new positive W or smaller history set cannot erase a denial or original property counter |
+| HA09 / unverified negative distinction | Accepted inventory's missing negative proof blocks completeness; forged submission stays diagnostic | Drop an unavailable accepted denial to pass, or treat arbitrary forged text as accepted authority, both refuse |
+| HA10 / current frame | New accepted records/source/status invalidate old frames appropriately | Replay old discovery/approval receipt after late denial or changed required inventory cannot admit |
+| HA11 / property repair | Exact old/new claim/basis and new A/E/W/use support scoped repair | Changed digest, same case/payload, wrong run/domain or M04 repair for M06 cannot prove resolution |
+| HA12 / repair versus denial | Verified repair retained separately from required authorized denial replacement | Passing repaired method cannot silently cancel prior rejection or change old W polarity |
+| HA13 / bounded exception | Actual permitted criterion, risk/decision authority, scope/mitigation/expiry/reopen checks bound | Generic waiver, missing risk owner, non-exceptable condition or false property labeled true cannot authorize |
+| HA14 / exception currentness | Actual live conditions/mitigation/status constrain permitted scoped use | Expired exception or unmet mitigation cannot become general project/release permission |
+| HA15 / explicit supersession | Qualified new record names exact accepted denial and actual authority/scope/lineage | Approval without names, unrelated scope, unknown forward ID or unauthorized replacement leaves denial blocking |
+| HA16 / acyclic replacement | Declared authenticated supersession graph is unambiguous and acyclic under Core analysis | Cycle, incompatible identity or concurrent fork cannot be resolved by lexical revision/last-file-wins |
+| HA17 / resolution withdrawal | Revoked/ineligible resolution reopens affected denial unless another genuine current scoped resolution covers it | Permanent erase bit, old receipt after revocation or copied replacement record cannot retain admission |
+| HA18 / historical/current grants | Validity at record acceptance and present policy/status consequences stay separate | Grant/key expiry erasing denial or historical signature bypassing actual targeted withdrawal refuses |
+| HA19 / no self-certification | Decision binds predecision H0 and R; accepted H1 includes it with actual lineage | Decision hashing its own future prefix, retroactive Q/R edit or authority inferred from its own ASCENT row refuses |
+| HA20 / exact current H use | Later H validates record inclusion/original basis and all subsequent relevant accepted status | Signature for H0 treated as permission to ignore H2 denial/withdrawal cannot admit |
+| HA21 / serialized publication | Actual host selection/expected prior pin and qualified publication/custody bind accepted prefix | Hash-only CAS claim, concurrent stale writer or selected-head rollback cannot authorize current use |
+| HA22 / ambiguous persistence | Known accepted negative survives publication failure; owner becomes unusable for positive use | Roll back to favorable old frame, drop negative or claim distributed atomic rollback refuses |
+| HA23 / local revocation semantics | Actual Core issuer revokes receipt; separate owners record grant/decision/use withdrawal | Public status toggle, deleting a file or revoking unrelated receipt cannot create or erase project authority |
+| HA24 / fresh time/status | Actual trusted bounded clock/source checks and new-time Core admission gate use | Cached admission, backdated caller now, changed status within lease or unsupported freshness cannot pass |
+| HA25 / genuine recovery | Selected closed prefix/origins/root, fresh reader activation and current predecessor custody reverified | Deserialized receipt, stale repair/head/grant replay, retired reader or fork cannot revive authority |
+| HA26 / storage versus semantic repair | Authorized exact-prefix repair preserves every original accepted record/origin | Storage repair removing denial, changing project claim or inventing original signed decision refuses |
+| HA27 / framework boundary | Genuine design support/preflight/Cedar mapping used only at declared scope | Support flag, preflight or permit-shaped request cannot imply review decision, release or Runtime effect authority |
+| HA28 / exact downstream association | Accepted authority/status may feed subsequent Q and recipient verification with original C/Q/R | Raw rule row mints grant, current decision inserted into own input hash or provider approval grants recipient deployment refuses |
+| HA29 / case honesty | Actual unassigned roles, history/semantic/cold gaps and historical subjects retained | Test Alice/Bob/root, 17/3 counts, old coding fixture or drafting permission cannot become real case authority |
+| HA30 / full qualification | Actual source/compiled discovery/grant/negative/repair/exception/withdrawal/custody controls and full required recovery acceptance pass | Documentation/model-only success, unchanged failed restart, widened budget or rewritten receipts cannot close WP00/WP10 |
+| HA31 / action-specific preconditions | Genuine scoped rejection/defer/withdraw can be accepted against a recognized incomplete technical basis; accepted inclusion verified separately | Requiring technical success to retain a denial, using rejection as positive permission or replaying proposal/preflight receipt as an accepted decision refuses |
+
+Existing [[file:../../../t/backpressure-cross-intake-test.ss][cross-intake]], [[file:../../../t/backpressure-reassessment-test.ss][reassessment]], [[file:../../../t/backpressure-owner-handover-test.ss][handover]], [[file:../../../t/backpressure-owner-recovery-test.ss][recovery]], [[file:../../../t/backpressure-archive-cache-test.ss][archive]] and [[file:../../../t/backpressure-review-test.ss][review]] tests are migration/qualification surfaces.
+Future controls need independently authored grant/lineage/action/repair/exception
+cases, not just signed happy-path fixtures or production-derived expectations.
+Fixture principals/keys do not appoint project people. No test, key generation,
+signing, source activation, decision submission or authority gate is run here.
+
+Dependency order: WP01-WP03 real policy/project/mandate/C -> WP04-WP07 genuine
+technical/content evidence, Q/R and current verification -> expected history/
+authority/action/impact Types and bounded source demand -> actual source/grant/
+credential/lineage verification -> exact accepted decision/current-use and negative
+retention -> independently checked repair/exception/supersession/withdrawal ->
+qualified prefix publication/recovery/handover -> subsequent WP06 projections and
+WP09 recipient status/use -> WP10 complete source/compiled/cold joint controls.
+Actual missing authority/role inputs remain project work, never fabricated by
+restructuring Library or Aitia code.
+
+* DESIGN Documentation and qualification status
+:PROPERTIES:
+:CUSTOM_ID: history-authority-design-status
+:END:
+
+This details WP08/GA20-GA22/GA24 from 10.41 and refines the authority boundaries
+in 10.40/10.48 using the C/A/E/W/use/content/Q/R design of 10.42-10.48. New domain
+bindings/gates and full DE-CASE-01 authorization/reassessment remain target work.
+Library declaration generation retains its sole owner; Org/D2 only reference it.
+No new version, versioned Namespace or implementation filename is introduced.
+
+Only Org and D2/SVG change. No implementation/directory migration, method/content/
+ASCENT/Aitia run, receipt issuance/revocation, review submission, decision/exception/
+withdrawal/handover act or delivery occurs. Original 10.34 catalog and historical
+receipts remain unchanged; [[file:10.35-content-validation-slice.org::#slice-input-freshness][10.35]] records static drift and actual recapture gates.
+
+[[file:10.50-library-delivery-and-recipient-use.org::#library-delivery-and-recipient-use][10.50 details WP09 Library delivery and recipient use]]: exact C/Q/R and accepted
+distribution authority, manifest/product/reference closure, actual transfer and
+acknowledgement, receiver-owned trust/verification/capture/review, adoption and
+current intended use. Missing/status/withdrawal/replay and DU01-DU30 controls
+remain future qualification; no implementation or actual delivery occurs.
+
+[[file:10.51-case-joint-acceptance-plan.org::#case-joint-acceptance-plan][10.51 details WP10 joint acceptance]]: existing entries/file owners, exact
+plan/evidence closure and G0-G8 source/compiled/cold/recovery/recipient gates;
+216 referenced contract control rows plus JA01-JA32 cross-boundary controls and
+OJ01-OJ12 open items. These are future requirements; no implementation,
+acceptance execution, review submission or actual delivery occurs.
+
+[[file:10.52-contract-consistency-and-implementation-order.org::#whole-slice-consistency-audit][10.52 reconciles the whole slice]]: policy/Scope/Config handoffs, required-unit
+and request-purpose bindings, captured/technical/current-authority lifetimes and
+private/exported provenance; S0-S9 implementation dependencies and retained OJ
+gates. Design consistency is not implemented or operational qualification.
+
+#+CAPTION: WP08 exact C/Q/R, independent required history H, scoped authority, retained negatives, repair/exception/replacement and current withdrawal/custody.
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.svg]]
+
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][Editable D2 source]]. Target design and future acceptance; no decision, review or revocation performed.
+
+[[file:10.61-history-authority-and-reassessment.org::#s7-history-authority-reassessment][10.61 details S7]]: exact C/Q/R/H, independently required history, scoped
+principal/grant/action checks, accepted inclusion/current use, immutable negatives,
+repair/exception/supersession/withdrawal and qualified custody. Assumption failure
+triggers scoped reassessment without false zero-effect or authority inference.
+The paper is critically studied through competing designs/falsifiable RQ1-RQ6,
+not treated as a normative source or demonstrated improvement. AX01-AX44 are
+future controls; no implementation, acceptance execution or review submission.

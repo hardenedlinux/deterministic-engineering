@@ -1,0 +1,483 @@
+#+TITLE: 10.68 P3 Profile Selection, Scenario Binding and Capture Origin
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.68
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+TODO: AUDITED SPECIFIED | QUALIFIED
+#+FILETAGS: :design:profile:scenario:capture:provenance:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.64-contract-consistency-and-implementation-order.org::#audit-implementation-order][P0-P9 order]] | [[file:10.56-profile-selection-and-scenario-capture.org][S3 foundation]] | [[file:10.65-ascent-migration-and-contract-handoff.org][P0 dependency owners]] | [[file:10.66-effective-types-and-contract-closure.org][P1 effective Types]] | [[file:10.67-library-construction-publication-and-scope-handoff.org][P2 checked publication]]
+
+* SPECIFIED P3 result and trust boundary
+:PROPERTIES:
+:CUSTOM_ID: p3-selection-binding-capture
+:STATUS: Source/design and static documentation only; no implementation, acquisition execution, acceptance run or delivery
+:END:
+
+P3 consumes actual checked Library Scopes, binds a normalized Profile to a supported
+model/slice/policy and explicit project request, acquires independently required
+inputs at their actual owners, and forms one Scenario-owned capture C. The same C
+is consumed by later methods, observers, ResourceEvidence, Aitia and receiver work.
+Profile intent, structural conformance, source acquisition, actual capture issuance
+and current eligibility are separate assertions. None substitutes for the others.
+
+This chapter consolidates 10.56 with P0-P2. It keeps POO values/Function Types,
+existing Core Scope/read/verification mechanisms and actual qualified Host inputs.
+It adds no Profile loader, public hash-signing service, provenance registry, second
+Rust Context, C reconstruction route or Aitia verification-purpose symbol.
+Origin binding below is a target composition of existing mechanisms, not a claim
+that current Scenario code or Core alone implements authenticated project capture.
+
+* AUDITED Existing seams and source observation
+:PROPERTIES:
+:CUSTOM_ID: p3-current-source
+:END:
+
+At this turn's initial observation, project HEAD is
+8044732d505f84e373119a70f947df00e1767300; outer Flow is
+03d7c59180d08fc14e72fdfbd6f8b69d4b152b00 and ASCENT is
+0f99da9e3a3baf1a272ba58fe0769ed8278ae746. Core's separate HEAD remains
+52130d2d338b09622a3f55e37987ddc0375b6187 and Aitia's remains
+cbf3f6861ef7cf66d8d02aaf71b1c89630eaf7fc, with dirty source distinguished
+from HEAD. These are source observations, not stable installed/load qualification.
+
+| Existing source | Current support / target disposition |
+|-----------------+--------------------------------------|
+| [[file:../../../profiles/resource-lifecycle.ss][LifecycleProfile / LargerPayloadProfile]] | Existing POO inheritance and resource-64/128 values. Move effective numeric/runtime/workload intent into one parameter child, retain outer Profile identity and explicit supported selection/investigation/product intent |
+| [[file:../../../scenarios/resource-lifecycle/interface.ss][Scenario interface]] / [[file:../../../scenarios/resource-lifecycle/config.ss][Config]] | Requires Domain and Evidence; Config is an unused purpose marker. Add explicit Generic dependency for the advertised all-role route; publish complete selection/acquisition/capture operations and expected Contracts. Default-profile, if used, is a checked request only |
+| [[file:../../../scenarios/resource-lifecycle/func.ss][resource-lifecycle-scope]] / [[file:../../../scenarios/resource-lifecycle/types.ss][Types]] | Fixes Domain.entry; capture forwards flat arguments to native-context; open-review ignores validation return and passes separate raw fields. Current Type checks procedure presence. Replace with fixed Scope-bound selectors, acquisition and recognized same-C calls |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/methods.ss][resource-native-context / resource-context-current!]] | Bounded file/env/scope inspection exists, but validation returns are discarded and current! reconstructs a new Context from ambient paths. Preserve supported read algorithms; remove independent project occurrence construction and recapture-based currentness |
+| [[file:../../../scenarios/gateway-review/func.ss][Gateway]] / [[file:../../../modules/resource-evidence/func.ss][ResourceEvidence]] | Flat profile/source/snapshot/scopes and fixture fallback rows exist. Share supported selection/capture operations, remove production fallback and flat inference reconstruction; ResourceEvidence retains Q ownership |
+| [[file:../../../../poo-flow/core/module-system/source/link.ss][Core link.ss]] | Context, required-edge and final Scope candidate retention defects inspected in P2 remain. P3 must consume repaired actual handoffs; local revalidation does not repair Core |
+| [[file:../../../../poo-flow/core/module-system/source/objects.ss][Core SourceRef]] / native read issuance | SourceRef carries module location/metadata; actual native slot-read tokens have producer identity and dependency replay. Neither is generic authenticated observation of arbitrary project files, Git state, data or tools |
+| [[file:../../../../poo-flow/core/contribution/verification.ss][Core verification]] | Registered adapter/receipt/admission ownership, copied snapshots, pre/post operation snapshot check, bounded validity and revocation exist. Operation and clock/source/trust selection are caller/Host obligations; a constructed adapter is not automatically a trusted Scenario producer |
+
+Core issued-read test sources reject fabricated read records and preserve original
+tokens/parent revisions. Those are inspected source controls, not executed P3 tests.
+The inspected contribution/verification.ss source hash is
+e190bcb2d426f9d730d172facd417011b669c0c647e15b7db3056bf0b5b8456c;
+its private issuance behavior is not an application source-provenance guarantee.
+Current source/build/load/reader/clock/issuer associations still need qualification;
+an upstream migration report is not this project's capture acceptance.
+
+* SPECIFIED File ownership and dependency direction
+:PROPERTIES:
+:CUSTOM_ID: p3-files-and-contracts
+:END:
+
+| Existing owner | Complete responsibility / prohibition |
+|----------------+----------------------------------------|
+| profiles/resource-lifecycle.ss | Independent outer selection requests, one parameter child, supported questions/modes/products/project restrictions. No observed revision, tools found via cwd, adoption, grants or acquisition callbacks |
+| scenarios/resource-lifecycle/types.ss | ResourceSelectionProfileContract, ResourceProjectRequestContract, ResourceProjectInputsContract, ResourceSelectionContract, ResourceCapturedUseContract, complete Scope and Function expectations. Compose Library common data Types; no imported method bodies or assembled Module/init |
+| Scenario objects.ss / config.ss | Reusable case identity/intent; closed checked default-profile reference where supported. No C, actual source manifest, selected key/role or hidden execution switch |
+| Scenario interface.ss / func.ss | Explicit checked aliases and real Scope-bound selector/acquisition/capture/current-use/adapters; independent demand, returned candidates/wrappers and actual origin association. No source-root/global-acceptance fallback |
+| Library Types/definitions/methods | Publish P1/P2 parameters/claim/premise/strength/input/operation expectations and real implementations. Context is shared input data; Library does not create a second authoritative project C or import Scenario Types to authenticate it |
+| Actual Core/Host read and verification owners | Source-qualified reads, owned immutable bytes/reference domains, actual execution/result association, native read validity and Core receipt ownership where used. Scope source/selection and trusted Host clock/lease rules remain actual owner inputs |
+| Gateway / review adapters / examples | Consume shared lower Types/algorithms and actual admitted provider-bound operations. No import of assembled ResourceLifecycle Module/Config/init to reuse a capture helper; no duplicate capture manager |
+| ResourceEvidence / Aitia | Consume recognized C and later actual A/E/W/use/Q. They do not acquire a favorable second basis, manufacture C from rows or declare policy adoption from selection |
+
+Expected Types depend on POO/Core and Library Types only. Pure shared helpers can
+be private/named functions at the existing owning source; they create no new public
+framework. Actual deferred bodies and trusted source/Host bindings must exist before
+complete Scenario Scope exposure. Keep incoherent assembly unpublished rather than
+use always-true producer checks or placeholder readers.
+
+* SPECIFIED Profile, checked selection and policy association
+:PROPERTIES:
+:CUSTOM_ID: p3-profile-parent-policy
+:END:
+
+| Checked request field | Required meaning and finite selection boundary |
+|------------------------+-----------------------------------------------|
+| identity | Stable resource-64/128 or other authored Profile identity; not project observation or generation |
+| selection | generic-model, rust-model or integration plus supported review intent/policy choice and optional provider restrictions; trusted operation maps to fixed advertised exports/Contracts |
+| parameters | Exactly one inherited/refined parameter child; select actual Generic/Rust/six-case/Integration expected Contract, retain returned child. No duplicate outer capacity/item/workers/lock/scopes |
+| investigations | Supported claim/subject/method/mode/limits from actual selected capabilities; no arbitrary executable, callback or candidate-selected validator |
+| products | Requested additions to independent mandatory architecture/Org/decision/reference duties; never an offered list defining completeness |
+| project-constraints | Explicit expected repo/worktree/subject/mandate restrictions; actual observed inputs arrive through qualified acquisition |
+
+LifecycleProfile retains controlled resource-64 intent. LargerPayloadProfile refines
+the same parameter child to 128 once. An Integration request selects the published
+integration-entry, not methods.integration-entry or a copied mapping/delta builder.
+Config default resolution and explicit Profile choice produce one effective request;
+unknown keys, conflicting defaults or ambient project/tool/policy inference refuse.
+
+| Selection | Actual consumed checked Scope / graph relation |
+|-----------+------------------------------------------------|
+| Generic | Explicit Generic requirement candidate -> entry/entry-contract, parent=false, supported Generic parameters/methods |
+| Rust | Domain requirement candidate -> entry/entry-contract; Rust.parent remains its own checked Parent edge's Generic entry |
+| Integration | Domain.integration-entry/integration-contract; immediate parent is returned Rust in that same admitted Domain Scope |
+| Bounded coding-method policy | Domain.review-policy/review-policy-contract; exact supported model/claim/purpose/product limits |
+| DE-CASE-01 design policy | Domain.design-review-policy/design-review-policy-contract; independent mandatory model/content/Org/decision/history/action/delivery/premise/strength duties |
+
+Both policies are sibling declarations, parent=false, sharing the admitted family
+descriptor, not model parents or grants. Bind actual selected policy/source/semantic
+revision and project adoption evidence or typed unverified/missing adoption finding.
+Coding policy cannot satisfy design review; Generic cannot use a Rust case policy
+merely because Domain exposes it. A no-review intent requires an actual operation
+and mandate permitting it; missing adoption never removes a required review.
+
+All selection reads use P2's actual returned final/required-edge candidates and
+wrapped functions. Corroborate Scenario Generic and Rust Parent through actual
+provider/source/family/qualified normalization association; neither global raw eq?
+nor equal names establish that relation. Never patch an admitted parent afterward.
+Read contract-version through checked role -> admitted declaration Contract (V1);
+do not copy it into Profile/C/Config or derive it from Namespace.
+
+The all-role Scenario must resolve explicit Generic/Domain/Evidence dependencies
+before bind. A Generic Profile cannot prune a failed required Domain. An independent
+Generic-only publication may use the same lower operations with explicit narrower
+dependencies, but it is not a fallback loader triggered after failed binding.
+
+* SPECIFIED Project request, independent demand and acquisition
+:PROPERTIES:
+:CUSTOM_ID: p3-input-demand-acquisition
+:END:
+
+bind consumes an explicit project request as well as the Profile: intended subject,
+repo/worktree restrictions, logical Library/reference/project roles, permitted read
+and output intent, bounded acquisition class and relevant prior mandate references.
+A path/URL/revision supplied by a caller is a request, not an observed source fact
+or permission to install, fetch, build, run verification or submit review.
+
+Selection derives complete independently required units/input roles first from
+selected declarations, claims, parameters, policy and intended operation. Acquisition
+then supplies every required role with qualified observation or a typed gap. Bounded
+list/map keys and multiplicities come from P1; premise IDs are not new role enums.
+
+| Input role / actual owner | Required acquired basis and limit |
+|----------------------------+-----------------------------------|
+| Library/provider | Actual checked Generic/Rust/Integration/parents/policies/Contracts/mapping/delta/asset and selected implementation sources; dirty/import/build/load associations as required or explicit unresolved gap |
+| Reference six-case workload | Provider-owned crate/lock/source/oracle/protocol and required facet definitions when selected. Distinct reference subject; results never silently prove a network-service implementation |
+| Project implementation | Explicit repo/worktree/subject, observed revision plus included dirty/untracked bytes, path/include/exclusion/negative-directory observations, lock/build/model/config inputs and full required dependency domains |
+| Architecture/Org/decision products | Exact required/actual product role, bytes/base/selector/actual-target/historical-current, reference demand and retained access/limits; shared sections permitted with real coverage |
+| Tools/environment | Actual selected executable/source/compiled/ABI/config/env/worker/limit identities from supported qualified reads; requested tool labels are not observed versions or execution results |
+| Governance/history/receiver intent | Actual adopted mandate/policy/role/source/recipient-purpose inputs with qualified origins or explicit gaps. C neither appoints people nor contains future decisions/adoption |
+| Causal/model/data/measurement inputs | Exact question/subject/domain/variables/data/model/intervention/measurement/identification/transport premise inputs required by selected claim. Missing data/check capability stays unsupported; no fabricated effect estimate |
+
+Library and project roots remain different logical roles even for DE-CASE-01 using
+the same physical files. Byte storage may deduplicate; subject/demand/dependency/origin
+edges may not. Arbitrary service sources cannot be relabelled reference six-case
+protocol. Explicitly unsupported workload/model domains refuse affected operations.
+
+Acquire through real source-qualified readers bound by the Scope/Host operation,
+not project-input fields containing current! lambdas, generic SourceRef labels or
+precomputed hashes. Keep actual operation/input/result/reader-source/cut/limits and
+owned bytes or supported immutable retained source domain together. Use guarded
+native object reads only where the actual producer supports them: forward original
+issued tokens/dependency roots, never make a synthetic read token with an always-true
+checker. Those tokens authenticate that POO read domain, not external file contents.
+
+For files/data/tools, qualify actual OS/Host read-result provenance, owning base,
+symlink/alias/relocation policy, content/enumeration/negative dependency and supported
+stability checks at that owner. Existing module SourceRef and POO receipts do not
+already provide a universal arbitrary-repo snapshot reader. Missing qualified reader
+support blocks the required complete acquisition; a supported partial capture may
+record the precise unavailable role, never claim coherent ready inputs.
+
+There is no atomic whole-filesystem snapshot claim. Changes during acquisition must
+be refused/reacquired under supported guards or preserved as explicit unstable gaps.
+Do not join pre-change metadata with post-change bytes as one stable cut. Later
+methods consume retained owned inputs; checking a hash then reopening mutable paths
+is not the same captured basis. Any staging/materialization records original-to-copy
+and actual byte/operation origin and belongs to its own explicit permitted operation.
+
+* SPECIFIED Actual capture origin using existing Core ownership
+:PROPERTIES:
+:CUSTOM_ID: p3-origin-protocol
+:END:
+
+The target protocol uses Core's existing verification adapter as the private issuance
+owner for a precise capture-origin assertion, composed with real Scenario acquisition.
+It does not make Core verify arbitrary file truth or use an Aitia review purpose.
+The trusted Scenario operation binds the expected adapter and snapshot/verification
+bodies from its actual qualified source; it never accepts an adapter/validator from
+Profile, C or a caller. Core permits anyone to construct an adapter, so registered
+adapter status alone is insufficient: exact expected producer/source binding is
+required at every consuming operation.
+
+| Boundary / existing mechanism | Required target association and output |
+|--------------------------------+----------------------------------------|
+| Scope-bound capture operation | Actual admitted source/selection/reader/Host/clock/lease bindings, recognized selection and project request. A caller chooses data/intent only within the supported operation, not who authenticates it |
+| Real acquisition and basis admission | Acquire demanded inputs/gaps with actual read-result origins; normalize complete owned input-basis once, retain returned candidate. Scenario assigns a new capture occurrence, not a caller reuse token or content digest |
+| Scenario capture-origin verification operation | Core adapter's trusted operation checks that exact occurrence/basis against actual acquisition output, selected producer/reader/declaration/parameter/policy and allowed gaps; checks real source/read stability and observed Host instant/lease policy. Shape/hash equality alone cannot return success |
+| Core poo-flow-verify | Existing pre/post canonical snapshot equality and private receipt issuance bind the verified capture-basis snapshot and validity interval. A genuine receipt establishes only that precise operation assertion, not positive premises, policy adoption or method outcomes |
+| Final C admission | ResourceCapturedUseContract composes normalized captured basis and its genuine origin association in existing acquisition/origin fields. Retain returned C; final normalization must preserve sealed basis and actual producer association or refuse |
+| Actual current!/method/evidence/review adapter | Resolve expected producer/source from qualified Scope/operation; verify original receipt through that exact adapter plus exact basis/occurrence/limits. Add actual fresh source/status/purpose prerequisites before use, not a saved admission verdict |
+
+The effective acquisition/origin refinement declares basis-ref, actual acquisition
+operation/result refs, selected producer/source/generation, qualified reader support,
+original Core receipt association, clock/lease limits and diagnostics. Adapter/receipt
+refs are recognized owner-bound values, not reconstructible alists. These fields
+refine P1's existing C acquisition/origin group before closed validation; they are
+not a new Contract generation or a caller-controlled method table.
+
+Occurrence identity is scoped to the actual producer/owner instance and its source
+association. A printed counter or digest claims neither global uniqueness nor
+survival across restart; equivalent data cannot supply the missing owner identity.
+
+The normalized capture basis is an input to issuance. Origin receipt is a later
+binding of that basis; it is not recursively an input to its own seal. The final
+C carrier combines them without modifying the sealed meaning, post-admission field
+patching or producing a second authoritative C. Failure after actual receipt issuance
+retains the failed attempt/origin; do not claim rollback of Core issuance or return
+a partial recognized C. Missing qualified origin operation yields an unrecognized
+draft/acquisition diagnostic, not an authentic C with a fabricated receipt.
+
+Core snapshot validity alone accepts matching encoded meaning; it does not prove
+physical object identity or a new capture occurrence. Equal-field/JSON copies without
+actual trusted receipt/source association refuse. Borrowed genuine receipt with a
+different occurrence/basis/producer/scope refuses. A supported normalized presentation
+of the very same original occurrence requires the actual qualified origin association;
+it is not a new occurrence or private receipt reissuance. Arbitrary wrappers are not
+admitted merely because their printed fields match. No blanket object-equality check
+replaces source/issuer recognition.
+
+Core's pre/post snapshot comparison is value equality, not an atomic read transaction
+or detection of every mutate-and-restore change. Keep owned immutable basis and actual
+native generation/reader guards across the supported operation; unsupported external
+ABA/stability guarantees remain gaps. The Scenario/Host wrapper obtains actual clock
+instants and checks source/read/lease prerequisites again at final exposure/use;
+caller now/until values and an interval accepted earlier do not authorize that gate.
+
+Raw native read records, caller true/current flags and copied Core receipt objects
+cannot authenticate capture. Core's private receipt tables remain at Core; Scenario
+does not mirror them in an identity/nonce/issuer directory. No public API seals
+arbitrary submitted C data or grants retrospective origin to a reconstructed result.
+Original token/receipt authenticity, actual read provenance and semantic adequacy
+remain separate controls.
+
+Runtime consumers are joined through actual trusted Scenario/Host adapters to Library
+operations with retained C/origin association. Library common Context Types do not
+import Scenario or authenticate C structurally. The P4 issuer must recognize that
+actual call/input association rather than an editable already-checked flag; the
+cross-owner call/receipt route is an explicit qualification obligation, not an assumed
+capability supplied by Function conformance or a public capture callback.
+
+This protocol is process/owner-bound. Serialization or restart loses private handle
+authority unless an independently supported recovery/portable-origin protocol verifies
+retained original assertions and creates its own local association. No JSON load, old
+time argument or historical receipt snapshot restores an issuer or current eligibility.
+Receipt expiry/revocation blocks uses requiring it but does not edit captured history.
+Fresh origin/use verification, when supported, has a real new observation over the
+original occurrence; it does not extend old seals or silently recapture C.
+
+* SPECIFIED Unique C, logical calls and operation lifetimes
+:PROPERTIES:
+:CUSTOM_ID: p3-calls-and-lifetimes
+:END:
+
+One C holds its occurrence/normalized input-basis, checked selection/Profile/parameter/
+model/ordered parents/two-policy associations, actual project/reference subjects and
+source roles, independent requirements/products, owned inputs/prior mandate references,
+acquisition/origin/limits and every gap. No new version field, global ready flag,
+later A/E/W/Q/R/decision output or mutation of previously captured inputs.
+
+| Existing target operation name | Complete input -> retained output / limit |
+|--------------------------------+-------------------------------------------|
+| bind(Profile, project-request) | Actual admitted Scope-bound selector -> checked ResourceSelectionContract; retain normalized Profile/parameter/project request and actual parent/policy/expected capability/demand associations |
+| capture(selection, project-inputs) | Recheck recognized selection; actual qualified acquisition/owned basis/origin -> checked ResourceCapturedUseContract C or explicit diagnostic. Submitted project-input values cannot authenticate their own source |
+| current!(C, use-purpose) | Original recognized C plus exact intended operation -> fresh bounded source/lease/premise/status finding or refusal; no recapture or permanent Boolean authorization |
+| observe/method(C, application-request, destination) | Recognized same C plus supported target claim/mode/owned execution options -> actual prepared A and later E/Observation/W/use under P4; no independent overriding root/Profile/policy/tool meaning |
+| open-evidence(C, qualified-results/uses) | Same C -> ResourceEvidence association/Session, including honest empty initial evidence; Q comes from P5's actual accepted projection, not Scenario synthesis |
+| prepare-review(C, exact-Q/uses, additional-inputs) | Same actual C and definite Q -> S6 R with required policy/role/product/context gaps preserved. This prepares no accepted decision or submission |
+
+These are target existing-design signatures, not new implemented exports. Scenario
+Scope advertises selection-profile-contract, project-request-contract, project-inputs-
+contract, selection-contract, capture-contract and operation-contracts with the real
+supported operations. Retain all normalized callable wrappers and final Scope/provider
+coherence from P2; no P3-local cache or double validation to conceal Core defects.
+
+Actual project acquisition is permitted bounded reading only under prior Host/project
+mandate. It is not a model check, build, method run, appointment, dependency install
+or review action. Output destination/options affecting later execution belong to the
+prepared operation input footprint, not post-hoc edits to C. A newly discovered
+unbound transitive input stops affected use and requires new acquisition/C, unless
+already inside an actually supported captured immutable source domain.
+
+| Change / operation | C and later-result behavior |
+|--------------------+-----------------------------|
+| Same captured inputs, later question within supported domain | Same C -> distinct actual A/E/use/Q as demanded; no duplicate Context |
+| Captured model/policy/parameter/source/product/mandate meaning changes | New selection/acquisition occurrence/C; preserve original C0/outputs |
+| Source/role/status/premise check changes without editing captured meaning | Fresh scoped check/impact/use, block unsupported current eligibility; preserve historical C/W/Q/R even on Session rollback |
+| New technical/content/check findings change query basis | New Q/R as required, never append findings into C |
+| Equal bytes acquired again, retry or restart | Distinct real capture occurrence unless genuinely returning the same retained owner-bound C; no digest-based deduplication of occurrence authority |
+| Receiver/project/domain/transport basis differs | Receiver own selection/C and qualified comparison/identification or gap; reference/provenance receipt cannot transfer an empirical causal effect |
+
+Honest C with permitted missing reviewer/data/model/product may be recognized as a
+capture with gaps. It does not certify the missing role, fulfilled criterion or ready
+operation. Unrelated supported analysis can proceed only under its own explicit
+complete prerequisites. Forged acquisition/identity/issuer or incoherent source cut
+is refused, not represented as an ordinary favorable missing-input capture.
+
+* SPECIFIED Direct migration and implementation dependency
+:PROPERTIES:
+:CUSTOM_ID: p3-migration-order
+:END:
+
+1. Complete P1 selection/project-input/C/Function expectations, including the explicit
+   acquisition/origin refinement; consume P2 fixed returned Scope/model/policy/source
+   and real operation bodies. P0 actual installed/load cut remains a prerequisite.
+2. Refactor independent Profiles/default Config and fixed Scope-bound bind operations.
+   Add explicit required aliases, preserve Generic-only isolation and fail complete
+   all-role binding on any invalid required provider. No dynamic Profile loader.
+3. Qualify actual demanded read-result/owned-source domains at existing Core/Host owners,
+   then trusted acquisition and capture-origin operation/source/clock/lease composition
+   using existing Core issuance. Do not publish a fake reader or public sign-anything
+   route while real source provenance remains absent.
+4. Normalize input basis, preserve actual acquisition -> issuance -> final C association,
+   then bind current!/method/evidence/review adapters to the same genuine C/origin.
+   Keep this coordinated unit unpublished until actual producer recognition works.
+5. Directly migrate native-context/current! flat arguments, gateway fallback, examples,
+   ResourceEvidence and review adapters. Retain bounded fixtures as tests only; remove
+   old production routes rather than aliases accepting both C and overriding inputs.
+6. Map and qualify owner controls/source/compiled/cold/recovery lanes when authorized.
+   Pure acquisition/capture tests do not need to launch verification methods. Actual
+   method issuance, deterministic Q, Aitia review/authority and receiver work keep
+   their independent P4-P8 gates and immutable original evidence.
+
+* SPECIFIED Positive and matched negative acceptance conditions
+:PROPERTIES:
+:CUSTOM_ID: p3-acceptance-controls
+:END:
+
+BC controls refine CX/SX/EF/LP/PM and later EX/OX/QX/RX/DX/JX obligations. They are
+prospective matched controls, not executed tests or additions to historical 248/380
+row counts. Existing test names are seams for future actual owner assertions.
+
+| Control / existing seam or owner | Positive requirement | Negative control / refusal or honest gap |
+|----------------------------------+----------------------+------------------------------------------|
+| BC01 / module-design and selection tests | resource-64/128 requests keep one normalized parameter child and supported intent | Duplicate outer parameters, competing default or unknown request fields refuse |
+| BC02 / library-owner/selection controls | Fixed trusted selector maps supported role/parameter/capability/policy | Candidate Scope/Contract/validator/loader or arbitrary command selects itself; refuse |
+| BC03 / Core Scope / Scenario admission | Returned Context/required/final Scope/function wrappers actually consumed | Raw Scope, discarded nonidentity return or closures over incompatible graph; refuse |
+| BC04 / parent and source controls | Real Rust Parent and Integration immediate chain, qualified distinct Generic view | Equal names, foreign family, patched parent or global eq? as sole lineage; fail |
+| BC05 / bounded/design selection | Exact policy/descriptor/source revision/applicability and independent demands retained | Coding-as-design, Generic using Rust policy or dropped mandatory product refuses |
+| BC06 / adoption/mandate input | Actual supported selection with adoption/source gaps explicitly preserved | Profile selection grants adoption/appointment or missing mandate implies no review; refuse |
+| BC07 / all-role versus Generic-only route | All required aliases checked; separately explicit Generic-only route stays cold | Generic Profile bypasses invalid Domain, dynamic loader or silent fallback; refuse |
+| BC08 / project-request/input Types | Explicit subject/root/read restrictions and one checked project request | Ambient cwd/global acceptance, requested label as observed revision or reader callback; refuse |
+| BC09 / independent demand acquisition | Required units/roles precede observed input inventory | Offered-only inputs define completeness, dropped obligation/result or arbitrary premise roles; refuse |
+| BC10 / reference/project subject | Same bytes can serve separate qualified roles; six-case reference remains reference | Reference output relabelled network-service proof or unsupported subject protocol; refuse |
+| BC11 / file/Host read owner | Actual read-result origin/owned bytes/dependency domain with declared path/stability policy | Caller hash/SourceRef label, stale metadata plus new bytes or check-then-reopen; refuse coherent basis |
+| BC12 / source inventory and closure | Revision plus required dirty/untracked/negative/enumeration/transitive basis retained | HEAD-only identity, hidden included file, omitted missing reference or undeclared symlink escape; gap/refusal |
+| BC13 / original native read tokens | Genuine issued dependency roots forwarded/replayed under supported domain | Constructed token/callback claims issued; reject before callback, no file-authenticity promotion |
+| BC14 / acquisition stability | Supported stable cut or explicit unavailable/unstable role retained | Mixed reads or mutate-and-restore treated as atomic/ready merely from equal snapshots, unsupported source domain trusted; refuse |
+| BC15 / normalization and capture origin | Checked selection/input-basis and final C preserve actual operation/input association | Seal pre-normalized data but return changed basis, discard wrapper or patch origin after admission; refuse |
+| BC16 / trusted Core adapter selection | Actual Scenario source binds expected adapter/operation/reader/clock; Core issues real bounded receipt | Registered but caller-created adapter, candidate now/validator or public sign-anything route; refuse |
+| BC17 / exact capture assertion | Genuine receipt binds occurrence/basis/producer/gaps/limits and actual acquisition | Shape/hash alone proves origin, copied token or borrowed receipt for another basis/scope; refuse |
+| BC18 / qualified presentation | Same original occurrence recognized through its actual qualified normalized association | Equal JSON/fields alone mint C, arbitrary clone auto-admitted or presentation creates new private receipt; refuse |
+| BC19 / Core snapshot/current-use distinction | Original origin retained; fresh actual source/lease/purpose checks at use | Saved admission verdict, old-time replay, expired/revoked receipt or byte restoration authorizes now; refuse |
+| BC20 / failure after issuance | Failed final/export attempt retained, no partial recognized C returned | Claim Core issuance rollback, lose failure or present draft as authentic C; fail |
+| BC21 / same-C adapters | Library/common Types remain Scenario-independent; actual trusted call association reaches A/E/W | Editable checked flag, C callback chooses recognizer or Types -> Scenario import cycle; fail |
+| BC22 / lifecycle/context consumers | Rust/QNT/Lean/SysML/content/Evidence consume one recognized C with exact subject/input basis | Separate native Context, flat raw inference fallback or later root/Profile/tool override; refuse |
+| BC23 / current! and later inputs | Purpose-bounded current finding without recapture; new unbound semantic input -> new C | Recomputed Context called current check, append input/output/decision into C or silent transitive read; refuse |
+| BC24 / honest missing/negative inputs | Permitted missing reviewer/data/product retains required unit and blocks affected use | Missing becomes zero/pass, role appointment or opposite causal claim; refuse inference |
+| BC25 / side-effect boundary | Capture performs actual permitted bounded reads only | Runs QNT/build/tool analysis, installs dependency or submits review to validate C; fail |
+| BC26 / occurrence/restart boundary | Equal-byte distinct captures distinct; same retained genuine C reuse explicit | Hash equality merges issuance, restart/JSON load restores private owner or old receipt reissued; refuse |
+| BC27 / causal applicability and lifetime | Scoped premise/domain/check/impact basis and later required new C/Q/R/use preserved | Captured hypothesis proves causality, formal trace estimates effect or reference scope implies transport; refuse |
+| BC28 / shared gateway/direct migration | Shared lower operations close over own admitted providers; no production compatibility route | Assembled Module/init cycle, duplicate capture manager or fixture fallback accepted in production; fail |
+| BC29 / source/compiled/cold and recovery | Actual reader/issuer/call/source artifact closure and per-control evidence lanes qualify later | Source/table-only origin claim, stale binary, widened bounds or old failed recovery as pass; refuse |
+| BC30 / correctness/research/authority | Sound gaps/invalidation and real scoped authority; full revalidation remains valid baseline | Capture becomes approval/delivery, missing current status grants use or unmeasured selective benefit claimed; refuse |
+
+Future seams include module-design-test, library-owner-test, library-selection-test,
+native-context-test, resource-lifecycle-test/resource-integration-test, real-result
+controls and actual Core read/verification/Scope tests. Use supported heap-fenced
+owner entries when authorized, with exact source/lane/expected artifacts. Fixed
+2 GiB and existing watchdog/recovery limits, q34 failed restart-two and unrun
+restart-three remain; no acceptance/acquisition/method run occurs in this work.
+
+* SPECIFIED P3 handoff and still-open qualification
+:PROPERTIES:
+:CUSTOM_ID: p3-handoff-status
+:END:
+
+The design now specifies checked selection, independent source demand, actual
+acquisition -> Core-owned capture-origin binding -> normalized unique C, plus
+fresh purpose-scoped use. Concrete arbitrary-file/data reader provenance, trusted
+clock/issuer/source binding, cross-owner consumer recognition, recovery/portable
+origin where required, and all matched executable controls remain unqualified.
+Core's primitives are reused at their real strength, not asserted to solve those
+application obligations automatically. P0/P2 Scope/build/load defects remain blockers.
+
+P4 consumes this same genuine C for actual methods/content findings; P5 retains
+independent obligations and honest gaps in Q; P6-P8 retain actual review/authority/
+recipient prerequisites. Aitia request purposes stay the twelve in P1. Captured
+meaning changes, later technical findings and live status keep their distinct
+lifetimes; correctness and research superiority remain separate claims.
+
+The paired [[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][D2 source]] and [[file:../../90-99-views/90-architecture-views/90.99-library-contracts.svg][SVG]] distinguish Profile intent, checked binding, real source
+observation, private issuance and later use. Historical dossier/catalog and prior
+negative/recovery receipts remain unchanged. No implementation, review submission,
+acceptance execution or actual delivery occurs here.
+
+* SPECIFIED P3 origin handoff to P4 method issuer
+:PROPERTIES:
+:CUSTOM_ID: p3-p4-issuer-handoff
+:END:
+
+[[file:10.69-method-content-execution-and-evidence-issuance.org::#p4-footprint-and-derivation][10.69 P4 consolidation]] defines this boundary.
+The original recognized C and qualified acquisition/origin association flow through actual trusted call preparation to A/E/Observation/W/use. Capture-origin receipt is not property W. Actual derived outputs stay outside C; fresh validation has its own origin and never claims recapture or rerun of the original workload.
+
+* SPECIFIED P3 original capture consumed by accepted Q
+:PROPERTIES:
+:CUSTOM_ID: p3-p5-genuine-c-query
+:END:
+
+[[file:10.70-ascent-projection-and-determinate-query-view.org::#p5-required-inventory-and-relations][10.70 P5 consolidation]] defines this boundary.
+Projection consumes exact genuine C/origin and qualified input/producer/use associations. Fixed required inventory can exist before methods run; absent W cannot erase units. Changed captured meaning requires new C, while later query/findings/status have their own Q/use lifetimes.
+
+* SPECIFIED P6 original C and project occurrence
+:PROPERTIES:
+:CUSTOM_ID: p6-follow-up-68
+:END:
+
+[[file:10.71-aitia-review-adaptation-and-current-use.org::#p6-fields-and-contracts][10.71 P6 consolidation]] defines this boundary.
+Review binds exact C/Q/project revision/dirty inputs, real policy adoption, required versus actual roles/products and original origins. Changed captured meaning requires successor C; fresh status checks and later review outputs never retroactively mutate C.
+
+* SPECIFIED P7 capture and live history lifetime
+:PROPERTIES:
+:CUSTOM_ID: p7-follow-up-68
+:END:
+
+[[file:10.72-history-authority-reassessment-and-withdrawal.org::#p7-causal-reassessment][10.72 P7 consolidation]] defines this boundary.
+Changed captured project/selection/mandate meaning needs successor C. History-only status/inclusion can retain original C/Q/R with new H/use. Actual source demand and role/credential verification remain independent of favorable supplied records.
+
+* SPECIFIED P8 capture versus future adoption
+:PROPERTIES:
+:CUSTOM_ID: p8-follow-up-68
+:END:
+
+[[file:10.73-library-delivery-and-recipient-adoption-use.org::#p8-recipient-verification][10.73 P8 consolidation]] defines this boundary.
+Prior host/project mandate authorizes explicit inspection/provisioning; future adoption cannot authorize its own prerequisite. Receiver C1 captures actual inputs/proposals and own duties before accepted adoption, preserving producer C0 as separate original basis.
+
+* SPECIFIED P3 cold capture and source origin
+:PROPERTIES:
+:CUSTOM_ID: p9-follow-up-68
+:END:
+
+[[file:10.74-case-joint-acceptance-and-research-plan.org::#p9-gates-and-lanes][10.74 P9 consolidation]] defines this boundary.
+Cold means a real new VM with new local associations and explicit qualified inputs, not empty OS cache. Same exogenous gold can compare lanes while preserving each actual capture/execution/issuer basis; fake identical C is not required or permitted.
+
+* SPECIFIED Same capture beyond origin-verification lease
+:PROPERTIES:
+:CUSTOM_ID: consistency-audit-75-68
+:END:
+
+[[file:10.75-contract-consistency-and-refactoring-order.org::#audit-capture-origin-lifetime][10.75 P1-P9 consistency audit]] defines this refinement.
+C is the original acquisition occurrence, not its expiring verification interval. Fresh verification of that exact retained basis requires the actual qualified original owner/source association and current guards; record a later observation outside immutable C. Missing origin or process loss blocks this route; actual reacquisition/import has appropriate new origin/C. Do not automatically recapture or extend old seal.
+
+* SPECIFIED Capture prerequisites from checked Context and source
+:PROPERTIES:
+:CUSTOM_ID: p0-76-follow-up-68
+:END:
+
+[[file:10.76-dependency-build-load-and-normalized-handoff.org::#p0-context-handoff][10.76 unified P0]] defines this boundary.
+P3 must receive actual checked Context/Scope/source-capability association after P0. Nonidentity normalization cannot silently substitute paired reader/generation/callback authority; raw Context fallback and arbitrary candidate adapters remain forbidden.
+
+* SPECIFIED Complete origin verification data Contracts
+:PROPERTIES:
+:CUSTOM_ID: p1-77-follow-up-68
+:END:
+
+[[file:10.77-effective-types-contracts-and-origin-lifetime.org::#p1-origin-lifetime-fields][10.77 unified P1]] defines this boundary.
+Existing acquisition/origin/current-use groups declare actual basis/occurrence/expected producer/adapter, original receipt and later real verification observation/target use. Same C can persist only with actual retained original association and fresh guards; process loss/raw JSON cannot renew it. New fields are declared before closed checks, not patched into C.

@@ -1,0 +1,32 @@
+# org-target: docs/10-19-design/10-architecture/10.18-agent-authored-engineering-and-review-contracts.org::#agent-engineering-review-purpose
+# render-layout: elk; theme: 0; pad: 24; timeout: 30
+direction: down
+classes: {
+  context: {style.fill: "#EAF2FF"; style.stroke: "#315B8A"; style.border-radius: 10}
+  proposed: {style.fill: "#FFF2DD"; style.stroke: "#9B6C25"; style.border-radius: 10}
+  existing: {style.fill: "#E6F5F3"; style.stroke: "#19756C"; style.border-radius: 10}
+}
+status: "DESIGN ONLY\nNo new validator, policy engine or measured review-cost reduction\nArrows show reasoning/evidence dependencies, not a mandatory tool sequence" {class: proposed}
+question: "Engineering question / actual project context\nOptimization, architecture, style or lifecycle change" {class: context}
+library: "Selected Library knowledge + project Profile\nDomain contracts / known counters / explanation requirements\nOnly relevant obligations; preserve inherited requirements" {class: proposed}
+agent: "LLM-based AI agent\nDiscover, hypothesize, compare alternatives and revise design\nChoose checks that resolve outstanding questions" {class: existing}
+proposal: "Candidate code and explanation claims\nTypes / ownership / principle / invariant\nConditional time and space costs / failures / tradeoffs\nAuthor explanation is not checked evidence" {class: proposed}
+mechanical: "Mechanical Style checks\nSelected formatter / lint / local policy\nDoes not validate semantic explanations" {class: proposed}
+semantic: "Semantic validation chosen for the claim\nAnalysis review / QNT / Lean / independent native controls\nSeparate measurement for speed or latency claims\nActual results and independent gold are required" {class: proposed}
+evidence: "EXISTING ASCENT evidence path\nSelected Catalog and dependencies -> obligations\nActual witness + method review + matching current scope\nSupport / counter / pending and historical references" {class: existing}
+review: "Focused engineering review / existing SDLC authority\nChanged contract, assumptions, explanations and evidence\nHuman judgment where no adequate mechanical oracle exists\nDerived support alone does not authorize merge" {class: context}
+change: "Source / algorithm / dependency / comment-claim change\nRevisit affected explanation and evidence applicability\nPreserve unaffected knowledge and original history" {class: proposed}
+evaluate: "Prospective evaluation: expanded AR01-AR08\nBefore/after code + comments / independent review gold\nMissed defects / false alarms / time to assess claims\nTotal author + validation + review + maintenance cost\nComment volume and generation speed are not quality oracles" {class: proposed}
+status -> question
+question -> agent
+library -> agent
+agent -> proposal
+proposal -> mechanical
+proposal -> semantic
+mechanical -> evidence
+semantic -> evidence
+evidence -> agent
+evidence -> review
+review -> change
+change -> proposal: {style.stroke-dash: 5}
+review -> evaluate

@@ -1,0 +1,296 @@
+#+TITLE: 10.75 P1-P9 Consistency Audit and Refactoring Order
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.75
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+TODO: AUDITED SPECIFIED | QUALIFIED
+#+FILETAGS: :design:audit:contracts:causality:dependencies:qualification:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.64-contract-consistency-and-implementation-order.org][Prior whole-chain audit]] | [[file:10.65-ascent-migration-and-contract-handoff.org][P0 dependency foundation]] | [[file:10.66-effective-types-and-contract-closure.org][P1]] | [[file:10.67-library-construction-publication-and-scope-handoff.org][P2]] | [[file:10.68-profile-selection-scenario-binding-and-capture.org][P3]] | [[file:10.69-method-content-execution-and-evidence-issuance.org][P4]] | [[file:10.70-ascent-projection-and-determinate-query-view.org][P5]] | [[file:10.71-aitia-review-adaptation-and-current-use.org][P6]] | [[file:10.72-history-authority-reassessment-and-withdrawal.org][P7]] | [[file:10.73-library-delivery-and-recipient-adoption-use.org][P8]] | [[file:10.74-case-joint-acceptance-and-research-plan.org][P9]]
+
+* AUDITED Conclusion and scope of closure
+:PROPERTIES:
+:CUSTOM_ID: audit-p1-p9-conclusion
+:STATUS: Source/design audit and static documentation only; no implementation, acceptance execution, provisioning, review submission or actual delivery
+:END:
+
+10.66-10.74 describe a coherent target owner chain after the explicit refinements
+below. Design continuity is not executable closure: real source/dependency/build/load,
+normalized Core handoff, actual capture/issuance/Host/authority/custody and receiver
+operations remain implementation and qualification work. Missing real mandates,
+semantic products and empirical evidence cannot be supplied by an architecture table.
+
+This audit retains 10.64 AC01-AC14 and OJ01-OJ12/BS01-BS09. CA01-CA18 identify this
+round's findings; CI01-CI18 specify prospective matched checks. No row is an executed
+test, issued receipt or accepted decision. The audit distinguishes compatible design,
+new explicit design refinement and actual unresolved producer prerequisites.
+
+Read sole Library declaration generation V1 through the checked declaration Contract.
+No new version source, Namespace generation, public schema DSL, receipt registry,
+approval flag or global invalidation/recall service is introduced. Ordinary POO values,
+Contracts, named pure functions and actual operation owners remain the framework.
+
+* AUDITED Current source and dependency observations
+:PROPERTIES:
+:CUSTOM_ID: audit-current-source-cut
+:END:
+
+Initial observation: . HEAD 8044732d505f84e373119a70f947df00e1767300; ../poo-flow HEAD 20ca0903bdbb67ed3682dc0a732f1a435e716770; ../poo-flow/core HEAD 251ff282e2aa9cc8f6d2b194e5f26615cd042f58; ../poo-flow/packages/lambda-aitia HEAD 87fb8f17c8ea7af5e553f3bd86140b3c5b1cab03; ../gerbil-ascent HEAD 5054f6d8b97ae0e1fa266f2d80f7ddb66c99e367.
+
+Initial observation covered 94 selected source/runner/test/dependency files. Against
+P9's initial cut, Flow gerbil.pkg has the later byte identity already recorded in
+10.74: f7789d75784e3db112501017feda702f16caa930f319839889331d50622f7520 ->
+601a40bc5d13123815e4ee7a886837cffd7cc5e71bec85907a12241d5d2b8587.
+Core read-projection.ss retains the P9-observed
+79948d8e393c9c52dda2112583826fd4bdb9dcacf426bce211f52cf0cb47d7b0 after the
+prior 2280918d39d3b775e5f9cc931f8d9f0073217615ebe57e3ce5abb77f4a809e22.
+Other inherited selected bytes matched at this bounded initial observation. These
+separate reads are not an atomic checkout, actual loaded image or successful build.
+
+| Actual source / observation | Consequence and owner |
+|-----------------------------+-----------------------|
+| [[file:../../../../poo-flow/gerbil.pkg][Flow dependency declaration]] | Now pins POO 0df023fd9e15192156935c971f0f1940028c5277 and ASCENT 0f99da9e3a3baf1a272ba58fe0769ed8278ae746 (plus existing ASP/parser/Orgize pins). A declared pin is not what a process actually loads |
+| Project .gerbil/pkg/github.com/tao3k/gerbil-poo resolves to Flow .gerbil/pkg/github.com/tao3k/gerbil-poo | Resolved checkout HEAD is fdeadfa40ca5cee5fe20308985aef1577f2eb49b, different from new declared POO pin. Do not claim pin satisfaction or replace links/packages here; P0 must select a coherent qualified source/build/load route |
+| Project Core/Flow/ASCENT package links | Resolve to ../poo-flow/core, ../poo-flow and ../gerbil-ascent. ASCENT checkout HEAD 5054f6d8b97ae0e1fa266f2d80f7ddb66c99e367 differs from Flow's declaration pin. This does not by itself prove semantic failure, but prevents a claimed declaration-matching route without reconciliation |
+| [[file:../../../gerbil.pkg][Project gerbil.pkg]] / [[file:../../../manifest.ss][manifest.ss]] | Project dependencies are unpinned; version-manifest retains earlier source/package identities. Neither updates the Library generation nor proves actual loaded compatibility. Reconcile actual provider selection/dirty bytes/artifacts, not strings alone |
+| [[file:../../../../poo-flow/core/object-family/read-projection.ss][Core read-projection]] | Current call-local region invokes stable? around action, forwards the complete original read graph on success/failure and leaves replay to the enclosing native consumer. It does not certify a smaller weak read witness, arbitrary file acquisition, persistent currentness or all external ABA |
+| [[file:../../../../poo-flow/core/module-system/source/link.ss][Core link.ss]] | Publication uses evidence.candidate. Context admission still discards its returned candidate; required bindings read provider.scope instead of requirement-evidence.candidate; final record still stores scope-value instead of scope-evidence.candidate. Core owns all three repairs with provider isolation and graph coherence |
+| [[file:../../../../poo-flow/core/types.ss][Core types]] / [[file:../../../../poo-flow/core/module-system/source/reader.ss][source reader]] | Prior changes in default successful classifier/read/source guards remain relevant. Types/reader presence and source hashes do not qualify actual value normalization, genuine reads or loaded source/compiled paths |
+| Project old ASCENT imports and new generic owner routes | Old evidence/interface, evidence/declaration, program/clue-exchange and program/trajectory routes remain implementation migration work. Use actual rules/interface + declaration and Flow Clue/trajectory owners from 10.65; Evidence Assessment is a separate application, not an inferred replacement |
+
+Physical POO slot-observation.ss observed SHA256
+38091191369bda10ec8f14bf22da8d1e7126cc1385cadb281ab9c27e8e6fb8cd and object.ss
+1fc4b5f16848ac37c8ee00c171a7bb458271bb502a2451f26246f885b6e623dd. These
+byte observations supplement the HEAD/pin mismatch, not a native ABI/load qualification.
+No package update, dependency installation, cleanup or uninstall is performed.
+
+* AUDITED Findings across contracts, responsibilities and acceptance
+:PROPERTIES:
+:CUSTOM_ID: audit-consistency-findings
+:END:
+
+| Finding | Disposition / explicit owner and closure boundary |
+|---------+--------------------------------------------------|
+| CA01 | Open dependency gate: declared pins and actual checkout/load are different facts. P0 reconciles POO/ASCENT routes; no pin string update claims installed parity |
+| CA02 | Clarified current Core read projection forwards full original graph and native replay remains owner-bound. No weak witness/arbitrary file proof or performance claim follows |
+| CA03 | Open Core implementation gate: retain Context/requirement/final Scope candidates, preserving consumer-local requirements and actual provider record; publication candidate path already retains return |
+| CA04 | Compatible P1/P2 generation, Generic->Rust->Integration and two sibling policies. Expected effective inherited maps precede closed checks; definitions grant no project roles |
+| CA05 | Compatible Types/pure relation versus source/issuer authentication. Actual operations from checked Scope, not arbitrary candidate adapter/Contract/clock/root; retain actual wrappers at all handoffs |
+| CA06 | Compatible single C within actual producer chain, separate receiver C1/variant C. No universal cross-host capture or forced identical C across source/compiled/research code |
+| CA07 | Explicit refinement: captured meaning, original provenance, expiring verification and current target use are distinct. Same-C long work needs real owner re-verification route or refuses; old origin seal is never extended/revived |
+| CA08 | Compatible P4 planned A/actual E/G/derived inputs and W/use polarity. Historical executed A/E remains diagnostic if final current use fails; no implicit workload rerun from fresh verifier |
+| CA09 | Compatible independent D/K and original-W/target-U matching, full primitive projection/Q. Real serialized Session and complete empty replacement remain prerequisites; no actor/API equivalence inferred |
+| CA10 | Compatible rollback/commit/export versus external live invalidation. Engine old cut cannot restore current source/role/premise status; known invalidity blocks even on rejected projection |
+| CA11 | Compatible P6 complete R before outputs and separate context/inventory/criterion purposes. Inventory accounted/provenance/refutation receipt is not adequacy, support or permission |
+| CA12 | Compatible P7 history/grants/action/stage and H0/H1/H2. Authentic negative/defer/withdraw has own source/authority prerequisites without requiring positive technical success; preserve protected veto |
+| CA13 | Compatible repair/exception/supersession/typed withdrawal/custody. Changed source/premise recovery cannot cancel denial; partial or withdrawn resolution leaves uncovered blockers; no global erase/recall |
+| CA14 | Compatible P8 phase-typed payload/distribution/ack/receiver and prior provisioning mandate. No future output self-hash or adoption authorizing its bootstrap |
+| CA15 | Compatible foreign assertion/local verifier distinction and exact causal transport. New local verification does not recreate foreign W/E/Scope/Q/receipt or observe old workload; receiver needs own duties/authority |
+| CA16 | Clarified causal status/meaning lifetime matrix across W/U/K/Q/R/H/decision/receiver. Missing check is not violated premise/zero effect; trigger block and actual authorized withdrawal differ |
+| CA17 | Compatible P9 independent required control inventory, file/entry/report envs/lane/oracle/exit and fixed recovery limits. Proposed suites/Host/receiver bodies are missing work, never optional pass flags |
+| CA18 | Compatible correctness versus research: conservative complete revalidation valid; precision/causal/latency improvement requires real matched evidence, actual variant origin and all failure reporting |
+
+* SPECIFIED Lifetime refinement for same-C long-running work
+:PROPERTIES:
+:CUSTOM_ID: audit-capture-origin-lifetime
+:END:
+
+P3's capture-origin receipt is a bounded verification of an immutable actual
+acquisition occurrence, not C itself and not a perpetual right to use it. Distinguish
+original acquisition/issuance provenance, current verification interval and fresh
+target-use eligibility. A 600s investigation envelope cannot assume its origin seal's
+lease covers every final issuance/review; a caller cannot extend issued-at/expires-at.
+
+The expected source-bound owner may freshly verify the same original basis/occurrence
+only if its genuine acquisition/origin association is still retained and independently
+checkable at that owner. Record the original origin plus new verification/use
+observation in P1's existing acquisition/origin/current-use groups, declared before
+closed validation; consume the new observation as a later input at the actual operation
+boundary. Preserve C's captured meaning/identity and old receipt. Do not patch C,
+revive the old private seal, add a second authoritative capture or admit arbitrary
+C-shaped data. This is a target protocol refinement, not an existing new export.
+
+Current source/status/role/premise/operation checks remain necessary. If original
+association, required source stability or expected operation cannot be verified,
+refuse that current use; report unavailable/expired origin rather than pretend a
+renewal. A real new acquisition or imported qualified assertion has its own actual
+origin and appropriate new C/target lineage. Process loss/foreign JSON cannot restore
+the original owner. Recovered original bytes alone do not recreate private issuance.
+
+If an actual workload already ran, retain A/E/raw outputs and exact launch/input/time
+origin even when final current-use/issuance refuses. A historical diagnostic can remain
+true without positive W/use. New target U or re-verification does not re-observe that
+execution, rerun it by implication or append future verification to old C's self-hash.
+Actual checkpoint/final guard and qualified clock/source semantics must be implemented;
+if this route is absent, long-running positive use remains blocked, not auto-recaptured.
+
+* SPECIFIED Causal-assumption change across the complete chain
+:PROPERTIES:
+:CUSTOM_ID: audit-causal-lifetime-matrix
+:END:
+
+Assumptions are claim/domain/source-cut-specific, not global truth flags. The single
+semantic chain is selected criterion/premise -> actual qualified check/impact ->
+original C/A/E/G/W -> fresh target U/independent K -> accepted Q -> immutable R ->
+current H/accepted action/decision-use -> manifest/receiver assertion -> receiver
+C1/U1/K1/Q1/R1/adoption/operation. P1 publishes fields; actual owners establish facts.
+
+| Actual change | Evidence and query/review response | Authority and receiver response |
+|---------------+------------------------------------+---------------------------------|
+| Captured selection/project/mandate/product meaning changes | Actual acquisition/new C; affected applications/observations and new Q/R, preserving old lineage | New scoped decisions/manifest/receiver C as affected, never historical mutation |
+| Later qualified premise status changes without captured meaning change | Original C/W stay historical; new check/impact/use, known invalidity blocks actual use even if Session update fails. New Q/R when asserting changed technical view | Fresh H/decision-use; authorized resolution/withdrawal if required, receiver rechecks exact applicability |
+| Known identification/isolation prerequisite violated | Block affected empirical support/use; retain diagnosis and actual evidence. No invented opposite W or zero effect | Reassess decisions/adoption/use conditioned on that claim; event alone cannot sign withdrawal |
+| Required check/data unavailable or stale | Support unestablished/unsupported with K/gap retained, not proved premise violation | Positive action/use blocks where required, with honest scoped negative/defer path under real authority |
+| Actual comparable refutation/conflict | Retain both original bases and limits; P5 comparison uses exact subject/domain/basis, P6 preserves conflict | Accepted denial/veto survives favorable evidence, policy label or majority count; P7 scoped resolution required |
+| Population/environment/measurement/interference/transport change | Actual compatible-domain/identification argument or new analysis, otherwise gap; formal/model strengths stay distinct | P8 compares receiver conditions before U1/adoption/use; metadata/hash equality cannot transfer effect |
+| Actual supported repair/restoration | Fresh method/content finding/use and affected Q/R; revoked historical receipt never revived | Rediscover H, real current grants and accepted resolution where required; recovered premise does not cancel denial or exception-as-truth |
+| Role/grant/credential/source/status changes only | Verify actual affected owner/cut; old technical evidence is not automatically false | New H/current-use can retain original C/Q/R if meaning unchanged. Any Q asserting new history needs a new accepted cut; exact owner withdrawal/no global instantaneous recall |
+
+Live invalidation, engine rollback, decision acceptance, external transport and receiver
+operation are separate owner effects. Known invalidity blocks at the actual Host/
+producer/use owner even while a projection is rejected. Two fresh receipts do not
+create a global transaction; check-to-effect races require qualified serialization/
+fences/limits or refusal at the real effect owner. Offline grace needs actual adopted
+bounded policy and cannot override known invalidity. Preserve observed consistency
+scope rather than promise cross-host CAS or disconnected instantaneous revocation.
+
+* SPECIFIED Owner and call handoff ledger
+:PROPERTIES:
+:CUSTOM_ID: audit-handoff-ledger
+:END:
+
+| Boundary | Required owned output / consumer check / no circular authority |
+|----------+--------------------------------------------------------------|
+| Library -> Core publication/Scope | Complete inherited Types, real method/Function bodies, Generic->Rust->Integration immediate parents, two sibling policies, sole mapping/delta/Config ownership; consume every normalized return without mutating provider evidence |
+| Profile -> Scenario | Intent/allowed choice consumes actual checked Scope; actual project source/products/roles/mandate acquired separately into one C. No Types->Scenario/runners dependency or caller validator |
+| Scenario -> actual methods/content | Recognized same C/retained input basis and current origin-use; actual final Ops launch or pure content operation, A/E/G and scoped observations/W, never preview/hash-only issuance |
+| Producer -> P5 | Original W and target U retain distinct origins/strengths; required D/K independent of W; complete owned primitive sources/empty replacement/accepted result/full Q. No raw Session or arbitrary label grants eligibility |
+| Q/C -> Aitia P6 | Complete exact Q + same producer C -> frozen R before requests; independent context/inventory/criterion assertions and fresh Host use. Inventory accounted is not adequate; proof/refutation retains polarity |
+| P6 -> P7 | Exact C/Q/R/current review and independently required H, actual grants/action/target/stage. H0 proposal, H1 inclusion, H2 use are distinct; negative actions have authentic prerequisites without requiring positive technical success |
+| P7 -> P8 producer | Prior review/authority with finalized payload/recipient/purpose -> distinct later accepted distribution and actual transfer/ack. Future authorization cannot be inside its own manifest identity |
+| P8 -> receiver | Portable assertion/custody is data, not original private W/Q/receipt/Scope. Actual local verification plus prior host-authorized provisioning -> own genuine C1/Q1/R1/H and accepted adoption/exact use. Future adoption cannot authorize its own bootstrap |
+| Owner evidence -> P9 | Independent document/control/lane mapping, exact required cases/exits/loaded cut and accessible artifacts -> scoped report. Mechanism pass/test people/report signature cannot appoint real case authority or issue delivery |
+
+* SPECIFIED Correctness versus research hypotheses
+:PROPERTIES:
+:CUSTOM_ID: audit-correctness-research
+:END:
+
+Mandatory correctness: exact source/issuer/capture/assertion binding, normalized
+candidate retention, full independent demand, original negatives, sound scope-specific
+invalidation, authentic actions/inclusion/current use, phase-typed closure and exact
+receiver/effect permission. Every independently known stale use must block. Missing
+capability/data/authority remains blocked/unsupported, never a default pass or zero.
+
+Research hypotheses: better causal assessment/transport, smaller affected sets,
+selective reuse, simpler approval organization, review quality/cost/latency or benefit
+over paper-derived alternatives. Conservative full revalidation is valid unless an
+actually selected Contract advertises a narrower bound. Paper is a research object,
+not authority, a required platform or proof of our superiority. Compare real variants
+on matched exogenous histories/requirements/gold/budgets with actual per-variant C and
+all failures/unknowns, then paired cost/uncertainty. No fake identical C, invented weak
+baseline, single contaminated run or unmeasured advantage. No advantage/refutation can
+be an honest research outcome without failing correct conservative mechanics.
+
+P9 separately reports mechanism/lane correctness, real case-positive readiness and
+research results. Actual semantic reviewers/mandate/products may still block the case
+when scoped mechanics hold. No empirical estimator is invented to close unrelated
+architecture/ownership tests; empirical causal assertions need actual data/design at
+required strength. These distinctions are now referenced explicitly by P1-P9.
+
+* SPECIFIED Dependency order, prerequisites and open closure
+:PROPERTIES:
+:CUSTOM_ID: audit-implementation-order
+:END:
+
+| Order / owner | Required before advancing / retained open gate |
+|---------------+-----------------------------------------------|
+| P0 refresh / dependency/Core/ASCENT/Flow build and loader owners | Reconcile actual POO/ASCENT pins/checkouts/dirty bytes, removed imports and current reader graph/source guards; complete actual build roots/artifacts/loaded lanes. Fix Core Context/edge/final candidate handoff at owner with provider isolation; do not mask it by project wrapper revalidation |
+| P1 / Library+Aitia Types | Complete inherited closed effective fields, sole generation, finite twelve purposes/seven actions/stages, origin/current-use observations and causal/phase fields; coordinate all narrower consumers and explicit refusal, retain normalized outputs |
+| P2 / Library/Core | Real model/policy/Config graph and source-bound callable bodies before export; mapping/delta once, immediate parent and consumer-local Scope coherence; no success/unsupported stub satisfying advertised required capability |
+| P3 / Profile/Scenario/source Host | Actual checked selection/mandate/acquisition and one C; qualify native read versus arbitrary file provenance, private original origin, finite interval/fresh verification and all external consistency limits |
+| P4 / method/content/issuer owners | Actual launch and full acquired/derived/validation/load inputs; same C A/E/G/observation/W/use, original semantics, fresh invalidation, bounded architecture/Org/decision closure and real independent content routes |
+| P5 / ResourceEvidence+ASCENT owner | Required D/K independent of outcomes, safe primitive keys/limits, real serialized supported Session route, complete batch acceptance/Q origin/outputs and independent external live guards; actor positive Set API is not drop-in stratified route |
+| P6 / Aitia verification/Host + thin Scenario | Complete same C/Q/R and exact typed independent assertions, factored actual Host clock/operation/readers/current use, partial failure/receipt preservation and long-operation/final checkpoints |
+| P7 / Aitia/source/custody/project authority | Complete required H/real mandates/grants/quorum/lineage, proposal/inclusion/use, genuine serialized acceptance/replay/recovery and scoped repair/exception/supersession/withdrawal retaining negatives |
+| P8 / delivery/receiver/Core/Runtime | Final actual accessible manifest/current distribution/arrival/local trust/provisioning, own C1/Q1/R1 and domain duties, exact adoption/use/effect boundary and causal applicability/status/replay with genuine retention/transport limits |
+| P9 / qualification owner, continuously mapped from P1 | Actual API/suite/filter/lane/oracle/artifact mapping, bounded source/compiled/cold/ordinary/intended recovery/receiver controls at compatible cuts, scoped mechanism/case/research report. No report effects or actual execution in this update |
+
+P0 stays qualified throughout, not a one-time hash check. Pure Type/algorithm design
+may proceed while runtime is blocked; a public capability requiring an unimplemented
+operation cannot be published as complete. Exercise bounded mechanical controls only
+under their actual authorized scope; real project/cross-host/effect claims need actual
+mandates and route qualification. Diagnose changed-basis fixes before retries; do not
+widen fixed limits or drop required negative cases to obtain a full claim.
+
+OJ01/BS08/BS09 retain construction/capture responsibilities; OJ02-OJ05 actual evidence/
+Q/review/Host; OJ06 real semantic/decision/receiver roles; OJ07 history/custody/authority;
+OJ08/BS06 full ordinary recovery; OJ09/BS07 current ancillary/interruption suites;
+OJ10 real receiver adoption/use; OJ11/BS01-BS05 dependency/build/load/wiring/oracles;
+OJ12 fresh current dossier/accessible closure. New pin mismatch and origin-lifetime
+protocol are refinements of these owners, not invented green work packages.
+
+Historical q34 natural producer 0/127.161s, restart-one 0/179.777s and restart-two
+-9/185.059s including grace/controlledSigkill=false/DR07-DR14 stay partial/failed;
+restart-three remains unrun. Retain 2 GiB Gerbil heap, 180s build/recovery +5s grace,
+120s focused test, 600s investigation, 240s reassessment generation and current 45s
+method-command limits. Future parse/receiver/joint limits require explicit bounded
+owner enforcement; no unbounded default or guessed concurrency memory allowance.
+
+Original 10.34 dossier SHA/catalog remains unchanged: 138 entries, 22 currently
+mismatched/unavailable historical references retained, not refreshed to make green.
+Fresh current dossier is a new identified product. Prior 19/22 drift observations
+are historical cuts, not competing version sources. Old control families/counts stay
+unchanged and overlap; actual instance/lane evidence is still missing.
+
+* SPECIFIED Prospective audit controls and documentation-only exit
+:PROPERTIES:
+:CUSTOM_ID: audit-acceptance-controls
+:END:
+
+CI01-CI18 refine CA findings and document-qualified PM/EF/LP/BC/EV/PV/AR/AU/DL/JT,
+not additional test totals. Future controls require actual owner/operation/source/load/
+clock/cut, independent expected positive/paired negative result and preserved effects.
+
+| Control | Matched expected outcome / unsafe alternative refused |
+|---------+-------------------------------------------------------|
+| CI01 | Actual selected source/build/load matches declared route or explicit qualified alternative; POO/ASCENT pin/HEAD mismatch or old compiled fallback cannot claim parity |
+| CI02 | Full original read graph reaches native consumer on success and failure; weaker reconstructed witness/file hash or suppressed failed dependencies cannot replace it |
+| CI03 | Nonidentity Context/edge/final Scope/Function candidates consumed with provider isolation; raw provider.scope/precheck input or wrapper repair cannot mask Core loss |
+| CI04 | Sole declaration generation and proper inherited model/sibling policy graph; Namespace versions/duplicate effective identity or Org version authority refuses |
+| CI05 | Actual expected source-qualified operation/Contract/clock/reader selected; candidate-provided validator/always-true registered adapter cannot authenticate |
+| CI06 | Same real producer C and separate actual receiver/lane captures retained; mixed producer basis or fake same C across variants cannot qualify |
+| CI07 | Original occurrence retained and new genuine current verification qualifies same C within real owner limits; expired origin edited/revived, arbitrary C resealed or process-loss clone refuses |
+| CI08 | Actual historical A/E retained when current gate fails; fresh verification pretends new workload or failure erases attempt refuses |
+| CI09 | Independent D/K/full source batch/accepted Q and target use matched; absent W erases duty, partial Q or actor API shortcut refuses |
+| CI10 | Known external invalidity blocks current use through failed Session update; accepted old cut/rollback treated as continuing permission refuses |
+| CI11 | Exact R/typed purposes and independent content current-use verified; inventory/provenance/refutation counted as positive content/support refuses |
+| CI12 | Actual required H/grants/stage/inclusion and authentic negative path verified; preflight/test key/public flag or positive-success prerequisite for rejection refuses |
+| CI13 | Scoped real repair plus accepted eligible resolution preserves denial/veto; hash change/generic waiver/cyclic replacement or withdrawn resolution erases nothing |
+| CI14 | Manifest finalized before distribution and receiver prior mandate before bootstrap; self-hash/future adoption/install from inert intake refuses |
+| CI15 | Qualified portable assertion yields new local finding and exact receiver premise comparison; foreign JSON/signature recreates private authority or transport by metadata refuses |
+| CI16 | Actual violated/missing/contrary/restored premise has distinct scoped W/use/Q/R/H/receiver response; zero effect from no-data, event-signed withdrawal or restored-premise denial cancellation refuses |
+| CI17 | Every required actual suite/filter/lane/case/exit/artifact and independent oracle closes; zero cases, unimplemented body, source-only compiled claim, ordinary timeout or widened budget refuses |
+| CI18 | Correctness first with separate real-case and matched research verdict; fast wrong run/invented weak baseline/fake identical C or unmeasured advantage cannot close gates |
+
+The design-only exit is reconciled owner/contract/lifetime/control references with
+explicit implementation/qualification gaps. It is not any runtime or project acceptance
+verdict. No implementation, method/model/ASCENT/verifier run, acceptance, provisioning,
+review submission, notification, withdrawal or actual delivery occurs here.
+
+* SPECIFIED P0 detailed reconciliation and actual Context limit
+:PROPERTIES:
+:CUSTOM_ID: p0-76-follow-up-75
+:END:
+
+[[file:10.76-dependency-build-load-and-normalized-handoff.org::#p0-unified-source-handoff][10.76 unified P0]] defines this boundary.
+10.76 expands CA01-CA03/CI01-CI03 into actual files/order/paired controls. Current default Context is predicate-only, so its discarded return is a protocol gap without a demonstrated nonidentity runtime failure. Real owner fixture and coherent joint source/load qualification remain prerequisites, not static audit passes.
+
+* SPECIFIED P1 refinement of same-C verification lifetime
+:PROPERTIES:
+:CUSTOM_ID: p1-77-follow-up-75
+:END:
+
+[[file:10.77-effective-types-contracts-and-origin-lifetime.org::#p1-origin-lifetime-fields][10.77 unified P1]] defines this boundary.
+Original C basis/provenance and expired receipt stay immutable; actual expected source-bound owner may independently reverify retained original occurrence into a new later observation/receipt and fresh target use, never timestamp editing or C recapture by default. Missing support refuses. Sound invalidation remains correctness, improved selectivity research.

@@ -1,0 +1,530 @@
+#+TITLE: 10.55 S2 Library Construction, Publication and Core Scope Handoff
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.55
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+TODO: AUDITED DESIGN SPECIFIED | QUALIFIED
+#+FILETAGS: :design:library:publication:scope:normalization:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.52-contract-consistency-and-implementation-order.org::#consistency-implementation-order][S0-S9]] | [[file:10.43-library-objects-and-publication.org][WP02 construction]] | [[file:10.53-source-build-and-recovery-baseline.org][S0 baseline]] | [[file:10.54-library-and-aitia-types-contracts.org][S1 Types]] | [[file:10.44-profile-selection-and-scenario-capture.org][S3 capture]] | [[file:10.51-case-joint-acceptance-plan.org][Joint qualification]]
+
+* DESIGN S2 objective and trust boundary
+:PROPERTIES:
+:CUSTOM_ID: library-construction-scope-handoff
+:STATUS: Existing-file/field/call/normalization design only; no implementation or acceptance execution
+:END:
+
+S2 constructs and publishes one coherent Library object graph per actual successful
+linked Scope: Generic -> Rust -> Integration, two independent policy definitions,
+typed Config and complete exports/deferred callables. Core retains the checked
+publication, the consumer-specific required-edge candidate and the final admitted
+Scope candidate at their actual boundaries. A validator returning a different
+receiver/function must not lose that returned value on the path to consumers.
+
+This refines 10.43 using S1's complete roles/fields and S0's dirty source/load/
+recovery limits. It adds no linker, constructor framework, global singleton,
+family cache, version resolver, generated schema layer or compatibility facade.
+S2 publishes reusable meaning and actual callable expectations; it neither
+captures a project C nor executes methods, issues W, prepares authoritative Q/R,
+approves a review or delivers anything.
+
+The 75 selected current implementation/build/runner files still match S0's
+recorded bytes at this inspection. Linked Core remains the dirty checkout at
+52130d2d338b09622a3f55e37987ddc0375b6187; project HEAD remains
+8044732d505f84e373119a70f947df00e1767300. Source inspection supplies no fresh
+compiled/loading/acceptance result. S0 BS01-BS09 and the restart-two timeout remain
+open at their existing scopes.
+
+* AUDITED Existing construction and Core return paths
+:PROPERTIES:
+:CUSTOM_ID: s2-construction-source-audit
+:END:
+
+| Existing source seam | Inspected behavior / target change |
+|-----------------------+------------------------------------|
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/abstract/objects.ss][abstract/objects.ss]] | Authored BackpressureModel has identity/revision/lifecycle/rules/dependencies/qualification. Complete its S1 contract/parent/premise/asset/capability fields, using expected Types rather than a duplicated field/version table |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/abstract/config.ss][abstract/config.ss]], [[file:../../../library/concurrency/resource-control/backpressure-memory/abstract/interface.ss][abstract/interface.ss]] | Config.entry selects the authored model; interface currently exports only entry. Retain selection, consume returned checked Config/entry and publish full associated descriptors/callables |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/objects.ss][rust/objects.ss]] | specialize-backpressure extends a supplied parent, stores generic-entry and appends current duties. Directly migrate to immediate admitted parent and complete construction of Rust, Integration and both policies |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/config.ss][rust/config.ss]], [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/interface.ss][rust/interface.ss]] | Unused purpose marker; interface requires Parent and constructs Rust entry. Replace marker with closed no-options Config; actual required Parent supplies the root, never a direct abstract object import |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/correspondence.ss][correspondence.ss]], [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/func.ss][func.ss]] | resource-slice-entry and independent case/factor/mapping/delta source live beside algorithms, exported through ResourceMethods.integration-entry. Move authored slice semantics to objects; methods consume checked published values |
+| [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/module-system/source/declaration.ss][Core declaration.ss]] | core.exports lowers to the generated deferred core.link over explicit required aliases. Keep this actual lowering; no handwritten second core.link or global initializer |
+| [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/module-system/source/admission.ss][Core admission.ss]] / admit-module-publication! | Already admits and uses evidence.candidate for publication owner checks; link's publication/eligible also retains that checked publication. Preserve this correct handoff |
+| [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/module-system/source/link.ss][Core link.ss]] / link required edge | Computes effective-scope, admits the requirement, then builds consumer bindings from record.provider.scope rather than requirement-evidence.candidate. Normalized required-edge receiver can be discarded |
+| Core link.ss / final linked record | Runs bind-exports and final Scope admission, but stores scope=scope-value, not scope-evidence.candidate. Final Scope normalization can also be discarded |
+
+These are inspected control/data paths, not newly executed failing tests or an
+implemented repair. S2 corrects both latter handoffs at Core's actual owner;
+Library-side repeated validation or a replacement Scope cache cannot conceal them.
+
+* SPECIFIED File and field responsibility
+:PROPERTIES:
+:CUSTOM_ID: s2-construction-file-ownership
+:END:
+
+| Existing owner / file | Target responsibility and dependency |
+|-----------------------+--------------------------------------|
+| abstract/types.ss; rust/types.ss | S1 complete expected family/role/Config/Scope/Function and relational checks. Source-owned identity bindings referenced by construction; never import authored objects or generators to discover expected meaning |
+| abstract/objects.ss | Author complete BackpressureModel: identity/revision/contract/parent=false, lifecycle/rules/dependencies/assumptions/assets/capabilities/qualification. Generic knows no Rust/project/authority inputs |
+| abstract/config.ss | Select the authored Generic entry only under BackpressureConfigContract; no copied model fields, policy/version/tool/root/grant settings |
+| abstract/interface.ss | Validate/consume selected Config and returned entry, expose complete Generic Scope using core.exports; actual deferred generic methods and expected Function Types |
+| rust/objects.ss | Author Rust/Integration and both policy definitions. Compose with the actual supplied checked parent, own mapping/delta/case associations and semantic revisions; no init/interface/global parent lookup |
+| rust/config.ss | Closed RustResourcesConfigContract no-options value. Remove current unused purpose marker in future coordinated migration, not by adding replacement policy or factory settings |
+| rust/interface.ss | Resolve explicit Parent, consume its required-edge checked Scope, construct/admit Rust then Integration then both policy siblings, assemble exact exports and actual deferred functions; no public duplicate family builder |
+| rust/func.ss | Assemble real deferred implementations and expected callables over checked definitions where required. Remove independent integration-entry constructor export; do not keep old/new accepted slice routes |
+| correspondence.ss | Pure supported trace/projection/render algorithms consuming selected integration.mapping/deltas/case-links. No second cases/factors/revision/delta semantic authority or caller-supplied arbitrary transition callback |
+| methods.ss and extracted method/observer units | Actual selected typed operation bodies and later input/provenance/issuer boundaries. Required bodies must exist before exposure; no execution merely to construct/admit declarations |
+| Core source/declaration.ss; admission.ss | Existing deferred lowering and real accepted candidate/evidence protocol. Preserve publication owner/source checks and normalization before contextual checks; do not replace Core .admit |
+| Core source/link.ss | Per-context provider/required-edge/final Scope records, actual realized dependency handling, source/currentness/eligibility/failure/cache guards and checked candidate propagation |
+| Core building/artifacts.ss; actual build/test owners | Later source/compiled output/loading provenance and normalized handoff controls at supported runtime/compiled cuts. No metadata-only or historical receipt substitution |
+| Profile/Scenario/Evidence/review callers | S3+ consume exact checked exports and real origin guards. They neither rebuild declarations nor accept raw caller Scope/procedure/schema labels as proof |
+
+Objects retain POO composition as the extensibility mechanism. A pure helper may
+remain private if required to compose the admitted parent; it is not another
+public family factory or source of semantic identity. Imports remain acyclic:
+POO/Core -> Types -> authored values/real implementations -> interface assembly ->
+project consumers. Config does not import an interface that must import it back.
+
+* SPECIFIED Construction inputs and definition graph
+:PROPERTIES:
+:CUSTOM_ID: s2-definition-graph
+:END:
+
+| Constructed value | Actual predecessor / fixed expected Contract | Authored fields and invariant |
+|-------------------+---------------------------------------------+-------------------------------|
+| Generic | No model parent; BackpressureModelContract | concurrency.resource-control.backpressure-memory / ownership-budget/v1; contract points to expected role, parent=false; generic six-state meanings and BP duties/premises/assets/capabilities |
+| Rust | Exact entry of this Rust consumer's checked Parent Scope; RustResourceModelContract | rust.resources.backpressure-memory / backpressure/v3; parent=that checked entry; own Rust states, complete child -> parent map, preserved Generic duties/dependencies/premises plus BP/TR/CA/RL/runtime responsibilities |
+| Integration | Exact returned checked Rust exported in this linked Scope; BackpressureIntegrationContract | rust.resources.backpressure-memory.integration / backpressure-integration/v1; parent=that Rust; inherited duties and six-case RL/SI/TM, single mapping/delta/capability association |
+| Bounded policy | No model parent; BackpressureReviewPolicyContract | rust.resources.backpressure-memory.review-policy / bounded-coding-method-review; review-policy role, parent=false, applicable supported Rust/Integration roles and bounded coding-method criteria/products/history requirements |
+| Design policy | No model parent; BackpressureDesignReviewPolicyContract | rust.resources.backpressure-memory.design-review-policy; own source-authored semantic revision required before publication; parent=false, applicable design/content/history/authority/delivery criteria under the same family |
+
+Role shape inheritance is not inheritance of concrete role identity constraints.
+Rust's expected value must not be checked through Generic's fixed identity or
+parent=false Contract; Integration must not inherit Rust's fixed-role/Generic-parent
+constraint. Policy values share common declaration/policy shape while retaining
+their distinct expected identities/applicability; neither derives from a model
+or implies actual project policy adoption/appointments/approval.
+
+The family read is actual checked Scope -> selected expected role Contract ->
+its admitted declaration-contract -> contract-version. BackpressureDeclarationContract
+in abstract/types.ss owns the one target V1 symbol; no object, Config, interface,
+Profile, generator, Org or D2 copies that field or parses a generation from a
+revision/Namespace. Existing semantic tokens above remain opaque baselines;
+construction/source edits do not automatically advance them. Actual role/source/
+owner guards prevent copied metadata or restored mutable state from authorizing use.
+
+Preserve inherited meaning, not merely set membership. Conflicting duplicates,
+dropped duties/input roles, wrong state-map endpoints and inconsistent premises
+refuse the effective value. Exact duplicate authored rows are corrected at their
+owner, not silently merged into a new accepted definition during use. The final
+Rust map uses waiting->waiting, queued->queued, cpu-running->active,
+result-pending->returned, cleanup->cleanup and released->released. Integration's
+observed QNT running/done domains remain separately declared.
+
+* SPECIFIED Config and exact published Scope
+:PROPERTIES:
+:CUSTOM_ID: s2-config-and-scope-exports
+:END:
+
+Generic Config.entry references the authored BackpressureModel and is validated
+under the closed BackpressureConfigContract. The interface consumes the returned
+checked Config.entry and its expected role/source association; it must not call
+validate then read the original raw Config. This is an explicit Library boundary,
+not an invented automatic Core config-contract field. Rust Config is the closed
+no-options value under RustResourcesConfigContract. Neither Config selects a
+project, policy, parent, method result or arbitrary constructor/validator.
+
+| Export / field pair | Generic Scope | Rust Scope and checked association |
+|---------------------+---------------+------------------------------------|
+| entry / entry-contract | Selected checked Generic / BackpressureModelContract | Checked Rust / RustResourceModelContract |
+| declaration-contract | Sole admitted family owner | Same family associated with actual required Generic and every exported role |
+| integration-entry / integration-contract | Not advertised | Checked Integration whose parent is this exported checked Rust |
+| review-policy / review-policy-contract | No bounded Rust policy | Checked bounded policy and its own expected descriptor |
+| design-review-policy / design-review-policy-contract | No Rust case design-policy export; generic criteria have their own supported capability meaning | Distinct checked design policy and its own expected descriptor; actual authored revision/applicability/content/history/delivery requirements |
+| profile-contract | BackpressureProfileContract | ResourceProfileContract |
+| six-case-profile-contract / integration-profile-contract | Not advertised | ResourceSixCaseProfileContract / ResourceIntegrationProfileContract |
+| context-contract | Not advertised by this Generic Scope | ResourceContextContract with complete S1 expected input/selection/occurrence fields; no always-true placeholder |
+| methods / method-contracts | Real supported generic functions / actual expected Function Types | Real supported Rust/integration/content operations / expected exact Function Types, associated with selected declarations and real source-qualified implementation owners |
+
+The complete Rust Scope advertised here requires both policies and their real
+mandatory exports. Missing design revision/criterion/callable support cannot be
+hidden by dropping that export, switching to bounded policy or relabeling required
+support optional. An independently supported narrower publication needs an explicit
+expected Contract/capability design first; this task creates none. Independently
+selected Generic-only routes retain their existing provider/demand isolation.
+
+Validation of a Function must preserve its returned wrapper and exact input/
+output/keyword/arity expectations. Method bodies are real before exposure, but
+publication executes none. Merely deferring external calls does not prove every
+imported parser/tool/initializer is cold; actual source/compiled import/initializer
+footprints remain S0/S4 qualification inputs.
+
+* SPECIFIED Mapping and delta single ownership
+:PROPERTIES:
+:CUSTOM_ID: s2-mapping-delta-owner
+:END:
+
+The actual selected Integration definition owns mapping identity/semantic baseline,
+input/output domains and projection losses, case-links, factors/duties/input roles,
+and typed deltas. rust/objects.ss authors these values using rust/types.ss expected
+shapes; correspondence.ss consumes them and owns only the pure supported algorithms.
+ResourceMethods no longer publishes resource-slice-entry as a second constructor.
+No renamed compatibility alias or side registry remains for active consumers.
+
+| Declared association | Consumer contract and retained limit |
+|-----------------------+--------------------------------------|
+| RL-M01/SI-M01/TM-M01 through RL-M06/SI-M06/TM-M06 | Exactly six associations, unique IDs and actual domain/premise links; no independent generator-maintained case/factor/duty list |
+| Engineering child -> parent state map | Validate actual endpoint domains and preserved premise/duty meaning. A supported map's presence is not proof of universal Rust refinement |
+| Single-job observed-cut mapping | Explicit observation states/order/synchronization premises, actual upstream Rust run/facets, synthesized state losses and supported finite interpretation strength |
+| Queued-cancellation delta | Guard job is queued; remove from queued, add to cleanup; preserve admitted ownership and unaffected limit/queueLimit/admitted/running/returned/done fields. Cleanup draining remains a separate transition |
+| QNT/SysML generation | Render supported declared domains/mapping/delta guard/effect/frame; refuse unsupported declarations instead of choosing hardcoded alternative behavior. Bind generator/checker/asset/tool footprints later under WP04 |
+| Result/report provenance | Read selected meaning association and actual content/source identities; do not invent another mapping version or infer applicability from its label |
+
+Moving labels into objects without making the actual renderer consume declared
+semantics is insufficient. Independent guard/effect/frame and projection controls
+must reject a renderer that ignores the selected delta or silently preserves the
+old hardcoded cancelQueued behavior. Formal model assets remain actual dependencies;
+no general transition DSL or prose-to-proof service is introduced.
+
+* SPECIFIED Core admission and checked-value handoff
+:PROPERTIES:
+:CUSTOM_ID: s2-core-candidate-handoff
+:END:
+
+The following are logical existing-field paths and proposed migrations, not an
+implemented replacement API. Core owns these records; Library does not maintain
+another admission/candidate cache.
+
+| Boundary / actual call | Required retained result and next read |
+|------------------------+----------------------------------------|
+| Publication / admit-module-publication! -> publication/eligible | Existing correct behavior: evidence.candidate is checked-publication, owner/source checks and dependency projection use it, linked publication stores it. Preserve evidence/currentness/source association |
+| Provider produced Scope / recursive link | base-record.scope is the provider's final admitted Scope candidate and base-record.scope-evidence describes that same subject. Original provider record remains coherent in its own cache |
+| Optional realization / dependency-scope | Derive actual effective input under the current realization/source/package guards. It is an input to this consumer edge's expected requirement Contract, not automatic evidence of admission |
+| Required edge / admit-module-value!(requirement.contract, effective input, context) | Retain actual requirement-evidence; its candidate is the consumer binding. Construct bindings.alias from records.alias.requirement-evidence.candidate, not records.alias.provider.scope |
+| Deferred factory / baseline.link(bindings) | Generated core.link/core.exports sees actual checked required-edge aliases. Build/admit actual child graph and wrappers from that binding; no direct raw parent/global import |
+| Export protocol / bind-exports | Preserve actual .bind-publication owner/selection/export/currentness behavior on the produced Scope before final Scope admission; its returned value is the admission input |
+| Final Scope / admit-module-value!(baseline.scope-contract, bound Scope, context) | Retain scope-evidence.candidate as linked record.scope; record.scope-evidence, exports/source/owner/currentness and cache subject must agree |
+| Final guard / current!('scope-linked) -> cache insert -> resolve | No usable linked Scope is exposed before actual admission/final currentness passes. Return that same admitted record Scope under existing selection/source/failure semantics |
+
+For the required-edge record, provider must retain the actual original base-record
+and its original Scope/evidence/source association. requirement-evidence records
+the consumer-local accepted receiver. The existing realization context retains
+its source/selection association. If an effective raw input needs diagnostic
+retention, label it explicitly as input; never overwrite provider.scope while
+leaving provider.scope-evidence describing another receiver. No redundant public
+required-scope mirror is needed when the authoritative returned candidate already
+lives in requirement-evidence. Audit/update every direct record consumer at Core
+when applying this migration; do not keep a second old binding route.
+
+A required-edge normalization must not mutate/replace the provider's cached
+produced Scope or contaminate another consumer's differently admitted view.
+Conversely, final produced-Scope normalization belongs to that provider's record
+and is reused only under its actual valid source/context/currentness. Realization
+and requirement admission are not skipped when a cached provider exists.
+
+Keep both original provider provenance and consumer-specific evidence reachable
+at their actual owner. A copied candidate/identity/evidence-shaped object supplied
+by a caller is not an accepted required edge. Source/style/descriptor/policy/read
+and realized-build guards remain active around actual getter/validator/factory/
+.bind-publication calls; no broader read cache or discarded final guard is added
+for apparent speed. Existing publication-tail optimization is retained only within
+its current qualified closed window, never across a new effect/author callback.
+
+* SPECIFIED Construct, normalize and expose one coherent graph
+:PROPERTIES:
+:CUSTOM_ID: s2-construction-call-order
+:END:
+
+| Stage / responsible owner | Input -> actual checked output and invariant |
+|----------------------------+---------------------------------------------|
+| 1 / Generic objects + Config/interface | Authored Generic and closed selected Config -> actual validated Config/Generic references, full Generic Scope and retained Core Scope evidence |
+| 2 / Core required edge for Rust Parent | Actual produced/realized Generic Scope -> requirement-evidence.candidate; consume its entry, role/family/source associations |
+| 3 / Rust object owner | That exact admitted Generic entry -> full Rust definition, validate/admit under RustResourceModelContract, retain returned Rust |
+| 4 / Integration owner | Returned Rust -> full Integration mapping/delta/case definition, validate/admit under BackpressureIntegrationContract, retain returned Integration |
+| 5 / Both policy owners | Actual applicable checked role/family references -> two separate checked policy values with their own expected descriptors and semantic revisions; parent=false |
+| 6 / Implementation/interface assembly | These checked declarations plus real deferred operations -> full effective Scope exports and returned typed Function wrappers; no invocation |
+| 7 / Core export binding + final admission | Produced/bound Scope -> final scope-evidence.candidate with coherent checked descendants/parents/policies/callables/source association |
+| 8 / Consumer link/S3 | Final guarded cached record -> exact consumer-visible Scope; further requirement normalization produces its own retained edge candidate, not a raw reuse |
+
+Do not assume validate is identity-preserving, idempotent or wrapper-free. A
+returned checked Generic/Rust can differ from the authored receiver. Construct
+its descendant using that checked predecessor, and validate cross-export relations
+on the final effective checked graph. If normalization affects nested references,
+it must preserve/rebind them coherently as part of the qualified normalizer before
+acceptance; changing one parent field after admission invalidates that evidence.
+Independent revalidation/cloning of each component that detaches parent references
+or wraps callables under stale evidence cannot be accepted.
+
+Within a constructed Rust Scope, Rust.parent refers to its actual required-edge
+checked Generic entry; Integration.parent refers to the returned Rust exported
+there. A later Scenario's separate Generic requirement may have a different
+consumer-local normalized view. Corroborate its actual provider/source/family and
+qualified normalization association with Rust's recorded parent; do not substitute
+it into an already admitted Rust, require raw eq? across all consumer views or
+accept equal printed identity strings as lineage proof. Unsupported/incompatible
+normalization refuses that route; no optimistic semantic equivalence is invented.
+
+Opaque parent/descriptor association fields do not recursively execute one
+another's Contracts. Reuse S1 effective value shapes and actual contextual
+relationship checks; source-qualified checked references need no objects -> Types
+-> objects self-validation loop. Construction is once per successful actual
+linked Scope, not a new global singleton guarantee. New/failed contexts can
+construct other instances, with their own evidence and guards.
+
+* SPECIFIED Failure, cache, currentness and direct migration
+:PROPERTIES:
+:CUSTOM_ID: s2-failure-and-migration
+:END:
+
+| Event | Required state and boundary |
+|-------+-----------------------------|
+| Wrong/missing Config/role/parent/policy/export/semantic revision | Stop affected construction/admission; publish no successful child or Scope with placeholders. Independent previously accepted provider evidence remains historical/valid only at its own current scope |
+| Requirement refuses or source/realization changes | No child factory using raw fallback; no alias bound from a discarded candidate. Preserve actual diagnostic/source occurrence; existing failed-session policy still applies |
+| Child graph/Function/final Scope normalization fails | No partially constructed current Scope/cache entry. Already admitted upstream provider is not globally rolled back or relabeled as the failed child |
+| Final source/currentness check fails | No new successful cache insertion or current return for that route; actual known previous values retain only their original identity, not successor eligibility |
+| Public presentation/export fails after actual accepted link | Preserve actual owner/evidence state and report unavailable export; no claim that the real accepted operation or an unrelated owner was rolled back |
+| Source, descriptor, policy, parent, Config or implementation changes later | Re-evaluate affected selection/link/currentness under actual guards and input closure; do not return stale cached graph because identity/version/fields look equal |
+| Independent consumer or new source context | Required-edge normalization/evidence stays local to that actual consumer; no global cached Parent/definition transplanted by a helper |
+
+Keep existing active-cycle guards, current-source/selection checks and failed
+context behavior at Core. No cross-owner transaction or rollback is promised;
+Library/Config evaluation may have already performed real reads/composition.
+S2's declaration path performs no project/tool scans or method/authority effects,
+but cannot retroactively undo unrelated arbitrary effects a malformed extension
+attempted. Such a route is refused, not qualified by a fake rollback receipt.
+
+Implementation order is S1 expected Types/actual supported definitions -> Core
+normalized provider/edge/final handoff controls -> Generic objects/Config/exports
+-> Rust/Integration/policies and sole semantic declarations -> deferred consumers/
+Function wrappers/complete exports -> coordinated active caller/test migration.
+Actual implementation work can be grouped to avoid publishing incompatible halves;
+public exposure waits for all its real requirements. Remove generic-entry and
+resource-slice-entry active aliases directly; retain historical artifacts in their
+original meaning without maintaining two accepted current paths.
+
+* SPECIFIED S2 operation and current-owner prerequisite
+:PROPERTIES:
+:CUSTOM_ID: s2-audit-owner-prerequisite
+:END:
+
+Actual deferred bodies and expected Contracts precede full Scope exposure; they
+need not execute tools or import a future Scenario capture during construction.
+The newly observed removal of linked ASCENT application protocol modules is a real
+source/owner prerequisite for affected operations; retain exact checked handoffs
+and keep incomplete full publication unavailable rather than expose fake stubs.
+
+[[file:10.64-contract-consistency-and-implementation-order.org::#s1-s9-consistency-audit][10.64 whole-chain audit]] supplies exact change/closure rules and remaining gates.
+
+* SPECIFIED Positive and matched negative acceptance
+:PROPERTIES:
+:CUSTOM_ID: s2-publication-acceptance
+:END:
+
+SX01-SX32 refine PB/CT/TY and related SC/ME/PQ/JA requirements at actual S2
+boundaries. These are unexecuted detailed cases, not additional executed passes
+or an automatic change to WP10's 248-row high-level inventory. Bind source/compiled
+instances to existing Core and Library owner test/filter/API/evidence/oracle seams.
+
+| Control / actual boundary | Positive condition | Matched negative / retained state |
+|---------------------------+--------------------+------------------------------------|
+| SX01 / complete Generic | Returned checked Config/Generic and source family/role fields coherent | Missing contract/premise/capability or raw Config used after validation; no accepted incomplete Scope |
+| SX02 / actual required Parent | Rust consumes requirement-evidence.candidate from its real Parent edge | Direct abstract import, global lookup or raw provider.scope substitutes; refuse edge/lineage |
+| SX03 / immediate parent graph | Returned Generic -> Rust -> Integration with inherited meaning and actual references | generic-entry alias, skipped/cyclic/foreign parent or stale raw predecessor; refuse |
+| SX04 / separate fixed roles | Full child shape checked against its own fixed identity/parent Contract | Generic/Rust concrete identity constraints inherited into a different role or unknown child fields ignored; fail |
+| SX05 / two policies | Own bounded/design identity, applicability/revision/criteria under same family | Bounded policy used for design review, model parent on policy or candidate chosen descriptor; refuse |
+| SX06 / authored revision/version | Read one actual family generation; source-authored policy semantic revisions distinct | Missing design revision, copied generation, invented counter or Namespace suffix selects meaning; refuse |
+| SX07 / Config responsibility | Generic entry selection and Rust closed no-options retained | Unused purpose retained as allowed semantic knob, Config chooses parent/policy/project/grant or alternate factory; refuse |
+| SX08 / sole mapping/delta | Objects own exact case/domain/mapping/delta and renderers read it | Method constructor or generator maintains second accepted case list/mapping label/transition semantics; refuse migration |
+| SX09 / delta implementation | Supported generator honors selected guard/effect/frame and original model dependencies | Delta label moves but renderer ignores it, drops frame field or accepts unsupported domain; independent oracle refuses |
+| SX10 / full exports | Both models/policies/expected Contracts/parameters/C/callable associations present | Missing policy pair or silently optionalized unsupported required operation; no full Rust Scope |
+| SX11 / normalized Config entry | Deliberately nonidentity normalization's returned Config/entry is actually exported | Validate then read original Config or reintroduce authored raw entry; fail identity/behavior oracle |
+| SX12 / checked publication | Existing actual publication candidate retained in owner checks/link records | Raw publication used for ownership/dependencies after admission; refuse stale/wrong subject |
+| SX13 / required-edge candidate | Actual requirement normalizer returns distinguishable receiver/function consumed by child factory | Final Scope normalization alone hides raw required-edge binding; fail consumer-observation oracle |
+| SX14 / original provider provenance | Provider original scope/evidence stays coherent; edge evidence describes its own receiver | Mutate provider.scope while keeping old evidence or overwrite global provider cache with edge view; fail isolation |
+| SX15 / actual realization | Effective realized input admitted through expected edge Contract and current guards | Treat realization as preapproved or normalize baseline instead of actual realized input; no accepted edge |
+| SX16 / export binding order | Actual .bind-publication return is final Scope admission input with source/owner binding | Discard binding return, run it after final admission or omit its actual context; no matching admitted Scope |
+| SX17 / final Scope candidate | Real nonidentity Scope normalization is record.scope and consumer return | Store/return raw scope-value while evidence describes normalized Scope; fail direct identity/behavior check |
+| SX18 / coherent nested graph | Normalization preserves actual checked parent/leaf/policy/callable cross-references | Independently cloned nested receivers, stale lexical parent or post-admission .cc patch; refuse coherence |
+| SX19 / Function wrappers | Actual returned wrappers enforce expected arguments/results and remain published | procedure?-only/raw function or discarded input/output wrapper passes; fail at correct boundary |
+| SX20 / repeated admission semantics | Legitimate receiver changes handled without assuming validate idempotence/eq? | Raw-equality shortcut rejects valid distinct checked view or string equality admits unrelated view; refuse wrong inference |
+| SX21 / two consumers | Same provider has independent expected normalized edge views and unmodified produced Scope | One consumer contaminates another's Parent/functions/evidence; fail isolation despite same provider label |
+| SX22 / source mutation | Changed source/descriptor/policy/parent/read basis invalidates affected current link | Same generation/name or restoring bytes revives known stale evidence; no current fallback |
+| SX23 / failed edge | Actual requirement refusal prevents child factory/cache publication | Factory runs on raw fallback or failed candidate enters bindings; fail and preserve diagnostics |
+| SX24 / failed final admission | No successful partial child Scope; valid independent provider remains scoped | Cache before final checks, erase valid upstream or claim all-owner rollback; fail state oracle |
+| SX25 / effect/read guards | Existing eligibility/currentness/closed read-window rules preserved around author operations | New broad cache skips validator/getter/factory/bind callback source guard; no qualified publication |
+| SX26 / cyclic demand and cold sibling | Actual graph cycle refuses; independent parent-only explicit route leaves disabled unrelated owner cold | Profile string dynamically prunes already-required provider or forces invalid disabled sibling; refuse unsupported claim |
+| SX27 / per-link construction | One coherent graph per successful link/context; no duplicate semantic constructor path | Process-global family instance, stale helper cache or two active slice APIs create detached graph; fail |
+| SX28 / inert construction | Typed object/Scope/function construction invokes no external method/project scan/authority act | Constructor triggers Rust/QNT/Lean/SysML/content readers/signing or a method default; fail boundary |
+| SX29 / custody of accepted link | Actual final guarded record/currentness retained; later export failure reported separately | Presentation failure invents rollback or relabels an old cached Scope current; refuse state claim |
+| SX30 / direct caller migration | Scenario/Evidence/method consumers use exact checked published leaf/parents/policies | Recreate integration in caller, select validator from candidate, retain generic-entry factory facade; refuse |
+| SX31 / source and compiled routes | Actual owner controls and loaded artifact provenance agree at required lane | S0 older default route, stale SSI/.oN/ABI or source fallback counts compiled normalization acceptance; leave lane unqualified |
+| SX32 / evidence scope | Real future controls retain origins/refusals/negative state and fixed budgets | Static Org/D2, historical q34 build or unrun SX/TY labels close S2/WP00/review/recipient delivery; refuse claim |
+
+Core verification belongs at existing [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/t/module-scope-link-test.ss][module-scope-link-test.ss]],
+[[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/t/admission-checked-publication-test.ss][admission-checked-publication-test.ss]] and relevant real source/selection/admission
+owner seams. Library uses existing [[file:../../../t/library-owner-test.ss][library-owner-test.ss]], [[file:../../../t/library-selection-test.ss][library-selection-test.ss]],
+[[file:../../../t/module-design-test.ss][module-design-test.ss]], [[file:../../../t/native-context-test.ss][native-context-test.ss]] and method/integration tests.
+Positive normalization controls must actually return a distinguishable checked
+receiver/wrapper; identity validators cannot detect the discarded-return defect.
+Observe the factory argument, cached final Scope, actual callable behavior and
+provider/edge evidence separately with independent expected results. None runs here.
+
+* DESIGN S3 handoff and remaining gates
+:PROPERTIES:
+:CUSTOM_ID: s2-design-status
+:END:
+
+S3 receives the exact admitted exported Scope/role/parent/policy/parameter/callable
+associations with actual Core source/selection/currentness and edge provenance.
+It selects supported meaning and acquires unique project C; it cannot repair
+S2 by recopying fields or assuming a role/version label proves source admission.
+Both policy choice and actual project adoption remain distinct.
+
+Remaining work includes the actual S1/S2 source migration, source-authored design
+policy revision/criteria and supported real callables, complete normalizer/edge/
+provider coherence and failure/isolation controls, actual source/compiled loading
+qualification, S0's runtime closure and recovery repair and later full WP10 evidence.
+No graph/source/producer/authority claim becomes qualified from this document.
+
+Only Org and paired D2/SVG change. No implementation/directory/runner/package
+mutation, build, method/model/content/ASCENT/Aitia/acceptance execution, receipt,
+signing, authority act, review submission, actual delivery or recipient use occurs.
+Original 10.34 catalog, S0 byte observations and historical receipts remain unchanged.
+
+#+CAPTION: S2 exact checked parent/object/policy graph, sole mapping/delta owner and Core publication/required-edge/final Scope candidate handoffs.
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.svg]]
+
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][Editable D2 source]]. Target design only; SX01-SX32 are unexecuted acceptance refinements.
+
+[[file:10.56-profile-selection-and-scenario-capture.org::#s3-profile-scenario-capture][10.56 details S3]]: checked Scope/parent/policy selection, complete Profile and
+project input Contracts, owner-separated acquisition and unique C; direct caller
+migration and CX01-CX32 future controls. Normalized values and actual origin/use
+associations are retained; missing governance stays explicit. No implementation,
+acceptance execution, review submission or actual delivery occurs.
+
+[[file:10.57-method-execution-and-evidence-issuance.org::#s4a-method-execution-issuance][10.57 details S4a]]: actual same-C applications/attempts/run groups, complete
+acquired/derived/execution/validation footprints, Core launch/environment boundary,
+method-specific semantics, private W and fresh use, failure retention and selective
+reuse. EX01-EX36 refine existing controls; no implementation, acceptance execution,
+review submission or actual delivery occurs.
+
+[[file:10.58-content-observers-and-reference-closure.org::#s4b-content-observers][10.58 details S4b]]: same-C product/criterion/locator fields and actual owner
+boundaries, independent finite demand closure, architecture/Org/decision/view
+claims, historical/current evidence, semantic attribution and A/E/W/use association.
+OX01-OX36 refine existing controls; missing/conflicting/stale inputs and fresh reuse
+remain explicit. No implementation, acceptance execution or actual delivery occurs.
+
+[[file:10.59-ascent-projection-and-query-view.org::#s5-ascent-projection-query][10.59 details S5]]: complete C/D/K/A/E/G/W/U/basis relations, actual producer/use
+and independent duty projection, missing/counter/conflict/coverage semantics,
+existing Session prospective acceptance/rollback and postcommit failure boundary,
+owned determinate Q and exact Aitia handoff. QX01-QX40 are future controls;
+no implementation, acceptance execution, review submission or delivery occurs.
+
+[[file:10.60-aitia-review-adaptation.org::#s6-aitia-review-adaptation][10.60 details S6]]: exact C/Q to inert R, adopted policy/project revision/roles/
+products, purpose-specific context/inventory/criterion checks and lossless negative
+assessment, actual common Host/Core receipt/current-use/replay boundaries.
+Causal Software Engineering is the research object for critical comparison of
+claim/assumption/identification/uncertainty handling. Framework mappings are
+proposals to test, not paper authority, demonstrated superiority or an estimator. RX01-RX40 remain future controls;
+no implementation, acceptance execution or review submission occurs.
+
+[[file:10.61-history-authority-and-reassessment.org::#s7-history-authority-reassessment][10.61 details S7]]: exact C/Q/R/H, independently required history, scoped
+principal/grant/action checks, accepted inclusion/current use, immutable negatives,
+repair/exception/supersession/withdrawal and qualified custody. Assumption failure
+triggers scoped reassessment without false zero-effect or authority inference.
+The paper is critically studied through competing designs/falsifiable RQ1-RQ6,
+not treated as a normative source or demonstrated improvement. AX01-AX44 are
+future controls; no implementation, acceptance execution or review submission.
+
+[[file:10.62-library-delivery-and-recipient-use.org::#s8-library-delivery-recipient-use][10.62 details S8]]: exact producer C/Q/R/authority and finalized manifest,
+product/reference/access closure, actual arrival and receiver-owned verification,
+new receiver C/Q/R/adoption/current use. Missing/withdrawn/replayed status and
+claim-specific causal applicability remain explicit; selective reuse is a research
+hypothesis compared against full revalidation. DX01-DX44 are future controls;
+no implementation, acceptance execution, review submission or actual delivery.
+
+[[file:10.63-case-joint-acceptance-plan.org::#s9-case-joint-acceptance][10.63 details S9]]: actual file/entry/lane and owner-artifact matrix, G0-G8
+source/compiled/load/cold/recovery/receiver through-gates, exact finite budgets,
+negative/assumption-change correctness and separate critical research comparison.
+Original 248 rows and stage refinements retain identity; JX01-JX44 are future
+joint controls. OJ01-OJ12/BS01-BS09 remain open until actual owner evidence;
+no implementation, acceptance/research execution or actual delivery occurs.
+
+* SPECIFIED P0 checked Scope and publication prerequisite
+:PROPERTIES:
+:CUSTOM_ID: s2-p0-checked-scope-prerequisite
+:END:
+
+[[file:10.65-ascent-migration-and-contract-handoff.org::#p0-core-contract-delta][10.65]] confirms that publication owner checks use the checked candidate, while requirement Scope, final Scope and Context handoffs in Core link.ss still discard relevant returned candidates. Their repair belongs to Core, with currentness/cache checks over actual downstream values. The types.ss migration does not close SX acceptance. [[file:10.65-ascent-migration-and-contract-handoff.org::#p0-build-and-load][Supported Flow exports and build/load provenance]] must also close before compiled Scope qualification.
+
+* SPECIFIED S2 consumer boundary for complete P1 Types
+:PROPERTIES:
+:CUSTOM_ID: s2-p1-effective-return-boundary
+:END:
+
+[[file:10.66-effective-types-and-contract-closure.org::#p1-normalization-and-validation][10.66 P1 consolidation]] defines the effective refinement.
+S2 constructs only the complete expected model/policy/Scope/callable values. Core checked Context, requirement Scope and final Scope must be the downstream subjects, not pre-normalized inputs. Read ownership/open-callback rules remain. Complete shape does not prove actual origin, publication, policy adoption or method adequacy.
+
+* SPECIFIED P2 unified construction and Core return path
+:PROPERTIES:
+:CUSTOM_ID: s2-p2-unified-publication
+:END:
+
+[[file:10.67-library-construction-publication-and-scope-handoff.org::#p2-construction-publication][10.67 P2 consolidation]] defines this handoff.
+P2 consolidates the S2 graph with current P0 ownership and P1 effective fields. It includes checked Context retention, provider/consumer-edge isolation, final Scope candidate retention and real operation binding before exposure. LP01-LP28 refine SX obligations without executing or replacing them.
+
+* SPECIFIED P3 consumption of actual returned Scope
+:PROPERTIES:
+:CUSTOM_ID: s2-p3-consumer-edge
+:END:
+
+[[file:10.68-profile-selection-scenario-binding-and-capture.org::#p3-profile-parent-policy][10.68 P3 consolidation]] defines this boundary.
+Scenario aliases consume the actual final and required-edge candidates from Core, preserving provider evidence and consumer-local normalization. Profile cannot supply a raw Scope, replace Rust.parent, build Integration or repair discarded Core returns in a wrapper.
+
+* SPECIFIED P4 actual operation and source prerequisite
+:PROPERTIES:
+:CUSTOM_ID: s2-p4-real-operation-use
+:END:
+
+[[file:10.69-method-content-execution-and-evidence-issuance.org::#p4-owners-and-values][10.69 P4 consolidation]] defines this boundary.
+P2 real callable bindings precede exposure; P4 consumes those exact checked definitions/wrappers and P3 C. Publication runs no methods and does not prove their results. Actual execution/read/observer/issuer/load dependencies must be retained, including real shared assembly sources.
+
+* SPECIFIED P5 Evidence publication boundary
+:PROPERTIES:
+:CUSTOM_ID: s2-p5-evidence-publication
+:END:
+
+[[file:10.70-ascent-projection-and-determinate-query-view.org::#p5-owners-and-operations][10.70 P5 consolidation]] defines this boundary.
+Evidence Scope exports real checked open/prepare/commit/query operations and expected Contracts, with actual program/owner/source association. No public raw Session mutation, fake body, second source mirror or Library method fact-store role. Core returned candidate/Function coherence remains prerequisite.
+
+* SPECIFIED Checked review operation publication
+:PROPERTIES:
+:CUSTOM_ID: p6-follow-up-55
+:END:
+
+[[file:10.71-aitia-review-adaptation-and-current-use.org::#p6-current-source][10.71 P6 consolidation]] defines this boundary.
+Scope publishes real normalized preparation/verification/use/assessment operations and expected Contracts. Scenario cannot supply arbitrary trusted callback/clock values; generic Host mechanics factor at Aitia while Core retains private issuance.
+
+* SPECIFIED Actual authority operations and custody
+:PROPERTIES:
+:CUSTOM_ID: p7-follow-up-55
+:END:
+
+[[file:10.72-history-authority-reassessment-and-withdrawal.org::#p7-current-source][10.72 P7 consolidation]] defines this boundary.
+Checked Scope publishes real expected operations and normalized wrappers. Core retains issuance/graph primitives; Aitia owns pure authorization; project sources/signatures/serialized custody own real acquisition and effects. Candidate callbacks cannot select trust.
+
+* SPECIFIED Delivery consumes actual checked publication
+:PROPERTIES:
+:CUSTOM_ID: p8-follow-up-55
+:END:
+
+[[file:10.73-library-delivery-and-recipient-adoption-use.org::#p8-current-source][10.73 P8 consolidation]] defines this boundary.
+Library exports real checked normalized model/policy/parent/Contract/Function associations. No transport/recipient/grant settings enter Library Config; actual channel/custody and generic Aitia semantics remain at their owners.
+
+* SPECIFIED Publication and candidate qualification
+:PROPERTIES:
+:CUSTOM_ID: p9-follow-up-55
+:END:
+
+[[file:10.74-case-joint-acceptance-and-research-plan.org::#p9-gates-and-lanes][10.74 P9 consolidation]] defines this boundary.
+G1/G2 require actual Generic->Rust->Integration/sibling policies/mapping ownership and retained normalized Context/requirement/final Scope/Function. Every claimed source and compiled owner must be genuinely built/loaded.

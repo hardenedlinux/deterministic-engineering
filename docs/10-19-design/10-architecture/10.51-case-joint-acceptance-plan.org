@@ -1,0 +1,514 @@
+#+TITLE: 10.51 DE-CASE-01 Joint Acceptance Plan: WP10 Detailed Design
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.51
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+TODO: AUDITED DESIGN SPECIFIED | QUALIFIED
+#+FILETAGS: :design:qualification:acceptance:case:recovery:recipient:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.41-workflow-gap-audit.org::#integrated-refactoring-dependency-order][WP00-WP10]] | [[file:10.42-library-types-and-contracts.org][Types]] | [[file:10.43-library-objects-and-publication.org][Publication]] | [[file:10.44-profile-selection-and-scenario-capture.org][C]] | [[file:10.45-method-execution-and-evidence-issuance.org][A/E/W/use]] | [[file:10.46-content-observers-and-reference-closure.org][Content]] | [[file:10.47-ascent-projection-and-query-view.org][Q]] | [[file:10.48-aitia-review-adaptation.org][R]] | [[file:10.49-history-authority-and-reassessment.org][History/authority]] | [[file:10.50-library-delivery-and-recipient-use.org][Delivery/recipient]]
+
+* DESIGN WP10 scope and acceptance meaning
+:PROPERTIES:
+:CUSTOM_ID: case-joint-acceptance-plan
+:STATUS: Joint qualification design only; no implementation, acceptance execution, review submission or delivery
+:END:
+
+WP10 qualifies the complete DE-CASE-01 slice against the actual selected policy:
+checked Library publication -> Profile selection -> unique Scenario C -> actual
+method/content A/E/W and qualified use -> determinate Q -> exact R and independent
+context/content verification -> authoritative history and scoped accepted actions
+-> exact authorized delivery -> recipient-owned verification, capture, review,
+adoption and current intended use. WP00's supported source/compiled/cold/recovery
+lane is mandatory for the corresponding end-to-end claim.
+
+This plan defines future executable controls, artifacts, owners and gates. It
+does not declare the target refactoring implemented, populate missing reviewer
+appointments, issue evidence, authorize any real operation or supply an acceptance
+result. Role names below assign engineering responsibility, not actual people.
+Org/D2 lint/render success is documentation validation only.
+
+Acceptance is a conjunction over an independently declared finite requirement
+inventory and required lanes. It is not a count of green assertions, majority
+vote, report status, execution exit code or timestamp winner. Known negative
+controls must succeed by producing the specified refusal/counter/pending result
+and preserving the required history. A rejected use can be correct behavior;
+that test pass is not permission for the rejected operation.
+
+The final policy/scope/roles/source/trust inputs and concrete expected control
+matrix must be bound before execution. Today's design does not pretend that a
+runnable, adopted plan or current C already exists. Missing preconditions leave
+the affected gate blocked and the full slice unqualified.
+
+* AUDITED Existing validation entry points and gaps
+:PROPERTIES:
+:CUSTOM_ID: joint-acceptance-entry-audit
+:END:
+
+Audit basis: HEAD 8044732d505f84e373119a70f947df00e1767300 plus the active dirty
+checkout, inspected source and retained design evidence. No command in this
+section is executed in this task. Source inspection establishes entry shape,
+not a current passing result.
+
+| Current file / entry | Present coverage and target migration |
+|----------------------+---------------------------------------|
+| [[file:../../../Justfile][Justfile]] / build; [[file:../../../build.ss][build.ss]] | Bounded Gerbil build using init.build-spec/build-run. Current roots are init, gateway example, resource Profile and lifecycle example; this is not complete compilation of integration, all tests, Aitia/Core or future observers/adapters |
+| just test; test-file; test-gateway | Basic Library/selection/context/design, seven gateway groups, dependency compatibility and package metadata. test-file checks harness/module/suite/case/final markers under a 120-second fence. The test aggregate omits the full resource/method/review/recovery/recipient slice |
+| [[file:../../../t/library-owner-test.ss][library-owner-test.ss]], [[file:../../../t/library-selection-test.ss][library-selection-test.ss]], [[file:../../../t/module-design-test.ss][module-design-test.ss]], [[file:../../../t/native-context-test.ss][native-context-test.ss]] | Existing parent/role/Profile/source-bound capture/refusal checks. Migrate assertions with WP01-WP03; current generic-entry and split Scope assumptions cannot be retained as an alternate accepted target route |
+| [[file:../../../t/package-metadata-test.ss][package-metadata-test.ss]], [[file:../../../t/dependency-compatibility-test.ss][dependency-compatibility-test.ss]] | Real installed manifests/pins/ordinary compiled artifacts and finite independent POO/ASCENT ABI oracle. Extend exact current loaded/build dependency association; these checks alone do not qualify all Library or Aitia behavior |
+| just investigate-resource OUTPUT; [[file:../../../examples/resource-lifecycle-evidence.ss][resource-lifecycle-evidence.ss]]; [[file:../../../t/resource-lifecycle-test.ss][resource-lifecycle-test.ss]] | Actual Rust/QNT/Lean investigation, fresh report and independent bounded assertions. Recipe runs the report check via RESOURCE_REAL_REPORT. Existing 22 results and nine query snapshots remain the old coding fixture, not the new policy's duty inventory |
+| just investigate-resource-integration OUTPUT SYSML; [[file:../../../examples/resource-integration-evidence.ss][resource-integration-evidence.ss]]; [[file:../../../t/resource-integration-test.ss][resource-integration-test.ss]] | Actual optional integration investigation plus D2 render. Recipe does not invoke resource-integration-test; a distinct test invocation requires RESOURCE_INTEGRATION_REPORT. Current 20 results include six case links and trace checks, and explicitly deny complete Rust refinement/authority issuance |
+| just test-backpressure-review; [[file:../../../t/backpressure-review-test.ss][backpressure-review-test.ss]] | Four bounded applicability/reuse/counter/corruption groups; fixture review purposes/subject/policy and synthetic instants are not the full policy-neutral design review or real-time production authority |
+| just investigate-backpressure-reassessment OUTPUT; test-backpressure-reassessment; [[file:../../../t/backpressure-reassessment-test.ss][backpressure-reassessment-test.ss]] | Real old/new Rust runs and retained failure/reconsideration checks. Generalize repair correspondence and authority through WP08; changed source alone cannot resolve a denial |
+| just test-backpressure-cross-intake; [[file:../../../t/backpressure-cross-intake-test.ss][backpressure-cross-intake-test.ss]] | Actual bounded discovery/signature/grant/negative controls. Current fixed test principals/SWE packet are a qualification fixture; they do not appoint DE-CASE-01 reviewers |
+| just test-backpressure-owner-handover; [[file:../../../t/backpressure-owner-handover-test.ss][backpressure-owner-handover-test.ss]] | Separate transfer/reuse groups and optional compiled test loading. Generalize exact C/Q/R/history/policy basis and require the full fresh source cut |
+| just test-backpressure-owner-recovery; [[file:../../../t/backpressure-owner-recovery-test.ss][backpressure-owner-recovery-test.ss]] | Four ordinary processes: producer, restart-one, restart-two, restart-three. Full DR01-DR21 branch expectations and fresh private issuance must hold; second ordinary restart remains timed out historically |
+| just test-backpressure-durable-intake; test-backpressure-prefix-repair; same recovery test | Real interruption branches; three expected killed intake phases, later pending replay and exact-prefix repair/replay. A killed branch passes only its explicit interruption protocol; it is never ordinary recovery success |
+| [[file:../../../t/backpressure-archive-cache-test.ss][backpressure-archive-cache-test.ss]], [[file:../../../t/backpressure-registration-batch-test.ss][backpressure-registration-batch-test.ss]] | Exact byte/signature-cache and batch/partial-publication checks exist. No dedicated recipe in the current justfile; their required environment/inputs and compiled load selection must be supplied by the future joint orchestrator |
+| just test-producer-source-custody; [[file:../../../t/producer-source-custody-test.ss][producer-source-custody-test.ss]] | Exact historical producer archive and live-consumer distinction. Requires actual custody/source/acceptance artifacts; it is not full portable Library delivery/adoption/use |
+
+Current recipes reference historical .data directories and support environment
+loadpath/compiled-library overrides. These are explicit historical inputs, not
+an exact current qualification closure. A future orchestrator must bind and
+check actual roots, manifests, source/build/loaded identities, environment and
+fresh output directory, without overwriting those historical paths or silently
+falling back to them. Merely invoking every existing recipe cannot implement
+WP01-WP09 or close WP10.
+
+* SPECIFIED File ownership and verification-call boundaries
+:PROPERTIES:
+:CUSTOM_ID: joint-acceptance-file-ownership
+:END:
+
+| Existing seam / accountable responsibility | Target joint qualification work |
+|--------------------------------------------+---------------------------------|
+| justfile; build.ss; init.ss; gerbil.pkg; manifest.ss / integration owner | Directly migrate caller/build roots and bounded serial recipes; explicit source/compiled modes, actual dependencies and stage prerequisites, exact filters/case inventory and exits. Do not keep a compatibility path to old capture/authority semantics |
+| Library abstract/rust types, objects, config, interface; Profile and Scenario files / semantic owners | Implement and qualify WP01-WP03 declarations, single generation owner, immediate parent chain, selected independent policy and sole C. The harness consumes real publication/capture operations, not a parallel test declaration registry |
+| rust/methods.ss; correspondence.ss; oracle.ss; model.qnt; budget.lean; rust/native/src/main.rs / method owners | WP04 actual Ops, input/result provenance and result semantics with independent finite method oracles. Change experiment inputs in isolated case copies; preserve source/control evidence |
+| WP05 proposed ordinary content/observer units; actual Org/model/decision sources / content owners | Bounded required-product/reference closure and substantive semantic findings; no link/hash/render stand-in for semantic review |
+| modules/resource-evidence/types.ss, func.ss, interface.ss; linked gerbil-ascent Session / projection owner | WP06 required/actual/application/use relations, qualified program/source acceptance and exact complete Q. Exercise real transaction/currentness boundaries; do not fabricate accepted row or Session handles |
+| Linked Aitia modules/sdlc/types.ss, objects.ss, review.ss, review-authority.ss, proposed review-verification.ss and shared Host factoring / Aitia owner | WP07-WP09 expected request/facts/purpose, genuine local issuance/currentness, real history/action scope and recipient semantics. Add owner-level tests in Aitia's actual test owner when implementing, rather than prove upstream behavior using a local always-true callback |
+| review/func.ss, cross-intake.ss, reassessment.ss, archive.ss, signatures.ss / project custody adapter owner | Actual project input/custody/accepted source cuts, persistent negatives, repair/withdrawal and recovery. Retain owner limits, selected prefixes and status semantics; no second decision log |
+| Existing t files above; examples/resource-*.ss / qualification owner | Direct migration of existing entry/test semantics and honest old report compatibility as historical readers only. A readable old artifact cannot enter the target acceptance lane as current issued evidence |
+| Proposed t/de-case-joint-acceptance-test.ss / joint qualification owner | Ordinary future orchestration/cross-boundary controls over real APIs and independently required cases, with retained attempts and exact artifacts. This file does not exist and is not created here |
+| Proposed t/library-recipient-test.ss; WP09 proposed review/delivery.ss; actual receiving repo adapter / recipient owner | Future isolated real receiver source/compiled/adoption/use controls with actual selected trust/status/transport capabilities. No existing complete recipient runner is claimed |
+| Existing documentation indices and 90.99 D2/SVG / document owner | Display exact bound results/limits and open items after future verification. Diagrams and exported HTML never issue W, acceptance or authority |
+
+The orchestrator invokes actual expected-Contract operations, capture/method/
+observer owners, Session acceptance, Aitia verification/authority and recipient
+owners. It can retain their real outputs and compare independent expected
+observables; it cannot replace their private issuers or mint an approved? flag.
+Core/POO/ASCENT/Aitia defects are repaired and tested at their real owners.
+No upstream/source/test/build file changes are made by this design task.
+
+* SPECIFIED Predeclared inventory and evidence products
+:PROPERTIES:
+:CUSTOM_ID: joint-acceptance-plan-and-artifacts
+:END:
+
+A future plan binds case/purpose/policy/scope, actual expected duty/control list,
+required execution lanes, source/dependency/compiled/runtime/tool/OS roots,
+commands/arguments/environment/cwd, finite budgets, actual role/trust/transport
+mandates, expected observation/exit semantics and retained artifact routes.
+Expected demand is independent of offered observations and discovered tests.
+Do not derive required cases from whichever runner happens to report success.
+
+| Evidence product / owner | Required retained association and acceptance boundary |
+|--------------------------+-------------------------------------------------------|
+| Source and execution basis / integration owner | Exact repo/worktree/HEAD plus dirty/untracked content, symlink origins and dependency checkouts; package manifests, actual compiler/VM/engine/tools and binaries, environment/foreign libraries and supported platform. HEAD equality alone is insufficient |
+| Build and loaded-artifact record / build + runtime owners | Exact compile roots/options/inputs/output identities, command logs and exits; actual .ssi/.o1/foreign artifacts and loaded module paths/identities in each process. Compilation success alone cannot prove those outputs were loaded |
+| Control expectation matrix / qualification owner | Document-qualified control identity, requirement/duty, real API/test filter, lane, positive assertion, matched negative perturbation, independent expected observation, budgets and expected exit class; mandatory/conditional selection rationale |
+| Attempt transcript / actual runner | Unique stage/attempt/parent process identity and actual command/start/end/exit/signal/watchdog/grace status; unfiltered stdout/stderr, resource limits/measurements and actual output identities; earlier failures retained |
+| Technical C/A/E/W/use and content basis / real producers | Original C, actual attempts/issuance, complete input/artifact/validator footprints and semantic claims; original W plus fresh use for reuse; required product roles/closure and genuine semantic findings. Exported records are inspectable data, not cloned private authority |
+| Accepted Q / projection owner | Qualified actual program/schema/engine/source set, accepted result, exact complete request/output/limits and trace to required duty/C/A/E/W/use; pending/counter/conflict retained |
+| R/verification/authority dossier / Aitia + project owners | Exact finalized R, independent context/content findings, current real receipt-use, required H, roles/grants and accepted scoped actions with later inclusion/status checks; no future output in its own input hash |
+| Recovery handoff set / custody owner | Exact retained accepted prefix/origins/current signed selected head, activated/retired actual owners/readers; interruption boundary evidence, byte identities and independent recovery oracle findings |
+| Delivery/receiver dossier / actual owners | Exact manifest/closure/authorization/arrival/acknowledgement, receiver-owned trust/verification/C/Q/R/adoption/current use and status/effect associations; original provider scope retained |
+| Joint verification report / qualification owner | Required-versus-observed controls/lanes and exact evidence links, unresolved differences/waivers/counters, independent oracle findings and status per gate. A report is a derived observation, not the actual project acceptance decision |
+| Acceptance/disposition record / actual project authority | Exact plan/current source/qualified report/C/Q/R/history/policy/roles and permitted acceptance scope; separate real authorized act. A test result alone does not submit or accept DE-CASE-01 |
+
+Retain artifacts in fresh owner-qualified attempt directories using the existing
+custody/access operations. Paths are locators; durable accessible bytes, trust,
+content identity and exact typed associations are required. No new generation
+field or version registry is introduced. Read Library generation from the single
+WP01 declaration-contract owner; record semantic revisions/build identities
+separately. Result files refer to finalized prior inputs; the report and later
+acceptance record do not hash themselves into those original inputs.
+
+An independent oracle may share canonical parsing/identity helpers only where
+this cannot duplicate the same semantic mistake. Expected state/duty/transition/
+negative retention must come from explicit requirements or independently authored
+finite references, not the production query result copied into gold. Mutate an
+oracle-relevant input while preserving report status/count to test that the oracle
+actually rejects. New content/adoption joint oracles remain to be implemented.
+
+* SPECIFIED Execution lanes, order and through-gates
+:PROPERTIES:
+:CUSTOM_ID: joint-acceptance-lanes-and-gates
+:END:
+
+| Gate / execution lane | Future entry/basis -> evidence -> required result |
+|-----------------------+--------------------------------------------------|
+| G0 / plan and exact qualification basis | Predeclared policy/duties/control/lane inventory, actual appointments/mandates/trust and exact supported environment -> checked plan/source/dependency/currentness cut. Missing mandatory input blocks that positive lane; negative/mechanical work can remain separately scoped |
+| G1 / source publication and capture | Existing test-file entries for Library/selection/design/context plus migrated WP01-WP03 cases -> real checked publication and one C; all selected source controls and unsupported/forgery cases meet independently expected outcomes |
+| G2 / build and compiled load | Bounded build plus explicit missing dependency/Aitia/integration/test roots; package/ABI checks and actual loaded-artifact inspection in a fresh process -> exact qualified compiled closure, loaded path/byte proof and equivalent required semantic outcomes |
+| G3 / actual methods and content | Migrated investigate-resource/integration plus actual mandatory WP05 observers/findings -> real C-bound A/E/W/use and required product/reference/content observations; expected support/counter/pending semantics and true origins retained |
+| G4 / projection and review | Real WP06 Session acceptance -> complete Q -> WP07 R/context/content checks -> independent technical findings; rejects mixed basis, omitted mandatory duties, incomplete query and cloned/expired/currentness-invalid receipt-use |
+| G5 / history and authority | Migrated review/cross-intake/reassessment + actual scoped project roles/actions -> complete required H, retained accepted negatives, explicit authorized repair/exception/replacement/withdrawal and accepted inclusion/current-use; no favorable filtered history |
+| G6 / cold and recovery | Fresh source and compiled process variants; handover/recovery/durable-intake/prefix-repair/cache/batch seams -> full planned ordinary natural exits and exact expected interruption/recovery results, current selected custody/reader and fresh verification |
+| G7 / recipient verification and adoption | Qualified WP09 manifest/authority and actual isolated receiving repo/context -> exact acknowledged closure, receiver verification, own eligible publication/C/A/E/W/use/Q/R and accepted adoption/current use; wrong purpose/recipient/status replay refused |
+| G8 / joint report and disposition | Independent complete mandatory coverage across G0-G7 at compatible exact cuts -> derived joint report with all open items; actual authority may later assess/accept only that declared scope through WP08. Generating a report never performs acceptance/delivery |
+
+Dependencies are semantic rather than merely chronological. G1/G2 mechanics can
+be developed while G0's real appointments are pending, but that does not permit
+G5/G7 positive authority claims. WP04 and WP05 can run independently only against
+the same qualified C. Downstream gates consume actual upstream accepted outputs,
+not saved public status strings. A later change invalidates affected evidence/use
+and downstream gates according to actual footprints, while retaining original
+observations; it does not force unrelated work to be relabeled current.
+
+** SPECIFIED Source, compiled and cold distinctions
+
+Source lane means actual source-mode selection/loading of the relevant project
+units in a fresh process, with explicitly identified precompiled dependency
+closure where required. It does not mean every dependency was interpreted.
+Compiled lane means actual qualified compilation and inspection of loaded output
+for every unit covered by the claim, including tests/adapters where required.
+Do not infer either lane merely from a launcher named gxi or a .ss/.ssi argument.
+An earlier compiled test path check covers its named units only; WP10 extends
+actual provenance to the selected required closure.
+
+Cold here means a new process/VM, no inherited live C/W/receipt/admission/Session
+or trusted reader cache, an explicit loadpath and fresh attempt outputs. It is
+not a claim that OS page caches are empty, and does not require deleting global
+package caches or historical data. Archived evidence may be supplied explicitly
+as data; each new process re-establishes real current local verification/custody.
+Separate fresh-rebuild qualification from fresh-process use of retained compiled
+artifacts. Both must name actual inputs; neither proves the other's behavior.
+
+Ordinary cold/recovery runs must finish all planned cases, harness/oracle checks
+and natural exit zero under the fixed limit, including shutdown. A last passing
+assertion followed by timeout/kill, a stale source cut, zero discovered cases or
+an incomplete phase sequence cannot pass. Resource admission and semantic
+correctness remain separate reported dimensions.
+
+** SPECIFIED Recovery and receiver scope
+
+Ordinary recovery requires every producer/restart-one/restart-two/restart-three
+phase and complete DR01-DR21 expectations at the new target semantics. Handover
+requires both current groups, exact predecessors/accepted negatives and retired
+writer refusal. Durable intake and prefix repair retain every declared killed
+boundary, actual partial bytes and later fresh-process refusals/authorized repair.
+A signature-cache hit still checks complete current byte/status closure; a batch
+must preserve the prior accepted cut on precommit failure and distinguish actual
+postcommit export failure.
+
+Process interruption qualification does not establish power-loss/fsync or general
+distributed crash atomicity. Any stronger required deployment boundary must have
+its real storage/fencing/transport owner qualified separately. No before/after
+hash or local reader map is promoted to distributed serialization.
+
+Receiver qualification needs a distinct actual project root and custody/process,
+with its own project assumptions, roles/policy/trust adoption and C/Q/R, not only
+a copied producer report or renamed Profile. Test a permitted declared operation
+through its real use owner. General cross-host/offline claims require that actual
+route's independent trust/current-status and effect-boundary controls; a same-host
+isolated receiver establishes only that narrower scope. Runtime deployment is
+outside this slice unless separately and explicitly selected/authorized; no
+review/adoption result grants deployment implicitly.
+
+* SPECIFIED Fixed budgets and harness/oracle acceptance
+:PROPERTIES:
+:CUSTOM_ID: joint-acceptance-budgets-and-harness
+:END:
+
+| Current bounded entry / resource meaning | Required retention and target condition |
+|------------------------------------------+-----------------------------------------|
+| just build: 180 seconds; test-file: 120 seconds | Preserve actual pre-import fence and Gerbil 2 GiB maximum heap for both launcher and test VM where used; exact supported environment and complete exits recorded |
+| Resource/integration investigation: 600 seconds | Whole investigation envelope is distinct from method-level command limits; record real per-tool limits/process outcomes. One envelope cannot turn an unfinished submethod into support |
+| Review/cross-intake/reassessment/handover/recovery/durable/prefix/custody test processes: 180 seconds | Current recipes use 2 GiB maximum heap and 5-second termination grace; retain per-process limits and all phase identities. Reassessment generation separately uses a 240-second envelope |
+| Actual signature commands and method Ops | Retain their actual declared tool limits, binary/currentness and real exit/log artifacts. A process timeout is incomplete/failure, never a method proof or signed authority result |
+| Target content/projection/recipient/joint entries not yet implemented | Finite expansion/query/process budgets must be explicitly declared and qualified before running. An unset budget means the lane is not ready, not permission to use unbounded defaults |
+
+These are recorded supported boundaries, not performance promises or new version
+literals. The 2 GiB ceiling is Gerbil heap, not total RSS or preallocation. Record
+actual resource measurements separately, host contention/power state and tool/
+process boundaries; use an existing real power guard when appropriate. Do not
+invent a host/GC cause or speedup from a single elapsed time.
+
+The runner must retain raw exit/signal/watchdog and pipeline statuses, complete
+unfiltered log identity and marker/case inventory. Match the exact selected test
+module/filter and expected nonzero case count; actual MODULE-OK, HARNESS-OK,
+SUITE-OK, CASE-OK and final OK markers are necessary where emitted, but not
+sufficient. Independently compare actual expected IDs/results and retained byte/
+history state. Reject module/check/case/harness errors, heap/stack overflow,
+truncation, stale inputs, skipped mandatory cases and missing artifacts even if
+some marker or public passed field exists.
+
+Expected SIGKILL is permitted only for an explicitly planned interruption phase:
+actual process/boundary marker, exact interrupt record and byte closure, matching
+runner status and later independent recovery checks must all agree. Exit 137
+alone can mean watchdog/OOM/unrelated termination and never passes. An ordinary
+phase requires natural zero exit; timeout 124 or termination after watchdog fails
+that phase even if partial gold appears. Preserve the cause and observed grace.
+
+The unchanged failed ordinary-recovery route must not be rerun to seek a lucky
+pass or closed by widening limits. First qualify a concrete source/runtime/build
+repair at its real owner, retain old failures, then run the affected exact new
+basis within the declared limits. An independently adopted new support envelope,
+if ever needed, is a separately identified scope and cannot rewrite old failure.
+No such repair, scope change or execution occurs in this task.
+
+The case associations retain 10.40/10.41's requirement meanings rather than
+introducing a second case taxonomy:
+
+| Existing requirement / duty | Gate and artifact association |
+|-----------------------------+-------------------------------|
+| DE-R01/R03; DE-T01/T03; DE-O-TRACE | G0-G4 checked Contracts/publication/selection/C, exact execution/issuance/use and Q/R linkage; G7 receiver-specific correspondence and G8 complete coverage |
+| DE-R02/R04; DE-T02/T04; DE-O-ARCH/DOC/DEC | G3 actual/target model, interfaces/dependencies/assumptions/boundaries, D01-D10 content/closure and decision rationale; G4 independent content findings and G7 actual recipient products |
+| DE-R05; DE-T05/T06; DE-O-REVIEW/TRACE | G4-G7 real policy/roles/context/content/history/accepted actions, current custody/delivery/adoption/use; G8 actual authorized disposition boundary |
+| DE-R06; all selected case duties | G0-G8 this repo's real current case, exact historical/source limits and unresolved observations; no fixture or target text promoted to actual acceptance |
+
+* SPECIFIED Control coverage from WP01-WP09
+:PROPERTIES:
+:CUSTOM_ID: joint-acceptance-control-coverage
+:END:
+
+The referenced designs specify 216 positive/matched-negative control rows. These
+are design requirements, not 216 executed tests or asserted current passes.
+Control identity is document + ID: WP03's SC01 and the old custody fixture SC01
+are different requirements. Keep the original control IDs and semantic meaning.
+One real invocation can cover several rows only with explicit per-row evidence;
+retries and multi-lane instances are distinct observations, not extra coverage.
+
+| Contract/control family | Expected file/API seam and evidence |
+|-------------------------+-------------------------------------|
+| [[file:10.42-library-types-and-contracts.org::#library-contract-acceptance][CT01-CT15 / 15]] | Actual expected POO effective Types/role/generation/parent boundary, checked normalized values; migrated Library owner/selection tests and linked Core owner tests |
+| [[file:10.43-library-objects-and-publication.org::#object-publication-acceptance][PB01-PB18 / 18]] | Actual object/parent/policy construction and Scope admission/exports/currentness at Library + Core source owner; no declaration-time processes |
+| [[file:10.44-profile-selection-and-scenario-capture.org::#selection-capture-acceptance][SC01-SC20 / 20]] | Profile capability/parameter choice and real guarded owned Scenario C; exact project/provider/roles/dirty inputs, no split capture |
+| [[file:10.45-method-execution-and-evidence-issuance.org::#method-execution-issuance-acceptance][ME01-ME24 / 24]] | Actual Rust/QNT/Lean/SysML Ops, attempts/producers/footprints/private issuance/use and scoped reuse; lifecycle/integration methods and independent oracles |
+| [[file:10.46-content-observers-and-reference-closure.org::#content-observer-acceptance][CO01-CO24 / 24]] | Actual required Org/model/decision/reference/source/history/semantic observer findings; future WP05 tests, not old catalog/hash checks alone |
+| [[file:10.47-ascent-projection-and-query-view.org::#ascent-projection-query-acceptance][PQ01-PQ26 / 26]] | Genuine application-scoped facts, full required duties/use/conflicts and accepted complete Q; actual Session mutation/rollback/export/ownership controls |
+| [[file:10.48-aitia-review-adaptation.org::#aitia-review-adaptation-acceptance][RV01-RV28 / 28]] | Real expected request/purpose/facts/R/actual verifier/clock/source/context/content/current receipt-use; actual Aitia and Core tests plus Scenario adaptation |
+| [[file:10.49-history-authority-and-reassessment.org::#history-authority-acceptance][HA01-HA31 / 31]] | Independent required H, authentic roles/actions/grants/negative retention/repair/exception/withdrawal and real accepted prefix/custody/recovery |
+| [[file:10.50-library-delivery-and-recipient-use.org::#delivery-recipient-acceptance][DU01-DU30 / 30]] | Exact authorized closure/transport/acknowledgement, own receiver trust/C/Q/R/adoption/current intended use and status/effect scope |
+
+For the complete slice, all unconditional requirements and every actually selected
+conditional facet need actual evidence in their relevant source/compiled/cold/
+recovery/recipient lanes. Case/policy owner defines applicability before execution;
+exclude a genuinely optional facet only with an explicit scope reason. Integration
+SysML/projection checks belong to this planned slice; they do not imply the whole
+optional DE-T07 semantic architecture facility is implemented. A missing required
+capability cannot be reclassified optional after a failed test.
+
+* SPECIFIED Joint positive and negative controls
+:PROPERTIES:
+:CUSTOM_ID: case-joint-acceptance-controls
+:END:
+
+These 32 additional cross-boundary rows supplement the 216 contract rows; they
+are not a replacement sample or an execution count. Future oracles must check
+the exact rejection/pending/counter/currentness and retained unrelated scope.
+
+| Control / real boundary | Positive observation | Matched negative and required preserved state |
+|-------------------------+----------------------+------------------------------------------------|
+| JA01 / plan coverage | Required independent duty/control/lane inventory reconciles every observation | Drop a mandatory case from both offered inventory and report; required demand remains, no full acceptance |
+| JA02 / source identity | Exact dirty/project/provider/dependency basis current through actual use | Same HEAD with changed dirty/untracked source or symlink origin; affected use invalid, old evidence retained |
+| JA03 / publication to capture | Real normalized checked Scope and immediate model parents selected into C | Raw Scope/wrong role/generation copy or provider-project root swap; refuse before method execution |
+| JA04 / compiled closure | Exact build inputs/artifacts and observed loaded modules agree in fresh process | Stale .o1/.ssi/ABI, missing compiled test or ambient fallback source; compiled lane fails despite build zero |
+| JA05 / source-compiled meaning | Same specified duties/polarities/limits hold at each genuinely qualified lane | One lane emits different result or silently loads the other; report disagreement, no lane substitution |
+| JA06 / cold identity | New actual process has fresh receipt/Session/reader state with explicit data inputs | Inherited live owner/cache or serialized private IDs count as cold authority; refuse scope claim |
+| JA07 / same C across facets | Actual Rust/QNT/Lean/SysML/content A/E/W/use bind the expected capture and actual inputs | Mix provider C, receiver C, another attempt/run or facet basis; refuse false combined support |
+| JA08 / method result semantics | Six Rust case observations and independent finite oracle retain actual M06 counter | Exit-zero harness or available permit labels retained work ownership safe; counter stays refuted, no holds |
+| JA09 / bounded formal meaning | Actual model/proposition/premises and replay result distinguish claim strength | Lean negation or QNT unfinished violation/path completion relabeled universal implementation correctness; refuse |
+| JA10 / integration trace | Actual Rust parent attempt, case IDs/order/state mapping and tool artifacts agree | Missing/duplicate/reordered/unmapped event or mapping-only change reuses old integration result; refuse current use |
+| JA11 / selective reuse | One true independent footprint change invalidates only affected qualified use | Broad shared checker/tool dependency ignored, or same digest/name invents independence; block affected reuse |
+| JA12 / required products | Mandatory sections/bytes/typed closure and actual-target labels observed | Ten empty headings, unavailable .data ref, ambiguous anchor or target labeled actual; pending/refuted criterion retained |
+| JA13 / substantive review | Actual scoped semantic finding and authentic independent role/inputs bind content | Link/render/hash pass or Agent authorship substitutes for rationale truth/appointment; no semantic success |
+| JA14 / required Q | Actual accepted complete program/source/query view retains duties/unknown/counter/conflict | Empty/favorable subset, forged issuer row or omitted required duty produces ready Q; refuse readiness |
+| JA15 / Session boundaries | Precommit rejection preserves prior accepted result; postcommit export failure retains committed result | Callback truthy-not-true, reentry, partial source update or export error treated as universal rollback; reject false state claim |
+| JA16 / Q to R | Exact actual Q/C/policy/project/purpose and required content enter finalized R | Old/foreign/filtered JSON Q or late input mutation inserted into old R/C; no authenticated review basis |
+| JA17 / purpose-specific verification | Actual context and inventory/criterion assertions separately sealed/current | Context receipt becomes content-holds, provenance becomes adequacy, or same-named always-true adapter passes; refuse |
+| JA18 / live status/time | Actual trusted current instant/source/grant/status checked at use | Frozen valid seal/admission, backdated now, clock rollback or changed status within lease; current use unavailable |
+| JA19 / complete required history | Genuine independent source demand and accepted prefix/inclusion retained | Hide denied predecessor, vanish intake or choose favorable root/head; no complete discovery/positive use |
+| JA20 / scoped authority | Real distinct role/grant/action/conditions and accepted inclusion checked | Fixture principal, key possession, proposal receipt or public admitted flag acts as project approval; refuse |
+| JA21 / repair and exception | New scoped evidence/correspondence plus genuine allowed resolution/exception | Changed bytes alone, unrelated repair or generic waiver erases denial/false property; original blocker retained |
+| JA22 / replacement and withdrawal | Exact authenticated supersession and later status restore/reopen correct blockers | Unnamed denial, cyclic/forked replacement or revoked resolution leaves favorable cached admission; refuse |
+| JA23 / ordinary recovery | Every DR01-DR21 expected result and all four ordinary processes complete with natural zero exits | DR07-DR14 partial gold then watchdog, missing restart-three or failed shutdown counted complete; lane fails |
+| JA24 / intentional interruption | Actual planned killed boundary/record/status/bytes then independent replay agree | Exit 137 without boundary proof, watchdog/OOM/unrelated kill treated expected; fail interruption protocol |
+| JA25 / durable prefix repair | Actual exact accepted prefix/origins/current head and authorized repair preserve negatives | Old signed head, changed denied record, unauthorized truncate or storage repair claimed semantic repair; block |
+| JA26 / handover and ownership | Genuine successor activation/current prefix and old owner retirement enforce use | Restored reader IDs/cache, retired writer, missing predecessor or ambiguous publication; retain negatives, withhold positive use |
+| JA27 / authorized manifest | Exact finalized product closure then scoped actual distribution decision | Self-input hash, missing mandatory access, changed/redacted subset or wrong recipient/purpose inherits old approval; refuse |
+| JA28 / actual intake trust | Actual arrival/omissions and own receiver roots/assertion/status checks retained | Sender acknowledgement or manifest-supplied roots/private receipt clone accepted as receiver verification; refuse |
+| JA29 / recipient adoption | Real own network repo publication/project inputs/C/A/E/W/use/Q/R/roles and acceptance | Renamed Profile/copied producer C/Q/R, mismatched network premises or import grants adoption; refuse |
+| JA30 / recipient current use | Exact adopted operation/principal/project/target bound through actual use/effect owner | Replayed purpose, offline unknown status, changed input after check or Cedar preflight alone grants deployment; refuse |
+| JA31 / exact report closure | Independent oracle verifies full case/lane/artifact identities and actual expected states | Edited passed field/count, missing raw logs, skipped cases or old report accepted as fresh; report incomplete/failed |
+| JA32 / honest final disposition | Actual authorized acceptance binds all required current gates/limits and retains counters | Majority pass, static docs, model success, old signatures or changed timeout grants complete DE-CASE-01 acceptance; refuse |
+
+* SPECIFIED Current open items and closure owners
+:PROPERTIES:
+:CUSTOM_ID: joint-acceptance-open-items
+:END:
+
+| Open item / current basis | Required future closure and accountable owner |
+|---------------------------+-----------------------------------------------|
+| OJ01 / WP01-WP03 are target designs | Actual declaration/role Contracts, parent/policy exports, Core checked-candidate retention, Profile/project separation and sole C; Library/Core/Profile/Scenario owners with CT/PB/SC evidence |
+| OJ02 / WP04 full actual source/execution provenance | Actual complete prepared launch/result/attempt/producer closures and selective fresh-use controls; method/Core Ops owners. Existing observed method results retain narrower original meaning |
+| OJ03 / WP05 substantive case products | Actual model/interfaces/dependencies/assumptions/decisions/Org closure and independent semantic findings; content/project owners. D01-D10 bindings and design text are not completed criteria |
+| OJ04 / WP06 target facts/Q | Required duty-preserving application-level projection, actual acceptance transaction and determinate full Q; project adapter/ASCENT owner. No raw favorable query or coding count substitute |
+| OJ05 / WP07 expected review verification | Actual policy-neutral facts/purposes/Host factoring, full R and independent context/content/time/source use; Aitia/Core/Scenario owners. Fixture NASA/clock assumptions cannot fill project input gaps |
+| OJ06 / actual policy/roles/grants | DE-CASE-01 adopted design policy and real project/content/semantic/Aitia/decision/distribution/recipient responsibility mandates; actual project authorities. Current unassigned roles remain unassigned |
+| OJ07 / WP08 full accepted authority/status | Authentic complete required H, real scoped actions, repairs/exceptions/withdrawals and current accepted custody/fencing; Aitia/project/custody owners. No general distributed or power-loss guarantee inferred |
+| OJ08 / 10.23 ordinary restart-two timeout | Concrete qualified repair and complete fresh ordinary source/compiled/recovery sequence within recorded 2 GiB/180-second bounds; runtime/custody/integration owners. DR07-DR14 alone remain partial |
+| OJ09 / remaining fresh historical routes | Current exact-cut cross-intake, reassessment, handover, remaining restarts plus required archive/batch/custody controls; respective owners. Earlier durable-intake/repair passes retain their old cuts, not current authority |
+| OJ10 / WP09 recipient route | Real permitted receiving repo/process/trust/status/transport, complete manifest/acknowledgement and own adoption/use evidence; delivery/recipient owners. No qualified general cross-host/offline route exists in this audit |
+| OJ11 / runner/build/oracle gaps | Explicit full build/load roots and required filters/control inventory, env-only test wiring, future content/recipient/joint entries and independent oracles; build/qualification owners. Current just test does not close all phases |
+| OJ12 / dossier freshness and retained artifacts | New actually selected content capture/closure and accessible exact evidence; source/content/custody owners. Preserve original 138-entry catalog, 19 drifts and historical receipts; never refresh old hashes to appear current |
+
+Historical 10.23 observations remain exactly scoped: fixed 2 GiB Gerbil heap and
+180-second watchdog; ordinary producer exited at 127.161 seconds, first restart
+at 179.777 seconds, second restart failed at 185.059 seconds including grace.
+Its DR07-DR14 partial observations do not establish the later gold/suite exit.
+The earlier interrupted-intake, pending-replay and explicit repair evidence is
+retained at its original cuts. Read [[file:10.23-native-aitia-backpressure-content-review.org::#two-gib-recovery-observation][the original remaining acceptance boundary]];
+this plan does not rerun it or infer an unobserved cause/performance improvement.
+
+The [[file:10.34-case-design-review-dossier-draft.org][historical dossier]] and [[file:10.35-content-validation-slice.org::#slice-input-freshness][freshness observation]] remain evidence of their own scope.
+Their 20 witnesses / 17 support / 3 counter / 9 pending and the separate old
+22-result coding fixture are not WP10 gold. Historical digest drift requires
+fresh actual capture/use qualification, not a new Library generation or edits
+to historical accepted expectations.
+
+The complete control inventory remains 216 referenced contract rows and 32 JA
+rows: 248 design rows before lane/attempt expansion, not an executed test count.
+The [[file:10.52-contract-consistency-and-implementation-order.org::#consistency-implementation-order][whole-chain implementation order]] refines staged prerequisites and the
+[[file:10.52-contract-consistency-and-implementation-order.org::#consistency-open-items][open-item register]] preserves OJ01-OJ12. Later policy/Scope and lifetime
+clarifications apply to the existing control meanings; they do not silently add
+executed coverage. Actual case acceptance remains a distinct authority act from
+correct mechanical/refusal-control outcomes and requires its real project inputs.
+
+* SPECIFIED Joint pass criteria and responsibility handoff
+:PROPERTIES:
+:CUSTOM_ID: joint-acceptance-pass-criteria
+:END:
+
+A future complete-slice pass requires all mandatory applicable CT/PB/SC/ME/CO/PQ/
+RV/HA/DU and JA controls, required source/compiled/cold/recovery/recipient lanes,
+independently checked artifacts and natural/intentional exit semantics at a
+compatible exact current basis. Every selected duty must retain its actual
+semantic outcome and accepted resolution where permitted; known demonstration
+counters are not required to become support. Missing/incomplete/conflicted/
+unsupported findings remain visible and block any claim whose policy requires
+the missing condition. A broader full-green label is not permitted.
+
+A permitted exception is an actual bounded policy/authority record with scope,
+risk/mitigation/expiry and open duty visible. It cannot waive mandatory mechanism
+correctness controls (forgery, dropped history, false support or unauthorized use)
+and then claim this complete conformance suite passed. If a separately narrowed
+acceptance scope is authorized, name it explicitly; it does not close omitted
+WP10 requirements or the complete-slice claim.
+
+The qualification owner retains the report and exact source/artifact/attempt
+closure; framework owners confirm their actual mechanism evidence, Library
+owners the published semantics, project/content owners the actual case meaning,
+Aitia/authority owners the current scoped review/history/action basis, and the
+recipient owner its own adoption/use. The actual authorized project decision
+owner may later assess the dossier. No one inherits another owner's authority
+from a report signature or a successfully rendered view.
+
+* DESIGN Documentation status
+:PROPERTIES:
+:CUSTOM_ID: joint-acceptance-design-status
+:END:
+
+This details WP10 and its WP00 prerequisite from 10.41 against 10.42-10.50,
+covering GA01-GA25 and DE-R01-R06 / DE-O-ARCH/DOC/DEC/TRACE/REVIEW through the
+selected duties and DE-T targets. Actual scope/optional facets remain explicit
+policy choices; specification completeness is not implemented qualification.
+
+Only Org and paired D2/SVG are updated. No source/build/test/runner/directory
+change, build, model/method/content execution, acceptance run, receipt/signing/
+revocation, review submission, authorized decision, recipient adoption or actual
+delivery occurs. Static link/lint/export/render checks only validate these docs;
+all future joint pass claims and OJ01-OJ12 closures remain unperformed.
+
+[[file:10.52-contract-consistency-and-implementation-order.org::#whole-slice-consistency-audit][10.52 reconciles the whole slice]]: policy/Scope/Config handoffs, required-unit
+and request-purpose bindings, captured/technical/current-authority lifetimes and
+private/exported provenance; S0-S9 implementation dependencies and retained OJ
+gates. Design consistency is not implemented or operational qualification.
+
+[[file:10.53-source-build-and-recovery-baseline.org::#source-build-recovery-baseline][10.53 details S0]]: live dirty source/dependency identities, current selected
+byte map, build/default-route versus q34 loading evidence, BS01-BS09 WP00
+blockers/repair owners and explicit S1 entry conditions. Static inventory does
+not close the remaining build/load/recovery qualification gates.
+
+[[file:10.54-library-and-aitia-types-contracts.org::#library-aitia-types-contracts][10.54 details coordinated S1]]: complete Library/Aitia effective fields and
+inheritance, both policy/Scope associations, single declaration-generation read,
+the twelve-purpose domain with fixed expected facts and operation allowlists,
+closed Aitia payload checks and TY01-TY32 acceptance refinements. No source or
+acceptance change is performed.
+
+[[file:10.55-library-construction-and-scope-handoff.org::#library-construction-scope-handoff][10.55 details S2]]: complete checked object/parent/policy graph, Config and
+sole mapping/delta construction, exact exports/callables, separate provider/edge/
+final Scope candidate retention and SX01-SX32 future controls. No source change,
+acceptance execution or actual delivery occurs.
+
+#+CAPTION: WP10 independent required coverage and exact evidence across source, compiled, cold/recovery and recipient lanes, with explicit open gates.
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.svg]]
+
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][Editable D2 source]]. 216 contract control rows plus JA01-JA32 are future qualification requirements, not executed passes.
+
+[[file:10.56-profile-selection-and-scenario-capture.org::#s3-profile-scenario-capture][10.56 details S3]]: checked Scope/parent/policy selection, complete Profile and
+project input Contracts, owner-separated acquisition and unique C; direct caller
+migration and CX01-CX32 future controls. Normalized values and actual origin/use
+associations are retained; missing governance stays explicit. No implementation,
+acceptance execution, review submission or actual delivery occurs.
+
+[[file:10.57-method-execution-and-evidence-issuance.org::#s4a-method-execution-issuance][10.57 details S4a]]: actual same-C applications/attempts/run groups, complete
+acquired/derived/execution/validation footprints, Core launch/environment boundary,
+method-specific semantics, private W and fresh use, failure retention and selective
+reuse. EX01-EX36 refine existing controls; no implementation, acceptance execution,
+review submission or actual delivery occurs.
+
+[[file:10.58-content-observers-and-reference-closure.org::#s4b-content-observers][10.58 details S4b]]: same-C product/criterion/locator fields and actual owner
+boundaries, independent finite demand closure, architecture/Org/decision/view
+claims, historical/current evidence, semantic attribution and A/E/W/use association.
+OX01-OX36 refine existing controls; missing/conflicting/stale inputs and fresh reuse
+remain explicit. No implementation, acceptance execution or actual delivery occurs.
+
+[[file:10.59-ascent-projection-and-query-view.org::#s5-ascent-projection-query][10.59 details S5]]: complete C/D/K/A/E/G/W/U/basis relations, actual producer/use
+and independent duty projection, missing/counter/conflict/coverage semantics,
+existing Session prospective acceptance/rollback and postcommit failure boundary,
+owned determinate Q and exact Aitia handoff. QX01-QX40 are future controls;
+no implementation, acceptance execution, review submission or delivery occurs.
+
+[[file:10.60-aitia-review-adaptation.org::#s6-aitia-review-adaptation][10.60 details S6]]: exact C/Q to inert R, adopted policy/project revision/roles/
+products, purpose-specific context/inventory/criterion checks and lossless negative
+assessment, actual common Host/Core receipt/current-use/replay boundaries.
+Causal Software Engineering is the research object for critical comparison of
+claim/assumption/identification/uncertainty handling. Framework mappings are
+proposals to test, not paper authority, demonstrated superiority or an estimator. RX01-RX40 remain future controls;
+no implementation, acceptance execution or review submission occurs.
+
+[[file:10.61-history-authority-and-reassessment.org::#s7-history-authority-reassessment][10.61 details S7]]: exact C/Q/R/H, independently required history, scoped
+principal/grant/action checks, accepted inclusion/current use, immutable negatives,
+repair/exception/supersession/withdrawal and qualified custody. Assumption failure
+triggers scoped reassessment without false zero-effect or authority inference.
+The paper is critically studied through competing designs/falsifiable RQ1-RQ6,
+not treated as a normative source or demonstrated improvement. AX01-AX44 are
+future controls; no implementation, acceptance execution or review submission.
+
+[[file:10.62-library-delivery-and-recipient-use.org::#s8-library-delivery-recipient-use][10.62 details S8]]: exact producer C/Q/R/authority and finalized manifest,
+product/reference/access closure, actual arrival and receiver-owned verification,
+new receiver C/Q/R/adoption/current use. Missing/withdrawn/replayed status and
+claim-specific causal applicability remain explicit; selective reuse is a research
+hypothesis compared against full revalidation. DX01-DX44 are future controls;
+no implementation, acceptance execution, review submission or actual delivery.
+
+[[file:10.63-case-joint-acceptance-plan.org::#s9-case-joint-acceptance][10.63 details S9]]: actual file/entry/lane and owner-artifact matrix, G0-G8
+source/compiled/load/cold/recovery/receiver through-gates, exact finite budgets,
+negative/assumption-change correctness and separate critical research comparison.
+Original 248 rows and stage refinements retain identity; JX01-JX44 are future
+joint controls. OJ01-OJ12/BS01-BS09 remain open until actual owner evidence;
+no implementation, acceptance/research execution or actual delivery occurs.

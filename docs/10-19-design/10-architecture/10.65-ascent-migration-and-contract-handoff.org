@@ -1,0 +1,393 @@
+#+TITLE: 10.65 P0 ASCENT Migration, Contract Handoff and Load Closure
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.65
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+TODO: AUDITED SPECIFIED | QUALIFIED
+#+FILETAGS: :design:ascent:contracts:dependencies:build:loading:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.64-contract-consistency-and-implementation-order.org::#audit-implementation-order][P0-P9 order]] | [[file:10.53-source-build-and-recovery-baseline.org][Historical baseline]] | [[file:10.54-library-and-aitia-types-contracts.org][S1 Contracts]] | [[file:10.55-library-construction-and-scope-handoff.org][S2 checked Scope]] | [[file:10.59-ascent-projection-and-query-view.org][S5 Q]] | [[file:10.63-case-joint-acceptance-plan.org][S9 acceptance]]
+
+* AUDITED P0 conclusion and observation boundary
+:PROPERTIES:
+:CUSTOM_ID: p0-ascent-migration
+:STATUS: Static source/design audit; no implementation, build, acceptance, review submission or delivery
+:END:
+
+The migration separates the generic rule producer from application reasoning.
+This project must keep its application obligation program, use ASCENT's current
+generic rule declarations and Session, and obtain Clue/history capabilities from
+their actual POO Flow owners. Moving every old Evidence import to Evidence
+Assessment would change responsibilities and is rejected. A source-level export
+alone does not establish an installed public module or a trusted runtime owner.
+
+The new Flow checkout now contains the transferred sources that were not found
+at the earlier 10.64 cut. That earlier absence remains a historical observation.
+Current public-facade/build closure and consumer compatibility remain unqualified.
+Core's current change also requires its read-projection dependency; it does not
+introduce a new Contract generation or move Library version authority into Org.
+
+** Separate repository and byte identities
+
+Read-only observation on 2026-10-21; upstream changed during investigation.
+Outer Flow was first observed at e81c55c37f3221f2c42d38afd7da7f128d92bb74,
+then at bc07ce198614ed2f3b584052d8764ba4d3eab0fe. These are observation cuts,
+not a coordinated release, accepted pin set or successful execution receipt.
+
+| Repository / resolved source | HEAD at the later observation | Interpretation |
+|------------------------------+-------------------------------+----------------|
+| This project | 8044732d505f84e373119a70f947df00e1767300 | Existing dirty implementation/docs preserved |
+| ASCENT / ../gerbil-ascent | b03efb55f2bfda0a7062687b6539a45f06adbabe | Current generic producer; old application paths absent |
+| POO Flow / ../poo-flow | bc07ce198614ed2f3b584052d8764ba4d3eab0fe | Application migration owners now present; independent from Core/Aitia HEADs |
+| Core / ../poo-flow/core | 52130d2d338b09622a3f55e37987ddc0375b6187 | Separate repository with staged types.ss changes; HEAD does not describe those bytes |
+| Aitia / ../poo-flow/packages/lambda-aitia | cbf3f6861ef7cf66d8d02aaf71b1c89630eaf7fc | Separate dirty repository; no review/authority acceptance inferred |
+
+The linked package roots resolve to these sibling checkouts. The project manifest
+still records the old ASCENT archive description ending e119827e; Flow gerbil.pkg
+and its assessment Cargo.toml name b03efb55 in full, while Flow manifest.ss still
+records 86ad9ae3. An observed agreement between two declarations is not proof of
+the installed producer. Reconcile authoritative dependency resolution and generated
+manifest observations, rather than editing a displayed version to appear current.
+
+** Selected source byte anchors
+
+These selected actual source bytes were recorded and rechecked unchanged after
+drafting. They bind this static observation only, not installed or loaded code.
+
+| Observed source | SHA256 |
+|-----------------+--------|
+| ASCENT generic rule facade | b930d5876713a3993f7150dc82ba34bc44c341382ddcd2db2a95e863297775fb |
+| ASCENT declaration/extraction | a313a8f58279ede150ae850dc34542ebac88f834922f5a0132d55134fbeb3802 |
+| Flow advanced Clue leaf | aea9b96b2d99726b041cc3a318d0fde854cbb491417e201b0eb14c46403b9d01 |
+| Flow application history leaf | 28c679ac427705650f1846dc36b74847c2d4690abafabc62c6550c19377316ea |
+| Core dirty Types | 3b1182030502571fcf4c54a458871b9e4160d5fe8da55c3c54159dad481129be |
+| Core read ownership dependency | dcd70a189b466a9410921c293a8f04e40341c49aadc381ff4f6ed01d572098d3 |
+
+* AUDITED Actual responsibility and interface inventory
+:PROPERTIES:
+:CUSTOM_ID: p0-owners-and-interfaces
+:END:
+
+Paths below identify inspected source interfaces, not qualified installed entrypoints.
+
+| Owner / existing files | Actual exported surface / responsibility | Boundary for this project |
+|------------------------+------------------------------------------+---------------------------|
+| [[file:../../../../gerbil-ascent/rules/interface.ss][ASCENT rules/interface.ss]], [[file:../../../../gerbil-ascent/rules/declaration.ss][rules/declaration.ss]] | define-program, ascent-rule-module, make-declared-program; rule-module-program/bindings/explain in declaration.ss | Generic relation/rule declaration and Program extraction. Existing project obligation rules stay in modules/resource-evidence. Do not replace them with a hypothesis assessment Case |
+| [[file:../../../../gerbil-ascent/program/interface.ss][ASCENT program/interface.ss]] and program/session.ss | POO Program/relations, evaluation, Session/source updates/results and bounded execution | Keep generic engine calls at the projection owner. Source labels and recorded explanations are metadata, not per-row proof, producer authenticity or action authority |
+| [[file:../../../../poo-flow/modules/evidence-assessment/interface.ss][Flow evidence-assessment/interface.ss]], objects.ss/funs.ss | PooFlowEvidenceAssessmentCase.; reference/claim/step/hypothesis/branch constructors; evaluate, hypothesis-result, explore | Optional application assessment of supplied claims and branches. supported/needs-evidence/conflicted are assessment results, not project technical pass/fail or Aitia acceptance |
+| [[file:../../../../poo-flow/modules/evidence-assessment/migration.org][Flow migration.org]], [[file:../../../../poo-flow/modules/evidence-assessment/relational-runtime.ss][relational-runtime.ss]] | Application computational Evidence store and internal dispatcher; generic calls delegated to ASCENT | Do not import candidate store, packet dispatcher, evidence DAG or engine FFI as the ordinary Library API. They are owner implementation details |
+| [[file:../../../../poo-flow/modules/ai-agentic-context/clue-exchange.ss][Flow ai-agentic-context/clue-exchange.ss]] | Leaf exports open-clue-exchange and open-trajectory-clue-exchange; verifier/context/retained snapshot and submit/query/generation handling | Existing advanced Host boundary. ai-agentic-context/interface.ss does not re-export it. Trusted verifier belongs to Host, not Agent/Profile payload |
+| [[file:../../../../poo-flow/modules/temporal-causality/trajectory/ascent-ledger.ss][Flow trajectory/ascent-ledger.ss]] | Leaf export ascent-trajectory, ordered observations, epoch/reference invalidation and cost accounting | Host creates/appends/closes actual ledger; Agent exchange only reads history and submits clues. trajectory/interface.ss does not re-export this ledger |
+| [[file:../../../../poo-flow/modules/temporal-causality/trajectory/interface.ss][Flow trajectory/interface.ss]] | Temporal sample/series/replay and delta Types/values/functions | Existing temporal model is a different abstraction. Do not substitute a time series for the migrated application ledger just because both use the word trajectory |
+| [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/types.ss][Core types.ss]] / gerbil-poo | Core contextual evidence-bearing admission; upstream POO Type/ObjectContract validation and prototype dispatch | Domain Types compose these facilities; Core does not own backpressure model/policy versions, method adequacy, C issuance or project authority |
+| Aitia modules/sdlc/{types,verification,review-authority}.ss and existing adapters | Review context/content verification, history and action-specific authority; exact target contracts in S6-S8 | Consume same C and definite Q through S6; neither a generic engine result nor application supported status grants review/distribution/adoption/use authority |
+
+Flow migration-inventory.json is source-transfer provenance at sourceRevision
+923610340c4890bb56f51a7264355a91e05d44ab. It is not the current dependency lock,
+ABI contract, installed build receipt or proof that every copied file is unchanged.
+The Scheme POO Case facade, migrated Scheme advanced leaves and Rust/Python
+application runtime are distinct call routes. No Python or Rust application
+runtime is required merely to declare this project's Scheme relational program.
+
+** Target public handoff, without a compatibility facade
+
+Use current generic rules/interface plus explicitly selected declaration exports
+for project rule construction. Keep the complete Program, sources, outputs,
+bindings, bounds and explanation semantics. make-declared-program reconstructs
+relations/rules/bounds/source handles as inspected; do not assume arbitrary custom
+Program fields survive that constructor. A custom callback/extension must be
+checked against the actual constructor chosen, not promised by a comment.
+
+The project currently consumes exported advanced Clue and ledger leaves. P0 must
+make their support level explicit with the Flow owner before installation: qualify
+those exact exported leaf APIs as supported Host interfaces, or publish their
+capabilities through existing POO objects/funs/interface at that owner. Proposed
+ordinary POO operations compose a Host-owned history capability and Agent-limited
+exchange capability; they are not another hash/action DSL in this Library. Names
+and callable contracts for that POO route remain an upstream publication decision,
+not an invented already available API. The leaf source locations above are exact;
+the missing facade publication is an explicit gap. No shim at the old ASCENT
+Namespace, duplicate ledger/store, copied query rules or silent old-binary fallback.
+
+* AUDITED Project consumer-by-consumer migration
+:PROPERTIES:
+:CUSTOM_ID: p0-consumer-map
+:END:
+
+Inventory covers old imports, their invocations and the compiled-artifact assertion.
+The replacement column is future work; source files have not been edited.
+
+| Existing file / current use | Target adjustment / preserved responsibility | Qualification dependency |
+|-----------------------------+-----------------------------------------------+--------------------------|
+| [[file:../../../modules/resource-evidence/func.ss][resource-evidence/func.ss]]: evidence/interface, evidence/declaration; define-evidence; evidence-module-program; Session | Current generic rules/interface define-program and rules/declaration rule-module-program. Keep make-resource-evidence/open-resource-review application exports and explicit relation/input/output/bounds/negative rules. Renaming local constructors is unnecessary | PM01-PM04, PM13; no claim syntax compatibility from spelling alone |
+| [[file:../../../scenarios/gateway-review/func.ss][gateway-review/func.ss]]: both old Evidence imports, profile validation/open-review | Remove unused old generic imports; this file has no define-evidence/evidence-module-program invocation. Retain Scenario delegation to admitted ResourceEvidence and bind checked profile return | PM03/PM09/PM10; no speculative replacement imports |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/methods.ss][rust/methods.ss]]: old program/clue-exchange, registration submit/query | Generic Session remains ASCENT. Consume actual supported Flow Clue capability at registration boundary; preserve real verifier/C/A/E/W/use association, no Agent-supplied attestation | PM05/PM06/PM14; S4 method execution remains Library-owned |
+| [[file:../../../scenarios/resource-lifecycle/review/reassessment.ss][review/reassessment.ss]]: old clue-exchange and trajectory, open history/exchange and submit/snapshot | Flow Host history and Clue capabilities; retain Aitia review history and revocation semantics independently from ledger events. Move no authority into generic ASCENT | PM05-PM07/PM14; S7 causal-trigger/current-use obligations remain |
+| [[file:../../../examples/gateway-evidence.ss][gateway-evidence.ss]], [[file:../../../examples/resource-lifecycle-evidence.ss][resource-lifecycle-evidence.ss]], [[file:../../../examples/resource-integration-evidence.ss][resource-integration-evidence.ss]]: old program/trajectory open/append | Actual supported Flow history owner; same task/source/epoch/event/close lifecycle and independently observed origins. Examples orchestrate, not construct a second producer or reconstruct trusted execution from JSON | PM05/PM07/PM11/PM14; no model/provider requests required for import checks |
+| [[file:../../../t/module-design-test.ss][module-design-test.ss]]: old declaration Program extraction | rule-module-program from current generic declaration, retain complete relation/rule/Scope assertion | PM01/PM03; future test edit, no execution now |
+| [[file:../../../t/dependency-compatibility-test.ss][dependency-compatibility-test.ss]]: old interface/declaration and define-evidence | Current generic declaration/extraction route; preserve numeric rule, repeated empty-result, typed no-rule positive and invalid-source negative controls | PM01-PM04/PM12; retain distinct ABI/typing versus application-semantic evidence |
+| [[file:../../../t/gateway-library-test.ss][gateway-library-test.ss]]: old interface for generic rule/evaluation helpers | Import only current generic exports actually used; preserve seven gateway control groups and method/obligation semantics | PM03/PM13; no forced use of EvidenceAssessmentCase. |
+| [[file:../../../t/package-metadata-test.ss][package-metadata-test.ss]]: literal compiled gerbil-ascent/evidence/interface expectation | Required current rule modules plus chosen actual Flow Host interfaces, all .ssi/.o1 artifacts and owner namespaces; obsolete artifacts must not satisfy import closure | PM08/PM11/PM12; keep ordinary-directory/regular-file requirements |
+
+The five existing Types files also consume Core's retained
+poo-flow-predicate-contract: abstract/types.ss; rust/types.ss; resource-evidence/
+types.ss; gateway-review/types.ss; resource-lifecycle/types.ss. Eight constructor
+sites remain (one, four, one, one, one). Their imports have not disappeared; they
+must be assessed as shallow current predicates versus S1's complete target
+contracts, rather than mechanically renamed. Broadening a procedure? predicate
+cannot repair real call/producer recognition.
+
+* AUDITED Core types changes and contract boundary
+:PROPERTIES:
+:CUSTOM_ID: p0-core-contract-delta
+:END:
+
+There are three different comparisons. S9 observed Core types.ss SHA256
+c72b57f1c87fb974916077e3260512e313dc49888d0ef0d96724f1ad05f40a8c;
+10.64 later observed 31a0bf256ebec3abd062e0807a23cd1f3e8132263c1ae9a5f7453137cf0835cd.
+At this P0 cut the current bytes are
+3b1182030502571fcf4c54a458871b9e4160d5fe8da55c3c54159dad481129be.
+The committed Core HEAD:types.ss bytes hash to
+34608b5737b25a996472c545c783e7b0a9e7b2f1f44c7bfeccb745b7a8c888f1.
+The concrete diff below compares HEAD to the inspected working bytes, not S9 to
+HEAD. These hashes differ; a HEAD diff must not be labelled the whole S9 delta.
+
+| Inspected behavior / change | Retain, replace or dependency consequence |
+|------------------------------+-------------------------------------------|
+| Existing Type. -> PooFlowType. -> PooFlowContract.; define-type and upstream element?/validate | Retain. No new Type system or Namespace generation. Public Types validate values; values do not inherit their Contract |
+| Existing value-contract normalization before classification, then contextual child admissions/obligations | Retain. It predates this diff. Shape/normalization belongs to upstream POO value Contract; contextual responsibilities do not duplicate the public field map |
+| New default .classify on PooFlowContract. emits accepted classification | Remove redundant always-success domain classifiers only after complete value-contract is bound. Bare default Contract is not complete shape/closed-field validation, origin authentication or policy enforcement |
+| New import core/object-family/read-projection and owned-read-leaf! around classification/validation receipt construction | Include actual read-projection source/import/MOP dependency in Core compilation/load closure. This is call-local dependency retention, not a persistent evidence cache or forged-kind authenticity check |
+| owned-read-copy! around responsibility/child receipt refinements | Keep constructor-owned association when refining a genuine receipt. Arbitrary .cc of contributed receipt is not an ownership capability; no Library clone/reissue substitute |
+| owned-read-open! before custom local obligations and open Context callbacks | Preserve conservative full read trace/open-boundary guard. Do not mark domain lambdas as closed to obtain selective reuse. Unknown hook/callback behavior remains open |
+| Existing predicate helpers and PooFlowNativeObjectContract. prototype check | Existing literal API names stay as observed; no new Native filenames/family names. Preserve negative prototype/refined classifier/child replacement checks; actual issuer remains a separate operation owner |
+| Existing admit evidence carries checked candidate and .validate returns it | All consumers must use checked result. Evidence shape/accepted? alone is not permission to use pre-normalized candidate or transfer private producer provenance |
+
+The current [[file:../../../../poo-flow/core/module-system/source/admission.ss][admission.ss]] publication boundary uses evidence.candidate for owner checks,
+and link.ss retains that checked publication. However,
+[[file:../../../../poo-flow/core/module-system/source/link.ss][link.ss]] still admits a requirement Scope then binds the pre-admission
+record Scope; it also publishes scope-value after its own Scope admission, and
+admits the input Context without using a returned candidate. These are distinct
+S2 handoff sites; the new types.ss change does not close them. The Core owner must
+retain the appropriate checked Context, requirement Scope and final Scope
+candidates and their evidence, then perform currentness/cache eligibility checks
+on the actual published/bound values. Do not normalize twice or put this repair in
+a project wrapper. Contract callback failures or changed sources must not publish
+a partial normalized Scope or replace an eligible cache entry prematurely.
+
+The gateway open-review validator likewise discards its profile return today.
+S1/S2/S3 must migrate the actual local consumer along with complete value Types.
+Library owns one declaration contract-version (target V1); semantic revision,
+project revision, dependency commit, source digest, read generation and ledger
+epoch retain their separate owners. None is derived from an Org heading, old
+schema string or Namespace suffix. Existing historical v1 wire/schema literals
+are observations, not a new Library version source or an instruction to rename them.
+
+* SPECIFIED Dependencies, build and actual load adjustment
+:PROPERTIES:
+:CUSTOM_ID: p0-build-and-load
+:END:
+
+| Existing source / responsibility | Coordinated future adjustment | Required evidence, not inferred now |
+|----------------------------------+-------------------------------+-----------------------------------|
+| Project gerbil.pkg / manifest.ss | Declare direct Flow dependency when consuming its Clue/history APIs; retain Core, POO and generic ASCENT direct dependencies where directly imported. Select one compatible resolved set, including independent Aitia/Core roots. Generate/update manifest through existing owner mechanism | Resolved immutable commits plus dirty source closure, no old archive description standing for current b03efb55 bytes |
+| Flow gerbil.pkg / manifest.ss / assessment Cargo.toml and Cargo.lock | Reconcile Scheme/Rust producer resolution and displayed manifest; avoid vendored second generic engine. Package source-transfer history separately | Actual resolved Cargo git producer and Scheme module origins agree with intended cut. Lock/declaration bytes alone do not prove loaded extension |
+| Flow build.ss public-entry-modules | Current list includes ai-agentic-context/interface and temporal-causality/interface; does not explicitly list migrated Clue/ledger leaves or assessment/interface. Existing facades do not import those leaves | Inspect generated source collection/spec and published artifact inventory; add supported selected roots through existing PackageSpec/build owner where closure is absent. Do not claim every unlisted file is necessarily excluded |
+| Project build.ss / init.ss / Config / interface imports | Explicit current generic rules plus selected Flow capability closure must be reachable by actual package roots. Retain Core build mechanism and lazy domain publication; do not eagerly load optional provider/Python runtime to repair a Scheme import | Source collection and expansion/runtime imports, regular compiled artifacts, expected public exports and actual loaded paths. No parallel build system or copied source facade |
+| Core types.ss / read-projection.ss / gerbil-poo MOP | Build/load compatible source closures together, including same read ownership primitives and scope handoff changes when implemented | Exact source, .ssi/.o1, linked runtime/compiler artifacts and read-projection/MOP origins. Changed producer invalidates dependent compiled candidates until requalified |
+| Justfile / review runner defaults | Replace unexplained mixed source/.gerbil/lib/native-build-10/q21 routes with explicit qualification lane inputs and frozen owner-bound load plan. Preserve historical q34 build-13/tests-5 receipts and their source cuts | Report GERBIL_PATH, ordered GERBIL_LOADPATH, realpaths/digests and all actually resolved modules/FFI libraries in each process. Declared loadpath is not observed loading |
+| Rust/Python assessment route, only if selected | Existing native build.rs freezes application inputs and resolved ASCENT producer sources into extension receipt. Compare with independently loaded producer and actual extension files | Application receipt, engine receipt, source hashes, extension digests, architecture/ABI and supported route. These receipts do not authenticate external artifact content or establish a causal effect |
+| Project/Aitia review and receiver lanes | Same C/Q/R/policy/project revision and real Host roles; load closure is part of input/source provenance | Aitia assertions must come from independent qualified verification; upgrading dependencies never reissues old W or creates review authority |
+
+Planned load qualification first inventories stale old modules without deleting
+historical build roots; then uses an isolated explicit output/load closure that
+cannot fall back to them. Include a negative lane with an incompatible earlier
+artifact earlier on the path: it must be refused or excluded by the qualified
+launcher, not silently accepted. A stale module that happens to resolve is an
+origin failure even if a simple numeric assertion passes. Qualify source and
+compiled routes separately, then fresh-process cold loading and recovery. Source
+inspection here is not an observation of any running process's loaded modules.
+
+* SPECIFIED Implementation dependency order and ownership
+:PROPERTIES:
+:CUSTOM_ID: p0-implementation-order
+:END:
+
+These are P0 substeps inside 10.64, not a replacement S1-S9 project or an
+authorization to execute. Owner names allocate responsibilities, not appointed people.
+
+| Order / accountable owner | Work and prerequisite | Exit / next consumer |
+|---------------------------+-----------------------+----------------------|
+| P0.1 / dependency integrator and each upstream owner | Preserve old receipts; freeze exact current source/pin/dirty-byte and expected export inventory. Resolve manifest discrepancies and choose supported Scheme versus optional native route | Reproducible candidate dependency set and import/call matrix; no qualification yet |
+| P0.2 / Flow module/publication owner, ASCENT producer owner | Confirm generic declaration contract and publish supported Clue/history capability at actual owner; qualify existing leaf support or complete POO facade. Establish source/build roots and module contracts | Consumer can name a real published route; missing interface publication blocks dependent build acceptance |
+| P0.3 / Core and gerbil-poo owners | Keep read ownership semantics; complete normalized Context/requirement/final Scope handoff repair under S2; bind compatible MOP/read-projection source | Real checked value flows to next consumer with evidence/currentness, not raw input; PM09/PM10 and TY/SX prerequisites |
+| P0.4 / project Library/Scenario/projection owners | Directly migrate consumer table and metadata assertions. Preserve existing relation/obligation semantics; use Flow capability rather than copy store/history. Align package dependencies/build roots and lane inputs | Complete current import and intended call closure; no old Namespace facade |
+| P0.5 / build/runtime qualification owner | In future execution, build compatible producers before dependent artifacts, verify actual module/FFI origins, source versus compiled parity, stale-path rejection and clean-process cold route | PM01-PM14 as applicable and BS build/load conditions; ordinary recovery remains separate |
+| P0.6 / recovery owner and S1-S9 owners | Diagnose the old restart-two failure independently; retain fixed bounds, original negative result and unrun restart-three. Map refined controls to actual lane/artifact owners | Only qualified build/load gates can clear those blockers; full S1-S9 semantic/role/receiver/causal gates remain |
+
+P0.2 and P0.3 can be designed independently after the candidate cut; their results
+join before qualification of P0.4/P0.5. Complete S1 effective Types/premise fields
+before new domain publication, then S2 actual normalized Scopes, S3 C, S4 A/E/W/use,
+S5 Q, S6 R, S7 authority/status and S8 receiver use, with S9 cross-boundary controls.
+An import-only migration does not claim any of those semantic contracts complete.
+
+* SPECIFIED Positive and negative qualification obligations
+:PROPERTIES:
+:CUSTOM_ID: p0-acceptance-controls
+:END:
+
+All PM controls are prospective P0 obligations, overlapping existing BS/TY/SX/EX/
+QX/RX/JX controls. They are not extra executed tests or additions to historical
+248/380 counts. Each future result must bind expected contract, candidate source,
+actual execution/load origin, lane/budget, outcome and retained failure artifacts.
+
+| Control / existing entry or responsible boundary | Positive requirement | Negative control / rejection condition |
+|-------------------------------------------------+----------------------+----------------------------------------|
+| PM01 / dependency-compatibility-test.ss | Current define-program -> rule-module-program preserves declared relation handles/source/output bindings and bounds | Undeclared relation, duplicate/conflicting public binding rejected; obsolete Evidence module cannot be silently used |
+| PM02 / same finite numeric/typed controls | Rule result, empty second result, valid no-rule typed source are distinct successful controls | Invalid typed source rejected in both matched paths; no old result retention or ABI-only promotion to semantic pass |
+| PM03 / module-design-test.ss and gateway seven groups | Library/Scenario keep intended public Scope/program and current obligation behavior | Import success with missing rules, lost outputs or substituted hypothesis assessment fails |
+| PM04 / project ResourceEvidence Session boundary | Current generic Session preserves declared batch/source/finished/result behavior | Rejected/incomplete batch cannot publish definite Q or erase required obligations; old Q only historical after known invalidation |
+| PM05 / Flow publication and package metadata | Supported Clue/history export route exists in installed collection and has expected contracts | Existing source leaf without required artifact/support contract, guessed root re-export or missing transitive rule include fails |
+| PM06 / Library methods and Flow Clue owner | Trusted Host verifier, exact C/input/result refs, bounded generation and read-only Agent history preserved | Forged attested clue, stale generation/context, changed retained snapshot or Agent append authority rejected |
+| PM07 / examples and reassessment ledger boundary | Task/source/epoch/order/owner and actual observation origins retained; close/invalidation behavior qualified | Wrong/closed handle, stale evidence after invalidate, invented model/tool execution or ledger event treated as Aitia authority rejected |
+| PM08 / gerbil.pkg/manifest/Flow Cargo/build receipts | One resolved intended generic producer and actual package roots, appropriate direct dependencies | Unreconciled manifest/Cargo/installed producer mismatch, two producer identities or dirty bytes hidden behind HEAD fails |
+| PM09 / Core Types and S1 value-contract checks | Complete POO value Contract normalizes once, Core contextual admission retains exact candidate; genuine refinement keeps owned dependency trace | Bare default success classifier used as shape/origin check, unknown fields, forged receipt clone, mismatched child replacement or duplicate shape registry fails |
+| PM10 / Core link/admission and Scenario profile boundary | Checked Context, each dependency Scope, final Scope and profile flow downstream; currentness checked before publication | Distinguishable normalized candidate discarded, pre-check input bound, custom obligation read lost, failure partially cached or restored bytes reviving old authority fails |
+| PM11 / build.ss/Justfile/package-metadata-test.ss | Source, expansion and compiled roots have required regular artifacts, actual ordered module/FFI origins and compatible ABI | Hidden source/.gerbil/lib/native-build fallback, old removed namespace resolving, wrong read-projection/MOP artifact fails even with exit zero |
+| PM12 / future clean-process import/cold lane | Installed-only fresh process resolves intended public modules and exact origin under existing heap/watchdog | Cache/warm-only result, missing producer or stale earlier loadpath artifact cannot satisfy cold acceptance |
+| PM13 / resource-integration and S5/S6 boundaries | Same required obligations/C and honest A/E/W/use enter Q and independent Aitia verification; pass/fail/pending/conflict meanings remain distinct | Generic recorded-only explanation, assessment supported or source digest alone promoted to proof/review acceptance fails |
+| PM14 / history/recovery/receiver controls | Original negatives, later causal applicability findings and live status guards preserved across migrated capability boundary | Replay, lost veto, revoked seal reuse or return of old premise bytes restoring authority fails; partial ordinary recovery remains failed |
+
+Future invocation uses existing heap-fenced Justfile test-file/gateway groups,
+build, resource investigation/integration and review/history/recovery entries with
+explicit frozen inputs. Integration generation still needs its separate
+resource-integration-test consumer/report binding; generation alone is not that
+assertion. No new unbounded launcher is proposed. Ordinary build remains 180 s,
+test-file 120 s, integration investigation 600 s, recovery 180 s plus 5 s kill
+grace; Gerbil max heap remains 2 GiB per process. Avoid parallel Gerbil lanes
+without an aggregate memory owner. Retain q34 restart-two -9/185.059 s, DR07-DR14
+partial and restart-three unrun; do not explain that timeout by this import drift
+without evidence, widen its budget, or rerun an unchanged failed route.
+
+* SPECIFIED P0 disposition and remaining prerequisites
+:PROPERTIES:
+:CUSTOM_ID: p0-status-and-prerequisites
+:END:
+
+This chapter closes the static responsibility/import/Core-diff design inventory.
+It does not clear AC01, WP00/BS02-BS05/BS07/BS09, OJ dependency/load prerequisites
+or the recovery gate. Upstream supported Clue/ledger publication, compatible
+resolved pins, actual installed/load observations, complete normalized Scope
+handoff and per-control executable lane/evidence mappings remain to be qualified.
+No package install/update, implementation edit, runtime acceptance, review
+submission or delivery has occurred in this work.
+
+The S1-S9 causal-assumption lifecycle remains unchanged: captured meaning changes
+require new C; technical basis changes require new Q/R; later external status can
+invalidate current use without editing historical W/Q/R. Generic rule derivation,
+Flow ledger order and Core read dependency tracking are not empirical causal
+identification. Sound invalidation, preserved counterevidence and real authority
+are correctness requirements. Minimal invalidation or cost improvement remains a
+research proposition against conservative full revalidation; the paper remains
+a research object and does not authorize the migration or prove an improvement.
+
+The paired [[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][D2 source]] and [[file:../../90-99-views/90-architecture-views/90.99-library-contracts.svg][SVG]] show actual ownership, unclosed publication and future
+qualification separately. Historical 10.34 catalog hashes and 10.64 observations
+remain immutable; current source identities must be captured anew when work executes.
+
+* SPECIFIED P0 handoff to complete P1 expectations
+:PROPERTIES:
+:CUSTOM_ID: p0-p1-expectation-handoff
+:END:
+
+[[file:10.66-effective-types-and-contract-closure.org::#p1-normalization-and-validation][10.66 P1 consolidation]] defines the effective refinement.
+P1 consumes the inspected current generic/application split and Core value-contract/read ownership semantics without pretending P0 qualified a build. Effective value/class metadata and finite request/action refinements must be in place before coherent S2 publication. Source exports, structural receipts and normalized shapes do not replace actual producer/source/status/authority checks.
+
+* SPECIFIED P0 dependency boundary consumed by P2
+:PROPERTIES:
+:CUSTOM_ID: p0-p2-owner-handoff
+:END:
+
+[[file:10.67-library-construction-publication-and-scope-handoff.org::#p2-current-source][10.67 P2 consolidation]] defines this handoff.
+P2 uses the observed generic/application owner split and actual Core return defects. Supported Flow interface publication and compatible resolved package/build/actual load closure remain P0 prerequisites. Neither source-leaf availability nor an old binary can qualify a full new Scope.
+
+* SPECIFIED P0 source and origin prerequisite consumed by P3
+:PROPERTIES:
+:CUSTOM_ID: p0-p3-origin-prerequisite
+:END:
+
+[[file:10.68-profile-selection-scenario-binding-and-capture.org::#p3-current-source][10.68 P3 consolidation]] defines this boundary.
+The current source observation and actual Core read/verification primitives are distinct from qualified arbitrary-repo observation or trusted Scenario producer status. P0 actual resolved package/build/load and source/Host bindings remain prerequisites. Upstream HEAD or migration reports do not qualify this project capture.
+
+* SPECIFIED P0 actual producer and loaded source in P4
+:PROPERTIES:
+:CUSTOM_ID: p0-p4-loaded-origin
+:END:
+
+[[file:10.69-method-content-execution-and-evidence-issuance.org::#p4-source-and-gaps][10.69 P4 consolidation]] defines this boundary.
+P4 keeps generic ASCENT and actual Flow application owners separate. Actual loaded reader/method/oracle/issuer/backend/FFI sources and tool/build artifacts belong to the footprint. Upstream HEAD/version/import success or old compiled fallback cannot prove what a method executed.
+
+* SPECIFIED P0 generic Session API consumed by P5
+:PROPERTIES:
+:CUSTOM_ID: p0-p5-session-api
+:END:
+
+[[file:10.70-ascent-projection-and-determinate-query-view.org::#p5-current-source][10.70 P5 consolidation]] defines this boundary.
+P5 uses current generic rules/interface, declaration extraction and synchronous Session acceptance. Current pure-positive actor-session is not a drop-in replacement for the stratified-negation/accept-result program. Actual loaded engine/provider/predicate/codec and supported serialized Host route remain owner qualification obligations.
+
+* SPECIFIED P6 current source observation and load gate
+:PROPERTIES:
+:CUSTOM_ID: p6-follow-up-65
+:END:
+
+[[file:10.71-aitia-review-adaptation-and-current-use.org::#p6-current-source][10.71 P6 consolidation]] defines this boundary.
+A bounded current source observation records changed Flow/Core/ASCENT HEADs and Core read-projection/source-reader bytes without rewriting prior observations. Selected Aitia/Core verification bytes remain observed unchanged; actual load/build/read-origin qualification still belongs to P0/P3.
+
+* SPECIFIED P7 actual source observation
+:PROPERTIES:
+:CUSTOM_ID: p7-follow-up-65
+:END:
+
+[[file:10.72-history-authority-reassessment-and-withdrawal.org::#p7-current-source][10.72 P7 consolidation]] defines this boundary.
+The current bounded observation retains P6 dependency bytes/HEADs without a new runtime qualification. Actual Core/Aitia graph/issuance and scoped assurance preflight remain reusable seams, not implemented generic authority or Runtime effect guarantees.
+
+* SPECIFIED P8 source and bootstrap observation
+:PROPERTIES:
+:CUSTOM_ID: p8-follow-up-65
+:END:
+
+[[file:10.73-library-delivery-and-recipient-adoption-use.org::#p8-current-source][10.73 P8 consolidation]] defines this boundary.
+Current bounded source observations preserve preceding dependency bytes/HEADs and earlier drift records. Existing package manifest/ABI/custody seams are not actual load/build-to-artifact/receiver qualification; old ASCENT compatibility imports remain a P0 blocker.
+
+* SPECIFIED Current dependency observation and qualification
+:PROPERTIES:
+:CUSTOM_ID: p9-follow-up-65
+:END:
+
+[[file:10.74-case-joint-acceptance-and-research-plan.org::#p9-current-source][10.74 P9 consolidation]] defines this boundary.
+P9 observes another Core read-projection.ss byte change without changing HEAD; original source observations remain intact. Actual build/load/read-origin qualification and removed imports remain prerequisites; a static digest is no stable runtime cut.
+
+* SPECIFIED Current POO and ASCENT dependency observation
+:PROPERTIES:
+:CUSTOM_ID: consistency-audit-75-65
+:END:
+
+[[file:10.75-contract-consistency-and-refactoring-order.org::#audit-current-source-cut][10.75 P1-P9 consistency audit]] defines this refinement.
+Flow declared POO pin 0df023fd differs from resolved POO checkout fdeadfa; declared ASCENT 0f99da9e differs from checkout 5054f6d8. Current Core projection forwards original native read graph. Actual installed/loaded routes and Core Context/edge/final return handoff remain qualification/repair gates; no package changes occur here.
+
+* SPECIFIED P0 complete dependency and handoff follow-up
+:PROPERTIES:
+:CUSTOM_ID: p0-76-follow-up-65
+:END:
+
+[[file:10.76-dependency-build-load-and-normalized-handoff.org::#p0-current-dependency-cut][10.76 unified P0]] defines this boundary.
+10.76 retains this API migration foundation and current source observations, adding ASCENT old Core declaration, joint qualified revision selection and exact three candidate handoffs. No alias facade, invented SHA or LOADPATH-only claim reconciles incompatible declarations.
+
+* SPECIFIED Current upstream package and API transition
+:PROPERTIES:
+:CUSTOM_ID: p1-77-follow-up-65
+:END:
+
+[[file:10.77-effective-types-contracts-and-origin-lifetime.org::#p1-current-source-and-apis][10.77 unified P1]] defines this boundary.
+Current Core now declares yuanxu and exports Yuanxu*/yuanxu-* APIs; ASCENT declares Yuanxu dependency. Project/Aitia old :core/poo-flow-* consumers remain observed unchanged, so earlier API spellings are historical, not compatibility exports. Re-audit actual source/build/load owners before positive use.

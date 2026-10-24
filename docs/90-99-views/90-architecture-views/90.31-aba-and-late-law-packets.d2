@@ -1,0 +1,33 @@
+# org-target: docs/20-29-cases/20-gateway/20.11-expanded-boundary-review-packets.org::#c07-full-packet
+# Finite paper inputs and independent gold; no native capture or verification execution.
+grid-columns: 2
+grid-gap: 32
+classes: {
+  input: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; border-radius: 10; font-size: 17}}
+  state: {style: {fill: "#E6F5F3"; stroke: "#19756C"; border-radius: 10; font-size: 17}}
+  gate: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; border-radius: 10; font-size: 17}}
+}
+capture: "C07: coherent capture versus ABA labels" {
+  direction: down
+  states: "C07-00 / 01 independent state table\n20: A / C2 / allow; 21: B / C1 / deny\n22: A / C2 / allow; same raw N_L\nManifest members and generations explicit" {class: input}
+  mixed: "C07-02 Mmix = cfgA20 + permitB21\nNo declared coherent state contains this pair\nRefuse capture setup; fresh capture pending\nNo gateway counterexample or new RJ code" {class: gate}
+  unknown: "C07-03 independent unknown fork\nOnly equal endpoint A labels available\nPending coherence; not proven mixture\nUnknown footprint is not irrelevance" {class: gate}
+  frozen: "C07-04 independent positive fork\nAuthentic immutable coherent M20\nHistorical L0 read remains support\nABA alone does not falsify coherent snapshot" {class: state}
+  current: "C07-05 current use at epoch 22\nFresh usage / T-use and access guards\nKnown stale use RJ10; unknown pending\nRetain failed attempt and earlier bodies" {class: gate}
+  states -> mixed: "known independent member mismatch"
+  states -> unknown: "different input: proof unavailable"
+  states -> frozen: "different input: exact retained M20"
+  frozen -> current: "historical capture is not current grant"
+}
+law: "R06: late law evidence" {
+  direction: down
+  old: "R06-00 / 01 rLaw0 at k0-law\nL0 support and three factors\nS1 published before result intake\nOld I / cut / gold unchanged" {class: input}
+  intake: "R06-02 retain OutLaw0 at kLaw.late\nBind exact original request / body / subject\nCompletion time unknown without receipt\nRaw query output is not method VL0" {class: state}
+  check: "R06-03 independent current law check\nRL / VL0 / mapping / method / issuer\nComplete unchanged relevant footprint + access\nUnknown guards pending; known mismatch refused" {class: gate}
+  use: "R06-04 fresh kSrc.R06 / usage / T-use\nPrior artifact enters a new captured input\nOriginal output never relabeled as a new run\nNative TL and EL origin unchanged" {class: state}
+  target: "R06-05 changed target still pending\nNo Corr1 / new application / source Q / ASrc\nDirect Psrc promotion RJ03\nNo effect authority from raw / T / V / A" {class: gate}
+  old -> intake: "intake is not input capture"
+  intake -> check: "independent method and scope premises"
+  check -> use: "only if exact guards supplied"
+  use -> target: "law use is not target application"
+}

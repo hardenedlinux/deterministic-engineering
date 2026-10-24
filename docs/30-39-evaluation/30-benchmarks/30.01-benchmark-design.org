@@ -1,0 +1,322 @@
+#+TITLE: 30.01 Engineering Benchmark and Evaluation Design
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 30.01
+#+OPTIONS: toc:3 num:nil
+#+STARTUP: overview
+#+TODO: OPEN REVIEW | RESOLVED
+#+FILETAGS: :evaluation:benchmark:design:
+#+LINK: cases https://github.com/specula-org/specula-case-studies/blob/d419b3f72bd593e8f9ec04f5a98bffbdeaa7727b/%s
+#+LINK: tlaps https://github.com/specula-org/TLAPS-Bench/blob/d29eb13a6c2ec49c9980abc794f13e44fc9415a9/%s
+#+MACRO: status Evaluation protocol proposal. No corpus, harness, scores, benchmark execution or capability claim is delivered here.
+
+{{{status}}}
+
+[[file:../../../README.org][Overview]] | [[file:../../10-19-design/10-architecture/10.02-domain-and-rules.org][Domain and finite rules]] | [[file:../../20-29-cases/20-gateway/20.02-gateway-obligation-ledger.org][Gateway ledger]]
+
+* Evaluation questions
+:PROPERTIES:
+:CUSTOM_ID: evaluation-questions
+:STATUS: proposed
+:END:
+
+Evaluate engineering validity, implementation correctness, Agent effectiveness
+and operational cost separately. The proposed stack combines ASCENT reasoning,
+Core POO Modules/Profiles/Scenarios, Org arguments, D2 projections, Quint/QNT,
+Lean/lean-poo and JSON interchange with Aitia lifecycle assurance. Passing any
+one surface is insufficient for acceptance of the combined workflow.
+
+The [[file:../../10-19-design/10-architecture/10.04-evidence-driven-workflow.org][primary architecture]] treats ASCENT as evidence-chain-driven reasoning,
+including open exploration, current support/counterevidence and reusable checked
+derivations. This is broader than a rule checker. QNT is the maintained protocol
+authoring surface; TLC runs generated backend artifacts. Specula and TLAPS are
+reference assets, not the architecture to reproduce. The
+[[file:30.02-gateway-minimal-benchmark.org][minimal gateway protocol]] now fixes the pilot cohort, oracle responsibilities,
+budgets and GAP01-GAP12 convergence criteria, derived from our Library domain
+contracts, gateway obligations and framework consumption boundaries. The
+[[file:30.04-oracle-review-data-contracts.org::#framework-owned-evaluation][framework ownership contract]] defines those responsibilities; the
+[[file:../../40-49-research/40-reference-studies/40.02-selected-system-and-proof-case.org][external dossier]] is comparative research with separately qualified optional assets.
+
+The central questions are:
+
+1. Does a design composition produce the independently expected obligations,
+   conflicts, unknowns and method requirements?
+2. Do changes revoke exactly the required support, including negative and
+   aggregate dependencies, while permitting justified fine-grained reuse?
+3. Do the projections and external methods address the same bound proposition?
+4. Does Module-based organization preserve selected scope, source identity,
+   test isolation and explicit effect boundaries at acceptable cost?
+5. Under matched resources, does the Library help Agents make better design
+   decisions, repair defects and complete current, justified lifecycle work?
+6. Are costs and limits acceptable for the actual engineering workload, including
+   fresh, retained, changed-source and failed-result paths?
+
+* External reference inspection and transfer limits
+:PROPERTIES:
+:CUSTOM_ID: external-references
+:INSPECTED_ON: 2026-10-18
+:STATUS: source-inspected-not-reproduced
+:END:
+
+#+NAME: external-source-register
+| Reference | Pinned commit | Inspected material |
+|-----------+---------------+--------------------|
+| Specula Case Studies | d419b3f72bd593e8f9ec04f5a98bffbdeaa7727b | README, archive layout, etcd/raft historical CI evolution record |
+| TLAPS-Bench | d29eb13a6c2ec49c9980abc794f13e44fc9415a9 | README, usage contract, scoring implementation |
+
+Both references now have authorized shallow partial/sparse research clones under
+~.data/~ at these exact revisions. The
+[[file:../../40-49-research/40-reference-studies/40.01-specula-reference-study.org::#research-checkouts][local checkout receipt]] records selected paths and source-only inspection limits;
+the [[file:../../40-49-research/40-reference-studies/40.01-specula-reference-study.org::#transferred-controls][EXT01-EXT08 control register]] adds archive qualification, canonical-context,
+target-alias, protocol-binding and self-reported-count controls. Upstream tests
+were read, not executed. The research clones are ignored local inputs, not runtime
+dependencies or vendored implementation.
+
+** Systems cases: evidence-bearing engineering tasks
+
+The [[cases:README.md][archive introduction]] and [[cases:docs/layout.md][layout contract]] organize records by system,
+module and run, with provenance inventories. The inspected
+[[cases:systems/etcd/modules/raft/runs/etcd-raft-ci-evolution-20260923/README.md][etcd/raft historical evolution record]] distinguishes upstream source revisions
+from wrapper revisions, historical findings from new discoveries, local action
+checks from equivalence, and a model counterexample from unfinished implementation
+reproduction. It also records incomplete overall acceptance and omitted runtime
+artifacts. We did not reproduce that study.
+
+Transfer to this design: retain per-run provenance and negative/incomplete results;
+qualify selected assets before treating them as an executable engineering case.
+Importing an archive is not replay. A historical replay is not a new bug discovery.
+
+** Formal tasks: frozen target and independent grading
+
+The [[tlaps:README.md][benchmark introduction]] uses fixed specifications and target invariants.
+The [[tlaps:docs/USAGE.md][usage contract]] specifies manifests, immutable context, allowed proof-edit
+regions, canonical replay and scoring boundaries. The pinned
+[[tlaps:src/evaluator/score.py][scorer]] distinguishes budget timeouts from infrastructure failures, preserves
+first-attempt versus continuation metrics, and uses mode-dependent aggregation;
+module proof-from-scratch coverage and strict specification completion are not
+interchangeable. Freeze mode and scorer rather than inferring one metric from a
+repository summary. No TLAPS task was executed here.
+
+Transfer to this design: freeze target claims and dependencies, grade independently,
+retain all attempts and separate partial support from whole-case closure. A
+TLA+/TLAPS task is not already a Quint or Lean task. Translation requires property,
+transition, fairness and assumption correspondence; otherwise register a new,
+reviewed derived case with its own oracle.
+
+** Qualification before reuse
+
+For each selected external asset, record repository/commit, actual system source
+revision, license/attribution, available artifacts, unavailable dependencies,
+model scope, fault label, replay command and expected observation. Review missing
+artifacts before calling the case reproducible. Keep gold labels, reports and
+reference solutions out of blind Agent inputs; an archive-assisted task belongs
+to a separately labeled exposure cohort.
+
+Use a small representative pilot before importing a broad systems catalog. This
+document does not claim a corpus size, ranking, bug count or score. Versioned
+case manifests, licensing review and independent qualification remain open.
+
+* Evaluation lanes and independent oracles
+:PROPERTIES:
+:CUSTOM_ID: evaluation-lanes
+:STATUS: proposed
+:END:
+
+#+NAME: benchmark-lanes
+| Lane | Unit under test | Oracle and controls | Primary observation |
+|------+-----------------+---------------------+---------------------|
+| B0 projection integrity | Bound Org/D2/QNT/Lean/JSON design views | Independently fixed IDs, planes, units, interpretations; stale/ambiguous payload controls | Exact correspondence/refusal within representable scope |
+| B1 finite derivation | Design snapshot + R01-R15 + obligation inventory | Hand-reviewed expected sets and independent finite reference, not the same rule output | Required methods/origins, missing/extra obligations, unknown scope |
+| B2 change and reuse | Before/after context, CH01-CH12, candidate admissions | Independent expected impact/transport decisions; omitted edge, last support, negation and stale reference controls | False admission, false withdrawal, correct transfer and retained uncertainty |
+| B3 formal capability | Fixed property/model plus allowed proof/model work | Trusted checker policy and known negative controls; frozen statement and assumptions | Valid proof or checked refutation, separately reported by method |
+| B4 Module organization | Selected Core Graph, Profiles, Scenarios and native tests | Existing native assertion semantics, poison selection, source mutation, explicit effects | Scope fidelity, currentness, completeness and per-phase cost |
+| B5 Agent engineering | Requirement/design/change task and allowed tools | Hidden independent obligation/decision rubric, artifact checks, blinded design review | Justified case closure and decision quality under matched budgets |
+| B6 lifecycle and runtime | End-to-end handoffs and optional real gateway | Revision/authority/effect controls; exact-artifact fault/resource/workload evidence | Current scoped closure and actual runtime properties, separately |
+
+B0-B4 are prerequisite component evidence for the tested integration. They do not
+establish B5 efficacy. B5 success cannot compensate for a B2 false admission.
+Actual gateway throughput belongs to B6 and is distinct from toolchain latency.
+A case's expected outcome may be justified refusal, an unresolved assumption, or
+a counterexample; indiscriminately approving designs is not success.
+
+** Formal-method scoring boundaries
+
+Keep at least these result types separate: bounded model nonfinding, checked
+counterexample, theorem proved under assumptions, implementation reproduction,
+and source/model correspondence. A model counterexample may be spurious relative
+to source behavior; independent reproduction or a checked correspondence is needed
+for a source-bug claim. A valid refutation succeeds on a refutation task but is not
+a proof of the original invariant. Checker acceptance of a weakened statement or
+extra unreviewed axiom is invalid for the fixed task.
+
+B3 includes known-good, known-bad and unqualified/unknown cases. Inspect axiom and
+trusted-tool policy, not merely exit status. A finite enumeration and a universal
+Lean theorem support different statements. Record exact tool options, scope,
+fairness, seeds and bounds with every result.
+
+* Module and organizational benchmarks
+:PROPERTIES:
+:CUSTOM_ID: module-benchmarks
+:STATUS: proposed
+:END:
+
+Use the committed [[file:../../10-19-design/10-architecture/10.03-upstream-capabilities.org::#core-module-system][Core PR 19 mechanisms]] as the candidate organization foundation.
+Reuse its selected Graph, native ~std/test~, Case policy and explicit execution
+boundary; do not introduce a parallel benchmark runner in this design phase.
+
+#+NAME: module-scenario-register
+| Case family | Controlled variation | Required correctness condition / cost observation |
+|-------------+----------------------+--------------------------------------------------|
+| Selected closure | More available but unselected Modules | Poison/unselected body remains undemanded; measure actual selected work |
+| POO specialization | Parent depth, diamonds, order, overrides, final receiver | Correct effective providers/contracts/conflicts; measure resolve and observe phases |
+| Test ownership | Atomic versus integration selection, helpers and new files | Exact selected owners/suite, no implicit all-directory fallback |
+| Source currentness | Test/helper/config/import changes during validation | Stale view refuses at required boundaries; unchanged scoped work remains eligible |
+| Policy Profiles | Developer/staging/production and explicit tailoring | Mandatory obligations remain or get reviewed contract revision; no silent suppression |
+| Case resource policy | Memory/time budgets and cleanup failures | Retain exhaustion/unfinished natural exit; distinguish process counters from local allocations |
+| Organizational role | Missing/revoked reviewer and conflicting responsibility | Scope-aware gap/refusal, independent of passing tool results |
+| Contribution/effect | Explicit graph contribution and requested execution | Selection remains inert; one ordered pass is not claimed as fixed-point convergence |
+
+Measure cold preparation/build, first selected demand, warm same-source demand,
+changed-source admission, test execution, external checking and publication
+separately. Record counts of imports, observations, selected files, rule work,
+verifier calls and invalidations. Warm cache presence is not a correctness oracle.
+A retained path must demonstrate both currentness and the same admitted outcomes
+as an independent fresh path.
+
+Role/standard Scenarios are domain consumers of Core. Core's own mechanism tests
+must remain independent of concrete gateway, NASA or evaluation contributors.
+Organization extensibility is evaluated through correct composition and policy
+boundaries, not through a claim that more inheritance is inherently better.
+
+* Agent study protocol
+:PROPERTIES:
+:CUSTOM_ID: agent-study
+:STATUS: proposed
+:END:
+
+Pre-register tasks, expected outcomes, prompts, model/version/settings, allowed
+sources/tools, resource budgets, stopping criteria, continuation policy and scoring.
+Use the same model and task inputs across paired arms, randomize order, and freeze
+evaluator policy before running. Keep hidden reference support and failure labels
+outside model-visible context, including tool errors, filenames and rich metadata.
+
+#+NAME: agent-comparison-arms
+| Arm | Available support | Comparison question |
+|-----+-------------------+---------------------|
+| A | Same engineering tools and raw source/design references | Baseline without composed Library obligations/reuse |
+| B | A plus structured Library, bounded derivation and scoped feedback | Does organization and explicit obligation support improve decisions? |
+| C | B plus admitted fine-grained reuse and change impact | Does reuse preserve correctness and reduce total repeated work? |
+
+Use ablations for Core composition, obligation feedback and reuse separately where
+sample size permits. Match total accessible source information when isolating
+interface structure. Report extra setup/context cost; a richer arm must not be
+credited for a withheld answer that only it received. No tool description injects
+the required repair or preferred design branch.
+
+Hold out whole source systems or design families where possible; splitting only
+invariants from one public model leaks shared proof structure. Separate known-fault
+replay, blind defect investigation, design repair and new-design tasks. Public
+training contamination cannot generally be excluded, so report exposure and avoid
+attributing a public-problem score entirely to reasoning improvement.
+
+Use predeclared time, token, tool-call and checker/resource budgets. Any required
+repair and rechecking are part of endpoint cost. Preserve first-attempt outcomes;
+continuations and retry budgets have separate labels. Report a pilot as a pilot,
+with task counts and uncertainty rather than a population claim. Blinded reviewers
+score the stated design rubric and disagreements, not surface writing quality.
+
+* Metrics, denominators, and result integrity
+:PROPERTIES:
+:CUSTOM_ID: scoring-policy
+:STATUS: proposed
+:END:
+
+A frozen selected manifest defines the denominator. Missing records remain
+unresolved. Required budget exhaustion and timeout are nonpasses under that fixed
+budget. Infrastructure/provider errors are separately counted as unassessed and
+eligible for bounded replay; they never silently shrink the reported selected
+cohort. Applicability exclusions require predeclared policy and justification.
+A denominator of zero yields unavailable, not 100 percent.
+
+#+NAME: engineering-metrics
+| Metric | Proposed definition / required qualification |
+|--------+---------------------------------------------|
+| Obligation completeness | Expected required obligations/methods present divided by independently expected set; report extras separately |
+| False admission | Unqualified/stale/contradicted candidates admitted among the predeclared adverse candidates |
+| Valid reuse acceptance | Eligible certified transfers accepted among expected eligible transfers; report unnecessary invalidation |
+| Impact coverage | Expected affected nodes/admissions reached; report missed negative/aggregate dependencies separately |
+| Atomic task success | Correct expected verdict and required artifact/premise checks; refusal may be correct |
+| Whole-case closure | All required leaves/methods, coverage review and handoff checks satisfy the case's expected outcome |
+| Case-macro score | Mean per-case atomic completion; diagnostic partial credit, not whole-case acceptance |
+| Operational closure | Current exact artifact/configuration, admitted evidence, authorization and actual effect receipt where required |
+| Cost | Full lifecycle wall/CPU time, peak-memory scope, tool/checker calls, input/output tokens, repair/recheck and setup costs |
+| Reproducibility | Qualified independent replay under fixed inputs; report unavailable dependencies and nondeterminism |
+
+Engineering acceptance requires no observed false admissions in required boundary
+controls, plus the relevant proof/coverage obligations. Zero observed failures
+supports only the sampled scope, not a universal safety theorem. Report numerator,
+denominator and uncertainty appropriate to the design; no arbitrary composite
+weighted score should conceal a safety failure behind token savings.
+
+Compare quality at matched budgets and cost at matched correctness/closure. Count
+all support-changing epochs, failed attempts, verifier reruns and repair work.
+Report exact-work and measured-time improvements separately. External compiler
+load or differing cache/build conditions invalidate a clean speedup comparison;
+retain the contaminated run and repeat only under a justified matched protocol.
+
+A latency metric must specify its start/end events and population. Gateway p95
+must account for refused, timed-out and incomplete requests under an explicit
+policy; do not omit inconvenient outcomes. Tail quantiles require adequate samples,
+repeat runs and workload stability, not one small warm batch.
+
+* JSON records and independent grading
+:PROPERTIES:
+:CUSTOM_ID: run-record
+:STATUS: proposed-contract
+:END:
+
+JSON carries versioned observations and task/result references. Org remains the
+maintained human-readable design/report format. The future record contract must
+preserve exact typed quantities and statuses under the
+[[file:../../10-19-design/10-architecture/10.02-domain-and-rules.org::#projection-contract][projection contract]]; no schema implementation is added here.
+
+#+NAME: run-record-fields
+| Record group | Required content |
+|--------------+------------------|
+| Selection | Protocol/cohort/scorer revision, all selected case IDs, task/dependency manifest, exposure split |
+| Input | Design/Library/rule/standard/source/artifact/model IDs, projection versions, environment and workload |
+| Intervention | Arm, model/settings, allowed tools, source visibility, prompt and Profile identities |
+| Execution | Attempt/continuation/epoch, commands, budgets, natural completion, exit and infrastructure state |
+| Observation | Method verdict, completeness/scope, counterexample, reference/produced rows or artifact IDs |
+| Admission | Independent oracle result, semantic binding, freshness, authority, rejection/missing reasons |
+| Accounting | Raw usage, elapsed/CPU/memory scope, costs or unavailable values, all retries and setup |
+| Reporting | Raw/log content references, result history, scorer output and any exclusion justification |
+
+Agent-produced results are untrusted inputs to grading. Freeze canonical targets,
+context and expected obligations separately. Recompute scores from immutable raw
+records without rerunning the Agent. Stop grading on altered claims, substituted
+identities, missing required dependencies or invalid records; classify the reason
+rather than treating malformed results as proof failure or task success.
+
+Expected controls include changed theorem/assumption, extra axiom, stale source,
+relabelled receipt, unsupported status, duplicate JSON key, authority-plane
+substitution, empty test selection, missing result, incomplete process and modified
+hidden oracle. A valid schema and a clean diagram/export do not satisfy semantic
+correspondence. Keep trusted grader/oracle execution outside the editable task
+workspace and define the actual isolation boundary when a harness is implemented.
+
+* OPEN Pilot and completion gates :evaluation:
+:PROPERTIES:
+:CUSTOM_ID: evaluation-open-work
+:STATUS: open
+:END:
+
+1. Review ontology/templates and gateway expected obligations with independent reviewers.
+2. Freeze our Module/Profile/Scenario and producer source identities; qualify external assets only for a separately declared imported case.
+3. Freeze gateway positive/adverse/unknown controls, expected impact and reuse outcomes.
+4. Review the [[file:30.04-oracle-review-data-contracts.org][oracle input/gold/closure/cut contracts]], independent grading and budget/score policy.
+5. Qualify B0-B4 correctness and bounded cost before making an Agent-efficacy claim.
+6. Run a predeclared paired B5 pilot; retain full costs, failures and uncertainty.
+7. Qualify real B6 source/runtime handoffs and effects before claiming operational closure.
+
+Each step requires concrete evidence before being marked complete. This document
+establishes the evaluation questions and controls; no benchmark is reported as run.

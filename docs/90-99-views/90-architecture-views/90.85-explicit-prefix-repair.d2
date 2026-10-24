@@ -1,0 +1,56 @@
+# org-target: docs/10-19-design/10-architecture/10.23-native-aitia-backpressure-content-review.org::#explicit-prefix-repair
+# render-layout: elk; theme: 0; pad: 24; timeout: 30
+direction: down
+classes: {
+  evidence: {style.fill: "#e8f2ff"}
+  pending: {style.fill: "#fff2cc"}
+  denied: {style.fill: "#fce4df"}
+}
+intent: "Selected signed writing intent\nExact archive SHA + owner + cut" {class: evidence}
+partial: "Interrupted half-write\nPreserve original bytes" {class: pending}
+input: "Original complete candidate\nRoot-signed repair bindings\nExact prior active head" {class: evidence}
+repair: "Existing archive module\nCheck ordered prefix + full references\nFresh output; serial host CAS"
+checkpoint: "Signed repaired checkpoint\nSame original cut; no reader\nRepair authorization closure" {class: pending}
+retry: "Same request + same current closure\nReuse checkpoint; no duplicate"
+activation: "Fresh process + reader activation\nOriginal Aitia handover\nOriginal signatures / targets / policy"
+counter: "Six original records\nPublished + partial counter retained" {class: denied}
+old: "Old receipt presentations\nNo current authority" {class: denied}
+resolution: "Current signed disposition\nNames both original counter IDs"
+admit: "Fresh Core receipts\nNative review-admitted\nRelease still unauthorized"
+later: "Active reader or later prefix\nRefuse old repair replay" {class: denied}
+intent -> partial
+intent -> repair
+input -> repair
+repair -> checkpoint: "Exact completion only"
+checkpoint -> retry
+checkpoint -> activation
+activation -> counter
+old -> activation: "Refuse receipt rehydration"
+counter -> resolution
+resolution -> admit
+activation -> later
+admit -> later
+partial -> repair: "Incomplete candidate stays pending"
+
+capacity: "Bounded native review work" {
+  direction: down
+  policy: "Existing Aitia stage policy\nSelect required Catalog rows first"
+  same: "Same input validation + same row evaluator\nFull Catalog remains parity control"
+  ownership: "Direct Core model / classes imports\nHistory owns each run closure once\nRelease temporary original-run presentation\nPublic entries remain deep copies"
+  pure: "One private completed pure audit\nOne baseline construction epoch for A / B / aggregate\nComplete entry and return byte guards\nThree independent exchanges and private state\nFresh full byte scan at every actual use\nPrivate baseline interpretation + canonical keys\nEach intake retains independent native state\nNo counter or receipt cache"
+  custody: "Exact historical producer source inventory\nOriginal identities + versions + captured byte locations\nCurrent consumer seal; fresh native receipts"
+  registration: "One complete union check per registration operation\nA: 3606 references / 1212 paths\nAggregate: 4808 references / 1218 paths\nSame per-run oracle and bound JSON\nEvery later operation checks again\nArchive cache pairs checked key with parsed result\nCold capture reads its verified branch result\nOne full checked native capture at each use\nFederation synchronizes then forwards to aggregate"
+  layer: "Reject impossible issuance first\nConstruction: declarations + native capture\nContext: declarations + Profile\nEligible content: full current closure\nSelected disposition: exact closure"
+  load: "Native owners before project-source alias\nCompile maintained recovery test sources once\nGxtest loads compiled tests; actual object SHA checked"
+  groups: "Five causal cross-intake groups\nFour native-selected basic suites\nDelayed receipts + actual group exit\nRecovery producer owns independent preflight checks\nIntake / repair execute only their own complete setup\nDiagnostic status asserted without duplicate gate\nOriginal checks and gold retained"
+  current: "Full original runtime closure checked at use\nFull qualification cut checked around every recipe\nAll Org documents independently checked\nNo timestamp, label or old receipt authority"
+  oracle: "Independent event / packet / signature audits\nFresh output paths + frozen execution workspace\nShared intake events; pending branch restores exact bytes\nSeparate full durable and repair data oracles\nRetained passes keep original cuts; no authority transport"
+  budget: "Fixed 2 GiB / 180 seconds per process\nHeap ceiling, not preallocation\nScoped awake guard; no timer reset\nExit 0 + all markers; timeout fails"
+  policy -> same -> ownership -> pure -> custody -> registration -> layer -> load -> groups -> current -> oracle -> budget
+}
+activation -> capacity.current
+
+observed: "Observed at fixed 2 GiB / 180 seconds\nDurable intake: 13 gold + oracle pass\nExplicit repair: 17 gold + oracle pass\nOrdinary restart two: watchdog failure\nFull acceptance remains open" {
+  class: pending
+}
+capacity.budget -> observed: "Keep failed trace; no budget widening"

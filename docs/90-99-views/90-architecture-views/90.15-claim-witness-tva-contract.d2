@@ -1,0 +1,24 @@
+# org-target: docs/10-19-design/10-architecture/10.07-claim-witness-reference-contracts.org::#witness-applicability-contract
+# Proposed domain data contract; no native T extension or implemented verifier.
+direction: down
+classes: {
+  data: {style: {fill: "#E6F5F3"; stroke: "#19756C"; border-radius: 10; font-size: 17}}
+  native: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; border-radius: 10; font-size: 17}}
+  boundary: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; border-radius: 10; font-size: 17}}
+}
+claim: "Canonical ClaimDescriptor\nProposition, target, assumptions, units\nSeparate obligation / admission policy" {class: data}
+witness: "WitnessEnvelope / EnvelopeId\nID + artifact digest is only a join key\nClaim, polarity, factors and extraction bound" {class: data}
+t: "T: native content reference\nSource label + content digest\nDoes not verify envelope metadata or truth" {class: native}
+v: "V: authentic verification record\nExact subject, proposition and method\nMapping/application, verdict and completeness" {class: boundary}
+applicable: "Per-witness applicability\nG01-G08 at declared target/cut\nUnknown remains pending; no factor splicing" {class: boundary}
+obligation: "Obligation and argument revision\nSlots: owner claim / required proposition\nCounter intake/review scope and policy" {class: data}
+a: "A: authentic scoped admission\nExact obligation, references and coherent cut\nNot execution permission or effect receipt" {class: boundary}
+raw: "Independent raw read / open hypothesis\nNative support and counter remain visible\nNo canonical-review prerequisite" {class: native}
+claim -> witness: "checked proposition-to-record mapping"
+witness -> v: "exact envelope binding"
+t -> v: "content binding is only one premise"
+v -> applicable: "accepted complete checks; result kind preserved"
+applicable -> a: "eligible positive support, not self-issued A"
+obligation -> v: "required proposition: SC checks Corr0, owned by P0"
+obligation -> a: "checked argument to owner + all slots / review / policy"
+raw -> obligation: "relevant counter review cannot be hidden" {style.stroke-dash: 4}

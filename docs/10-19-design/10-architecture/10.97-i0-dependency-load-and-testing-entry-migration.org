@@ -1,0 +1,453 @@
+#+TITLE: 10.97 I0 Dependency, Load and Testing Entry Migration
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.97
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+FILETAGS: :design:dependencies:bootstrap:testing:fixtures:load:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.96-declarative-slice-coherence-and-current-upstream-audit.org::#slice-audit-order][10.96 I0 order]] | [[file:10.89-i0-source-cohort-dependencies-and-load-boundaries.org][Earlier I0]] | [[file:10.90-i1-normalized-context-and-scope-handoffs.org][I1]] | [[file:10.95-i6-joint-acceptance-and-explicit-sysml-publication.org][Joint acceptance]] | [[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][D2]]
+
+* Scope, target direction and execution boundary
+:PROPERTIES:
+:CUSTOM_ID: i0-migration-scope
+:END:
+
+This unifies 10.96 I0 and 10.89 against the actual local POO/Core/ASCENT/Flow
+sources, with explicit test-policy, recipe and fixture ownership. It specifies a
+coherent direct migration, not a namespace alias, alternate loader, new test runner
+or second dependency/version registry. I0 establishes compatible selected sources
+and entry closure; complete build/load/cold/recovery and I1 normalized-value behavior
+remain separately evidenced gates, not consequences of making imports resolve.
+
+#+begin_example
+POO validation/observation -> Core source/Scope/build/TestingScript/Ops/Fixture
+ -> generic ASCENT Program/Session -> this Project's formation consumers
+Core / generic ASCENT -> optional Flow products -> selected Project evidence/review
+Flow development package -> ASP discovery/batching -> original native harness
+Actual test entry -> selected source + policy -> TestingScript .run
+ -> Fixture precheck -> Ops child -> process gate -> receipt refinement
+ -> Fixture postcheck -> actual domain/lane verdict
+#+end_example
+
+The arrows indicate dependency/use, not a new orchestration pipeline. Formation
+need not depend on Flow products, ASP or Nix merely because their tests exist in the
+workspace. Selected full evidence/review/provider lanes must include their actual
+Flow/Aitia/product dependencies instead of borrowing retired ASCENT application APIs.
+
+This update reads sources, metadata, launcher bytes and selected artifact bytes;
+it changes Org/D2 only. No package operation, recipe parsing/execution, build, load,
+source namespace check, test, cold start, restoration, inference, SysML validation,
+publication or orchestration expansion occurs. Even just --list can evaluate
+backtick environment expressions; recipes are read as source here. Proposed calls
+and acceptance conditions are not executable receipts.
+
+* Declared dependencies, actual checkouts and source cut
+:PROPERTIES:
+:CUSTOM_ID: i0-migration-dependencies
+:END:
+
+Read-only observation on 2026-10-21. Counts use normal Git directory granularity
+and precede this documentation update. HEAD is not dirty-source or load identity.
+
+| Checkout | Observed HEAD | Changed/untracked paths |
+|----------+---------------+-------------------------|
+| . | 8044732d505f84e373119a70f947df00e1767300 | 421 |
+| ../poo-flow/core | 1107677e53b0c3096958edc83429ddf9f1e1257e | 163 |
+| ../poo-flow | e20e93236ca7a04275d1293cdc9ce770401efd7f | 646 |
+| ../gerbil-ascent | 18751d5c513fd7ae6e768f580866b9e1fb34d2d3 | 2 |
+| ../poo-flow/.gerbil/pkg/github.com/tao3k/gerbil-poo | fdeadfa40ca5cee5fe20308985aef1577f2eb49b | 10 |
+
+| Native declaration / resolution | Required coherent disposition |
+|---------------------------------+--------------------------------|
+| Project gerbil.pkg unpinned poo-flow-core/ASCENT/POO; manifest.ss records older Core/ASCENT descriptions | Select reviewed immutable compatible revisions through the existing owning native metadata; actual resolved links/dirty inputs and generated reports must agree. A manifest/report is not an independent pin authority |
+| Core gerbil.pkg: yuanxu, prelude :tao3k/yuanxu/prelude, POO f956f4c68d7d996ef860a2633f4fb9b4e745bd0b | Actual shared POO is fdeadfa plus observation/read-route edits. Resolve the required POO behavior and package/prelude identity before choosing a new qualified Core revision |
+| ASCENT gerbil.pkg: yuanxu 44a99d45396d1a23e850105ffe8af442a61b2780; Program/types/operator/operator-change still :core/PooFlow | Directly migrate actual Type/Contract semantics to selected Yuanxu/POO. The old formation checkout at that hash declares core; metadata address alone does not make it the current Yuanxu API |
+| Flow gerbil.pkg: POO 0df023f, parser 78507e6, Orgize 8f04aa2, ASCENT 0f99da9 | Actual Flow-local ASCENT is 86ad9ae and shared POO fdeadfa; reconcile each actually selected production route. Flow remains optional for formation-only reasoning |
+| Flow dev/gerbil.pkg: ASP 0f78289a7ae465a84370f5d94d8d14671f3c43af | ASP moved out of production dependencies into the development package. dev/unit-tests.ss still imports ASP testing-api; dev/.gerbil/lib is a distinct intentional test dependency, not production fallback |
+| Core/Project nested gerbil.pkg and language metadata | Migrate public package/prelude and phase dependencies together. Library/modules/scenarios currently use :core/module-system/source/module-prelude; Profile metadata is distinct. Do not rename only source import strings |
+
+Project links resolve to adjacent Core, Flow, ASCENT and Flow's shared POO. Further
+actual roots remain: ASCENT-local Core e85fd45303b208b23e5957fd316e7004994109a4,
+POO 099b381588360a8a49fd772f666a1a00351366f5 (untracked manifest), and Flow-local
+ASCENT 86ad9ae3469565bea6229b71ef1d9197c6a82d63. Isolated formation Core
+44a99d45396d1a23e850105ffe8af442a61b2780 and POO
+0df023fd9e15192156935c971f0f1940028c5277 are clean historical alternatives.
+They are not interchangeable same-process dependencies or evidence of current API parity.
+
+No exact new compatible tuple is established here. Select current ownership and
+supported behavior, freeze actual reviewed bytes/revisions at the owners, then
+qualify; do not select the nearest old compiled directory merely because it imports.
+Library V1 remains declaration-owned under I2. Checkout pins, compiler identities,
+wire tags and source/method revisions are distinct and do not belong in Namespace.
+
+** Selected inspected bytes
+
+These identify local read-only observations, not a frozen whole working tree or
+actual compiled/loaded code. Older cuts remain in their original chapters.
+
+| Existing source | SHA-256 |
+|-----------------+---------|
+| ../poo-flow/core/gerbil.pkg | 14943e2c1a5ff0f941e5521d1f35b8e0a0ad64faea972f4c13f5be997d2c6224 |
+| ../gerbil-ascent/gerbil.pkg | 8dc86416025555eaf0b2c7a62426ba53ed1d5985892e077234e93fa929434e63 |
+| ../poo-flow/gerbil.pkg | d185922700039aeb6979e0d249fa8ec60328c13c41b683ae90813ad7e4a57615 |
+| ../poo-flow/dev/gerbil.pkg | 68d30bad66707ac4b0ff08b39ea8cd3c27b279bc46e2398013292f6190c47ff8 |
+| ../poo-flow/core/observability/testing-script.ss | dc13846fd71b7e6ee7463a0298fc1becb685032e14b8a29c2aefa50d39baf7e7 |
+| ../poo-flow/core/observability/testing-fixture.ss | 789e3acbf0d20900baa0a56247e5d3c45100a8be2d9024dc813d0531262e411f |
+| ../poo-flow/core/module-system/building/test-projection.ss | 586317684972a160dfc2b3afdeb511b6ba3752e496a9435634162ac27ce1fc38 |
+| ../poo-flow/core/dev/just/build.just | 156e918fce57116c40012c49c55a65031d2d659943336c481f70460558a6a29b |
+| ../poo-flow/core/dev/just/testing.just | 26a603eb3cbacbd39a299a9e921c2fb2f489570d6fd12b563218c065f90dda91 |
+| ../poo-flow/t/qualification/build-publication/approved-producer.ss | d5bb6deedaba3dea3288b0ec3e4283f12e8c2411b8090a28e9783bea06c316ae |
+| ../poo-flow/core/t/qualification/build-publication/store.ss | c028655e824e0ad252a5ee0a4b645d3faa9535e3ecc48ad14f3c8fe2bd29ccf9 |
+| ../poo-flow/t/qualification/nix/build.ss | 3a66e90138c5b72523ffe4d52c0703b0b8112f4b86c1e70723c9f328f01ef795 |
+
+** Later concurrent dependency observation
+
+During the final source comparison, Flow gerbil.pkg changed independently of this
+documentation work: its POO pin is now
+f956f4c68d7d996ef860a2633f4fb9b4e745bd0b instead of the initial 0df023f pin.
+The later file SHA-256 is
+f1038f60d0e43343b0a4e3daca8f617dfa36b5318f796e3e71fc16654e7e0a19.
+The initial table/hash above is intentionally retained as the earlier cut. ASP
+remains development-owned, and the other declared production pins are unchanged.
+
+Flow/Core now agree on the declared POO revision, but the actual selected shared
+POO checkout remains fdeadfa plus edits. This narrows one declaration mismatch;
+it establishes neither source compatibility nor build/load/entry qualification.
+The source-selection owner must freeze a new coherent actual closure before later
+execution. None of these dependency changes was made by this documentation update.
+
+* Public API, bootstrap and compilation/load handoffs
+:PROPERTIES:
+:CUSTOM_ID: i0-migration-load
+:END:
+
+| Owner/files | Retain and migrate | Evidence boundary |
+|-------------+--------------------+-------------------|
+| Shared POO object/mop/slot-observation/read-route and build.ss | Actual Object/Type/Function validation/normalization and native producer-owned read observations; compile the required actual units and phase inputs | Metadata-route guards and same-VM issuance do not supply arbitrary project snapshot, original C recovery or filesystem effect authority |
+| Core types.ss; module-system/source/{link,admission,publication}.ss | YuanxuType./YuanxuContract./YuanxuObjectContract., yuanxu-predicate-contract/admission and existing checked source/publication | I1 separately retains K1/SD/S1. Successful API migration cannot substitute for nonidentity normalization/source/edge/lazy controls |
+| Core build.ss, prelude.ss, core-spec.ss, building/source-package.ss | register-yuanxu-build-source! verifies package yuanxu and actual root prelude context tao3k/yuanxu/prelude at expansion time; retain actual source registration before compiled prelude use | Do not copy the historical nested yuanxu/prelude arrangement or introduce :core aliases to bypass bootstrap |
+| Core building/{build-projection,source-closure,artifacts}.ss | Existing selected graph/phase traversal, real compiler source/output inventory, receiver-local issuance/handoff/currentness | Graph/build receipt does not authenticate C/view, SysML validation or publication; output existence is not build admission |
+| ASCENT program Types/operators/session and build-modules.ss/build.ss | Generic Program/rules/Session and existing artifact snapshot/invalidation; direct selected Yuanxu migration. Name selected Scheme versus C/runtime/native consumers | Engine library list and native runtime/C-API/executables are different build surfaces; its receipt is not Core issuance. Scheme-only qualification cannot claim native/Actor/Rust completion |
+| Flow selected modules/evidence-assessment, temporal-causality, ai-agentic-context and packages/lambda-aitia | Actual application, causal, context and SDLC APIs remain at Flow owners; migrate retired evidence/interface consumers semantically only when selected | No mechanical function-name substitution or return of application Evidence into ASCENT; full Q/R/authority remains separate from formation view |
+| Project root/formation init, build.ss, Library/Module/Scenario Types/interfaces and nested metadata | Current :core/poo-flow! and old predicate imports migrate directly to selected yuanxu!/Contract/prelude surfaces; build includes all selected formation roots | Keep lazy explicit selection and native build projection, not an additional manual graph or import-init lookup |
+
+The Project build currently names four roots and omits complete formation entry/
+runner/test closure. formation-runtime mounts old Core/POO and adjacent ASCENT,
+copies nested language metadata, and places runtime/lib before source. Replace
+that source preparation coherently under the selected actual package identity;
+retain explicit source/compiled/bootstrap lane labels and no hidden old path.
+
+| Read-only artifact observation | General .gerbil/lib | Formation runtime/lib |
+|--------------------------------+---------------------+-----------------------|
+| clan/poo/object.o1 SHA-256 | 1cab71d8c826983fd6b99da6f5912596b1b632361d642e68c4e0e454ab6d5765 | Same wrapper bytes |
+| clan/poo/object~0.o1 SHA-256 | 4a4e003993e32e9c1bd8bf6b95b4d1887ff33f2a5a590a08848f22ec284c5c0f | 010e555fa53f953d08af9e391d1bc5876eb5a2e71f947670aafb22bfeb33b4f7 |
+| clan/poo/object.ssi SHA-256 | 090a7e9af6351a1b9219f718df57776569856a47fd91686f10e0791484e2c2da | 7f480a89b7fb55f3b06ca36058b448392be25ade4719f4ed0e9d5853314d81b6 |
+
+At the exact general paths inspected, core/types.ssi and retired
+gerbil-ascent/evidence/interface.ssi exist; yuanxu/types.ssi is absent. This is
+bounded file inspection, not actual resolution or a complete artifact inventory.
+Do not delete unrelated or historical outputs to manufacture a clean result; use
+the actual build owner's supported selected output isolation/invalidation at implementation.
+
+The shell's gerbil/gxi/gxc/gxtest resolve to the Homebrew
+0.19.20261009110849.1cfb032.patch618d76f9eb72 prefix. Their observed 478/481-byte
+launchers set GERBIL_HOME=current, append GAMBOPT runtime paths and exec another
+installed executable. Launcher digests alone cannot identify the actual VM/compiler/
+SDK/header/library image. Ambient GERBIL_PATH/LOADPATH/HOME/GAMBOPT/BUILD_CORES were
+unset in this inspection; child setup and package wrappers can still introduce paths.
+Future build/load evidence records exact exec chain, actual imports/expansion phases,
+interfaces/named sections/native libraries, argv/env/cwd and source association.
+No tool command is executed here, including --version.
+
+* TestingScript, Fixture and native harness call boundaries
+:PROPERTIES:
+:CUSTOM_ID: i0-migration-testing
+:END:
+
+| Actual mechanism / field | Responsibility and contract |
+|---------------------------+-----------------------------|
+| Core building/test-projection.ss | Discovers selected owner's tests from actual source/selection; qualification belongs to init owner. Preserves source/directory/negative observations, lazy execution and no second business Scope/Graph |
+| module-test-execution -> testing-script-for-source | Existing delayed native import/prototype factory, demanded only by explicit execution. Not a new loader or automatic execution at Project selection |
+| TestingScript. source.spec/source-root/admit-current | Nonempty native files, actual process directory and expected currentness operation. Simple one-file CLI observation is not proof every transitive import/fixture/recipe is guarded |
+| profile/runtime-options/command/environment | Core policy carries actual heap/time/observation modes; actual Ops request binds child argv/environment. Default native command retains gerbil test setup; custom command is an explicitly trusted specialization |
+| call-with-yuanxu-fixture .acquire/.release | Acquire calls source current! before launch; release checks it afterward. Acquisition owns rollback before returning a resource; returned resources release even on body failure, preserving body and cleanup failures |
+| Ops ProcessScript./run-script | Actual execution/status/output/log/cancellation/progress and process limits; retain original runtime and process owner. A parent exit/log marker does not prove child termination |
+| Common admit-testing-process-result | Always precedes .admit-result on actual TestingScript .run: nonempty spec, actual zero status/string output, no known harness/runtime errors and final OK. Cannot be bypassed by a permissive receipt refinement through that route |
+| Default admit-testing-result / .admit-result | Exact MODULE-OK files and HARNESS-OK native list, supported harness/required-lines/case-count and undefined-binding warning checks. Optional #f count is not independent semantic inventory |
+| Trusted specialized .admit-result | Owns actual product receipt interpretation, preserving common process and source/Fixture guarantees. Direct calls with synthetic results test admission logic only, not real launch or genuine provenance |
+| Original native harness and domain tests | Own suites/assertions/cleanup and independent expected results. ASP can own development discovery/batching while Core owns process/Fixture admission; neither marker nor count proves domain or C/view correctness |
+
+The existing Core CLI t/qualification/testing/run.ss binds one observed file and
+current directory, refines profile/observation/runtime options and calls .run.
+Its optional custom harness chooses an explicit gxi command; it is not an arbitrary
+Project-supplied executable trust API. Flow qualification-source observes its own
+helper and explicit files/inputs; qualification-script refines Core policy. Required
+transitive inputs/negative dependencies must come from the actual selected source/
+build/test projection or qualified source owner, not be inferred from that small list.
+
+Selecting an object or retrieving cached fields does not launch tests or perform
+continuous currentness IO. Keep execution explicit and expected owner/operation
+recognition separate from submitted POO shape. No new Project testing service,
+launcher, issuer registry or environment-driven discovery is required.
+
+* dev/just ownership, entry routing and fixed bounds
+:PROPERTIES:
+:CUSTOM_ID: i0-migration-recipes
+:END:
+
+| Existing entry / actual resolution | Target boundary and migration |
+|------------------------------------+-------------------------------|
+| Core Justfile -> dev/just/{build,checks,environment,proofs,source-admission,testing}.just | Root imports the actual maintained fragments; their bytes, variable expansion, cwd, tools, included scripts and child recipes belong to selected execution closure. A filename match is not closure |
+| Core test-file -> core/t/qualification/testing/run.ss -> TestingScript .run | Core generic policy/Fixture/Ops and native harness. Current recipe first reads a runtime budget in a separately bounded Scheme process, then launches the policy projection; do not omit bootstrap/launcher effects from provenance |
+| Core test-files/test-directory/check-test-groups | Existing direct-file group discovery and partition checks remain owned here. Nonzero complete expected inventory and actual case semantics are still needed; not every shell glob proves intended coverage |
+| Flow test-file -> explicit core/t/qualification/testing/run.ss path | Flow cwd/product files and declared dev library path; Core helper path is explicit but current process directory/source-root remains Flow. Do not accidentally reinterpret Flow paths relative to Core |
+| Flow test -> test-core then test-root | test-core changes cwd into Core; test-root selects specialized.ss package -> dev/unit-tests.ss ASP discovery/batching. Record both lanes separately; development ASP resolution cannot leak into production acceptance |
+| Flow qualification-script/specialized.ss/package-result.ss | Product selection and receipt refinement over Core TestingScript; preserve its declared inputs/observer/log/child limits and actual native harness. Do not copy product dispatch into Core or this Library |
+| Flow t/qualification/nix/{Justfile,build.ss,run.ss} | Product adapter roots/traversal using existing for-each-build-module; actual Nix reader and serial Core TestingScript files. Adapter compile filter is not a full Core/Project build receipt; default empty discovery cannot count as complete qualification |
+| Project Justfile formation-test-file/test-project-formation/entry/investigations | Migrate old source mounts/imports and consume Core test/source projection where actually supported. Keep existing focused algorithms, real entry and candidate-only investigation labels; do not build a duplicate harness or rename FORMATION-OK into acceptance |
+| ASCENT Justfile test-file and selected compiled/source entries | Preserve engine-owned supervisor/discovery/native harness. ASCENT_TEST_LIBRARY selects explicit compiled .ssi route; directory/preparation/source routes differ. Capture actual branch and loaded closure, not just final PASS |
+
+A bare just command resolves from the actual process cwd, not from the Scheme
+source file's owner. Child recipes must bind their expected owner/Justfile and cwd
+explicitly at the maintained entry, with selected arguments/environment. This does
+not authorize caller-selected recipes or a generic shell dispatch callback.
+Imported fragment paths and this-source-file-based fixture bases are different
+resolution mechanisms; both must preserve the selected graph after relocation.
+
+Current limits differ: Core generic profile defaults are 2 GiB, 600 seconds total/
+60 seconds idle; Flow root launch defaults to 1 GiB and its package gate uses
+1200 seconds; Nix adapter parents use 240/3600 seconds with serial 120-second
+workers; ASCENT has separately configured preparation/runtime/supervisor routes.
+These observations are not new Project permissions or equivalent lane caps.
+Keep this Project's 2 GiB, applicable 120-second focused/180-second complete-build/
+30-second static-model caps and actual signal/grace, plus narrower selected owner
+limits. Refine the existing supported profile/launcher coherently before execution;
+never inherit a larger default, add an unintended idle cutoff or widen a failed gate.
+Pre-import VM caps and in-process policy must agree. Bound aggregate subprocess work;
+a heap cap is not total RSS and activity output is not proof of useful completion.
+
+* Migrated fixture and recipe graph: concrete remaining breaks
+:PROPERTIES:
+:CUSTOM_ID: i0-migration-fixtures
+:END:
+
+The following are actual read-only path/import observations. No failing test was
+run. Future relocation/splitting below is target ownership, not a present API/file.
+
+| Existing source/entry | Current break or coupling | Target owner/disposition |
+|-----------------------+---------------------------+--------------------------|
+| Flow t/qualification/build-publication/approved-producer.ss | Still imports ./projection and ./store, neither present beside it; both remain Core qualification files | Import actual reusable Core probe projection by canonical Core module identity. Nix store operations belong to Flow product qualification; relocate/refactor existing store adapter there, not a compatibility duplicate |
+| Flow t/build-store-recovery-test.ss | Relative ./qualification/build-publication/store target absent in Flow | Same Flow-owned Nix adapter; retain actual Core handoff/invalidation and independent selected release pin checks |
+| Flow t/{approved-build-recovery,build-store-recovery}-test.ss | Bare just build-approved-* / build-store-* from Flow cwd; no corresponding recipe found in Flow maintained fragments | Move product recipe ownership coherently to Flow dev/just, bind exact owner/cwd in test/driver and all nested worker launches; preserve names only where they have one genuine current owner |
+| Core dev/just/build.just build-approved-producer | References removed Core approved-producer.ss, now at Flow | Product producer recipe follows Flow source; Core keeps generic issuance/compile/handoff entry, not a forwarding alias to a deleted file |
+| Core t/qualification/build-publication/store.ss | Executes nix-store/daemon, verifies exact store root and release pin, then actual Core handoff | Product Nix transport/verification belongs at Flow. Generic packet admission/currentness stays Core; no public product issuer is created |
+| Core store-producer.ss / worker.ss | Producer invokes just build-publication-worker; worker imports store and mixes generic handoff with Nix persist/restore/approved modes | Retain generic probe/issuance/handoff worker responsibility in Core, move Nix-specific modes and product driver to Flow qualification using actual Core APIs. Update every nested argv/cwd/fixture/projection and its build roots together |
+| Core service-publication/fixtures.ss | Generic DirectoryFixture/ServicesFixture/write-source and failure-preserving resource preparation remain here | Reuse qualified Core fixtures with their source/cleanup semantics. Flow product test can consume them without moving generic fixtures into Flow |
+| Flow t/scenarios/aws/fixtures.ss | Product-owned Nix/OpenTofu closure, workspace and provider inputs; actual source path differs from old Core t/Scenarios/aws | Keep product assets/closure at Flow and canonical selected identity/case; check this-source-file base and captured source/currentness after migration, not filesystem case assumptions |
+| Core worker package-process-end observation / Flow modules/nix/progress.ss | Generic completion vocabulary versus product-specific progress parsing | Core keeps generic source/process events; Flow Nix reader composes generic reader. Progress advances only through actual supported evidence and never admits a model/review/effect |
+
+This split is complete ownership refactoring, not just repairing two relative imports.
+In particular, pointing Flow back to the present Core store helper would keep Nix
+qualification coupled to Core and leave nested recipe/cwd issues. Do not copy those
+helpers into a Library-owned implementation or make Core depend on Flow to satisfy
+removed tests. A future Flow product worker may be extracted from the existing Core
+worker; it is explicitly absent/unqualified until implemented and tested.
+
+The original Core issuance still comes from call-with-build-artifact-issuance and
+its actual supported process/handoff path. Product transport, Nix registration or
+stored packet equality does not mint receiver issuance. Generic source/compiler/
+artifact checks and failed-restore invalidation stay at Core. Neither product nor
+generic build recovery restores C/view origin or publishes SysML.
+
+* Implementation sequence and evidence handoff
+:PROPERTIES:
+:CUSTOM_ID: i0-migration-order
+:END:
+
+| Order / actual owner and files | Prerequisite -> required exit |
+|-------------------------------+--------------------------------|
+| I0.1 source/API inventory / Project and dependency owners | Freeze intended production versus dev/product lanes, exact native metadata/actual checkout/dirty/phase closure and symbols; inspect complete selected recipes/fixtures. Exit: explicit incompatibilities/owner graph, no guessed new revision tuple |
+| I0.2 POO and Core bootstrap / upstream build/source-package/Types owners | Choose reviewed required POO source, direct Yuanxu language/Contract migration and supported phase registration. Exit: compatible declarations and actual source/prelude closure; keep I1 K1/SD/S1 repair and nonidentity qualification explicit |
+| I0.3 generic ASCENT / Program Types/operators/build owners | I0.2 compatible Contracts -> remove old :core/PooFlow use directly and bind actual Program/Session Scheme/native build surface. Exit: coherent engine source dependency and intended tests, no retired application Evidence API restored |
+| I0.4 selected Flow product/dev dependencies and fixtures / Flow + Core generic owners | I0.2/I0.3 supported sources -> split Nix versus generic helpers/workers/recipes, fix all nested imports/cwd/argv and product/test assets; ASP remains dev-owned. Exit: complete actual selected owner graph with no missing fixture or old alias |
+| I0.5 this Project / native metadata/nested package/build/init/Justfile and actual callers | Selected coherent upstream graph -> direct namespace/prelude/Contract/import migration, declared full build roots and supported Core TestingScript/projection refinements. Exit: source-compatible entries/limits and exact intended test inventory |
+| I0.6 actual build/load/cold/recovery qualification / compiler/Core/engine/product/Project owners | Complete selected immutable sources -> separate real source/compiled/empty-artifact/cold/build-recovery controls, actual named artifacts and loads, preserved logs/failures. No partial kernel or marker-only pass |
+| I0.7 handoff to I1/I2/I3 / Project and actual validation owners | Pass the advertised selected lanes and I1 normalized handoff controls before downstream Scope claims. Deliver actual source/build/load/test associations and unresolved optional gates; no C/view/model/publication credential inferred |
+
+Source/Contract/fixture/oracle design can proceed while compatible revisions are
+being prepared, but actual downstream execution waits for the selected real exits.
+Do not patch only the Project pins and run against stale compiled units. Native
+metadata/build projections remain authoritative; reports/Org/D2 display exact cuts,
+selected results and open gates without becoming a second lockfile.
+
+| Evidence role at existing owner | Required retained content |
+|--------------------------------+---------------------------|
+| Source/dependency selection | Actual owner/path/pin/package/prelude and expected APIs, production/dev/product scope, immutable source/dirty/phase closure and negative observations |
+| Entry/fixture declaration | Explicit actual Justfile plus imported fragments/cwd/argv/env/runtime options, test spec/case inventory/independent oracle, source/currentness and cleanup owners |
+| Build and actual load | Actual compiler/VM/SDK chain, selected roots/phase/named artifacts/interfaces/native libraries, original issuer/handoff and observed loaded association |
+| Test/process/Fixture outcomes | Actual .run route, precheck/launch/common gate/refinement/postcheck, status/signals/limits/raw logs, complete cases and both primary/cleanup failures where present |
+| Bounded downstream handoff | Qualified Scopes/source/build/load refs plus exact passed/open lane labels; I1 normalized values and I3 actual acquisition still have their own gates |
+
+No new authoritative manifest/receipt format is introduced. Planned commands,
+synthetic wire receipts, fixture existence, matching wrapper digest and direct
+.admit-result tests are insufficient to populate these roles with real success.
+
+* Proposed positive and negative acceptance conditions
+:PROPERTIES:
+:CUSTOM_ID: i0-migration-controls
+:END:
+
+These refine 10.89 I0-C01--C10 and 10.96's current-owner controls. IDs below are
+local proposed control labels, not new public enums or executed case counts.
+
+| Control / existing seam | Positive requirement | Negative control / expected state |
+|-------------------------+----------------------+-----------------------------------|
+| I0-R01 declarations/checkout | Exact compatible native pins, actual selected checkouts/dirty bytes/package/prelude and macro/runtime closure agree | Historical formation or nested package satisfies an old import, manifest-only identity, unknown dirty source or mixed :core/:yuanxu refuses selected lane |
+| I0-R02 bootstrap/API | Actual POO/Contract/prelude semantics and public Program inputs/normalized returns match, with real prelude registration | Namespace-only rename, copied old prelude, wrong expander identity or lost Function/value normalization fails |
+| I0-R03 production/dev graph | Formation uses only required owners; selected Flow product and ASP dev gates bind their own admitted dependencies | Root production silently imports dev ASP, missing dev dependency masked by ambient lib, or all formation forced through Nix/Aitia fails scope claim |
+| I0-R04 complete compile | Declared graph builds every selected phase/unit/interface/named section/native dependency with actual issuance | Equal .o1 wrapper hiding changed ~0/.ssi, omitted formation root, partial object/mop or stale library receipt cannot qualify full build |
+| I0-R05 actual load | Fresh process records actual selected expand/runtime loads and VM/tool/SDK chain under exact path priority | Wrong earlier lib, retired evidence/interface, old core/types, wrapper-only hash or source fallback into a compiled lane fails |
+| I0-R06 Script/Fixture ordering | Actual .run executes precheck -> Ops -> common gate -> expected refinement -> postcheck, and a returned fixture resource always releases | Stale precheck launches child, permissive refinement admits nonzero/error/missing OK, or postcheck/body+cleanup failure hidden fails; synthetic admission alone cannot qualify launch |
+| I0-R07 native protocol/inventory | Exact nonzero suites/cases/cleanup and required module/harness/count/line protocol match independent domain oracle | Zero/skipped/extra/wrong case, forged markers, count-only success, truncated log or undefined-binding warning cannot establish complete case |
+| I0-R08 fragment/cwd routing | Actual imported dev/just closure and maintained child recipe resolve at expected owner/cwd, with actual declared VM/environment | Flow calls Core-only bare recipe, imported fragment omitted, path rebased by source location or arbitrary caller callback/recipe fails |
+| I0-R09 migrated fixtures | Flow product adapters/workers/recipes join real Core generic probe/fixture/issuance APIs and correct product assets; Core generic route imports no Nix transport | Missing ./projection or ./store, dangling Core approved-producer, circular Core->Flow dependency, duplicate copied helper or wrong this-source-file base fails |
+| I0-R10 observation/laziness | Selected native source/test projection stays lazy; product progress composes generic events under actual observation mode | Nix reader imported from removed Core owner, progress grants completion/authority, eager business Scope/Graph demand or changed observer mode mislabeled parity fails |
+| I0-R11 cold/bootstrap | Own fresh process and empty selected application artifacts with explicit prerequisite compiler/system dependencies reach all required cases | Warm issuer/Session cache, hidden installed dependency, opt-in skipped suite, timeout after marker or kernel-only build fails advertised lane |
+| I0-R12 recovery | Actual Core receiver issuance/source/compiler/artifact guards and selected Flow transport refusal controls complete | JSON/disk packet, wrong pin/store, modified static/section/record, no-op/recursive restore or failure falling back to source admission fails; C/view origin remains separate |
+| I0-R13 limits/termination | Pre-import and in-process policies agree within selected fixed caps, child completion and actual work/logs recorded | Inherited 600/1200/3600-second or larger preparation budget substitutes for Project deadline, hidden child alive, unbounded aggregate work or timeout widening fails |
+| I0-R14 downstream boundary | Actual entry/source/build/load/Script/fixture associations and I1 normalized Scopes reach downstream owners with open gates explicit | Metadata/test receipt presented as genuine C/accepted view/SysML validation, source-stage observer pass called full runtime parity or product restore as publication authority fails |
+
+Existing owner seams include Core t/prelude-test.ss, module-bootstrap/load-path/
+scope-link and testing-script/module-testing tests; Core testing launch-count and
+Fixture controls; Flow t/qualification/testing/qualification-test.ss and moved
+approved/store/AWS tests; actual ASCENT Session/source/artifact controls; Project
+t/package-metadata-test.ss, dependency-compatibility-test.ss and formation entry.
+Their existence is not a pass. Test discovery and assertion count must be actual,
+not inferred from this list or the old ten formation-control suites.
+
+* Open capabilities and bounded exit
+:PROPERTIES:
+:CUSTOM_ID: i0-migration-open
+:END:
+
+Open: reviewed compatible immutable tuple; current native namespace/Contract/prelude
+and full selected build roots; generic/product fixture/worker/recipe split including
+nested cwd/import repair; actual effective TestingScript/Fixture/transitive source
+coverage and nonzero semantic inventory; selected complete compiler/loader/SDK/
+artifact provenance, cold/bootstrap and real build restoration. I1's K1/SD/S1 and
+nonidentity Context fixture remain separately required, not fixed by this chapter.
+
+The source plan may be complete while an advertised route remains unsupported.
+Keep unselected optional product gates outside a formation-only claim, but never
+remove a previously selected mandatory lane after failure. Preserve original
+10.34 dossier/model and historical timeouts/kernel/static-model receipts unchanged.
+No new directory/version hierarchy, compatibility path, generic shell runner,
+credential issuer or automatic LLM coordinator is needed or added.
+
+I0 hands later stages actual qualified source/entry/build/load associations when
+available, otherwise named blockers. It does not produce C, an accepted application
+view, model validation or effect permission. Correctness requires these honest
+boundaries and independent controls; comparative architecture/review/reuse benefits
+remain separate research hypotheses. No acceptance gate is executed or closed here.
+
+* I1 normalized Context and Scope retention follow-up
+:PROPERTIES:
+:CUSTOM_ID: i0-migration-i1-retention-followup
+:END:
+
+[[file:10.98-i1-normalized-context-and-scope-retention.org::#i1-retention-values][10.98]] unifies exact K1/SD/S1 and actual evidence fields. Its
+[[file:10.98-i1-normalized-context-and-scope-retention.org::#i1-retention-context][Context/package boundary]] preserves native source ownership and keeps the actual
+nonidentity fixture open; [[file:10.98-i1-normalized-context-and-scope-retention.org::#i1-retention-scopes][consumer isolation]] distinguishes provider SP evidence,
+realized SX and actual ED.candidate SD. [[file:10.98-i1-normalized-context-and-scope-retention.org::#i1-retention-lanes][Compilation/load/cold/recovery lanes]] reuse
+I0's actual testing/fixture owners; [[file:10.98-i1-normalized-context-and-scope-retention.org::#i1-retention-controls][controls]] and [[file:10.98-i1-normalized-context-and-scope-retention.org::#i1-retention-order-open][ordered exits/open gates]] remain
+planned. No implementation, build/load/acceptance, model/effect publication or
+expanded orchestration is performed; existing historical receipts stay unchanged.
+
+* I2 effective declarations and checked Scope follow-up
+:PROPERTIES:
+:CUSTOM_ID: i0-migration-i2-effective-followup
+:END:
+
+[[file:10.99-i2-effective-library-module-declarations-and-scope-publication.org::#i2-effective-version-inheritance][10.99]] unifies the sole neutral V1 source and distinct descriptor/model/policy
+graphs. [[file:10.99-i2-effective-library-module-declarations-and-scope-publication.org::#i2-effective-objects][Authored objects]] retain actual Generic -> Rust -> Integration and one
+mapping/delta owner; [[file:10.99-i2-effective-library-module-declarations-and-scope-publication.org::#i2-effective-bindings][actual bindings]] preserve inert Library expectations and the
+Module's typed Library edge. [[file:10.99-i2-effective-library-module-declarations-and-scope-publication.org::#i2-effective-publication][Normalized publication]] consumes I1 SD/S1 and checks
+final receiver-aware associations without lexical-capture repair. [[file:10.99-i2-effective-library-module-declarations-and-scope-publication.org::#i2-effective-order][Order]] and
+[[file:10.99-i2-effective-library-module-declarations-and-scope-publication.org::#i2-effective-controls][positive/negative controls]] remain planned; no implementation, workload, acceptance,
+Scope/model effect, delivery or expanded orchestration is performed.
+
+* I3 unified selection and capture handoff
+:PROPERTIES:
+:CUSTOM_ID: i3-binding-handoff
+:END:
+
+[[file:10.100-i3-project-profile-scenario-binding-and-unique-capture.org::#i3-binding-project][10.100]] unifies checked Scope/Config consumption and consumer isolation,
+[[file:10.100-i3-project-profile-scenario-binding-and-unique-capture.org::#i3-binding-selection][selection and actual offering bindings]],
+[[file:10.100-i3-project-profile-scenario-binding-and-unique-capture.org::#i3-binding-acquisition][real project input coverage]],
+[[file:10.100-i3-project-profile-scenario-binding-and-unique-capture.org::#i3-binding-capture][C origin/lifetime]] and
+[[file:10.100-i3-project-profile-scenario-binding-and-unique-capture.org::#i3-binding-controls][proposed controls]]. This is the current I3 design handoff;
+historical observations remain scoped to their original source and execution basis.
+No implementation, acceptance or orchestration is performed by this update.
+
+* I4 unified projection and accepted-view handoff
+:PROPERTIES:
+:CUSTOM_ID: i4-unified-handoff
+:END:
+
+[[file:10.101-i4-application-projection-and-accepted-ascent-view.org::#i4-unified-inputs][10.101]] unifies same-C/actual-Program and normalized Scope binding,
+[[file:10.101-i4-application-projection-and-accepted-ascent-view.org::#i4-unified-relations][complete source and semantic coverage]],
+[[file:10.101-i4-application-projection-and-accepted-ascent-view.org::#i4-unified-consequences][declaration/evidence and negative consequences]],
+[[file:10.101-i4-application-projection-and-accepted-ascent-view.org::#i4-unified-calls][actual reception/frozen SysML handoff]] and
+[[file:10.101-i4-application-projection-and-accepted-ascent-view.org::#i4-unified-controls][proposed controls]]. Historical source/runtime observations retain their
+original scope. No implementation, acceptance or expanded orchestration is performed.
+
+* I5 unified SysML candidate and validation handoff
+:PROPERTIES:
+:CUSTOM_ID: i5-unified-handoff
+:END:
+
+[[file:10.102-i5-sysml-selection-materialization-and-validation.org::#i5-unified-selection][10.102]] unifies exact same-C/accepted-view and candidate/plan/catalog/mapping selection,
+[[file:10.102-i5-sysml-selection-materialization-and-validation.org::#i5-unified-names][identity/name resolution]], [[file:10.102-i5-sysml-selection-materialization-and-validation.org::#i5-unified-closure][owned reference closure]],
+[[file:10.102-i5-sysml-selection-materialization-and-validation.org::#i5-unified-validation][actual independent validation]] and [[file:10.102-i5-sysml-selection-materialization-and-validation.org::#i5-unified-invalidation][invalidation/explicit I6 handoff]].
+[[file:10.102-i5-sysml-selection-materialization-and-validation.org::#i5-unified-controls][Proposed controls]] retain the original scope of historical sources and receipts.
+No implementation, acceptance, model publication or expanded orchestration is performed.
+
+* I6 unified joint acceptance and explicit publication handoff
+:PROPERTIES:
+:CUSTOM_ID: i6-unified-handoff
+:END:
+
+[[file:10.103-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-unified-current][10.103]] records current upstream dependency/source changes and unifies
+[[file:10.103-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-unified-handoffs][same-C/view/candidate/validation joins]], [[file:10.103-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-unified-publication][explicit protected B-to-O]],
+[[file:10.103-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-unified-recovery][cold/recovery domains]], [[file:10.103-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-unified-lanes][entry/evidence products]] and
+[[file:10.103-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-unified-controls][proposed joint controls]]. Historical source/runtime observations retain
+their original scope; no implementation, acceptance, publication or orchestration
+extension is performed. I7 execution remains a separate later activity.
+
+* Integrated coherence audit and gate clarification
+:PROPERTIES:
+:CUSTOM_ID: coherence104-followup
+:END:
+
+[[file:10.104-declarative-slice-coherence-and-implementation-gates.org::#coherence104-findings][10.104]] audits the I0--I6 contract/control correspondence and preserves
+[[file:10.104-declarative-slice-coherence-and-implementation-gates.org::#coherence104-upstream][current versus historical source/dependency cuts]].
+[[file:10.104-declarative-slice-coherence-and-implementation-gates.org::#coherence104-chronology][Stage-qualified demand]] keeps generated O and later validation outside original C;
+[[file:10.104-declarative-slice-coherence-and-implementation-gates.org::#coherence104-transition][guard domains]] distinguish original provenance, current applicability and permitted B-to-O.
+[[file:10.104-declarative-slice-coherence-and-implementation-gates.org::#coherence104-recovery][Recovery claims]] remain independent; [[file:10.104-declarative-slice-coherence-and-implementation-gates.org::#coherence104-order][the implementation order]] separates
+framework/bootstrap readiness from final application lane acceptance, avoiding a
+prerequisite cycle. [[file:10.104-declarative-slice-coherence-and-implementation-gates.org::#coherence104-controls-open][Joined controls/open gates]] remain proposed. No implementation,
+acceptance, publication or orchestration expansion is performed.
+
+* I0 current source, graph and testing-entry follow-up
+:PROPERTIES:
+:CUSTOM_ID: i0-105-followup
+:END:
+
+[[file:10.105-i0-dependencies-prelude-build-load-and-testing.org::#i0-105-dependencies][10.105]] unifies current dependency declarations/checkouts and
+[[file:10.105-i0-dependencies-prelude-build-load-and-testing.org::#i0-105-prelude-load][entry/prelude/phase/load provenance]]. [[file:10.105-i0-dependencies-prelude-build-load-and-testing.org::#i0-105-package-spec][Actual package-library-spec]]
+remains distinct from required-root selection/build/load; [[file:10.105-i0-dependencies-prelude-build-load-and-testing.org::#i0-105-testing][TestingScript]] and
+[[file:10.105-i0-dependencies-prelude-build-load-and-testing.org::#i0-105-fixtures][fixture/recipe/cwd ownership]] retain their actual framework/product boundaries.
+[[file:10.105-i0-dependencies-prelude-build-load-and-testing.org::#i0-105-order][Ordered exits]] separate I0 readiness from final application qualification;
+[[file:10.105-i0-dependencies-prelude-build-load-and-testing.org::#i0-105-controls][controls]] are proposed. Historical cuts/receipts remain unchanged; no
+implementation, acceptance or orchestration extension is performed.

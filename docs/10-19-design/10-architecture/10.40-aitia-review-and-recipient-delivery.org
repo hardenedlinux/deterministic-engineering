@@ -1,0 +1,426 @@
+#+TITLE: 10.40 Aitia Review and Recipient Delivery
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.40
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+TODO: DESIGN SPECIFIED | QUALIFIED
+#+FILETAGS: :design:aitia:review:delivery:authority:history:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.37-library-declarations-and-contract-design.org][Library declarations]] | [[file:10.38-profile-selection-scenario-capture-and-evidence-use.org][Selection and capture]] | [[file:10.39-method-execution-evidence-issuance-and-ascent-projection.org][Methods and identified queries]] | [[file:10.34-case-design-review-dossier-draft.org][Retained dossier draft]]
+
+* DESIGN Objective and current source boundary
+:PROPERTIES:
+:CUSTOM_ID: aitia-review-and-delivery
+:STATUS: Complete target design; no implementation, submission, approval or delivery
+:END:
+
+This specification continues 10.39 from an identified, completed ASCENT query
+view into project review, authenticated disposition and recipient use. It designs
+the complete target architecture, including direct refactoring of current case
+adapters. Native POO Contracts, Core verification, Aitia review/history/authority
+and existing source custody remain the owners. There is no second review engine,
+fact store, role directory, receipt registry or version-management service.
+
+The Library remains a reusable engineering Library delivered to Aitia projects.
+DE-CASE-01 is this repository's own design-review case, not institutional
+certification or an automatically authorized Library release. Its architecture,
+Org products and decisions are review inputs with explicit verification duties.
+The requested declaration generation remains V1, read from the native Contract
+owner designed in 10.37. This document assigns no new generation, adds no version
+to a namespace and does not treat a project revision as a contract version.
+
+| Inspected native source | Present capability and limit |
+|-------------------------+------------------------------|
+| [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/contribution/verification.ss][Core verification]] | Private adapter/receipt/admission associations, request snapshots, bounded validity and explicit revocation. Copied objects or serialized receipt fields cannot recreate issuance |
+| [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/types.ss][Aitia native types]] and [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/review.ss][sdlc-review]] | Subject/revision/scope-bound facts and pure review preparation; reported failure, stale evidence, missing evidence and tailoring remain distinct. Preparation explicitly does not authenticate authority or execute a graph |
+| [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/standards/nasa-lifecycle.ss][NASA lifecycle verification/gates]] | Context/content request snapshots and verified stage assessment exist for that adopted standard; stage admission still has release-authorized? false. No authority to classify DE-CASE-01 as NASA class A follows |
+| [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/review-authority.ss][Native review authority]] | Exact required/available history-source coverage, verified discovery and verified approvals; retained rejections survive policy changes until explicitly superseded by verified current-policy approval. Gate still does not authorize release |
+| [[file:../../../scenarios/resource-lifecycle/review/func.ss][Current backpressure review]] and [[file:../../../scenarios/resource-lifecycle/review/profile.ss][fixture Profile]] | Source-bound content audit and exact request callbacks exist; local subject/revision/scope/target/class and SWE-061 policy are case-specific. They do not implement the DE-CASE-01 policy or a universal Q consumer |
+| [[file:../../../scenarios/resource-lifecycle/review/reassessment.ss][Current reassessment]] | Captured failures, bounded repair matching, verified dispositions and unresolved-failure retention exist. Same-case/payload/source-change checks are local repair rules, not a general permission to accept risk |
+| [[file:../../../scenarios/resource-lifecycle/review/cross-intake.ss][Cross-intake owner]] and [[file:../../../scenarios/resource-lifecycle/review/archive.ss][Archive custody]] | Complete intake discovery, actual signed directory/decisions, retained accepted prefix, guarded owner handover and archive recovery exist. Local test reviewer names, paths and policy bindings remain fixtures; archive integrity alone does not confer current approval |
+
+Source observations refer to HEAD 8044732d505f84e373119a70f947df00e1767300 plus
+the active dirty checkout and locally linked upstream sources. They establish
+ownership and gaps, not executable qualification. In particular the generic
+sdlc-review and review-authority gate do not themselves consume a complete Q,
+verify every claim, select all project roles, enforce arbitrary quorum rules,
+or deliver a portable recipient package. Those associations require the target
+native adapters/Contracts below. Existing cold native/recovery limits in
+[[file:10.35-content-validation-slice.org][10.35]] and [[file:10.23-native-aitia-backpressure-content-review.org][10.23]] remain open.
+
+* SPECIFIED Publication, selection, capture and authority
+:PROPERTIES:
+:CUSTOM_ID: review-policy-project-and-roles
+:END:
+
+| Responsibility | Library publishes | Profile selects | Scenario captures / actual authority supplies |
+|----------------+-------------------+-----------------+-----------------------------------------------|
+| Review meaning | Native policy identity/revision, expected role Contract, applicable model/slice identities, review purposes, duty and product rules, decision conditions and semantic limits | An applicable policy and model/integration slice, requested project review purpose and required DE-O duty/product scope | Actual native descriptors, parent chain, policy values/source closure and selected applicability; no policy lookup from an ambient Profile at review time |
+| Project adoption | Reusable policy capabilities and admissible adoption/exception requirements | Requested policy application, project scope and required adoption evidence | Real project identity/revision, governed repository and input closure, actual adoption decision and its authorized issuer. A Profile cannot approve its own adoption |
+| Roles and decision power | Required responsibilities, allowed combinations/separation, delegation constraints, required approval coverage and expiry rules | Requested role allocation and any allowed stricter selection | Actual people/service principals, authentic project roster/grants, scope, validity, delegations and authority-source custody. A role string or Agent-authored document is not a grant |
+| History and disputes | Required technical/decision source categories, completeness and reconsideration rules | Relevant review family, required source inventory and permitted operation | Trusted authoritative inventory and exact available source cut; the policy alone cannot enumerate undisclosed project history |
+| Delivery/use | Published Library interfaces, use constraints, required evidence/access and recipient admission obligations | Intended recipient, purpose and permitted distribution/use scope | Actual recipient owner, transport/access bindings, delivered content and authenticated acknowledgement; recipient authority evaluates its own project use |
+
+The policy's semantic revision identifies its rules; the provider source revision
+identifies their implementation. Project revision identifies the reviewed target
+occurrence, including relevant dirty/untracked inputs and dependencies. Review
+record identity and evidence attempt identity identify events. These are separate
+associations, inherited/read through their native owners, with no lexical or
+numeric ordering assumed between opaque revision strings.
+
+The reusable policy composes with a model/slice; it neither inherits the model's
+project authority nor establishes a NASA standard adoption. A new general design
+review policy must publish its actual requirements rather than translate DE-O
+identifiers into fabricated NASA SWE requirements. Existing standard providers
+apply only when the project has genuinely adopted their standard and mappings.
+Shared context/content verification mechanics belong in native Aitia; NASA-specific
+classification and clauses remain in the NASA provider. If the current native
+request/type shape cannot express the selected policy, refactor that owner and
+qualify its callers directly; do not bypass it with an approved? packet field.
+
+| Role | Accountable act / boundary |
+|------+----------------------------|
+| Project owner / adoption authority | Establish subject/scope, policy adoption and actual role mandates; authorize exceptions only within that mandate |
+| Content steward / architecture owner | Own Org products, model/source references, decisions, assumptions and revision completeness; correct input gaps |
+| Trusted technical verifier | Check native C/Q/W/use and actual content/context under the selected operation; issue scoped Core verification through its actual adapter |
+| Semantic reviewer | Evaluate architecture rationale, model applicability, assumptions, alternatives and counter evidence; record findings rather than infer them from a digest |
+| Decision authority | Authenticate the scoped accept/reject/reconsideration decision and explicit treatment of previous denials; cannot manufacture missing technical evidence |
+| Delivery owner | Bind authorized distribution to exact reviewed content, recipient and access; record transfer and limitations |
+| Recipient owner | Verify provenance/access/current status, adopt the Library in its own project and admit the intended use; deployment requires its separate authority |
+
+A policy may allow a person to hold multiple roles or require independence for
+particular acts. The selected rule must be checked against actual authenticated
+principals, including delegation and conflicts of interest. Agent authorship does
+not appoint the Agent to a reviewer or decision role. DE-CASE-01's unfilled roles
+from C1 remain unfilled until actual assignment; this design supplies no signatures.
+
+* SPECIFIED Review input and deterministic query consumption
+:PROPERTIES:
+:CUSTOM_ID: exact-query-review-request
+:END:
+
+C, A, E, W and Q retain the meanings in 10.38/10.39. R is a prepared review
+request over that input/evidence/query basis. A disposition record and a delivery
+manifest are native values/references owned by the relevant operation; these names
+do not prescribe another wire schema or a central object manager.
+
+R binds the following together before verification:
+
+| Binding | Required input / check |
+|---------+------------------------|
+| Selected native association | C and actual Library role descriptors, shared native Contract owner, real parent chain, model/slice/policy identities and semantic revisions; validator selected from the trusted required boundary |
+| Project and purpose | Actual subject/revision/repository, reviewed scope, design-review purpose, adoption, Profile selection and captured project inputs; provider checkout remains distinct from target repo |
+| Exact query | Q identity and accepted program/catalog/engine/source-set, completed finite query and filter, rule closure, C/A/W/use associations, outcomes, explanations and coverage limits from 10.39 |
+| Evidence and products | Required DE-O obligations and expected document/model/decision inventory independently of available witnesses; exact D01-D10 product sections/bytes, model mappings, attempts, artifacts, methods and qualified uses |
+| Review context | Actual responsibility assignments/grants, policy applicability, outstanding assumptions, risk/exception rules, trusted history/decision source inventory and current source cut |
+| Intended downstream use | Recipient and purpose when delivery is requested, allowed scope and accessibility requirements; an unspecified recipient cannot receive a scope-specific use approval |
+
+The Scenario adapter consumes Q as an identified native result, not a reconstructed
+list of favorable rows. It verifies ownership/accepted-source association and
+required scope against C and the actual query owner. Serialized rows, a view
+hash, a screenshot or a public checked flag are inspectable artifacts, not native
+issuance. Imported results require a separately qualified provenance/verification
+route. An unsupported route remains a gap.
+
+The selected policy declares the queries and coverage needed for review. User
+filters may aid inspection but cannot reduce the required scope, hide counters
+or remove pending duties. Each relevant row/explanation is traced to its actual
+application, attempt, witness and checked use. A completed empty result does not
+prove all duties discharged; explicit expected obligations/product inventory and
+query completeness determine that. Counter, pending and conflict remain visible
+when mapped into Aitia: SdlcEvidence's current pass/fail shape cannot encode them
+by calling unknown pass or dropping conflicts. Refactor the native assessment
+input/result representation where needed and qualify the selected policy's gate.
+
+ASCENT computes deterministic consequences for explicit finite accepted inputs;
+Aitia authenticates context/content and applies the selected review policy. It
+does not silently rerun a different query or treat inferred support as a human
+approval. New evidence, source set, rules, policy or request scope creates the
+appropriate new C/application/use/Q/R associations. Q remains immutable history
+when its current applicability expires. A decision history update alone need not
+rerun Rust/QNT/Lean/SysML; it requires fresh current discovery/review assessment.
+If the selected query actually includes that history, its changed input also
+requires a newly identified Q. Captured adoption, role assignment or policy-input
+changes require a fresh appropriate capture; a later status check does not silently
+replace those captured inputs. Independent withdrawal/status checks can invalidate
+current eligibility without rewriting the original C.
+
+* SPECIFIED Context, content and decision verification
+:PROPERTIES:
+:CUSTOM_ID: context-content-and-disposition
+:END:
+
+| Operation / input | Output and retained artifact | Responsible trust boundary |
+|-------------------+------------------------------+----------------------------|
+| Prepare R from C/Q and required review scope | Readable dossier linking exact products, evidence, gaps, history and role bindings; structured native request association | Scenario preparation only; not a verdict or authority receipt |
+| Verify project context | Scoped context request and real Core verification receipt, or explicit unresolved/refused finding | Trusted verifier checks actual repo/revision/scope, policy adoption/applicability, project classification when relevant, roles/grants and expected source inventory |
+| Verify content | Scoped content requests and receipts plus product/trace/semantic findings | Read exact referenced bytes/sections/models and claims; verify Q association, witnesses, input footprints, assumptions, decisions and reference closure. File existence/hash checks alone establish integrity, not content adequacy |
+| Discover history and assess technical obligations | Exact required-source discovery and current technical assessment, including unresolved failures/conflicts | Existing history/source owners and the selected native policy; no complete? asserted by a packet author |
+| Review semantics and resolve findings | Attributed findings, requested changes, accepted limitations or properly authorized exceptions | Actual appointed reviewer; independent technical controls where required. Unsupported assumptions remain explicit obligations |
+| Decide under policy | Authenticated scoped accept/reject decision and rationale bound to R, verification basis, history cut and prior records | Actual decision authority with verified grants/identity and required coverage; proof of decision signing is distinct from truth of the reviewed claims |
+| Evaluate current review admission | Existing native authority gate plus qualified selected-policy checks, or blocked/rejected/incomplete result | Real current receipts, discovery and actual authority inputs; the public assessment is not a transferable authority token |
+
+Context verification and content verification use distinct purposes/snapshots
+but share the same R binding. Context success cannot stand in for content
+success, reviewer approval cannot stand in for either, and semantic support
+cannot stand in for actual appointment. The trusted adapter checks the selected
+policy and operation, exact request, actual inputs and current dependencies both
+at issuance and subsequent use. It owns acceptable verification duration and
+clock assumptions; a caller cannot choose an unlimited approval lifetime.
+
+Core's existing verification machinery remains the sole local receipt issuer:
+its private adapter association, snapshot, interval and revocation are checked
+through the native APIs. The verifier operation must itself establish the facts;
+snapshot stability is not an atomic global filesystem capture or semantic proof.
+Copying a receipt, mutating the request, replaying a receipt at another revision,
+using an unissued adapter or revoking a receipt must prevent current admission.
+A serialized packet is retained for explanation and transport, not deserialized
+into the original process's issuance table.
+
+A decision records actual signer/role/grant, R and reviewed query/evidence basis,
+policy/project revision/scope, findings/rationale, unresolved duties, permitted
+exceptions, prior/superseded decision references and validity/reconsideration
+conditions. The decision must identify what it accepts: for example bounded
+design adequacy rather than native runtime safety or a recipient deployment.
+An accepted exception records authorized risk owner, scope, rationale, mitigation,
+expiry and review trigger. It does not change a failed property into support.
+
+The current native authority gate requires verified discovery, technical admission,
+current-policy approval and no unresolved verified denial; it does not by itself
+enforce arbitrary project quorum, independence, exception semantics or delivery.
+The actual trusted approval operation and qualified native policy adapter must
+check these rules before their receipts are usable. Extend that native owner
+when necessary; do not infer these protections from its existing admitted? field.
+The existing gate's release-authorized? false is preserved as its authority limit.
+
+* SPECIFIED Counter evidence, conflict, reassessment and revocation
+:PROPERTIES:
+:CUSTOM_ID: review-history-and-revocation
+:END:
+
+| Event | Required response and retained evidence | Consequence for current use |
+|-------+-----------------------------------------+-----------------------------|
+| Property counter, including a successful M06 negative control | Keep actual claim/polarity/C/A/E/W and applicable query explanation; distinguish test-harness expectation from property truth | No positive safety disposition for that same claim. Narrowing a use needs explicit applicability justification; excluded counters remain visible in the relevant history |
+| Support and counter for one applicable duty/basis | Retain both, determine differing assumptions/runs/footprints and assess conflict under the policy | Required conflict blocks admission until explained/resolved; newest or favorable result does not automatically win |
+| Missing/failed/timeout method or missing required product | Retain attempt/diagnostics, required duty and gap; unavailable artifacts do not become absent obligations | Pending/incomplete for the affected purpose; no routine pass/fail conversion merely from command exit |
+| Duplicate identity with incompatible content, divergent decision branches or contradictory role grants | Reject ambiguous binding and retain offending records; consult the actual authoritative source inventory | Refuse current decision/use until a qualified authority resolves the scope; no lexical revision or last-file-wins rule |
+| Source, mapping, model, tool, rule, project or policy change | Apply 10.39 footprints and 10.38 input capture; establish successor project occurrence and new affected Q/R; record impact/rationale | Reuse only through actual fresh applicability verification; old approval does not follow a revision string change |
+| Repair of a failed case | Link old failure to exact changed inputs, new attempt/result, correspondence and scoped repair justification; independently verify the repair/disposition | Original counter remains history. Repair may discharge its current duty only under the selected policy; a changed digest alone is insufficient |
+| Previous rejection or policy replacement | Discover complete relevant accepted decision history, including negative decisions under previous policy; name the exact record and authority for any supersession | Current native gate retains negative decisions across policy changes. A verified current-policy approval may supersede named denials only when the trusted operation also validates that authority and scope |
+| Reviewer grant revoked, receipt revoked/expired, source unavailable or new accepted denial | Preserve historical issuance and decisions; refresh authority/discovery and current applicability | Refuse affected current admission; prior verification success is not a durable permission |
+| Review owner retirement, restart, recovery or handover | Retain accepted prefix and source references; verify actual root/head/prefix/reader and authorized handover through existing custody owners | Recovery must establish current owner authority and fresh native verification; archive consistency or copied receipt bytes cannot restore it |
+
+Reassessment is an append-only association of predecessor review, changed basis,
+impact allocation, new verification, retained findings and authenticated decision.
+It does not mutate the old project capture, witness or review. Project owners
+establish actual revision lineage; no semantic ordering is inferred from r1/r2 or
+opaque labels. Supersession edges must be unambiguous, authorized, scope-correct
+and acyclic. A repair finding, a denial supersession, a grant revocation and a
+Core receipt revocation are different owner operations, not one status toggle.
+
+Discovery must close over the authoritative required technical and decision
+sources, predecessor/handover sources and accepted decisions, with each source
+available and current. Required inventory comes from actual trusted project
+mandate/custody, not from only the sources a caller happens to supply. Missing
+sources, disappeared intakes, forked heads or an unverified negative record
+cannot be omitted to make approval possible. Malformed unauthenticated submissions
+remain diagnostic attempts; they are not accepted authority denials.
+
+Aitia's authority assessment consumes verified current source discovery; any
+ASCENT projection of disposition/history is derived from accepted native facts.
+ASCENT cannot create reviewer grants or erase retained decisions. If a new review
+creates new history facts, use a subsequent identified query when needed; never
+insert the decision back into its own input hash or retroactively change Q/R.
+
+Revocation has two layers: Core removes local receipt validity; actual project
+owners record and discover authority withdrawal or review/use restrictions.
+Recipients recheck the relevant current status before the governed operation.
+There is no claim of instantaneous global revocation across disconnected hosts.
+Offline use is permitted only if an actual adopted policy explicitly bounds its
+scope/freshness and accepts that delay; otherwise current status unavailable
+means admission unavailable. Revocation does not erase a historical transfer or
+undo an executed deployment; downstream response needs its own authorized act.
+
+* SPECIFIED Delivery and recipient admission
+:PROPERTIES:
+:CUSTOM_ID: recipient-delivery-and-use
+:END:
+
+Review disposition, permission to distribute, transfer receipt, recipient
+verification, project adoption, use admission and deployment are distinct acts.
+A review result is handed to the actual receiving owner together with its basis
+and restrictions. Neither a rendered D2 nor a producer's review-admitted label
+executes any of these downstream acts.
+
+| Handoff step | Inputs | Output / document artifact and acceptance |
+|--------------+--------+-------------------------------------------|
+| Qualify distribution | Exact reviewed R/disposition and current policy/project/role/history bindings; actual recipient/purpose and distribution mandate | Authorized distribution scope, or blocked reason. Recipient and allowed artifacts/access must be concrete |
+| Assemble delivery | Exact Library native publication and selected interface/role Contracts; reviewed Org/model/decision products; C/Q/evidence and decision provenance | Delivery manifest locating exact content identities/bytes, expected inventory, dependencies/tools, source/artifact access, limits, retained counters/gaps and current-status discovery. Contents are referenced before the manifest is identified; no self-hash cycle |
+| Export trust material | Real issuer/decision identity, authority grants, signed records where supported, verification method and trust roots, validity/status sources | Inspectable provenance. Core process-local receipts are explanatory references; any exportable attestation route must itself be qualified and its scope checked |
+| Transfer and acknowledge | Authorized manifest/content and actual receiver/channel/access | Authenticated acknowledgement of exactly what arrived, missing references and available access. Transport success or checksum match does not imply review acceptance |
+| Verify at recipient | Received bytes/provenance, required dependencies/artifacts, actual trusted roots/status sources and recipient verifier | Fresh recipient-owned verification of integrity, content and current authority at the required strength, with explicit gaps; local producer private issuance is not imported as live authority |
+| Adopt and bind project use | Recipient's actual Profile, project revision/repo, native Contract/role compatibility, policy adoption and role mandate | Recipient Scenario capture and scoped use/review association; reuse of old evidence requires 10.39's fresh qualified applicability, or rerun affected methods |
+| Admit intended operation | Recipient-bound context/content/history and actual decision/operation authority | Recipient-owned use decision plus receipt/record of its scope. Separate explicit authority is still needed for release/deployment |
+
+A delivery contract is the native operation's expected Contract over these
+associations, not a duplicate JSON governance system. Shared in-process delivery
+may retain actual handles when their owner/custody remains available. Cross-process
+or cross-host delivery requires real recipient-side verification and any actual
+exportable signed provenance. Existing local signature/archive code demonstrates
+bounded custody mechanisms; a general cross-host Library handoff and revocation
+channel are not already qualified. If no qualified issuer route exists, deliver
+inspectable source/artifacts and re-establish the necessary recipient evidence;
+do not claim to reproduce an unobserved original execution.
+
+The Library publishes reusable model/policy/method Contracts. Its DE-CASE-01
+approval covers the reviewed provider occurrence and purpose. A network-service
+repo selects suitable model/slice/policy, captures its own architecture, source,
+parameters, documents and roles, and establishes its own Q/R. It may reuse exact
+qualified evidence only for matching claims/footprints and permitted scope.
+Provider approval does not approve that service's runtime, architecture or deployment.
+Reading V1 from the same native generation owner is required; it does not prove
+compatibility of changed semantic revisions, providers or execution premises.
+
+D01-D10 may remain sections of a bounded Org dossier. The manifest resolves their
+exact section/content and transitive references; it does not require ten files.
+A local .data path without accessible retained bytes is not a portable delivery.
+Missing proprietary or external evidence must have an authorized inspectable
+access route or remain an explicit gap. A redacted/subset package is a newly
+identified view whose claimed review scope and verification basis must be checked;
+it cannot inherit an unqualified full-package approval. Relative artifact relocation
+may preserve bytes, but changed custody/resolution/access requires verification.
+
+An acknowledgement, verification report and final use decision identify the
+recipient, manifest/content, operation and actual authority. Persist their records
+through existing custody owners; do not add an independent shadow decision log.
+Later revocation/reassessment uses those recipient associations for authorized
+notification and re-evaluation. Merely recording an intended recipient does not
+notify or grant them authority.
+
+* SPECIFIED DE-CASE-01 walkthrough and document products
+:PROPERTIES:
+:CUSTOM_ID: case-review-delivery-walkthrough
+:END:
+
+| Stage | DE-CASE-01 input | Expected authored/retained output and current gap |
+|-------+------------------+-------------------------------------------------|
+| Declare/adopt | 10.37 native policy/Contract target; DE-CASE-01-DESIGN scope and C1 roles | Actual policy publication and project adoption/role mandate. Present documents specify the target; no adopted native case policy or appointed authority is inferred |
+| Capture | 10.30 selection/decisions, 10.31 contracts, 10.33 actual/target architecture, 10.34 D01-D10 bindings and later selected design revisions | Future C and input/product inventory with explicit actual/target labels and reference closure; historical dossier catalog remains historical |
+| Query | Future 10.39 Q over actual qualified observations/applications and required DE-O duties | Identified technical assessment/explanations, including native baseline and source-drift gaps; no previous support count is a current Q |
+| Prepare/check | C/Q, actual project policy/revision/roles/history, architecture/Org/decision products | R and dossier, distinct context/content verification reports and findings. Syntax/render checks in this task are documentation checks only |
+| Decide/reconsider | Verified technical/history basis and actual appointed reviewers/decision authority | Signed/otherwise authenticated scoped decision and reconsideration links. D10 stays unsubmitted; no design acceptance, role assignment or repaired failure is authored as accomplished |
+| Deliver/adopt | Future actual recipient and distribution authority, exact published Library/products and qualified disposition | Delivery manifest/acknowledgement, recipient verification and project-specific adoption/use record; DE-T06 remains a target |
+
+The dossier is the readable composition of original product sections, exact
+source/model/evidence references, role/adoption records, verification findings,
+query explanations, unresolved items, decisions and intended use. Library product
+Contracts define required roles; Profile selects them; Scenario captures their
+actual occurrences. Verification, decision and delivery records arise afterwards
+under their real owners and refer back to the capture; they do not mutate C.
+The same source associations drive Org links and D2 display. Neither format is
+the native declaration source or an issuer of evidence/authority.
+
+| Case requirement / target / duty | Required review and delivery association |
+|---------------------------------+------------------------------------------|
+| DE-R01/R03; DE-T01/T03; DE-O-TRACE | Native expected Contracts, captured project/provider separation and exact C/Q/W/use closure |
+| DE-R02/R04; DE-T02/T04; DE-O-ARCH/DOC/DEC | Actual/target model, D01-D10 product content, decisions/assumptions, semantic claim limits and complete reference closure |
+| DE-R05; DE-T05/T06; DE-O-REVIEW | Adopted policy, actual roles, independent context/content/authority, retained counter/history and recipient-bound use |
+| DE-R06; DE-O-ARCH/DOC/DEC/TRACE/REVIEW | This repository is the actual case; historical receipts, dirty-source drift and unqualified native boundaries remain visible |
+
+* SPECIFIED Refactoring work packages and acceptance
+:PROPERTIES:
+:CUSTOM_ID: review-delivery-refactoring-acceptance
+:END:
+
+| Order / owner | Complete target responsibility | Acceptance boundary |
+|---------------+--------------------------------+---------------------|
+| 1. Library declarations and native Aitia policy/types | Publish actual general design-review policy, role/product/duty/applicability Contracts; factor common verification mechanics from standard-specific classification without inventing NASA mappings | Direct native expected-Contract admission; wrong role/parent/policy/provider or absent adoption stays refused/unresolved. V1 read only from 10.37 native owner |
+| 2. Project Profile/Scenario and Q preparation | Consume 10.38 C and 10.39 accepted Q; bind actual project revision, scope, products, policy and authenticated project mandates; migrate active callers directly | No reconstructed second capture, free-standing JSON approval, current-root fallback, favorable filtering or omitted duty; prepared R remains inert |
+| 3. Aitia context/content and semantic review adapters | Native requests/snapshots verify selected project meaning/content and actual Q/issuer/use provenance; represent pending/conflict/unknown without false pass | Context-only/content-only/signature-only controls cannot admit review; exact receipt mutation/replay/expiry/revocation controls pass; substantive content findings preserved |
+| 4. Existing history/authority/reassessment owners | Generalize fixture bindings, retain trusted required source closure and accepted decisions, enforce actual grants, policy coverage, negative supersession, repair and withdrawal rules | Missing intake/denial/source blocks current admission; no changed-policy reset, unauthenticated supersession or erased counter; required role/quorum checks demonstrably enforced by trusted operation |
+| 5. Existing custody, handover and recipient adapters | Qualify archive/recovery/current owner status and real export/import provenance; bind exact delivery/access, fresh recipient verification and adoption | Restart never revives copied receipts; rollback/fork/retired owner rejected; delivery acknowledgement distinct from recipient use and deployment authority |
+| 6. Full source-bound case qualification | Exercise real capture, methods, query, context/content, history/authority, delivery and recipient use under declared supported routes; retain negative/historical attempts | Actual complete cold native acceptance including recovery gates, matched negative controls and recipient evidence. Local tests/model results/docs never substitute for unresolved native qualification |
+
+Steps follow semantic dependencies and may require substantial direct refactoring;
+they are not a commitment to preserve current fixture APIs or directory layout.
+Reuse actual framework owners and pure named algorithms, with private compact
+records where appropriate. Do not introduce compatibility layers, a second review
+manager or standalone strings pretending to be native Contracts. No implementation
+or directory change is made in this design task.
+
+| Future negative control | Required observed result |
+|-------------------------+--------------------------|
+| Same-looking Q with another C/rule/source/filter; omitted pending/counter row | Exact native basis/scope mismatch or incomplete review; never approval from copied rows |
+| Project/provider swap, changed dirty source, wrong policy revision/parent or forged adoption | Refuse affected context/content/use; preserve original review history |
+| Hash-correct Org with missing assumptions, dangling decision relation or target presented as implemented | Content finding and unresolved corresponding DE-O duty despite artifact integrity |
+| M06 expected-control success, Lean negated-budget proof, QNT mapped-path reachability | Preserve actual semantic polarity/strength; no blanket safety support |
+| Forged role name, expired/revoked grant, same signer occupying forbidden roles or unmet quorum | No authenticated policy decision or current admission |
+| Earlier denial omitted, vanished intake, unavailable predecessor or conflicting head | Discovery/authority incomplete or rejected, not a clean history |
+| Changed policy or passing repair without exact authorized denial supersession | Historical denial remains effective within the relevant review family |
+| Revoked/expired/copied Core receipt; mutated request; recovered serialized receipt | Native current verification fails; only fresh actual issuance can restore eligibility |
+| Correct signature over wrong R/recipient/project/scope or stale authority cut | Refuse current decision/delivery/use for the requested purpose |
+| Delivery missing .data artifact/access, partial package or unsupported cross-host attestation | Explicit missing evidence/provenance and blocked affected use; transport success alone insufficient |
+| Recipient with different parameters/project revision/policy or offline status unavailable | Fresh applicability/adoption/review or refusal under actual policy; no inherited deployment approval |
+| Later source/authority withdrawal after successful transfer | Retain transfer history; re-evaluate affected current use through actual status discovery and authorized response |
+
+* DESIGN Documentation and qualification status
+:PROPERTIES:
+:CUSTOM_ID: review-delivery-design-status
+:END:
+
+10.37 owns the native declaration/version design, 10.38 the selected capture,
+10.39 execution/evidence/query meaning, and this document the review/disposition/
+delivery/recipient association. Existing historical 10.34 input hashes and
+receipts are retained unchanged. New design products are not inserted into that
+old catalog; [[file:10.35-content-validation-slice.org::#slice-input-freshness][10.35]] records current static drift and the need for actual recapture.
+
+This turn authors only Org and the paired D2/SVG. It does not run methods, models,
+ASCENT or Aitia; assign roles; issue verification or approval; sign/submit a
+review; revoke a real record; transfer artifacts; or admit recipient use.
+
+[[file:10.41-workflow-gap-audit.org::#integrated-refactoring-dependency-order][10.41 integrates the source gap audit and dependency-ordered refactoring]]
+across declarations, capture, methods/query, review and recipient use. Its work
+packages share the native owners above; they do not constitute a second pipeline.
+
+[[file:10.46-content-observers-and-reference-closure.org::#content-observers-and-reference-closure][10.46 details WP05 content observers]]: selected product/criterion policy, same-C
+bounded Org/architecture/decision/reference checks, actual A/E/W and historical
+versus current evidence, qualified semantic findings, invalidation/reuse and
+CO01-CO24 controls. This is target design, not executed content qualification.
+
+[[file:10.47-ascent-projection-and-query-view.org::#ascent-projection-and-query-view][10.47 details WP06 application projection and Q]]: independent required units,
+exact C/A/E/W/U/basis/run relations, current eligibility/coverage/conflict/gap
+semantics, existing Session acceptance/rollback and owned determinate Q for
+Aitia; PQ01-PQ26 are future controls, not an executed inference or review.
+
+[[file:10.48-aitia-review-adaptation.org::#aitia-review-adaptation][10.48 details WP07 Aitia review adaptation]]: exact C/Q to R, actual policy/
+project/role/product bindings, separate context/inventory/criterion checks,
+shared existing-Host mechanics, current Core receipt use, lossless findings and
+RV01-RV28 controls. Preparation is inert; no verification or submission occurs.
+
+[[file:10.49-history-authority-and-reassessment.org::#history-authority-and-reassessment][10.49 details WP08 history and decision authority]]: mandated source discovery,
+exact C/Q/R/H/action/grant bindings, accepted negative retention, repair/exception/
+supersession/withdrawal, genuine prefix custody and HA01-HA31 controls. These
+remain target operations; no authority decision or review is submitted here.
+
+[[file:10.50-library-delivery-and-recipient-use.org::#library-delivery-and-recipient-use][10.50 details WP09 Library delivery and recipient use]]: exact C/Q/R and accepted
+distribution authority, manifest/product/reference closure, actual transfer and
+acknowledgement, receiver-owned trust/verification/capture/review, adoption and
+current intended use. Missing/status/withdrawal/replay and DU01-DU30 controls
+remain future qualification; no implementation or actual delivery occurs.
+
+[[file:10.51-case-joint-acceptance-plan.org::#case-joint-acceptance-plan][10.51 details WP10 joint acceptance]]: existing entries/file owners, exact
+plan/evidence closure and G0-G8 source/compiled/cold/recovery/recipient gates;
+216 referenced contract control rows plus JA01-JA32 cross-boundary controls and
+OJ01-OJ12 open items. These are future requirements; no implementation,
+acceptance execution, review submission or actual delivery occurs.
+
+[[file:10.52-contract-consistency-and-implementation-order.org::#whole-slice-consistency-audit][10.52 reconciles the whole slice]]: policy/Scope/Config handoffs, required-unit
+and request-purpose bindings, captured/technical/current-authority lifetimes and
+private/exported provenance; S0-S9 implementation dependencies and retained OJ
+gates. Design consistency is not implemented or operational qualification.
+
+#+CAPTION: Native C/Q basis, project-bound review, retained authority/history and separately admitted recipient use.
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.svg]]
+
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][Editable D2 source]]. Complete target architecture; every operation still needs actual qualification.

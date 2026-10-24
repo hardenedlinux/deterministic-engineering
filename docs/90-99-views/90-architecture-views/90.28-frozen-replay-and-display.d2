@@ -1,0 +1,37 @@
+# org-target: docs/20-29-cases/20-gateway/20.09-exchange-replay-and-display-trajectories.org::#qr06-event-trajectory
+# QR06 and QR11 paper trajectories; no native as-of API or owned-display implementation claimed.
+grid-columns: 2
+grid-gap: 32
+classes: {
+  input: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; border-radius: 10; font-size: 17}}
+  state: {style: {fill: "#E6F5F3"; stroke: "#19756C"; border-radius: 10; font-size: 17}}
+  boundary: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; border-radius: 10; font-size: 17}}
+}
+capture: "QR06: captured history and late intake" {
+  direction: down
+  freeze: "06-00 freeze O0 / k0 / Pfx0\n{o+, oL, oSC0, oF0}; producer t0 captures S0\nRead P0 / L0: original support\nProducer completion unknown" {class: input}
+  source: "06-01 publish S1 / OS-open\nOnly oL; Psrc unknown\nOriginal capture / gold unchanged" {class: state}
+  late: "06-02 record RLate / ELate at kLate\n06-03 fresh OH-late adds checked oLate\nHistorical P0 support; no VLate / ASrc" {class: state}
+  replay: "06-04 frozen k0 replay\nExact captured corpus / rules / host maps\nOriginal support; no oLate\nMissing required capture: unqualified" {class: input}
+  retain: "06-05 / 06-06 separate historical and current use\nOld P0 bytes do not prove Psrc: RJ03\nWithdraw affected use; retain old bodies\nNever insert late intake into Pfx0" {class: boundary}
+  freeze -> source: "fixture causal order"
+  source -> late: "new intake, not old membership"
+  freeze -> replay: "retained exact state"
+  late -> retain: "new historical capture"
+  replay -> retain: "preserve original body"
+}
+display: "QR11: independent presentation controls" {
+  direction: down
+  shown: "11-00 / 11-01 independent display reset\nSame {oL} / N_L; authentic Shown-cap-L\nF-L = support plus all three factor rows\nChecksum alone is not owned provenance" {class: input}
+  reuse: "11-02 / 11-03 cache and source contexts\nSame N_L + changed anchor: rescope\nPrior ack only exact F-L if policy permits\nNo cross-target unknown acknowledgement" {class: state}
+  mutation: "11-04 submit h3; same N_L possible\nSame scope can keep incremental mode\nContent / capture checks still required\nExpand / selector also affect anchor" {class: boundary}
+  history: "11-05 historical late projection\nNew supplied oLate changes factory identity\nNative reset; prior ack empty\nNo automatic acknowledgement of oLate" {class: boundary}
+  forks: "11-F1 / F2 / F4 / F5\nKnown unseen shown: host RJ11\nUnknown provenance: pending + safe replay\nOther consumer / late response: exact recheck" {class: boundary}
+  method: "All three gateway change paths\nDisplay reuse is not T-use / V / A reuse\nCurrent permission and opposing intake required\nMethod / Host SDLC qualification stays open" {class: boundary}
+  shown -> reuse: "owned same-consumer companion"
+  reuse -> mutation: "identity is not state version"
+  shown -> forks: "independent adversarial resets"
+  mutation -> method: "no semantic promotion"
+  history -> method: "fresh delivery still required"
+  forks -> method: "honest shown / access / intake checks"
+}

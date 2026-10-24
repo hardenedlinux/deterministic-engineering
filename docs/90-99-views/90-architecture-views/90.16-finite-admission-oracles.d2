@@ -1,0 +1,23 @@
+# org-target: docs/10-19-design/10-architecture/10.07-claim-witness-reference-contracts.org::#finite-claim-witness-rules
+# C3 outputs enter a new C0 epoch; no same-run rule creates its own verifier success.
+direction: down
+classes: {
+  data: {style: {fill: "#E6F5F3"; stroke: "#19756C"; border-radius: 10; font-size: 17}}
+  inference: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; border-radius: 10; font-size: 17}}
+  boundary: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; border-radius: 10; font-size: 17}}
+}
+c0: "C0: frozen typed input / cut\nPredeclared claims, envelopes and T/V/A\nGuard, slot, intake and dependency domains" {class: data}
+c1: "C1: positive bounded derivation\nSame-witness associations and typed paths\nGrounded impact; no new IDs or receipts" {class: inference}
+c2: "C2: complete scoped views\nEligibility / pending / conflict / refusal\nNegation only over complete frozen domains" {class: inference}
+c3: "C3: existing external owners\nReal verifier/reviewer/admission work\nNew immutable V/A/disposition records" {class: boundary}
+c4: "C4: consume actual A at current cut\nReject stale or mixed-cut use\nActual authorization/Host remains separate" {class: boundary}
+oracle: "Independent OC / OW / OR / OK / OU\nReviewed gold bodies, matrices and reference graphs\n30.04: input / gold / closure / stage / cut\nCandidate rows are not oracle gold" {class: data}
+compare: "Compare exact statuses and bindings\nQ1-Q6 + three changes + DC01-DC16\n20.05: stage-local gold and independent resets\nUnknown/incomplete never becomes pass" {class: inference}
+c0 -> c1: "checked finite input, not truth from a flag"
+c1 -> c2: "explicit guard/coverage completeness"
+c2 -> c3: "unmet work; eligibility is not an A"
+c3 -> c0: "new epoch only" {style.stroke-dash: 4}
+c2 -> c4: "validate externally supplied A and prerequisites"
+c0 -> oracle: "independently reviewed input specification"
+oracle -> compare: "independent expected results"
+c2 -> compare: "candidate derived results"

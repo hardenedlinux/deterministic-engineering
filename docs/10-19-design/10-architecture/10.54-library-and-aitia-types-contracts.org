@@ -1,0 +1,588 @@
+#+TITLE: 10.54 S1 Library and Aitia Types and Contracts: Coordinated Refactoring Design
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.54
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+TODO: AUDITED DESIGN SPECIFIED | QUALIFIED
+#+FILETAGS: :design:types:contracts:library:aitia:requests:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.52-contract-consistency-and-implementation-order.org::#consistency-implementation-order][S0-S9]] | [[file:10.53-source-build-and-recovery-baseline.org][S0 baseline]] | [[file:10.42-library-types-and-contracts.org][WP01 detailed Types]] | [[file:10.43-library-objects-and-publication.org][Publication]] | [[file:10.48-aitia-review-adaptation.org][Review facts]] | [[file:10.49-history-authority-and-reassessment.org][Authority]] | [[file:10.50-library-delivery-and-recipient-use.org][Delivery]] | [[file:10.51-case-joint-acceptance-plan.org][Acceptance]]
+
+* DESIGN S1 scope and coordinated target
+:PROPERTIES:
+:CUSTOM_ID: library-aitia-types-contracts
+:STATUS: File/field/inheritance/validation design only; no implementation or acceptance execution
+:END:
+
+S1 defines complete expected Types and Contract boundaries for Library publication,
+selection/capture/application/evidence and Aitia review/history/delivery requests.
+It unifies the later WP05-WP09 requirements into WP01's existing owners, before
+S2 exposes checked values and deferred real operations. There is one Library
+declaration generation owner, two distinct policy definitions, four declaration
+role categories and one finite Aitia verification-purpose domain.
+
+This is a target design for ordinary POO Types/ObjectContract/Function and Core's
+Contract/CLOS mechanisms. It creates no parallel schema grammar, generic registry,
+version service, policy evaluator, evidence issuer or contribution framework.
+Actual source-qualified producer recognition, freshness, authorization and effects
+remain separate from data conformance. Types do not issue C/W/Q/receipts, appoint
+roles, accept decisions or install/deliver a Library.
+
+The current 75 selected implementation/build/runner hashes still agree with the
+S0 appendix at this inspection. Project HEAD is
+8044732d505f84e373119a70f947df00e1767300; linked Core is
+52130d2d338b09622a3f55e37987ddc0375b6187; POO is
+fdeadfa40ca5cee5fe20308985aef1577f2eb49b; Aitia is its own repository at
+cbf3f6861ef7cf66d8d02aaf71b1c89630eaf7fc. Dirty-source/runtime/compiled limits from
+10.53 remain in force. No current source/compiled acceptance is inferred here.
+
+* AUDITED Current mechanisms and S1 gaps
+:PROPERTIES:
+:CUSTOM_ID: s1-current-type-audit
+:END:
+
+| Inspected existing owner / file | Actual behavior and target consequence |
+|--------------------------------+----------------------------------------|
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/abstract/types.ss][Library abstract/types.ss]] | Predicate checks fixed model identity/rule/dependency lists and a minimal entry Scope. Replace with complete effective declaration/role/Scope Contracts; do not call this a current complete family descriptor |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/types.ss][Library rust/types.ss]] | Slot predicates, generic-entry, flat parameters, exact-seven-key context scopes and procedure? method inventory. Migrate to immediate parent, full role/parameter/C/application/use shapes and real typed callables |
+| [[file:../../../scenarios/resource-lifecycle/types.ss][Scenario types.ss]], [[file:../../../modules/resource-evidence/types.ss][ResourceEvidence types.ss]] | Existing exported Scope checks largely establish procedure presence. Consume admitted expected Types and typed boundary signatures, not another copy of Library fields or a procedure-shaped admission bypass |
+| [[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-poo/object-contract.ss][POO object-contract.ss]] | Effective responsibilities/constraints, explicit extra-field handling, prototype checks and unknown-name inspection before value demand. Reuse this behavior; derive the full receiver field map before applying closed role checks |
+| [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/types.ss][Core types.ss]] | Existing PooFlowContract classification/validation/evidence protocol and returned candidate association. Keep value-shape checks with POO Types and real contextual admissions with Core |
+| [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/poo-clos/model.ss][Core poo-clos/model.ss]], [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/poo-clos/classes.ss][classes.ss]] | Actual expected prototype ancestry, required effective slots and conjunction of inherited slot predicates. check-model returns the candidate; this does not automatically reject extra candidate slots, perform domain relations or issue a verification receipt |
+| [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/types.ss][Aitia sdlc/types.ss]] | SdlcBoundFact supplies subject/revision/scope; SdlcIdentified supplies identity. SdlcEvidence also requires standard/requirement and outcome pass/fail. Current request has seven finite purposes and only object? for facts; policy-neutral facts/requests need explicit expected refinements |
+| [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/objects.ss][Aitia objects.ss]] | Existing constructors use the actual expected CLOS models, often copy textual bindings, and preserve standard-specific semantics. Add owned constructors for the new policy-neutral models; no generic deserialize-and-trust constructor |
+| [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/review-authority.ss][Aitia review-authority.ss]] | Defines SdlcHistorySource/Discovery and standard-specific approval requests; snapshots explicitly handle history/disposition purposes. Move common class ownership once if needed; retain real domain checks and original signed meanings |
+| [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/standards/nasa-lifecycle.ss][NASA lifecycle request-snapshot]] | Its case covers four purposes without an explicit unsupported-purpose else. Base-purpose expansion must be coordinated with a finite owner allowlist/refusal; do not assume base membership proves this snapshot understands every purpose |
+
+No exploit or runtime failure is inferred from these source observations. The
+missing explicit rejection is a concrete migration prerequisite, not evidence
+that a malicious request was executed. Existing certification and authority
+snapshots retain their own narrower purpose/expected-facts checks.
+
+* SPECIFIED Existing-file allocation and import graph
+:PROPERTIES:
+:CUSTOM_ID: s1-file-and-import-ownership
+:END:
+
+| Existing file seam | Complete S1 target and dependencies |
+|---------------------+-------------------------------------|
+| Library abstract/types.ss | Sole family descriptor/generation owner; generic/common declaration, row/premise/reference/product/capability/value shapes; generic parameters/Config/Scope; shared C/A/E/observation/use data responsibilities. Import POO/Core Types only |
+| Library rust/types.ss | Exact Rust/integration/bounded-policy/design-policy roles, mapping/delta/six-case premises and domain refinements; full Rust Scope, parameter/Context/application/output Contracts. Depend on abstract Types and POO/Core, never authored objects/Config/methods/Scenario/init |
+| Library objects/config/interface/func files | Consume these expected descriptors in S2, construct from actual admitted parent and retain returned checked values/wrappers. They do not own another generation, field catalog or expected-identity lookup |
+| profiles/resource-lifecycle.ss | S3 composes complete selection request and single parameter child. No duplicate parameter constants or candidate-supplied Contract, project C or role grant |
+| Scenario types.ss / func.ss / interface.ss | Compose published expectations for selection/acquisition/C recognition and callable preparation; actual Scenario owns occurrence capture. Add project input associations without copying Library schemas or claiming shape implies issuance |
+| modules/resource-evidence/types.ss / func.ss | Own project projection relation/Q boundary under WP06; consume qualified application/use references and independently required D/K. Library Types and generic Aitia do not import this query program |
+| Aitia modules/sdlc/types.ss | Common policy-neutral review/history/role/decision/exception/reassessment/withdrawal/delivery fields, effective CLOS shapes, expected facts/request subclasses, one finite purpose domain and pure relation/closed-field checks |
+| Aitia modules/sdlc/objects.ss | Owned constructors validating the trusted expected model and full binding relations; deep ownership/guarded references. Constructor conformance remains inert and grants no issuer/role/approval |
+| Aitia modules/sdlc/review-authority.ss | Consume common Types and construct/verify exact action/history facts. Directly move existing shared history class definitions/exports to types.ss once, updating consumers; no duplicate registered CLOS class identities |
+| Aitia modules/sdlc/review.ss; existing verification.ss; future review-verification.ss/shared Host factoring | Consume expected facts/request Types in their actual scope. Existing verification.ss remains design-guarantee support; WP07 owns actual new context/content verification and real currentness, not S1 constructors |
+| Aitia modules/sdlc/standards/nasa-lifecycle.ss and other standard owners | Coordinate base-purpose change with explicit supported-purpose/expected-facts/semantic snapshot checks and negative controls. Keep real standard-specific APIs/records; no fake standard for Library design policy |
+| Aitia modules/sdlc/interface.ss and actual test owners | Directly export/import the same definitions and expected constructors after migration. No facade maintaining parallel old/new current classifiers; historical readers preserve original record meanings |
+
+Import direction is POO/Core -> abstract Types -> Rust Types -> authored values/
+real deferred implementations -> checked interfaces -> project adapters. Aitia
+common Types independently depend on POO/Core and existing generic bound-fact
+owners, not this repo's Library/Scenario/C/Q classes or DE identifiers. Thin
+Scenario adaptation binds opaque qualified references to generic Aitia models
+through actual expected operations. Textual references are inert until their
+actual producer/custody/source association has been checked.
+
+A helper over existing effective-field/slot metadata is a pure function at the
+owning Types boundary, not a new public validation framework. Core retains
+receipt issuance; Source/Scope normalization defects in S0 BS08 remain a real
+S2 prerequisite, not something Types can mask with a structural predicate.
+
+* SPECIFIED Family, concrete roles and the single generation read
+:PROPERTIES:
+:CUSTOM_ID: s1-family-and-policies
+:END:
+
+| Expected descriptor / owning file | Concrete semantic definition and constraints |
+|-----------------------------------+----------------------------------------------|
+| BackpressureDeclarationContract / abstract/types.ss | Stable family identity backpressure-memory/declaration; one authored contract-version field with target symbol V1. This is the sole Library declaration-generation source |
+| BackpressureModelContract / abstract/types.ss | BackpressureModel identity concurrency.resource-control.backpressure-memory; generic-model role, parent=false; semantic revision ownership-budget/v1 |
+| RustResourceModelContract / rust/types.ss | Rust identity rust.resources.backpressure-memory; rust-model role, parent=actual admitted Generic; semantic revision backpressure/v3 |
+| BackpressureIntegrationContract / rust/types.ss | Integration identity rust.resources.backpressure-memory.integration; integration role, parent=actual admitted Rust; semantic revision backpressure-integration/v1 |
+| BackpressureReviewPolicyContract / rust/types.ss | BackpressureReviewPolicy identity rust.resources.backpressure-memory.review-policy; review-policy role, parent=false; bounded coding-method semantics/revision bounded-coding-method-review |
+| BackpressureDesignReviewPolicyContract / rust/types.ss | BackpressureDesignReviewPolicy identity rust.resources.backpressure-memory.design-review-policy; review-policy role, parent=false; design/content/history/delivery semantics. Authored semantic revision must come from its actual Library declaration before publication, not an invented Org counter |
+
+Each role descriptor has identity, role, declaration-contract and value-contract.
+Its expected identity is a typed source-owned binding referenced by construction
+and validation. Exact descriptor identities already specified in 10.42 remain;
+the design-policy descriptor receives a distinct source-owned identity at its own
+Types owner. It is not the bounded descriptor with a candidate-selected validator.
+Both policy descriptors share the family owner but neither has its own generation
+slot. Aitia references actual selected policy/Contract/source associations without
+importing a backpressure-only generation into its generic request base.
+
+The only read chain is checked Scope -> selected expected role descriptor ->
+its admitted declaration-contract -> contract-version. Scope's family export,
+each definition.contract and every expected role/source association must agree.
+Read guards/actual source ownership matter: copied symbols, object pointer equality
+or restored version bytes do not authorize mutation. Org/D2 show that relationship;
+package manifests, namespace names, record schemas, Git/dirty/compiled identities
+and semantic revisions never supply or advance that generation.
+
+| Policy dimension | Bounded coding-method policy | Design-review policy |
+|------------------+------------------------------+----------------------|
+| Published export | review-policy / review-policy-contract | design-review-policy / design-review-policy-contract |
+| Covered meaning | Supported controlled Rust/coding method claims, premises and evidence limits | Applicable actual/target architecture, Org/decision products, required content/trace, review/history/authority and selected delivery/use criteria |
+| Composition | Applicable Rust/integration models, selected method duties | Same family/actual model/slice associations plus generic content criteria at their real owners |
+| Prohibited inference | Coding pass implies complete DE-CASE-01 review | Policy definition implies project adoption, appointed reviewer, granted exception or actual delivery |
+
+A semantic design-policy revision is a required authored implementation input,
+not an alternative generation-setting location. Missing actual revision prevents
+publication of that definition; S1 may define and validate the expected nonempty
+revision field while retaining this as an explicit missing authored input.
+
+* SPECIFIED Library effective fields and inheritance
+:PROPERTIES:
+:CUSTOM_ID: s1-library-effective-fields
+:END:
+
+The field names below consolidate 10.42-10.46. Exact structural shape and actual
+relations compose through the full expected Type; none is delegated to Any or
+an always-true predicate. Nested references retain explicit role/source/locator
+meaning and finite supported domain; optional absence must have an explicit
+expected Type and cannot silently choose latest/cwd/default authority.
+
+| Effective shape / fields | Owning validation and relation constraints |
+|--------------------------+-------------------------------------------|
+| Common declaration: identity, revision, contract, parent | Symbol identity/source-owned expected binding; nonempty semantic revision text; admitted expected role descriptor; explicit false or actual immediate declaration parent |
+| Shared model: lifecycle, rules, dependencies, assumptions, assets, capabilities, qualification | Typed states; unique factor/obligation/method triples and obligation/input-role pairs; complete inherited duties; premise/assets references and declared capability/domain/strength/limits; no actual outcomes or granted authority |
+| Rust extension: state-map, runtime-premises, design, trajectories | Child -> parent state association with valid endpoints/complete projection, actual admitted Generic parent, typed runtime/workload/source premises and declared references; no generic-entry alias |
+| Integration extension: case-links, mapping, deltas | Actual Rust parent, exact six RL/SI/TM triples; single mapping identity/revision/domain/loss/asset association; typed queued-cancellation guard/effect/frame and duties. Renderers are consumers, never alternate semantic owners |
+| Common policy: applies-to, criteria, products, responsibilities, reconsideration | Expected model/role/family/purpose applicability; unique criterion/duty/method/evidence/product/strength/negative handling; real role/independence/history/repair/exception/status/delivery constraints. Definitions contain no actual people/keys/grants/approvals |
+| Generic Config / Rust Config | Generic entry references the authored admitted value; Rust uses the closed no-options shape. No policy chooser, project root, version or grant copy |
+| Profile request | identity, selection, parameters, investigations, products, project-constraints from WP03; one selected parameter child. Request does not supply providers, validators, authority or a second snapshot |
+| Parameter Contracts | Generic numeric signs/exactness and supported factors; Rust runtime/workload/inventory/lock/worker premises; six-case and integration refinements under their actual supported modes. A broader valid parameter does not imply a particular method supports it |
+| C / ResourceContextContract data | Actual selection/parents/policy/Profile, provider/project/subject/tool/environment/acquisition/product/mandate references, required duties and owned/read-guarded input basis/gaps. Scenario issuance/recognition is separate; no Q/result/decision appended into C |
+| A / ResourceMethodApplicationContract | Actual C, capability/subject/claims/domain/mode/limits, derivation/upstream expectations and complete role-bound expected inputs; prepared application recognition is not a user label |
+| E / ResourceMethodAttemptContract | Actual A/attempt/group, real preflight/derivation/build/probe/run origins and commands/argv/cwd/environment/limits/wait results; raw artifacts, completion/validation failures and diagnostics |
+| Observation / ResourceMethodObservationContract | Exact C/A/E/subject/claim/basis, actual complete input/artifact/validator origin, execution, interpretation, semantic conclusion, control result and strength/limits as separate dimensions |
+| W and qualified use / ResourceEvidenceUseContract | W's immutable original C0/A0/E0/G/claim/conclusion/issuer/footprint; target C/A/claim/basis, actual verification/currentness/compatible premises and fresh U. Original private W is never minted from conformance or a JSON record |
+
+Shared shape inheritance is common declaration -> model -> Rust -> integration;
+policy shape is a sibling derived from common declaration. Concrete role Contracts
+compose full effective shape and their own fixed identity/parent/applicability
+checks. Rust must not inherit the Generic fixed identity/parent=false constraint;
+integration must not inherit the Rust fixed role/Generic-parent constraint.
+The two policies share shape, not each other's fixed identities or concrete
+criteria. Engineering POO value ancestry and Contract-shape reuse are distinct;
+use required-prototype only where actual ancestry is explicitly promised.
+
+Materialize the complete receiver field map before closed validation, even if
+the parent's prepared map has already been forced. Preserve all inherited
+constraints, required duties and returned normalized/wrapped values. Required
+unknown fields are rejected by name without evaluating their values; an undeclared
+poisoned getter must not run merely to reject its name. Closed rejection must not
+misapply the parent's incomplete field inventory to a valid full child.
+
+* SPECIFIED Full Scope and callable expectations
+:PROPERTIES:
+:CUSTOM_ID: s1-scope-callable-contracts
+:END:
+
+| Scope / existing target Contract | Required exports and checks |
+|----------------------------------+-----------------------------|
+| Generic / BackpressureScopeContract | entry, entry-contract, declaration-contract, profile-contract, methods, method-contracts; exact expected role/source/family associations and supported callable inventory |
+| Rust / RustResourcesScopeContract | entry/entry-contract, integration-entry/integration-contract, both policy/Contract export pairs, declaration-contract, profile-contract, six-case-profile-contract, integration-profile-contract, context-contract, methods/method-contracts; actual required Parent and checked normalized role references agree |
+| Scenario / ResourceLifecycleScopeContract | Typed capture/selection/preparation/review calls over the published expectations; actual Generic/Domain/Evidence requirements; no procedure-only or caller-controlled Contract/provider/currentness association |
+| Project Evidence / ResourceEvidenceScopeContract | Typed actual projection/accepted-result/Q calls and trusted input/use recognition; project relation/Q ownership remains here, not another Library/Aitia query schema |
+
+Use actual POO Function Types for exact positional/keyword/optional/variadic and
+result-count expectations where supported. Capture/bind accepts owned project
+input and a checked request and returns recognized C/selection or explicit gaps;
+prepare consumes C/request and qualified upstream results, not replacement roots/
+Profile/tools; execute/observe consume actual A/E; issue/use depend on actual
+producer recognition; project projection consumes required units plus genuine
+qualified origins. Function validation itself executes no method body/default.
+
+Return the actual normalized receiver/function wrapper from validate/admission,
+not the raw prechecked candidate or a boolean diagnostic. The typed signature
+can express an outcome/gap object where the operation promises one; malformed
+input/refused capability cannot be disguised as a successful issued result.
+A method completing a negative control can yield a refuted property; incomplete
+or invalid execution retains E/diagnostics and cannot create property W.
+
+Required unit K belongs to WP06's actual project demand/application-claim adapter.
+Bind the target C/A/claim/basis/U to K there; do not mutate an issued W to add it
+or rely on method/obligation labels to establish common origin. Foreign attestation
+verification is a new local observation of its precise assertion, not imported
+original private issuance. All complete runtime/issuer/currentness operations
+are later S3-S8 work; S1 defines their expectations and source owner boundaries.
+
+* SPECIFIED Aitia models, inherited fields and facts
+:PROPERTIES:
+:CUSTOM_ID: s1-aitia-models-and-facts
+:END:
+
+SdlcSubject -> SdlcBoundFact supplies subject/revision/scope; SdlcIdentified adds
+identity where an actual identified record is required. Compose these existing
+classes at each new record owner. SdlcVerificationRequest already derives from
+SdlcBoundFact; fixed-purpose subclasses refine purpose and facts together.
+Policy-neutral records do not derive from SdlcClause or SdlcEvidence merely to
+borrow pass/fail or standard/requirement fields. Those genuine standard-specific
+models retain their current meanings.
+
+| Target class / field group in sdlc/types.ss | Required fields and validation boundary |
+|--------------------------------------------+------------------------------------------|
+| SdlcReviewBinding / R | Bound/identified project occurrence; exact generic C/Q references and qualified origins, selected policy/Contract/source/semantic revision, purpose, parent/selection association, required/actual products/criteria/roles and reference closure/limits. Finalize before requests/results |
+| SdlcReviewContextFacts | Exact R/requested assertion, selected project/policy adoption/applicability, actual role/mandate/independence/status/source cut and gaps; no architecture-truth claim from context completeness |
+| SdlcReviewInventoryFacts | Exact R, independently required versus actual product/criterion/reference/Q/input inventory and missing/conflict/unsupported findings; inventory-accounted can preserve known missing items without claiming fulfilled |
+| SdlcReviewCriterionFacts | Exact R/criterion/subject/proposition/domain/strength, actual content/W/use/semantic finding and attribution/original input basis, conclusion and limits; a validated refuted finding is not criterion-holds |
+| SdlcReviewAssessment | R/C/Q/policy binding and separate input/context/inventory/criterion/current-use findings; pending, unknown, refuted, conflict and gaps retained. No single pass flag grants authority or hides evidence polarity |
+| SdlcHistorySource / SdlcHistoryDiscovery | Existing identified/bound classes refined with required source roles, mandate/source/custody/current head/prefix/lineage, full original records/grants/status and exact C/Q/R/policy association. Required demand independent of offered sources |
+| SdlcReviewHistoryFacts / SdlcReviewDispositionFacts | Exact required H and C/Q/R/policy/technical assertion/target, action, stage, actual principal/grants/status, conditions and expected/actual accepted inclusion as appropriate. Proposal, accepted-inclusion and current-use assertions cannot substitute for each other |
+| Role/mandate binding | Actual principal/credential/appointment/delegation/root/status references, action/project/family/scope/validity/quorum/independence. This describes real inputs; it creates no grant directory or appointment |
+| SdlcReviewDecision / SdlcReviewException | Identified exact C/Q/R/action/target/policy and predecision H/expected prior, authenticated authority origins and accepted conclusion/reasons/limits; exception also binds actual permitted unmet duty, risk owner, mitigation/expiry/status. Preserve original denial/counter |
+| SdlcReassessment / SdlcReviewWithdrawal | Original/new basis and exact failed claim/denial/decision/exception links, actual repair/correspondence and authorized replacement; withdrawal binds actual owner-target-kind/effective scope and authenticated status. No generic public erase toggle |
+| SdlcDeliveryManifest / acknowledgement | Exact producer C/Q/R/publication/prior review basis, independent expected product/typed reference/access/dependency closure, intended recipient/project/purpose/limits/status; acknowledgement records actual arrival/omissions and channel origin separately |
+| SdlcDeliveryInventoryFacts / SdlcDeliveryProvenanceFacts | Exact finalized manifest, receiver/project/purpose, required-versus-observed content/access/closure and precise signed assertion/issuer/root/status/verifier findings. Provenance is not adequacy or automatic authority |
+| SdlcRecipientVerification / SdlcLibraryAdoption / SdlcLibraryUse | Actual receiver trust/verification/currentness, own project/selection/C/Q/R/policy/roles and accepted adoption/intended-operation/status associations. Later output refers to prior inputs; it cannot enter its own C/manifest hash |
+
+Shared fields and pure relation checks are composed from their owners, not copied
+C/Q/R/authority schemas. For generic references, the Type checks role/source/
+identity/association shape; the actual trusted consuming operation verifies owner
+recognition and live dependencies. Request construction cannot establish current
+qualified technical/effect authority. Keep facts/results owned or access them
+through real guarded qualified references; shallow list copies and hashes alone
+are insufficient for mutable nested facts.
+
+* SPECIFIED The finite request-purpose domain
+:PROPERTIES:
+:CUSTOM_ID: s1-request-purpose-domain
+:END:
+
+The target base domain has twelve symbols: retain the existing seven and add
+only the five review/delivery purposes already specified in WP07/WP09. Author
+that domain once at SdlcVerificationRequest's existing Types owner. It is separate
+from a review's intended use and a disposition action; no concatenated purpose
+strings, version suffixes or policy-selected validators are introduced.
+
+| Purpose symbol | Status / trusted consuming owner and expected facts |
+|----------------+----------------------------------------------------|
+| criterion-content | Existing; actual adopted standard's criterion-evidence operation and its standard-bound facts; not policy-neutral review criterion by alias |
+| classification-and-context | Existing; actual standard/classification context operation with its exact supported facts |
+| tailoring-decision | Existing; actual standard tailoring packet/authority/context facts and permitted tailoring assertion |
+| structured-inventory | Existing; actual standard inventory/classification facts and supported inventory semantics |
+| certification-decision | Existing; actual certification owner's expected request/facts/authority assertion |
+| history-discovery | Existing; expected SdlcReviewHistoryRequest/SdlcReviewHistoryFacts for the generic route, or the original standard-specific route under its own operation. Base purpose alone does not select the domain |
+| disposition-approval | Existing; expected SdlcReviewDispositionRequest/SdlcReviewDispositionFacts for exact supported action/stage/target, or the genuine old standard-specific operation. A rejection/withdrawal receipt is not positive permission |
+| review-context | Added; SdlcReviewContextRequest -> SdlcReviewContextFacts; only the precise context assertion |
+| review-content-inventory | Added; SdlcReviewInventoryRequest -> SdlcReviewInventoryFacts; exact inventory-accounting assertion |
+| review-content-criterion | Added; SdlcReviewCriterionRequest -> SdlcReviewCriterionFacts; exact substantive criterion/finding assertion |
+| delivery-inventory | Added; SdlcDeliveryInventoryRequest -> SdlcDeliveryInventoryFacts; exact offered/required received closure assertion |
+| delivery-provenance | Added; SdlcDeliveryProvenanceRequest -> SdlcDeliveryProvenanceFacts; exact provenance assertion and scope |
+
+All new request classes derive from the existing request base, retain its bound
+subject/revision/scope and narrow purpose to exactly one supported symbol plus
+its expected facts class. Their facts binding must agree on project/revision/
+scope, R or manifest identity, policy and precise assertion/target. Operations
+select the expected class/facts/domain, never a submitted classifier or arbitrary
+facts object's own validation method. Existing purpose spelling is retained;
+the word approval does not change a disposition action's actual polarity.
+
+Inherited CLOS predicates conjoin: a wider subclass enum cannot widen the old
+seven-purpose base. Update the actual base once, while every snapshot/verifier
+retains an explicit finite operation-specific allowlist and expected facts/action
+checks. NASA lifecycle's missing explicit refusal must be repaired in that same
+migration; certification/history/authority and new review/delivery snapshots must
+reject unsupported purpose/facts before reading them. No base-only widening is
+publishable, no unrelated request is accepted via an unspecified/default case,
+and no pre-existing signed artifact is rewritten as a new-purpose record.
+
+* SPECIFIED Validation order and trust limits
+:PROPERTIES:
+:CUSTOM_ID: s1-validation-and-trust-boundaries
+:END:
+
+| Boundary / order | Required check and returned value | What it cannot establish |
+|------------------+-----------------------------------+--------------------------|
+| 1. Trusted entry | Choose expected role/model/request/Function from actual source-qualified operation/Scope and finite supported role/purpose | Candidate-supplied Contract, callback, class or issuer label cannot choose the validator |
+| 2. Kind and actual promised ancestry | Check object kind and required prototype/expected CLOS model before forcing unrelated fields | Ancestry/shape alone cannot authenticate source, private issuance or project authority |
+| 3. Full effective field/slot inventory | Inspect allowed names, required fields and supported metadata policy; reject extra/missing fields before demanding unknown values | Current CLOS check-model by itself is not a closed-schema check |
+| 4. Primitive/nested field Types | Exact signs/domains/enums, finite unique lists/maps, typed references and parameter/capability shapes under the complete expected receiver | Missing fields are not silently defaulted; a string identity/digest is not an actual source/owner association |
+| 5. Pure cross-field relations | Identity/parent/family/policy applicability, full inherited duty/input/product roles, unique keys and exact request/facts/R/project/action association | Present declarations do not prove premises, semantic adequacy, real appointments or accepted history |
+| 6. Validation/admission return | Retain actual normalized/wrapped candidate and real Core contextual evidence at the expected boundary | Diagnose/element?/boolean success cannot replace the returned checked value |
+| 7. Qualified producer and later use | Actual C/A/W/U/Q/receipt/accepted history/source/clock/role/currentness under its real producer and supported footprint | Types cannot synthesize this step; genuine negative/missing findings remain at their actual meanings |
+
+For the new closed Aitia public request/facts boundaries, derive allowed semantic
+slot names from the same class's effective slot metadata. After the existing
+expected-ancestry check, inspect field names before full effective-slot value
+validation; then run actual check-model and pure cross-field relations. Keep the
+name/metadata and relation helpers at the Aitia Types owner; do not create an
+independently maintained duplicate field map or replace Core's model validation.
+The framework's inherited %poo-clos-class marker is checked as expected model
+metadata, not arbitrary semantic payload; no blanket allowance for all percent-
+prefixed names. If a new record uses a kind tag, declare/constrain it explicitly.
+Legacy standard constructors' existing kind fields do not justify accepting any
+extra slot on a new policy-neutral request. No global Core CLOS semantic rewrite
+or unrelated legacy model tightening is required by this scoped boundary.
+
+Canonical snapshots must include every semantically relevant field and qualified
+content reference under a supported typed encoding: preserve symbol/string kind,
+ordered trace ordinals versus sets, exact role/action/target/criterion/facts and
+source/issuer/lease limits. Own immutable nested values or enforce actual guarded
+reference reads before/after verification. No stripped-field collision, omitted
+negative, unknown coerced to false/pass, or serializing a private handle can create
+an equivalent authenticated request. Encoding is an assertion snapshot, not a
+new generation or an authorization decision.
+
+Receipt validity is not a live file/clock/role/status check. S1 requires those
+future operation inputs and distinct output Types but does not perform them.
+C captures governance record meaning; later H/current-use observes status; Q/R
+change when their technical/projected meaning changes, as 10.52 specifies.
+No such later result mutates old C/Q/R or enters its own input identity.
+
+* SPECIFIED Coordinated migration and S2 entry
+:PROPERTIES:
+:CUSTOM_ID: s1-migration-and-s2-entry
+:END:
+
+| S1 work unit / order | Existing owner and completion required before dependent exposure |
+|----------------------+-----------------------------------------------------------------|
+| Shared primitive/effective shapes | abstract/types.ss and actual POO/Core mechanisms: full declaration/data/nested field definitions and pure relational constraints; no methods/objects imports or body execution |
+| Concrete model/policy/parameter/Scope Contracts | rust/types.ss: five concrete descriptor associations under four roles; both policies, fixed parent/applicability, mapping/delta and complete Scope exports. Actual authored design-policy revision required before that value is published |
+| Callable and occurrence expectations | Complete Function signatures, Scenario and Evidence consuming Contracts, lower shared C/A/E/use shapes; producer recognition stays with actual later owners. No always-true placeholder until S3/S4 |
+| Common Aitia model ownership | types.ss and objects.ss: compose bound/identified records, five added purpose fact/request pairs plus expected history/disposition refinements; move history classes once with direct imports/exports |
+| Purpose-domain and verifier migration | Base twelve-purpose domain plus each actual owner allowlist/facts/snapshot/assertion negative checks, including NASA lifecycle explicit unsupported refusal, form one coordinated change |
+| Constructor/input ownership and consumer migration | Owned expected-model results and all direct callers/exports/tests update together; historical readers retain original facts, never a second current classifier or compatibility dispatch facade |
+| S1 acceptance design to implementation evidence | Bind TY controls below to existing owner test seams and WP10 control/lane/artifact expectations; later actual source/compiled checks must prove conformance before claiming qualified S1 |
+
+S1 design can proceed with S0/WP00 unqualified source/load/recovery gaps retained.
+Actual S2 exposure requires complete expected Types, real source associations,
+normalized Core required/final Scope handoff and real deferred implementations,
+not only class/Contract names. S4 same-C runtime qualification happens later;
+required method bodies cannot be deferred behind published fake functions.
+When source/capture/callables require coordinated construction, keep that unit
+unpublished until coherent. No implementation changes or S2 admission occur here.
+
+* SPECIFIED S1 late-stage effective-field reconciliation
+:PROPERTIES:
+:CUSTOM_ID: s1-audit-effective-refinements
+:END:
+
+Selected causal premise/check/impact and phase-typed delivery refinements in S6-S8
+are part of the complete expected child field maps at these existing owners before
+closed validation. Reuse criterion/Context/A/Observation/use and Aitia review/
+reassessment/delivery fields; no undeclared late payload, assumption registry or
+new verification purpose. Shape acceptance cannot authenticate actual C/check origin.
+
+[[file:10.64-contract-consistency-and-implementation-order.org::#s1-s9-consistency-audit][10.64 whole-chain audit]] supplies exact change/closure rules and remaining gates.
+
+* SPECIFIED Positive and matched negative acceptance conditions
+:PROPERTIES:
+:CUSTOM_ID: s1-types-contract-acceptance
+:END:
+
+TY01-TY32 refine existing CT/PB/SC/ME/CO/PQ/RV/HA/DU/JA requirements for S1. They
+are future boundary-specific cases, not executed passes or an automatic increase
+to WP10's 248 design-row inventory. Bind each to the original requirement and
+required source/compiled lane before implementation; preserve distinct attempts
+and independent expected outcomes rather than counting a shared assertion twice.
+
+| Control / actual expected boundary | Positive condition | Matched negative / preserved result |
+|------------------------------------+--------------------+--------------------------------------|
+| TY01 / one generation owner | All concrete model/policy roles read the same source-admitted V1 descriptor | Missing/foreign owner, string instead of symbol, copied flat version or mutable owner masquerade refuses |
+| TY02 / version dimensions | Existing semantic tokens and package/schema/source identities stay distinct | Parse /v3 or Git/tag/Org/Namespace suffix as generation or auto-advance design revision; refuse |
+| TY03 / effective child map | Parent map forced first; complete child additions and inherited constraints validate | Parent-only extra-field rejection, lost inherited check or arbitrary extras admit child; fail boundary |
+| TY04 / fixed role constraints | Each model/policy passes its own expected descriptor and actual parents | Rust via Generic fixed identity, integration via Rust fixed parent or candidate validator is refused before candidate dispatch |
+| TY05 / policy siblings | Both policy definitions retain own identity/revision/applicability under review-policy role | Design policy passed through bounded policy, policy as model parent or coding approval claims full design review; refuse |
+| TY06 / authored policy baseline | Actual nonempty source-authored design-policy revision and supported criteria present | Constructor/Org/Profile invents revision or missing revision defaults; publication unavailable |
+| TY07 / complete role relations | Declared rules/dependencies/premises/capabilities retain all inherited duties | Drop required role/duty and offered observation together, dangling/multiple conflicting key or unsupported premise; required gap/refusal remains |
+| TY08 / mapping and delta | Exact six case triples and child-parent mapping/delta guard/effect/frame validate | Missing/duplicate M case, reversed endpoint or hidden renderer-only semantic delta; refuse |
+| TY09 / Config/Profile | Generic entry/no-options Rust Config and one typed Profile parameter/selection child | Config selects policy/grant/root/version, flat duplicate parameters or unsupported policy/model pair; refuse |
+| TY10 / closed Scope | Both fixed policy export pairs, model/parents/family/Contracts/callables agree | Missing design export, separately forged family/parent or raw unnormalized candidate admitted; refuse |
+| TY11 / Function input shape | Actual supported argument/keyword/optional/result-count Types wrap and preserve invocation | Wrong arity/key/default side effect or output count; reject at actual boundary, no method execution during validation |
+| TY12 / returned checked values | Actual normalized object/wrapped function is retained and consumed | Ignore validate/admission return and publish raw candidate; owner control fails |
+| TY13 / C conformance versus issuance | Complete owned selection/project/provider/acquisition data recognized by Scenario | Copied shape, seven arbitrary keys, foreign source or post-result appended input cannot issue/replace C |
+| TY14 / A/E/W/use association | Correct original C/A/E/G and fresh target U/required K relation preserved | Mix retries/parent run, attach target K by rewriting W, clone JSON issuer or missing material footprint; no qualified use |
+| TY15 / result meaning | Completion, interpretation, claim polarity and control expectation are independent | M06 completion/Lean negation/QNT path result becomes universal support, or incomplete E issues property W; refuse |
+| TY16 / bound neutral Aitia facts | Actual expected bound/identified policy-neutral model and exact project/revision/scope | Fake NASA standard/requirement, incompatible SdlcEvidence outcome widening or arbitrary object? facts; refuse |
+| TY17 / finite base purpose | Exactly existing seven plus the five agreed additions validate structurally | Unknown symbol/string purpose, candidate-added enum or role label becomes verification purpose; refuse |
+| TY18 / inherited purpose conjunction | Base updated at owner and fixed-purpose subclass narrows it correctly | Wider subclass alone tries to bypass old inherited base, or same-purpose wrong facts class; refuse |
+| TY19 / legacy owner allowlists | Supported old NASA/authority/certification requests keep their exact semantics | New review/delivery or unrelated old purpose hits missing/default snapshot branch; explicit refusal before fact reads |
+| TY20 / trusted expected class | Operation chooses its actual expected request/facts/action model | Candidate classifier/validator/callback or same issuer label reroutes validation; refuse |
+| TY21 / closed Aitia payload | Effective-slot metadata + supported actual class marker accepts exact fields | Undeclared semantic/kind/percent-prefixed poisoned getter is accepted/forced; refuse by names without running it |
+| TY22 / cross-bound facts | Request/facts/R or manifest/project/policy/assertion/target agree | Same-shaped facts from another revision/receiver/R/criterion or widened action/stage; refuse |
+| TY23 / fact assertion strength | Context/inventory/criterion/provenance each authenticate only exact assertion | Context means content truth, inventory-accounted means adequate, provenance means authority or refutation means holds; refuse escalation |
+| TY24 / ownership and encoding | Owned/guarded nested facts and typed complete snapshot preserve every semantic field | Post-copy mutation, stripped negative, symbol/string collision or ordered trace treated as unordered set; no matching verification |
+| TY25 / history class identity | One actual SdlcHistorySource/Discovery definition imported by constructors/consumers | Duplicate CLOS registered class identities or mismatched moved imports create alternative accepted route; refuse |
+| TY26 / action stages | Actual typed history/disposition facts distinguish proposal/inclusion/current use and real scoped action | Rejection receipt becomes approval, proposal means accepted inclusion, exception erases original counter; refuse |
+| TY27 / immutable lifetime cuts | C record content, Q/R technical meaning and H/current status keep correct lifetimes | Later status inserted into old C/Q/R, cached instant treated live or changed captured input called unchanged; block affected use |
+| TY28 / receiver boundary | Own receiver facts and exact new verification assertion keep original provenance | Foreign private W/Q/receipt deserialized, changed recipient/purpose or provider approval grants adoption/use; refuse |
+| TY29 / acyclic ownership | Types/class metadata depend on actual POO/Core owners; deferred methods define without execution | Types import objects/methods/Scenario/init to discover expected meaning, or library loads project authority; fail design/load boundary |
+| TY30 / no placeholder exposure | Complete real expected Contract/callable before actual S2 Scope publication | procedure?/always-true/value-shape stand-in is advertised as full issuer/review/currentness support; refuse |
+| TY31 / source and compiled parity | Exact expected class/Contract/source/loaded association yields same required semantic checks in both lanes | Stale SSI/image, wrong dependency ABI or source fallback counted compiled pass; retain unqualified lane |
+| TY32 / scope of result | Actual future owner checks and retained failure/gap evidence report their exact scope | Static lint/render, constructor result, old q34 or unrun TY cases close S1/WP00/project review/delivery; refuse claim |
+
+S1 future verification belongs to existing Library owner/selection/context/package/
+dependency test seams and Aitia's actual SDLC/Core model-owner tests. Extend those
+real tests and the operation snapshot boundaries during implementation; no new
+fake receipt fixture or copied implementation oracle proves the requested
+semantic/authority property. Cold/recovery/recipient acceptance remains at WP10's
+real source/compiled/runtime boundaries under fixed S0 limits.
+
+* DESIGN Open inputs and documentation status
+:PROPERTIES:
+:CUSTOM_ID: s1-types-design-status
+:END:
+
+Open work includes actual expected Type/class/constructor implementations,
+design-policy authored revision/criteria/domain/budgets, coordinated purpose and
+closed-field checks, actual Core normalized Scope handoff, real producer/current
+verification, independent semantic/role inputs and complete source/compiled/cold/
+recovery/recipient evidence. S0 BS01-BS09 and WP10 OJ01-OJ12 remain open at their
+actual scopes; no Types refactor can supply an absent appointment or recover
+process-private authority from old bytes.
+
+Only Org and paired D2/SVG change. No implementation/directory/package/runner
+change, build, method/content/model/ASCENT/Aitia/acceptance execution, receipt or
+authority act, signing, review submission, adoption or actual delivery occurs.
+No new version literal or versioned Namespace is introduced. Static documentation
+checks validate this design's structure and links, not the future TY conditions.
+
+[[file:10.55-library-construction-and-scope-handoff.org::#library-construction-scope-handoff][10.55 details S2]]: complete checked object/parent/policy graph, Config and
+sole mapping/delta construction, exact exports/callables, separate provider/edge/
+final Scope candidate retention and SX01-SX32 future controls. No source change,
+acceptance execution or actual delivery occurs.
+
+#+CAPTION: S1 complete Library role/policy/Scope Contracts and Aitia effective models, finite purpose/facts boundaries, normalized return and distinct issuer/currentness obligations.
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.svg]]
+
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][Editable D2 source]]. Coordinated target design only; TY01-TY32 are unexecuted refinements of existing acceptance requirements.
+
+[[file:10.56-profile-selection-and-scenario-capture.org::#s3-profile-scenario-capture][10.56 details S3]]: checked Scope/parent/policy selection, complete Profile and
+project input Contracts, owner-separated acquisition and unique C; direct caller
+migration and CX01-CX32 future controls. Normalized values and actual origin/use
+associations are retained; missing governance stays explicit. No implementation,
+acceptance execution, review submission or actual delivery occurs.
+
+[[file:10.57-method-execution-and-evidence-issuance.org::#s4a-method-execution-issuance][10.57 details S4a]]: actual same-C applications/attempts/run groups, complete
+acquired/derived/execution/validation footprints, Core launch/environment boundary,
+method-specific semantics, private W and fresh use, failure retention and selective
+reuse. EX01-EX36 refine existing controls; no implementation, acceptance execution,
+review submission or actual delivery occurs.
+
+[[file:10.58-content-observers-and-reference-closure.org::#s4b-content-observers][10.58 details S4b]]: same-C product/criterion/locator fields and actual owner
+boundaries, independent finite demand closure, architecture/Org/decision/view
+claims, historical/current evidence, semantic attribution and A/E/W/use association.
+OX01-OX36 refine existing controls; missing/conflicting/stale inputs and fresh reuse
+remain explicit. No implementation, acceptance execution or actual delivery occurs.
+
+[[file:10.59-ascent-projection-and-query-view.org::#s5-ascent-projection-query][10.59 details S5]]: complete C/D/K/A/E/G/W/U/basis relations, actual producer/use
+and independent duty projection, missing/counter/conflict/coverage semantics,
+existing Session prospective acceptance/rollback and postcommit failure boundary,
+owned determinate Q and exact Aitia handoff. QX01-QX40 are future controls;
+no implementation, acceptance execution, review submission or delivery occurs.
+
+[[file:10.60-aitia-review-adaptation.org::#s6-aitia-review-adaptation][10.60 details S6]]: exact C/Q to inert R, adopted policy/project revision/roles/
+products, purpose-specific context/inventory/criterion checks and lossless negative
+assessment, actual common Host/Core receipt/current-use/replay boundaries.
+Causal Software Engineering is the research object for critical comparison of
+claim/assumption/identification/uncertainty handling. Framework mappings are
+proposals to test, not paper authority, demonstrated superiority or an estimator. RX01-RX40 remain future controls;
+no implementation, acceptance execution or review submission occurs.
+
+[[file:10.61-history-authority-and-reassessment.org::#s7-history-authority-reassessment][10.61 details S7]]: exact C/Q/R/H, independently required history, scoped
+principal/grant/action checks, accepted inclusion/current use, immutable negatives,
+repair/exception/supersession/withdrawal and qualified custody. Assumption failure
+triggers scoped reassessment without false zero-effect or authority inference.
+The paper is critically studied through competing designs/falsifiable RQ1-RQ6,
+not treated as a normative source or demonstrated improvement. AX01-AX44 are
+future controls; no implementation, acceptance execution or review submission.
+
+[[file:10.62-library-delivery-and-recipient-use.org::#s8-library-delivery-recipient-use][10.62 details S8]]: exact producer C/Q/R/authority and finalized manifest,
+product/reference/access closure, actual arrival and receiver-owned verification,
+new receiver C/Q/R/adoption/current use. Missing/withdrawn/replayed status and
+claim-specific causal applicability remain explicit; selective reuse is a research
+hypothesis compared against full revalidation. DX01-DX44 are future controls;
+no implementation, acceptance execution, review submission or actual delivery.
+
+[[file:10.63-case-joint-acceptance-plan.org::#s9-case-joint-acceptance][10.63 details S9]]: actual file/entry/lane and owner-artifact matrix, G0-G8
+source/compiled/load/cold/recovery/receiver through-gates, exact finite budgets,
+negative/assumption-change correctness and separate critical research comparison.
+Original 248 rows and stage refinements retain identity; JX01-JX44 are future
+joint controls. OJ01-OJ12/BS01-BS09 remain open until actual owner evidence;
+no implementation, acceptance/research execution or actual delivery occurs.
+
+* SPECIFIED P0 current Core Contract refinement
+:PROPERTIES:
+:CUSTOM_ID: s1-p0-core-contract-refinement
+:END:
+
+[[file:10.65-ascent-migration-and-contract-handoff.org::#p0-core-contract-delta][10.65 Core comparison]] separates existing value-contract normalization from new default classification/read-projection behavior. Complete value Types own shape; custom obligations retain an open read boundary. Do not use a bare default success classifier as full validation, duplicate field checks, or construct private receipt provenance from a clone. Existing predicate imports remain valid source exports but their shallow Contracts still need S1 reconstruction. TY controls remain prospective.
+
+* SPECIFIED S1 complete effective refinement under P1
+:PROPERTIES:
+:CUSTOM_ID: s1-p1-effective-contracts
+:END:
+
+[[file:10.66-effective-types-and-contract-closure.org::#p1-effective-contracts][10.66 P1 consolidation]] defines the effective refinement.
+The complete expected receiver includes the claim/premise/check/impact/strength and phase-specific fields consolidated there before closed validation. The twelve-purpose base is retained; finite generic action/target/conclusion/assertion-stage domains are now explicit. Use its owner tables and EF controls alongside TY, not an undeclared late payload or second schema registry.
+
+* SPECIFIED P2 use of complete expected Types
+:PROPERTIES:
+:CUSTOM_ID: s1-p2-construction-handoff
+:END:
+
+[[file:10.67-library-construction-publication-and-scope-handoff.org::#p2-files-and-dependencies][10.67 P2 consolidation]] defines this handoff.
+P2 constructs actual values and binds real operations against complete P1 expectations; Types remain independent of authored objects and operations. Full publication cannot use shallow procedure predicates or fake bodies. Contract generation and concrete role descriptors retain their existing sole owners.
+
+* SPECIFIED P3 capture origin and effective input refinement
+:PROPERTIES:
+:CUSTOM_ID: s1-p3-capture-origin
+:END:
+
+[[file:10.68-profile-selection-scenario-binding-and-capture.org::#p3-origin-protocol][10.68 P3 consolidation]] defines this boundary.
+P3 refines existing C acquisition/origin fields with exact basis/acquisition-result/producer/source/generation/read-support/Core-receipt/clock-lease associations before closed validation. Actual capture recognition is an operation boundary, not a Types predicate or new Aitia purpose. No fake C, method or reader body is publishable.
+
+* SPECIFIED P4 effective execution and observation contracts
+:PROPERTIES:
+:CUSTOM_ID: s1-p4-execution-fields
+:END:
+
+[[file:10.69-method-content-execution-and-evidence-issuance.org::#p4-owners-and-values][10.69 P4 consolidation]] defines this boundary.
+A/E/Observation/W/use and product/locator/reference/criterion/finding refinements compose the complete P1 map. Planned derivation expectations and actual later bytes remain separate; output/private origin is not manufactured by Type conformance. Retain normalized candidates and real Function/call/source associations.
+
+* SPECIFIED P5 complete row and query expectations
+:PROPERTIES:
+:CUSTOM_ID: s1-p5-query-expectations
+:END:
+
+[[file:10.70-ascent-projection-and-determinate-query-view.org::#p5-required-inventory-and-relations][10.70 P5 consolidation]] defines this boundary.
+Complete effective row/request/projection/Q fields retain independently required D/K/input roles and exact C/A/E/G/W/U/basis/strength/verification associations. Primitive ownership/functional keys and returned normalization remain mandatory; Type conformance or hash never authenticates accepted Q.
+
+* SPECIFIED Review fields and typed operations
+:PROPERTIES:
+:CUSTOM_ID: p6-follow-up-54
+:END:
+
+[[file:10.71-aitia-review-adaptation-and-current-use.org::#p6-fields-and-contracts][10.71 P6 consolidation]] defines this boundary.
+Neutral bound/identified facts retain complete inherited fields and exact R/C/Q, roles/products/criteria/limits. Fixed typed purpose pairs and normalized return values precede issuance; neither CLOS shape nor pass/fail evidence substitutes for provenance or adequate content.
+
+* SPECIFIED History and disposition fields
+:PROPERTIES:
+:CUSTOM_ID: p7-follow-up-54
+:END:
+
+[[file:10.72-history-authority-reassessment-and-withdrawal.org::#p7-fields-and-requests][10.72 P7 consolidation]] defines this boundary.
+Complete neutral history/grant/action/impact/exception/withdrawal records and fixed assertion-stage pairs retain all semantic fields. Move existing history classes once if centralizing; no duplicated CLOS identities, new purpose or version source.
+
+* SPECIFIED Delivery phase Types and exact lineage
+:PROPERTIES:
+:CUSTOM_ID: p8-follow-up-54
+:END:
+
+[[file:10.73-library-delivery-and-recipient-adoption-use.org::#p8-phases-and-fields][10.73 P8 consolidation]] defines this boundary.
+Complete payload/distribution/transfer/ack/verification/adoption/use fields are fixed by expected Type; no public phase flag promotes authority. Preserve neutral inherited fields, normalized returns, full negatives and original producer/local origins.
+
+* SPECIFIED Effective Types qualification
+:PROPERTIES:
+:CUSTOM_ID: p9-follow-up-54
+:END:
+
+[[file:10.74-case-joint-acceptance-and-research-plan.org::#p9-gates-and-lanes][10.74 P9 consolidation]] defines this boundary.
+G1 checks complete inherited fields, finite purpose/action/stage domains and normalized returns before closed validation. Shape/enum checks alone cannot establish provenance, appointment or authority.

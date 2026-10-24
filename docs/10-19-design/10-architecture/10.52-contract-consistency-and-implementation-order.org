@@ -1,0 +1,373 @@
+#+TITLE: 10.52 Whole-Slice Contract Consistency Audit and Implementation Order
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.52
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+TODO: AUDITED DESIGN SPECIFIED | QUALIFIED
+#+FILETAGS: :design:audit:contracts:dependencies:acceptance:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.41-workflow-gap-audit.org::#integrated-refactoring-dependency-order][WP00-WP10 ownership]] | [[file:10.42-library-types-and-contracts.org][Types]] | [[file:10.43-library-objects-and-publication.org][Publication]] | [[file:10.44-profile-selection-and-scenario-capture.org][C]] | [[file:10.45-method-execution-and-evidence-issuance.org][A/E/W/use]] | [[file:10.46-content-observers-and-reference-closure.org][Content]] | [[file:10.47-ascent-projection-and-query-view.org][Q]] | [[file:10.48-aitia-review-adaptation.org][R]] | [[file:10.49-history-authority-and-reassessment.org][Authority]] | [[file:10.50-library-delivery-and-recipient-use.org][Recipient]] | [[file:10.51-case-joint-acceptance-plan.org][Joint qualification]]
+
+* AUDITED Overall finding and scope
+:PROPERTIES:
+:CUSTOM_ID: whole-slice-consistency-audit
+:STATUS: Design consistency audit and documentation corrections only; no implementation or acceptance execution
+:END:
+
+10.42-10.51 specify one coherent target pipeline with distinct semantic owners,
+immutable stage inputs, real producer/verification boundaries and conservative
+negative/currentness handling. They did not yet form a fully synchronized contract
+set: WP05's later policy publication and Config wording had not been completely
+reconciled with WP01-WP03, and WP06's unconditional history-to-Q wording needed
+WP08's technical-versus-authority lifetime distinction. These documentary seams
+are corrected in place by this audit, rather than hidden behind another pipeline.
+
+The result is a reconciled target design, not a claim of complete operational
+closure. Actual expected Contract implementations, source/compiled boundaries,
+finite supported domain/budget assignments, substantive case content, real roles/
+mandates, recipient route and the remaining recovery qualification are still open.
+The implementation can proceed in the dependency order below; positive project
+acceptance and actual distribution/use cannot be inferred from the design.
+
+Audit basis is the active dirty checkout at HEAD
+8044732d505f84e373119a70f947df00e1767300, the ten named design documents, existing
+file/entry associations recorded there and retained historical limits. Current
+source identities remain distinct from historical receipts. This task does not
+re-run Core/POO/ASCENT/Aitia or refresh an old evidence cut.
+
+* AUDITED Findings and in-place corrections
+:PROPERTIES:
+:CUSTOM_ID: consistency-findings
+:END:
+
+| Finding / source seam | Assessment and documentary disposition | Existing future acceptance association |
+|------------------------+----------------------------------------+----------------------------------------|
+| IC01 / generation, identity, revision, Namespace across all ten documents | Consistent. Retain one BackpressureDeclarationContract.contract-version owner, role references and separate semantic/source/project/record identities; no new generation or Namespace suffix | CT01/CT02/CT04, PB/SC source checks, JA02/JA03 |
+| IC02 / 10.42 closed role/Scope inventory; 10.43 export table; 10.44 selector versus 10.46 design-policy extension | Incomplete back-propagation. Add the distinct BackpressureDesignReviewPolicyContract/definition and fixed design-review-policy export pair to earlier target tables; bind both policy choices through trusted expected descriptors. Do not widen the bounded policy's fixed identity | CT01/CT04/CT10/CT13; PB policy/Scope checks; SC selection; CO and RV02; JA03/JA20 |
+| IC03 / 10.46 Config selects options versus 10.43 closed no-options Rust Config | Conflicting ownership wording. Correct 10.46: Generic Config selects authored entry, Rust Config has no options; Profile chooses the published policy/content requests. No project/policy/grant mirror in Config | PB Config/export controls; SC policy/parameter controls; JA03 |
+| IC04 / WP04 target claim/use versus WP06 required unit K | Compatible but handoff was implicit. Clarify that trusted project application/use projection maps actual C/A/claim/basis to independently required K; no added K mutation on original W or obligation/method-only join | ME use/origin, PQ required-unit/key checks; JA07/JA14 |
+| IC05 / 10.47 any new history -> new Q versus 10.49 history-only update can retain technical R | Ambiguous lifetime rule. Correct the WP06 transition: technical/projected source-cut change requires new Q/R, external authority-only H/status change can preserve unchanged technical Q/R with fresh current authority assessment. Captured basis changes require C-level handling | PQ current-source/rollback, RV19/RV23, HA10/HA19/HA20; JA14/JA18/JA19 |
+| IC06 / captured grant/policy inputs versus fresh role/status checks | Clarify ownership: captured governance record content is immutable C input; later effective status is an independently checked H/use input. No cached grant verdict, mandatory recapture on every clock tick, or status-triggered mutation of C | SC source/acquisition; RV16-RV20; HA18/HA23/HA24; JA02/JA18 |
+| IC07 / WP07 and WP09 extend the same finite Aitia purpose domain | Compatible extensions need one migration. Consolidate at the existing SdlcVerificationRequest base owner; keep fixed expected facts/operation/purpose for review, delivery and existing history/action requests. No incompatible subclass widening or universal verifier | RV06-RV12, DU12/DU13, JA17 |
+| IC08 / W/U/Q/receipt private authority versus cross-process delivery | Clarify in WP04/WP09: a recipient verifies an exact exported assertion under its own actual provenance; that is a new local observation/use, not re-created original private W/receipt/Session authority or re-observed historical execution | ME provenance/reuse; RV26; DU13/DU18; JA07/JA28/JA29 |
+| IC09 / C/Q/R/decision/manifest/adoption input order | Consistent when stages are separated. Make the composite order explicit: accepted review precedes manifest; distribution references finalized manifest; recipient adoption follows own C/Q/R. Later outputs never enter their own earlier input hash | RV23, HA19/HA31, DU06; JA16/JA20/JA27 |
+| IC10 / Session rollback, accepted negative persistence and later export failures | Consistent and retained. Precommit refusal, already committed result, accepted-but-ambiguously-published negative and external file/transport effects have distinct owners and recovery states. No all-owner rollback | PQ transaction controls; HA21/HA22/HA25; DU29; JA15/JA24-JA26 |
+| IC11 / WP10 control counts, real input prerequisites and positive acceptance | Clarify 216 referenced contract rows + 32 JA rows = 248 design rows before lane expansion. Mechanical control pass is not property truth or actual project acceptance; actual required scopes/roles/limits must be independently bound | All referenced controls; JA01/JA08/JA13/JA20/JA31/JA32 |
+| IC12 / complete implementation and operational qualification | Not closed. Preserve OJ01-OJ12, exact historical recovery failure and missing receiver/role/domain/budget inputs. Add explicit implementation stage exits below; no documentation-only qualification claim | WP00, G0-G8, OJ01-OJ12; JA23/JA29-JA32 |
+
+The corrections add no new control ID, executable API, version literal or second
+source of domain meaning. In-place sections remain the semantic owners. The
+following tables reconcile their dependencies and explain how future evidence
+must close them; they are not another Contract field registry.
+
+* SPECIFIED Contract and owner closure map
+:PROPERTIES:
+:CUSTOM_ID: consistency-contract-owner-map
+:END:
+
+| Boundary | Publisher / actual owner | Consumer and required association | Refusal / preserved state |
+|----------+--------------------------+-----------------------------------+---------------------------|
+| Family, role and value admission | Library abstract/rust Types using POO/Core; one admitted family descriptor | Objects and trusted Scope/selection boundaries use returned checked effective values, separate fixed role identities and actual source/parent associations | Wrong role/family/extra field/ancestry/source refuses; no candidate validator or permissive placeholder |
+| Publication and choice | Existing Library objects/interface and Core required-edge/Scope owner | Profile requests supported model/slice/policy; Scenario consumes exact normalized checked Scope and explicit providers | No raw Scope cache, hidden loader, Config choice mirror or fake Generic-only pruning |
+| Captured input C | Scenario using actual project/provider acquisition and admitted Types | Methods/content read sole owned meaning/product/mandate input cut and qualified origin guards | Unknown required input stays a gap; outputs never appended into C |
+| Application/attempt/result/use | Real method/content producers using Core Ops and private issuance | Actual A/E/W, original C0/A0/E0/G and fresh target U map to project-required K through trusted adapter | No W on incomplete property execution; no old W rewrite or hash-only common run |
+| Required facts and accepted Q | Project ResourceEvidence adapter + actual ASCENT Session | Complete mandatory D/K inventory, real qualified W/U, program/source/request/completion/explanation reach Aitia | Invalid candidate refuses before commit; committed result retained after export failure; pending/counter/conflict remain |
+| Review basis and technical verification | Aitia SDLC Types/review/verification plus actual shared Host/Core issuer | Exact C/Q/policy/products/roles form inert R; context, inventory and substantive criterion assertions remain distinct | Unknown/negative assertion can be faithfully verified without becoming adequacy/approval; receipt alone is not live status |
+| History/action/current authority | Aitia review-authority and actual project/custody source/grant owners | Independently required H, real grants/action/quorum/scope, actual accepted inclusion and later status | Rejection/defer can preserve negative findings without positive technical eligibility; only genuine authorized resolution covers denial |
+| Delivery and recipient | Existing custody/actual channel adapter + recipient project owner | Exact finalized manifest, separate distribution action, arrival/acknowledgement; recipient trust, own C/Q/R/adoption/current use | Missing access, foreign private IDs, wrong recipient/purpose or unsupported status route blocks affected use |
+| Qualification and actual acceptance | Qualification owner retains actual attempts/oracles; actual project authority owns disposition | Independently required lanes/control matrix and exact current qualified evidence; separate actual scoped acceptance | No report/count/static pass/old failure cleanup grants acceptance, distribution or deployment |
+
+One origin can have several consumers without becoming several issuers. Org and
+D2 describe/locate the same bindings; they do not publish executable meaning,
+appoint a principal or make an ASCENT row authoritative. Actual project roles
+must be appointed through real sources; ownership in this table does not appoint
+anyone.
+
+The import graph must remain acyclic: POO/Core -> shared Types -> concrete role
+Types -> authored definitions/implementation units -> interface assembly ->
+Profile/Scenario adapters -> project projection/review/delivery orchestration.
+Common Aitia Types/semantics do not import this repo's DE identifiers or Scenario
+classes. Expected C/A/E/W/use data Types can be defined at their declared lower
+owner before operations; real C/W recognition stays with the actual producer.
+Library Types cannot import Scenario or methods to authenticate them. Trusted
+assembly binds actual source-qualified producer operations/Contracts; arbitrary
+caller callbacks cannot fill that boundary. No second capture, Host, policy
+engine, Session store, decision log or transport package manager is introduced.
+
+* SPECIFIED Stage order and loop closure
+:PROPERTIES:
+:CUSTOM_ID: consistency-call-order
+:END:
+
+The flow is directional within each captured technical basis. Feedback creates
+new qualified observations/bases or current-use assessments, never edits an
+immutable earlier stage or makes a result its own authority.
+
+| Order / produced binding | Prior inputs and actual effect boundary |
+|--------------------------+-----------------------------------------|
+| Select and acquire C0 | Checked Library model/parents/policy, actual project source/products/mandates and bounded acquisition. Expected duties exist before results |
+| Prepare A; observe E; issue W; qualify U | C0 plus actual derivations/commands/observer/issuer origins; each target required K has its independent expected demand |
+| Accept complete Q0; prepare R0 | Actual qualified program/source cut and finished query; R0 binds exact technical Q0 and adopted policy/project/product/role input references |
+| Verify R0; discover H0; propose action | Separate context/content/currentness and independently required accepted history/grants/status. Proposal/action receipt is not accepted inclusion |
+| Accept decision D0 and observe H1 | D0 binds predecision H0/R0; actual append/publication -> accepted H1. Current checks bind real inclusion, original lineage and later relevant status |
+| Materialize manifest M; accept distribution D1 | Exact reviewed publication/products and prior decision/current authority basis -> finalized M; distribution act binds M/recipient/purpose. D1 is outside M's own content identity |
+| Transfer and verify at receiver | Actual authorized channel, exact arrival/access/omissions and acknowledgement; own trusted verifier/root/status/source/clock, no import of private authority |
+| Capture C1; establish Q1/R1; accept adoption/use | Receiver's actual project/roles/policy/source/architecture and eligible publication; own method/content duties/evidence applicability. Later acceptance/current operation refers back to those inputs |
+
+C1 is a recipient occurrence label here, not a new contract generation. D0/D1 in
+this table name actual authority records conceptually, not replacements for the
+case's authored DE-D01-DE-D05 decision-document identities. A received statement
+of prior authority, its integrity verification and a newly authorized recipient
+action remain different facts.
+
+The receiver's prior project policy adoption/appointment mandates are inputs;
+acceptance of this particular Library use is a later output. No bootstrap cycle
+requires that later acceptance before constructing the receiver C, or permits
+current use before the required adoption/operation authority actually exists.
+Project qualification fixtures can test this mechanism under isolated real test
+mandates; those test principals do not become actual DE-CASE-01 or recipient
+project authorities.
+
+* SPECIFIED Change impact and reuse rules
+:PROPERTIES:
+:CUSTOM_ID: consistency-change-impact
+:END:
+
+| Change / lifetime | Required transition and surviving original evidence |
+|-------------------+-----------------------------------------------------|
+| Declaration generation/role/source/parent/semantic meaning changes | Re-admit actual publication/selection and acquire affected new C. Same V1 label cannot preserve source/semantic compatibility automatically |
+| Captured project/product/parameter/governance record content changes | New C when the selected input basis changes; old C/results remain historical. Reuse unaffected original W only through genuine fresh target use and compatible premises |
+| Actual method/parser/generator/validator/tool/compiled/runtime footprint changes | Requalify affected execution/interpretation/use; new E/W where the claim requires actual new observation. Do not assume independent extraction until actual import/initializer/read closure proves it |
+| New actual method/content observation or changed required technical/query inputs | New accepted source/query cut and Q/R as required; keep old W/Q/R and counters. Mandatory units remain even without a result |
+| Later grant/decision/status event with unchanged captured records and technical Q meaning | Fresh actual H/current-use/clock/dependency assessment can refer to unchanged technical Q/R. It does not certify a query that claims to display the later event |
+| Authority event becomes part of required query facts, coverage or technical demands | New Q/R at that projected technical cut; new C if captured inputs/selection/products/mandates also change. Do not insert later history into old Q |
+| Expiry/withdrawal/revocation of use/receipt/decision/exception | Actual owning status/issuer changes current eligibility; dependent denial can reopen. Historical statement/transfer/execution stays recorded; old bytes or restored private IDs cannot reactivate use |
+| Manifest inventory/recipient/purpose/redaction/access basis changes | New identified manifest and actual scoped authorization; receiver rechecks changed closure/custody/applicability. Whole-package approval never automatically covers altered subset |
+| Process loss / accepted-but-unexported result | Re-establish actual selected custody and current verification at its real owner. Keep actual accepted state/known negatives/uncertainty; no file-based recreation of private W/Q/receipt authority or universal rollback |
+
+An issued receipt's interval/seal is only one check. Every current use needs the
+actual supported trusted instant, current source/status/role/accepted-history and
+producer/target applicability checks. A cached admission's captured instant is
+not a running clock. A receiver verifying a signed assertion issues only its
+own exact verification assertion; preserving the claimed foreign origin does
+not prove the original execution or import its private issuer association.
+
+* SPECIFIED Full refactoring dependency order
+:PROPERTIES:
+:CUSTOM_ID: consistency-implementation-order
+:END:
+
+Stages below refine WP00-WP10 without renumbering the original work packages.
+A stage exit describes required future evidence, not work executed here. Shared
+Types can be authored before all operations, but exported checked callables must
+have real implementations and complete expected Contracts at publication time.
+
+| Stage / prior dependencies | Owner and existing file seam | Exit condition / downstream permission |
+|----------------------------+------------------------------+----------------------------------------|
+| S0 / preserved baseline, WP00 starts | Integration/build/qualification owners: justfile, build.ss, init.ss, gerbil.pkg, manifest.ss and actual linked dependency/runtime owners | Bind exact source/dirty/dependency/tool/loaded basis, supported budgets and retained failures; identify concrete build/recovery defects. Design and bounded refactoring proceed while qualification is open; no current all-green claim |
+| S1 / S0 source association; WP01 plus all later shape requirements | Library abstract/types.ss and rust/types.ss; Aitia actual sdlc/types.ss/objects.ss owners | Complete effective Types for both policies, full Scope fields, C/A/E/W/use and common review/history/delivery facts, finite purpose-domain migration and normalized return semantics; no permissive placeholders or Types -> implementations cycle |
+| S2 / S1; WP02 and Core handoff prerequisite | Core module-system/source/link.ss owner; Library objects/config/interface/func and pure correspondence owner | Checked dependency and Scope candidates actually retained; Generic -> Rust -> Integration, separate bounded/design policy, sole mapping/delta and one generation owner; complete validated exports/deferred callables, no declaration-time run |
+| S3 / S2; WP03 plus actual acquisition providers | profiles/resource-lifecycle.ss; scenarios/resource-lifecycle/types/func/interface and source provider owners | Trusted selection maps supported published roles/policies, separate provider/project inputs, expected duties and unique owned C with acquisition gaps; actual guards and real C recognition, no shadow capture |
+| S4a / S3 and capability Contracts; WP04 | Actual Core Ops, Library method/oracle/correspondence units and selected tools | Real prepared launch/wait/source closure, A/E/W/U and group/K association; actual bounded semantics, negative controls and selective reuse. No path/hash-only issuer or copied execution origins |
+| S4b / S3 and policy/product Contracts; WP05 | Common abstract content/observer units plus actual project architecture/Org/decision sources and semantic finding owners | Bounded typed closure/actual-target/decision observations and original A/E/W/use mechanics; substantive findings remain actual attributed input. Can develop independently of S4a, not fabricate missing findings |
+| S5 / required S4a/S4b facets; WP06 | modules/resource-evidence/types/func/interface; real ASCENT program/Session owner | Required D/K facts survive missing results; actual owned qualified facts, transaction semantics and complete determinate Q with limits. New program/schema/codec requires its actual qualified binding |
+| S6 / S5 + S1 common Types + adopted project mandates; WP07 | Aitia review/verification/common Host factoring; Scenario thin adaptation | Exact inert R, independent context/inventory/criterion findings and genuine current receipt-use; fresh clock/source/roles, no fixed NASA/test-person substitution. Technical preparation can report gaps; positive project verification needs actual inputs |
+| S7 / S6 + independently required authority/custody sources; WP08 | Aitia review-authority; actual project grants/roots/status; review/cross-intake/reassessment/archive/signatures | Authentic H, action-specific authority, accepted inclusion/current status, retained negatives and actual permitted resolution; qualify host serialization/selected-head/reader boundaries. No new ledger or universal distributed guarantee |
+| S8 / S7 + full actual artifact closure and receiver prerequisites; WP09 | Aitia common delivery bindings/authority; project delivery/custody adapter; actual receiving repo/Core/bootstrap/mandates | Qualified exact manifest/authorization/arrival and receiver's independent trust/C/Q/R/adoption/current use at declared scope. Same-process/local evidence cannot qualify unimplemented cross-host/offline transport |
+| S9 / all required previous stages plus qualified WP00; WP10 | Existing tests/examples and justfile/build roots plus future ordinary joint/recipient test seams | Actual required source/compiled/cold/recovery/recipient control matrix, independent oracles, complete retained evidence and declared exit/resource conditions. Produce derived joint report; actual acceptance/submission/distribution are separate authorized acts |
+
+Implementation dependencies and execution prerequisites are different graphs.
+Real deferred runner/observer bodies needed by an advertised S2 Scope must be
+authored against S1 Types before exposing that Scope; defining them does not
+invoke a method, require a captured project occurrence or import Scenario/init.
+S4a/S4b are same-C execution/issuance/content integration and qualification stages,
+not permission to publish a placeholder at S2 and implement it later. Actual
+source-qualified recognition/operations are bound at trusted assembly; an incoming
+C callback or candidate descriptor cannot choose the verifier. If those changes
+require coordinated producer/capture/callable migration, S2-S4 form a coordinated
+construction unit with no externally usable half-migrated Scope. Internal unit
+work can proceed; the publication/capture exits are claimed only after their real
+prerequisites exist. This prevents a Scope -> C -> method-definition -> Scope
+bootstrap cycle while preserving the runtime requirement that methods consume C.
+
+WP00 is a parallel qualification/repair lane through S0-S9, not a one-time green
+checkbox before Types work. Start exact build/load and recovery diagnosis early;
+qualify each actual changed source cut at its owner. No unchanged failed ordinary
+restart is replayed for luck. Shared Aitia Types/Host factoring and finite custody/
+recipient trust research may proceed alongside Library work, but live downstream
+use waits for actual C/Q/R/authority prerequisites.
+
+Avoid publishing half-migrated checked interfaces. Migrate active constructors,
+Scope consumers, Profile/Scenario adapters and tests in dependency-coherent units;
+retain historical artifacts as historical readers, without keeping a second
+accepted implementation or compatibility facade. Required missing operations or
+unsupported domains are explicit unavailable/gap results, never procedure-shaped
+stubs. Existing source paths need no directory redesign to express this order.
+
+* SPECIFIED Joint acceptance closure and invariant matrix
+:PROPERTIES:
+:CUSTOM_ID: consistency-acceptance-closure
+:END:
+
+| Invariant spanning stages | Required independent positive/negative evidence |
+|---------------------------+-------------------------------------------------|
+| One source of meaning | CT/PB/SC policy/parent/version checks and JA02-JA04; swap one descriptor/source/root/role/policy or normalized receiver and verify refusal without invoking candidate code |
+| Same capture and honest execution origin | ME/CO/PQ plus JA07-JA11; preserve retries/actual parent groups, reject mixed C/run/footprint, and distinguish actual new execution from historical/attestation verification |
+| Required content/duties survive absence | CO/PQ/RV plus JA01/JA12-JA14; delete required product and offered inventory together, retain required K/gaps and actual-target/semantic limits |
+| Determinate technical review, independently current authority | PQ/RV/HA plus JA15-JA22; new technical facts require new Q/R, authority-only status requires new current H check, receipt lease alone cannot bypass it |
+| Actual accepted origin and retained negatives | HA/DU plus JA19-JA28; proposal is not accepted inclusion, old head/vanished source/exception withdrawal cannot erase denial; precommit and postcommit failure states independently checked |
+| Recipient-specific adoption/use | DU and JA27-JA30; exact bytes/access and real own trust/C/Q/R/roles/purpose/status; reject producer-private replay and unauthorized operation/deployment |
+| Complete qualification with bounded claims | CT through DU families and JA01-JA32; exact lane/case/attempt/source/compiled/load/exit/resource/artifact evidence, not a report count or partial timeout trace |
+
+The nine contract-control families retain 216 rows and WP10 retains 32 joint rows,
+248 design rows total. Per-lane instances and retries do not change the required
+row inventory. Coverage must be keyed by document + control + declared lane,
+including exact real test/filter/API/oracle/artifact/expected state; old fixture
+SC identifiers cannot collide with WP03 SC requirements. Applicability is fixed
+before execution and cannot shrink after a failure.
+
+A passing negative control establishes correct refusal/retention at its scope,
+not approval of the rejected claim. M06 and formal counter semantics remain
+negative where observed. A complete positive operation is possible only when
+its actual selected policy's premises are met or a genuinely permitted scoped
+exception/resolution exists; this design grants neither. The requirement to
+exercise rejection/defer/withdraw paths must not depend on a successful positive
+technical verdict for those negative actions.
+
+Source loading, actual compiled loading, new-process cold use, complete ordinary
+restarts, intentional interrupted intake/repair and actual recipient use require
+their distinct evidence as specified in 10.51. No static audit closes one of
+these lanes. Optional scope choices are explicit predeclared policy decisions;
+mandatory mechanism-conformance controls cannot be waived while retaining a
+full-conformance label.
+
+* AUDITED Unclosed items and entry conditions
+:PROPERTIES:
+:CUSTOM_ID: consistency-open-items
+:END:
+
+| Unclosed class / existing WP10 items | Required closure before the affected claim |
+|--------------------------------------+-------------------------------------------|
+| Actual framework/Library/Scenario implementation / OJ01-OJ05 | S1-S6 source/expected Contract/call/issuance/Q/R mechanisms and actual owner-level controls; today's source does not implement the reconciled target |
+| Domain and finite demand concretization / OJ01-OJ04/OJ11 | Author supported semantic policy revision at Library owner, complete capability/criterion/field/key/role mappings and supported cardinality/parser/query/process budgets before exporting/executing that route. Org is not the version or declaration owner |
+| Actual project products/semantic review / OJ03/OJ06/OJ12 | Real required architecture/interfaces/assumptions/decisions/Org closure and independent semantic findings; actual selection and fresh content capture rather than design-only text or refreshed historical hashes |
+| Real policy/people/trust/action prerequisites / OJ06/OJ07/OJ10 | Actual project adoption, appointments/delegation/quorum/independence, roots/grants/status/accepted sources and actual receiver/transport/access permissions. Refactoring cannot appoint or authorize them |
+| Exact execution/build/cold evidence / OJ02/OJ08/OJ09/OJ11 | Actual full compiler/runtime/tool/dependency/loaded closure, prepared Ops results and complete required source/compiled/ordinary-recovery exits; no ambient historical .data/loadpath fallback |
+| Remaining ordinary recovery / OJ08/OJ09 | Preserve 2 GiB heap, 180-second watchdog and original second-restart 185.059-second failure including grace/DR07-DR14 partial trace. Concrete qualified repair first; then complete affected new-basis acceptance, not unchanged retry or wider timeout |
+| Strong custody/effect/transport boundaries / OJ07/OJ10 | Actual expected-prior publication/reader activation/fencing, byte/access provenance and current status at receiving/effect owner. Local process/rename/hash checks are not general distributed/power-loss guarantees |
+| Final actual qualification/disposition / all OJ items | Required 248-row applicability/lane map, exact current evidence, independent oracles and complete joint report; actual project authority separately assesses any acceptance. No test count, diagram or signed report supplies missing real acts |
+
+These are retained limitations and necessary implementation/input work, not
+permission questions introduced by this audit. Domain design can advance without
+pretending absent operational facts exist. The original 138-entry dossier catalog,
+19 retained drifts, old failed traces and historical method/review evidence keep
+their original identities. Static checks here do not recapture them or repair
+source/semantic/authority freshness.
+
+* DESIGN Documentation and audit status
+:PROPERTIES:
+:CUSTOM_ID: consistency-design-status
+:END:
+
+10.42-10.51 now explicitly reconcile both policy exports/selection, Config choice,
+required-unit handoff, common request purposes, captured-versus-current governance,
+Q-versus-H update rules, private-versus-exported provenance and acceptance counts.
+This document supplies the joint closure map and dependency order; each original
+chapter remains owner of its actual detailed target. 10.41 work-package ownership
+and 10.51 G0-G8/JA/OJ criteria remain in force at their stated scopes.
+
+Only Org and paired D2/SVG change. No implementation/directory/build/test/runner
+migration, model/method/content/ASCENT/Aitia execution, acceptance run, signing/
+receipt act, review submission, authority act, actual delivery or recipient use
+occurs. New assertions here are design findings, never issued operational evidence.
+
+[[file:10.53-source-build-and-recovery-baseline.org::#source-build-recovery-baseline][10.53 details S0]]: live dirty source/dependency identities, current selected
+byte map, build/default-route versus q34 loading evidence, BS01-BS09 WP00
+blockers/repair owners and explicit S1 entry conditions. Static inventory does
+not close the remaining build/load/recovery qualification gates.
+
+[[file:10.54-library-and-aitia-types-contracts.org::#library-aitia-types-contracts][10.54 details coordinated S1]]: complete Library/Aitia effective fields and
+inheritance, both policy/Scope associations, single declaration-generation read,
+the twelve-purpose domain with fixed expected facts and operation allowlists,
+closed Aitia payload checks and TY01-TY32 acceptance refinements. No source or
+acceptance change is performed.
+
+[[file:10.55-library-construction-and-scope-handoff.org::#library-construction-scope-handoff][10.55 details S2]]: complete checked object/parent/policy graph, Config and
+sole mapping/delta construction, exact exports/callables, separate provider/edge/
+final Scope candidate retention and SX01-SX32 future controls. No source change,
+acceptance execution or actual delivery occurs.
+
+#+CAPTION: Whole-slice consistency: reconciled contracts and lifetime cuts, staged dependency order, real owner boundaries and still-open qualification/input gates.
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.svg]]
+
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][Editable D2 source]]. Design audit only; no executable acceptance or delivery performed.
+
+[[file:10.56-profile-selection-and-scenario-capture.org::#s3-profile-scenario-capture][10.56 details S3]]: checked Scope/parent/policy selection, complete Profile and
+project input Contracts, owner-separated acquisition and unique C; direct caller
+migration and CX01-CX32 future controls. Normalized values and actual origin/use
+associations are retained; missing governance stays explicit. No implementation,
+acceptance execution, review submission or actual delivery occurs.
+
+[[file:10.57-method-execution-and-evidence-issuance.org::#s4a-method-execution-issuance][10.57 details S4a]]: actual same-C applications/attempts/run groups, complete
+acquired/derived/execution/validation footprints, Core launch/environment boundary,
+method-specific semantics, private W and fresh use, failure retention and selective
+reuse. EX01-EX36 refine existing controls; no implementation, acceptance execution,
+review submission or actual delivery occurs.
+
+[[file:10.58-content-observers-and-reference-closure.org::#s4b-content-observers][10.58 details S4b]]: same-C product/criterion/locator fields and actual owner
+boundaries, independent finite demand closure, architecture/Org/decision/view
+claims, historical/current evidence, semantic attribution and A/E/W/use association.
+OX01-OX36 refine existing controls; missing/conflicting/stale inputs and fresh reuse
+remain explicit. No implementation, acceptance execution or actual delivery occurs.
+
+[[file:10.59-ascent-projection-and-query-view.org::#s5-ascent-projection-query][10.59 details S5]]: complete C/D/K/A/E/G/W/U/basis relations, actual producer/use
+and independent duty projection, missing/counter/conflict/coverage semantics,
+existing Session prospective acceptance/rollback and postcommit failure boundary,
+owned determinate Q and exact Aitia handoff. QX01-QX40 are future controls;
+no implementation, acceptance execution, review submission or delivery occurs.
+
+[[file:10.60-aitia-review-adaptation.org::#s6-aitia-review-adaptation][10.60 details S6]]: exact C/Q to inert R, adopted policy/project revision/roles/
+products, purpose-specific context/inventory/criterion checks and lossless negative
+assessment, actual common Host/Core receipt/current-use/replay boundaries.
+Causal Software Engineering is the research object for critical comparison of
+claim/assumption/identification/uncertainty handling. Framework mappings are
+proposals to test, not paper authority, demonstrated superiority or an estimator. RX01-RX40 remain future controls;
+no implementation, acceptance execution or review submission occurs.
+
+[[file:10.61-history-authority-and-reassessment.org::#s7-history-authority-reassessment][10.61 details S7]]: exact C/Q/R/H, independently required history, scoped
+principal/grant/action checks, accepted inclusion/current use, immutable negatives,
+repair/exception/supersession/withdrawal and qualified custody. Assumption failure
+triggers scoped reassessment without false zero-effect or authority inference.
+The paper is critically studied through competing designs/falsifiable RQ1-RQ6,
+not treated as a normative source or demonstrated improvement. AX01-AX44 are
+future controls; no implementation, acceptance execution or review submission.
+
+[[file:10.62-library-delivery-and-recipient-use.org::#s8-library-delivery-recipient-use][10.62 details S8]]: exact producer C/Q/R/authority and finalized manifest,
+product/reference/access closure, actual arrival and receiver-owned verification,
+new receiver C/Q/R/adoption/current use. Missing/withdrawn/replayed status and
+claim-specific causal applicability remain explicit; selective reuse is a research
+hypothesis compared against full revalidation. DX01-DX44 are future controls;
+no implementation, acceptance execution, review submission or actual delivery.
+
+[[file:10.63-case-joint-acceptance-plan.org::#s9-case-joint-acceptance][10.63 details S9]]: actual file/entry/lane and owner-artifact matrix, G0-G8
+source/compiled/load/cold/recovery/receiver through-gates, exact finite budgets,
+negative/assumption-change correctness and separate critical research comparison.
+Original 248 rows and stage refinements retain identity; JX01-JX44 are future
+joint controls. OJ01-OJ12/BS01-BS09 remain open until actual owner evidence;
+no implementation, acceptance/research execution or actual delivery occurs.
+
+[[file:10.64-contract-consistency-and-implementation-order.org::#audit-dependency-drift][10.64 dependency observations]]: ASCENT advanced during this audit, first
+39679ae2 then b03efb55; evidence/interface.ss, program/clue-exchange.ss and
+program/trajectory.ss are absent while project imports remain. Core types.ss
+also changed at unchanged HEAD. Earlier 19 drifts remain historical; current
+EXT01/EXT02 are unavailable and EXT08 changed, giving 22 differences at recheck
+(21 at first pass). No stable whole-run dependency cut is claimed; no historical
+digest/receipt is rewritten, replacement API inferred or acceptance executed.
+
+* SPECIFIED P0 current owner and import prerequisite
+:PROPERTIES:
+:CUSTOM_ID: p0-current-owner-prerequisite
+:END:
+
+P0 is detailed in [[file:10.65-ascent-migration-and-contract-handoff.org::#p0-implementation-order][10.65]]. The migrated Flow application owners now exist at a newer cut. Generic rules stay in ASCENT; actual Clue/history publication, compatible dependency/build/load closure and Core checked candidate handoffs remain prerequisites. Earlier S0-S9 observations and failed recovery receipts retain their identities.

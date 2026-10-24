@@ -1,0 +1,15 @@
+;;; -*- Gerbil -*-
+(import :clan/poo/object (only-in :clan/poo/mop validate))
+(export resource-lifecycle-scope)
+(def (resource-lifecycle-scope domain evidence)
+  (def selected-entry (.ref domain 'entry))
+  (def selected-methods (.ref domain 'methods))
+  (.o entry: selected-entry integration-entry: (.ref domain 'integration-entry) methods: selected-methods
+      capture: (lambda (root profile crate cargo rustc usage (mode 'normal))
+        ((.ref selected-methods 'native-context) root selected-entry profile crate cargo rustc usage mode))
+      open-review: (lambda (context)
+        (validate (.ref domain 'context-contract) context)
+        (unless (eq? (.ref context 'entry) selected-entry) (error "context belongs to another Library entry"))
+        ((.ref selected-methods 'context-current!) context)
+        ((.ref evidence 'open-review) selected-entry (.ref context 'profile)
+          (.ref context 'usage) (.ref context 'snapshot) (.ref context 'scopes)))))

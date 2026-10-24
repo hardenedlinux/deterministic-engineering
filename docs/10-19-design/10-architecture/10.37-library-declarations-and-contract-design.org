@@ -1,0 +1,422 @@
+#+TITLE: 10.37 Library Declarations, Contract Ownership and Refinement
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.37
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+TODO: DESIGN SPECIFIED | QUALIFIED
+#+FILETAGS: :design:library:contracts:refactoring:identity:version:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.26-backpressure-public-contracts.org::#contract-version-source][Native ownership/read rule]] | [[file:10.36-version-revision-and-namespace-audit.org][Source audit]] | [[file:10.33-case-actual-and-target-architecture.org][Actual/target architecture]] | [[file:10.35-content-validation-slice.org][Validation slice]]
+
+* DESIGN Objective and change of design constraint
+:PROPERTIES:
+:CUSTOM_ID: library-declaration-design
+:STATUS: Comprehensive target design; no implementation, directory migration or review submission
+:END:
+
+The objective is a coherent, extensible Library declaration system, not the
+smallest source diff. Refactoring is appropriate while this project is under
+design. This specification expands the Declare step of 10.36; the later selection,
+capture and evidence steps remain necessary qualification boundaries.
+
+One earlier choice is replaced: BackpressureModel.contract-version is no longer
+the proposed authority. A model is an engineering subject, whereas the shared
+public declaration Contract owns its compatibility protocol. The proposed native
+BackpressureDeclarationContract in abstract/types.ss becomes the single version
+owner for this Library declaration family. It is an ordinary POO/Core Contract
+descriptor, not an Org property, registry, release service or separate manifest.
+The current target generation remains V1. No descriptor or successful native
+version read is implemented by this document, and no new generation is introduced.
+
+Four semantic definitions retain their own identities and revisions. The shared
+generation describes how those declarations are published and consumed; it does
+not assert that a model, a Rust specialization, an integration slice and a review
+policy are interchangeable. Their expected role Contracts remain distinct.
+
+* SPECIFIED Scientific criteria and alternatives
+:PROPERTIES:
+:CUSTOM_ID: declaration-design-criteria
+:END:
+
+| Criterion | Consequence for the design |
+|-----------+----------------------------|
+| Separate independent dimensions | Subject identity, Contract identity/generation, semantic revision, source identity and occurrence identity must not stand in for one another |
+| Follow semantic responsibility | Domain definitions live in native Library objects; Types express expected values; interfaces publish; Scenarios bind uses; observers produce evidence |
+| Distinguish construction from proof | Native POO inheritance constructs values. Structural Contract acceptance is not a proof of semantic refinement, tool correspondence or project safety |
+| Preserve substitutability honestly | Shared representation does not imply role compatibility. Specializations preserve declared parent duties and expose the assumptions/projections needed for stronger claims |
+| Preserve evidence meaning | Historical bytes, schema meanings and receipts remain exact; direct refactoring does not relabel old observations as the new declaration protocol |
+| Make extension accountable | New roles, capabilities or semantic deltas need explicit native ownership, expected Contracts and obligations; no unvalidated bags of extra fields |
+| Keep authority where it exists | POO/Core own validation/admission/currentness; ASCENT owns inference; Aitia owns review/disposition. Domain metadata cannot manufacture those authorities |
+
+| Alternative considered | Assessment / decision |
+|------------------------+-----------------------|
+| Keep the shared version on the generic model | Simple, but gives an engineering instance authority over a declaration protocol also used by policy objects; replace the earlier proposal |
+| Let each object/Profile copy the current generation | Produces independent mutable authorities and misleading equality; reject |
+| Put every object on one model inheritance chain | Makes a review policy inherit model semantics and encourages false subtype claims; reject |
+| Separate a versioned Module/namespace for each generation | Couples routing to metadata and fragments selection; reject |
+| Introduce a global registry or metadata file | Duplicates native declaration/publication mechanisms; reject |
+| Native shared declaration Contract plus distinct role Contracts | Selected: one native generation owner, normal POO references, role-specific validation, explicit engineering relations |
+
+These decisions apply to this Library family, not to every unrelated Library in
+the repository. Another Library can publish its own Contract family. Equal version
+labels across families imply neither equivalence nor compatibility. A future split
+is justified only by an independently evolving public protocol, not by creating
+more counters for the same protocol.
+
+* SPECIFIED Identity, generation and revision ownership
+:PROPERTIES:
+:CUSTOM_ID: declaration-identity-matrix
+:END:
+
+The following are proposed native declaration addresses and public names, not
+new executable declarations. Existing package and Module namespaces remain stable.
+
+| Native definition | Semantic identity | Contract generation / expected role | Semantic revision and owned meaning |
+|-------------------+-------------------+-------------------------------------+------------------------------------|
+| BackpressureDeclarationContract, abstract/types.ss | backpressure-memory/declaration identifies the native Contract family | Sole generation owner; current target V1; common publication/metadata protocol | Descriptor source/currentness identifies its implementation; no extra human revision counter is introduced for the descriptor |
+| BackpressureModel, abstract/objects.ss | concurrency.resource-control.backpressure-memory, retained | References BackpressureModelContract; reads the shared declaration generation through that Contract | Retain ownership-budget/v1 as the existing semantic baseline token for generic retention/lifecycle/duties |
+| Rust specialization, rust/objects.ss | rust.resources.backpressure-memory, retained | References RustResourceModelContract; same declaration family, no copied generation | Retain backpressure/v3 for Rust ownership/runtime premises, state map and BP/TR/CA/RL definitions |
+| Integration slice, rust/objects.ss | rust.resources.backpressure-memory.integration, retained | References BackpressureIntegrationContract; same declaration family, explicitly selected | Retain backpressure-integration/v1 for SI/TM duties, case links and the explicit mapping/model delta |
+| Review policy, rust/objects.ss | rust.resources.backpressure-memory.review-policy, proposed stable identity | References BackpressureReviewPolicyContract; same declaration family; composition with applicable models | Proposed initial opaque baseline token bounded-coding-method-review; owns applicability, criterion/method requirements and review semantics, not a project revision or approval |
+
+The proposed role Contract identities are respectively backpressure-memory/model,
+rust-resources/model, rust-resources/integration and rust-resources/review-policy.
+Each role descriptor references BackpressureDeclarationContract through its
+native declaration-contract responsibility. Only that common descriptor owns
+contract-version. Data definitions reference their role descriptor through contract.
+They do not carry independently writable contract-version fields.
+
+The uniform read path is: selected scope -> entry-contract (or the selected
+integration/review role Contract) -> declaration-contract -> contract-version.
+The corresponding definition's contract reference must resolve to that same
+admitted role descriptor. This replaces the earlier flat version-slot proposal.
+The shared descriptor itself is also available as declaration-contract in the
+published scope; equality/association is checked, not inferred from matching labels.
+
+The retained /v1 and /v3 text in existing revision tokens is historical opaque
+semantic labeling, not the Contract generation. Keep it when engineering meaning
+is unchanged; do not parse or increment its suffix. The new policy token is a
+proposed definition label, not a claim that the policy has already been published
+or reviewed. No accepted-owner-slice/r1 value is reused as its revision.
+
+A semantic revision describes an authored meaning baseline. An actual source or
+payload change is still bound by exact source/content identities even if that
+label stays unchanged. Neither a label change nor a source digest proves semantic
+equivalence. Descriptor/object-revision, package versions, tool versions, project
+revision, mapping identity and signed wire schemas retain their separate owners.
+
+* SPECIFIED Four semantic definitions and their relationships
+:PROPERTIES:
+:CUSTOM_ID: declaration-semantic-relations
+:END:
+
+** Generic model
+
+BackpressureModel owns the generic retention predicates, abstract lifecycle,
+BP-O01/O02/O03, dependency meanings, qualification boundary and links to the
+conditional formal assets. It has no engineering parent. Its root parent
+responsibility is explicitly empty. It does not own Rust scheduler settings,
+local project baselines, review outcomes or the declaration family's version.
+
+** Rust specialization
+
+The Rust definition is constructed from the actual admitted generic entry using
+native POO composition. It owns its identity, revision, role Contract, immediate
+parent reference, Rust lifecycle/state map, runtime/ownership assumptions and
+additional obligations. Generic duties and their dependency meaning are retained.
+
+The target uses one immediate parent relation, rather than keeping both parent
+and generic-entry as writable aliases. Consumers obtain the generic ancestor
+through the validated chain. This is a direct target-model refactor: no new
+compatibility accessor or second ancestry representation is proposed.
+
+Required semantic refinement consists of an explicit state/ownership projection,
+applicable premises and linked verification obligations. For example, the active
+to cpu-running and returned to result-pending mappings must preserve the relevant
+retention responsibility under their stated premises. A field/subset check alone
+cannot establish that result. Constructor inheritance and proof admission remain
+separate outcomes.
+
+** Integration slice
+
+The integration definition has the admitted Rust entry as its immediate parent.
+It owns its identity/revision, SI/TM duties, six-case RL/SI/TM associations, mapping
+reference, explicit semantic deltas and supported method dependencies. Publishing
+it does not activate it: Scenario selects either the Rust entry or the integration
+entry with its corresponding expected Contract.
+
+The queued-cancellation extension is part of that declared semantic delta, not
+an invisible convenience of QNT serialization. correspondence.ss consumes the
+Library definition and generates projections. It no longer declares the slice's
+identity/revision, invents duties or supplies an independent mapping identifier.
+Method execution remains outside declaration construction. No external tool run
+is needed merely to publish the slice.
+The existing methods.integration-entry constructor is replaced in active callers
+by the published integration-entry value and its expected Contract. Do not retain
+a second live constructor that can publish a different duty catalog. The current
+generic-entry field is similarly replaced by the immediate parent chain, with
+consumers and existing validators/tests migrated together in implementation.
+
+An integration slice is an extension under premises, not an unconditional proof
+that the Rust program refines the generated model. Exact case coverage, projection
+losses and tool interpretation are declared. RL-M06 remains the unsafe control;
+passing a test that detects that failure is not positive safety evidence for M06.
+
+** Review policy
+
+The policy has no engineering parent. It composes with the Rust/integration role
+Contracts through explicit applies-to associations and required obligation/method
+references. It shares only the native declaration protocol, not model inheritance.
+
+It owns the bounded coding-method review purpose, applicable targets/case subsets,
+required evidence and stage/criterion mapping, unsupported/timeout/missing behavior,
+retained-counter/re-review rules and permitted evidence strength. It distinguishes
+worker-owned M01-M05 from the caller-owned M06 investigation without erasing
+historical counter evidence. The applicable project selection determines the
+current reviewed subject; the policy does not silently narrow the inherited duties.
+
+Its SWE-061 mapping describes the existing local fixture route. It does not make
+the NASA matrix universally applicable or appoint reviewers. Independent semantic
+review, authorized dispositions, actual project classification, signing keys,
+paths, timestamps and initial project baseline are project/Aitia responsibilities.
+The Library publishes method requirements and policy meaning, not an approval.
+
+* SPECIFIED Contract architecture and validation
+:PROPERTIES:
+:CUSTOM_ID: declaration-contract-architecture
+:END:
+
+Existing mechanisms are sufficient. [[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-poo/object-contract.ss][POO ObjectContract]] supplies required field
+Types, effective declarations, constraints, obligations and controlled refinement;
+[[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/types.ss][Core PooFlowContract]] supplies value-contract and evidence-bearing admission;
+PooFlowNativeObjectContract additionally checks declared native prototype ancestry.
+[[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/module-system/source/publication.ss][Core publication Contracts]] validate native publication shape. No new Type
+system, declaration DSL, universal validator or version resolver is required.
+
+| Contract layer | Expected responsibility | Limits / native mechanism |
+|----------------+-------------------------+---------------------------|
+| Shared declaration Contract | Own the family identity/generation and common identity/revision/role-descriptor/parent reference protocol | Native Contract descriptor with a shared ObjectContract value shape; additional domain metadata is owned here, not prescribed by Core |
+| Four role value Contracts | Effective fields for generic/Rust/integration/policy; stable identities; correct parent or applicability relations; required semantic declarations and closure | Reuse common field Types and derive each effective ObjectContract; add relational constraints without discarding inherited checks |
+| Existing BackpressureScopeContract | Publish and associate the generic entry, entry-contract and declaration-contract | Refactor the existing predicate into structured value checks with native Core admission; keep its stable scope identity |
+| Existing RustResourcesScopeContract | Associate base entry, integration entry, policy and their Contracts with the same selected generic provider/family | Extend the existing scope responsibilities; no second publication protocol or independent contract map service |
+| Existing Profile/Context Contracts | Validate selected parameters and the normalized captured occurrence against the expected role | They do not own Library meaning or provide a fallback generation |
+| Semantic obligations and observers | Check behavior/refinement, actual correspondence, evidence sufficiency and policy application under declared premises | Contracts expose these duties; an empty structural diagnostic list is not an execution result or a proof |
+
+A common header ObjectContract must be extended into the role's effective field
+set before validating a full value. Validating the unextended header with the
+native default extra-field rejection would incorrectly reject every domain field.
+Use one authoritative field-Type map per effective Contract. Do not duplicate it
+in Core contextual responsibilities: those bind contextual child Contracts.
+Explicit extension fields are governed by the effective Contract; do not switch
+to unrestricted extra-field acceptance to make specializations pass.
+
+Rust and integration role Contracts reuse the common declaration protocol and
+appropriate model constraints. Do not blindly refine a generic role Contract that
+fixes the generic object's identity and then override that identity: conjunction
+would remain unsatisfiable. Generic role/identity checks, shared model invariants
+and parent-preservation checks are separate native responsibilities composed in
+the expected role. A review-policy Contract is a sibling declaration role, not a
+subtype of the engineering model Contract.
+
+Where a real native prototype relation is part of the contract, use the existing
+prototype-aware Core Contract. Prototype ancestry alone is not source authority
+or a semantic refinement proof. Ordinary predicates remain suitable for pure
+cross-field/domain relations; pure algorithms stay named functions. Function
+Types validate method inputs/outputs while leaving execution deferred. Apply
+validation's returned normalized/wrapped values instead of discarding them.
+
+** Required checks for each declaration
+
+| Subject | Structural and relational checks | Obligations beyond those checks |
+|---------+----------------------------------+---------------------------------|
+| Shared descriptor and all roles | Non-versioned stable Contract identity, present supported generation at its owner, trusted family/role association, nonempty semantic revision, typed declared references and no parent cycles | Current source/provider/admission association; policy for any future protocol change |
+| Generic model | Expected generic identity; no parent; defined lifecycle/predicates; unique duty identities; complete declared dependency roles | Conditional model/arithmetical premises, source inventory and review duties remain explicit |
+| Rust model | Correct immediate generic parent from selection; own expected identity/role; preserved inherited duties/dependencies; typed state map and explicit assumptions; declared methods cover supported requests | Semantic state/ownership refinement and runtime/native premises; no automatic discharge by inheritance |
+| Integration | Correct immediate Rust parent; preserved inherited responsibilities; exactly one RL/SI/TM association for each M01-M06; no conflicting duty IDs; mapping/delta/tool-input closure | Actual SysML assertions and complete mapped QNT path under the declared extension; M06 counter distinction retained |
+| Review policy | Stable policy identity and own revision; no model parent; valid applies-to role/model associations; required criteria/methods/evidence roles; explicit unsupported behavior; no embedded project revision/disposition | Actual policy adoption, classification, reviewer authority, current evidence and Aitia disposition |
+
+A candidate cannot choose the validator that admits it. Core first supplies the
+expected Contract from the selected, source-qualified publication. The boundary
+checks the candidate's descriptor reference against that expected association;
+it does not call a candidate-supplied classifier merely because a version/identity
+string matches. A forged descriptor or an unauthorized family override is refused.
+
+Within one selected graph, the admitted native references preserve association.
+Across processes, pointers are not portable: use existing source-bound capture
+and evidence references for the provider/descriptor/definition closure. Normalize
+once at the expected native boundary and bind the returned value. No serializer
+of arbitrary Contract procedures or new authority token is proposed here.
+
+* SPECIFIED Source ownership, dependencies and publication
+:PROPERTIES:
+:CUSTOM_ID: declaration-publication-design
+:END:
+
+| Existing native role | Target responsibility | Forbidden dependency / misplaced meaning |
+|----------------------+-----------------------+-------------------------------------------|
+| abstract/types.ss | Shared declaration Contract/version owner; generic role and scope Contracts; common pure relation checks | No import of concrete model objects just to discover their version; no project parameters or method execution |
+| abstract/objects.ss | Generic model definition referencing its expected role Contract | No duplicated generation literal, selected Profile or project baseline |
+| rust/types.ss | Rust/integration/policy role Contracts; existing Profile/Context/scope Contracts and relational expectations | No import of rust/objects.ss or methods.ss to rediscover declarations; no generator-defined duties |
+| rust/objects.ss | Construct Rust and integration definitions from the admitted parent; declare policy, semantic deltas and mapping identity; reference Types | No policy copied from a Scenario Profile; no runtime process/hash work at declaration construction |
+| Config roles | Default selections and references where needed | No separate version source, rules catalog or extra serialized metadata |
+| interface roles | Bind existing requires/exports; assemble a consistent native scope from the actual parent and declared objects/Contracts | No hidden file scanning, external process or alternative linking mechanism |
+| correspondence.ss / methods.ss | Project selected definitions and perform supported observation/execution; use one published mapping definition | No construction of independent engineering catalogs or policy/version literals |
+| Profiles / Scenarios / local review adapter | Independent selection values; actual occurrence capture; project baselines; source/evidence/Aitia adaptation | No ownership of reusable Library policy, Contract generation or semantic definition |
+
+This is an acyclic role dependency plan: native primitive/Core Types -> abstract
+Types -> generic objects/publication; abstract Types -> Rust Types -> Rust objects;
+methods depend on Types and published semantic definitions; interfaces link the
+actual required parent scope. Types do not import objects/methods back. Scenario
+and review adapters consume the resulting scope; Library objects do not import
+them. Stable subject IDs used by both a declaration and an exact-role constraint
+should be native typed domain bindings in the existing Library Types role, then
+referenced by the objects and validators. A binding names the subject; the object
+still owns its engineering meaning. This avoids importing objects back into Types
+or repeating independently maintained ID literals. It is not an identity registry.
+Existing module-prelude role discovery/linking remains the entry mechanism.
+No directory layout migration is necessary to express this plan; a later physical
+refactor should follow these responsibilities rather than preserve accidental files.
+
+| Publication | Expected native exports / association |
+|-------------+---------------------------------------|
+| BackpressureLibrary, existing backpressure-memory Module | entry, entry-contract, declaration-contract, applicable generic profile-contract and supported generic methods/callable Contracts; entry.contract associates with entry-contract, whose declaration-contract is the sole version owner |
+| RustResources, existing rust-resources Module | entry and entry-contract; integration-entry and integration-contract; review-policy and review-policy-contract; declaration-contract; applicable generic/Rust/native/integration parameter and Context Contracts, plus supported methods |
+| Required generic dependency | Existing Parent alias/core.requires with BackpressureScopeContract; every constructed model parent comes from that admitted scope |
+| Scenario use | Choose a published entry and its role Contract, plus the policy/parameters applicable to that use; publishing integration does not make it a mandatory execution path |
+
+These are target export responsibilities and proposed slot names, not an
+implemented interface. The shared descriptor is referenced through the required
+scope; its version literal is never repeated in Config, interface, Profile or
+Scenario. Interface construction must bind each selected parent/definition once
+for that scope and expose associated Contracts consistently. This is normal native
+object/link construction, not a new cache, registry or manager.
+
+** Publication and read sequence
+
+1. Load native expected descriptors and domain objects through existing role
+   mechanisms. Only the shared descriptor declares the current generation.
+2. Core admits the required generic scope under its expected Contract and source
+   currentness guards. Rust construction uses that actual admitted parent.
+3. Construct and associate the Rust model, opt-in integration slice and composed
+   policy. Admit the complete produced scope under RustResourcesScopeContract.
+4. Consumers read native exported values/expected Contracts, validate selections
+   and bind the actual occurrence. The version is read through the selected role's
+   declaration-contract reference, not scanned from Scheme or Org text.
+5. Capture the provider/descriptor/definition source identities, role/semantic
+   revision/parent or applicability closure and actual Profile/project inputs.
+   ASCENT/Aitia and Org/D2 consume that bound association at their existing boundaries.
+
+The [[file:10.38-profile-selection-scenario-capture-and-evidence-use.org][10.38 complete use design]] specifies Profile selection, model-specific
+parameter/capability Contracts, Scenario bind/capture, separate provider/project
+roots and one association delivered to ASCENT/Aitia. It expands the generic
+profile-contract and integration parameter requirements above; these are expected
+native Types, not additional generation owners.
+[[file:10.39-method-execution-evidence-issuance-and-ascent-projection.org][10.39]] specifies the published method capability/input/result responsibilities,
+actual execution/validation closure and per-application projection. It refactors
+method ownership and project inference relations rather than hiding broad actual
+dependencies behind narrower declared hashes.
+
+Missing/unknown metadata, descriptor substitution or an invalid parent/policy
+association prevents a qualified use. Neither equal V1 labels nor descriptor
+shape proves compatibility. A supported role, admitted provider, current source
+closure and satisfied applicable constraints are all required.
+
+* SPECIFIED Revision, invalidation and evidence consequences
+:PROPERTIES:
+:CUSTOM_ID: declaration-revision-consequences
+:END:
+
+| Change | Identity/version/revision consequence | Evidence consequence |
+|--------+---------------------------------------+----------------------|
+| Move a definition or restructure its native representation while meaning is preserved | Retain semantic identity/revision; declaration protocol stays at its current generation during this unshipped design work | Source/content binding changes; prior receipts remain historical; prove the new capture/reader association before current use |
+| Change lifecycle meaning, inherited duties, assumptions or a mapping delta | Review the affected definition's own semantic baseline and parent/application association; no automatic family version increment | Re-evaluate affected obligations using their actual footprints; preserve prior counter/history and identify the changed semantics |
+| Change policy applicability, required evidence or review semantics | Review the policy's semantic revision independently of project revision | Affected review requests need current policy binding and appropriate fresh verification; no disposition is fabricated |
+| Change project revision, payload size, tool binary, lock or runtime configuration | Library identity/generation is unchanged unless the actual Library contract changes | Existing source/Context/footprint guards decide affected applicability; project revision-bound review receipts cannot be reused by label |
+| Change the published declaration/role protocol incompatibly | Explicitly design and authorize a native Contract change at its owner; no automatic bump, ranges or namespace suffix | Qualify consumers and new candidate inputs; version equality never substitutes for source/capability validation |
+| Change a historical wire packet/schema/hash-domain interpretation | Keep old bytes/decoder meanings; a changed producer/reader contract needs explicit qualification | No alias registry, silent packet upgrade, old signature rewrite or relabeled historical positive |
+
+Preserve existing wire-policy tokens as producer-owned encoding identifiers when
+that representation is retained. They are not the new stable policy identity or
+the Library version owner. Refactor active callers directly to native declarations;
+retain historical decoding only where its actual evidence/history responsibility
+requires it. Do not keep duplicate live semantic catalogs as compatibility facades.
+
+* SPECIFIED Refactoring work packages and acceptance
+:PROPERTIES:
+:CUSTOM_ID: declaration-refactoring-acceptance
+:END:
+
+The order below follows semantic and trust dependencies rather than minimizing
+the diff. It replaces the Declare portion of 10.36; none is completed implementation.
+
+| Work package | Deliverable in a future implementation | Acceptance and negative controls |
+|--------------+---------------------------------------+---------------------------------|
+| Define the protocol and role Types | Shared native declaration Contract, sole generation owner, effective field Contracts and expected role descriptors | One version owner; no flat writable versions on definitions. Missing/unsupported metadata, descriptor forgery, family substitution and unsupported role are refused. Normalized admitted values remain usable; arbitrary candidate validators are not executed |
+| Refactor semantic objects | Generic/Rust/integration definitions with immediate parent chain; composed policy; single mapping/delta owner | No cycles, duplicate/conflicting duties, dropped inherited dependencies, unknown case links or policy/model inheritance. M01-M06 and the queued-cancellation delta remain explicit; source changes cannot retain old currentness by keeping a label |
+| Publish one consistent scope | Updated existing generic/Rust scope Contracts and interfaces; explicit entry/role/policy exports | Missing export, foreign parent, wrong role, copied version/fake descriptor or independently constructed mismatched associations fail. Opt-in integration selection retains the base route; no execution occurs at declaration/link time |
+| Refactor consumers to the native boundary | Profile policy selection, Scenario project baseline and capture, mapping/method observers, Aitia adapter use of the same association | Initial project-baseline and prior-review guards survive; no Profile controls Library version. A changed occurrence or policy cannot replay an old receipt; raw ASCENT rows do not admit an invented declaration |
+| Qualify semantics and projections | Source-bound native checks, formal/correspondence obligations, negative controls and honest Org/D2 readout | Structural acceptance, semantic support, native execution and Aitia review are reported separately. Counter/timeout/stale outcomes remain explicit; missing native metadata displays pending |
+
+Native validation controls must include inherited-field preparation after parent
+validation, forbidden extra fields, type-invalid/missing methods, contradictory
+identity constraints, real versus forged prototype ancestry and reuse of validation's
+returned values. These exercise actual POO mechanisms rather than mirror a new
+handwritten validator. Source-bound and review-replay controls remain those in
+10.35/10.36, adapted to the selected expected Contract/source association.
+
+No declaration-only check closes the semantic refinement or production gate.
+Actual native qualification remains subject to the compatible Core baseline,
+current Scenario path and required source/evidence closure. No model, Rust,
+ASCENT or Aitia run is claimed by this design.
+
+** Allocation to the existing case and obligations
+
+| Design responsibility | Existing case allocation | Evidence limit |
+|-----------------------+--------------------------+----------------|
+| Native Contract ownership and expected roles | DE-R01/R03; DE-T01; VA-01/02; DE-O-ARCH/TRACE | Native shape/admission controls, not an engineering refinement proof |
+| Parent preservation, integration delta and mapping | DE-R02/R04; DE-T01/T02; VA-04/08; DE-O-ARCH/TRACE | Source review plus applicable QNT/Lean/correspondence/native duties remain required |
+| Composed policy and project selection boundary | DE-R05; DE-T05; VA-10/11; DE-O-DEC/REVIEW | Declared policy has no project adoption or Aitia authority by itself |
+| Source-qualified occurrence association | DE-R03/R04; DE-T03; VA-07/09; DE-O-TRACE/REVIEW | Source/Context/issuer/currentness controls before admitted evidence use |
+| Org/view and historical identity handling | DE-R06; VA-03/12/13/14; DE-O-DOC/DEC | Documentation checks do not emit obligation witnesses or upgrade historical packets |
+
+This is design allocation to existing responsibilities, not new registered
+ASCENT facts or completed obligations. The exact later duty/method footprint must
+be published and captured before a native result can support it.
+
+* DESIGN Documentation and decision status
+:PROPERTIES:
+:CUSTOM_ID: declaration-design-status
+:END:
+
+10.26 now points to the shared native Contract owner; 10.36 retains its observed
+source findings while its first-step target is expanded here. The source checkout
+is HEAD 8044732d505f84e373119a70f947df00e1767300 plus concurrent local work, not a
+frozen release. Existing runtime declarations still have the 10.36 audited shape.
+No new descriptor, export, object, policy or revision is implemented in this turn.
+
+This design is a current authored candidate, not an admitted capture or an Aitia
+review disposition. It is not inserted retrospectively into the preserved C4
+catalog in [[file:10.34-case-design-review-dossier-draft.org][10.34]]. [[file:10.35-content-validation-slice.org::#slice-input-freshness][10.35]] records current catalog drift. A later
+candidate must include this specification/view and their actual source closure
+when required by its selected Profile.
+
+[[file:10.41-workflow-gap-audit.org::#integrated-refactoring-dependency-order][10.41 integrates the source gap audit and dependency-ordered refactoring]]
+across declarations, capture, methods/query, review and recipient use. Its work
+packages share the native owners above; they do not constitute a second pipeline.
+
+[[file:10.42-library-types-and-contracts.org::#library-types-and-contracts][10.42 details WP01 by existing file, effective fields and role Contracts]],
+with the sole generation owner, separate shape/definition relationships and
+matched acceptance controls. Its responsibility-based naming replaces the
+ambiguous adjective in maintained design filenames; source API names remain
+exact references until implementation migration.
+
+[[file:10.43-library-objects-and-publication.org::#library-objects-and-publication][10.43 details WP02 object/configuration/publication responsibilities]],
+including actual checked parent bindings, single mapping/delta ownership, complete
+Scope exports and the Core checked-value handoff prerequisite. Declaration
+admission and completed method/review qualification remain distinct.
+
+#+CAPTION: Engineering parent relations, policy composition and the single native declaration Contract owner.
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.svg]]
+
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][Editable D2 source]]. This is target architecture; no implementation or review submission.

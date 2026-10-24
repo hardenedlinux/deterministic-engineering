@@ -1,0 +1,280 @@
+#+TITLE: 10.76 P0 Dependency, Build, Load and Normalized Handoff
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.76
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+TODO: AUDITED SPECIFIED | QUALIFIED
+#+FILETAGS: :design:dependencies:core:contracts:build:loading:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.75-contract-consistency-and-refactoring-order.org::#audit-implementation-order][10.75 P0 order]] | [[file:10.65-ascent-migration-and-contract-handoff.org][Earlier P0 API migration]] | [[file:10.66-effective-types-and-contract-closure.org][P1 effective Contracts]] | [[file:10.67-library-construction-publication-and-scope-handoff.org][P2 publication]] | [[file:10.74-case-joint-acceptance-and-research-plan.org][P9 lanes and gates]]
+
+* SPECIFIED P0 target and bounded claims
+:PROPERTIES:
+:CUSTOM_ID: p0-unified-source-handoff
+:STATUS: Source/design and static documentation only; no implementation, package mutation, acceptance execution, provisioning or actual delivery
+:END:
+
+P0 unifies one qualified dependency source set with its real compiled/loaded closure
+and Core's normalized Context/required-edge/final Scope handoff. It is a prerequisite
+for P1-P9 runtime claims, not another version manager or project-local repair facade.
+Declarations express intended dependencies; actual checkout/dirty bytes, build inputs,
+artifacts and per-process loaded modules are distinct observed facts. All must agree
+through a qualified route before that route can be called complete.
+
+The Library declaration's sole generation remains V1. Package source revisions,
+semantic revisions, document revision and runtime/load identities remain separate;
+manifest.ss and Org/D2 do not become dependency resolution or Library version owners.
+No new Namespace suffix, compatibility facade, alternate Contract system or global
+load/receipt registry is introduced. Historical build/recovery/dossier receipts remain
+at their original identities, including failures. No implementation or tests run here.
+
+* AUDITED Current files and declaration versus realization
+:PROPERTIES:
+:CUSTOM_ID: p0-current-dependency-cut
+:END:
+
+Initial observation: . HEAD 8044732d505f84e373119a70f947df00e1767300; ../poo-flow HEAD 20ca0903bdbb67ed3682dc0a732f1a435e716770; ../poo-flow/core HEAD 251ff282e2aa9cc8f6d2b194e5f26615cd042f58; ../poo-flow/packages/lambda-aitia HEAD 87fb8f17c8ea7af5e553f3bd86140b3c5b1cab03; ../gerbil-ascent HEAD 5054f6d8b97ae0e1fa266f2d80f7ddb66c99e367.
+
+The inherited 94-file source set matched 10.75 at the initial observation; the Core
+package declaration was additionally read. Separate reads are not an atomic checkout
+or loaded process. POO physical checkout through the project package link remains
+Flow .gerbil/pkg/github.com/tao3k/gerbil-poo at HEAD
+fdeadfa40ca5cee5fe20308985aef1577f2eb49b in the preceding resolved observation.
+No checkout/link/package mutation occurs here.
+
+| Existing file / actual owner | Observed state and target adjustment |
+|------------------------------+--------------------------------------|
+| [[file:../../../gerbil.pkg][Project gerbil.pkg]] | Currently unpinned Core/ASCENT/POO dependencies. Declare the jointly qualified exact source revisions for direct imports. If project imports supported Flow Clue/Aitia collection modules directly, declare their actual supported Flow package owner too; do not invent a standalone Aitia package identity |
+| [[file:../../../../poo-flow/core/gerbil.pkg][Core gerbil.pkg]] | Declares POO 0df023fd9e15192156935c971f0f1940028c5277; current linked POO HEAD differs. Core owner must qualify actual required POO native read/normalization APIs and reconcile declaration/source/build |
+| [[file:../../../../poo-flow/gerbil.pkg][Flow gerbil.pkg]] | Same POO 0df023fd and ASCENT 0f99da9e3a3baf1a272ba58fe0769ed8278ae746. Preserve ASP/parser/Orgize dependencies and qualify their actual transitive footprint when used; no guessed updates to unrelated packages |
+| [[file:../../../../gerbil-ascent/gerbil.pkg][ASCENT gerbil.pkg]] | Declares Core 52130d2d338b09622a3f55e37987ddc0375b6187, while actual Core checkout is 251ff282 with dirty source observations and pending handoff repairs. ASCENT owner must advance to the genuinely qualified Core revision together with dependent Flow/project declarations |
+| Actual project package links | Core -> ../poo-flow/core; Flow -> ../poo-flow; ASCENT -> ../gerbil-ascent (HEAD 5054f6d8, different from declared 0f99da9e); POO -> Flow package checkout. These are actual resolution inputs, not pin satisfaction or semantic failure proof by themselves |
+| [[file:../../../manifest.ss][Project version-manifest]] | Earlier POO fdeadfa/Core 52130d2/ASCENT archive identifiers. Regenerate through its actual owning metadata route only after real qualified sources exist; it documents realization, never overrides gerbil.pkg or Library declaration generation |
+| [[file:../../../build.ss][Project build.ss]] / [[file:../../../init.ss][init.ss]] | Existing four build roots and explicit Module/Scenario selection. Enumerate all actually claimed integration/adapters/observers/tests and dependencies at actual build owners; init selects providers, not arbitrary incoming roots |
+| [[file:../../../Justfile][Justfile]] | Existing bounded launchers mix source, .gerbil/lib, historical qualification/native-build-10 and optional compiled test roots. Replace production defaults with explicit qualified lane inputs when implementing, preserving old directories/receipts. LOADPATH selection alone is no declaration/build/load closure |
+| [[file:../../../../poo-flow/core/module-system/source/admission.ss][Core admission.ss]] / [[file:../../../../poo-flow/core/types.ss][types.ss]] | admit-module-value! returns accepted evidence, whose candidate is the normalized subject. Publication admission already consumes that candidate; validate returns normalized value. Keep accepted evidence and complete expected Contracts, not bool or precheck input |
+| [[file:../../../../poo-flow/core/module-system/source/link.ss][Core link.ss]] / [[file:../../../../poo-flow/core/module-system/source/publication.ss][publication.ss]] | Context result discarded; required bindings consume provider.scope; final record consumes pre-admission scope-value. Default ModuleScopeContextContract is currently predicate-only and normally identity-preserving: its discarded return is a protocol/extensibility gap, not evidence of a demonstrated nonidentity Context failure |
+
+Do not pick a final pin solely because it is today's HEAD or newest-looking string.
+The selected candidate set must contain the required real POO/Core/ASCENT/Flow APIs,
+source guards and repaired handoff. During refactoring identify each commit plus dirty/
+untracked/linked source closure explicitly; unfinished dirty bytes cannot be published
+as a committed reproducible pin. Final declarations reference actual qualified commits
+once implementation and acceptance establish them; no future SHA is fabricated here.
+
+* SPECIFIED One dependency direction and actual source-set qualification
+:PROPERTIES:
+:CUSTOM_ID: p0-dependency-direction
+:END:
+
+Target direction remains POO -> Core -> ASCENT -> Flow application owners -> project
+consumers, with direct POO/Core imports declared where used. Core must not depend on
+Flow/Aitia or this Library to fix normalization. ASCENT owns generic Program/Session;
+Flow owns actual Clue/history/evidence-assessment applications; Aitia owns review;
+Library owns domain meaning. A transitive package presence is not a supported public
+module facade. Keep declaration paths/package identities at their real owner.
+
+Coordinate the candidate source set in dependency order: qualify POO features ->
+Core handoff/source/reader -> ASCENT current generic rules/Session -> Flow actual
+application/collection exports -> project Library/Scenario/tests. Update each owning
+gerbil.pkg to the qualified upstream revisions rather than hiding a contradictory
+transitive pin behind a local link. Project declarations and metadata then follow.
+A qualified diagnostic working-tree override remains explicitly an override and
+cannot pass the declaration-matching reproducible lane.
+
+One VM must use one coherent resolved POO/Core object/Contract/issuer implementation
+for these shared APIs. Detect conflicting qualified module origins, duplicate/stale
+producer implementations or unsupported transitive ABI. Different checkout copies may
+exist as historical data; neither equal commit labels nor two directories prove two
+compatible runtime authorities. Actual source guards, resolved modules and loaded
+images determine the route. No global cache/pin table is added.
+
+Migrate old imports directly at project ResourceEvidence, Library Rust methods and
+dependency tests using actual rules/interface define-program and rules/declaration
+rule-module-program plus supported Flow Clue/trajectory exports from 10.65. Validate
+exact relation handles, complete named outputs and method bindings. Do not alias removed
+Evidence APIs, copy application modules into ASCENT or substitute Evidence Assessment
+for this project's stratified application. Missing supported package exports are owner
+work, not a guessed import success. No implementation/directory change occurs here.
+
+* SPECIFIED Build and actual loading plan
+:PROPERTIES:
+:CUSTOM_ID: p0-build-load-plan
+:END:
+
+| Boundary | Required future input/observation / refusal |
+|----------+--------------------------------------------|
+| Realized source | Exact package declarations, selected repo/commit/dirty bytes, links/realpaths/symlinks, required source units/includes and actual producer/Contract APIs. Mismatch is explicit diagnostic, not pin-complete |
+| Build | Actual compiler/VM/platform/env/flags, final invocations, dependency/root graph and exact source inputs -> actual .ssi/.o1/native/FFI artifacts and logs at fresh explicit output roots. Omitted required root cannot hide behind build zero |
+| Source lane | Explicit intended source units and declared precompiled dependencies; observe actual module origin/reader behavior. Source driver importing compiled dependencies is not all-source qualification |
+| Compiled lane | All claimed required units/tests/adapters built and actually loaded from that artifact set. Exclude implicit old artifacts and source fallback; mere file presence or LOADPATH string is insufficient |
+| Cold lane | Real fresh VM/process with explicit data/source/load inputs and new local Context/Session/issuer/reader associations. Retained qualified artifacts may be reused; private old receipt/C/Q authority cannot be deserialized |
+| Loaded observation | Actual resolved module/foreign library path/bytes and source-build association per process including transitive runtime. Use real loader/build observation support; where unavailable, mark gap, never synthesize paths from intent |
+| Currentness | Changes to native POO, Core policy/reader/Contract, ASCENT/provider or actual dependency/load closure invalidate affected qualification. Preserve old history, requalify new basis; no automatic reissue of W or grant |
+
+Existing seam owners include Core module-build-spec/load-path/reader/source-admission,
+Flow actual collection build, project build.ss and Justfile. Loader observation is not
+implemented merely by this table; concrete observation coverage is a P0 prerequisite.
+Use existing build/loader/source APIs and ordinary evidence products rather than a
+new package/loader manager. Preserve historical output trees; future isolated explicit
+roots exclude them from candidate resolution without deleting old receipts.
+
+* SPECIFIED Context normalization before linker state creation
+:PROPERTIES:
+:CUSTOM_ID: p0-context-handoff
+:END:
+
+At link-module-context entry, retain initial admit-module-value! evidence and select
+its candidate as the checked Context before reading generation, selected/module IDs,
+locate/read/current callbacks, policies or constructing cache/closures/graph state.
+The original supplied Context is only the initial admission input/bootstrap context;
+it is not a fallback downstream subject after admission returns a different receiver.
+Retain context evidence through the actual native read/admission mechanism as required
+by the owner; do not introduce a duplicate private context approval cache.
+
+All subsequent scope admissions use checked Context. The directory/reader's actual
+source/generation/candidate-location capabilities already paired outside this function
+must remain authentically associated with it. A normalized wrapper may differ in
+identity; it cannot silently select another source/provider/clock/callback capability.
+Where actual owner association or contextual obligations cannot be preserved, refuse
+unsupported transformation instead of bypassing a guard or using old raw Context.
+Do not normalize a context recursively using itself as already-authorized authority.
+
+Current predicate-only default usually preserves identity. Positive nonidentity
+qualification requires a real owner-scoped supported Contract fixture exercising the
+actual handoff, not a forged evidence object, public validator argument or mutation
+of production Contract just to make the test pass. If no such test seam exists, record
+it as owner test work; an identity-only test cannot prove the nonidentity path. Keep
+raw/current capability guards and external ABA limits explicit, not inferred from
+canonical snapshot equality or native read forwarding alone.
+
+* SPECIFIED Consumer-local dependency Scope and final Scope handoff
+:PROPERTIES:
+:CUSTOM_ID: p0-scope-handoffs
+:END:
+
+| Link boundary / existing fields | Target behavior |
+|--------------------------------+-----------------|
+| Actual provider record | Recursive link returns the provider's own admitted record/scope/source/publication. Keep this actual record unmodified in records.alias.provider; do not replace shared provider state with consumer-specific normalization |
+| Realized dependency input | dependency-scope(owner,alias,provider-id,provider.scope) selects baseline or exact realized package scope. Retain actual realization/config-owner/alias/provider association; reject missing/ambiguous realization. Do not store a rewritten provider record merely to carry this edge input |
+| Requirement admission | Admit exact requirement.contract over that effective input under checked Context. Retain records.alias.requirement-evidence; its candidate is the consumer-local edge result |
+| Link bindings | bindings.alias must consume requirement-evidence.candidate, including nonidentity wrapped callables, not provider.scope or the precheck realized input. Two consumers can impose different valid requirements without contaminating provider or one another |
+| Scope construction/export binding | baseline.link consumes those actual admitted bindings; bind-exports applies the existing selected publication association. These produce scope-value, the input to final admission, not automatically the final exported subject |
+| Final admission/linked record | Admit baseline.scope-contract under checked Context; record.scope is scope-evidence.candidate. Return/cache/Graph views/build/export consumers observe that same admitted subject and normalized Functions. Keep final evidence and actual source/publication associations |
+| Final coherence/failure | A returned final candidate must preserve required export/publication/model/parent/method-Contract coherence. If normalization changes callable/associated metadata inconsistently, reject at actual contextual owner rather than patch after admission. Finish currentness checks before publishing/caching record |
+
+The tuple provider / requirement-evidence / final scope-evidence already supplies
+these roles; no new public edge DSL or second graph is needed. If an internal pure
+candidate-extraction helper removes repetition, it consumes actual accepted evidence,
+not a caller-authored checked flag. Do not rerun normalizers merely to rediscover their
+return: they may produce a distinct wrapper, and repeated evaluation is not identity.
+Native contextual dependencies/obligations and diagnostics still belong to actual
+admission/source/read machinery.
+
+Core transports the actual checked subjects and runs expected generic obligations.
+Library/model/method parent and metadata coherence belongs to their authored Contracts
+and contextual responsibilities, not domain field checks hardcoded into Core.
+
+No partial failed record enters accepted cache; active recursion state must unwind.
+Existing linked-publication pending/accepted and graph/current guards remain at their
+owners. Source/Contract/MOP mutation, reentry or a failing wrapper cannot make a stale
+cached graph valid. These are current-use boundaries, not guarantees of global
+transactional rollback over reader/tool effects. Publication admission's correct
+candidate path stays intact and is covered by regression controls.
+
+* SPECIFIED File ownership, implementation order and open prerequisites
+:PROPERTIES:
+:CUSTOM_ID: p0-order-and-files
+:END:
+
+| Order / existing owner files | Concrete change scope / advance condition |
+|------------------------------+-------------------------------------------|
+| 1 / gerbil.pkg at POO/Core/ASCENT/Flow/project + actual package links/metadata | Establish inspectable candidate source set and real package collection/API origins; distinguish pins/overrides/dirty bytes. No uninstall: preserve active/historical checkouts. Final pins wait for genuine qualified commits |
+| 2 / Core types.ss, source/admission.ss, publication.ss, link.ss, reader.ss, read-projection.ss | Keep actual value normalization/evidence/native read guards; implement checked Context first, isolated requirement candidate, final scope candidate and coherent publication/currentness. No Library/project workaround |
+| 3 / Core t/module-scope-link-test.ss, module-public-dependency-test.ss, module-source-admission-test.ss, module-reader-tool-context-test.ss | Actual nonidentity/realization/isolation/wrapper/failure/source-guard controls at owner; complete test seam where absent, without public injection of expected Contract |
+| 4 / ASCENT gerbil.pkg, generic rules/Session and Flow owning collection/build files | Qualify against repaired Core/POO route, update actual dependency declarations and support exports/transitive includes. No new compatibility imports or transfer of generic/application ownership |
+| 5 / project gerbil.pkg, modules/resource-evidence/func.ss, Library rust/methods.ss, t/dependency-compatibility-test.ss | Migrate consumers directly to supported current APIs and real expected operations; retain full required relation/query semantics and meaningful finite oracle |
+| 6 / build.ss/init.ss/Justfile/manifest.ss and actual upstream build owners | Explicit required roots/output/load lanes and per-process actual image provenance, remove historical defaults from new candidate route. Refresh metadata from real selected source set, not invented pins |
+| 7 / Core load/build/source tests + project owner/selection/design/Context/metadata/ABI and P9 suites | Source/compiled/cold matched controls at compatible cuts, then affected integration/recovery. Concrete old recovery repair precedes rerun; no widened budgets or unchanged failed-route retries |
+
+Steps 1-7 are coordinated source-set work with continuous P0 checks, not seven
+independent release promises. A provisional dirty route can support explicitly scoped
+diagnostics, but final declared/build/load qualification needs actual committed
+qualified identities; later source changes reopen affected gates. Types/algorithm
+design may continue while runtime blocked. P1-P9 positive claims need real operations,
+normalized Scope, capture-origin/current-use protocol, complete source/load and actual
+project roles. This chapter closes none of those executable gates.
+
+OJ01/BS08/BS09 retain Core candidate and construction work; OJ11/BS01-BS05 dependency,
+ABI/roots/loader/wiring; OJ08/BS06 ordinary recovery remains separately blocked.
+Preserve original dossier/catalog and q34 failure, including incomplete restart-two
+and unrun restart-three. Keep 2 GiB Gerbil heap, 180s build/recovery +5s grace, 120s
+focused test and existing investigation/method budgets; future lanes need explicitly
+bounded enforceable limits. No package changes, build, test, review or delivery occurs.
+
+* SPECIFIED Prospective positive and matched negative acceptance
+:PROPERTIES:
+:CUSTOM_ID: p0-acceptance-controls
+:END:
+
+DH01-DH32 refine PM/CA/CI/LP/JT and document-qualified owner requirements, not executed
+tests. Future instances name exact file/API/suite/filter/lane/source/load/cut, real
+admission evidence/returned subject, independent expected result and preserved failure.
+
+| Control | Positive / matched negative and required outcome |
+|---------+---------------------------------------------------|
+| DH01 | Joint declared candidate pins match actual qualified committed source set; latest HEAD/dirty bytes or local override relabeled reproducible refuses |
+| DH02 | Actual Core/ASCENT/Flow/project transitive declarations agree on supported APIs; old ASCENT Core pin hidden by LOADPATH alone cannot pass |
+| DH03 | Resolved package links/realpaths and byte origins recorded; same pin string with another checkout/symlink target cannot reuse evidence |
+| DH04 | One coherent actual POO/Core implementation loaded for shared APIs; duplicate/stale producers or equal-name incompatible issuer refuses |
+| DH05 | Current generic rules/extraction/Flow exports present in real collection; removed Evidence import/guessed facade/Assessment substitution refuses |
+| DH06 | Required relation/typed/empty-output independent oracle preserved; import success/no rules/missing outputs or old result leak refuses |
+| DH07 | Build includes every claimed adapter/test/observer/include root; build zero with omitted root cannot qualify compiled closure |
+| DH08 | Actual source-build-artifact/compiler/runtime inputs retained; filename/source hash/unrelated binary/finite ABI alone refuses full claim |
+| DH09 | Actual per-process loaded module/FFI paths and bytes observed; declared LOADPATH or metadata alone cannot establish loading |
+| DH10 | Source/compiled routes really load selected units with scoped gold; ambient source fallback/stale .ssi/.o1/native image blocks compiled lane |
+| DH11 | Cold VM creates new local associations from qualified explicit inputs; live inherited cache/receipt/reader or JSON restoration cannot qualify |
+| DH12 | Publication candidate correctly retained with original source owner; regression to raw publication or changed source/module owner refuses |
+| DH13 | Actual accepted Context evidence retained before reading state; generation/cache/reader closed over raw pre-admission Context fails handoff |
+| DH14 | Supported owner nonidentity Context fixture drives actual checked subject; identity-only test/forged evidence/public validator injection cannot prove path |
+| DH15 | Checked Context keeps genuine paired reader/current source association; wrapper substitutes source/callback/generation capability or guard bypass refuses |
+| DH16 | All subsequent admission/graph/current uses observe checked Context; raw Context fallback or mixed checked/raw generation refuses |
+| DH17 | Provider record remains its own actual admitted scope/evidence; consumer normalization mutates shared provider or another consumer refuses |
+| DH18 | Actual realized dependency scope is admitted for exact alias/owner/provider; missing/ambiguous package or wrong configuration owner refuses |
+| DH19 | Requirement evidence candidate supplies consumer link binding; provider.scope/raw realized input after nonidentity admission fails |
+| DH20 | Two consumers retain independent requirement candidates and wrappers; edge cache or normalizer contaminates other alias/provider fails |
+| DH21 | Actual linked/export-bound scope enters final expected admission; prebinding/raw scope or caller-selected Contract refuses |
+| DH22 | Final record.scope is actual scope-evidence.candidate; pre-admission scope-value returned/cached after transformation fails |
+| DH23 | Normalized method wrappers and associated Contract/parent/export metadata cohere; callable replaced with stale metadata or post-admission patch refuses |
+| DH24 | Each actual admission return consumed once without rediscovery; repeated normalizer yields unrelated wrapper or copied candidate flag refuses |
+| DH25 | Failed admission/currentness leaves no partial accepted record; cache hit/active recursion leak or stale graph survives failure refuses |
+| DH26 | Contract/MOP/source edits replay actual native dependencies at boundary; weaker reconstructed witness/suppressed failed read graph cannot qualify |
+| DH27 | Existing contextual obligations/diagnostic order and source guards retained; normalization skips responsibility or masks refusal with project recheck fails |
+| DH28 | Owner fixture exposes genuinely different accepted candidate and invocation behavior; test mirrors only identity/slot equality or fake evidence cannot qualify |
+| DH29 | New lane excludes preserved historical artifact roots without deleting receipts; hardcoded old native-build/default fallback presented as fresh refuses |
+| DH30 | Source/compiled nonidentity/isolation/currentness controls agree with independent gold; mode parity by stripped provenance/fake identical C refuses |
+| DH31 | Concrete changed-basis repair precedes full natural recovery within fixed limits; unchanged restart-two retry/partial DR inventory/widened watchdog cannot pass |
+| DH32 | P0 outputs explicit source/build/load/candidate evidence before P1-P9 positive use; static docs/test signers/report hash cannot issue capture/review/receiver authority |
+
+Existing concrete project seams are [[file:../../../t/library-owner-test.ss][Library owner]],
+[[file:../../../t/library-selection-test.ss][selection]], [[file:../../../t/module-design-test.ss][design]],
+[[file:../../../t/native-context-test.ss][Context]], [[file:../../../t/package-metadata-test.ss][metadata]] and
+[[file:../../../t/dependency-compatibility-test.ss][ABI]]. Core seams include
+[[file:../../../../poo-flow/core/t/module-scope-link-test.ss][scope link]],
+[[file:../../../../poo-flow/core/t/module-public-dependency-test.ss][public dependency]],
+[[file:../../../../poo-flow/core/t/module-source-admission-test.ss][source admission]],
+[[file:../../../../poo-flow/core/t/module-reader-tool-context-test.ss][reader context]],
+[[file:../../../../poo-flow/core/t/module-load-path-test.ss][load path]] and
+[[file:../../../../poo-flow/core/t/module-build-spec-test.ss][build specification]].
+These are existing files to extend/qualify, not claims that all DH tests already exist.
+Org lint/export and D2 render are documentation checks only; no implementation,
+acceptance, package operation, provisioning, review submission or actual delivery.
+
+* SPECIFIED Post-P0 source observation: Yuanxu package transition
+:PROPERTIES:
+:CUSTOM_ID: p1-77-follow-up-76
+:END:
+
+[[file:10.77-effective-types-contracts-and-origin-lifetime.org::#p1-current-source-and-apis][10.77 unified P1]] defines this boundary.
+After this P0 observation Core HEAD advanced to a6a7c9d2 with package yuanxu/prelude and Yuanxu*/yuanxu-* exports; ASCENT HEAD 71408ec3 now declares yuanxu@45817d93, Flow HEAD e20e9323. Earlier old Core package/API observations remain historical. Actual project/Aitia imports and POO/build/load coherence require P0 requalification; linker three return gaps remain observed. No implementation migration was made here.

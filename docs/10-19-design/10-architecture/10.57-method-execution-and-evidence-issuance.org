@@ -1,0 +1,497 @@
+#+TITLE: 10.57 S4a Method Execution, Evidence Issuance and Qualified Use
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.57
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+TODO: AUDITED DESIGN SPECIFIED | QUALIFIED
+#+FILETAGS: :design:methods:rust:qnt:lean:sysml:evidence:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.52-contract-consistency-and-implementation-order.org::#consistency-implementation-order][S0-S9]] | [[file:10.45-method-execution-and-evidence-issuance.org][WP04]] | [[file:10.53-source-build-and-recovery-baseline.org][S0]] | [[file:10.54-library-and-aitia-types-contracts.org][S1]] | [[file:10.55-library-construction-and-scope-handoff.org][S2]] | [[file:10.56-profile-selection-and-scenario-capture.org][S3]]
+
+* DESIGN Objective and retained authority
+:PROPERTIES:
+:CUSTOM_ID: s4a-method-execution-issuance
+:STATUS: Existing-file/field/call design only; no implementation, acceptance or delivery
+:END:
+
+S4a consumes S3's actual recognized C, prepares method application A, retains each
+real attempt E, issues scoped W only from accepted observations, and produces
+fresh qualified use records for actual target applications. Rust, QNT, Lean and
+SysML share C and common owner mechanics, not one undifferentiated pass flag or
+one claim. Outputs never mutate C. Missing results leave independent duties open.
+
+Library Types/declarations own reusable method meaning; trusted method operations
+own interpretation and private issuance; Core Ops owns actual process execution;
+Scenario owns project/C association; ASCENT owns accepted projection; Aitia owns
+review/authority. No new executor, scheduler, signature service, public evidence
+constructor or result registry is introduced. Public extensible records remain
+POO values; compact private handles stay producer-owned implementation details.
+
+The 75 selected project implementation/build/runner inputs match S0 and S3 at
+inspection. Project HEAD remains 8044732d505f84e373119a70f947df00e1767300; linked
+dirty Core HEAD remains 52130d2d338b09622a3f55e37987ddc0375b6187. Source inspection
+is not current compilation/loading or execution evidence. WP00, BS01-BS09, S3
+acquisition/origin qualification and the historical recovery timeout remain open.
+
+* AUDITED Existing execution and producer seams
+:PROPERTIES:
+:CUSTOM_ID: s4a-source-audit
+:END:
+
+| Actual source / function | Inspected behavior / target change |
+|--------------------------+------------------------------------|
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/methods.ss][methods.ss]] / command | Invokes supplied ProcessScript with timeout 45, out as directory and check-status=false; reduces Ops receipt to requested argv/exit/seconds/log digest. Retain actual invocation object and launch association, not reconstructed argv |
+| methods.ss / issue, resource-result-current! | Private final resource-result handle, JSON records and file integrity checks exist. issue runs after accepted interpretation; no complete A/E/use graph and no structured retained failure path yet |
+| methods.ss / resource-run-native | Actual metadata/build/binary/oracle pipeline exists. Registry inputs are discovered after initial Context; C cannot be retroactively extended to bless newly discovered reads |
+| methods.ss / resource-run-qnt | TLC structured invariant check and independent finite oracle exist; early-release additionally invokes TypeScript for ITF. Keep two actual execution origins |
+| methods.ss / resource-run-lean | Parameter-specific theorem, axiom output and olean checks exist; positive versus negated theorem is meaningful independently of exit zero |
+| methods.ss / resource-run-integration | One broad pipeline shares sources, before list, SysML and QNT tool probes. Actual Rust facets/origin checks exist but lack target C/A/E/use and robust same-run association |
+| methods.ss / SysML and TM branches | SysML inspects the first of two checks plus count/status; TM interprets unfinished violation as path completion. Validate every required named check and retain native tool conclusion separately from mapped claim/control expectation |
+| methods.ss / resource-register-results! | Private recognition and clue-exchange attestation precede Session replacement. Preserve these actual owners; replace flat obligation/footprint joins with qualified application/use associations at WP06 |
+| [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/ops/func.ss][Core Ops func.ss]] / preview-script, run-script, execute-script | Prepared command feeds spawn, but run-script merges inherited environment at execution; returned receipt lacks the actual prepared launch descriptor. Pure preview is not evidence of the effective launch |
+| [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/ops/progress.ss][Ops progress.ss]] | Cancellation and idle/total progress mechanisms exist; wrapper wait-status and host interruption do not establish every descendant's termination or durable completion |
+
+These are source observations, not executed failures. Current private handles are
+useful local mechanics but do not already implement the complete target issuer
+association, transitive closure, cross-process recognition or qualified reuse.
+
+* SPECIFIED Existing files, extraction and dependency direction
+:PROPERTIES:
+:CUSTOM_ID: s4a-file-ownership
+:END:
+
+| Existing owner / file | Complete target responsibility |
+|-----------------------+--------------------------------|
+| abstract/types.ss | Common ResourceMethodApplicationContract, ResourceMethodAttemptContract, ResourceMethodObservationContract, ResourceEvidenceUseContract and expected operation/input/result field Types from 10.45 |
+| rust/types.ss | Controlled Rust case/protocol, exact upstream run/facets, mapping/delta and supported domain refinements. Do not inherit fixed Generic role identities or duplicate shared field maps |
+| abstract/objects.ss; rust/objects.ss | Authored capabilities/claims, expected input roles, supported domains/limits and result meaning. Mapping/delta stay solely in S2's Rust objects; no command effects during construction |
+| abstract/interface.ss; rust/interface.ss; rust/func.ss | Publish actual source-qualified deferred typed operations and owner-bound output recognition. Preserve S2 normalized Function/Scope candidates; no public issue(record) or caller runner selection |
+| rust/methods.ss | Migrate monolithic runners into thin specialization/use adapters and common producer mechanics; remove authoritative Scenario capture and raw root/Profile/tool/ProcessScript overrides |
+| rust/oracle.ss | Keep controlled event/cut oracle; separate generic finite ownership and budget algorithms by actual consumption |
+| rust/correspondence.ss | Shared ordered event/state/cut projection algorithms over checked selected mapping/delta; no declaration factory or second cases/catalog authority |
+| model.qnt; budget.lean | Captured authored finite model and arithmetic propositions; generated selected models/theorems remain derivation outputs with exact input/recipe origin |
+| rust/native/src/main.rs; Cargo.toml/Cargo.lock | Actual controlled workload and build/output protocol. Observations have bounded subject meaning; no production performance or arbitrary service certification |
+| scenarios/resource-lifecycle/types.ss and func.ss | Recognized C plus supported application request/upstream references/destination -> checked A and C-bound operations; consume returned normalized values, never reconstruct a competing Context |
+| modules/resource-evidence/func.ss; Scenario review/func.ss | WP06 maps qualified use to required units and Q; WP07 consumes Q/C for R. Neither issues method W from raw facts or turns a selected policy into authority |
+| Core ops/types.ss, config.ss, process-script.ss, func.ss, progress.ss | Actual launch/result association, effective environment policy, supported process limits/output routing and failure retention at their existing execution owner |
+
+10.45's extracted implementation units remain the intended complete architecture:
+abstract/methods.ss (common coordination/private producer), abstract/qnt-method.ss,
+abstract/ownership-oracle.ss, abstract/lean-method.ss, abstract/budget-oracle.ss,
+rust/rust-method.ss, rust/sysml-method.ss and rust/qnt-path-method.ss. These are
+proposed units inside existing source directories, not existing files, new public
+Library Modules or a plugin hierarchy. No file/directory is created here.
+
+Imports flow POO/Core -> Types -> authored meaning / pure algorithms -> qualified
+method operations -> interfaces -> Scenario/adapters. Types do not import runners
+to recognize private handles; contextual output recognition is bound at the
+actual publication/producer boundary. Real implementation bodies precede exposed
+Scope operations. If an assembly facade/initializer still loads unrelated runners,
+that dependency remains in the footprint until actually removed and qualified.
+
+* SPECIFIED A/E/Observation/W/use fields and relational invariants
+:PROPERTIES:
+:CUSTOM_ID: s4a-record-fields
+:END:
+
+| Subject | Required effective fields / boundary |
+|---------+--------------------------------------|
+| A / ResourceMethodApplicationContract | identity, C, capability and expected operation/Contract/owner, subject, claim or declared claim-set, case/cut/theorem/path, mode/domain/parameters/strength, expected-inputs, derivation/upstream references, execution/interpretation policy and relevant source/load associations |
+| A.expected-inputs | Independently required role -> qualified captured or actual upstream binding, with cardinality/type/subject/domain constraints. Missing, extra, duplicate, conflicting or vacuous required roles refuse the affected executable application |
+| E / ResourceMethodAttemptContract | identity, actual A, run/derivation group G, ordered preflight/derive/build/probe/run/check steps, actual command results, effective limits, owned raw inputs/outputs/logs, execution/interpretation findings and terminal or explicit incomplete state |
+| E.commands | Actual Core operation/result and used launch descriptor references; effective executable/wrapper argv, resolved cwd/environment policy/basis, stream/log routing, limits, normalized status, raw wait-status, elapsed observations and available interruption cause evidence |
+| Observation / ResourceMethodObservationContract | Actual C/A/E/G, subject/claim/basis, observed input/derivation/artifact inventory, exact proposition/target/domain, execution/validation/semantic/control dimensions, observer/loaded-source identity, diagnostics and premise/strength limits |
+| W / private resource-result + owner-bound output Contract | Immutable original C/A/E/G/subject/claim/facet, scoped conclusion, actual footprint/artifacts/accepted observation and selected issuer association. Public record/hash/reference is presentation only |
+| use / ResourceEvidenceUseContract | Original W/origin, target C/A/claim/basis, actual verifier/source/artifact/issuer checks, comparison of subject/domain/strength/policy demands, fresh verification association and limitations. WP06 denotes the actual qualified occurrence U |
+
+A identifies an application; retries of it have distinct E/G. One Rust suite A/E
+can yield six separately scoped W sharing that actual group. SI/TM bind exact
+facets and raw observation of that Rust group, not merely equal filenames/digests.
+The claim binding is not overwritten by the latest attempt. Missing A remains a
+projection gap; preflight after a real A can retain E with no command started.
+A request refused before A exists does not invent an executed E.
+
+Normalize inputs and retain returned checked A/E/observations/use and operation
+wrappers before contextual checks. Normalizers must preserve or re-establish
+real owner association; copying fields or returning an unrelated object cannot
+mint origin. Final E retains an actual attempt's failure/unknown completion even
+when no W is issued. No mutable global last-result or success-only result list
+is the authoritative attempt history.
+
+The sole generation read remains the checked Library declaration Contract at
+S1/S2, not another method/record/Namespace version. Existing serialized historical
+schema tokens keep their original meaning and are not upgraded or relabeled.
+Semantic revision or V1 equality alone establishes neither issuer nor execution.
+
+* SPECIFIED Complete input basis and actual execution origin
+:PROPERTIES:
+:CUSTOM_ID: s4a-footprint-and-launch
+:END:
+
+A's full C association and its precise consumed footprint are distinct. Required
+roles derive from capability/claim before results exist. Bind semantic inputs,
+execution tool/runtime inputs, validation inputs, actual reader/runner/observer/
+issuer/source/load dependencies, and supported domain/premises. Every role has an
+actual qualified input/derived association; a supplied manifest cannot define
+its own completeness. Shared dependencies remain shared honestly.
+
+| Boundary | Input -> retained association / refusal |
+|----------+----------------------------------------|
+| Prepare / Scenario + selected Library operation | Actual recognized C + bounded request + qualified upstream W/use + execution destination -> returned checked A or explicit gap/refusal. No root/Profile/tool/policy/mapping overrides or caller ProcessScript/observer |
+| Derive / actual selected method | Owned C/upstream inputs -> exact copied/generated model/theorem/build input, recipe/source/parameters and owned bytes. Derived products are execution inputs of A/E, not additions to C |
+| Preflight / qualified source and Ops owner | Check supported environment/destination/config/limit domains and actual operation association. Hidden relevant input outside C/qualified captured domain blocks launch and requires proper recapture |
+| Execute / Core Ops | Used prepared launch value -> actual process/result; retain the exact effective value after environment resolution and the invocation association. Never attach a separately reconstructed preview as launch proof |
+| Interpret / bound observer | Exact E and required raw artifacts/targets -> accepted scoped observation or retained rejection/incomplete finding. Tool output, independent oracle and expected control remain separate inputs/dimensions |
+| Issue / trusted producer | Accepted observation + real E and complete required closure -> private W. No public issue(JSON), supplied checked flag or copied receipt/issuer name |
+| Revalidate / actual verifier | Original W/artifacts + target C/A -> fresh qualified use, or explicit refusal/gap retaining historical W. Actual new check invocations have their own origin, never claim a workload rerun |
+| Exchange / WP06 | Same C/A/E/G/W/use -> actual required-unit K association and later Session/Q. K is not retroactively appended to issued W; trusted adapter performs exact target binding |
+
+Core Ops needs a retained launch descriptor associated with the exact value used
+by execute-script, including post-merge environment and actual routing. Configure
+and validate explicit environment-policy at its Types/Config/ProcessScript owner:
+qualified inherit is possible only with actual relevant inherited inputs bound;
+replace requires actual implementation of replacement, not current override merge.
+No Library-side clearing/sampling assertion can claim isolation that Ops lacks.
+Sensitive environment material stays owner-controlled; portable diagnostics expose
+only the qualified representation needed for verification, not arbitrary secrets.
+
+Bind actual tool binary, interpreter/wrapper/backend/import chain, actual executable
+produced by a specific build, relevant system linkage/config/cache, and actual
+selected loaded method/observer/issuer. CLI version text, Cargo.lock/offline flags
+or recursive source enumeration alone do not close all reads. Metadata-discovered
+registry inputs must already be in a qualified captured domain; discovering them
+after launch cannot bless the earlier C. Unsupported closure blocks stronger claims.
+
+Methods use owned bytes/qualified immutable inputs, never hash then reopen ambient
+paths. Output placement can affect Cargo ancestor configuration, plugin resolution
+or cache/backend behavior: bind these before launch under the existing request
+and captured domain, or require new C. Generated outputs do not hash themselves
+into their own capture. Local before/after checks do not eliminate all exec-file
+or change-and-restore races; stronger custody/snapshot claims require an actually
+qualified facility, otherwise the claim/use remains bounded or unsupported.
+
+* SPECIFIED Method-specific meaning and result dimensions
+:PROPERTIES:
+:CUSTOM_ID: s4a-method-semantics
+:END:
+
+| Method / obligation | Required basis and accepted meaning / limit |
+|---------------------+---------------------------------------------|
+| Rust / RL-M01-M06 | Exact workload/instrumentation/source/lock/build dependencies, actual produced and launched binary, compiler/linkage/runtime/environment, payload/worker/permit/case protocol and independent event/cut oracle. Accept only complete exact six-case inventory/order/subject. M06 is property refutation with a successful negative-control harness; no all-schedules, throughput or arbitrary repo guarantee |
+| QNT / BP-O02 | Exact model/imports/initializer/action/invariant/domain/mode, actual QNT/backend/Node/TypeScript/Java/TLC as used, finite oracle and complete run scope. Completed invariant check supports bounded model safety; actual violation refutes it. Early-release ITF belongs to the TypeScript command; TLC finding and trace agreement have distinct origins. No Rust refinement or unverified delta claim |
+| Lean / BP-O03 | Exact integer parameters/units and positive requested property, generated actual theorem/polarity, kernel/compiled imports/axiom policy and independent arithmetic checker. Kernel-checked positive theorem supports that conditional bound; proved negation refutes the positive bound. Exit zero or existing olean alone proves neither inventory nor physical memory premises |
+| SysML / SI-M01-M06 | Exact original Rust E/G/W/raw observations, selected mapping/cuts, generated package/instance/element/assertion IDs and complete required check set, semantic libraries/runtime and observer. Every required check/status must match its target; count/first check/syntax-only success is insufficient. Evidence concerns observed cuts, not whole architecture or behavioral refinement |
+| QNT mapped path / TM-M01-M06 | Same actual Rust group and ordered events, mapping, base model plus explicit queued-cancellation delta/guard/effect/frame, generated replay initializer/action/unfinished target/domain and tool chain. Completed violation of unfinished means completion reachable; exhaustive ok means no such path under that scope. Neither is automatically the polarity of an unrelated safety claim; this route exports no TLC ITF witness |
+
+Tool conclusion is interpreted before comparing the independent oracle or desired
+control label. Disagreement preserves actual output/mismatch and blocks target
+issuance; do not coerce it into the expected pass/fail. A narrower useful result
+requires an explicitly declared supported claim, not an invented favorable subset.
+The finite model and conditional arithmetic proof do not establish real source
+correspondence; SysML cut checks and mapped path checks do not close that gap alone.
+
+| Independent result dimension | Required state distinction |
+|------------------------------+----------------------------|
+| execution | Not started/refused, completed, tool failure, deadline/idle timeout, cancellation, drift, interrupted/unknown completion with actual cause evidence |
+| validation | Accepted, rejected or incomplete for exact schema/target/input/observer basis; parseable JSON is not semantic acceptance |
+| semantic | Holds, refuted or undetermined at declared scope/strength/premises; qualified holds/refuted alone may become W support/counter |
+| control | Expected safe/unsafe behavior met or failed independently of semantic polarity; harness success can yield counter evidence |
+| current applicability | Historical original versus fresh eligible use for target C/A; never rewrite original execution or conclusion |
+
+* SPECIFIED Failure retention, limits and interruption
+:PROPERTIES:
+:CUSTOM_ID: s4a-failure-and-limits
+:END:
+
+Retain actual attempt/step/output references as available before presenting success.
+A timeout, malformed artifact, incomplete closure, observer mismatch or missing
+terminal observation yields diagnostic E/Observation and no qualified target W.
+One failed tool step does not erase preceding steps or other independently issued
+results. Retry has a new E; a missing Rust facet cannot complete the declared suite.
+A narrower partial claim requires a published capability. SI already accepted
+under its own complete basis is not erased by a later TM timeout.
+
+Current command timeout 45 is per command. Target execution-policy binds positive
+finite per-command and aggregate attempt budgets, remaining time, idle/cancellation
+limits and actual enforceable scope. Pure field presence is not enforcement.
+Core owns actual mechanisms; Library supplies policy constraints, not another
+watchdog. Preserve raw wait-status and observed timeout/cancellation findings:
+124/137 alone cannot determine exact cause or every descendant's termination.
+Host SIGKILL cannot execute cleanup; missing terminal receipt remains unknown,
+not inferred completed from a log/artifact or invented during recovery.
+
+Keep S0/WP00 fixed 2 GiB/180-second acceptance limits. Per-method limits are
+validated at their actual supported scope, not automatically equated with the
+acceptance watchdog. No budget widening, synthetic progress, swallowed status or
+unchanged failed recovery rerun can close a gate. Retained owned evidence need
+not imply cross-crash durable attempt storage; durability/recovery guarantees
+require the actual existing custody owner to be qualified at that strength.
+
+* SPECIFIED Invalidation and qualified reuse
+:PROPERTIES:
+:CUSTOM_ID: s4a-invalidation-reuse
+:END:
+
+| Actual change / missing basis | Required action and retained distinction |
+|-------------------------------+------------------------------------------|
+| Project documents/roles/policy change; method basis unchanged | New C/Q/R as affected. Original W can serve only through fresh qualified target use and adequate claim/domain/premises, never a new execution |
+| Rust source/compiler/config/runtime/payload/protocol or actual run changes | New affected Rust E/W and dependent SI/TM application/run associations. Unaffected complete abstract QNT/Lean bases need no automatic rerun |
+| Mapping/renderer/delta changes | Re-derive/recheck affected SI/TM; retained telemetry may support an actually qualified regeneration path. New derivation/check origin does not rewrite original generated artifacts |
+| Method-specific QNT/SysML/Lean tool/checker change | Invalidate actual consumers only after real import/initializer/compiled closure separation. Current monolithic dependencies remain broad |
+| Shared Types/descriptor/issuer/observer/Core/load/trust change | Fresh actual association/meaning qualification, potentially new C. Retained artifacts can establish only what the actual new supported verification performs |
+| Artifact absent/changed, foreign or unavailable issuer, unqualified origin | No affected current use; retain history/gap. Recovered/downloaded/signed bytes do not reconstruct a private W or an unobserved execution |
+| Stronger purpose/claim/domain/coverage request | Re-evaluate target required units/strength and current prerequisites; finite/control evidence cannot be relabeled broader refinement/project evidence |
+| Rule/query/history/status change only | WP06+ refresh affected Q/R/current authority. Preserve C/W when captured meaning is unchanged; withdrawal may immediately block use without rerunning unrelated methods |
+
+Qualified use compares complete expected/actual input roles, acquired/derived/artifact
+basis, actual producer/observer/source/load association, subject/claim/domain/strength
+and target requirements. Equal digests, revision strings or V1 do not suffice.
+Original W always retains original C/A/E/G; fresh U targets C/A/K through the actual
+adapter. A changed run origin cannot be merged with old facets into one group.
+Opposite comparable findings remain available; a new successful attempt does not
+erase counter evidence, failure history or independently required repeat coverage.
+
+Local private handles are not portable. Cross-process/host verification uses actual
+qualified source/custody/attestation mechanisms at declared trust strength. A
+verified foreign assertion yields a new local observation with its actual verifier
+origin, not a reconstructed old private W or proof the workload was rerun. Without
+that route, retain inspectable artifacts and an unsupported-use gap, or perform
+a real new method. A signature authenticates an assertion, not its truth.
+
+* SPECIFIED S4a premise use and portable assertion boundary
+:PROPERTIES:
+:CUSTOM_ID: s4a-audit-use-boundary
+:END:
+
+A binds complete selected premise input roles; E/W keep original execution and
+claim immutable while target U checks actual current applicability. Foreign
+assertion verification has new local operation/origin, not reconstructed original
+private W/E. Provenance-only support cannot fill property K without qualified
+semantic trust/strength mapping. Failed projection cannot restore known stale use.
+
+[[file:10.64-contract-consistency-and-implementation-order.org::#s1-s9-consistency-audit][10.64 whole-chain audit]] supplies exact change/closure rules and remaining gates.
+
+* SPECIFIED Positive and negative controls, not executed
+:PROPERTIES:
+:CUSTOM_ID: s4a-acceptance-controls
+:END:
+
+EX01-EX36 refine ME01-ME24, related TY/SX/CX and WP10 gates. They do not add
+executed passes or change the original 248 WP01-WP10 control rows. Each row
+requires the supported case and its paired refusal/gap/history observation.
+Actual tests must inspect consumed normalized values, command/owner associations,
+raw results and rejected state, not just a final success Boolean.
+
+| ID / actual future seam | Positive case / negative control and required observation |
+|--------------------------+-----------------------------------------------------------|
+| EX01 / Scenario types/func + t/native-context-test.ss | Recognized C and supported request prepare A; flat root/Profile/tool/mapping/policy override or fake ProcessScript/observer refuses before spawn |
+| EX02 / POO operation boundary + t/library-owner-test.ss | Nonidentity A/parameter/request/function returns are actually consumed; discarded normalization or incoherent raw closure refuses |
+| EX03 / Producer output boundary | Nonidentity E/Observation/use normalization preserves actual origin; equal-field foreign receiver cannot acquire recognition |
+| EX04 / t/resource-lifecycle-test.ss | Independent expected input-role inventory closes; supplied empty/missing/extra/duplicate/conflicting roles cannot redefine completeness |
+| EX05 / Core ops/func.ss owner controls | Actual post-resolution prepared value binds result; altered preview/argv/cwd/routing/receipt cannot establish invocation origin |
+| EX06 / Core ops/types/config/process-script owner controls | Implemented qualified replace environment excludes ambient inputs; current merge mislabeled replacement refuses |
+| EX07 / Core Ops + t/library-owner-test.ss | Qualified inherit binds relevant actual inputs; changed PATH/HOME/wrapper/backend/cache/config blocks affected use |
+| EX08 / t/library-owner-test.ss | Destination under captured execution domain passes; hidden Cargo ancestor/output config outside it refuses before launch |
+| EX09 / Rust runner / source owner controls | Exact metadata/dependency/build input closure admitted; unbound registry/build-script/macro/non-source input discovered later stops affected use without appending C |
+| EX10 / Rust runner + t/resource-lifecycle-test.ss | Produced executable has actual build/launch association; expected filename with foreign/stale bytes cannot qualify |
+| EX11 / All method derivation owners | Owned generated model/theorem bytes retain recipe/upstream origin; hash-then-ambient-reopen or self-hashed C output refuses |
+| EX12 / Producer / Scenario attempt controls | Each real retry retains distinct E/G and terminal/unknown state; repeated label/digest cannot collapse attempts |
+| EX13 / Core Ops + producer failure controls | Actual A preflight failure retains no-spawn E; refusal before A remains a gap, never an invented executed attempt |
+| EX14 / Core Ops progress/cancellation owners | Per-command plus actual aggregate/idle limits enforced; 45-second command setting alone cannot claim suite bound or memory enforcement |
+| EX15 / Core Ops interruption / WP00 controls | Actual raw wait-status and cause retained; 124/137, partial log or SIGKILL without terminal receipt cannot prove completion/descendant cleanup |
+| EX16 / t/resource-integration-test.ss | Complete controlled six-case same-run observation accepted; missing/duplicate/unknown/reordered event, case, cut or mixed group refuses suite claim |
+| EX17 / Rust oracle / producer controls | M06 harness succeeds and W refutes ownership; expected unsafe label cannot become support or disappear from history |
+| EX18 / abstract QNT method / ownership oracle future units | Exact requested initializer/action/property/domain completes; wrong mode, parser failure or cut-off run cannot support invariant |
+| EX19 / QNT early-release owner controls | Actual TypeScript ITF and TLC finding retain distinct command origins; trace relabeled TLC or borrowed from another run refuses |
+| EX20 / Lean method / budget oracle future units | Exact positive theorem/kernel/import/axiom basis supports conditional bound; unrelated theorem, sorry/unsupported axiom, stale import or olean existence alone refuses |
+| EX21 / Lean polarity controls | Proved negation refutes requested positive budget; exit zero cannot be blindly projected as support |
+| EX22 / SysML method + t/resource-integration-test.ss | Every required element/assertion/cut status validated; correct count/first success with second failure or wrong target refuses |
+| EX23 / SysML semantic owner controls | Declared semantic check accepted with actual library/runtime; syntax-only success or ambiguous extra assertion is not cut evidence |
+| EX24 / QNT path method + correspondence controls | unfinished violation interpreted as completion reachability; exhaustive ok is no-path at exact scope, not blanket safety or invented ITF witness |
+| EX25 / t/resource-integration-test.ss | Explicit queued-cancellation delta/guard/effect/frame binds; hidden transition, ownership drop or base-invariant result cannot stand for delta proof |
+| EX26 / t/resource-integration-test.ss | SI/TM consume exact actual Rust E/G/W/raw inventory; facets mixed across runs/Cs or joined by path/digest refuse |
+| EX27 / Independent observer controls | Actual tool/oracle agreement qualifies; disagreement retains raw findings and blocks target W instead of forcing expectation |
+| EX28 / Private producer + t/resource-lifecycle-test.ss | Actual selected invocation/interpretation owner issues W; public JSON/issuer/checked flag or foreign private owner cannot mint it |
+| EX29 / SI/TM split + t/resource-integration-test.ss | Independent accepted SI survives later TM timeout; missing Rust case cannot be narrowed silently into a complete suite |
+| EX30 / Extracted module/source/loading owner controls | Selective tool invalidation follows real closed dependencies; trimming public footprint while monolith/eager imports remain cannot qualify independence |
+| EX31 / Evidence use + Scenario controls | New matching target C/A obtains fresh qualified use preserving original W/E/G; old U replay, empty basis, stronger claim or altered issuer refuses |
+| EX32 / Artifact revalidation owner controls | Actual reparse/check produces new validation origin; artifact recovery/signature/copy cannot claim workload rerun or reconstruct unobserved execution |
+| EX33 / WP06 required-unit adapter controls | Exact target C/A/claim/basis maps U to independent K with original G; joins by obligation/method or deleting pending K refuse |
+| EX34 / WP06/WP07 comparison controls | Comparable support/counter and distinct attempts retained; choosing latest favorable result cannot erase refutation or satisfy repeat coverage |
+| EX35 / Cross-process custody / WP09 controls | Actual verified foreign assertion creates scoped local observation; deserialized private handle or copied receipt cannot claim old issuer origin |
+| EX36 / WP00 / WP10 actual verification entries | Source/compiled/load/cold/recovery and methods qualify at declared cut with fixed bounds; historical receipts/doc render/model-only pass cannot close runtime or delivery gates |
+
+Existing t/native-context-test.ss, t/library-owner-test.ss,
+t/resource-lifecycle-test.ss and t/resource-integration-test.ss are inspected
+migration seams, not existing coverage of all these controls. Core Ops tests
+belong to Core's actual owner; proposed extracted-unit controls need actual future
+entries. No invented existing test filename or execution receipt is implied.
+
+* SPECIFIED Implementation dependencies, exit and open items
+:PROPERTIES:
+:CUSTOM_ID: s4a-order-and-open-gates
+:END:
+
+1. Complete S1 Types/role/capability and S2 checked publication/Scope/Function
+   return paths; qualify S3's actual C/acquisition recognition and owned input
+   domains. Missing source/load/subject prerequisites remain explicit blockers.
+2. Refactor actual Core Ops launch/result association and environment policy at
+   its existing owner; qualify enforced limits, interruption, routing and actual
+   invocation origins. Keep correct existing Ops/cancellation mechanics and avoid
+   a Library substitute executor or wrapper-only provenance repair.
+3. Extract 10.45's real compilation units and generic/Rust oracles, keep S2's sole
+   mapping/delta authority, then qualify actual source/import/initializer/compiled
+   closures. Stage unpublished incomplete assembly with S1-S3 if needed; no stubs.
+4. Migrate prepare/derive/execute/interpret/private issuance/use and all Scenario/
+   driver/registration callers together. Preserve historical records and failed
+   attempts; remove split-input bypasses without a permanent compatibility layer.
+5. Qualify EX controls and actual A/E/G/W/use/artifact origin at each claimed source/
+   compiled/loading cut. S4a exits only when supported operations have real bodies,
+   complete qualified footprints, independent semantic/control interpretation,
+   authenticated local issuance and fresh use, with actual matched negative controls.
+   Static documentation checks do not satisfy this exit.
+6. S4b can develop content observations independently on the same C under its own
+   required prerequisites; S5 consumes actual method/content associations into Q.
+   S6+ performs R/context/content/authority/custody/delivery at its own owner.
+
+This allocates the existing BP/RL/SI/TM method duties and 10.45's DE-R/DE-T
+verification links without issuing DE-O findings. Required but unclosed items
+include actual prepared launch retention, enforceable environment policy, complete
+transitive build/tool/import/load closure, race/custody guarantees at claimed
+strength, method separation, private origin and foreign-verification qualification,
+current project subject/correspondence and actual EX evidence. Do not infer these
+from method labels, source presence or published capability descriptions.
+
+S0's q34 artifacts are not current default build/load proof. BS01-BS09/WP00 and
+the restart-two failure remain at their original scope and fixed limits; do not
+rerun the unchanged failed route. Original 10.34 historical catalog/receipt bytes
+stay unchanged. New Org/view bytes require a future fresh capture, not updated
+historical hashes. No acceptance, method/tool/model/content/ASCENT/Aitia execution,
+review submission, signing, authorization, adoption or delivery occurs here.
+
+#+CAPTION: S4a consumes unique C, records actual A/E/G, interprets scoped claims, privately issues W and qualifies target use; later Q/R are distinct boundaries.
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.svg]]
+
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][Editable D2 source]].
+
+[[file:10.58-content-observers-and-reference-closure.org::#s4b-content-observers][10.58 details S4b]]: same-C product/criterion/locator fields and actual owner
+boundaries, independent finite demand closure, architecture/Org/decision/view
+claims, historical/current evidence, semantic attribution and A/E/W/use association.
+OX01-OX36 refine existing controls; missing/conflicting/stale inputs and fresh reuse
+remain explicit. No implementation, acceptance execution or actual delivery occurs.
+
+[[file:10.59-ascent-projection-and-query-view.org::#s5-ascent-projection-query][10.59 details S5]]: complete C/D/K/A/E/G/W/U/basis relations, actual producer/use
+and independent duty projection, missing/counter/conflict/coverage semantics,
+existing Session prospective acceptance/rollback and postcommit failure boundary,
+owned determinate Q and exact Aitia handoff. QX01-QX40 are future controls;
+no implementation, acceptance execution, review submission or delivery occurs.
+
+[[file:10.60-aitia-review-adaptation.org::#s6-aitia-review-adaptation][10.60 details S6]]: exact C/Q to inert R, adopted policy/project revision/roles/
+products, purpose-specific context/inventory/criterion checks and lossless negative
+assessment, actual common Host/Core receipt/current-use/replay boundaries.
+Causal Software Engineering is the research object for critical comparison of
+claim/assumption/identification/uncertainty handling. Framework mappings are
+proposals to test, not paper authority, demonstrated superiority or an estimator. RX01-RX40 remain future controls;
+no implementation, acceptance execution or review submission occurs.
+
+[[file:10.61-history-authority-and-reassessment.org::#s7-history-authority-reassessment][10.61 details S7]]: exact C/Q/R/H, independently required history, scoped
+principal/grant/action checks, accepted inclusion/current use, immutable negatives,
+repair/exception/supersession/withdrawal and qualified custody. Assumption failure
+triggers scoped reassessment without false zero-effect or authority inference.
+The paper is critically studied through competing designs/falsifiable RQ1-RQ6,
+not treated as a normative source or demonstrated improvement. AX01-AX44 are
+future controls; no implementation, acceptance execution or review submission.
+
+[[file:10.62-library-delivery-and-recipient-use.org::#s8-library-delivery-recipient-use][10.62 details S8]]: exact producer C/Q/R/authority and finalized manifest,
+product/reference/access closure, actual arrival and receiver-owned verification,
+new receiver C/Q/R/adoption/current use. Missing/withdrawn/replayed status and
+claim-specific causal applicability remain explicit; selective reuse is a research
+hypothesis compared against full revalidation. DX01-DX44 are future controls;
+no implementation, acceptance execution, review submission or actual delivery.
+
+[[file:10.63-case-joint-acceptance-plan.org::#s9-case-joint-acceptance][10.63 details S9]]: actual file/entry/lane and owner-artifact matrix, G0-G8
+source/compiled/load/cold/recovery/receiver through-gates, exact finite budgets,
+negative/assumption-change correctness and separate critical research comparison.
+Original 248 rows and stage refinements retain identity; JX01-JX44 are future
+joint controls. OJ01-OJ12/BS01-BS09 remain open until actual owner evidence;
+no implementation, acceptance/research execution or actual delivery occurs.
+
+* SPECIFIED P0 producer and application capability split
+:PROPERTIES:
+:CUSTOM_ID: s4a-p0-producer-application-split
+:END:
+
+[[file:10.65-ascent-migration-and-contract-handoff.org::#p0-consumer-map][10.65 consumer map]] keeps generic Session execution in ASCENT and locates Clue/history at Flow application owners. Library methods consume a real supported capability and preserve C/A/E/W/use; they do not copy the store, accept Agent attestations, or treat a supported hypothesis as a technical pass. Source leaf exports alone do not establish installed Host interfaces. EX acceptance remains unexecuted.
+
+* SPECIFIED S4a effective result and evidence strength fields
+:PROPERTIES:
+:CUSTOM_ID: s4a-p1-effective-strength
+:END:
+
+[[file:10.66-effective-types-and-contract-closure.org::#p1-shared-field-types][10.66 P1 consolidation]] defines the effective refinement.
+Method expectations carry scoped claim/premise/strength/input demand; actual E/Observation/W/use retain execution, validation, semantic, control and fresh applicability dimensions separately. Seven scoped claim kinds are not a confidence ladder. Unsupported empirical identification/uncertainty stays explicit; no formal or provenance result is silently promoted to a causal estimate.
+
+* SPECIFIED P2 real deferred method binding prerequisite
+:PROPERTIES:
+:CUSTOM_ID: s4a-p2-real-bindings
+:END:
+
+[[file:10.67-library-construction-publication-and-scope-handoff.org::#p2-real-method-bindings][10.67 P2 consolidation]] defines this handoff.
+Required real supported bodies and returned Function wrappers bind checked definitions before publication; actual C/A/E/W/use execution remains later. P2 publication does not run tools or issue evidence. Missing implementation cannot be disguised as an honest project-data gap or unconditional unsupported response.
+
+* SPECIFIED P3 genuine same-C method input prerequisite
+:PROPERTIES:
+:CUSTOM_ID: s4a-p3-genuine-c
+:END:
+
+[[file:10.68-profile-selection-scenario-binding-and-capture.org::#p3-calls-and-lifetimes][10.68 P3 consolidation]] defines this boundary.
+Method preparation consumes the same genuine C plus supported application options, preserving actual acquisition/origin and declared input domains. Separate native-context recapture or independently overriding root/Profile/policy/tool inputs is removed. A real bound Function or C shape does not authenticate the prepared call or issue W; qualify actual producer/call linkage.
+
+* SPECIFIED P4 unified method/content evidence path
+:PROPERTIES:
+:CUSTOM_ID: s4a-p4-unified-issuance
+:END:
+
+[[file:10.69-method-content-execution-and-evidence-issuance.org::#p4-unified-execution-evidence][10.69 P4 consolidation]] defines this boundary.
+P4 consolidates S4a with content observations and P0-P3 actual owners. Core must retain final post-environment launch/invocation/result; methods preserve independent semantic/control/current-use dimensions and original E/G/W. EV01-EV40 refine EX/OX controls without executing or replacing them.
+
+* SPECIFIED P5 exact original and target-use binding
+:PROPERTIES:
+:CUSTOM_ID: s4a-p5-use-to-unit
+:END:
+
+[[file:10.70-ascent-projection-and-determinate-query-view.org::#p5-required-inventory-and-relations][10.70 P5 consolidation]] defines this boundary.
+Original W/C0/A0/E0/G remains immutable. P5 associates actual fresh U with independently defined K through a real checked target binding; if original U did not assert K, it does not pretend otherwise. Private producer attestation remains P4, project source replacement P5.
+
+* SPECIFIED Evidence assertion strength in review
+:PROPERTIES:
+:CUSTOM_ID: p6-follow-up-57
+:END:
+
+[[file:10.71-aitia-review-adaptation-and-current-use.org::#p6-independent-verification][10.71 P6 consolidation]] defines this boundary.
+Original C/A/E/G/W/use, actual operations and scoped result polarity survive review. Independent interpretation does not pretend to rerun methods, and verified refutation never becomes positive criterion support.
+
+* SPECIFIED Repair is actual evidence correspondence
+:PROPERTIES:
+:CUSTOM_ID: p7-follow-up-57
+:END:
+
+[[file:10.72-history-authority-reassessment-and-withdrawal.org::#p7-resolution-and-withdrawal][10.72 P7 consolidation]] defines this boundary.
+Technical repair needs actual old/new claim/domain/strength/input and A/E/G/W/use association. Favorable method results or changed source hashes do not independently cancel an accepted denial or authorize an effect.
+
+* SPECIFIED Receiver evidence reuse and execution origin
+:PROPERTIES:
+:CUSTOM_ID: p8-follow-up-57
+:END:
+
+[[file:10.73-library-delivery-and-recipient-adoption-use.org::#p8-recipient-verification][10.73 P8 consolidation]] defines this boundary.
+Same-owner reuse needs original private recognition and fresh guards. Qualified portable assertions yield new local verification associations, not re-observed foreign execution or recreated W/E; unavailable required strength needs actual receiver observations or a gap.
+
+* SPECIFIED Actual method and launch qualification
+:PROPERTIES:
+:CUSTOM_ID: p9-follow-up-57
+:END:
+
+[[file:10.74-case-joint-acceptance-and-research-plan.org::#p9-plan-and-artifacts][10.74 P9 consolidation]] defines this boundary.
+G3 binds same C, actual final Ops launch/footprints/derivations/artifacts/issuer and independent expected six-case results. Backend/theorem/polarity/control semantics remain distinct from successful tool completion.

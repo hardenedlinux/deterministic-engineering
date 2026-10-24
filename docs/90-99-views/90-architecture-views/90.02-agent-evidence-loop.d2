@@ -1,0 +1,25 @@
+# org-target: docs/10-19-design/10-architecture/10.05-agent-reasoning-and-design-convergence.org::#agent-design-purpose
+# Relationship graph: no edge prescribes the Agent's next action.
+direction: down
+classes: {
+  knowledge: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; font-size: 17; border-radius: 12}}
+  open: {style: {fill: "#E6F5F3"; stroke: "#19756C"; font-size: 17; border-radius: 12}}
+  boundary: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; font-size: 17; border-radius: 12}}
+}
+agent: "LLM-based AI agent\nEngineering reasoning\nQuestions, alternatives, new hypotheses" {class: open}
+library: "POO design Library\nDomains, contracts, extensible knowledge" {class: knowledge}
+ascent: "ASCENT\nEvidence Chain + DAG + Trajectory" {class: knowledge}
+view: "Progressive evidence view\nSupport, counterevidence, unknowns\nCurrent references and deeper reads" {class: open}
+experiments: "LLM-based AI agent investigation\nSource inspection, QNT, Lean, experiments" {class: open}
+observations: "Bound observations\nPremises, source, result, scope" {class: knowledge}
+aitia: "Aitia / Host boundary\nScoped admission, authorization, effects" {class: boundary}
+library -> ascent: "domain facts and associations"
+agent -> ascent: "caller-selected questions and scope"
+ascent -> view: "current truthful evidence"
+view -> agent: "inform; do not rank or choose"
+agent -> experiments: "choose, revise, or invent"
+experiments -> observations: "record results and failures"
+observations -> ascent: "checked support and changed premises"
+ascent -> aitia: "references with explicit scope"
+aitia -> observations: "actual execution / operational feedback"
+agent -> library: "propose reviewed extensions" {style.stroke-dash: 4}

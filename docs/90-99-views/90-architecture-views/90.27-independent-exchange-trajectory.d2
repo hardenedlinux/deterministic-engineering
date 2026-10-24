@@ -1,0 +1,27 @@
+# org-target: docs/20-29-cases/20-gateway/20.09-exchange-replay-and-display-trajectories.org::#qr03-event-trajectory
+# Paper event gold. No executed native isolation or gateway implementation.
+direction: down
+classes: {
+  input: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; border-radius: 10; font-size: 17}}
+  state: {style: {fill: "#E6F5F3"; stroke: "#19756C"; border-radius: 10; font-size: 17}}
+  boundary: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; border-radius: 10; font-size: 17}}
+}
+raw: "03-00 identical raw factory inputs\n{oL}, RF-L, {sL:dL}; no hypotheses\nSame N_L; distinct mutable occurrences" {class: input}
+cap0: "eCap / OC-open / kCap.open\n03-01: L0 support; H3 unknown\nOriginal capture retained" {class: state}
+cache: "eCache / OK-open / kCache.open\n03-01 and 03-03: L0 support\nH3 unknown; conditional empty" {class: state}
+src: "eSrc / OS-open / kSrc.open\n03-01 and 03-03: L0 support\nH3 unknown; conditional empty" {class: state}
+cap1: "03-02 submit h3 only to eCap\n03-03 fresh kCap.h3; still N_L\nH3 conditional AND unknown\nX0 / W0 factors; no H3 T / V / A" {class: state}
+replay: "03-04 original cap-open replay\nCaptured facts or faithful reconstruction\nH3 unknown; conditional empty\nNever relabel the mutated live handle" {class: input}
+use: "03-05 new cut needs exact usage / T-use\nOld wrapper offered as current: RJ10\nMissing current binding: pending\nTL and historical VL0 retained" {class: boundary}
+target: "03-06 Pcap application still pending\nNo C2 / W1 applicability from X0 / W0 h3\nNo execution or completion from T / V / A" {class: boundary}
+alias: "03-F1 identity-only handle cache\nVisible alias: setup discrepancy\nActual cross-instance leak: gold disagreement\nDeliberate sharing needs a different input" {class: boundary}
+atomic: "03-F2 invalid duplicate / mixed batch\nReject atomically; h3 body unchanged\nNo committed h4; history retained" {class: boundary}
+raw -> cap0: "allocate independently"
+raw -> cache: "allocate independently"
+raw -> src: "allocate independently"
+raw -> alias: "must not merge by N_L"
+cap0 -> cap1: "only this instance mutates"
+cap0 -> replay: "old capture, not live state"
+cap1 -> use: "fresh captured state"
+cap1 -> atomic: "adversarial fork"
+use -> target: "binding is not method proof"

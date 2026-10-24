@@ -1,0 +1,471 @@
+#+TITLE: 10.98 I1 Normalized Context and Scope Retention
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.98
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+FILETAGS: :design:core:contracts:scope:normalization:recovery:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.96-declarative-slice-coherence-and-current-upstream-audit.org::#slice-audit-order][10.96 I1 order]] | [[file:10.90-i1-normalized-context-and-scope-handoffs.org][Earlier I1]] | [[file:10.97-i0-dependency-load-and-testing-entry-migration.org][I0 migration]] | [[file:10.95-i6-joint-acceptance-and-explicit-sysml-publication.org][Joint acceptance]] | [[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][D2]]
+
+* Scope, invariant and evidence boundary
+:PROPERTIES:
+:CUSTOM_ID: i1-retention-scope
+:END:
+
+This unifies 10.96 I1, 10.90 and the actual entry/source ownership from 10.97.
+POO owns value/Function normalization; Core contextual admission returns evidence
+whose candidate is the effective receiver. The linker must consume that returned
+receiver at Context, consumer edge and final Scope boundaries. This is direct
+repair of existing fields/calls, not a new Type system, compatibility layer,
+versioned Namespace, loader or Scope cache.
+
+#+begin_example
+K0 -- actual Context admission EK --> K1 = EK.candidate
+Provider final SP -- optional exact package realization --> alias input SX
+SX -- actual consumer requirement ED under K1 --> SD = ED.candidate
+consumer.link(bindings of SD) -> opt-in bound exports -> S0
+S0 -- actual final Scope admission ES under K1 --> S1 = ES.candidate
+final record.scope = S1 -> namespace facade.scope / selected records / later edges
+#+end_example
+
+These symbols explain existing values, not public field names, protocol versions
+or portable credentials. Each actual admission has its own expected Contract,
+input/context/source association and normalized result. Extracting a candidate is
+not a second admission; a new edge/session/process has its own admission. There is
+no whole-graph exactly-once claim.
+
+This is Org/D2 design and read-only source inspection. No implementation/model/
+package change, build, load, test, cold start, restoration, acquisition, inference,
+validation, publication or orchestration expansion is performed. Static document
+checks/rendering are the only executed verification. All controls remain proposed.
+
+* Current source cut and existing defects
+:PROPERTIES:
+:CUSTOM_ID: i1-retention-current
+:END:
+
+Read-only observation on 2026-10-21: adjacent Core
+1107677e53b0c3096958edc83429ddf9f1e1257e (163 changed/untracked paths), Flow
+e20e93236ca7a04275d1293cdc9ce770401efd7f (648), ASCENT
+18751d5c513fd7ae6e768f580866b9e1fb34d2d3 and shared dirty POO
+fdeadfa40ca5cee5fe20308985aef1577f2eb49b. The actual linker still discards all
+three candidates. The default ModuleScopeContextContract is predicate-only and
+normally identity-preserving; the K1 defect is an extensibility/protocol gap, not
+an observed failure of default nonidentity normalization.
+
+Flow/Core now declare POO f956f4c, but actual shared POO still differs. ASCENT's
+old :core/PooFlow imports, historical formation cohort and stale compiled inputs
+remain 10.97 prerequisites. No new immutable compatible build/load tuple is selected.
+Historical source hashes and the original dossier/model bytes are preserved.
+
+| Actual file/call | Current observed behavior | Target disposition |
+|------------------+---------------------------+--------------------|
+| Core types.ss contract-admit-evidence | POO validate(value-contract,candidate) result drives classification/children/contextual obligations and evidence.candidate | Retain this producer and actual normalized children/Functions; do not replace admission with a boolean or redundant validate |
+| source/admission.ss admit-module-value! | Returns accepted evidence after yuanxu-contract-admit; refuses otherwise | Preserve evidence-returning protocol, expected Contract and context references |
+| source/link.ss context-admission | Calls admit-module-value!(ModuleScopeContextContract,K0,K0), discards evidence and closes later code over raw context-value | Hold EK before later closures/caches; bind their effective Context to exact K1 |
+| link requirements/bindings | Retains requirement-evidence but bindings[alias] reads records[alias].provider.scope | Keep edge evidence and provider provenance; read ED.candidate for consumer bindings |
+| link final record | Retains scope-evidence but record.scope is raw scope-value | Store S1 = ES.candidate, after existing export binding and final source guard |
+| source/admission.ss admit-module-publication!; link publication/eligible | Already uses accepted publication candidate for actual identity/SourceRef checking and linked-publication.value | Preserve as adjacent regression pattern; do not alter its evidence/context or revert to raw publication |
+| building/interface.ss module-view | Namespace leaf facade has identity, lazy scope=(scope!) and tests | facade.scope yields S1; facade identity itself is not equal to S1, and tests remain independently lazy |
+| source/link.ss .with-packages | Checks exact package-result.build-graph; relinks with current Context and shares publications/prepared metadata but creates new linker caches | Retain exact Graph/source association; re-admit new Context and compatibility-check retained metadata instead of relabelling old evidence |
+
+| Selected source observation | SHA-256 |
+|-----------------------------+---------|
+| ../poo-flow/core/types.ss | 1559423111a660c47fbc42a74a6f707b8c2268ea7b24f93e0679f6926fb56a5a |
+| ../poo-flow/core/module-system/source/link.ss | 606b1b044c379d1f16ee8174217693c05af08a1949becadf2687124a5c3230ac |
+| ../poo-flow/core/module-system/source/admission.ss | 1fdfced268e777b51ed02ac49894eb3c4a34317eb03854eea32997bd0a06c8c8 |
+| ../poo-flow/core/module-system/source/publication.ss | 7f70ccdda2bdd8ea2cf7a9d814a09af1972297dfaf0a076b5bf626a4b1ef2702 |
+| ../poo-flow/core/module-system/building/interface.ss | 60b76361364f0b50f59da5b17072c9095f742c2cd57a417352318bb30d8f67d0 |
+| ../poo-flow/core/module-system/building/artifacts.ss | da155979dca8670624f27c469ebd7266cb07b9d171c316a91923760bc6cacfb2 |
+| ../poo-flow/core/observability/testing-script.ss | dc13846fd71b7e6ee7463a0298fc1becb685032e14b8a29c2aefa50d39baf7e7 |
+| ../poo-flow/core/t/module-scope-link-test.ss | ab7f5b6b10313201d3f924b05a1f2786c8b09f7d07140462ee5cf9fcadcbae47 |
+
+These identify inspected bytes, not a frozen whole working tree or actual loaded
+units. Qualified compilation/loading must use the complete selected closure.
+
+** Later concurrent compiler-recipe observation
+
+During the final source comparison, Core dev/just/build.just changed independently
+of this documentation work. It now includes compile-build-projection, which selects
+an optimized gxc -O compilation of module-system/building/source-closure.ss and
+comments on keeping optimized implementation and .ssxi metadata in one cohort.
+Its later SHA-256 is
+0261919521a0826e384fc9ef4f8e20b84136709f760d41fd609ff83947ad07a2.
+The recipe was read, not run. This is not proof of an actual stale-metadata failure
+or its repair. The earlier source observations remain unchanged.
+
+Include the actual optimization flags, implementation, .ssxi/interfaces and named
+sections in I1's selected compiler/load controls. A helper recipe or equal wrapper
+cannot qualify the normalized-value path; a different optimization/metadata cohort
+must not silently satisfy the compiled lane. This additional entry does not repair
+the three source handoffs, product fixture migration or cold/recovery gates.
+
+* Exact fields and retained admission associations
+:PROPERTIES:
+:CUSTOM_ID: i1-retention-values
+:END:
+
+| Symbol / existing carrier | Actual association to retain |
+|---------------------------+------------------------------|
+| K0 | Actual initial Context plus its bootstrap/native paired source or caller-supplied Context route; not automatically filesystem origin |
+| EK | Actual accepted Context admission evidence; admission-contract is the expected Core descriptor and context remains the actual K0 submitted at bootstrap |
+| K1 = EK.candidate | Exact effective Context for all subsequent context-dependent reads, admissions, selection and package relink; no Context reconstructed from Config/Profile |
+| SP = base-record.scope | Provider's own final normalized S1, with its own publication/source/generation/final evidence; independent of downstream consumer requirements |
+| SX = dependency-scope(owner,alias,provider-id,SP) | Exact alias input under a matching realized request; SP if no applicable realization, otherwise actual selected package Scope |
+| ED = records[alias].requirement-evidence | Actual consumer requirement admission of SX under effective K1; retains its expected requirement Contract and source/package context |
+| SD = ED.candidate | Exact consumer-specific receiver, including normalized child values and Function wrappers; supplied only to that alias |
+| S0 = scope-value | Actual baseline.link(bindings) output after supported opt-in .bind-publication processing; no final admission yet |
+| ES = scope-evidence | Actual expected baseline.scope-contract admission under K1; classification/child/contextual evidence describes the normalized candidate |
+| S1 = ES.candidate = record.scope | Exact final cached receiver, returned through resolver/selected records and later used as SP; no rebuilding or post-admission export binding |
+
+Retain the actual admission-contract, classification/candidate, responsibility and
+context associations. Evidence is factual history: EK.context is not rewritten to
+K1, and ED/ES.candidate is never replaced afterward. In-process controls compare
+exact expected receiver references as well as independent behavior, not equal-looking
+strings/objects. Reports cannot reconstruct these producer associations.
+
+Use existing lexical/record storage: EK stays privately associated with the linker;
+dependency-records already carry provider and requirement-evidence; final record
+already carries scope-evidence. No public K1/SD/S1 credential slots, redundant checked
+Scope field, global registry or cross-consumer admission cache is required.
+
+* Context K1, native reader ownership and package relinking
+:PROPERTIES:
+:CUSTOM_ID: i1-retention-context
+:END:
+
+| Existing read/call boundary | Required target behavior |
+|-----------------------------+--------------------------|
+| Entry to private link-module-context | Actual K0 admits once through Core's expected Context Contract; extract K1 before generation-value, paired-context policy, graph/cache keys or any Context-dependent closure is formed |
+| generation/module-ids/selected/denied/init-source/eligible? | Read effective K1 consistently; normalization grants no new source permissions or arbitrary graph/generation replacement |
+| locate/read-publication/current?/publication-inputs/publication-preparation | Use K1 fields with actual source/producer/currentness association; unknown wrapper/callback provenance cannot acquire native reader privilege |
+| select-module-graph and publication/requirement/final admissions | Pass K1 as actual contextual input after bootstrap; preserve source/owner/policy checks and exact returned normalized publication |
+| selection.context/namespace/selected-graph/selected-records/.selected-record/dependency-order | All closures and public views resolve the same K1 generation/roots. Auto-demand stays bounded by existing source eligibility, not a second graph or broad eager traversal |
+| selection.sources-current/package-current/admit-current/prepare-publication | Retain actual source and package owner guards; cached fields are not live filesystem/currentness IO |
+| .with-packages -> link-module-context | Keep actual package-result.build-graph identity check and package admit-current, re-admit effective Context at the new linker boundary and consume that new returned candidate |
+
+The public directory loader constructs context/reader-ref/original-current?,
+read-located/candidate-read and candidate-location closures before private linking.
+Replacing the local context variable alone cannot retarget those already-created
+native closures. K1 must preserve their actual owner/generation/selected-source
+association or the owner must reprepare/refuse. Same field values, a copied callback
+or equal generation text does not authenticate that association.
+
+Keep the native paired reader lazy and its existing closed-prefix/source-window
+optimization only where its actual owner supports the unchanged path. A nonidentity
+wrapper cannot inherit this privilege merely through POO shape. Use the actual
+supported ordinary guarded path when provenance remains adequate, otherwise refuse
+or reprepare; no author/normalizer/MOP callback may execute inside a reused pure
+filesystem window. Do not eagerly create the reader or demand siblings to make a
+test appear current.
+
+Package relink has a new Context admission and fresh linker cache, while some source
+publications/preparations and original build Graph remain shared. Their earlier
+evidence still belongs to its actual earlier Context. Reuse requires adequate source/
+Contract/selection/currentness compatibility with the new effective Context, not a
+copied reference or renamed evidence field. If normalization changes the selected
+source/permission/Graph meaning, the old original-graph cache cannot be seeded under
+new roots. Re-admit/reprepare through the actual source owner or refuse; no fabricated
+Graph equivalence or second realization is introduced.
+
+The actual .with-packages call does not forward every original native paired-reader
+argument. Do not assume its new linker retains the same fast prefix. Qualify its
+actual ordinary source/package guards and retained preparation ownership separately.
+Keep effectful package checks at their existing public boundary, outside the pure
+source-read cache; package realization changes alias input, not publication identity.
+
+** Nonidentity Context fixture gate
+
+Production ModuleScopeContextContract remains Core-owned and fixed; no public
+runtime Contract override or permissive test mode is added. Core's existing
+admission-binding controls demonstrate actual nonidentity value admission, but do
+not exercise this linker Context handoff through the identity-preserving default.
+
+The required fixture must use a real Core-owned expected normalizing value Contract,
+produce an owner-compatible distinct Context receiver through actual admission,
+and exercise the same production retention/continuation path. A possible private
+factorization may share that path with a statically owner-bound test fixture;
+only one linker algorithm is permitted. The concrete test-only binding/access/
+compilation arrangement remains to be qualified at Core, not assumed available.
+No mocked evidence, public setter, global descriptor mutation or duplicate linker
+can close this gate.
+
+Test caller-supplied object Context behavior separately from native paired directory
+provenance. A diagnostic marker/nonidentity wrapper with unchanged permission may
+exercise retention; it does not prove arbitrary transformed native callbacks safe.
+Native paired compatibility/ordinary fallback/refusal and lazy-reader controls must
+use actual producer paths. Until both positive behavior and required refusals are
+implemented, the advertised K1 qualification remains open.
+
+* Consumer SD, final S1 and failure isolation
+:PROPERTIES:
+:CUSTOM_ID: i1-retention-scopes
+:END:
+
+| Existing link seam | Target retention and isolation |
+|---------------------+--------------------------------|
+| Resolve provider record | Link/admit provider once for its actual generation; SP stays the provider's final S1 |
+| dependency-scope | Match configuration-owner, dependency-alias and build-owner on actual original-graph external-packages. Multiple matches or missing package refuses; a valid alias may use SX distinct from SP |
+| Alias-local provider child | Preserve actual current representation: base record when SX=SP, persistent local child with scope=SX otherwise. Do not mutate cached provider, publication, evidence or sibling alias |
+| admit requirement.contract | Actual SX -> ED under K1; retain ED exactly in this edge's requirement-evidence |
+| bindings[alias] | Read records[alias].requirement-evidence.candidate = SD. Stop passing provider.scope or pre-realization SP as consumer-authoritative value |
+| baseline.link -> bind-exports | Factory receives these SD values. Complete supported opt-in binding before final admission; it is not new domain execution or an implicit publication effect |
+| Final scope admission and record | S0 -> ES -> S1; keep scope-evidence=ES and scope=S1. Existing final current!('scope-linked') must pass before cache insertion |
+| All Scope readers | Resolver, namespace facade.scope, module-view thunk, .selected-record.scope, selected-records and future provider edges observe the same actual S1 |
+
+An alias-local provider child with scope=SX can retain the base provider's original
+scope-evidence for SP. That evidence must not be described as a fresh proof of SX.
+Actual package Scope provenance and ED describe this edge; the original provider
+record/evidence still describe its own SP. Do not overwrite provider evidence with
+consumer ED or treat a shared source/generation as universal Scope validation.
+
+For provider P shared by A.Left and B.Right (or two aliases of A), keep one provider
+factory/final admission and independent actual ED/SD per edge. Same Contract name,
+alias spelling or equal result does not authorize cross-consumer ED reuse. Each
+consumer final admission owns its own ES/S1. Repeated warm reads of that cached
+record preserve exact identity and counts without rerunning factories or normalization.
+Required currentness checks still execute at actual use/publication boundaries.
+
+Final normalization may wrap Functions/children and rebind derived fields. Keep
+those exact semantics, including preforced-parent-cache controls. No copying raw
+siblings over S1, rebuilding a raw Scope from Config or repeating .bind-publication
+after ES is permitted. If a normalized wrapper loses a required bound-export behavior,
+its actual expected Contract/control must refuse; post-admission repair cannot alter
+the attested receiver.
+
+Refusing a requirement/factory/final admission inserts no accepted consumer record.
+Existing resolve/prepare fences can poison the linker session, while active-cycle
+markers unwind through dynamic-wind. Isolation means no provider/sibling value
+mutation, not permission to keep using another module through a refused session.
+Check unaffected sibling meaning in a separately admitted fresh session; retained
+historical references are not current authority. No global rollback promise applies
+to external effects performed by unsupported author code.
+
+* Currentness coverage and owner file changes
+:PROPERTIES:
+:CUSTOM_ID: i1-retention-files
+:END:
+
+Retaining normalized receivers is necessary but insufficient for currentness. The
+actual normalization inputs, expected descriptors/value-contracts/contextual policies,
+Function wrappers and source/package observations need adequate owner-controlled
+coverage. A guard's name or presence cannot prove it covers every new field/callback.
+
+| Actual owner/file seam | Required adjustment / qualification |
+|------------------------+-------------------------------------|
+| POO Object/Type/Function and slot observation | Preserve actual normalization/rebinding/container/derived-cache/read semantics. Repair only demonstrated primitive gaps; no Module source policy moves into POO |
+| Core types.ss; t/admission-binding-test.ss | Preserve one real value normalization per admission, checked root/child/context and actual evidence. Contextual duties operate on checked values, not raw siblings |
+| source/link.ss | Retain EK/K1, ED/SD, ES/S1 as above; inventory every Context closure, record/accessor, package-relay and currentness path. Preserve original accepted publication candidate path |
+| source/admission.ss/publication.ss | Keep evidence-producing refusal and actual SourceRef/checked-owner checks. Default Context descriptor remains fixed; expected descriptor selection is not caller-controlled |
+| source/directory.ss/reader.ss/selection.ss/preparation.ss/build.ss | Preserve native paired ownership, selected source/Graph identity and preparation/currentness guards. Reprepare only at genuine owner when changed K1 makes retained observations incompatible |
+| linked-publication metadata-current and native source observations | Existing publication/currentness replay may retain actual producer projection. Audit additional EK/ED/ES normalization inputs explicitly; do not infer all new obligations are covered or rerun value classification on freshness reads |
+| building/interface.ss/test-projection.ss | facade.scope resolves S1; tests remain lazy and independently selected. Do not make test discovery demand unrelated business Scopes to observe K1 |
+| building/{source-package,build-projection,artifacts}.ss | Full selected source/prelude/phase/tool/named-output and real receiver issuance/load/handoff/currentness qualification; no second artifact or admission implementation |
+| Core t/module-scope-link-test.ss and admission/publication tests | Add genuine nonidentity edge/final/Context, alias/consumer, package, cache, lazy and refusal controls with actual expected receiver/behavior/counters |
+| Core build/cold/recovery tests; actual TestingScript/Fixture entries | Preserve exact source/child/postcheck and semantic inventory. Respect imported dev/just closure and 10.97 fixture/recipe ownership; no synthetic wire result stands for runtime qualification |
+| Project declared init/formation entry and Library/Module/Scenario callers | Consume actual retained Scopes once; migrate namespace/metadata/roots through I0 and hand actual source/binding refs to I2/I3. Profile/Scenario must not revalidate/reconstruct raw provider Scope |
+
+Mutation controls must target the real supported Contract/value-contract/policy/
+wrapper/source inputs after a warm admission and demonstrate refusal through the
+actual boundary. Repeating normalization to rebuild an equal wrapper is not freshness
+replay. Unsupported open callbacks or missing read coverage are explicit blockers;
+no global snapshot/cache, arbitrary liveness callback or broadened closed-prefix is
+introduced to conceal them.
+
+* Compilation, actual loads, cold start and recovery
+:PROPERTIES:
+:CUSTOM_ID: i1-retention-lanes
+:END:
+
+Every advertised lane needs the independently expected K1/SD/S1 behavior and actual
+source/Contract/currentness association. Within one process compare exact actual
+candidates; across processes compare independently specified meanings and genuine
+new evidence, never pointer equality or serialized EK/ED/ES authority.
+
+| Lane / existing entry owner | Positive requirement | Negative control / claim limit |
+|-----------------------------+----------------------+--------------------------------|
+| Selected source with explicit bootstrap / Core and Project entries | Real selected source/prelude/API and declared compiled SDK/POO prerequisites; actual same-process Context/edge/final retention and currentness | Historical runtime/lib before source, old Core/Evidence interfaces, unknown bootstrap or raw receiver cannot qualify a source-only claim |
+| Complete compiled / actual source/build projections | Full selected POO/Core/ASCENT/Project and required product/test roots, macro/runtime phases, compiler/VM/SDK/native image and all produced interfaces/named sections with genuine issuance | Focused object/mop only, equal wrapper with wrong ~0/.ssi/.ssxi, omitted normalizer/test source, stale Context type or hidden source fallback fails |
+| Fresh-process actual loader route | Observe actual expander/runtime/native resolutions before exercising admitted candidates through direct selected record, consumer, namespace facade and init entry | Source hash or build exit without load evidence, earlier stale lib or wrong module-view branch does not close this gate |
+| Cold process / separate absent-artifact bootstrap | Own fresh process and explicitly named cache/artifact prerequisites; source prelude registration before init macros, complete selected build if absent artifacts advertised, actual nonzero cases and completed process | Warm private issuer/reader/selection, old artifact mask, opted-out/zero cases or timeout after marker fails. Cold OS/hardware caches are not inferred |
+| Supervised build/use handoff / Core artifacts | Actual parent run-build-artifact-process channel, matching projection/identities/source/libdir and real child receiver admission, then fresh actual Scope retention checks | Foreign entry/channel, stale source/compiler/output or unsupported normalization inputs fails at proper owner; record bytes alone do not authenticate parent provenance |
+| Fresh-process selected restoration / Core, optional Flow product | New selected graph obtains receiver-local issuance through actual supported restore and all guards; new admissions produce actual K1/SD/S1; selected Flow transport follows 10.97 repaired owners | No-op/recursive/failed restore, changed approval/record/section/inputs or old saved Scope refuses/invalidate. Managed recovery cannot fall back into a compiled pass through source loading |
+
+accept-build-artifact-handoff! validates actual packet/projection/source/artifact
+association but does not itself authenticate an arbitrary input port as a supervised
+parent. A byte-identical disk packet can satisfy data comparisons; rejection of an
+unapproved route belongs to the actual trusted entry/channel or selected approved
+source owner. Do not assert this helper universally rejects a matching copy or add
+a parallel credential registry to pretend it does.
+
+Ordinary unissued source publication remains distinct from selected managed recovery.
+The former may be inert; a failed managed recovery invalidates the receiver and
+cannot downgrade to source-only success. A fresh process rebinds the actual selected
+Graph generation only after real source/compiler/output checks. It does not recover
+old Context/edge/final evidence objects from a report.
+
+Build restoration, original C/view continuation and SysML publication-state recovery
+remain independent gates. I1 qualifies only actual build/use and newly admitted
+Scope lineage. No recovered machine code or product store pin grants I3 origin,
+I4 accepted-view recognition or I6 publication permission.
+
+10.97's Core TestingScript/Fixture/native harness and selected entry refinements
+remain the test execution path. Use exact actual Justfile/fragments/cwd/argv/env/
+observer mode and complete nonzero independent case inventory. Common process or
+marker/count admission is necessary, not K1/SD/S1 semantics. Preserve 2 GiB and
+applicable 120-second focused/180-second complete-build/30-second static-model caps,
+actual signal/grace and narrower owner limits. No wider generic default, heap/timeout
+increase, hidden child or incomplete log can qualify an advertised lane.
+
+* Proposed positive and negative controls
+:PROPERTIES:
+:CUSTOM_ID: i1-retention-controls
+:END:
+
+These refine I1-C01--C12 and 10.97's lane/entry controls. They are proposed acceptance
+conditions, not test results or new public enums. Exact receiver observations,
+independent semantic assertions, call counts and real failure states are all required.
+
+| Control / existing seam | Positive requirement | Negative control / required state |
+|-------------------------+----------------------+-----------------------------------|
+| I1-R01 admission/root/children | Real expected Contract normalizes once, classification/responsibilities see candidate and exact context; wrapped Function/derived-field semantics retained | Raw root/child, copied equal object, wrong admission-contract/context, repeated validation or preforced parent cache masking normalization fails |
+| I1-R02 K1 retention | Genuine distinct owner-compatible Context candidate reaches every closure/read/admission/context field; default identity route remains | One K0 closure, generation/roots from raw Context, overwritten EK.context, fake adapter/evidence or mock normalizer return fails |
+| I1-R03 native paired ownership | Actual unchanged native route retains lazy reader/prefix; supported ordinary nonidentity path has adequate guards or honest refusal | Copied callbacks grant native privilege, owner/generation changed without reprepare, author callback inside pure window or eager reader/siblings fails |
+| I1-R04 consumer SD | Factory receives exact ED.candidate including child/Function semantics after correct realized SX and under K1 | provider.scope/SP bypass, revalidated equal wrapper, foreign expected requirement or lost edge/context association fails |
+| I1-R05 alias/consumer isolation | One provider SP/factory/final admission serves distinct Left/Right or A/B actual ED/SD; base record and earlier edge unchanged | First edge overwrites provider, ED reused by name/alias, or base scope-evidence falsely described as proof of realized SX fails |
+| I1-R06 final S1/all readers | bind-exports precedes ES; record.scope = ES.candidate observed through facade.scope/thunk/selected records/later edges | Raw S0 cached, facade mistaken for S1, export binding repeated afterward, normalized wrapper loses required behavior or raw fallback fails |
+| I1-R07 package relink | Exact Graph/request/owner/alias/provider and current source/package scope; new Context admission and compatible retained metadata with fresh linker cache | Ambiguous/missing package, wrong Graph, old roots seeded under changed K1, evidence relabelled or paired-reader privilege assumed forwarded fails |
+| I1-R08 warm/lazy/currentness | Warm receiver identity and factory/normalizer counts stable; real source/Contract/value-policy/wrapper mutation refuses at use guard without revalidation | Extra wrapper per getter, new eager demand, unobserved normalization dependency, stale policy or cache hit bypassing currentness fails |
+| I1-R09 refusal/fencing | Rejected edge/factory/final/current guard inserts no accepted consumer; active cycle state unwinds and refused session remains fenced | Usable partial consumer, same-session sibling bypass, provider/sibling mutation, or native rollback claimed for external effects fails |
+| I1-R10 checked publication regression | Actual normalized publication candidate drives identity/SourceRef/linked value and current metadata as before | Raw publication owner checked instead, source/expected descriptor lost or already-correct boundary regresses fails |
+| I1-R11 compilation/actual loads | Every selected source/phase/named artifact and loaded route reaches actual retention assertions through real entries | Matching wrapper/stale interface or mismatched optimized implementation/.ssxi, omitted normalizer, wrong namespace/phase/native image or source fallback cannot qualify compiled behavior |
+| I1-R12 cold/bootstrap | Own fresh process or explicitly empty-artifact route observes actual prelude and all required nonidentity/refusal cases within caps | Inherited issuer/cache, incomplete kernel, optional suite skipped, marker-only exit or timeout fails advertised cold/full route |
+| I1-R13 build handoff/restoration | Actual recognized parent/approved-source route and current source/compiler/artifact checks yield receiver-local issuance and fresh checked Scopes | Unapproved matching packet entry, modified outputs/record, stale approval or no-op/recursive restore fails/invalidate; data helper alone is not source authentication |
+| I1-R14 downstream handoff | I2/I3 actual normalized Scope/callable/source/selection refs preserve meaning and evidence boundaries under qualified lane | Build/normalization receipt asserted as C origin, serialized old evidence reconstructed, Profile recapture/raw Scope rebuild or inferred SysML effect authority fails |
+
+Required concrete seams include t/admission-binding-test.ss, admission-checked-
+publication-test.ss and module-scope-link-test.ss; actual Core package/bootstrap/
+reimport/load-path/build-artifact/recovery tests; selected Flow product recovery only
+when its 10.97 owner/fixture graph is repaired; Project package-metadata/dependency-
+compatibility/formation-entry tests. Existing synthetic admission and default-context
+cases do not replace the still-open same-path nonidentity Context fixture.
+
+* Implementation order, outputs and open gates
+:PROPERTIES:
+:CUSTOM_ID: i1-retention-order-open
+:END:
+
+| Order / existing owner | Prerequisite -> required exit |
+|------------------------+-------------------------------|
+| I1.1 / I0 upstream and Project owners | 10.97 compatible actual tuple/API/prelude/entry/fixture closure and declared lanes; agree private Core-owned nonidentity Context fixture arrangement. No old artifact shortcut |
+| I1.2 / POO + Core Types/admission | Real primitive value/Function/child/context behavior and correct publication candidate retained; fix only demonstrated primitive gaps. Actual normalization/currentness footprint identified |
+| I1.3 / Core source/link + native source owners | Retain EK/K1 across every closure, source/selection/currentness and package-relay boundary; qualify owner-compatible paired/fallback/refusal path without public override |
+| I1.4 / Core link requirements/final record + building facade | Use ED.candidate SD for bindings and ES.candidate S1 for record.scope; preserve provider/edge isolation, realized provenance, export order, final guard, cache/lazy/failure fences |
+| I1.5 / Core actual testing/build/load owners and selected Flow consumers | Implement independent controls in actual TestingScript/Fixture/native entries; complete selected source/compiled/actual-load/cold/receiver-handoff/restoration evidence and truthful refusal states |
+| I1.6 / Project entry/Library/Module/Scenario owners | Actual qualified entry consumes exact checked Scope/Function and source association, with required current guard; hand explicit passed/open lane/evidence refs to I2/I3 |
+
+Retain original tests/oracles/failure receipts; implementation is not authorized
+by this plan. Logical evidence products are actual admission/candidate/source
+observations and bounded case logs, actual compiler/load/receiver records and a
+per-lane verdict. No new portable evidence format or Org-owned version authority
+is introduced.
+
+Still open: I0 compatible immutable source/load/entry graph; concrete private
+same-path nonidentity Context fixture; actual three returned-value repairs; adequate
+normalization-input/currentness and source/Context/Graph compatibility coverage;
+full selected compilation/load/cold/handoff/restore controls; downstream genuine
+capture. Ownership and target fields are specified; none of these runtime gates
+is closed by document rendering or a default identity-only test.
+
+Correctness is exact checked-value retention, consumer/source isolation and honest
+failure/currentness/build/load/recovery behavior. Better LLM architecture/review or
+reuse performance remains a separate research hypothesis. C/view/model/effect
+qualification remains with its later actual owner.
+
+* I2 effective declarations and checked Scope follow-up
+:PROPERTIES:
+:CUSTOM_ID: i1-retention-i2-effective-followup
+:END:
+
+[[file:10.99-i2-effective-library-module-declarations-and-scope-publication.org::#i2-effective-version-inheritance][10.99]] unifies the sole neutral V1 source and distinct descriptor/model/policy
+graphs. [[file:10.99-i2-effective-library-module-declarations-and-scope-publication.org::#i2-effective-objects][Authored objects]] retain actual Generic -> Rust -> Integration and one
+mapping/delta owner; [[file:10.99-i2-effective-library-module-declarations-and-scope-publication.org::#i2-effective-bindings][actual bindings]] preserve inert Library expectations and the
+Module's typed Library edge. [[file:10.99-i2-effective-library-module-declarations-and-scope-publication.org::#i2-effective-publication][Normalized publication]] consumes I1 SD/S1 and checks
+final receiver-aware associations without lexical-capture repair. [[file:10.99-i2-effective-library-module-declarations-and-scope-publication.org::#i2-effective-order][Order]] and
+[[file:10.99-i2-effective-library-module-declarations-and-scope-publication.org::#i2-effective-controls][positive/negative controls]] remain planned; no implementation, workload, acceptance,
+Scope/model effect, delivery or expanded orchestration is performed.
+
+* I3 unified selection and capture handoff
+:PROPERTIES:
+:CUSTOM_ID: i3-binding-handoff
+:END:
+
+[[file:10.100-i3-project-profile-scenario-binding-and-unique-capture.org::#i3-binding-project][10.100]] unifies checked Scope/Config consumption and consumer isolation,
+[[file:10.100-i3-project-profile-scenario-binding-and-unique-capture.org::#i3-binding-selection][selection and actual offering bindings]],
+[[file:10.100-i3-project-profile-scenario-binding-and-unique-capture.org::#i3-binding-acquisition][real project input coverage]],
+[[file:10.100-i3-project-profile-scenario-binding-and-unique-capture.org::#i3-binding-capture][C origin/lifetime]] and
+[[file:10.100-i3-project-profile-scenario-binding-and-unique-capture.org::#i3-binding-controls][proposed controls]]. This is the current I3 design handoff;
+historical observations remain scoped to their original source and execution basis.
+No implementation, acceptance or orchestration is performed by this update.
+
+* I4 unified projection and accepted-view handoff
+:PROPERTIES:
+:CUSTOM_ID: i4-unified-handoff
+:END:
+
+[[file:10.101-i4-application-projection-and-accepted-ascent-view.org::#i4-unified-inputs][10.101]] unifies same-C/actual-Program and normalized Scope binding,
+[[file:10.101-i4-application-projection-and-accepted-ascent-view.org::#i4-unified-relations][complete source and semantic coverage]],
+[[file:10.101-i4-application-projection-and-accepted-ascent-view.org::#i4-unified-consequences][declaration/evidence and negative consequences]],
+[[file:10.101-i4-application-projection-and-accepted-ascent-view.org::#i4-unified-calls][actual reception/frozen SysML handoff]] and
+[[file:10.101-i4-application-projection-and-accepted-ascent-view.org::#i4-unified-controls][proposed controls]]. Historical source/runtime observations retain their
+original scope. No implementation, acceptance or expanded orchestration is performed.
+
+* I5 unified SysML candidate and validation handoff
+:PROPERTIES:
+:CUSTOM_ID: i5-unified-handoff
+:END:
+
+[[file:10.102-i5-sysml-selection-materialization-and-validation.org::#i5-unified-selection][10.102]] unifies exact same-C/accepted-view and candidate/plan/catalog/mapping selection,
+[[file:10.102-i5-sysml-selection-materialization-and-validation.org::#i5-unified-names][identity/name resolution]], [[file:10.102-i5-sysml-selection-materialization-and-validation.org::#i5-unified-closure][owned reference closure]],
+[[file:10.102-i5-sysml-selection-materialization-and-validation.org::#i5-unified-validation][actual independent validation]] and [[file:10.102-i5-sysml-selection-materialization-and-validation.org::#i5-unified-invalidation][invalidation/explicit I6 handoff]].
+[[file:10.102-i5-sysml-selection-materialization-and-validation.org::#i5-unified-controls][Proposed controls]] retain the original scope of historical sources and receipts.
+No implementation, acceptance, model publication or expanded orchestration is performed.
+
+* I6 unified joint acceptance and explicit publication handoff
+:PROPERTIES:
+:CUSTOM_ID: i6-unified-handoff
+:END:
+
+[[file:10.103-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-unified-current][10.103]] records current upstream dependency/source changes and unifies
+[[file:10.103-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-unified-handoffs][same-C/view/candidate/validation joins]], [[file:10.103-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-unified-publication][explicit protected B-to-O]],
+[[file:10.103-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-unified-recovery][cold/recovery domains]], [[file:10.103-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-unified-lanes][entry/evidence products]] and
+[[file:10.103-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-unified-controls][proposed joint controls]]. Historical source/runtime observations retain
+their original scope; no implementation, acceptance, publication or orchestration
+extension is performed. I7 execution remains a separate later activity.
+
+* Integrated coherence audit and gate clarification
+:PROPERTIES:
+:CUSTOM_ID: coherence104-followup
+:END:
+
+[[file:10.104-declarative-slice-coherence-and-implementation-gates.org::#coherence104-findings][10.104]] audits the I0--I6 contract/control correspondence and preserves
+[[file:10.104-declarative-slice-coherence-and-implementation-gates.org::#coherence104-upstream][current versus historical source/dependency cuts]].
+[[file:10.104-declarative-slice-coherence-and-implementation-gates.org::#coherence104-chronology][Stage-qualified demand]] keeps generated O and later validation outside original C;
+[[file:10.104-declarative-slice-coherence-and-implementation-gates.org::#coherence104-transition][guard domains]] distinguish original provenance, current applicability and permitted B-to-O.
+[[file:10.104-declarative-slice-coherence-and-implementation-gates.org::#coherence104-recovery][Recovery claims]] remain independent; [[file:10.104-declarative-slice-coherence-and-implementation-gates.org::#coherence104-order][the implementation order]] separates
+framework/bootstrap readiness from final application lane acceptance, avoiding a
+prerequisite cycle. [[file:10.104-declarative-slice-coherence-and-implementation-gates.org::#coherence104-controls-open][Joined controls/open gates]] remain proposed. No implementation,
+acceptance, publication or orchestration expansion is performed.
+
+* I1 normalized handoff and realization follow-up
+:PROPERTIES:
+:CUSTOM_ID: i1-106-followup
+:END:
+
+[[file:10.106-i1-normalized-context-scope-realization-and-self-binding.org::#i1-106-values][10.106]] unifies exact K1/SD/S1 fields and normalized returns with
+[[file:10.106-i1-normalized-context-scope-realization-and-self-binding.org::#i1-106-realization][source-owned direct package overrides and declared config/export order]].
+[[file:10.106-i1-normalized-context-scope-realization-and-self-binding.org::#i1-106-context-self][self: result is a lexical object binding]], not a public field or admission repair.
+[[file:10.106-i1-normalized-context-scope-realization-and-self-binding.org::#i1-106-isolation][Consumer/currentness isolation]] and [[file:10.106-i1-normalized-context-scope-realization-and-self-binding.org::#i1-106-files-order][actual lane boundaries]] remain distinct from
+[[file:10.106-i1-normalized-context-scope-realization-and-self-binding.org::#i1-106-controls][proposed controls/open qualification]]. Historical source/receipt scope is retained;
+no implementation, acceptance or orchestration extension is performed.

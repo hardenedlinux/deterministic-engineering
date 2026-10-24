@@ -1,0 +1,38 @@
+# org-target: docs/10-19-design/10-architecture/10.32-case-content-contract-audit.org::#case-content-audit
+# render-layout: elk; theme: 0; pad: 24; timeout: 30
+direction: down
+criteria: "10.31 content responsibilities\nAudit presence and gaps separately from evidence\nNo audit label is an ASCENT verdict"
+content: {
+  label: "DE-CASE-01 inspected content"
+  architecture: "DE-AM01 / DE-AM02\nActual and target distinction present\nGatewayReview view omission corrected"
+  products: "D01-D10\nNavigable locations and honest gaps present\nRole list is not a complete captured inventory"
+  decisions: "DE-D01-D05\nChoices, rationale and consequences present\nRecorded design is not approval"
+}
+gaps: {
+  label: "Remaining content / reviewed in 10.32"
+  model: "C2 documented in 10.33\nActual/target inventory and source/duty allocation\nSemantic review and exact capture remain open"
+  docs: "C4 documented in 10.34\nExact local input index and unsubmitted dossier\nNative results, assignees and actual review missing"
+  records: "C3 documented in 10.30\nr1 roles, assumptions, links and reopen conditions\nAssignees and independent review remain unresolved"
+}
+duties: "DE-O-ARCH / DOC / DEC / TRACE / REVIEW\nScope-specific content, methods and dependencies\nNew project-content results are not issued"
+c1: "C1 / documentation complete in 10.30\nScope, required products, responsibilities and revisions\nActual assignees and review admission remain unresolved"
+plan: "C4 / documentation complete in 10.34\nBounded input closure; historical/current/missing states\nUnsubmitted draft; C5 qualification remains"
+qualification: "C5 future executable qualification\nExisting P1/P3 gates, native capture and observers\nASCENT applicability and actual Aitia disposition"
+history: "Preserve old method evidence\nM06 counters, 9 pending and cold regression\nNo new semantic review or delivery claim"
+criteria -> content.architecture
+criteria -> content.products
+criteria -> content.decisions
+content.architecture -> gaps.model
+content.products -> gaps.docs
+content.decisions -> gaps.records
+gaps.model -> duties: ARCH / TRACE
+gaps.docs -> duties: DOC / TRACE / REVIEW
+gaps.records -> duties: DEC / TRACE
+duties -> c1: explicit review selection
+c1 -> plan: documented product bindings
+plan -> qualification: future checks {
+  style.stroke-dash: 4
+}
+history -> qualification {
+  style.stroke-dash: 4
+}

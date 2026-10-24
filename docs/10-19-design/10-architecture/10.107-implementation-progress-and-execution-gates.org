@@ -1,0 +1,677 @@
+#+TITLE: 10.107 Implementation Progress and Execution Gates
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.107
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+FILETAGS: :implementation:qualification:library:sysml:
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.104-declarative-slice-coherence-and-implementation-gates.org][Plan and gates]] | [[file:10.105-i0-dependencies-prelude-build-load-and-testing.org][I0]] | [[file:10.106-i1-normalized-context-scope-realization-and-self-binding.org][I1]] | [[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][Current execution map]]
+
+* Status and authorized execution boundary
+:PROPERTIES:
+:CUSTOM_ID: implementation107-status
+:END:
+
+Implementation and bounded local validation started on 2026-10-23 following the
+user's authorization to proceed. The I0--I7 dependency order remains in force. This
+is an execution record, not another replacement specification. I0/I1 have concrete
+repairs and passing focused controls; the complete release gate remains open.
+Downstream design investigation is explicitly weaker than a qualified same-C chain.
+
+No existing root project.sysml was promoted, no Aitia review was submitted, and no
+Library delivery, commit or push was performed. Existing historical receipts and
+concurrent edits remain separate. New runtime outputs are under
+[[file:../../../.data/implementation-20261023/][the isolated execution directory]].
+
+* Actual selected sources and development preparation
+:PROPERTIES:
+:CUSTOM_ID: implementation107-sources
+:END:
+
+| Owner | Selected base | Actual realization |
+|-------+---------------+--------------------|
+| Project | 8044732d505f84e373119a70f947df00e1767300 plus existing and current working changes | Root gerbil.pkg is the sole authored dependency pin list for this preparation |
+| POO | 80b590b15c6d4bde7717f5fd85d5b98dbf230bd8 | Exact revision fetched into an isolated clone; no shared POO edits |
+| Yuanxu/Core | 10a075938f8820547acca8e915671a5e69dbea73 | Isolated clone plus the explicit Scope/build-root patch; adjacent ../poo-flow/core remains untouched |
+| ASCENT | 0b6da0403f75b35a23d198557510e139f1902eff | Isolated clone plus reviewed dependency, compiler-selection and artifact-inventory repairs |
+| Optional Flow context product | e789578bfa52cdd137d2ddc1ab6fb388807273c6 | Isolated tracked checkout plus explicit selected-context dependency/prelude patch; adjacent package metadata has further concurrent edits. Context acquisition is opt-in; full product qualification is not claimed |
+| SysML CLI | Installed v0.10.1, commit 1c45b6e1749fc8adc9b82d4af22fbe180b56a0e2, Go go1.25.14 | /opt/homebrew/bin/sysml, actual independent invocation; distinct from the inspected OpenSysML checkout |
+
+The explicit development patches are
+[[file:../../../dev/patches/yuanxu-scope-and-build-roots.patch][Core source and regression fixture]] and
+[[file:../../../dev/patches/ascent-core-dependency.patch][ASCENT dependency and complete-build repair]].
+These are reviewable local changes, not upstream releases. Installing just the base
+pins with gxpkg does not apply these repairs. An upstream committed tuple is still
+required before claiming normal package distribution.
+
+[[file:../../../dev/formation-environment.py][Development preparation]] reads pins from gerbil.pkg,
+checks exact checkout identities and compares each working tree against a temporary
+Git index containing only its reviewed patch. It rejects additional source changes
+and untracked dependency inputs. It never stages the user's repositories, fetches,
+uninstalls packages or chooses another revision after failure. Source Namespace
+mounts follow yuanxu, clan/poo and gerbil-ascent; tao3k/yuanxu maps the official source
+directory so prelude.ss remains a regular source file. No :core alias or copied
+language metadata is restored.
+
+The default prepared-source location is .data/formation-dependencies and the isolated
+source-test cohort is .data/formation-current. FORMATION_DEPENDENCIES and
+FORMATION_COHORT select explicit alternative locations. The generated source-baseline
+JSON records preparation, not original capture C, native acquisition authority or
+loaded-artifact proof. Native Core still owns source admission, freshness and build
+projection at demand.
+
+** Toolchain findings and bounded continuation
+
+The native pkg-config executable initially could not resolve OpenSSL. Supplying the
+actual installed OpenSSL pkg-config directory passed that preparation boundary.
+The installed SDK's executable link also names older OpenSSL search directories;
+explicit current pkg-config flags were needed for the independent control.
+
+A GCC 16 C program calling puts failed to link, while the same program linked with
+/usr/bin/clang. A minimal Gambit executable with actual OpenSSL link flags and
+GERBIL_GCC=/usr/bin/clang compiled and ran successfully. Clearing inherited SDKROOT
+alone and adding libSystem did not qualify the failed GCC route. The supported
+compiler choice is explicit in the development build recipe, not a silent fallback
+or a change to Library contract version/Namespace.
+
+The original full ASCENT attempt (04) returned 137 without an independent signal
+trace. A bounded reproduction (05) recorded watchdog TERM at 180 seconds followed
+by KILL at 185 seconds. This demonstrates deadline termination on the reproduced
+route; no OOM conclusion is inferred from 137 or a few RSS snapshots. Original
+failed outputs and their logs remain isolated, including the original 388 entries.
+
+Three concrete problems were repaired within the original complete target set:
+
+| Boundary | Observation | Repair |
+|----------+-------------+--------|
+| Tool PATH | The same GCC 16 puts control fails with the inherited Nix linker wrapper and succeeds with the system tool path | Explicit FORMATION_TOOL_PATH selects the packaged Gerbil launcher and native system linker; preparation records resolved tools. The packaged launcher supplies GERBIL_HOME/GAMBOPT; invoking its raw current/bin/gxi without that setup failed and is retained as a negative diagnostic |
+| ASCENT executable C objects | Darwin build targets hardcoded -cc gcc; /usr/bin/gcc is Apple Clang, bypassing the SDK's configured GNU compiler/flags | Remove this override. The existing SDK selects the C compiler for library and executable objects; final linking retains its GERBIL_GCC protocol. No SDK patch or new build scheduler was introduced |
+| Artifact inventory | Native registry census found 1,364 aliases for 330 contexts. Re-importing the compiled package after compilation repeats work; source/interface contexts can resolve to the same artifact | Require every declared .ssi through the SDK resolver; retain the SDK compiler's existing contexts, importing only missing roots. Visit each context and resolved metadata artifact once, preserving every phase and loader-selected contiguous generation |
+
+The stricter cold route exposed two retained failures after the first successful
+repair: an inventory timeout with cold dependency objects, and a setup attempt
+that omitted required Core static Scheme prerequisites. The latter is an invalid
+fixture, not a compiler result. The corrected fixture includes all 234 Core static
+Scheme units and starts with no dependency native C/object outputs. Failed attempt
+03 and its dependency native outputs were quarantined before attempt 04.
+
+Current complete cold ASCENT attempt i1-cold-ascent-build-04 exited 0 under the
+unchanged 180-second/2-GiB/four-worker profile, including the complete Library,
+libascent, ascent-develop and the final inventory. It retained 134 native compiler
+contexts and imported zero roots again. The 2,293 syntax resources, 970 compiled
+origins, 134 linked source entries and 141 source inputs passed 3,540 independent
+byte checks. Compared with successful build 07, module sets and generation-normalized
+resource sets are identical. The one absent resource is the earlier Core prelude.o2;
+the fresh Core build selects only its actual prelude.o1 generation. No module,
+phase, source obligation or executable was removed to meet the deadline.
+
+The independently linked ASCENT image also executed a finite transitive closure
+and rejected a prospective transaction while preserving the prior result.
+Removing a required interface in a separate artifact fixture made the real
+inventory refuse source fallback. These are focused tool/producer controls,
+not original capture C, accepted inference Q or publication authority.
+
+The current Project complete build also exited 0 against the new tuple. Core's
+same-path Context qualification is described below. Native Project test capture
+and fresh-process recovery are being recorded separately from ordinary compilation.
+
+* Implemented boundaries and retained framework ownership
+:PROPERTIES:
+:CUSTOM_ID: implementation107-changes
+:END:
+
+| Actual file/boundary | Implemented behavior | Evidence limit |
+|---------------------+----------------------+----------------|
+| Core source/link.ss | Retain Context admission evidence and use candidate K1; dependency bindings use exact ED.candidate SD; final record.scope uses exact ES.candidate S1 | Default public admission preserves identity. Core privately factors the fixed production entry through the same factory/continuation; two Core-owned normalizing Contract controls passed for caller Context and actual native directory/paired reader in source and compiled lanes. The public export set is unchanged |
+| Core building/interface.ss | Existing std-make-spec/std-make-run accept explicit build-source; retain exact roots and build source for the init epoch and reject switching either | Supports the actual non-adjacent Project build owner without implicit missing-file fallback; standard adjacent build source remains the ordinary default |
+| Core building/build-projection.ss | Derive build root/prefix from the native reader's already observed package metadata and exact package-relative compiler identity | Fixes nested Project init rejecting same-package Profile. No second package resolver, global alias or relocation of the Project entry |
+| Project current Scheme imports/preludes/init | Direct migration from :core/poo-flow! to :yuanxu/yuanxu!, current verification names and the single native init exports object | Historical manifests/receipts are not regenerated as current build evidence |
+| Core source/link.ss private factory | Public yuanxu-load-modules fixes the expected Context Contract; private load-module-selection shares acquisition, actual admission, continuation and relink with Core qualification | No public Contract override, global descriptor mutation or fabricated evidence; fixture normalizes roots without adding source permissions |
+| Resource reasoning declarations | Retired evidence syntax/interface imports migrate directly to current rules/define-program/rule-module-program | Does not repair removed trajectory/clue-exchange providers or prove the full resource/review lane |
+| formation-build.ss; build.ss | Actual selected init exports -> std-make-run -> SDK defbuild-script, with explicit ordinary roots and Core compiler/artifact boundary | A complete successful compiled/cold/recovery lane remains required |
+| dev/formation-test.ss and Justfile | Actual init.tests.for-files -> existing execution prototype -> TestingScript/Fixture/Ops/common gate/refinement/postcheck; explicit verbose native harness and nonzero exact case count | No duplicate test runner or marker-only approval. Complete artifact/currentness qualification is distinct from a passing focused run |
+| modules/project-formation/func.ss | Actual Program source-handles require complete batch including empty sources; actual rule-module bindings drive report outputs without a second authored list; own strings/binding pairs; native prospective acceptance verifies supplied source sets | Raw facts remain design assertions. This does not issue C or an authenticated accepted inference view |
+| Formation capability conclusions | Declaration conditions produce declared_ready; no rule promotes them into runtime_ready | Qualified-use/evidence projection remains a separate unimplemented gate |
+| Profile/Scenario/materializer | Root identity and stable dependency identities come from declarations; IDs no longer depend on sorted edge ordinals; duplicate layout type names refuse in Scenario preparation | Complete catalog/plan/mapping Contracts, trusted handoff and trace conformance remain open |
+
+The prospective ASCENT acceptance checks exact source *set* coverage for this declared
+primitive-string/set domain, not arbitrary bags, ordered occurrences, trusted origin
+or full A/E/W/use adequacy. Native Session replacement owns evaluation/adoption;
+application code adds no second engine. A failed projection cannot be repaired by
+inventing a missing trusted producer.
+
+* Executed controls and retained failures
+:PROPERTIES:
+:CUSTOM_ID: implementation107-controls
+:END:
+
+All Scheme invocations used a 2 GiB VM heap fence before imports. Focused commands
+were bounded at 120 seconds; complete dependency builds at 180 seconds; SysML checks
+at 30 seconds, with TERM then five-second KILL. No cap was increased after failure.
+Heap caps are not an aggregate RSS measurement or a performance claim.
+
+| Actual execution | Result | Scope |
+|------------------+--------+-------|
+| Isolated POO, Core Types/linker and ASCENT imports | Exit 0 | Actual source bootstrap, not complete compiled-load parity |
+| Core normalized Scope fixture | 3 cases passed | Two consumer-specific SDs, provider/final S1 identity, stable warm counts, lazy unused factory, Function pre/post checks and stale-session fencing |
+| Compiled-only Core normalized Scope fixture | Same 3 cases passed | Fresh process with only selected compiled library and SDK load paths; no production source path |
+| Existing Core public-config admission fixture | Same 5 cases passed in source and compiled-only lanes | Actual ObjectContract/Function behavior, final receiver retention, unknown-field laziness and declared paths |
+| Direct formation controls after changes | 14 cases passed | Includes original independent conflict/gap controls, complete actual source set, detached string cells and declared root/edge identity |
+| Native Project build-source controls | 3 cases passed | Real package projection, stable retained spec, changed build source and changed root-set refusal |
+| Native Project TestingScript adapter | 1 case passed | Actual declared Scenario Scope and real child completion, exact expected case count |
+| Native wrong-case-count control | Exit 70; actual one-case child rejected against expected two | Existing native Script refinement refuses a successful child with the wrong required count |
+| Native formation controls through the same adapter | 14 cases passed | Real compilation preparation and native child; same 14 cases, not 14 additional distinct controls |
+| Reviewed-source preparation control | Reviewed patch accepted; one extra source mutation refused | Fresh isolated clone, real temporary-index comparison; no mutation of the active positive dependency source |
+| Final candidate generation through declared Project Scope | Exit 0 | 8 conflicts, 34 gaps, one structurally covered LIB-C01; 9 nodes and 11 edges. Runtime readiness remains empty |
+| Installed independent SysML strict validator | Exit 0 | Exact generated candidate plus companion model, with record cache disabled |
+| Unresolved-reference / duplicate-name candidate controls | Both exit 2 | Actual missing reference and ambiguous member diagnostics; neither is a valid candidate |
+| POO complete cold build, one worker | Exit 124 at 180 seconds | Incomplete; partial outputs parked outside the positive source lane |
+| POO complete cold build, fresh artifact directory and two workers | Exit 124 at 180 seconds | Incomplete; separate artifacts retained, not promoted into the source lane |
+| POO complete cold build, another fresh directory and four workers | Exit 0; SDK body reported 65.18 seconds | Full unchanged library specification, original 180-second/2-GiB fences. Not a matched performance comparison or complete chain qualification |
+| Core complete build and updated explicit-build-source rebuild | Both exit 0 | Actual selected package graph/SDK compilation, followed by compiled-only Scope/config controls |
+| Independent native C/Gambit executable controls | GCC route refused; explicit Clang/Gambit control compiled and ran | Actual local toolchain isolation, not full ASCENT success |
+| Full ASCENT build with explicit Clang/OpenSSL configuration | Exit 137 under the unchanged 180-second fence; exact signal cause unconfirmed | Incomplete static executable stage; partial artifacts quarantined, no Project compiled-chain pass |
+
+The initial 18 distinct Project cases and eight Core cases are separate focused evidence;
+repeating 14 cases through TestingScript is route evidence rather than a new count.
+The logs and their hashes are indexed by
+[[file:../../../.data/implementation-20261023/case-counts.json][case counts]].
+
+Retained earlier failures are part of the investigation: the first new Core fixture
+had self-slot/parameter shadowing and raised CyclicSlot; corrected lexical names then
+passed. A single-file prelude symlink was rejected as non-regular source; mounting
+the official directory repaired that route. Native TestingScript first observed the
+broad root's removed clue-exchange import, then the declared nested Project exposed
+the actual package-prefix defect. That Core defect was repaired before the passing
+Project route. None of these failed logs is relabelled as a pass.
+
+
+** Current cold and compiled continuation
+
+| Execution | Actual result | Limit |
+|-----------+---------------+-------|
+| Core same-path normalizing Context controls, source | 2 cases passed after fixing an incomplete fixture's missing required roles | Actual native admission; exact K1 and evidence context; native directory ownership and changed-source refusal |
+| Fresh complete Core build | Exit 0 within 180 seconds | New Core artifact domain, existing qualified POO prerequisite; no prior Core binaries |
+| Compiled-only Core boundary suite | 39 cases passed, exit 0 within 120 seconds | K1 controls, SD/S1/Function retention, Scope linking, config source/admission, build-graph/owner/relink and recovery refusal; production load path contains compiled Core and SDK only |
+| Complete ASCENT cold native closure | Exit 0 within 180 seconds | No prior dependency native C/objects; full targets and all source/phase/generation obligations retained |
+| Current ASCENT receipt inspection | 3,540 byte checks, zero mismatches | Native receipt plus independent inspection; identical module/canonical resource coverage, not a new issuer |
+| Current Project complete compilation | Exit 0 within 180 seconds | Actual declared Project -> Core projection -> SDK -> native artifact issuance |
+
+The declared Project's isolated native test support cold start compiled two targets
+and passed its one required case. A separate fresh process restored through Core's
+actual test publication Source, reported nonzero recovery work and zero compilation,
+and passed the same case. Removing the approved private Profile .ssi caused exit 70
+with "build-required: selected compiler output is missing", zero compiler jobs and
+zero completed cases. Restoring the exact saved bytes (without changing approval or
+issuance records) allowed a new receiver to recover and pass with zero compilation.
+These checks exercise native issuance/recognition, not a successful rebuild described
+as recovery. The current 14-case formation and three-case build boundary suites also
+passed through the real Project TestingScript. The selected local total is 57 distinct
+Project/Core cases; repeated executions do not add cases. These establish the selected
+formation/toolchain lane, not the unselected historical Aitia/Flow resource adapter.
+
+The combined Core suite includes the original eight cases; repeated source and
+compiled executions are not additional distinct cases. Native test support capture,
+receiver recovery and their negative controls are separate from model/publication authority. A first
+entry observation overlapped Project compilation and remains diagnostic only;
+its markers are not used as the isolated cold-start receipt.
+
+* Candidate, validation and publication remain distinct
+:PROPERTIES:
+:CUSTOM_ID: implementation107-candidate
+:END:
+
+The generated [[file:../../../.data/implementation-20261023/candidate-final/project.sysml][candidate O]]
+and [[file:../../../.data/implementation-20261023/candidate-final/report.json][design report]]
+come from the actual declared Project/Scenario and ASCENT Program. The strict validator
+was invoked as:
+
+#+begin_example
+sysml -no-record-cache -strict -validate <candidate>/project.sysml \
+  docs/10-19-design/10-architecture/10.78-case-organization.sysml
+#+end_example
+
+This demonstrates current language/reference validation of those inputs. It does not
+prove complete architecture/Org/decision trace content, implementation correctness,
+actual upstream-checkout equivalence, full tool/resource footprint, original C/view
+recognition, current-use adequacy, causal applicability or an authorized effect.
+candidate-01 through candidate-03 remain historical earlier probes; candidate-final reruns the final declared scope and actual output bindings. Equal model bytes do not rebind the older producer basis. project.sysml at the repository root remains unchanged. No API was added that treats
+a raw native result, declared_ready, a JSON report or language success as a publication
+grant. I6's protected explicit B -> O and crash/replay controls remain required.
+
+* I2 effective declarations: implemented subset and remaining bindings
+:PROPERTIES:
+:CUSTOM_ID: implementation107-i2
+:END:
+
+[[file:../../../types.ss][Neutral Library Types]] owns the sole authored
+=LibraryDeclarationContract.contract-version= value, =V1=. Family Contracts derive
+from it. Its preliminary =library/types.ss= placement was superseded by the
+package-root kernel after Core correctly rejected cross-collection source sharing;
+see [[#implementation107-organization-methods][the current Organization/Module publication]].
+No new directory, namespace generation, registry or version reader was added.
+Definition revisions remain opaque semantic revisions; pre-existing revision
+strings containing v1/v3 are preserved and do not select a contract generation.
+
+The following table records the initial subset. The current Organization/Module
+extension below supersedes its pending method/declaration work.
+
+| Actual file / owner | Implemented behavior | Qualification / remaining boundary |
+|---------------------+----------------------+-------------------------------------|
+| Library Types | Closed native ObjectContract shapes; finite role, method-kind and strength domains; expected descriptor associations | Expected publication selects validation; submitted generation/Contract cannot select a validator |
+| Generic Types, objects, Config and interface | Separate family declaration/model/Config; admitted Config exports through existing Core scope publication | Scope uses one finite POO close-validation graph for entry/declaration/config and native Reference Types, preserving exact shared canonical children on re-admission |
+| Rust Types and objects | Generic -> Rust -> Integration immediate parent links; inherited rules/dependencies retained; complete six-state specialization mapping and six case links; missing/unbound state mappings and Integration reinterpretation refuse | Integration checks the actual expected Rust value Contract, not just its submitted contract field. Full integration mapping/delta ownership remains open |
+| Rust objects / policy Contracts | Independent coding/design policy roots with identity, revision, applicability, criteria, negative controls, roles, products, assumptions and limitations | Policy descriptor swapping, unrelated models, missing required products/duties, forged parent and extra grant fields refuse. A selected policy is not authority |
+| Rust interface / callers | Integration definition constructed once beside its model; Config publishes two checked policies; closed Scope retains external Parent SD and a six-node local POO value closure; Scenario/example read published integration-entry | Actual two-owner Core source selection, exact parent/policy/integration identities and re-admission passed. Deferred method declarations and full provider/source coverage remain required |
+
+The initial five Generic/selection cases passed, including actual parent-only Core
+selection with an invalid unrelated owner left cold. Scope normalization initially
+split =entry= from =config.entry=; that failed receipt is retained. The fix uses
+POO's existing bounded finite value closure, rather than relaxing the identity
+assertion. The model/policy cases passed after adding forged-parent,
+Contract-substitution, applicability and required-duty/product negatives. A second
+actual selection case now covers the Rust publication, Config/policy sharing,
+external SD anchoring and exact Integration parent. A fourth model/Profile case
+covers closed typed Profile/context fields, finite modes, unsupported selections,
+unknown-field refusal and complete scope rows. Its fixture is explicitly structural,
+not an acquired or issued C. These
+10 distinct local cases are additional to the 57 selected I0/I1 cases; they do not
+close all I2 or establish a same-C chain.
+
+Receipts: =logs/i2-generic-declaration-and-scope-03.log= and
+=logs/i2-model-policy-controls-02.log= and the consolidated successful
+=logs/i2-scope-owner-controls-07.log= under the isolated execution directory.
+
+Rust Scope qualification first exposed inherited Config field normalizers that
+replayed before Reference validation; its local graph now takes an explicit finite
+field snapshot from the admitted Config. A later test incorrectly used the Contract
+from a direct file-import Context to validate a different Core publication. The
+actual publication's exported Scope Contract is now used for re-admission; the
+foreign-Context Contract must refuse. Config, policies and model/integration graph
+identities remain exact. Failed authoring, Reference and foreign-Contract attempts
+remain recorded; no owner-identity check was waived.
+
+Native test entrypoints =just test-library-declarations= and
+=just test-library-selection= reuse the existing formation-test-file route. The
+second explicitly enables the actual context source provider. Their native compiled
+qualification is recorded separately below.
+
+** Native I2 support, owner selection and recovery
+
+After the checked context provider preparation, 4634 copied dependency prerequisites
+were byte-verified into a distinct runtime; this is explicit compiled-prerequisite
+reuse, not another cold dependency build. The actual declared Project was then
+compiled successfully under the unchanged 180-second cap in
+=logs/i2-project-compiled-build-01.log=. A one-second diagnostic sample observed
+macOS dyld signature loading during silent startup; it is not an explanation of
+the historical ASCENT 137.
+
+The first native Scope attempt exposed a fixture error: the test assumed repository
+cwd while Core runs it from the declared Project directory. The test now obtains
+its repository root from =this-source-file=, as the existing build tests do. The
+failed receipt remains =logs/i2-native-scope-cold-01.log=; the retry passed. A
+separate empty support state then passed both Scope cases after compiling 3 targets
+(=logs/i2-native-scope-fresh-01.log=). A fresh process restored the real native
+publication with =compile-count=0= and passed both cases
+(=logs/i2-native-scope-restore-01.log=). Repeated cases are not additional cases.
+
+The four declaration cases passed through the real TestingScript/Fixture/Ops path
+(=logs/i2-native-declaration-controls-01.log=). The four model/policy/Profile cases
+also passed with actual compiled support (=logs/i2-native-model-profile-controls-02.log=).
+State-map coverage and Integration preservation negatives passed.
+Profile and structural context contracts now use closed native ObjectContract shapes;
+the context constructor/currentness function retain actual normalization results.
+An extra source-level fixture error from a lexical =profile: profile= cycle was
+corrected by giving the local value a distinct name. No check was waived.
+
+The latest Scope run after these Types changes passed both cases with native
+support compilation (=logs/i2-native-scope-current-02.log=). Earlier successful
+Scope logs remain historical evidence for their earlier Types inputs; the current
+receipt supersedes their source applicability without overwriting them. The final
+fresh-process restore of these current Types passed with =compile-count=0=
+(=logs/i2-native-scope-current-restore-01.log=). =i2-qualified-controls.json= records
+10 distinct native Library cases and the 6 separate source-only Flow context cases;
+recovery repetitions are not extra cases.
+
+The actual =open-trajectory-clue-exchange= owner was located at
+=agentic-ai-lab/modules/ai-agentic-context/clue-exchange.ss=; its ledger is at
+=modules/temporal-causality/trajectory/ascent-ledger.ss=. The Rust method and
+integration example now import those public owners directly. The Flow tracked
+base pins POO 80b590b; its adjacent dirty package metadata pins 82588bb instead.
+The isolated preparation uses tracked source and a reviewable patch aligning its
+ASCENT/Core declarations with the already qualified tuple; it does not absorb
+concurrent package edits or copy the exchange into this project.
+
+=FORMATION_WITH_CONTEXT=1= explicitly enables context source preparation. The
+formation-only route stays independent. Gitlink identities are recorded as
+unselected, never hashed as acquired child source. In particular Aitia is now a
+separate =packages/lambda-aitia= gitlink with package identity
+=agentic-ai-lab/lambda-aitia=; the old =poo-flow/lambda-aitia= adapters still require
+a real source/Contract migration before review qualification. The six actual upstream clue-exchange controls passed
+(=logs/i2-context-owner-controls-01.log=), covering hypothesis refusal, receipt
+withdrawal, conflicts, content and prefix changes, foreign owners and context change
+during verification. This selected source lane is not a complete Flow build.
+No initialized or uninitialized gitlink is implicitly admitted as its parent's source closure.
+
+* I2 mapping, method boundaries and selected compiled provider
+:PROPERTIES:
+:CUSTOM_ID: implementation107-bindings
+:END:
+
+This continuation implements domain-owned mapping/catalog content and method
+boundaries; it does not claim all effective I2 declarations are complete. The
+Organization family/Config/Scope and Formation Module's Library edge, expected
+method definitions and full later source-bound invocation still need unification.
+The source of contract generation remains =LibraryDeclarationContract=; no version
+or namespace generation was added here.
+
+| Existing owner/file | Implemented responsibility | Acceptance and limit |
+|--------------------+----------------------------+----------------------|
+| Rust =objects.ss= / =types.ss= | Integration owns the case inventory, event transitions, selected QNT delta/frame and reusable ownership catalog; native Contracts retain expected family/role/descriptor associations | Reject incomplete delta frames, undeclared cases, catalog mismatch, foreign asset owner/kind and invalid catalog binding; no second inventory in correspondence |
+| Rust =ownership.sysml= | Library owns the reusable =Ownership= definition and its reservation constraint | Generated notation imports this asset and instantiates its definition; it does not copy the part definition into each observation |
+| Rust =correspondence.ss= | Interpret the selected Integration mapping and catalog; serialize declared delta and attribute bindings | Historical six-case input retains five supporting paths and M06 counterevidence; this is not a new Rust execution or complete refinement |
+| Rust =func.ss= / =types.ss= | Four real execution operations bind Core ProcessScript inside their producer and use native POO Function boundaries with finite modes and bounded payload inputs | Caller-supplied executor injection and wrong arity/argument/mode refuse before process work. Examples were directly migrated; no old executor-argument route remains. Structural output typing does not grant issuance: the method owner's private result recognition remains necessary |
+| Rust =methods.ss= | Keep domain interpretation files in the recorded input closure of QNT, Lean, Rust and integration results; include selected catalog bytes in integration | A real QNT invocation passes, altered declaration bytes invalidate its result, and original-byte restoration passes the local currentness check. This is byte applicability, not revocation clearance or final same-C reuse admission |
+| Actual Flow provider | Compile =clue-query=, =clue-exchange= and =trajectory/ascent-ledger= from the checked e789578b source and existing reviewed dependency patch | Three selected targets compiled with std/make under 180 seconds and four workers; source-before-build inputs remain unchanged. Qualified dependency outputs were reused: this is not a complete cold Flow build |
+
+The native method suite compiled eight selected support targets and passed three
+cases (=logs/i2-native-method-controls-03.log=). Its fresh child resolved all three
+actual provider interfaces as =.ssi= and their native =.o1= generations from the
+selected output root. A separate selected Scope probe also constructed and rechecked the structural
+Integration context against actual Rust tool paths (=logs/i2-scoped-method-context-01.log=);
+this is source-level binding coverage, not final C or Rust execution.
+The actual Core projected source guard retained those
+interfaces: withholding the expected interface refused; restoring its original
+bytes passed before child execution (=logs/i2-provider-core-currency-02.log=).
+The independent bare-SDK missing-interface probe hit its unchanged 30-second
+watchdog (=logs/i2-provider-missing-interface-01.log=). It is retained as an
+unqualified error route, not reported as a successful refusal. Consumers must keep
+the Core admission/currentness boundary ahead of loading; raw SDK lookup is not a
+replacement for that boundary.
+
+The first QNT control could not bind the verifier's local server in the sandbox;
+its Java log recorded =SocketException: Operation not permitted=. The bounded
+rerun permitted the actual verifier and passed. A separate retry accidentally used
+an existing output directory and refused; its log is retained. Neither failure
+was converted into a pass or addressed by widening deadlines.
+
+=library-mapping-test.ss= passed three native cases (seven support targets).
+Current model/policy and Scope suites passed four and two native cases respectively.
+After removing caller executor injection, the current native method suite passed
+three cases again and the Scope suite passed two. A new process restored that
+Scope support with =compile-count=0=
+(=logs/i2-native-producer-ops-scope-recovery-01.log=).
+Independent installed SysML checks over explicitly historical observations gave
+M01 =holds=/exit 0, M06 =fails=/exit 1, and missing catalog exit 2. Generated M02 QNT
+passed typechecking. These controls validate the new projection binding, not an
+accepted view, newly issued native evidence, publication or delivery.
+
+* I3 actual repository input acquisition and owner-bound use
+:PROPERTIES:
+:CUSTOM_ID: implementation107-acquisition
+:END:
+
+=profiles/library-formation.ss= now selects the actual repository input paths,
+byte budget and lifetime. =scenarios/project-formation/inputs.ss= acquires these
+files using Core's existing source reader/currentness operations, checks ordinary
+file/directory confinement, complete requested input presence, byte bounds and
+elapsed lifetime, and retains a private original acquisition object. Equal bytes
+acquired twice are two occurrences. Documentary copies cannot construct or restore
+that original object. Files are read/stat-checked and revalidated; no filesystem
+transaction or writer exclusion is claimed.
+
+The Scenario publishes =acquire=, =input-current!= and =observe-inputs= together
+from the same realized owner. A direct file import is a different owner: the first
+Project integration probe correctly refused that foreign observer. The corrected
+consumer uses the selected Scope's actual operations and tests foreign-owner
+refusal, rather than weakening private issuer recognition. Original-byte repair
+only restores the local file-currentness condition; expired observations remain
+expired and cannot obtain a new lifetime by repair or documentary replay.
+
+Three native repository acquisition cases passed with one selected support target,
+covering real bytes, distinct acquisition identities, documentary refusal,
+change/repair, missing/escape/duplicate/oversized requests and expiry. The native
+Project entry passed two cases with three support targets, including acquisition
+of the actual current repository inputs. Both repository and entry suites then passed in fresh processes with =compile-count=0=
+(=logs/i3-native-input-recovery-01.log= and =logs/i3-native-entry-recovery-01.log=).
+This recovers compiled support and performs a new acquisition; it does not restore
+an original C from serialized data. The existing fourteen raw ASCENT formation
+controls also passed after the Scenario changes. Their structurally covered
+candidate and runtime-blocked result remain different outcomes.
+
+This acquisition is explicitly =repository-observation=, not final C. It reports
+missing original user-confirmation, proposal-occurrence and role-mandate sources.
+Core verifies file/source applicability; the selected Flow exchange accepts an
+actual host verifier and does not itself supply those original institutional or
+user-channel capabilities. No always-true verifier, transcript assertion, callback
+name, hash or preparation record was introduced to cross that boundary. Full I3
+must bind checked selections and actual supported origin/lifetime verification
+before issuing C. Consequently the original-C, accepted-view, candidate support,
+protected publication and recovery conditions of I4--I7 remain outstanding.
+
+Receipts: =.data/implementation-20261023/i2-i3-binding-controls.json= records native
+case counts, compile counts, tool controls and unchanged caps;
+=i2-provider-load-controls.json= retains selected build/load observations, output
+hashes, the bare SDK timeout and the actual Core refusal/repair control. These are
+local executable receipts, not authority to issue C/Q/R or deliver the Library.
+
+* I2/I3 Organization/Module publication and checked Project preparation
+:PROPERTIES:
+:CUSTOM_ID: implementation107-organization-methods
+:END:
+
+The current implementation extends the earlier subset above. The neutral Library
+kernel moved from =library/types.ss= to the existing package-root =types.ss=.
+Core correctly rejected sharing a file inside another Module collection; the
+package kernel is outside that collection tree. No source-owner guard was waived
+and no compatibility import was left behind. =LibraryDeclarationContract= remains
+the sole authored contract-version source (=V1=); family and role Contracts inherit
+it. Semantic revisions and stable namespaces keep their existing separate roles.
+
+| File / responsibility | Current association | Refusal boundary |
+|-----------------------+---------------------+------------------|
+| =types.ss= | Neutral declaration, model, method, reference and binding Types; no execution or ASCENT imports | Closed native Contracts and finite role/kind/strength domains |
+| =library/project-organization/{types,objects,config,interface}.ss= | Family declaration, independent Organization demand, catalog, mapping and two method definitions; top-level =admissions.Config= and canonical three-node Scope | Lost/duplicate demand, wrong family/role, catalog escape and wrong method semantics refuse |
+| =library/project-organization/organization.sysml= | Reusable nine-definition catalog, selected by Profile | Project rendering references these definitions instead of copying their bodies |
+| =modules/project-formation/{types,objects,config,interface,func}.ss= | Typed Library dependency, finite design-only Config, one actual Program per realized owner, definition-to-Function bindings and exported Contracts | Changed Program owner, runtime authority, replaced operation or broken definition/Program/Scope aliases refuse |
+| Rust =types.ss / objects.ss / func.ss / interface.ss= | Four authored definitions select native signatures/provider/operation, result kind/strength, policies/models, input classes and catalog/mapping refs; selected-model obligation membership is checked and producer binding retains normalized definitions and Functions | Swapped method, foreign model/obligation, false strength/mode, missing operation-specific footprint and forged operation refuse; canonical seven-node Scope retains exact external SD and local aliases |
+| =projects/library-formation/init.ss= | Five explicit owners, existing Core source selection and source root =modules= | Shared package kernel does not authorize arbitrary foreign source imports |
+| =profiles/library-formation.ss= and Scenario =types.ss / func.ss= | Closed typed Profile selects actual Organization/catalog/mapping, Generic/Rust/Integration chain, both policies and published method bindings | Foreign policy/catalog/model selection, duplicate method, unknown request field and authority-purpose escalation refuse |
+
+=select= retains the actual admitted Library, Module and Rust Scopes rather than
+reconstructing equivalent declarations. =prepare-capture= acquires actual requested
+repository files and returns =capture-blocked / capture=#f= while prerequisites
+remain absent. Its findings include the three unsupported original-source roles
+and each selected method's unacquired input demands. Declaring required input
+classes does not acquire tools, runtimes, registry inputs, reference closure or
+compiled provenance, and does not issue A/E/W/use. Existing local method results
+remain local observations until those complete associations are implemented.
+
+** Current compiled qualification and support recovery
+
+The qualification load path exposes only the declared compiled dependency
+namespaces (=clan=, =yuanxu=, =tao3k=, =gerbil-ascent=), the separately qualified
+three-target Flow provider, and the actual source mounts. Earlier Project outputs
+were excluded from that dependency view. A new empty Project output directory
+completed the full selected =formation-build.ss compile= under the unchanged
+180-second/Gerbil-2-GiB/four-worker bounds: 32 interfaces and 67 native objects. Dependency
+outputs were reused explicitly; this is a cold Project build, not another cold
+build of all dependencies.
+
+A separate process explicitly imported nine current Project modules and checked
+the selected =.ssi= and native object paths against that new output directory. It
+also selected all four actual method bindings and observed seven missing-capability
+findings with =capture=#f=. The first diagnostic script used a self-shadowing POO
+=root: root= field and failed; the script was corrected to capture =project-root=
+without changing production code or expected acceptance. Its failed log is retained.
+
+| Current control | Observed result | Actual receipt under =.data/implementation-20261023/= |
+|-----------------+-----------------+----------------------------------------------------|
+| Clean dependency-view Project entry | Three native cases; compile-count 3 | =logs/i3-clean-project-preparation-01.log= |
+| Complete selected Project cold compilation | Exit 0; no prior Project outputs | =logs/i2-complete-organization-project-cold-01.log= |
+| Explicit current compiled imports and preparation | Nine interface/object origins; capture remains blocked | =logs/i2-organization-current-compiled-load-02.log= |
+| Fresh process native Project support recovery | Three cases; compile-count 0 | =logs/i2-i3-clean-current-project-formation-entry-01.log= |
+| Organization method/catalog/claim closure negatives | Three native cases passed | =logs/i2-i3-clean-current-organization-library-01.log= |
+| Canonical Rust Scope and foreign model/obligation/operation negatives | Two native cases passed | =logs/i2-i3-clean-current-library-selection-01.log= |
+| Complete method definition/Function bindings and input-demand negatives | Two native cases passed | =logs/i2-i3-clean-current-library-method-binding-01.log= |
+| Current declaration-only ASCENT inference controls | Fourteen native cases passed | =logs/i2-i3-clean-current-project-formation-01.log= |
+| Actual selected provider and QNT footprint controls | Three native cases; compile-count 0; QNT pass; altered declaration refuses and original-byte repair passes | =logs/i2-current-complete-method-boundary-03.log= |
+
+The documentary index =organization-methods-codex-source-controls.json= records
+current source/log/tool digests, exact selected outputs, retained failures and open
+gates under =.data/implementation-20261023/=. It is not a native receipt issuer.
+
+The 24-case clean declaration/selection/inference run plus the three actual-method
+cases are 27 distinct selected native controls, not an end-to-end C qualification.
+The actual-method first attempt correctly refused a symbolic-link tool path; the
+second used the real executable but the sandbox denied Apalache's local RPC bind
+(=SocketException: Operation not permitted=), so no structured result was issued.
+The third ran with that local service allowed, under the unchanged 45-second method
+and 120-second test bounds and Gerbil 2-GiB heap. All three cases passed; both
+failed logs and their separate output directories remain. Full tool/runtime input
+acquisition is still required despite this local byte-applicability result.
+
+The current candidate is regenerated through the declared five-owner Project in
+=.data/implementation-20261023/i2-organization-candidate-01/=. It retains eight
+conflicts, 34 gaps and only =LIB-C01= as structurally covered. Its nine architecture
+usages reference the actual =RepositoryOrganization= catalog; there are no copied
+=part def= bodies. Eleven declared dependency identities survive. Strict validation
+with the actual Library catalog exits 0; omitting that catalog exits 2 with unresolved
+references. The installed checker is separately recorded by executable digest.
+Receipts: =logs/i2-current-organization-candidate-01.log=,
+=logs/i2-current-organization-candidate-strict-01.log= and
+=logs/i2-current-organization-missing-catalog-01.log=. This is a candidate and
+reference-closure check, not a trusted accepted-view or explicit-publication result.
+The root =project.sysml=, native dependency pins and three reviewed dependency
+patches retain their baseline bytes.
+
+The wider 35-case native run remains recorded as
+=current-declaration-test-results.json=. Its declaration/model-chain/build/input
+controls retain their original scope; its affected Organization/Scope/Module
+controls are superseded by the current clean run after association tightening.
+Repeated cases are not added to a distinct-case total. Test-support recovery and
+compiled loading do not restore C, an accepted Q, effect authority or a published
+SysML model.
+
+** Current Codex dialogue source: actual observation and remaining capability
+:PROPERTIES:
+:CUSTOM_ID: implementation107-codex-origin
+:END:
+
+The current source adapter supersedes the earlier tool-surface-only observation.
+The bundled Codex CLI exposes supported read-only app-server operations:
+=account/read= with =refreshToken: false=, =thread/read= without resumption, and
+paginated =thread/items/list=. The maintained =dev/codex-source.py= transports
+these reads; =scenarios/project-formation/codex.ss= owns admission, currentness,
+Core verification and the operational authorization boundary. Account email is
+hashed before export; account plan, credentials and unrelated transcript items
+are not authority inputs. No inference, login, logout or account refresh occurs.
+See [[https://learn.chatgpt.com/docs/app-server][Codex app-server protocol]].
+
+The user explicitly grants =project-owner= and =implementation-owner= for this
+repository's design, implementation and verification, and accepts trusted local
+Codex as the source boundary. This is operational authorization under an explicit
+local trust assumption; it does not claim a historical account signature or
+independent authorship proof. It grants no independent review, delivery or
+recipient authority. The exact confirmed choice labels are declared as
+=LocalCodexConsent= in the Scenario's existing =objects.ss=. They are source-channel
+decoding data, not a new Library policy version, Namespace or identity service.
+Thread, turn and message references remain acquisition arguments rather than
+hardcoded Project/Profile identities.
+
+| Required association | Implemented owner / boundary | Remaining condition |
+|----------------------+------------------------------+---------------------|
+| Original dialogue | Bounded selected user-message occurrences, exact thread/turn/IDs and original text | Original text access does not approve a generated candidate; bind confirmation and proposal content to the actual selection |
+| Current local account | Before/after ChatGPT account fingerprint, actual CLI executable bytes and repository metadata | The fingerprint identifies the observed local account; historical message/account signatures remain unavailable and are not asserted |
+| Role and trust choices | Private authority retains the exact two original choices and a genuine Core verification | Only repository-design, implementation and verification; reject foreign roots, independent review, delivery and documentary replay |
+| Lifetime and use | Real clock, maximum 120 seconds, fixed producer operation, actual re-read before use, before/after receipt validity | Expiry, account/message/latest-human-input change, producer or consent-source change require renewed acquisition and context evaluation |
+| Revocation | Existing Core verification adapter and revoke operation | Revocation refuses further use of the original verification; copied JSON never restores authority |
+| Capture preparation | The Scenario accepts an optional original authority, checks it before and after repository acquisition and discharges only the role-mandate gap | Confirmation/proposal-to-selection binding and all four full method input footprints remain required; preparation still returns capture-blocked |
+
+The producer fixes the operation and real clock. No caller attester, supplied
+verification result, account name or digest manifest can issue an original handle.
+Outward observations are detached documentary copies. The private verification
+wraps Core's actual adapter and revocation registry; the use operation checks
+receipt validity both before and after the real source re-read. The adapter uses
+isolated Python execution and hashes its transport and Scenario consent source.
+The newest human-message occurrence is part of the source basis: later human input
+invalidates an earlier observation and requires context evaluation before reuse.
+This conservative invalidation does not claim that every new message revokes the
+underlying human grant.
+
+Two native cases passed in
+=logs/i3-native-codex-local-authority-01.log= with exactly two =CASE-OK= markers,
+=HARNESS-OK= and final =OK=. They exercise real account/message acquisition,
+outward-copy mutation isolation, current re-read, exact limited roles, supported
+implementation use, foreign-repository and forbidden-purpose refusal,
+documentary authority refusal, verification replay refusal and Core revocation.
+The earlier source-only and source-verification positive receipts remain historical;
+their failed syntax/root-association diagnostics are retained rather than relabeled.
+The same-owner Scenario integration passed one native case in
+=logs/i3-native-codex-capture-03.log=: preparation retains only the two original
+confirmation/proposal gaps plus four complete-method-footprint gaps, refuses a
+copied documentary authority, and returns no C. Its first attempt caught a POO
+self-slot cycle in the test fixture; the second exposed the history-window issue
+below. Both failing logs remain. The production Scenario did not discharge those
+other obligations when the role grant became available.
+
+The final chronological-lookup source controls are recorded separately in
+=logs/i3-native-codex-local-authority-02.log=; both native cases passed with exact case count, =HARNESS-OK= and final =OK=.
+The documentary index =codex-local-source-authority-controls.json= records these
+three distinct current cases and the separate build/load/recovery outcomes; it is
+not an original authority or C issuer.
+
+A new complete Project cold build completed with exit 0 under the original
+180-second watchdog, four workers and 2-GiB heap. Its isolated output
+=i3-local-authority-project-cold/lib= contains 33 Project interfaces and 70 native
+objects, reusing only previously qualified dependency/provider binaries. It is
+cold for Project outputs, not a new all-dependency cold build. Two focused actual
+interface/native-origin checks passed in =logs/i3-codex-origin-load-01.log=.
+Withholding the new Codex interface caused a new process to refuse with exit 70;
+restoring the exact original bytes allowed another new process to load with exit 0.
+See =logs/i3-codex-origin-missing-01.log= and
+=logs/i3-codex-origin-restored-01.log=. This restores compiled modules, not private
+source verification, operational authority or C. The larger combined origin/Scope
+probe in =logs/i3-local-authority-compiled-load-01.log= reached the unchanged
+30-second limit and exited 137; it is retained as a failed probe, not combined with
+the narrower passing checks to claim full recovery.
+
+The transport has a 25-second RPC budget, 16-MiB response bound, eight pages of
+32 items per lookup and a two-second child cleanup. Selected original messages
+are scanned chronologically within their declared turn; newest-human-input checks
+remain reverse chronological. The failed second integration run showed why an
+unboundedly growing recent-history window cannot stand in for original-message
+retrieval. The corrected third run passed without enlarging the page, response,
+time or memory bounds. A lookup that cannot establish the full required source
+basis within those bounds still refuses; it does not accept a partial transcript. Core ProcessScript retains a
+30-second command timeout. Native tests retain 120 seconds, Gerbil's 2-GiB heap
+and four build workers; the complete build retains 180 seconds. App-server startup
+requires access to Codex's local SQLite runtime; the actual-source native run used
+that approved local access. Exported observations are never credential files.
+
+* Blocking dependencies and complete continuation order
+:PROPERTIES:
+:CUSTOM_ID: implementation107-open
+:END:
+
+| Gate/owner | Current state and next required work | Entry/acceptance condition |
+|------------+--------------------------------------+----------------------------|
+| I0 / POO, Core, Project | Four-worker complete cold POO and complete Core build passed; two earlier timeouts and their partial outputs remain isolated. Controlled reproduction identified watchdog TERM/KILL. Current complete cold Core/ASCENT and Project builds passed; all failed outputs remain isolated. Independent Project cold support/recovery passed, including missing-output refusal and original-byte repair; unselected legacy Flow/Aitia adapter remains open | Preserve the complete graph, fixed caps and explicit worker setting; qualify Core/ASCENT/Project and actual loaded phases. No warm recovery substituted for cold, failed output promotion, or pruned case |
+| I0 / Flow context and Project resource adapter | Actual exchange/ledger owner acquired from e789578b with explicit dependency alignment; 6 upstream host-bound exchange cases passed. Rust method and integration example import actual owner; selected provider compiled and native method load/currentness controls passed; full product and Aitia migration remain open | Bind and qualify the actual provider at its new owner, including method/result/currentness semantics; no copied exchange, compatibility module, always-true attester or silent dependency on dirty Flow |
+| I1 / Core | Three return sites repaired; two same-path K1 controls passed in source/compiled lanes. Current compiled boundary suite passed 39 cases, including existing owner/relink/config controls. Real test-support capture, new-process recovery, missing-output refusal and original-byte repair passed; package-effect probes do not establish unselected Flow/Nix services | Genuine same-path nonidentity Context/native paired-reader, config/override/foreign-owner/ambiguity controls plus compiled, cold and actual restore qualification |
+| I2 / Library and Module | Neutral Types and sole V1 owner, Generic canonical Scope, immediate model parent chain and independent policies implemented; 10 local cases passed, including actual Rust Scope and foreign-Context refusal. Integration mapping/catalog and four Function ingress boundaries implemented; real QNT file invalidation and selected compiled provider qualified. Organization/Module declarations, actual Program/Function bindings and checked Profile selection are now implemented; complete tool/runtime/source acquisition remains open | Neutral Library-owned version, Generic -> Rust -> Integration construction, both policies, real methods/catalog/mapping and exact normalized Scope exports under qualified dependencies |
+| I3 / Project/Profile/Scenario and actual acquisition owner | Actual repository input acquisition/currentness/lifetime and owner-bound operations implemented and locally qualified; checked full selection is implemented. Actual read-only Codex account/messages, explicit local two-role authority and Core currentness/revocation are implemented and locally qualified; exact confirmation/proposal association and complete method footprints remain open | Actual supported acquisition capability -> unique original C; no transcript assertion, source hash, callback name or preparation JSON as issuer |
+| I4 / Module and actual evidence owners | Actual raw-design inference is runnable with distinct declared readiness/blocking and a runtime gate that stays blocked without a trusted provider; full same-C/A/E/W/use/accepted-view domain is not implemented | Independent full required units/checks and complete input coverage, real Program/findings, exact native adoption, frozen recognized view and rollback/currentness controls |
+| I5 / SysML adapter and checker | Fresh declared candidate and real strict validation passed; full accepted-view/plan/catalog/trace/tool-use association absent | Bind genuine same-C view, exact O/support and actual validation provenance; complete Org/architecture/decision closure and invalidation |
+| I6 / effect owner | No root publication performed | Actual protected prior-state/support guard, authorized exact candidate transition, poststate observation, replay/crash and effect recovery; fail closed when unsupported |
+| I7 / joint acceptance and research | Not run or claimed | Full original selected DE-CASE-01 positive activity plus negatives, compiled/cold/build/domain/effect recovery, then separate matched research comparison |
+
+These are prerequisite gates, not permission questions. Full advancement must not
+manufacture missing framework or institutional authority to make a downstream stage
+appear complete. Next work must complete acquisition of the declared method footprints and their actual
+compiled/runtime/tool origins; consume the qualified local Codex source at the Scenario/Flow host-verifier boundary without broadening its authority; qualify the separately acquired
+Aitia package and provider error routes; then complete I3's original confirmation/proposal association and binding over the real repository acquisition. A plain
+structural context, current-source digest or tool transcript is insufficient to
+issue the original C. I4--I7 require that acquisition before a positive same-C
+accepted view, protected publication or end-to-end recovery can be admitted. The paper remains a research comparator; none of
+these correctness results establishes a research advantage.

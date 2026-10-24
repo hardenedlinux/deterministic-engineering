@@ -1,0 +1,508 @@
+#+TITLE: 10.39 Method Execution, Evidence Issuance and ASCENT Projection
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.39
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+TODO: DESIGN SPECIFIED | QUALIFIED
+#+FILETAGS: :design:methods:evidence:ascent:rust:quint:lean:sysml:aitia:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.37-library-declarations-and-contract-design.org][Library declarations]] | [[file:10.38-profile-selection-scenario-capture-and-evidence-use.org][Selection and capture]] | [[file:10.35-content-validation-slice.org][C5 validation slice]] | [[file:10.25-rust-sysml-quint-lean-evidence-integration.org][Historical integration and limits]]
+
+* DESIGN Objective and source boundary
+:PROPERTIES:
+:CUSTOM_ID: method-execution-evidence-and-projection
+:STATUS: Complete target design; no implementation, directory migration, method run or review submission
+:END:
+
+This specification continues 10.38 after Scenario capture: Rust, QNT, Lean and
+SysML consume one selected input basis, produce precisely scoped evidence, and
+enter an identified ASCENT query view for Aitia. Refactoring is governed by
+meaning, dependency precision and trust, not the smallest diff. Existing native
+POO/Core, ASCENT Session/clue-exchange and Aitia owners remain the framework.
+No new scheduler, fact store, signing service, schema registry or approval engine
+is proposed. The Library declaration generation stays at its requested V1 target,
+read only through the proposed native owner in 10.37; it is not redefined here.
+
+C, W, Q and R retain their 10.38 explanatory meanings: captured input basis,
+issued result, identified query view and prepared review request. This document
+also uses A for a method application and E for an actual execution attempt. These
+are native value/owner-reference responsibilities, not a new serialized protocol.
+
+| Inspected current source | Existing support / reason for target refactoring |
+|--------------------------+--------------------------------------------------|
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/methods.ss][issue and resource-result]] | Private final result structure, saved observations/reviews, input/artifact rechecks and local-host issuance exist. JSON presentations are not constructors for issued results |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/methods.ss][resource-run-native/qnt/lean/integration]] | Owned inputs, command receipts, tool checks, structured interpretation and case-specific outcomes exist; separate root/Profile/tool arguments still permit reconstructing input outside C |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/methods.ss][integration before/footprint handling]] | Both SysML and Quint binaries enter one broad checked file list, although SI/TM footprints name different tools; whole methods.ss also couples unrelated implementations |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/oracle.ss][independent local oracles]] and [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/correspondence.ss][mapping/generators]] | Producer observations are checked/projected by separate local code; this is not an independent external reviewer or a complete Rust refinement proof |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/methods.ss][resource-register-results!]] | Verifies private results and clue-exchange attestation before projecting witness/input/checked rows; current claims are keyed mainly by obligation and footprint |
+| [[file:../../../modules/resource-evidence/func.ss][project relations]] | Exact missing/extra/mismatch and support/counter/pending rules exist; usage/key scopes and obligation/method joins do not explicitly distinguish every method application/upstream observation basis |
+| [[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-ascent/program/session.ss][native Session]] and [[file:10.64-contract-consistency-and-implementation-order.org::#audit-dependency-drift][clue exchange (historical path; currently absent)]] | Accepted source snapshots, prospective replacement, rollback and trusted host verification exist; nested mutable host values still require project ownership checks |
+
+These are source observations at HEAD 8044732d505f84e373119a70f947df00e1767300 plus
+the active dirty checkout. No historical positive, failed run, count or native
+baseline is relabeled as current qualification by this design.
+
+* SPECIFIED Method declarations and application identity
+:PROPERTIES:
+:CUSTOM_ID: method-declarations-and-applications
+:END:
+
+The Library publishes ordinary native method capability values, expected input/
+result Contracts and their meaning. Each method has a stable identity, supported
+subject/obligation/role, supported parameter domain, premises, input roles,
+execution/derivation recipe, output interpretation, claim strength and refusal
+behavior. Definition/implementation/validator source identities bind its baseline;
+no independent method version counter or versioned namespace is needed. Native
+Function Types validate actual boundaries using their returned values.
+
+The same C does not mean every method hashes or reads every captured input.
+Scenario binds A from C, the published capability, a concrete claim/case and any
+qualified upstream observations. A includes the selected native role/family/parent/
+policy association, expected method Contract, supported request, required input
+roles, exact basis and permitted use. It cannot come from a caller-supplied digest
+or execute a candidate-supplied observer. Project roots, Profile values, tools and
+mapping cannot be substituted beside C after binding.
+
+E names one actual attempt under A, associated with the real Core Ops receipts,
+invocation, budgets and produced files. A six-case Rust run can have one E and six
+scoped W; all six retain the same native observation-run reference. A retry is a
+new E with retained history. An input/method/claim change constructs another A;
+a changed captured occurrence constructs another C. No result is rewritten to
+hide either change.
+
+The application basis includes the actual claim semantics and required role/value
+bindings. It is compared through the qualified native source/encoder association,
+not through a newly invented hash format or lexical revision ordering. Context
+and application associations remain necessary even when two bases have identical
+content. Case identity, initial state, assertion/theorem, finite domain, negative
+mode, relevant limits/seeds and requested evidence strength are explicit inputs.
+
+* SPECIFIED Per-method consumption and claim limits
+:PROPERTIES:
+:CUSTOM_ID: method-claim-matrix
+:END:
+
+| Method/application | C and qualified derived inputs actually consumed | Accepted result / maximum claim |
+|--------------------+--------------------------------------------------+---------------------------------|
+| Rust native six-case observation | Acquired Cargo/source/lock/workspace inputs, resolved build/config/environment/toolchain closure, payload/workload/mode, native case/event contract and observer/oracle | Completed build/run plus valid structured telemetry and case checks can support/refute RL-M01-M06 for the observed bounded run. No scheduler universality, allocation/performance or production-safety claim |
+| QNT ownership invariant | Acquired base model, finite parameter/domain selection, initializer, transition/action, invariant, backend/configuration and local independent bounded oracle | Completed selected invariant checking and oracle agreement support/refute BP-O02 only under that model/domain; early-release mode retains its counterexample. No Rust source refinement follows |
+| Lean budget | Acquired theorem source/import closure, exact selected arithmetic parameters/units/proposition, generator, kernel/compiler and explicit axiom policy; independent integer accounting | Kernel acceptance of the selected proposition or its negation, exact artifact/source and allowed-axiom checks establish the conditional arithmetic claim BP-O03. Concrete Rust layout, payload sizing and ownership premises remain separate |
+| SysML observed-cut assertions | Qualified native observation-run reference, declared projection/mapping, generated notation, selected instantiated elements/assertions and actual SysML semantic tool/library closure | Structured semantic holds/fails results checked against the original cut meaning support/refute SI cases. Parsing/pretty-printing or a drawn diagram does not validate those assertions or overall architecture |
+| QNT mapped-path correspondence | Same qualified native run, ordered mapped states/events, base model plus declared queued-cancellation delta, generator and QNT/TLC backend | Completed bounded path check supports/refutes the declared TM interpretation. In the current method, violation of unfinished signals reaching a complete expected path; exit 1 is not automatically an error. TLC here exports no ITF path witness: report tool-checked bounded existence at that strength, not independently replayed execution or all Rust behavior |
+
+The source-to-event instrumentation, projection losses and oracle/model premises
+are part of the claim boundary. SysML and QNT mapping results consume a validated
+native observation; they do not independently re-observe the Rust program. Local
+oracle agreement checks interpretation but does not manufacture external review.
+An inherited duty also retains its actual semantic owner. A records whether its
+claim concerns the generic model, Rust interpretation or integration extension;
+checking a base-model invariant does not automatically prove an added transition
+safe. Any necessary refinement/extension bridge remains a distinct declared
+obligation with actual evidence. The parent chain is a trace, not that proof.
+A stronger replayable-certificate/refinement requirement needs the actual witness
+and a qualified independent checker; until then the stronger duty stays pending.
+
+Generated Lean/QNT/SysML inputs are derived artifacts. Bind the generator source,
+input C/A and upstream W/run references, actual generated bytes and command input
+association. A tool must read those bytes, not a fresh ambient source or a newly
+constructed Profile. Generated files are outputs of their derivation and inputs
+to a later tool step; neither C nor an artifact hashes itself.
+
+* SPECIFIED Complete, scoped input footprints
+:PROPERTIES:
+:CUSTOM_ID: method-input-footprints
+:END:
+
+A method footprint is its declared necessary semantic/execution/validation input
+closure for the claim. It includes what can change interpretation or trust, not
+just the visible model or a CLI version string. The full C association identifies
+the occurrence; the footprint identifies this application under that occurrence.
+The run/artifact manifest additionally records actual commands, intermediate
+outputs and diagnostics. It is not confused with the input set.
+
+| Application | Target named input responsibilities | Explicit independence, subject to actual code/source separation |
+|-------------+-------------------------------------+----------------------------------------------------------------|
+| Rust RL | source, runtime, workload, inventory, native-method | No SysML/Quint/Lean tool input; instrumentation, compiler/dependencies and native checker are included |
+| QNT BP-O02 | model, quint-tool, quint-method | No native observation or SysML/Lean tool input; finite model/request/backend/oracle meaning is included |
+| Lean BP-O03 | arithmetic, lean-tool, lean-method | No QNT/SysML/native trace input; source/import/axiom/proposition/units and integer checker are included |
+| SysML SI | Native run source/runtime/workload/inventory and native-method; native-observation, correspondence, sysml-tool, sysml-method | No Quint executable/base-QNT interpretation merely because the current integration function shares a file list |
+| QNT TM | Native run source/runtime/workload/inventory and native-method; native-observation, correspondence, model, quint-tool, correspondence-method | No SysML executable; ordered path, mapping and model delta are included |
+
+These are proposed Library-owned role meanings, not implemented catalog rows or
+new schema versions. Update the native obligation dependencies and corresponding
+method expectations together. Do not append keys only in a runner or keep the old
+catalog while silently broadening a witness. Exact required/actual role matching
+must remain meaningful, with missing, conflicting, duplicate and extra roles
+rejected at their applicable boundaries.
+
+The native-observation role references an actually qualified common run/telemetry
+artifact and upstream result association, not an unchecked JSON path. Such a role
+is materialized from a declared C-bound derivation after observation; C is not
+mutated to pretend the artifact existed at capture time. Multiple observed runs
+can create distinct applications under one C. Their derived inputs are kept
+application-scoped; never combine a SysML facet from one run and a TM facet from
+another into a claimed single-run closure without an explicitly justified rule.
+
+Tool closure covers the selected executable plus relevant actual interpreter,
+backend, imported libraries/preludes/plugins, configuration/environment and loaded
+implementation/source association. QNT may involve Node/TypeScript and Java/TLC;
+SysML's semantic runtime/library matters; Lean's imported compiled artifacts and
+kernel/axiom policy matter; Cargo build scripts/procedural macros and runtime
+linkage can read inputs beyond Cargo.lock. Capture qualified relevant inputs or
+retain an explicit open dependency/unsupported guarantee. Neither offline flags
+nor hashing a wrapper closes every transitive input automatically.
+
+The current broad file lists cannot be narrowed by dropping inconvenient hashes.
+First split actual method/generator/observer ownership so unrelated tools/code are
+not loaded/read by that method, then qualify the resulting smaller closure.
+If the monolithic methods.ss remains the actual implementation, its changes
+remain a real invalidation dependency. Shared issuer/checker changes also require
+fresh trust qualification even when underlying semantic data is unchanged.
+The declared correspondence capability distinguishes observed-cut meaning from
+ordered-state/path meaning and the explicit model delta. SI and TM bind the actual
+mapping responsibilities they consume. A shared mapping change affects both;
+a path-only delta can be independent of SI only after its actual definition/code
+closure is separated and qualified. Source-container edits are never ignored by
+assuming that a smaller semantic hash proves code independence.
+
+* SPECIFIED Execution, interpretation and issuance
+:PROPERTIES:
+:CUSTOM_ID: method-execution-and-issuance
+:END:
+
+| Phase / owner | Input -> output | Required gate |
+|---------------+-----------------+---------------|
+| Bind application / Scenario + expected method Contract | C, supported capability/request and qualified upstream inputs -> A | Actual selected role/parent/policy, exact input footprint, method domain, closure and available prerequisites; missing upstream input prevents that application from running |
+| Prepare derivation / method adapter | A and acquired inputs -> owned generated/copy inputs | Source/recipe identity, origin/acquisition limits and actual byte equality/derivation; no raw path re-resolution or extra Profile arguments |
+| Execute / existing [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/ops/process-script.ss][Core ProcessScript]] | A/E inputs -> real command receipts, structured outputs and logs | Bounded deadlines/resources, actual cwd/environment/executable identity and required child/exit completion; unsupported cancellation/closure guarantees remain explicit |
+| Interpret / trusted observer | Complete attempt and raw outputs -> scoped semantic conclusion plus diagnostics | Expected command/schema/stage/proposition/element/case checks, output inventory and declared independent oracle checks; exit code alone is insufficient |
+| Issue / existing local producer boundary | Validated observation and checked input/artifact manifest -> scoped W and raw presentation artifacts | Private native constructor/association, actual C/A/E/basis/claim and immutable artifact references; source/artifact changes refuse current qualification |
+| Admit use / existing producer/clue-exchange boundary | W plus target C/A and current native association -> qualified use reference or refusal | Full footprint, issuer/validator/source/claim-strength association; saved JSON, copied references or a checked flag are not issuance |
+| Project/query / native evidence owner | Admitted associations and declared inventory -> committed source projection and identified Q | Exact per-application requirements and finished, source-associated evaluation; failed update never relabels an old result |
+
+Public method declarations, requests, observations, outcomes and query views are
+extensible native POO values with expected ObjectContract/Function Types and Core
+value-contract/contextual admission. Keep the existing compact private producer
+result handle for issuance; public JSON is a presentation. Do not make all domain
+values private positional records or create another public receipt constructor.
+Normalize once at the expected boundary and retain the returned value.
+
+Issuance is a scoped statement by the actual trusted producer, not a new digital
+signature service. Current source uses local host trust and explicitly states
+that there is no external signature. Retain that limit. Cross-process/remote
+use requires an actually qualified owner verifier/immutable source/artifact
+association under its selected trust policy; a deserialized private-looking
+object, hash or copied issuer name cannot restore authority.
+
+For downstream transport, the selected existing owner must verify the producer's
+attestation over the actual C/A/E/claim, input/output/validation references and
+issuer scope under the project's trust policy, with validity/revocation when
+required. A signature authenticates that statement/bytes, not the truth of the
+method. Where that producer provenance cannot be established, a trusted receiver
+may revalidate retained artifacts only at the claim strength it can actually
+establish; it cannot reconstruct an unobserved original execution. Otherwise run
+the method through an available trusted producer or retain an unsupported gap.
+Use Aitia/Core's actual verification boundary or a qualified extension there;
+do not serialize the private handle or create a project signing/key registry.
+
+Persist input/command/raw-result/diagnostic references before presenting completion,
+then check the actual input/artifact closure and issue W only at the qualified
+boundary. W references its observation/artifact bytes; neither its digest nor a
+later review receipt is its own input. Outputs are retained on rejected issuance,
+source drift, tool failure and timeout as attempts/diagnostics, with their actual
+basis. No failure is overwritten by a retry or converted to a semantic positive.
+Existing Core budgets/cancellation contracts govern execution; no synthetic
+heartbeat, timeout widening or swallowed nonzero exit makes an attempt complete.
+
+** Outcome dimensions
+
+| Dimension | Meaning and use |
+|-----------+-----------------|
+| Execution status | Completed, tool error, timeout, cancelled, unsupported or changed input describes E; a crash/timeout is not a semantic safety counterexample |
+| Observation/validation status | Accepted, rejected or incomplete describes interpretation/issuance at the declared boundary; malformed output cannot become a domain witness |
+| Semantic conclusion | Holds, refuted or undetermined under the specified finite scope/premises; only qualified holds/refuted become support/counter witnesses |
+| Control expectation | Whether an intentionally safe/unsafe control behaved as specified; a successful negative-control check does not turn refutation into support |
+| Current applicability | Whether W may be used for this C/A now; a historical result can remain meaningful without current applicability |
+
+For M06, a completed expected unsafe run can pass the harness while the ownership
+claim is refuted. For Lean, successfully proving the negation of the selected
+budget yields a counter to the budget claim. For TM, violation of unfinished has
+the declared reachability interpretation. Unsupported/incomplete/timeout results
+are retained as such; they do not enter pass/fail domain witnesses by default.
+
+* SPECIFIED Invalidation, revalidation and selective reuse
+:PROPERTIES:
+:CUSTOM_ID: method-invalidation-and-reuse
+:END:
+
+W retains its original C/A/E and artifacts. New C or A never rewrites that origin.
+Matching generation, semantic revision, result label or digest is insufficient
+for reuse. A fresh native use qualification compares the exact method basis,
+supported domain/claim strength, native declaration/source association, required
+artifacts and selected policy. If that owner cannot attest the new use, keep W
+historical or rerun; do not mint a synthetic review receipt.
+
+| Changed input/meaning | Affected applications / required response |
+|-----------------------+-------------------------------------------|
+| Only required Org/review-role content, with method bases unchanged | New C/Q/R association where relevant; no automatic rerun of unchanged Rust/QNT/Lean data. Review/freshness checks and exact new request remain required |
+| Native crate/instrumentation/lock/runtime/tool configuration | Rust and dependent SI/TM need affected re-execution or explicitly qualified revalidation; abstract QNT/Lean can remain reusable only when their complete bases/premises stay unchanged |
+| Native observation run or ordered events | New derived SI/TM applications; no mixing of facets from old and new runs |
+| Mapping/generator or queued-cancellation interpretation | Affected SI/TM bases change; a QNT-specific model delta affects TM. Native observation and unrelated arithmetic/invariant results are not automatically rerun |
+| SysML tool/runtime or SysML-only checker | SI affected; TM/base QNT/Rust/Lean remain independent only after actual implementation closure is separated |
+| QNT/backend/import closure | BP-O02 and TM affected; no automatic SI/Lean/native invalidation when truly independent |
+| Lean/import/axiom policy or arithmetic parameter | Lean affected; parameter roles also invalidate other methods that consume that parameter. Payload changes affect native workload, for example; budget-only changes need not |
+| Observer/oracle/issuer/attestation implementation | Requalify the relevant trust/interpretation basis. Recheck retained raw artifacts only when the capability supports it; do not silently bless an old observation under new semantics |
+| Project revision, review policy, rule program or evidence set | New occurrence/use/query/request association as appropriate; raw method execution may be reusable under qualified unchanged footprints, but old query/review receipts do not answer the new request |
+
+Revalidation can avoid rerunning an expensive tool only when retained raw outputs,
+input/derivation artifacts and the qualified observer support that check at the
+required strength. It creates a new validation/use reference with the old attempt
+origin explicit. It does not claim a new execution or retroactive signature.
+Any change that affects property meaning or completeness invalidates reuse until
+that issue is resolved. Repeated/nondeterministic runs retain separate attempts;
+a policy requiring additional coverage cannot be satisfied by copying one run.
+
+10.38's acquired-input/currentness guarantee still applies: a complete input basis
+is not a linearizable snapshot of all origins. Use owned bytes/qualified providers;
+origin checks have their stated boundary. Stronger required guarantees remain
+unsupported without an actual qualified owner facility. Revoked/unavailable or
+changed artifacts cannot support current use merely because their old hash is known.
+
+* SPECIFIED ASCENT domain projection by method application
+:PROPERTIES:
+:CUSTOM_ID: application-scoped-ascent-projection
+:END:
+
+Refactor the project evidence program's domain relations to distinguish C, the
+required obligation inventory, A and W/use qualification. Keep the ASCENT engine,
+source transaction, rule ownership and exact-match principles. This changes the
+project's native declared relation program, not ASCENT itself or a parallel fact
+store. Historical queries keep their original rule/source identities.
+
+The old usage/key scope list and obligation/method candidate join cannot safely
+express every concurrent application and upstream observation choice. In the
+target, expected inputs are scoped by A; method uses retain C and the claim/case.
+Never put two different expected values under one occurrence/key and hope that
+negation/mismatch rules infer the intended one.
+
+| Native projection responsibility | Source / inference boundary |
+|----------------------------------+-----------------------------|
+| Captured application and required obligations | C-bound selected Library/catalog/policy/factors and trusted required inventory; duties remain present even if no A or W has yet been produced |
+| Method use | A, C, obligation/method, subject/case and actual basis/source references, produced by the expected native application boundary |
+| Required/expected application input | Published required role definitions plus A's unique role/value bindings, including qualified upstream derived artifacts; absent values stay missing |
+| Witness and actual input | Private issued W, original attempt/application/basis/claim/outcome and its complete actual input footprint |
+| Checked use | Qualified C/A/W use/attestation reference from the existing host/producer boundary; not an imported assertion and not inferred from matching names |
+| Diagnostic attempt state | Timeout/error/unsupported/incomplete/source-change references retain their real status without inventing semantic pass/fail |
+| Derived applicability/support/counter | Only matching expected/actual roles and an admitted checked-use association can support/refute the exact application/obligation |
+| Derived pending/mismatch/missing/extra/conflict and trace | Preserve all relevant distinctions and input/issuer links; aggregate to a context obligation only under its explicit case/method/policy requirements |
+
+The names method_use, expected_input and checked-use describe target relation
+responsibilities, not implemented APIs or serialized schema. Native field Types,
+unique role bindings, bounded domain checks and source admission validate the
+projection first. Candidate descriptors/JSON/hashes do not select their validator.
+
+Applicability must require the independently declared required footprint and all
+expected/actual input bindings; an empty expected map must not vacuously admit W.
+Missing expected inputs and missing witness inputs both block it. Extra/conflicting
+roles block the corresponding use. A W for the same obligation/method but a foreign
+C/A/upstream basis is not an eligible checked use. Equal result footprints without
+a qualified occurrence association do not authorize projection.
+
+Multiple runs/bases may be retained under one C. Group correlated RL/SI/TM facets
+by their actual common native run/derivation, not just case name. Applicable pass
+and fail remain visible across the required investigation scope; a query cannot
+select only a favorable run to erase a relevant counter. Query filtering must
+state its scope and cannot pretend to be the complete mandatory review inventory.
+
+Pending still means missing qualified support and can coexist with a counter.
+Support does not erase a counter. A whole-duty/ready question requires the actual
+conjunction of required cases/methods, coverage and conflict policy; a mechanical
+facet is not an unqualified architecture/refinement/review proof. Absent method
+applications remain pending rather than disappearing with the missing join row.
+
+** Native Session publication
+
+Submit each intended source update through the existing Session batch/qualified
+replacement boundary with the accepted input-source association. Session owns
+committed source snapshots and rollback; the project does not mirror them in a
+second store. Reuse a Session only for its actual admitted program/schema/source
+association. A changed rule program or relation schema requires the corresponding
+new native program/Session qualification; replacing facts cannot relabel the old
+engine as the new program. Preserve its prior Q under its original association.
+Prepare owned typed row values/strings: Session's row-spine copying
+does not freeze mutable nested host values or Contract/Profile objects.
+
+A failed/unfinished update preserves prior identified Q as history, not a result
+for the requested new projection. Require the actual accepted program/catalog/
+application/witness/use source set and finished evaluation for a complete view.
+Resource bounds and unsupported domains stay explicit. Engine completion proves
+closure of that finite projected query, not successful completion of all methods,
+truth of all source premises or Aitia authority.
+
+* SPECIFIED Determinate query view and Aitia handoff
+:PROPERTIES:
+:CUSTOM_ID: query-view-and-aitia-handoff
+:END:
+
+A determinate Q identifies the actual finite query and its interpretation. It
+includes the captured occurrence/selected native association, actual accepted
+projection/source-set reference, rule/catalog/engine implementation identity,
+method-application/basis and W/use references, requested query/filter, completion
+and scope limits, derived outcomes and their explanation/artifact links. Own the
+presented row values or bind immutable owner references; do not expose a live
+mutable Session as a frozen result. Fixed source facts, expected Types and rule
+semantics must be qualified: rule-side predicates are deterministic computations
+on those declared values, not hidden clock/environment/network reads. Native
+program/domain/negation validation and finite completion remain required. Compare
+relation sets under their declared semantics; preserve ordered traces, and qualify
+canonical presentation without treating incidental row iteration order as meaning.
+Deterministic inference on fixed W does not make the originating Rust runs or
+external tools deterministic. Encoding/source identity and ordered-versus-set
+semantics must qualify its reproducible reference, not just a display timestamp.
+
+Additional results, changed checked-use eligibility, rules, query request/filter
+or evidence inventory create another identified Q. Neither the same C nor the
+same generation implies the same Q. Rechecking current use can mark an old Q
+inapplicable without changing its immutable historical meaning. Unknown evaluation
+completion, inaccessible required references or an unsupported claim cannot be
+rendered as a determinate positive.
+
+Aitia preparation consumes the exact C and Q, with the referenced W/use/attempt
+closure and the selected project/policy/authority bindings in 10.38. It checks
+that Q covers the trusted required inventory and corresponds to the same native
+role/parent/policy association and subject/revision/scope. It does not rerun an
+ambient query, accept a chart as evidence or reconstruct a standalone review
+Profile. Raw outcome counts do not replace the required case/coverage/conflict
+checks. A completed query with pending/counter/conflicting duties remains so.
+
+The prepared request R binds those exact references and actual required products,
+criteria, roles, prior counter/history and adoption/recipient constraints. Existing
+owner-issued context/content verification, validity/revocation, semantic review,
+disposition and delivery remain separate boundaries. A new query or project
+revision cannot replay an old receipt. Unsupported DE-CASE-01 review policy or
+missing actual reviewer remains a gap; no NASA fixture classification is invented
+to reach an available gate. Packet/mechanical-basis changes need actual qualified
+producer/reader interpretation; old signed bytes and schema meanings stay exact.
+
+Org/D2 display that particular selection/application/query/request state and its
+limits. This authored target diagram is not such a runtime Q or an Aitia result.
+
+* SPECIFIED Refactoring ownership and acceptance
+:PROPERTIES:
+:CUSTOM_ID: method-evidence-refactoring-acceptance
+:END:
+
+| Owner/work package | Target responsibility and acceptance |
+|--------------------+--------------------------------------|
+| Library Types/objects and semantic method definitions | Publish capability/input/result/claim requirements and exact obligation roles together with 10.37/10.38 selection. Missing role, unsupported domain, altered premise or conflicting claim fails the relevant boundary; no helper-defined duty catalog |
+| Method implementations/generators | Separate generic QNT/Lean, Rust observation, common mapping, SysML generation/checking and QNT-path interpretation where their actual dependencies differ. Keep pure algorithms named functions and shared utilities private. Demonstrate narrower actual closure before claiming independent invalidation |
+| Scenario/native application boundary | Bind A from C and qualified upstream runs; use captured providers/bytes, not root/Profile/tool arguments supplied beside it. Positive and negative cases preserve complete parent/policy/case associations and distinguish multiple attempts |
+| Core Ops and trusted observers | Retain real receipts/outputs/diagnostics; interpret exact schemas/propositions and issue locally scoped W only after checks. Typed execution status, validation status, semantic conclusion and control result never collapse into one boolean |
+| Producer/use qualification and clue exchange | Preserve private issuance and exact complete footprint/claim/source checks. Cross-C reuse needs a fresh trusted use association; JSON, hashes or copied adapters cannot restore it. Revalidation explicitly retains the old execution origin |
+| Project ASCENT program/projection | Refactor relations to application-scoped expected inputs and checked uses; retain required duties, all current applicable counter/conflict states and historical references. Batch failure cannot relabel an old Q; no duplicate fact store |
+| Query view/Aitia adapter and drivers | Publish exact accepted finite Q and require its C/application/evidence/source/coverage association at preparation. Refactor active callers directly; no old-snapshot compatibility facade. Verification/disposition/submission remain real owner operations |
+
+Useful future controls include:
+
+| Control | Required distinction |
+|---------+----------------------|
+| M06 / early-release / over-budget negative controls | Completed expected negative detection still yields scoped property counter evidence |
+| Native result or facet from another run/C/A | No mixed-run proof, direct checked-use replay or parent/policy substitution |
+| Wrong initializer/proposition/cut/path or malformed output | Refuse that semantic result even with exit zero or matching expected label |
+| QNT unfinished violation / no exported path witness | Correct reachability polarity at its actual strength; no invented independently replayed witness |
+| Timeout, cancellation, signal exit or partial output | Retain attempt/diagnostics and pending obligation; never positive or ordinary safety counter by default |
+| Missing/extra/duplicate/conflicting role or empty expected map | No vacuous applicability or fallback to global occurrence scopes |
+| Mapping-only, SysML-only, QNT-only, Lean-only changes | Invalidate the actual affected footprint; demonstrate unrelated independence only after code/closure separation |
+| Changed validator/issuer or unclosed tool/runtime input | Require appropriate fresh qualification or refuse current use; matching old digest is insufficient |
+| Missing artifact, stale compiled producer, forged JSON/checked flag | No restored issuance or query authority; retain history and the real gap |
+| Mutable projected string or failed source replacement | Preserve the actual committed view and refuse relabeling it for new sources |
+| Favorable-run filtering, omitted attempt or whole-duty aggregation | Trusted required scope/coverage/counters remain visible; no success-only readiness |
+| Changed query/rule/evidence set or project revision | New identified Q/R association and actual fresh review verification; no old receipt replay |
+
+Implementation order follows the table's dependency sequence: native method
+Contracts/roles -> actual implementation closure separation -> C-bound applications
+and attempts -> issuance/use qualification -> application-scoped projection ->
+identified Q and Aitia preparation -> source-bound end-to-end controls. No step
+is implemented or marked qualified by writing this specification.
+
+| Existing case allocation | Scope of this design |
+|--------------------------+----------------------|
+| DE-R01/R03; DE-T01/T03; VA-07/08/09 | Native capability Contracts, shared capture/application and source-qualified method footprint |
+| DE-R02/R04; DE-T02/T04 | Actual/generator/model correspondence, scoped claim strength and independent interpretation duties |
+| DE-R05; DE-T05/T06; DE-O-TRACE/REVIEW | Exact accepted query/evidence/authority association, history, review and recipient boundaries |
+| DE-R06; DE-O-ARCH/DOC/DEC | The real repository's authored architecture/decision/view products; no runtime obligation witness is inferred |
+
+[[file:10.40-aitia-review-and-recipient-delivery.org::#aitia-review-and-delivery][10.40 continues the Aitia handoff]] with project policy/role binding, distinct
+context/content verification, retained negative history, authenticated decisions,
+revocation and recipient-owned admission. Review admission does not authorize
+release or deployment.
+
+* DESIGN Documentation and qualification status
+:PROPERTIES:
+:CUSTOM_ID: method-evidence-design-status
+:END:
+
+10.37 remains the native declaration authority design; 10.38 remains the Profile/
+Scenario input-basis design. This document expands method execution/issuance and
+refines the domain projection to explicit method applications. Source audits of
+today's functions/relations remain observations; they do not claim this target
+already runs. Existing historical counts/receipts and the cold native baseline
+limitation in 10.35 remain unchanged until actual qualification.
+
+Only Org and paired D2/SVG are edited. No implementation, directory layout,
+method/model run, ASCENT execution or Aitia submission changes here. The C4 catalog
+in [[file:10.34-case-design-review-dossier-draft.org][10.34]] remains unchanged; new documents/views are not inserted retrospectively
+into its evidence. [[file:10.35-content-validation-slice.org::#slice-input-freshness][10.35]] records the current static drift. Future actual capture
+must select the required then-current documents, sources and artifacts explicitly.
+
+[[file:10.41-workflow-gap-audit.org::#integrated-refactoring-dependency-order][10.41 integrates the source gap audit and dependency-ordered refactoring]]
+across declarations, capture, methods/query, review and recipient use. Its work
+packages share the native owners above; they do not constitute a second pipeline.
+
+[[file:10.45-method-execution-and-evidence-issuance.org::#method-execution-evidence-issuance][10.45 details WP04 method execution and evidence issuance]],
+including actual same-C A/E/W association, complete input/execution origins,
+separate outcome dimensions, private issuance, invalidation and fresh qualified
+reuse. Existing Ops launch/environment seams need actual qualification.
+
+[[file:10.46-content-observers-and-reference-closure.org::#content-observers-and-reference-closure][10.46 details WP05 content observers]]: selected product/criterion policy, same-C
+bounded Org/architecture/decision/reference checks, actual A/E/W and historical
+versus current evidence, qualified semantic findings, invalidation/reuse and
+CO01-CO24 controls. This is target design, not executed content qualification.
+
+[[file:10.47-ascent-projection-and-query-view.org::#ascent-projection-and-query-view][10.47 details WP06 application projection and Q]]: independent required units,
+exact C/A/E/W/U/basis/run relations, current eligibility/coverage/conflict/gap
+semantics, existing Session acceptance/rollback and owned determinate Q for
+Aitia; PQ01-PQ26 are future controls, not an executed inference or review.
+
+[[file:10.48-aitia-review-adaptation.org::#aitia-review-adaptation][10.48 details WP07 Aitia review adaptation]]: exact C/Q to R, actual policy/
+project/role/product bindings, separate context/inventory/criterion checks,
+shared existing-Host mechanics, current Core receipt use, lossless findings and
+RV01-RV28 controls. Preparation is inert; no verification or submission occurs.
+
+[[file:10.49-history-authority-and-reassessment.org::#history-authority-and-reassessment][10.49 details WP08 history and decision authority]]: mandated source discovery,
+exact C/Q/R/H/action/grant bindings, accepted negative retention, repair/exception/
+supersession/withdrawal, genuine prefix custody and HA01-HA31 controls. These
+remain target operations; no authority decision or review is submitted here.
+
+[[file:10.50-library-delivery-and-recipient-use.org::#library-delivery-and-recipient-use][10.50 details WP09 Library delivery and recipient use]]: exact C/Q/R and accepted
+distribution authority, manifest/product/reference closure, actual transfer and
+acknowledgement, receiver-owned trust/verification/capture/review, adoption and
+current intended use. Missing/status/withdrawal/replay and DU01-DU30 controls
+remain future qualification; no implementation or actual delivery occurs.
+
+[[file:10.51-case-joint-acceptance-plan.org::#case-joint-acceptance-plan][10.51 details WP10 joint acceptance]]: existing entries/file owners, exact
+plan/evidence closure and G0-G8 source/compiled/cold/recovery/recipient gates;
+216 referenced contract control rows plus JA01-JA32 cross-boundary controls and
+OJ01-OJ12 open items. These are future requirements; no implementation,
+acceptance execution, review submission or actual delivery occurs.
+
+[[file:10.52-contract-consistency-and-implementation-order.org::#whole-slice-consistency-audit][10.52 reconciles the whole slice]]: policy/Scope/Config handoffs, required-unit
+and request-purpose bindings, captured/technical/current-authority lifetimes and
+private/exported provenance; S0-S9 implementation dependencies and retained OJ
+gates. Design consistency is not implemented or operational qualification.
+
+#+CAPTION: C-bound applications, complete method footprints, private scoped issuance and identified ASCENT/Aitia use.
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.svg]]
+
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][Editable D2 source]]. Target design only; no executed query or review result.

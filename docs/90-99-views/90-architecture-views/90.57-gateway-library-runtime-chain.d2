@@ -1,0 +1,32 @@
+# org-target: docs/10-19-design/10-architecture/10.12-gateway-library-registration-and-runtime-dependencies.org::#gateway-library-organization
+direction: down
+classes: {
+  input: {style.fill: "#EAF2FF"; style.stroke: "#315B8A"; style.border-radius: 10}
+  work: {style.fill: "#E6F5F3"; style.stroke: "#19756C"; style.border-radius: 10}
+  open: {style.fill: "#FFF2DD"; style.stroke: "#9B6C25"; style.border-radius: 10}
+}
+library: "rust-resources: reusable Library entry\nFactor / obligation / method / input footprint\nAuthored rules and lifecycle knowledge" {class: input}
+profiles: "Independent profiles/gateway.ss\nC1 / C2 / cache / retry\nTokio + Rayon workers / CPU allowance / lock / workload" {class: input}
+scenario: "One gateway-review Scenario\nCore binds Domain and Evidence requirements\nExplicit open-review registers one application cut" {class: work}
+engine: "resource-evidence: native ASCENT DSL + Session\nTokio + Rayon derive handoff obligation\nExact footprint mismatch / missing / extra\nUncovered factors remain discoverable" {class: work}
+qnt: "QNT ownership model\nqueued -> running -> returned / cleanup -> released\nBounded safety simulations + early-release counter\nActual source correspondence still required" {class: work}
+lean: "Lean conditional accounting\nCapacity monotonicity + budget reuse\n384 / 512 / 512 small accounting fixtures\nNo Rust allocation or latency theorem" {class: work}
+validation: "Method observation and validation\nV result + checked method-review reference\nEarlier relation tests use fixture assertions\n10.13 adds real local verifier-backed exchange\nRemote producer authentication remains open" {class: open}
+query: "Completed snapshot queries\nObligation / support / counter / pending\nNew T-use + contextual applicability\nNo execution authority or conflict resolution" {class: work}
+change: "Capacity / cache / source change\nReplace application + factors + scope atomically\nKeep old witness facts and old completed result\nLate old-scope result cannot match new footprint" {class: work}
+agent: "LLM-based AI agent\nInvestigates and develops the design\nSupplies evidence or explores alternative hypotheses\nExtends reviewed Library knowledge\nSelects its own next engineering action" {class: input}
+real: "Open native engineering work\nReal Cargo.lock / features / target / source\nUnique allocations, cancel, panic, cleanup-full\nTokio responsiveness + Rayon submission budget\nMatched throughput / p99 / RSS / CPU evidence" {class: open}
+library -> scenario
+profiles -> scenario
+scenario -> engine
+engine -> qnt: "obligation"
+engine -> lean: "obligation"
+qnt -> validation
+lean -> validation
+validation -> engine: "native witness / input / checked source rows"
+engine -> query
+query -> agent
+agent -> change
+change -> engine
+agent -> real
+real -> validation

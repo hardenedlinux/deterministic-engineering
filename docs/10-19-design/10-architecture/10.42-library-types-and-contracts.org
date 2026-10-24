@@ -1,0 +1,428 @@
+#+TITLE: 10.42 Library Types and Contracts: WP01 Detailed Design
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.42
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+TODO: DESIGN SPECIFIED | QUALIFIED
+#+FILETAGS: :design:types:contracts:library:backpressure:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.41-workflow-gap-audit.org::#integrated-refactoring-dependency-order][WP01 and overall dependency plan]] | [[file:10.37-library-declarations-and-contract-design.org][Declaration design]] | [[file:10.38-profile-selection-scenario-capture-and-evidence-use.org][Selection and capture]]
+
+* DESIGN Purpose, terminology and scope
+:PROPERTIES:
+:CUSTOM_ID: library-types-and-contracts
+:STATUS: WP01 field/file/validation design; no implementation or test execution
+:END:
+
+This document specifies WP01 of 10.41 at existing file, field, inheritance and
+validation boundaries. The implementation uses the existing POO Type protocol,
+ObjectContract, Function Types and Core contextual/publication Contracts. These
+are the actual mechanisms; there is no separate category of Library described
+by the adjective /native/. That word previously mixed three distinct facts:
+using POO/Core mechanisms, checking prototype ancestry, and running compiled
+code. From here on, name each fact directly.
+
+Public design/file names describe responsibility: Library Types, declarations,
+Contract validation, publication, compiled loading or Rust observation. Proposed
+API names use the same rule. An upstream identifier such as
+PooFlowNativeObjectContract is quoted unchanged only when referring to that exact
+existing API. Existing source symbols, compiled/source-loading observations and
+historical schema tokens retain their traceable identities until a qualified
+implementation migration. The adjective is not a quality grade or a new layer.
+
+The maintained 10.35/10.36/10.37/10.41 design filenames and 90.99 paired view are
+renamed by responsibility in this documentation task. Numbered IDs and existing
+CUSTOM_ID anchors remain stable. Current links are updated; historical evidence
+catalog entries, saved execution records and implementation paths are unchanged.
+
+WP01 defines expected Types, declaration metadata and admission boundaries. WP02
+constructs/publishes the changed objects; WP03 binds/captures their use; WP04-WP09
+implement evidence/query/review/delivery associations. Their field/signature
+requirements are allocated below without claiming those downstream operations
+already exist or supplying permissive placeholder Contracts.
+
+* AUDITED Source basis and existing file allocation
+:PROPERTIES:
+:CUSTOM_ID: library-contract-file-allocation
+:END:
+
+Source inspection uses the active dirty checkout at HEAD
+8044732d505f84e373119a70f947df00e1767300 and the linked POO/Core sources. Current
+abstract/types.ss checks fixed identity/rule/dependency lists; rust/types.ss uses
+slot predicates, fixed parameter premises, procedure? and an exactly-seven-key
+Context. Those are the current mechanisms, not the complete target below.
+
+All short file names in this table are inside the existing
+library/concurrency/resource-control/backpressure-memory subtree unless stated.
+No new file or directory layout is necessary to express the design.
+
+| Existing file | WP01 design / ownership | Later implementation dependency |
+|---------------+-------------------------+---------------------------------|
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/abstract/types.ss][abstract/types.ss]] | Common data Types, family descriptor/version owner, shared model value shape, generic role/parameter/scope Contracts, pure relation constraints and stable generic identity binding | Import POO/Core Types only; no objects, Config, methods, init, source scans or external tool runs |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/types.ss][rust/types.ss]] | Rust/integration/policy value shapes and role Contracts; stable subject/mapping IDs; parameter refinements; method/scope and contextual expectations | Depends on abstract Types and POO/Core. No import of Rust objects, generators, methods or Scenario to discover expected meaning |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/abstract/objects.ss][abstract/objects.ss]] | Target BackpressureModel fields/reference described here; construction is WP02 | References the expected generic role Contract and typed identity binding; no version literal |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/objects.ss][rust/objects.ss]] | Target Rust definition, integration definition and composed policy fields/reference described here; construction is WP02 | Construct from admitted immediate parent; own semantic meaning and revision. Move slice declaration responsibility here from correspondence.ss |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/abstract/config.ss][abstract/config.ss]] and [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/config.ss][rust/config.ss]] | Select/reference authored values as needed | No duplicate field catalog, version, policy definition or project authority |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/abstract/interface.ss][abstract/interface.ss]] and [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/interface.ss][rust/interface.ss]] | Expected publication associations defined here; linking/exports migrate in WP02 | Existing Core requires/scope machinery; admit actual parent, construct once and expose the corresponding definitions/Contracts |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/correspondence.ss][correspondence.ss]] | Consumer of declared mapping/delta/case-link Types | WP02 removes its independent slice-definition authority; WP04 retains pure mapping/generation and qualified interpretation |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/methods.ss][methods.ss]] and [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/func.ss][ResourceMethods]] | Expected callable/input/output roles; no WP01 execution change | WP04 supplies actual typed methods and retains private result issuance. Types cannot import implementation merely to authenticate a result |
+| [[file:../../../profiles/resource-lifecycle.ss][Profile]] and [[file:../../../scenarios/resource-lifecycle/types.ss][Scenario Types/Contracts]] | Consume published parameter/selection/Context expectations | WP03 binds actual occurrence and owns C. A parameter Profile is not the entire selected occurrence or an authority grant |
+| [[file:../../../t/library-selection-test.ss][library-selection-test]], [[file:../../../t/library-owner-test.ss][library-owner-test]], [[file:../../../t/resource-lifecycle-test.ss][resource-lifecycle-test]], [[file:../../../t/resource-integration-test.ss][resource-integration-test]] | Planned owner-bounded declaration/publication and downstream regression controls | Future implementation adjusts relevant current tests directly; this document adds/runs no implementation tests |
+
+* SPECIFIED One generation owner and descriptor association
+:PROPERTIES:
+:CUSTOM_ID: library-contract-version-owner
+:END:
+
+| Subject | Required design |
+|---------+-----------------|
+| Sole owner | BackpressureDeclarationContract in abstract/types.ss, an ordinary Core Contract descriptor with stable identity backpressure-memory/declaration |
+| contract-version | One authored field on that descriptor. Target value is the symbol V1; it is not parsed from a namespace, revision, filename or Org property |
+| Generic role Contract | BackpressureModelContract; stable identity backpressure-memory/model |
+| Rust role Contract | RustResourceModelContract; stable identity rust-resources/model |
+| Integration role Contract | BackpressureIntegrationContract; stable identity rust-resources/integration |
+| Policy role Contracts | BackpressureReviewPolicyContract retains bounded coding-method meaning; BackpressureDesignReviewPolicyContract is the distinct WP05 design-review sibling under the same family owner |
+| Each role descriptor | declaration-contract refers to that same admitted family owner; value-contract is its complete effective ObjectContract; identity and role identify the expected role. It has no separate contract-version field |
+| Each semantic definition | contract refers to its actual admitted expected role descriptor. identity/revision identify engineering meaning; parent identifies immediate engineering ancestry or false |
+
+The role descriptor metadata is explicit: identity is its stable Contract symbol;
+role is one of generic-model, rust-model, integration or review-policy;
+declaration-contract is the admitted family reference; value-contract is the
+effective ObjectContract. Existing Core classify/admit/obligation methods remain
+Core's protocol, and pure domain relation checks compose through that protocol.
+There is no separate role version, descriptor revision counter or per-field
+responsibility mirror. Shared model-shape bindings contain no concrete role ID.
+
+The read is selected scope -> selected role Contract -> declaration-contract ->
+contract-version. Scope.declaration-contract and definition.contract must agree
+with those admitted references. A role reads the shared value through that path;
+it does not copy it into its own metadata or inherit a flat version slot by
+subclassing the family descriptor. Role Contracts compose the family reference
+and shared value shape while deriving their Core behavior from PooFlowContract.
+
+The generation literal is authored once. Validators compare actual owner/source/
+role association and the admitted owner value; they do not keep another literal
+in each role, Profile, interface or document. The supported owner is pinned by
+the expected source-qualified descriptor association and its guarded reads. A
+runtime mutation of that descriptor, including changing and restoring a slot,
+is not authorized merely because it still has the same object identity or V1
+label. Existing Core object/read revisions and source-currentness mechanisms
+must detect the changed association and require fresh admission. No second
+version counter, signing service or writable supported-version registry is added.
+
+An untrusted candidate's contract/declaration-contract fields are treated as
+references, not instructions to invoke that candidate's Type methods. Resolve
+the expected descriptor from the trusted required scope first. Reject substitution
+before executing a claimed validator. Across processes, pointer equality does
+not establish continuity: re-admit the provider/descriptor/source closure before
+reading generation and binding definitions. A serialized descriptor is not an
+executable trusted Contract.
+
+The semantic tokens ownership-budget/v1, backpressure/v3 and
+backpressure-integration/v1 remain opaque current baselines. They are not changed
+or interpreted as V1/V3 generations here. Review policy revision remains its own
+meaning baseline. Source/content/object revisions and tool/schema versions keep
+their respective purposes.
+
+* SPECIFIED Value inheritance and role constraints
+:PROPERTIES:
+:CUSTOM_ID: library-contract-inheritance
+:END:
+
+Three relationships must be kept distinct:
+
+| Relationship | Target graph and rule |
+|--------------+-----------------------|
+| Value-shape inheritance | Common declaration fields -> shared model shape -> Rust model shape -> integration shape. Policy shape derives from common declaration fields as a sibling of model shape |
+| Expected role constraints | Generic, Rust, integration and policy each compose the appropriate effective shape with their own identity/parent/applicability constraints. Rust does not refine a generic-role identity constraint; integration does not refine a Rust-role fixed identity/parent constraint |
+| Engineering definition inheritance | Generic has no parent; Rust has actual admitted Generic parent; integration has actual admitted Rust parent. Policy has no model parent and composes with applicable model roles |
+
+Shared value shapes need no additional public manager or registry. Their names
+are implementation-local POO ObjectContract bindings in the Types files; public
+consumers receive the expected role/scope/parameter Contracts. Shared field maps
+are extended into the complete effective role before validation, including
+extra-field rejection. Never validate a full Rust value with an unextended
+header that rejects every Rust-specific field, and never allow arbitrary extras
+to hide that mistake.
+
+The shared family descriptor may refer to the common value protocol; concrete
+role admission always uses the role's full effective shape. Role descriptors
+reference that family rather than inherit its contract-version field. Their
+Core contextual behavior uses value-contract, classification and pure obligations;
+ordinary field Types are not duplicated in Core responsibilities. Contextual
+responsibilities are for real contextual child admissions.
+
+POO ObjectContract constraints/refine preserve inherited checks and operate on
+the checked value. Derived effective maps remain receiver-local after a parent
+map has already been forced. POO Function Types wrap calls when validated; the
+returned wrapped value is the one to publish/use. A structural membership check
+or diagnose call is not a substitute for validate and its returned value.
+
+Actual prototype ancestry is checked only where a declaration explicitly promises
+it, using POO required-prototype or the existing Core prototype-aware Contract.
+Shape reuse does not fabricate such ancestry. Contextual parent-reference checks
+still bind the actual admitted engineering parent even when a compatible value
+has been normalized into a checked receiver. Proven ancestry alone establishes
+neither trusted source origin nor semantic refinement.
+
+* SPECIFIED Declaration fields and row Types
+:PROPERTIES:
+:CUSTOM_ID: library-declaration-fields
+:END:
+
+All declared fields below are required for their effective role. An empty value
+is allowed only when explicitly meaningful, such as root parent=false. Missing
+fields are not replaced by defaults invented by the validator. Exact field names
+below are target responsibilities, not code already added to the current files.
+
+| Field group / owning Types file | Shape and relational boundary |
+|--------------------------------+-------------------------------|
+| Common: identity | Symbol; one typed identity binding for each concrete subject, referenced by object construction and its expected role constraint. No repeated independent identity literals/registry |
+| Common: revision | Nonempty semantic baseline text; actual content/source identity remains independently captured. No lexical ordering or suffix parsing |
+| Common: contract | Opaque descriptor reference whose association must equal the expected admitted role; no arbitrary candidate-supplied validator invocation |
+| Common: parent | Explicit false or declaration reference at common shape level; concrete role checks narrow it to false, actual Generic or actual Rust as applicable. No cycle, foreign provider or skipped ancestor |
+| Shared model: lifecycle | Unique nonempty list of state symbols with declared state meanings; shared shape does not fix the generic-only vocabulary |
+| Shared model: rules | List of three-symbol factor/obligation/method rows, retaining current responsibility. Obligation IDs unique in the effective model; inherited duties preserved; method identifiers resolve to declared capability meaning |
+| Shared model: dependencies | Unique obligation/input-role pairs; every obligation belongs to rules and required input roles are complete for that declaration. Extra/dangling/contradictory mappings refused; no requirement disappears because no result exists |
+| Shared model: assumptions | Typed premise records with identity, statement/reference and affected duty/subject links. Required lifecycle/ownership/model bounds are explicit; presence of text does not prove the premise |
+| Shared model: assets | Typed formal/model/source references with identity, purpose, location/reference and affected duties. Files are not read/executed at declaration construction; capture/observers establish actual bytes and meaning later |
+| Shared model: capabilities | Typed method definitions with identity, claim/duty scope, supported parameter/domain/mode and required input/result roles. Semantic declaration remains distinct from availability of an actual callable |
+| Shared model: qualification | Explicit declared evidence-strength/limit value retaining the current conditional/model/specialization distinction; no approved? or complete? flag inferred from it |
+| Rust addition: state-map | Unique declared child-state/parent-state mapping with both endpoints in the respective lifecycle; every required projected state accounted for. Direction is explicit, avoiding reinterpretation of today's active->cpu-running notation as its inverse |
+| Rust addition: runtime-premises | Typed ownership/scheduler/payload/inventory/panic/workload premise references linked to assumptions and duties; actual runtime/source/tool observations belong to capture/methods |
+| Rust existing design / trajectories | Retained only as declared nonempty design reference / list of references in the effective Rust shape; documentation links cannot discharge duties |
+| Integration addition: case-links | Exactly one RL/SI/TM triple for each M01-M06, linked to effective rules/capabilities with no duplicate, unknown or missing case. Retain M06's property-counter/control distinction |
+| Integration addition: mapping | Identity, semantic revision/reference, input/output domain, projection losses and affected duties as one typed definition; correspondence.ss consumes this definition |
+| Integration addition: deltas | Typed changes to parent assumptions/model transitions, with rationale, supported mode and verification-duty links. Queued cancellation is explicit; declaring a delta is not proof it preserves all base properties |
+| Policy addition: applies-to | Nonempty typed associations of stable model identity and expected role descriptor, plus supported purpose/scope. Only source-admitted roles in the selected family can match; policy applicability is not project adoption |
+| Policy addition: criteria | Unique criterion/duty records with required method/evidence/product roles, semantic strength and explicit pending/counter/conflict/unsupported handling. Real adopted standards may be referenced; no fabricated NASA clauses |
+| Policy addition: products / responsibilities | Reusable product-role and responsibility requirements, including required document/decision/trace content, allowed selections, approval coverage/independence and authorized exception constraints. No people, signing paths or project grants |
+| Policy addition: reconsideration | Required history categories, repair/denial/supersession/withdrawal triggers and current-use conditions linked to criteria. Actual discovery, authority acts and revocation remain Aitia/project operations |
+
+Nested row/premise/reference/capability/policy values use POO Types and pure
+relation constraints in the same existing Types roles. They are not JSON Schemas
+or a second public grammar. No table here authorizes untyped arbitrary objects,
+callbacks, raw scope extras or generic Any fallbacks in an advertised checked API.
+Exact capture identities, timestamps, actual tools/results, project revisions,
+reviewers, approved dispositions and signature material do not belong in these
+reusable Library definitions.
+
+For the current Rust lifecycle, the complete target projection is waiting ->
+waiting, queued -> queued, cpu-running -> active, result-pending -> returned,
+cleanup -> cleanup and released -> released. Shared-state identities are explicit
+rather than guessed from absent rows. Integration retains that engineering map;
+its observation/QNT mapping separately declares running/done vocabulary and the
+queued-cancellation extension, so those distinct domains are not conflated.
+
+The target state-map convention is child -> parent. Current pairs active ->
+cpu-running and returned -> result-pending are migrated deliberately to the
+opposite order with both endpoint meanings preserved, not silently copied under
+a new convention. Mapping coverage/refinement still needs its semantic obligations;
+endpoint validity alone is insufficient.
+
+* SPECIFIED Role, parameter, scope and operation Contracts
+:PROPERTIES:
+:CUSTOM_ID: library-role-and-publication-contracts
+:END:
+
+| Expected Contract / location | Complete target responsibility and exclusions |
+|------------------------------+-----------------------------------------------|
+| BackpressureModelContract / abstract Types | Common + shared model fields; fixed generic identity, parent=false, generic duties/dependencies and formal premises. No Rust/policy fields |
+| RustResourceModelContract / Rust Types | Common + model + Rust fields; own fixed identity, actual admitted Generic parent, preserved inherited duties/premises and valid projection. No copied contract-version or generic-entry alias |
+| BackpressureIntegrationContract / Rust Types | Common + model + Rust + integration fields; own fixed identity, actual admitted Rust parent, inherited duties plus complete case/mapping/delta closure. Does not inherit Rust's fixed role identity or generic-parent constraint |
+| BackpressureReviewPolicyContract / Rust Types | Common + policy fields; own fixed identity/revision, parent=false, valid applicable role/criteria/product/responsibility/history associations. Does not inherit lifecycle/state-map/model obligations or contain project decisions |
+| BackpressureDesignReviewPolicyContract / Rust Types | Same common/policy shape and family association; own fixed design-review identity/applicability, required architecture/Org/decision/content/history/delivery constraints from WP05-WP09. Sibling of the bounded policy; never validate it through the bounded policy fixed-identity Contract |
+| BackpressureProfileContract / abstract Types | Generic parameters: positive exact capacity/queue/item/budget; nonnegative fixed/cache-bytes, unique supported factors and explicit mode domain. Parameter validity does not assert a particular verifier supports every value |
+| ResourceProfileContract / Rust Types | Preserve the existing parameter field set: identity, capacity, queue, item, fixed, budget, cache-bytes, factors, workload, runtime, inventory, tokio-workers, rayon-workers, cpu-budget and lock. Exact integers/sign constraints, nonempty premise text and factor/domain relations; no imported live init or authority grant |
+| ResourceSixCaseProfileContract / Rust Types | Proposed responsibility-based replacement for ResourceNativeProfileContract: existing controlled six-case premises, capacity/queue/workers/cpu-budget=1, cache=0, item<=4096 and exact declared workload/runtime/inventory/lock associations. The supported-mode predicate remains an explicit method-domain check |
+| ResourceIntegrationProfileContract / Rust Types | Six-case parameter premises plus selected mapping/delta/capability domain constraints. Selecting integration does not remove inherited SI/TM duties when a tool is unavailable |
+| ResourceContextContract / Rust Types and Scenario contextual admission | Proposed replacement for ResourceNativeContextContract's ambiguous name/exact-seven-key check. Typed selected role/parent/policy, effective parameters, separate provider/project input bases, declared tool/environment/source/content/mandate inventory and explicit acquisition gaps/currentness refs from 10.38. WP03 owns actual capture; a structural Context check cannot issue it |
+| BackpressureScopeContract / abstract Types | Complete generic publication shape: entry, entry-contract, declaration-contract, profile-contract, methods and method-contracts. Cross-associate those expected descriptors/returned values with the selected source; no arbitrary descriptor chosen by the entry |
+| RustResourcesScopeContract / Rust Types | Complete Rust publication shape: entry/entry-contract, integration-entry/integration-contract, review-policy/review-policy-contract, design-review-policy/design-review-policy-contract, declaration-contract, profile-contract, six-case-profile-contract, integration-profile-contract, context-contract, methods and method-contracts. Bind the actual required Parent, role descriptors and all published definitions consistently |
+
+These parameter and Context names supersede the earlier proposed API names in
+10.37/10.38 for the target refactor and are direct migrations for active callers. Existing source identifiers are unchanged in this task. There is no
+permanent pair of old/new Contract APIs or alias fields. Context construction and
+its full input Types follow WP03; WP01 must not publish an always-true placeholder
+as if it implemented that future contract. Its current baseline can remain
+explicitly unqualified until the dependent migration is ready.
+
+| Callable boundary | Expected typed input/output association | Phase and limit |
+|-------------------+-----------------------------------------+-----------------|
+| Published generic methods | Applicable generic parameters or captured generic use, declared request/domain -> method-specific result | Validate/wrap through actual POO Function Types; unsupported method remains unavailable rather than a procedure-shaped stub |
+| Published Rust/integration methods | Appropriate C and bounded application request/qualified upstream observations -> scoped result | Typed signature plus actual C/source/issuer checks from WP03/WP04; no root/Profile/tools passed beside C to override capture |
+| Currentness / result-use operations | Actual captured/result/use value expected by its real owner -> validated use or refusal | Keep producer-owned private issuance. A Type checking a presentation cannot manufacture resource-result or establish original execution |
+| Scenario evidence/review operations | Same C plus actual issued uses/identified Q/real review inputs -> identified inference/prepared review association | Scenario/Aitia own these downstream operations. Structural function wrapping is not review/decision authority |
+
+Method-contracts is an ordinary typed publication value bound to actual methods,
+not a validator-selection registry. The trusted publication supplies expected
+Function Types; candidate functions or attached labels cannot choose their own
+signatures. Validation wraps without invoking method bodies/defaults. At actual
+call time, supplied arguments and returned value count/types are checked and
+body/default exceptions propagate. If a result Type needs the private producer's
+recognizer, bind it at that trusted implementation/publication boundary; Types
+must not import methods back or claim a public shape authenticates issuance.
+
+* SPECIFIED Validation order, trust and extension boundaries
+:PROPERTIES:
+:CUSTOM_ID: library-contract-validation-boundaries
+:END:
+
+| Boundary | Required action / retained value | Refusal or remaining obligation |
+|----------+----------------------------------+----------------------------------|
+| Descriptor definition | Build expected Types from POO/Core and typed domain bindings in acyclic source roles; validate Type descriptors as developer-owned definitions | Malformed expected descriptor is a definition error, not a reason to execute a candidate's replacement validator |
+| Required scope admission | Core source/publication checks choose the actual expected scope and required Parent | Foreign provider/role/family or changed source association refused; equal labels/shape alone insufficient |
+| Effective value validation | Check prototype if explicitly required; declared shape/field Types; wrap/normalize fields; run inherited and role relation checks on the returned value | Missing/unknown/type-invalid fields and conflicting relationships refused with field/relation diagnostics. Unknown fields can be rejected without demanding their getters |
+| Contextual association | Check expected descriptor reference, family owner, actual immediate parent/provider and applicability against the admitted required scope | No parent cycle/skipping/substitution or policy-model inheritance. Classification/constraints remain pure; they do not run external methods |
+| Publish/read | Publish the checked definitions/functions and their associated expected descriptors; generation read follows the sole owner path | Do not discard validate's normalized/wrapped result. Stable labels cannot bypass descriptor/read revision/currentness guards |
+| Scenario selection/capture | Bind actual selected leaf/ancestors/policy, validate parameters/domain and acquire input closure under 10.38 | Field admission does not establish captured source truth, atomic acquisition, issuer identity or project authority |
+| Semantic/evidence/review use | Apply method/content/refinement/history/authority duties under 10.39/10.40 | Contract success is not a behavioral proof, completed method, reviewer appointment or delivery approval |
+
+Do not duplicate one field-Type map in ObjectContract and Core contextual
+responsibilities. Do not append replacement obligations that discard inherited
+ones, run the candidate's classifier before association checks, cache accepted
+booleans independently of the actual source/read basis, or normalize a contextual
+child into a detached substitute for the parent's already checked child.
+
+POO/Core validation is not a sandbox for arbitrary Scheme getters/callbacks.
+Declared getters and pure constraints execute under the selected source/read
+boundaries; arbitrary external reads remain open/unsupported premises rather
+than silently assumed pure. Capability publication is deferred: loading/admitting
+Library declarations must not invoke Rust, QNT, Lean, SysML or Aitia authority acts.
+
+The consolidated WP01 target includes the later WP05 design-policy descriptor
+and exact Scope fields above. Both policies have role review-policy and the same
+family owner, but different fixed subject identities, semantic revisions and
+applicability; they do not inherit each other's fixed-identity Contract. Content
+operations extend the existing methods/method-contracts associations with explicit
+supported capability keys and expected Function Types, not a second dispatcher.
+CT01/CT04/CT10/CT12/CT13 apply to both policies at their actual scopes; a bounded
+policy cannot silently substitute for design review. See [[file:10.52-contract-consistency-and-implementation-order.org::#consistency-findings][the whole-chain audit]].
+
+* SPECIFIED Positive and negative acceptance controls
+:PROPERTIES:
+:CUSTOM_ID: library-contract-acceptance
+:END:
+
+These are future meaningful controls, not tests written or executed in this task.
+
+| ID / positive control | Required positive result | Matched negative control and required refusal/limit |
+|-----------------------+--------------------------+----------------------------------------------------|
+| CT01 / admitted four-role family | Generic/Rust/integration/policy read the same V1 owner through their expected role and source association | Missing owner/version, foreign/forged descriptor, string-vs-symbol substitute, copied version field or unauthorized owner mutation cannot qualify |
+| CT02 / independent semantic revisions | Existing generic/Rust/integration semantic revision tokens remain readable without changing generation | Parsing /v3 as contract V3 or changing an Org/Profile value cannot select another generation |
+| CT03 / effective shape inheritance | Derived field maps validate after the parent's prepared map was forced; parent and added constraints both run on checked values | Missing parent field, bad child field, dropped parent constraint or arbitrary extra field refused; poisoned unknown getter is not demanded merely to reject its name |
+| CT04 / separate exact role constraints | Generic, Rust and integration each satisfy their own identity under shared model invariants | Rust under Generic fixed identity, integration under Rust fixed identity, wrong model ID or candidate-selected validator refused without calling its validator |
+| CT05 / admitted parent chain | Actual normalized Generic -> Rust -> integration references remain coherent within the selected scope | Foreign provider parent, skipped Rust parent, cycle, duplicate parent/generic-entry aliases or parent relabeling refused |
+| CT06 / real prototype promise | Declared actual ancestry passes when that role really promises it; structural value admission uses its own stated shape contract | Copied shape/metadata cannot forge promised ancestry; ancestry alone cannot supply source authority/refinement |
+| CT07 / complete duty/input relations | Inherited rules/dependencies and valid additions retain all required obligations with unique keys | Dropped duty, conflicting duplicate ID, unknown input role, dangling dependency or empty required closure for a nonempty duty refused |
+| CT08 / explicit child->parent state map | Valid reversed current pairs plus declared remaining projection coverage are accepted structurally | Wrong direction/endpoints, duplicate child mapping or omitted required projected state refused; acceptance still does not prove semantic refinement |
+| CT09 / integration inventory/delta | Exactly six RL/SI/TM associations and explicit mapping/queued-cancellation delta with duty links | Missing/duplicate case, unknown obligation, conflicting mapping or hidden delta refused; M06 test success remains property counter |
+| CT10 / composed policy | Applicable Rust/integration role, complete criteria/products/responsibilities/history rules and own revision | Policy as model child, generic-inapplicable selection, embedded project approval/grant or invented mandatory NASA adoption refused |
+| CT11 / bounded parameter domain | Existing 64/128 payload choices pass the six-case premises; generic and Rust method domains checked distinctly | Negative/inexact/zero-required values, unsupported workers/runtime/inventory/payload/mode or factor duplication refused; valid generic parameters do not imply six-case support |
+| CT12 / normalized callable publication | Returned wrappers/normalized receivers are published; valid input/output and actual deferred invocation preserved | Raw pre-validation value reuse, wrong arity/keyword/input/output/count rejected at its boundary; validation itself runs no method body/default |
+| CT13 / consistent scope association | Actual required Parent and role/family/parameter/method Contracts associate with every exported checked definition | Missing/wrong export, separately constructed mismatched definition/descriptor, arbitrary procedure? stand-in or stale declaration source refused |
+| CT14 / source/compiled loading and isolation | Source loading and compatible compiled loading exercise the same Contract semantics; parent-only selection leaves unrelated disabled owners cold | Changed loaded implementation, incompatible artifact or selected invalid owner stops that route; unrelated invalid disabled owner must not be forced |
+| CT15 / boundary strength | Valid declaration/publication enables subsequent explicit WP02/WP03 work with semantic duties retained | Matching hash, empty structural diagnostics, successful render or V1 label cannot issue evidence, erase pending/counters or approve review/delivery |
+
+WP01 is accepted only when the actual implementation demonstrates CT01-CT15 at
+its declared scope, with exact source/compiled identities, diagnostics and
+side-effect controls. Declaration/type tests and downstream integration checks
+are separate evidence. Historical cold-loading/recovery failures from 10.41 stay
+open until their actual current acceptance passes; completing WP01 does not close
+WP00 or WP10. Test ownership follows the existing Library/type/selection tests,
+with existing POO/Core controls reused and only domain-specific cross-boundary
+controls added where needed.
+
+* SPECIFIED Implementation sequence and status
+:PROPERTIES:
+:CUSTOM_ID: library-contract-design-status
+:END:
+
+First define shared value/row Types and the single family descriptor in abstract
+Types. Then define generic shape/role/parameters and Rust/integration/policy shapes
+and role constraints without object imports. Define parameter/callable/scope
+expectations under those trusted descriptors and test effective-field/normalization/
+reference controls. WP02 then migrates object construction, semantic catalogs and
+publication together; WP03/WP04 supply capture/method-dependent boundaries before
+their corresponding APIs are claimed usable. Active callers migrate directly;
+there is no intermediate permissive publication or duplicate live API path.
+
+This details GA01/GA03/GA04 and the WP01-facing parts of GA02/GA05-GA13/GA18 from
+10.41. It preserves DE-R01/R03 and DE-T01; model/content/refinement and review
+obligations remain allocated to their later owners. Source-grounded terminology
+and filenames replace the ambiguous adjective; no upstream API, implementation
+path, historical schema/version or execution receipt is renamed here.
+
+Only maintained Org/D2/SVG names, references and design content change in this
+task. No Types, objects, interface, tests, directory layout or running authority
+is changed. The old C4 catalog remains unchanged; [[file:10.35-content-validation-slice.org::#slice-input-freshness][10.35]] records current static
+input drift. This specification is not an executed Contract check or approval.
+
+[[file:10.43-library-objects-and-publication.org::#library-objects-and-publication][10.43 details WP02 object/configuration/publication responsibilities]],
+including actual checked parent bindings, single mapping/delta ownership, complete
+Scope exports and the Core checked-value handoff prerequisite. Declaration
+admission and completed method/review qualification remain distinct.
+
+[[file:10.44-profile-selection-and-scenario-capture.org::#profile-selection-scenario-capture][10.44 details WP03 by existing Profile/Scenario fields and operation boundaries]],
+including checked Scope consumption, actual ancestor/policy binding, separate
+provider/project/reference subjects, qualified acquisition and one owned C.
+Required gaps and downstream evidence/review qualification remain explicit.
+
+[[file:10.45-method-execution-and-evidence-issuance.org::#method-execution-evidence-issuance][10.45 details WP04 method execution and evidence issuance]],
+including actual same-C A/E/W association, complete input/execution origins,
+separate outcome dimensions, private issuance, invalidation and fresh qualified
+reuse. Existing Ops launch/environment seams need actual qualification.
+
+[[file:10.46-content-observers-and-reference-closure.org::#content-observers-and-reference-closure][10.46 details WP05 content observers]]: selected product/criterion policy, same-C
+bounded Org/architecture/decision/reference checks, actual A/E/W and historical
+versus current evidence, qualified semantic findings, invalidation/reuse and
+CO01-CO24 controls. This is target design, not executed content qualification.
+
+[[file:10.47-ascent-projection-and-query-view.org::#ascent-projection-and-query-view][10.47 details WP06 application projection and Q]]: independent required units,
+exact C/A/E/W/U/basis/run relations, current eligibility/coverage/conflict/gap
+semantics, existing Session acceptance/rollback and owned determinate Q for
+Aitia; PQ01-PQ26 are future controls, not an executed inference or review.
+
+[[file:10.48-aitia-review-adaptation.org::#aitia-review-adaptation][10.48 details WP07 Aitia review adaptation]]: exact C/Q to R, actual policy/
+project/role/product bindings, separate context/inventory/criterion checks,
+shared existing-Host mechanics, current Core receipt use, lossless findings and
+RV01-RV28 controls. Preparation is inert; no verification or submission occurs.
+
+[[file:10.49-history-authority-and-reassessment.org::#history-authority-and-reassessment][10.49 details WP08 history and decision authority]]: mandated source discovery,
+exact C/Q/R/H/action/grant bindings, accepted negative retention, repair/exception/
+supersession/withdrawal, genuine prefix custody and HA01-HA31 controls. These
+remain target operations; no authority decision or review is submitted here.
+
+[[file:10.50-library-delivery-and-recipient-use.org::#library-delivery-and-recipient-use][10.50 details WP09 Library delivery and recipient use]]: exact C/Q/R and accepted
+distribution authority, manifest/product/reference closure, actual transfer and
+acknowledgement, receiver-owned trust/verification/capture/review, adoption and
+current intended use. Missing/status/withdrawal/replay and DU01-DU30 controls
+remain future qualification; no implementation or actual delivery occurs.
+
+[[file:10.51-case-joint-acceptance-plan.org::#case-joint-acceptance-plan][10.51 details WP10 joint acceptance]]: existing entries/file owners, exact
+plan/evidence closure and G0-G8 source/compiled/cold/recovery/recipient gates;
+216 referenced contract control rows plus JA01-JA32 cross-boundary controls and
+OJ01-OJ12 open items. These are future requirements; no implementation,
+acceptance execution, review submission or actual delivery occurs.
+
+[[file:10.52-contract-consistency-and-implementation-order.org::#whole-slice-consistency-audit][10.52 reconciles the whole slice]]: policy/Scope/Config handoffs, required-unit
+and request-purpose bindings, captured/technical/current-authority lifetimes and
+private/exported provenance; S0-S9 implementation dependencies and retained OJ
+gates. Design consistency is not implemented or operational qualification.
+
+[[file:10.53-source-build-and-recovery-baseline.org::#source-build-recovery-baseline][10.53 details S0]]: live dirty source/dependency identities, current selected
+byte map, build/default-route versus q34 loading evidence, BS01-BS09 WP00
+blockers/repair owners and explicit S1 entry conditions. Static inventory does
+not close the remaining build/load/recovery qualification gates.
+
+[[file:10.54-library-and-aitia-types-contracts.org::#library-aitia-types-contracts][10.54 details coordinated S1]]: complete Library/Aitia effective fields and
+inheritance, both policy/Scope associations, single declaration-generation read,
+the twelve-purpose domain with fixed expected facts and operation allowlists,
+closed Aitia payload checks and TY01-TY32 acceptance refinements. No source or
+acceptance change is performed.
+
+#+CAPTION: WP01 file/shape/role/owner boundaries using POO/Core Types and Contracts.
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.svg]]
+
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][Editable D2 source]]. Proposed design; all positive/negative acceptance controls remain to execute.

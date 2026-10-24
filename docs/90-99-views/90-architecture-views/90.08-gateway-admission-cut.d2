@@ -1,0 +1,26 @@
+# org-target: docs/20-29-cases/20-gateway/20.03-gateway-design-audit.org::#audit-full-walk
+# Proposed domain/effect protocol, not an implemented ASCENT API.
+direction: down
+classes: {
+  evidence: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; border-radius: 12; font-size: 17}}
+  authority: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; border-radius: 12; font-size: 17}}
+  open: {style: {fill: "#E6F5F3"; stroke: "#19756C"; border-radius: 12; font-size: 17}}
+  gap: {style: {fill: "#FCE8E8"; stroke: "#A23D3D"; border-radius: 12; font-size: 17}}
+}
+record: "Immutable result and history\nProducer, inputs, scope, outcome\nFailure or completion remains recorded" {class: evidence}
+support: "Current evidence support\nGrounded dependencies and witnesses\nRequired methods and unresolved conflict" {class: evidence}
+cut: "Coherent required cut\nDesign/source/support epoch\nPolicy, principal, action, resource, context" {class: authority}
+commit: "Consumption / effect commit\nAtomic check-and-commit or justified fence\nRemote receiver needs actual enforcement" {class: authority}
+receipt: "Actual effect receipt\nEffect ID, artifact/configuration, cut\nCannot be inferred from a plan" {class: evidence}
+change: "Dependency change or unknown\nBetween validation and use\nOr a later operational observation" {class: gap}
+withdraw: "Withhold stale commit\nWithdraw affected future eligibility\nPreserve prior real effect and history" {class: gap}
+agent: "Return to actual owner\nRevise, transfer, recheck or investigate\nAgent chooses the next hypothesis" {class: open}
+record -> support: "check binding and applicability"
+support -> cut: "scoped candidate admission"
+cut -> commit: "one compatible version tuple"
+commit -> receipt: "only actual completed effect"
+change -> commit: "reject unmatched cut / fence"
+change -> withdraw: "affected support is no longer current"
+withdraw -> record: "retain original record" {style.stroke-dash: 4}
+withdraw -> agent: "explicit unmet premise"
+agent -> support: "new evidence or checked target transfer" {style.stroke-dash: 4}

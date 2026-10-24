@@ -1,0 +1,17 @@
+# org-target: docs/20-29-cases/20-gateway/20.15-late-outcome-origin-and-expanded-intake-reuse.org::#late-delivery-origin-packet
+direction: down
+classes: {
+  input: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; border-radius: 10; font-size: 17}}
+  state: {style: {fill: "#E6F5F3"; stroke: "#19756C"; border-radius: 10; font-size: 17}}
+  gate: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; border-radius: 10; font-size: 17}}
+}
+old: "LD00 original P2 / occ2 / ex2\nNative R1 + R2 acknowledged = 6\nExternal owned only r2m\nExact Kunit / consumer / completion-time access" {class: input}
+frozen: "LD01 B3: native c3 -> P3 -> review k3\ncap 3; scope L0; sigma3 distinct\nNative R1 + R2 + R3 acknowledged = 9\nExternal R3 ownership empty; late record absent" {class: input}
+late: "LD02 / LD03 old delivery arrives\nAuthenticate original P2 and complete units\nLater k4 can establish historical P2 owned R2\nFrozen k3 and current R3 ownership unchanged" {class: state}
+check: "LD04 / LD05 current confirmation\nOld record offered for P3: scope mismatch\nActual P3 completion needs exact new association\nRetain history; recheck current access" {class: gate}
+action: "LO00 / LO01 independent old action\nallow40 -> deny41 -> old completion\nNew kNew sees no actual old outcome yet\nallow42 renewal supplies no new completion" {class: input}
+arrival: "LO02 / LO03 late old completion\nActual subject / auth-1 / deny41 at old use\nRetain unauthorized occurrence and violation\nallow42 cannot authorize past use\nOnly later kLater includes actual old result" {class: gate}
+effect: "LO04 / LO05 effect scope\nNo remote no-effect, silent retry or exactly-once\nFresh useLaw2 needs actual current boundary\nHistorical violation persists after renewal" {class: state}
+old -> frozen -> late -> check
+action -> arrival -> effect
+late -> arrival: "shared origin-preserving rule; independent corpora"

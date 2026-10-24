@@ -1,0 +1,227 @@
+#+TITLE: 40.03 OpenSysML: Implementation Responsibilities and Evidence Boundaries
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 40.03
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+FILETAGS: :research:sysml:runtime:interoperability:evidence:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+#+LINK: osml https://github.com/Open-MBEE/OpenSysML/blob/188f222055755fa9deca1c1095e0727ed46f0628/%s
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:../../10-19-design/10-architecture/10.24-sysml-interoperability-and-authority-boundaries.org][Existing interoperability experiment]]
+
+* Research identity and scope
+:PROPERTIES:
+:CUSTOM_ID: opensysml-research-identity
+:INSPECTED_ON: 2026-10-20
+:STATUS: Source inspected; current checkout not built or executed
+:END:
+
+The complete repository was cloned into ignored research storage at
+~.data/OpenSysML~. It is a full, non-shallow clone on ~develop~, at
+~188f222055755fa9deca1c1095e0727ed46f0628~. The checkout was clean after
+inspection. No upstream source, dependency or global installation was changed.
+
+This study examines architectural ownership and selected implementation paths.
+It does not certify the implementation or reproduce its benchmarks. The host
+PATH exposed no Go executable during this inspection, so no build or Go test
+result is claimed. Tests named below were inspected as contracts, not executed.
+The older CLI experiment in 10.24 retains its original source and binary IDs;
+its results do not qualify this newer development checkout.
+
+The [[osml:go.mod][module manifest]] requires Go 1.25.0 and specifies toolchain
+go1.25.11. The architecture document's Go 1.23+ heading is less current than this
+executable dependency declaration.
+
+* Product responsibility
+:PROPERTIES:
+:CUSTOM_ID: opensysml-product-responsibility
+:END:
+
+The repository implements the OpenSysML Runtime Environment and Development Kit
+(REDK), also described as MDK2. It owns a SysML v2 / KerML language implementation
+and executable modeling environment. Its scope extends from authoring and static
+diagnostics through instantiation, behavior execution, analysis and publication.
+See the [[osml:README.md][product description]] and [[osml:docs/internals/architecture.md][architecture]].
+
+Three distinct paths matter:
+
+1. Static analysis: source -> lexer/parser -> immutable syntax tree -> symbol
+   index -> resolution/type model -> tiered diagnostics.
+2. Execution: resolved model -> effective features and lowered behavior graphs ->
+   instance/context -> values, action steps, state transitions and verdicts.
+3. Analysis: an explicit question -> an engine that covers it -> execution,
+   exploration, checking or solving -> a claim with evidence strength and bounds.
+
+Parsing a requirement does not execute it. Running one instance does not quantify
+over other inputs or schedules. Selecting a symbolic engine introduces a distinct
+encoding and solver boundary.
+
+* Implementation ownership map
+:PROPERTIES:
+:CUSTOM_ID: opensysml-implementation-map
+:END:
+
+#+NAME: opensysml-layer-responsibilities
+| Area | Responsibility | Relevant boundary |
+|------+----------------+-------------------|
+| internal/syntax | Source spans, lexer, recursive-descent parser, AST, formatting and packed notation | Syntax tree is intended to remain immutable; malformed input yields diagnostics and recovery nodes |
+| internal/semantic | Symbol scopes, lazy resolution, specialization/conformance, effective members, multiplicity, identity and element queries | Derived facts live outside the AST; this is language semantics, not project approval policy |
+| internal/check | Tiered syntax/name/type/constraint diagnostics and edit checks | Document-level higher tiers can be suppressed by lower errors; element-scoped passes gate their own subjects |
+| internal/ir | ActionGraph/StateGraph lowering, view/query/document plans | Behavior executors consume lowered graphs rather than inventing another control-flow representation |
+| internal/exec/runtime | Instances, values, quantities, expressions, token-flow actions, state machines, shared clock and scheduling | One concrete execution fixes choices according to its scheduling policy |
+| internal/exec/analysis | Questions, coverage, engine registry, isolated workers, results, witnesses and evidence strength | Engine capability and actual result strength are distinct |
+| internal/exec/solve and smt | External SMT solver process and supported model encodings | Unsupported constructs, unknown answers and exhausted bounds remain explicit |
+| internal/workspace | Multi-file document/index lifecycle, bundled libraries, caches and incremental invalidation | Owns when semantic and diagnostic caches become stale |
+| internal/translate | RDF/notation mapping, XMI migration, repository sync and selected native calculation compilation | Conversion fidelity and backend coverage need separate qualification |
+| internal/doc | Query execution, document IR and Markdown/HTML/PDF rendering | Rendered output is a view of model data, not a new semantic authority |
+| internal/frontend and cmd | CLI/REPL, LSP, gRPC, MCP, Jupyter and other transports/entrypoints | Surfaces expose the engine; their capabilities must be checked individually |
+| client | Embeddable Go API and Python, Node, Java, Rust, Julia and MATLAB clients | Client languages do not each implement the underlying runtime semantics |
+| tools and tests | Referees, corpora, conformance fixtures, traces, differential checks and architecture hygiene | Presence of a fixture or baseline is not proof that a current run passed |
+
+The [[osml:tests/hygiene/layering_test.go][layering test]] assigns packages to layers and checks imports.
+The implementation has more packages than the architecture overview lists;
+the checked import map is a useful companion to the prose diagram.
+
+** Runtime state and concurrency
+
+[[osml:internal/exec/runtime/model.go][runtime.Model]] caches model-derived facts and explicitly has a
+one-goroutine-at-a-time contract. Per-run mutable state belongs to Context.
+Analysis workers build their own model-derived state over a frozen shared index.
+This avoids interpreting public-client concurrency safety as unrestricted sharing
+of the runtime's memo tables.
+
+[[osml:internal/exec/runtime/action_executor.go][ActionExecutor]] holds a lowered ActionGraph, tokens and execution state.
+[[osml:internal/exec/runtime/scheduler.go][Scheduling policies]] include reverse, declared, seeded, exploration and replay,
+with an internal checker policy. A modeled concurrent action is executed through
+chosen interleavings; it is not evidence of native parallel execution behavior.
+
+** Incremental invalidation
+
+[[osml:internal/workspace/model/workspace.go][Workspace.reindexLocked / invalidateLocked]] replaces the indexed document,
+records index changes and invalidates resolver dependents, diagnostics, reverse
+references and batch-computed results. Gather recomputation is deferred until a
+read needs it.
+
+[[osml:internal/semantic/resolve/reads.go][resolve.Reads]] closes a document's read set over dependency frames and records
+names, namespaces, segments, documents, whole-table enumeration and spelling-set
+reads. Stale checks compare these with index changes. This is more informative
+than an import-only dependency graph, particularly for formerly missing names
+and global name suggestions. It is a design reference for dependency tracking;
+this inspection does not establish its completeness for every language feature.
+
+* Analysis contract and limits
+:PROPERTIES:
+:CUSTOM_ID: opensysml-analysis-contract
+:END:
+
+[[osml:internal/exec/analysis/question.go][Question]] separates evaluation, outcomes, holds, sensitivity, satisfiability,
+sweeps and external computation, including what is fixed and what remains free.
+[[osml:internal/exec/analysis/engine.go][Engine]] declares capability, checks coverage and runs under a budget.
+[[osml:internal/exec/analysis/result.go][Result]] separates the claim from its strength:
+~NotCovered~, ~Observed~, ~Witnessed~, ~Bounded~, ~Proved~.
+[[osml:internal/exec/analysis/standing.go][Standing]] reports the question's freedom, assumptions, replayed witnesses and
+reached bounds with the conclusion.
+
+#+NAME: opensysml-analysis-paths
+| Path | What it answers | Qualification boundary |
+|------+-----------------+------------------------|
+| run | One evaluation under selected bindings and schedule | Concrete observation |
+| explore | Alternative linearizations within exploration budgets | Enumeration scope and completion must be retained |
+| check | Explicit-state search with partial-order reduction and replayed counterexamples | Its own implementation caps its authority at bounded evidence |
+| solve | Constraint satisfiability/configuration through an external solver | sat, unsat and unknown remain separate; translation subset matters |
+| smt | Supported behavior properties or schedule sensitivity through symbolic encoding | Can label a result proved only under its encoding and completion conditions |
+| sweep / external tools | Enumerated or sampled inputs, or delegated computation | Domain, sampling, tool identity and trust remain relevant |
+
+The [[osml:internal/exec/analysis/check.go][explicit checker]] searches schedules on one clock; its comments explicitly say
+bounded, never proved. The [[osml:internal/exec/smt/engine.go][SMT engine]] declares moves, unrolling, slots and solver
+bounds. It replays witnesses and distinguishes an unsatisfiable query whose bound
+cannot be reached from an incomplete bounded search. The [[osml:internal/exec/solve/solver.go][solver wrapper]] discovers
+z3/cvc5 as external processes and retains unknown outcomes.
+
+Consequently, describing REDK as only a simulator would omit implemented checking
+and symbolic analysis. Describing every successful result as a proof would also
+be incorrect. Its ~Proved~ label is an engine result under the supported model
+semantics, assumptions, translation and solver trust; it is not automatically a
+Lean proof artifact, a complete SysML conformance claim or Rust runtime evidence.
+
+The [[osml:internal/exec/analysis/scale_test.go][strength tests]] include budget-driven downgrades, replay failure and prevention
+of strength promotion. These are useful patterns for our external-method contract.
+
+* Integration surfaces and neighboring projects
+:PROPERTIES:
+:CUSTOM_ID: opensysml-ecosystem
+:END:
+
+The [[osml:client/opensysml/client.go][Go Client]] provides a common API for model loading, diagnostics, evaluation,
+instantiation and execution. [[osml:client/opensysml/inprocess.go][New]] directly links the service implementation with no
+port, child process or serialization; Dial uses a remote service. A Go server is
+therefore an available deployment choice, not a requirement for Go embedding.
+Other language clients and editor integrations have their own transport and
+capability contracts. Inspect those before selecting a deployment topology.
+
+[[osml:internal/translate/interop/modelsync/modelsync.go][modelsync]] shares graph comparison/application above the repository clients.
+Its Repository interface is implemented by Flexo and SysML API repositories and
+includes branch head, last-seen commit and graph-at-commit reads. The runtime
+repository contains integration clients; it does not subsume the external stores.
+
+The [[https://opensysml.org/][OpenSysML suite site]] identifies independently maintained neighboring projects:
+
+#+NAME: opensysml-related-projects
+| Project | Responsibility relative to REDK | Inspection level |
+|---------+---------------------------------+------------------|
+| Open-MBEE/sysml-toolkit | Rust toolchain for parsing, transformation and pipeline integration | Suite description only; no source or execution audit here |
+| Systems-Modeling/SysML-v2-Pilot-Implementation | Java/Xtext reference implementation and grammar/library comparison baseline | REDK's wrapper, pinning and documentation inspected |
+| Open-MBEE/flexo-mms-* | Versioned RDF model-store services | REDK's repository abstraction and client paths inspected |
+| Open-MBEE/OpenSysML-Extensions-Library | Additional modeling libraries vendored at pinned revisions | REDK differential documentation inspected |
+| OpenMBEE | Wider model-based engineering community and integration ecosystem | Public project positioning only |
+
+Standard specifications, a reference implementation and an independent
+implementation have different roles. A reference implementation can contain bugs;
+agreement with it is a differential control rather than a normative proof.
+
+* Assurance evidence and maintenance observations
+:PROPERTIES:
+:CUSTOM_ID: opensysml-assurance-observations
+:END:
+
+The [[osml:docs/project/spec-compliance.md][compliance map]] links semantic rules to implementation and tests and distinguishes
+implemented, approximate, unsupported and extension behavior. The README expressly
+does not claim conformance certification. Corpus cleanliness or grammar presence
+alone cannot establish execution equivalence.
+
+The [[osml:docs/project/pilot-differential.md][Pilot differential]] fixes the reference version and corpus provenance and
+uses Java bridges over the Pilot validators. Its narrative calls the differential
+advisory. The [[osml:.github/workflows/oracle-reproduction.yml][oracle reproduction workflow]] runs scheduled/manual reproduction,
+including ~pilot-diff -check~, but explicitly states that it is not a required PR
+check. The [[osml:.github/workflows/pr.yml][PR workflow]] separately requires selected corpora and tools through
+~OPENSYSML_REQUIRE_*~ settings. Configured checks are not evidence that this
+checkout's remote CI or a local reproduction passed.
+
+The accepted [[file:../../10-19-design/10-architecture/10.25-rust-sysml-quint-lean-evidence-integration.org][integration design]] defines the shared-subject method contract and first delivery slice.
+
+* Implications for deterministic-engineering
+:PROPERTIES:
+:CUSTOM_ID: opensysml-design-transfers
+:END:
+
+Retain the existing 10.24 ownership decision: use an optional standards projection
+and external analysis method. The inspected implementation offers richer methods
+than the earlier Boolean CLI experiment exercised, but no new production bridge
+is introduced by this research.
+
+Useful transfers are explicit question/freedom records, preflight method coverage,
+claim/strength separation, replay-qualified witnesses, typed refusals, named
+budgets, dependency read sets and executable architectural layering contracts.
+They should inform our own contracts rather than dictate a Go-centric core.
+
+Before admitting one REDK result, bind the native obligation and subject revision,
+projection version, complete model/library bytes, executable identity, engine,
+inputs, assumptions, schedule, bounds, termination status and raw verdict. Compare
+against an independent positive/negative oracle. A changed projection invalidates
+translation evidence even when an unrelated native proof remains reusable.
+
+Imported requirement satisfaction, a repository commit or an upstream ~Proved~
+label cannot issue current Aitia authority or close a native blocker. Those remain
+decisions of the existing evidence and review owners. Evaluating broader adoption
+requires a concrete model-exchange need and measured benefit against mapping
+maintenance, model drift, toolchain size and repeated verification cost.

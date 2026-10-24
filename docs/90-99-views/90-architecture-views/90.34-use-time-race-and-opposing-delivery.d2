@@ -1,0 +1,34 @@
+# org-target: docs/20-29-cases/20-gateway/20.12-selected-read-use-race-and-counter-packets.org::#use-race-full-packet
+# Existing owner boundaries only; no remote fence, native run or external delivery receipt supplied.
+grid-columns: 2
+grid-gap: 32
+classes: {
+  input: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; border-radius: 10; font-size: 17}}
+  state: {style: {fill: "#E6F5F3"; stroke: "#19756C"; border-radius: 10; font-size: 17}}
+  gate: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; border-radius: 10; font-size: 17}}
+}
+use: "UR: validation does not grant future use" {
+  direction: down
+  validated: "UR00 kV / epoch 40\nAuthentic L0-only method / mapping / HC\nCurrent allow40; no future authority\nOutLaw0 and captured association immutable" {class: input}
+  revoke: "UR01 access changes to deny41\nBefore actual useLaw1\nRL / TL / VL0 / native identity unchanged\nThis consumer's current predicate fails" {class: state}
+  consume: "UR02 / UR04 actual use boundary\nKnown stale consumption RJ10\nUnknown access / order pending\nA pre-use lookup is not remote fencing" {class: gate}
+  reallow: "UR05 independent allow42 fork\nFresh current input / usage / guards\nLaw bytes may be reused if applicable\nSame-looking label is not old generation" {class: state}
+  history: "UR06 retain real history and failures\nOccurrence of delivery != authorization\nRevocation does not undo old effects\nNo compensation or new action synthesized" {class: gate}
+  validated -> revoke: "independent causal journal"
+  revoke -> consume: "actual consumer and policy scope"
+  revoke -> reallow: "new authoritative input, separate fork"
+  consume -> history: "truthful reached outcome"
+  reallow -> history: "fresh evidence does not rewrite old cut"
+}
+opposing: "LC: opposing family and review" {
+  direction: down
+  input: "LC00 / LC01 frozen O0 + late counter\nPrior P0 / L0 shown items = 10\nNew checked oLateCounter has method=Q\nFresh factory, not include composition\nNever edit Pfx0 or the support branch" {class: input}
+  raw: "LC02 native refresh\nCurrent 17 items; added 7, retained 10\nCounter + 5 factors + conflict newly added\nP0 current full family = 13 items" {class: state}
+  native: "LC03 honest bounded presentation\nComplete evaluation may defer P0 details\nNative complete flag / checkpoint\nDoes not prove external completed delivery" {class: gate}
+  full: "LC04 / LC05 exact coverage\nOld 6 positive items are not current 13\nGenuine full 13-item delivery can qualify\nKnown false ack RJ11; unknown pending" {class: gate}
+  review: "LC06 independent J4 / method disposition\nComplete required intake and exact subject\nMain input VCounter / disposition absent\nPresentation alone never creates clean A\nCurrent permission still checked under UR" {class: gate}
+  input -> raw: "fresh native projection and source map"
+  raw -> native: "semantic read remains complete"
+  native -> full: "authentic payload / consumer / capture"
+  full -> review: "shown is not method-valid counterexample"
+}

@@ -1,0 +1,27 @@
+# org-target: docs/20-29-cases/20-gateway/20.04-query-and-change-fixtures.org::#three-change-walkthroughs
+# Three independent resets from hypothetical B0, not cumulative changes or executed work.
+direction: down
+classes: {
+  base: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; border-radius: 10; font-size: 17}}
+  change: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; border-radius: 10; font-size: 17}}
+  result: {style: {fill: "#E6F5F3"; stroke: "#19756C"; border-radius: 10; font-size: 17}}
+}
+b0: "Hypothetical clean baseline B0\nX0 / S0 / C1 / cache off\nR+, RL, RSC0, RF0; mapping + App0 / VApp0\nComplete declared slots / counter scope and scoped A0" {class: base}
+cap: "C-CAP: C1 -> C2\nXcap, same S0 / M0\nRegister new target Pcap and owner OC" {class: change}
+cache: "C-CACHE: enable cache\nXcache, Sk / Kk, total B still 2\nRegister CacheAuth / Pcache and owner OK" {class: change}
+source: "C-SOURCE: callback S0 -> S1\nXsrc, M0 text unchanged\nRegister Psrc and new owner OS" {class: change}
+cap_read: "OC query: L0 supported\nPcap and PerfCap unknown\nConcrete Q / SC / PF applications pending" {class: result}
+cache_read: "OK query: L0 supported\nCacheAuth and Pcache unknown\nRevised existing methods + GW-01.c pending" {class: result}
+source_read: "OS query: L0 supported\nPsrc unknown; Corr1 missing\nLate X0 result cannot become S1 support" {class: result}
+reuse: "Reuse only justified scope\nRetain mathematical artifact RL\nCheck new application and actual dependencies" {class: base}
+history: "Existing durable history\nOriginal receipts and real past effects retained\nNew admission / use needs coherent current cut" {class: base}
+b0 -> cap: "independent reset"
+b0 -> cache: "independent reset"
+b0 -> source: "independent reset"
+cap -> cap_read: "withdraw copied C1 applications"
+cache -> cache_read: "invalidate negative / aggregate footprints"
+source -> source_read: "withdraw source correspondence"
+cap_read -> reuse: "conditional AppCap / VAppCap"
+cache_read -> reuse: "frame and shared ownership not assumed"
+source_read -> reuse: "new S1-to-model bridge required"
+reuse -> history: "new scoped records append; old meanings preserved"

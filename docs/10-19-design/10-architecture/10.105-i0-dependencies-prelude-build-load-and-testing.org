@@ -1,0 +1,346 @@
+#+TITLE: 10.105 I0 Dependencies, Prelude, Build/Load and Testing Entries
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.105
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+FILETAGS: :design:dependencies:prelude:build:testing:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.104-declarative-slice-coherence-and-implementation-gates.org::#coherence104-order][10.104 I0 gate]] | [[file:10.97-i0-dependency-load-and-testing-entry-migration.org][Earlier I0]] | [[file:10.98-i1-normalized-context-and-scope-retention.org][I1 retention]] | [[file:10.103-i6-joint-acceptance-and-explicit-sysml-publication.org][Joint lanes]] | [[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][D2]]
+
+* I0 scope and non-circular exit
+:PROPERTIES:
+:CUSTOM_ID: i0-105-scope
+:END:
+
+This unifies 10.97's migration design against 10.104's I0 gate and current source.
+I0 establishes a reviewed compatible realized dependency/API/prelude/source graph,
+actual build/load/test entry capability and an independent complete application
+root/lane plan. Framework/bootstrap qualification may precede I1--I6. Final complete
+new-application C/view/model/effect/cold/recovery acceptance waits for those stages;
+I0 cannot certify their future semantics using a synthetic substitute.
+
+#+begin_example
+Native owning declarations -> reviewed actual checkout/dirty/phase cut
+ -> real package + entry + prelude registration and qualified POO/Core APIs
+ -> explicit required roots -> package-library-spec/native traversal
+ -> std/make/Core build issuance -> actual artifact/load association
+ -> selected test-source -> TestingScript -> Fixture/Ops/process/receipt/postcheck
+ -> I1 and later domain implementation, then final whole-slice lane qualification
+#+end_example
+
+This is read-only source/metadata/launcher/selected-artifact inspection plus Org/D2
+editing/rendering. No implementation, dependency mutation, checkout move, package
+operation, recipe evaluation, tool/version command, build/load/test/acceptance,
+cold/restoration, capture/inference/validation/publication or orchestration extension
+occurs. Even recipe listing may evaluate shell-backed variables; Justfiles are read
+as text. All calls and controls below remain proposed.
+
+Use existing POO value/Function semantics, Core source/build/TestingScript mechanisms,
+ASCENT generic execution and Flow product/dev ownership. No parallel graph builder,
+compatibility alias, loader, environment-discovery harness or version registry. Library
+V1 remains declaration-owned; dependency pins, language identities, semantic revisions
+and observed tool/artifact hashes are different dimensions, not Namespace versions.
+
+* Current declarations, checkouts and owner decisions
+:PROPERTIES:
+:CUSTOM_ID: i0-105-dependencies
+:END:
+
+Initial read-only cut on 2026-10-22; dirty sources remain at several owners. HEAD alone is
+not the complete input or loaded-code identity. Preserve prior 10.97--10.104 cuts
+and existing failures rather than rewriting them to current names.
+
+| Owner / native declaration | Actual observed source resolution | Required disposition |
+|----------------------------+-----------------------------------+----------------------|
+| Project gerbil.pkg: unpinned poo-flow-core/gerbil-ascent/gerbil-poo | Project HEAD 8044732d505f84e373119a70f947df00e1767300 plus staged/working work; links resolve adjacent Core/ASCENT and Flow's POO | Direct migration of actual owning metadata/imports/build roots to a reviewed immutable compatible tuple; manifest.ss is generated/historical description, not a competing pin owner |
+| Core gerbil.pkg: package yuanxu, prelude :tao3k/yuanxu/prelude, POO c4b647ef66b735360346c0eb0e27c2cc5430cf72 | Adjacent Core e5ccb7330224eab194bdf66746a5c55ff3700f75 plus dirty source; repository identity tao3k/gebril-yuanxu | Keep repository/package/prelude identities distinct; qualify actual selected POO behavior and registration before claiming compatibility |
+| ASCENT gerbil.pkg: gebril-yuanxu@e5ccb7330224eab194bdf66746a5c55ff3700f75 | Adjacent ASCENT 18751d5c513fd7ae6e768f580866b9e1fb34d2d3 plus dirty Yuanxu migration; no realized new package edge in its nested tree | Realize reviewed canonical dependency through existing package ownership; Program/provider/storage/qualification imports and compile/load closure must agree |
+| Flow production gerbil.pkg: POO c4b647ef, parser 78507e68, Orgize 8f04aa24, ASCENT 0f99da9e | Flow e20e93236ca7a04275d1293cdc9ce770401efd7f plus dirty source; local ASCENT checkout 86ad9ae3469565bea6229b71ef1d9197c6a82d63 | Reconcile only actually selected product routes. Flow is optional for formation-only work, not a universal provider forced into every Project |
+| Shared actual POO | fdeadfa40ca5cee5fe20308985aef1577f2eb49b plus object/mop/observation/build/read-route edits | Declared c4b647ef is not realized here. Preserve needed behavior and choose immutable reviewed owner source, not whichever old compiled tree imports successfully |
+| Flow dev/gerbil.pkg: ASP 0f78289a7ae465a84370f5d94d8d14671f3c43af | Distinct dev package/library for dev/unit-tests.ss discovery/batching | Keep ASP development-owned; actual test path is explicit, never production fallback |
+| Alternate formation Core/POO | Clean .data/formation-core 44a99d45396d1a23e850105ffe8af442a61b2780 and .data/formation-gerbil-poo 0df023fd9e15192156935c971f0f1940028c5277 | Separate historical route; do not label it adjacent current Core/POO or mix compiled layouts |
+| ASCENT nested old package roots | poo-flow-core e85fd45303b208b23e5957fd316e7004994109a4 and POO 099b381588360a8a49fd772f666a1a00351366f5 | Wrong earlier path/stale interface is a matched negative control; no new gebril-yuanxu link is inferred from gerbil.pkg text |
+
+Current Flow init uses =:yuanxu/module-system/selection/init-syntax= and
+=(yuanxu! :load-modules "./modules" mode: auto)=. This Project's root/formation entry
+still uses old :core/poo-flow!; Library/Module/Scenario package metadata still selects
+=:core/module-system/source/module-prelude=, while profiles/gerbil.pkg is an ordinary
+profile package. Its nested review metadata also needs selected-closure inspection.
+Do not add missing per-owner gerbil.pkg files merely to duplicate the existing family
+metadata. Entry and package/prelude changes follow their actual existing owners.
+
+Current formation-runtime extracts only =github.com/tao3k/yuanxu@=, which does not
+match ASCENT's current literal =github.com/tao3k/gebril-yuanxu@...=. It also mounts
+older source/core and copies old nested language files. This is a source-visible
+preparation blocker, not an executed failure. Consume actual owning dependency/package
+mechanisms, migrate the route coherently and reject mismatches; do not add aliases,
+force a new pin or maintain another regex/version catalog. No new compatible tuple
+has been proven here and no package command is run to manufacture one.
+
+** Later concurrent Core commit and ASCENT pin observation
+
+During this documentation update, adjacent Core advanced to
+=39ed7176bdc30a3f47618aeed894e32e316c1e35= (selected graph native self binding).
+ASCENT gerbil.pkg now declares
+=github.com/tao3k/gebril-yuanxu@39ed7176bdc30a3f47618aeed894e32e316c1e35=,
+SHA-256 =5745a06a4747ff16ebd8e41976bc51a40258bd1edc7f8680feb81c96087202c6=.
+The initial e5ccb733 table remains its original cut. Observed link.ss bytes stayed
+=4abca17ca1fb52d8a3af090e7f1009da8bde10c6f11fa0e1bd2dc2b4a0766d99=:
+the explicit self:result form was already present as dirty source at initial read.
+Owner-local realized-scope remains additional working-tree source, not proof that
+this entire graph/currentness path is in that commit or qualified.
+
+The ASCENT gebril-yuanxu package edge is still absent in its package tree; earlier
+nested links and the old formation-runtime extraction remain. A committed lexical self-binding
+change and a moving dependency pin do not establish realized source, compiled/load
+parity or K1/SD/S1 retention. These are concurrent upstream changes, not mutations
+made by this task; no package/build/load/test command was run. Freeze a reviewed
+actual final tuple at implementation rather than repeatedly relabeling an old lane.
+
+* Entry, prelude and actual phase/load association
+:PROPERTIES:
+:CUSTOM_ID: i0-105-prelude-load
+:END:
+
+| Existing owner seam | Retained responsibility / target change | Qualification boundary |
+|---------------------+------------------------------------------+------------------------|
+| POO object/mop/slot-observation/read-route/build.ss | Actual ordinary Object/Type/Function normalization, receiver/reference semantics and producer-owned observations | Compile actual required units/phase inputs; source route/read issuance is not arbitrary-repo capture, trusted clock or SysML publisher |
+| Core gerbil.pkg/prelude.ss/source-package.ss/build.ss | register-yuanxu-build-source! checks package yuanxu, imports actual root prelude context tao3k/yuanxu/prelude and binds it at expansion time before current build entry | Repository spelling gebril-yuanxu differs from language package yuanxu and prelude package tao3k/yuanxu. Copying old nested files or just renaming imports is insufficient |
+| Core types.ss/admission/source/link/publication | Yuanxu Contracts, source/publication/currentness and actual Scope admission | I1 still retains K1/SD/S1 independently. New owner-local realized-scope and selection self:result changes do not by themselves fix dropped admission candidates |
+| Core init/core-spec/build projection/artifacts | Published Module projection and ordinary Core roots remain separate; real compiler/outputs/issuance/currentness at existing owners | Source graph and artifact receipt are not actual runtime load, C/view origin or model validation |
+| ASCENT build-modules.ss/build.ss/Program/session | Actual source-bound generic rule/Program/Session and separate Scheme/native/C/executable build surfaces | Current migration includes Program/operators/table providers/storage/withdrawal references; do not restore retired application Evidence. Scheme-only lane cannot claim every C/native/Actor/Rust surface |
+| Flow init and selected modules | Product-owned declarative graph, evidence-assessment/temporal/context/Aitia/Nix transport stay at actual owners | Importing current syntax is not complete product/fixture qualification; no reverse Core -> Flow edge to repair moved tests |
+| Project init/build/Types/interfaces/family metadata | Direct current syntax/Contract/prelude migration, lazy explicit selected providers and complete selected roots | Preserve Project intent/selection, not Flow's auto product graph; keep actual returned Config/Function/Scope values. No import-init lookup or handwritten second linker |
+
+The actual current syntax owner accepts =mode:=, =source:= and =:load-modules= and
+has its own declaration/diagnostic rules. Preserve the Project's supported explicit
+provider/source annotations through that actual API; do not infer that replacing a
+macro name alone preserves semantics. Language bootstrap/source registration must be
+performed by the selected owner before compiled prelude use, with full macro/runtime
+input provenance. No source evaluator or macro is invoked in this audit.
+
+The inspected Core linker now selects owner-local realized Scope from original-graph
+external-package requests before bind-exports/final admission. It rejects multiple
+owner matches and does not borrow a consumer dependency Scope. Its cached selection
+now uses the explicit lexical self: result option, not a public self field. Qualify these paths on actual POO/Contracts;
+no-match/foreign-owner/multiple-match/source changes remain controls. Scope factory
+still executes; do not treat realization as skipping it or as an effect permission.
+Final Context/edge/Scope normalized return retention stays the next I1 gate.
+
+** Bounded artifact and launcher observations
+
+These files were read, not loaded. At inspected paths, general .gerbil/lib has
+core/types.ssi and retired gerbil-ascent/evidence/interface.ssi; yuanxu/types.ssi is
+absent there and in the inspected formation runtime. This is not a complete package
+inventory, proof of actual resolution or permission to delete historical outputs.
+
+| POO artifact | General .gerbil/lib SHA-256 | Formation runtime/lib SHA-256 |
+|--------------+----------------------------+------------------------------|
+| object.o1 | 1cab71d8c826983fd6b99da6f5912596b1b632361d642e68c4e0e454ab6d5765 | Same wrapper bytes |
+| object~0.o1 | 4a4e003993e32e9c1bd8bf6b95b4d1887ff33f2a5a590a08848f22ec284c5c0f | 010e555fa53f953d08af9e391d1bc5876eb5a2e71f947670aafb22bfeb33b4f7 |
+| object.ssi | 090a7e9af6351a1b9219f718df57776569856a47fd91686f10e0791484e2c2da | 7f480a89b7fb55f3b06ca36058b448392be25ade4719f4ed0e9d5853314d81b6 |
+
+Thus equal wrapper hashes cannot qualify actual sections/interfaces. Future compiled
+admission needs actual selected .ssi/.ssxi/.o1/named sections/generated C/native outputs,
+compiler/ABI/source association and complete phase roots. Source fallback cannot rescue
+a compiled lane. Use existing owner-selected output isolation/invalidation, preserving
+unrelated caches and receipts rather than deleting shared paths.
+
+Shell resolution still finds Homebrew gerbil/gxi/gxc/gxtest launchers at
+=0.19.20261009110849.1cfb032.patch618d76f9eb72= (478/481 bytes). The gxi text sets
+GERBIL_HOME=current, appends runtime aliases to GAMBOPT, allows GERBIL_GCC override
+and execs another binary. No launcher/version command was executed. Actual future
+load evidence must record the exec chain/SDK/compiler/headers/libs, argv/cwd/env,
+package/bin/load priority and realized expansion/runtime inputs. A launcher path
+or digest cannot establish the installed VM image or transitive toolchain.
+
+* package-library-spec and build/source projection
+:PROPERTIES:
+:CUSTOM_ID: i0-105-package-spec
+:END:
+
+| Actual operation / field | Responsibility and boundary |
+|--------------------------+-----------------------------|
+| package-library-spec(root,package,entries, admit-context:, exclude:) | Existing Core source-closure.ss operation over explicitly selected native package entry imports. Returns package-relative targets, not a new scheduler, test discovery API or artifact receipt |
+| for-each-build-module | Existing invocation-local traversal/seen identity, dependency postorder, import/export/import-set unwrapping and prelude owner resolution; preserve existing phase semantics instead of a parallel dependency walk |
+| admit-context | Actual owner-provided admission/observation for each visited context before package/exclusion filtering. Not a caller-selected trust predicate or automatic proof of every input needed by a test/process |
+| Package prefix and exclusions | Select returned targets of this package; an excluded target still participates in import traversal/admission. Exclusion is not permission to erase a mandatory phase/root/duty |
+| Explicit entry inventory / package owner | Independently declare required application/test/adapter entry roots. Four current Project build roots do not cover formation; the function cannot discover what the activity requires |
+| Native import/expansion | Uses actual core-import-module; expansion/source/tool dependencies belong to qualified build preparation. No business runtime/workload activation is promised, but this is not a proof of effect-free arbitrary macro import |
+| std/make and actual Core build | Retain real compilation/currentness/output projection and receiver-local issuance/handoff. Returned relative paths alone cannot prove full build or realized runtime load |
+
+Existing Core t/package-library-spec-test.ss specifies shared imports once/dependency
+order, laziness for unused malformed sources, excluded-target behavior and admission
+refusal on excluded dependencies. Its source existence does not prove it passed on
+this dirty tuple. Extend controls at this owner only where actual Project/phase
+semantics require it; no implementation-mirroring test or second graph is needed.
+
+Project build.ss currently declares init, gateway-evidence, resource Profile and
+resource-evidence example roots. Select formation Project/Module/Scenario plus actual
+test/adapter entry closure when that activity is required, using existing Core init/
+build projection and package-native rules across the actual nested package identities.
+Do not pass one root prefix and claim it compiled all family packages or native targets.
+The same independently required inventory must later match actual emitted phase outputs
+and loads; generated gold from the same traversal is not independent completeness.
+
+* Test-source, TestingScript, Fixture and receipt handoff
+:PROPERTIES:
+:CUSTOM_ID: i0-105-testing
+:END:
+
+| Actual existing seam | Inputs -> checked outcome / responsibility |
+|-----------------------+--------------------------------------------|
+| building/test-projection.ss | Actual selection/eligible owner/suite -> lazy native test-source projection, file/directory/negative observations and source currentness; not an extra business Graph/Scope |
+| module-test-file-source | Explicit nonempty native file list -> owned source reads/spec/admit-current; these explicit files do not automatically cover every transitive fixture/import/recipe |
+| module-test-execution -> testing-script-for-source | Delayed private-context import of actual TestingScript prototype, forced only at explicit execution; not a new runtime Loader or auto-test on selection |
+| TestingScript source/profile/runtime-options/environment | Actual spec/source-root/expected currentness and bounded supported policy -> actual Ops request. Source directory/cwd and launcher paths remain explicit; retrieving slots is not continuous IO |
+| Fixture .acquire / .release | Precheck before child; returned resource always releases. Acquire owns rollback before return; body and cleanup failures both preserved |
+| ProcessScript/Ops/run-script | Real argv/env/cwd/process tree/status/output/log/progress/cancellation under actual limits; parent exit/marker alone cannot establish child termination |
+| Common process gate | Actual .run checks result before specialized .admit-result: nonempty spec, supported status/output and required final process/harness conditions. A permissive refinement cannot bypass it |
+| Default/native or specialized receipt admission | Expected MODULE/HARNESS/files/required-lines/count/undefined-binding checks and actual product protocol; direct synthetic receipt calls test admission only, not launch/provenance |
+| Domain suite/oracle | Independently expected cases/checks/semantics/cleanup, nonzero complete inventory and actual value/source/load behavior; marker and case count alone cannot establish correctness |
+
+The source/currentness footprint must include the actually required helper/import/
+recipe/config/negative inputs under a supported selected source projection. Core CLI
+=t/qualification/testing/run.ss= currently reads one requested file, sets source-root
+to cwd, refines runtime/observation/budget and calls .run. A custom harness there is
+an expected trusted specialization; it is not a public arbitrary executable/verifier
+API and its small source list is not automatically the full Project closure.
+
+At .run the actual order is source/profile validation -> Fixture acquire/currentness
+-> actual Ops child -> common process admission -> specialized receipt -> Fixture
+release/currentness. No global registry or separate Project testing service. Keep
+normalization/expected-source recognition distinct from public object shape and
+retain actual returned wrapped values. Current code existence is not actual launch
+or proof that I1/C/view semantics are covered.
+
+* Recipe, cwd and migrated fixture ownership
+:PROPERTIES:
+:CUSTOM_ID: i0-105-fixtures
+:END:
+
+| Existing entry / source | Current boundary or source-visible break | Coordinated target owner/change |
+|-------------------------+------------------------------------------+---------------------------------|
+| Core Justfile imports dev/just/{build,checks,environment,proofs,source-admission,testing}.just | Real maintained fragments; environment/variables/scripts/child argv/cwd matter | Keep generic build/test/issuance and actual Core helpers here; include fragment/preparation closure in evidence |
+| Core test-file -> qualification/testing/run.ss | Runtime budget projection/setup precedes actual Script launch | Bound pre-import/setup too; no actual process gate bypass or synthetic product receipt |
+| Flow test-file/test-core/test-root | Core helper path with Flow cwd; test-core changes into Core; test-root selects specialized package and dev ASP discovery | Preserve actual per-owner roots/cwd/bin/dev paths and separate lanes. Helper file owner is not process cwd |
+| ASCENT Justfile/build/test entries | Existing source/compiled/preparation/supervisor branches and distinct native targets | Bind selected ASCENT_TEST_LIBRARY/.ssi route, actual build/test protocol and limits; full-engine defaults do not widen Project gate |
+| Project formation-runtime/test/entry/investigations | Old pin extraction/mount/prelude; raw gxtest marker gate, independent Profile preparation | Direct metadata/entry/Script migration, existing focused/real-entry/probe labels; no wrapper renamed into joint acceptance |
+| Flow t/qualification/build-publication/approved-producer.ss | Imports ./projection and ./store, absent beside moved driver | Reuse generic Core projection by canonical identity; Nix store/approved product driver and its recipe belong at Flow, not a copied Core helper |
+| Flow t/{approved-build-recovery,build-store-recovery}-test.ss | Missing local store plus bare just build-approved/store children from Flow cwd | Move real product recipe/driver ownership coherently to Flow; update every nested worker argv/Justfile/cwd and assets |
+| Core dev/just/build.just build-approved-producer | Points at removed Core driver now in Flow | Retain only real generic Core issuance/handoff recipes; no forwarding alias into a missing path or new reverse Core->Flow edge |
+| Core qualification/build-publication/store.ss/store-producer.ss/worker.ss | Nix daemon/store/release selection mixed with generic packet/issuance/restore worker | Split product Nix transport/approved modes to actual Flow qualification, generic source/compiler/artifact admission remains Core. Update imports/recipes/build roots together |
+| Core service-publication/fixtures.ss | Generic DirectoryFixture/ServicesFixture/source writes and failure-preserving preparation | Reuse actual Core fixture APIs; moving product callers does not move generic fixture ownership |
+| Flow qualification/nix and scenario/aws fixtures | Product adapter traversal/assets/Nix/OpenTofu inputs and this-source-file-relative base | Keep actual product assets/source identity/case under Flow; adapter filter/empty discovery is not complete build qualification |
+
+A bare just command resolves in actual cwd, not the Scheme caller's source directory.
+All worker launches, imported fragments and this-source-file paths must follow the
+same reviewed owner graph. Fixing two relative imports alone leaves wrong recipe/cwd
+and Nix-in-Core coupling. No duplicate Library helper or compatibility layer. Selected
+Flow transport consumes real Core handoff; registered store bytes/selected release
+pin do not mint receiver issuance or recover C/view/publication authority.
+
+Flow is optional only when the preselected activity has no product dependency. Once
+selected, a failed fixture/product lane cannot be pruned after failure. Core's
+approved-source/parent channel plus current source/compiler/artifact checks remain
+necessary; matching arbitrary disk packet/input port is not origin authentication.
+Managed no-op/recursive/failed recovery cannot fall back to a source pass.
+
+* Implementation dependencies and concrete exits
+:PROPERTIES:
+:CUSTOM_ID: i0-105-order
+:END:
+
+| Order / existing responsible owner | Input and coordinated work when authorized | Required I0 exit |
+|------------------------------------+-------------------------------------------+------------------|
+| I0.1 / Project + dependency owners | Preselect production/dev/product/phase/lane scope; review native metadata, actual links/dirty sources, symbols/prelude/compiler and entry/fixture inventory | Explicit supported owner graph and named incompatibilities; no guessed compatible tuple |
+| I0.2 / POO + Core source/build/prelude owners | Review required POO behavior, actual package realization and Yuanxu registration/Contract API; actual source-closure/build/currentness primitives | Immutable compatible source/API/prelude closure and framework/bootstrap capability; I1 retention stays open |
+| I0.3 / ASCENT build/Program/provider/storage/test owners | Realize reviewed Core edge and direct Yuanxu migration across selected Scheme/native surfaces and references | Coherent actual engine build/test/source/load graph; no old Evidence APIs or mixed provider/descriptors |
+| I0.4 / selected Flow + Core generic fixture owners | Split actual Nix/approved transport/workers/recipes/assets from generic issuance/fixtures, preserve ASP dev edge and actual cwd | Full selected fixture/child graph with correct owner and no missing import or reverse dependency |
+| I0.5 / Project metadata/entry/build/Justfile/test owners | Migrate family preludes/imports and explicit Project route, declare independent complete roots; reuse package-library-spec/test projection/TestingScript | Source-compatible actual entry/preparation graph, selected finite root/case/lane plan and coherent profile/launcher limits |
+| I0.6 / compiler/Core/engine/selected product/Project owners | Later real framework/source/compiled/empty-artifact/load/cold/build-recovery controls on implemented owners, with exact artifacts/loads and actual source channel | Bounded nonzero actual evidence for claimed current owner lanes; no focused kernel extrapolation |
+| I0.7 / I1 and later domain owners, final I7 acceptance owner | Retain exact source/build/load/test associations and named open gates; implement/qualify I1--I6 before final whole-application acceptance | No C/view/model/effect credential inferred from I0; final complete new-application cold/recovery waits for real domain implementation |
+
+This is 10.104's non-circular order: qualification is reapplied to each implemented
+owner and ultimately to the whole activity, not a global preflight that certifies
+future code. Exact same C is a later within-run invariant; independent cold acquisitions
+produce independent C values. Core restoration only restores build eligibility and
+fresh Scopes; genuine original C/view continuation and effect recovery are separate.
+
+Evidence products are the actual declaration/checkout/dirty/phase tuple; reviewed
+required root/source/artifact/realized-load inventory; prelude registration/expansion
+and execution chain; exact selected test files/suites/cases/oracles; actual Ops/Fixture/
+receipt/currentness/cleanup results; per-lane cold/bootstrap/recovery associations and
+unclosed gate list. These are roles at existing owners, not mandatory new filenames,
+portable authority manifests or a second version manager. Preserve historical failures.
+
+* Proposed positive and negative acceptance conditions
+:PROPERTIES:
+:CUSTOM_ID: i0-105-controls
+:END:
+
+These refine 10.97 I0-R01--R14 and 10.104 JC104-01/02/09/10. None is executed.
+Each positive needs actual production path/expected owner, independent meaning and
+case inventory, selected sources/loads and complete bounded process/cleanup evidence.
+Correct refusal does not complete an advertised positive lane.
+
+| Control / existing seam | Positive condition | Matched negative / required refusal |
+|-------------------------+--------------------+--------------------------------------|
+| I0-105-C01 realized dependency | Native owning declarations, actual checkout/dirty bytes/package/prelude/source/compiled/load tuple agree | New gebril-yuanxu declaration with missing link, POO declared c4 but actual fdead, old manifest/pin regex or earlier nested package fails |
+| I0-105-C02 entry/prelude | Actual selected root package and prelude registration/expander identity supports direct Project syntax and family metadata | Namespace-only replacement, old source/core alias, copied nested prelude, wrong package identity or phase mismatch refuses |
+| I0-105-C03 graph projection | Actual explicit package/entries/import/prelude traversal, shared dependency order and admission, unused siblings lazy | Missing required entry, exclusion as admission bypass, hidden external phase, different package prefix as full root coverage or duplicate graph fails |
+| I0-105-C04 complete build | Independent required application/adapter/native roots match actual emitted phases/interfaces/sections/issuance | Four old roots, focused object/mop, equal wrapper with wrong ~0/.ssi/.ssxi or missing native target cannot qualify complete build |
+| I0-105-C05 actual load | Fresh receiver records real launcher/VM/SDK/compiler/library/bin/load path and actual macro/runtime sources/artifacts | Launcher hash/version label only, poisoned earlier lib, retired Evidence/core interface or hidden source fallback fails claimed compiled lane |
+| I0-105-C06 owner/Scope boundary | Owner-local realization from original graph, no foreign consumer or ambiguous owner result; actual normalized handoff deferred to I1 | First-wins owner Scope, lost scope-owner metadata, stale selection receiver or lexical self binding claimed K1/SD/S1 repair fails |
+| I0-105-C07 Script launch ordering | Source/profile -> precheck -> real Ops -> common gate -> expected refinement -> postcheck; returned fixture always releases | Stale precheck launches child, permissive refinement admits failed process, direct synthetic receipt claimed real execution or hidden body+cleanup failure fails |
+| I0-105-C08 test closure/inventory | Actual guarded tests/helpers/imports/fixtures/recipes/config/negative inputs and exact nonzero expected cases/checks | One-file guard claimed transitive closure, zero/skipped/extra/wrong suite, forged markers/count-only or truncated logs cannot pass |
+| I0-105-C09 production/dev | Only selected production owners, explicit dev ASP discovery/batching and actual per-owner library paths | Production depends on ambient dev ASP, unnecessary Nix/Aitia forced into formation or selected failed product removed fails |
+| I0-105-C10 fixture split | Flow Nix/approved transport and generic Core issuance/fixture/source APIs, all child argv/cwd/assets/build roots coherent | Missing projection/store, dangling approved recipe, copied helper/reverse Core dependency or wrong source-relative base refuses |
+| I0-105-C11 recipe routing | Actual imported fragments/Justfile/cwd/arguments/environment reach expected child and observer mode | Bare just resolves at wrong owner, omitted fragment, child source path used as cwd or enabled observer pass extrapolated to disabled fails |
+| I0-105-C12 bounds/process | Pre-import and in-process policy agree under selected fixed caps; actual child completion and finite aggregate work | Inherited larger default, unintended idle limit, unbounded expansion/preparation, live child after parent or synthetic progress fails |
+| I0-105-C13 cold/bootstrap | Fresh process with explicit prerequisites and empty selected artifacts exercises implemented owner and exact cases | Warm private issuer/Session, hidden installed output, focused kernel, timeout after marker or future domain claim fails |
+| I0-105-C14 build recovery | Genuine approved-source/parent route and receiver-local issuance with current source/compiler/artifact guards and honest failure | Matching disk packet as origin, altered record/section, no-op/recursive restore, selected Flow transport failure or source fallback cannot qualify |
+| I0-105-C15 direct effective semantics | Current POO/Core/ASCENT descriptors, normalized Config/Function/value behavior and actual source associations | Old descriptors/caches or renamed base alone claimed complete Type semantics; I1 required receiver/return control remains independently open |
+| I0-105-C16 downstream handoff | Exact I0 evidence and explicit open domain gates passed to I1/later owners; final full-application lanes after implementation | I0 marker/build receipt as C/view/SysML validation/effect authority, source-stage probe as whole-slice parity or research advantage fails |
+
+Keep Project 2 GiB and applicable 120-second focused/180-second complete-build/
+30-second static-model caps, actual signal/grace and narrower owner limits. Core
+600-second/60-idle defaults, Flow 1 GiB/1200-second package gate, Nix parent defaults
+or ASCENT preparation policies are observations, not permission to widen this gate.
+Bind pre-import and child policies coherently; heap is not RSS/process-tree memory.
+No silent timeout/heap/fact expansion, truncated required facts/logs, skipped cases or
+unchanged-failure reruns. Preserve primary/cleanup/stale/refused/failed/timeout states.
+
+* Open gates and bounded handoff
+:PROPERTIES:
+:CUSTOM_ID: i0-105-open
+:END:
+
+Still open: reviewed immutable compatible actual POO/Core/ASCENT and selected Flow
+source/API tuple; canonical dependency realization/import/prelude migration; complete
+independent roots/phases/outputs and actual load chain; selected fixture/recipe split;
+actual test transitive footprint/protocol/inventory and profile/launcher resource
+qualification; source/complete-compiled/cold/bootstrap/build-recovery evidence.
+I1 normalized receiver/currentness/native-owner controls remain the next actual gate,
+not a side effect of package migration. Later C/view, actual model/tool/load validation,
+protected publication and original-provenance/effect recovery remain separate owners.
+
+The framework can already supply key graph/build/test mechanisms, but source presence
+and partial compatibility do not close a lane. Org and D2 display these dependencies,
+implementation order and controls; they issue no evidence or new version. Correctness
+is honest actual source/semantic/load/entry/failure association. Better Agent proposal,
+causal reasoning or reuse remains a separate matched research question; no comparison
+or runtime qualification occurs in this update.
+
+* I1 normalized handoff and realization follow-up
+:PROPERTIES:
+:CUSTOM_ID: i1-106-followup
+:END:
+
+[[file:10.106-i1-normalized-context-scope-realization-and-self-binding.org::#i1-106-values][10.106]] unifies exact K1/SD/S1 fields and normalized returns with
+[[file:10.106-i1-normalized-context-scope-realization-and-self-binding.org::#i1-106-realization][source-owned direct package overrides and declared config/export order]].
+[[file:10.106-i1-normalized-context-scope-realization-and-self-binding.org::#i1-106-context-self][self: result is a lexical object binding]], not a public field or admission repair.
+[[file:10.106-i1-normalized-context-scope-realization-and-self-binding.org::#i1-106-isolation][Consumer/currentness isolation]] and [[file:10.106-i1-normalized-context-scope-realization-and-self-binding.org::#i1-106-files-order][actual lane boundaries]] remain distinct from
+[[file:10.106-i1-normalized-context-scope-realization-and-self-binding.org::#i1-106-controls][proposed controls/open qualification]]. Historical source/receipt scope is retained;
+no implementation, acceptance or orchestration extension is performed.

@@ -1,0 +1,34 @@
+# org-target: docs/20-29-cases/20-gateway/20.10-existing-owner-concurrency-and-delivery.org::#display-owner-trajectory
+# Current ASCENT 46a46bbe companions; older 20.09 pin/gold retained.
+grid-columns: 2
+grid-gap: 32
+classes: {
+  input: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; border-radius: 10; font-size: 17}}
+  state: {style: {fill: "#E6F5F3"; stroke: "#19756C"; border-radius: 10; font-size: 17}}
+  gate: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; border-radius: 10; font-size: 17}}
+}
+replies: "R00-R07: existing invocation and intake owners" {
+  direction: down
+  old: "R00 captured t0 / r0 at k0 / S0\nImmutable request and complete input roots\nProducer completion not yet known" {class: input}
+  publish: "R01 publish S1 / source-open\nL0 support; Psrc unknown\nOriginal k0 and gold unchanged" {class: state}
+  late: "R02-R05 reply arrives at kLate\nBind original request / body / capture\nHistorical OH-late is separate from O0\nOld P0 does not prove Psrc: RJ03" {class: state}
+  reuse: "R06 checked law-only reuse\nOriginal output / I remain unchanged\nFresh usage and prior-artifact reference\nNo target application or A manufactured" {class: gate}
+  retain: "R03 / R07 exact result review\nWrong binding refused; unknown pending\nDuplicates do not add independent evidence\nWithdraw use; retain historical bodies" {class: gate}
+  old -> publish: "fixture order"
+  publish -> late: "intake is not capture or completion"
+  late -> reuse: "unchanged law footprint only"
+  late -> retain: "complete independent review"
+}
+delivery: "D00-D08: native slice and existing consumer owner" {
+  direction: down
+  native: "D00 / D01 native brief + checkpoint\nExact captured request / items / relations\nGenerated shown is not external completion" {class: input}
+  confirm: "D02 actual full delivery premise\nConsumer / access / payload / capture bound\nComplete F-L only; partial / unknown pending" {class: state}
+  scope: "D03 / D04 same N_L across contexts\nExplicit cache query: rescope\nOmitted query may resume saved cap scope\nNo silent retarget or method transfer" {class: gate}
+  refresh: "D05 / D06 historical source changes\nMatching read contract: refresh\nMissing / different read contract: reset\nNew oLate items are never already shown" {class: state}
+  later: "D07 / D08 late / reordered receipt\nPreserve original subject and authentic history\nKnown unseen ack: RJ11; unknown pending\nCurrent permission and opposing intake required" {class: gate}
+  native -> confirm: "external completion checked separately"
+  confirm -> scope: "owned exact prior reuse"
+  confirm -> refresh: "separate historical input companion"
+  scope -> later: "recheck exact current scope"
+  refresh -> later: "native continuity grants no authority"
+}

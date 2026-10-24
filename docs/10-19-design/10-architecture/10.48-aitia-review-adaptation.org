@@ -1,0 +1,528 @@
+#+TITLE: 10.48 Aitia Review Adaptation: WP07 Detailed Design
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.48
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+TODO: AUDITED DESIGN SPECIFIED | QUALIFIED
+#+FILETAGS: :design:aitia:review:verification:receipts:context:content:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.41-workflow-gap-audit.org::#integrated-refactoring-dependency-order][Work packages]] | [[file:10.42-library-types-and-contracts.org][Types]] | [[file:10.43-library-objects-and-publication.org][Publication]] | [[file:10.44-profile-selection-and-scenario-capture.org][C]] | [[file:10.45-method-execution-and-evidence-issuance.org][A/E/W/use]] | [[file:10.46-content-observers-and-reference-closure.org][Content]] | [[file:10.47-ascent-projection-and-query-view.org][Determinate Q]] | [[file:10.40-aitia-review-and-recipient-delivery.org][Review/authority/delivery architecture]]
+
+* DESIGN WP07 objective and authority boundary
+:PROPERTIES:
+:CUSTOM_ID: aitia-review-adaptation
+:STATUS: Target file/field/call/receipt design only; no implementation, verification or review submission
+:END:
+
+WP07 consumes one acquired C and its actual determinate Q, prepares an identified
+review basis R, separately verifies context and content, and assesses the selected
+technical review requirements with every pending/counter/conflict preserved.
+It binds actual Library policy, project revision/scope, role/grant and product
+associations. It does not appoint reviewers, adopt a policy, decide exceptions,
+submit a review or create a release/delivery permission.
+
+Library owns policy/criterion/coverage meaning; Profile selects supported options;
+Scenario supplies the same C/Q and project bindings through trusted operations.
+Aitia owns common review semantics and verification adaptation; Core's existing
+verification boundary owns local receipt issuance. ASCENT Session remains the
+fact/evaluation owner. WP08 owns full history/disposition/reassessment authority,
+WP09 recipient delivery/use and WP10 joint qualification. None is replaced by a
+new local approval engine, receipt registry or an Org schema.
+
+R is an inert, inspectable binding until actual operations occur. A verified
+inventory or negative finding is not a positive adequacy result; technical
+eligibility to proceed is not a decision. Current source/compiled/cold/recovery,
+policy-adoption and actual role gaps remain open.
+
+* AUDITED Existing review and receipt mechanisms
+:PROPERTIES:
+:CUSTOM_ID: aitia-review-source-audit
+:END:
+
+The audit uses HEAD 8044732d505f84e373119a70f947df00e1767300 plus the active dirty
+checkout and linked Core/Aitia sources. No code execution or fresh qualification
+is inferred from this inspection.
+
+| Existing source | Retained capability / exact gap |
+|-----------------+--------------------------------|
+| [[file:../../../scenarios/resource-lifecycle/review/func.ss][make-backpressure-review]] | Binds source manifest/Profile/subject/revision/scope, fixed SWE-061 local class-a fixture, report audit and exact context/content callbacks. It takes separate Profile/acceptance/source paths; it does not consume the new C/Q or a DE-CASE-01 design-review policy |
+| func.ss / verify-operation and backpressure-stage | Separate request identities, dependency checks at issue, and current! before/after stage use are valuable. Preserve actual checks; factor common mechanics under Aitia, retain project/domain readers at their real owners, and bind all checks to actual R/C/Q |
+| [[file:../../../scenarios/resource-lifecycle/review/profile.ss][BackpressureReviewProfile]] | Current policy/subject/project revision/scope/class/target are colocated in a case fixture. WP01-WP03 separate published policy, independent selection and actual project inputs. Its old identity/revision tokens are not another declaration generation |
+| [[file:../../../scenarios/resource-lifecycle/review/reassessment.ss][reassessment]] | Uses actual current history checks, complete failure inventory, retained blockers and exact requests. Its M04/M06 repair matching and NASA wrapper remain bounded; they are not general project history/authority semantics |
+| [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/types.ss][Aitia types]] and [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/review.ss][sdlc-review]] | CLOS bound facts, expected model checks and inert standard-specific review preparation exist. SdlcEvidence is pass/fail; SdlcVerificationRequest has a finite purpose enum. These cannot silently encode all Q gaps/conflicts or accept new review purposes without owner changes |
+| [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/standards/nasa-lifecycle.ss][NASA lifecycle]] | Real request snapshots, classification/content distinction, scoped receipts and stage gates exist, with release-authorized? false. Keep genuine NASA semantics in that provider; do not label this Library repo class A or pretend DE-R is a NASA requirement |
+| [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/design.ss][design]], [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/implementation.ss][implementation]] and [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/verification.ss][design guarantee verification]] | Existing design contracts/assumption-guarantee/replacement/mapping and source-bound Host support review. The latter explicitly leaves verifier independence, implementation conformance and release unestablished. Reuse matching claims; it is not a full context/content/role review of arbitrary Org or a second evaluator for Q |
+| [[file:../../../../poo-flow/packages/lambda-aitia/modules/assurance/host.ss][Assurance Host]] | Captures trusted operation/clock/lease/snapshot source, checks clock rollback and source-cut changes, and optionally materializes source bytes. It already owns assurance admission/currentness at its declared scope; do not recreate it or turn its support flags into review authority |
+| [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/review-authority.ss][review authority]] | Verified source discovery/current policy approval/unresolved denial gate exists. Raw technical admitted? input is not authentication by itself. WP08 must consume an actual current owner-bound technical assessment and enforce project grants/independence/quorum/exception meaning |
+| [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/contribution/verification.ss][Core verification adapter]] | Actual adapter/receipt/admission identity, copied before/after request snapshots, exact #t operation result, interval and private revocation are enforced. Anyone using the low-level constructor can supply an operation; only the selected trusted operation's real checks establish review facts |
+| Core valid? / admission | valid? checks the seal/snapshot/interval and private revocation, without rerunning the verifier or reading live dependencies. An admission captures its supplied instant; retaining it is not a moving clock. Currentness and policy-authorized clock/lease must be checked at each actual Aitia use |
+| [[file:../../../modules/resource-evidence/func.ss][Evidence]] and [[file:../../../scenarios/resource-lifecycle/func.ss][Scenario]] | Current relations/context are narrower than WP03/WP06. Their future checked C/Q publication is a prerequisite, not something the review adapter can reconstruct from a favorable JSON table |
+
+Core snapshots stabilize the selected request representation, not all filesystem,
+reviewer or history state. A same-named Core adapter created with an always-true
+operation is still the wrong trusted review producer. Low-level Core receipt
+validity is one required check, not automatic policy authority.
+
+* SPECIFIED File ownership and direct refactoring
+:PROPERTIES:
+:CUSTOM_ID: aitia-review-file-ownership
+:END:
+
+| Existing owner / file | Complete target responsibility |
+|-----------------------+--------------------------------|
+| Library abstract/types.ss / objects.ss and rust/types.ss / objects.ss | Publish WP05 product/criterion/role/independence/closure requirements and distinct design-review policy; validate applicability and mandatory review coverage. Policy is composed, not a model parent, project appointment or verdict |
+| profiles/resource-lifecycle.ss and Scenario types/func/interface | Select supported policy/purpose; capture actual project/roles/products in C; pass actual Q and bounded review intent. Define ResourceReviewInputContract at the consumer boundary, composing expected C/Q Types. No ambient Profile/acceptance/rules/policy/people replacement arguments |
+| scenarios/resource-lifecycle/review/func.ss / interface.ss | Refactor into thin project-to-Aitia binding, domain observation/use/source checks and supported operation exports. Remove duplicated policy authority and aggregate report-gold classification from the new route; historical bounded readers remain explicit readers, not a compatibility fallback |
+| review/profile.ss | Retain the identified historical coding fixture as that fixture while migrating actual project selection/inputs to the WP03 owners. Do not treat its mutable revision/class/target fields as the current design-review policy |
+| Aitia modules/sdlc/types.ss | Existing CLOS classes/slot conjunction own common review-binding, purpose-specific fact and assessment shapes; extend actual request purpose support explicitly. Core/POO model validation remains the mechanism, not a second schema implementation |
+| Aitia modules/sdlc/objects.ss | Typed constructors of owned review bindings, request facts and assessments through expected classes. Copy/freeze needed strings/collections and retain actual reference associations; no verification merely by construction |
+| Aitia modules/sdlc/review.ss | Pure scoped review preparation/assessment, lossless pending/counter/conflict/unknown handling and policy requirement interpretation. Existing bounded standard facts keep their meaning; no generic pass/fail coercion or automatic disposition |
+| Aitia modules/sdlc/verification.ss | Retain actual design-guarantee/Host support meaning and its explicit exclusions. A valid source-bound guarantee may be one qualified input; do not rename this operation as whole-project semantic approval |
+| Aitia modules/sdlc/interface.ss / funs.ss | Export the qualified generic review adaptation at the actual source/publication owner. Preserve the lifecycle distinction verify/admit/decide/authorize/effect; no package import or flow graph grants approval |
+| Aitia modules/assurance/host.ss | Reuse genuine Host input/source/clock/currentness mechanisms where the selected assurance subject and mapping actually fit. Do not create an artificial assurance graph merely to obtain an admission flag or copy its private issuance state |
+| Aitia modules/sdlc/review-authority.ss and project review/reassessment/archive/cross-intake | WP08 owns real discovery/disposition/revocation/denial and source custody. WP07 exposes exact assessment/R/currentness inputs and outstanding authority requirements, not its own authority store |
+| Core contribution/verification.ss | Sole local adapter/receipt/admission/revocation mechanism, unchanged semantic ownership. Aitia calls its actual APIs; any missing general primitive belongs here after demonstrated need |
+| modules/resource-evidence | Own exact Q/program/accepted sources and fresh-use checks under WP06. Review reads this actual result through its supported producer operation; no second mutable fact graph or ambient Session query |
+
+Two future ordinary implementation units factor existing Aitia owners; neither
+is a new published Module, service, issuer or runtime:
+
+- modules/sdlc/review-verification.ss extracts common context/content request
+  construction, typed snapshots, actual trusted operation binding and current-use
+  verification from current project/standard wrappers. Standard catalog/class/
+  criterion meaning remains with its genuine provider.
+- modules/verification-host.ss factors the existing Assurance Host's shared
+  clock/lease/operation/source-cut lifecycle mechanics once. assurance/host.ss
+  retains its actual assurance graph/subject/input/read/admission semantics;
+  SDLC review uses the same internal mechanics with its own typed R/purpose/
+  C/Q/product/role currentness interpretation. Preserve existing clock rollback,
+  observed-cut invalidation and actual private-owner guards; no second Host
+  registry or copied receipt-issuance/revocation tables.
+
+The common Host binding captures the actual trusted clock/lease, operation and
+source/status observation protocol through Aitia's source-qualified owner. It is
+not selected from R's public fields. Leaf-specific source protocols cannot be
+replaced by an arbitrary public get-current callback; a generic Host seal cannot
+supply domain/role meaning it did not check. Core remains the receipt issuer.
+This is direct refactoring of actual mechanisms, not a fallback cloned Host or
+an artificial assurance graph for every review. No file or directory is created/
+moved by this task, including in the linked upstream checkout.
+
+Aitia's common code must not import deterministic-engineering C/Q/Library classes
+or hardcode DE-R/D01/M06. Scenario provides actual qualified generic references/
+operations from the checked publication boundary; Aitia validates its own expected
+input protocol and source association. These operations are host/source-bound,
+not callbacks chosen by submitted JSON or a public R field. The actual imported
+Aitia API/source must be admitted; do not invent an existing Aitia Core requires
+provider where the current Scenario only has Domain/Evidence requirements.
+
+* SPECIFIED R, roles, products and expected request fields
+:PROPERTIES:
+:CUSTOM_ID: aitia-review-binding-fields
+:END:
+
+Field groups below refine existing POO/CLOS owners; they do not duplicate C/Q,
+product bodies, A/E/W/use shapes or the Library generation declaration.
+
+| Value / proposed expected Type | Required fields and invariant |
+|--------------------------------+-------------------------------|
+| ResourceReviewInputContract / Scenario | Actual acquired C; producer-recognized full policy-required Q; selected bounded purpose/stage and actual project occurrence. Required product/role/criterion data come from these bindings, not an alternative candidate inventory |
+| SdlcReviewBinding / Aitia R | Identity and exact owned basis; project subject/revision/scope/purpose/stage; actual C/Q and their source/producer/use associations; selected policy/expected role Contract/semantic revision/parent/Library references; independently required duties/products/criteria; actual product/role/mandate/history references and explicit gaps; verifier/source/trust/limit premises |
+| Policy association | Actual checked applicable design-review policy and adopted project scope; one declaration Contract owner/generation and exact source/meaning. Library policy revision, project revision, document authored revision, source identity and occurrence are separate dimensions |
+| Role binding | Required role/operation/scope; actual principal and authentic appointment/delegation/mandate source or unresolved gap; permitted actions, validity/current-status source and independence constraints; no role inferred from name, Git authorship, signature possession or Agent drafting permission |
+| Product binding | Policy-required D01-D10 roles -> actual C.products inputs/unique locators/bytes and WP05 reference closure/views/actual-target scope. Shared sections can fulfill roles; no forced ten files, empty heading substitution or duplicated product content |
+| Review context facts | Exact R basis and purpose assertion, project/policy applicability/adoption, current role/mandate/status and required-source coverage inputs/gaps. Expected fact Type and verifier are selected by the trusted boundary |
+| Review content inventory facts | Exact R basis, full expected versus actual product/criterion/input inventory, Q completion/scope/coverage, referenced C/A/E/W/U and known historical/current/missing/conflict distinctions. An inventory-accounted assertion is not an all-products-adequate assertion |
+| Review criterion facts | Exact R/criterion/subject/claim/domain/strength, actual content/method/semantic finding and original A/E/W/use/attribution/input basis, actual finding conclusion and limitations. A validated refutation can be authenticated without becoming support |
+| SdlcReviewAssessment / Aitia | R/C/Q/policy/project association; input conformance, context/inventory/criterion verification and currentness as separate dimensions; required/missing/unverified/counter/conflict/unknown findings and provenance; policy-scoped technical assessment. Authority remains not granted and release/delivery remain unestablished |
+| Review-use observation | Exact R/request/receipt set and actual selected verifier; use instant/clock/lease premises; fresh input/role/source/evidence/status checks and Core admission at this instant; limits/diagnostics. It does not mutate R/Q or pretend Core automatically repeated the content check |
+
+SdlcReviewBinding/Assessment reuse SdlcBoundFact and SdlcIdentified where applicable.
+Policy/criterion associations are generic review fields; do not fabricate a NASA
+SdlcClause/SdlcStandard for a Library design policy. Retain SdlcEvidence's actual
+pass/fail standard-evidence meaning rather than forcing pending/conflict into it.
+The assessment references the complete Q/finding inventories directly, preserving
+independent axes; it is not a second copy of the project relation program.
+
+Extend SdlcVerificationRequest's supported purpose enum at its actual owner with
+review-context, review-content-inventory and review-content-criterion. Bind their
+expected typed fact refinements and assertion/criterion at construction, snapshot
+and use. CLOS effective slots conjoin inherited constraints: adding a wider enum
+only in a subclass cannot bypass the existing base enum. Unknown purposes or
+wrong fact shapes must explicitly refuse; extending the enum does not let a
+NASA/authority snapshot or callback accept an unrelated purpose by default.
+
+The concrete fact refinements are SdlcReviewContextFacts,
+SdlcReviewInventoryFacts and SdlcReviewCriterionFacts. Their corresponding
+SdlcReviewContextRequest, SdlcReviewInventoryRequest and SdlcReviewCriterionRequest
+classes refine the existing request base with one fixed purpose and its expected
+facts Type. Constructors choose the expected class from the trusted operation;
+submitted purpose/classifier fields cannot route validation. Existing standard/
+authority constructors and snapshots still explicitly accept only their actual
+supported purposes, and source/compiled controls must cover the changed base.
+
+The common snapshot includes exact R identity/basis, project/revision/scope,
+policy/Contract/source association, selected verifier operation/trust boundary,
+purpose/assertion, criterion/subject and complete required fact references/
+conclusions/limits. Own strings/collections and use a qualified typed encoding;
+no lossy symbol/string conversion, hidden mutable POO state or omitted semantic
+fields. Facts are snapshotted as data; snapshots are not a hook for tool execution.
+An excluded field cannot be allowed to change what a verified request means.
+
+R's basis is finalized from identified C/Q/policy/project/product/role/prior input
+references before verification requests exist. Requests reference that basis and
+their own assertion facts. Later receipts, assessment, reviewer deliberations and
+assembled dossier are outputs/envelopes bound to it; they are not inserted into
+their own input digest. The old 10.34 draft can be a C input; it does not become
+an issued request just because its path is listed. C and Q are never amended to
+contain their future R/receipt outputs.
+
+* SPECIFIED Preparation and actual call boundaries
+:PROPERTIES:
+:CUSTOM_ID: aitia-review-call-boundaries
+:END:
+
+| Operation / actual owner | Input -> output | Boundary |
+|--------------------------+-----------------+----------|
+| Prepare R / Scenario -> Aitia preparation | Checked C/Q + bounded selected review intent -> owned typed R with product/role/criterion inventories or refusal/explicit draft gaps | Verify actual same subject/revision/scope, full required query coverage and trusted C/Q producer/selection associations. Invalid/truncated/foreign Q refuses; an honest complete negative Q can prepare an incomplete review basis |
+| Prepare context/content requests / Aitia | Actual R and expected purpose-specific facts -> distinct owned requests | Policy-derived required purposes/criteria do not shrink to supplied favorable facts; no ambient Profile/rules path/people/manifest substitution |
+| Verify context / selected trusted operation through Core | R's context request + actual bounded source/role/policy checks -> real context receipt or failed/incomplete diagnostic | Actual source-owned operation checks the assertion, returns exact #t only when established, and Core verifies snapshot stability. A candidate-selected adapter is not sufficient |
+| Verify content inventory / selected trusted operation through Core | R's inventory request + exact required/actual products/Q/input closure -> scoped inventory receipt or diagnostic | Account for every required role/criterion and gap; exact inventory accounting may succeed while content adequacy remains pending |
+| Verify criterion / selected trusted operation through Core | Exact criterion/assertion request + actual content/evidence/semantic findings -> scoped receipt or diagnostic | Establish the stated conclusion at its real scope; missing semantic proof never issues criterion-holds. Authenticated counter still records refuted |
+| Check current use / Aitia trusted owner | Actual R/requests and proposed receipt set -> fresh use finding/Core admission at actual current instant | Recheck all relevant dependencies, eligible producer uses, policy/role/status, actual expected adapter/requests and interval/revocation. No retained admission or seal check alone supplies freshness |
+| Assess technical review / Aitia pure policy assessment plus current-use gate | Complete required facts, exact Q, fresh separate verification and findings -> SdlcReviewAssessment | Preserve missing/counter/conflict/unknown; distinguish technical requirements met from authority required. No new evidence/model execution, source mutation, disposition or submission |
+| Hand off later / WP08 owner | Exact R, actual assessment/use/receipt references, required history/role and unresolved findings -> future history/disposition request | Only actual authority owner can decide under real grants/quorum/independence. WP07 does not pass an unauthenticated public admitted? flag as authority |
+
+The qualified verifier operation is bound from the admitted Aitia/Scenario host
+source and selected policy capability, not supplied in request fields. Low-level
+Core APIs remain available to their rightful callers; their mere use does not
+make an arbitrary always-true callback the project's trusted verifier.
+
+Use known actual import/loaded source and compatible compiled artifacts; package
+version or a filename alone does not identify the executed checker. Existing
+Assurance Host can supply its genuine subject/input/currentness support where
+its declared mapping fits. An actual source-bound support review still leaves
+semantic independence/conformance/approval open as its API states. A Q is not
+re-encoded into a second live assurance fact store to bypass this boundary.
+
+Requests and facts may be public presentations; the owner resolves its actual
+expected R/request/purpose and verifier internally. A caller cannot route an
+unknown object to a favorable verifier by changing purpose, issuer or checked?.
+Private issuance/source associations are never reconstructed from serialized R,
+Q/W, signatures, cached receipts or a report with qualified=true.
+
+* SPECIFIED Independent context and content verification
+:PROPERTIES:
+:CUSTOM_ID: aitia-independent-context-content
+:END:
+
+| Verification purpose | Exact question and inputs | Does not establish |
+|----------------------+---------------------------+--------------------|
+| review-context | Is this project occurrence/revision/scope actually bound to the selected applicable adopted policy/Library/parent/Contract/purpose, with the required authentic roles/mandate/status at the declared cut? | Architecture truth, semantic content adequacy, all product closure or final approval |
+| review-content-inventory | Does the exact required/actual product/criterion/evidence inventory, with gaps explicitly accounted for, faithfully bind R to C/Q and accessible qualified references? | Fulfillment of missing roles/products/criteria, rationale adequacy, method re-execution or whole-case success |
+| review-content-criterion | Is this precise assertion/conclusion on this product/claim, domain and basis established by the actual qualified content/evidence/semantic findings under the selected criterion? | Broader property, a different criterion, current appointment, exception or disposition authority |
+
+Context verification checks actual project/revision/source identity including the
+dirty-worktree/input basis, not only HEAD or a human revision label. It checks
+authentic policy adoption/applicability and grants for the exact operation/scope,
+with validity/status/trusted source coverage. A policy object describes required
+roles; it cannot appoint principals. A public self-declared role, author signature
+or the user's permission to draft does not establish a standing semantic-review
+or disposition appointment. Mandatory unresolved roles prevent the corresponding
+complete-context assertion; partial findings remain inspectable without inventing
+a positive receipt. Another bounded assertion requires its own declared scope.
+
+Content verification checks exact acquired sections/model/decision/view identities,
+required closure and actual-target distinctions; complete Q/program/source/query
+scope and explanation; original W/E and target U/claim/domain/strength/footprints;
+historical evidence/counters; and independent semantic findings where required.
+It calls the actual qualified producers/readers, not a new ambient Session query
+or a success-only row/count summary. A same-run SI/TM result remains an observed
+cut/path result, not full repository architecture or Rust refinement evidence.
+
+Logical/purpose independence is mandatory: a context receipt cannot satisfy any
+content purpose; an inventory receipt cannot satisfy a semantic criterion; one
+criterion cannot satisfy all DE-O families. The selected policy separately defines
+required verifier/reviewer independence and permitted role combinations. Distinct
+function names, packages or two signatures by the same author are not independent
+semantic review. C1's Agent authoring does not fill its unassigned Semantic reviewer.
+Shared trusted infrastructure may be permitted without claiming independent
+methodology or reviewer identity from code separation alone.
+
+An existing WP05 semantic finding is a qualified input with its actual C/A/E/W/use
+and attribution. Deliberation produced about this R is a later review output,
+bound to exact R/product/criterion and actual principal; no invented shell attempt
+or retroactive change to C/Q. If new evidence is meant to discharge a Q missing
+unit or change its findings, it must pass WP05/WP06 and yield a new Q/R basis.
+Changed product/selection/adoption/role input requires the appropriate new C.
+A fresh status check on an existing grant observes current eligibility without
+rewriting that original grant or proving global history completeness.
+
+* SPECIFIED Pending, counter, conflict and assessment meaning
+:PROPERTIES:
+:CUSTOM_ID: aitia-review-assessment-meaning
+:END:
+
+| Situation | Required review result |
+|-----------+------------------------|
+| C/Q/request shape or actual producer binding invalid | Refuse the affected operation with diagnostics; no positive verification receipt or substitution of an old Q |
+| Complete Q contains pending/unsupported/missing | R may faithfully prepare; retain exact mandatory duty/unit/product/reviewer gaps. A valid inventory-accounted receipt cannot make those criteria fulfilled |
+| Actual scoped holds/refuted W and control success | Preserve property conclusion and control expectation separately; M06 success remains ownership counter, Lean negation remains budget counter and QNT path keeps its mapped meaning |
+| Comparable support/counter both present | Retain both and conflict with their precise source/use/claim/basis. No latest-looking revision, green majority or signature resolves it |
+| Different run-local subjects or content claims | Preserve distinct scopes; do not invent logical conflict or universal support. Aggregate only under actual policy coverage/comparison meaning |
+| Context valid, content absent/incomplete | Retain valid context receipt at its real scope; content verification/criterion requirements stay outstanding |
+| Content integrity/criterion verified, context or role absent | Preserve the actual finding; policy-required complete context/independence remains unverified. No content result appoints its reviewer |
+| Required findings and fresh separate verification meet policy technical requirements | Report exact scoped technical assessment, with all retained counters/limits and authority still required. It is not an approved/released decision |
+| New denial/history/role withdrawal or unresolved prior failure | Current review use is blocked/requires reassessment at the affected scope. WP08 owns actual discovery/resolution; WP07 cannot suppress it or manufacture completeness |
+
+A receipt states that its precise request assertion was verified. It does not
+necessarily state that a product is adequate. For example, inventory accounting
+or an authenticated scoped refutation can be true while positive adequacy is
+unestablished. The assertion, conclusion and limitations are explicit snapshot
+inputs and are checked through their own expected Type/operation. Missing access,
+unsupported parser or absent reviewer is not a semantic refutation; preserve
+undetermined/pending as in WP05/WP06.
+
+Required review purposes/criteria derive from selected policy, not whichever
+receipts were returned. All/alternative/negative-control/correlated coverage must
+match the published meaning. Partial verification cannot vanish from a table to
+produce technical eligibility. A policy may demand documented evidence of an
+unsafe alternative; that is not permission to change counter into support or
+silently waive a positive property. Any required exception/denial resolution
+needs real WP08 authority and does not rewrite the original failed property.
+
+Keep assessment axes separate: binding conformance, context validity, inventory
+accounting, per-criterion findings, independent role coverage, current evidence/
+receipt/source status and remaining authority obligations. A public assessment
+is explanatory data. Later authority must verify its actual source/current-use
+association; it cannot accept a caller-edited technical-eligible? or admitted?.
+The existing standard gates and design support reviews keep their explicit
+release-authorized? false/conformance/independence exclusions.
+
+* SPECIFIED Receipt lifetime, invalidation and replay
+:PROPERTIES:
+:CUSTOM_ID: aitia-review-receipt-lifetime
+:END:
+
+Core issues only after its actual selected operation returns exact #t and the
+copied snapshot remains equal before/after. Its private records bind the actual
+receipt object to the snapshot, issuer and interval. The interval is issued-at
+inclusive and expires-at exclusive; deleting its private record revokes it.
+Copying/editing a receipt presentation cannot recreate its private association.
+These are local-process guarantees, not exportable signatures or truth of an
+untrusted callback.
+
+| Event / proposed use | Required target handling |
+|----------------------+--------------------------|
+| Same R/purpose/assertion, unchanged required basis, within policy duration | Reuse an original valid receipt only after actual fresh dependency/role/evidence/status checks and Core admission at the current trusted instant. Technical verification can be idempotently reusable; it is not a one-use action token |
+| Another C/Q/project revision/scope/policy/purpose/criterion/role/product basis | Different request seal and actual expected binding; old receipt cannot answer it. Reprepare/reverify affected basis; no generation-label or same-content shortcut |
+| Mutated request/receipt/adapter or foreign adapter instance | Reject actual use under expected owner and Core private identity/snapshot checks. Same issuer string or a genuine low-level adapter with a fake operation is not the selected verifier |
+| Expired/not-yet-valid/revoked receipt | No current admission for that purpose. Retain history and diagnostics; only a genuine new verification can create a fresh receipt |
+| Underlying file/W/use/checker/policy/grant/status changed while Core interval remains valid | Core seal check may still pass for frozen request data; Aitia's fresh use check must reject the stale dependency and invalidate affected local receipts through their actual Core owner where observed |
+| Old bytes return after a known invalidating change | Do not revive a revoked/known-stale receipt or erase the observed transition. A supported unchanged-basis recheck may issue a new receipt; reinstated roles/policy require actual qualified source/adoption evidence |
+| Only one purpose issues before another fails/times out | Preserve that actual receipt and failed attempt; aggregate stays incomplete. No fabricated rollback or bundled all-purpose receipt |
+| New history/counter or denial/withdrawal arrives | Reassess current eligibility at actual source cut; new Q/R if its required input meaning changes. Preserve immutable original C/Q/R and prior receipts/findings |
+| Cross-process/host or restored serialized artifacts | Re-establish actual trusted source/custody/current verification through a qualified route. JSON/signed bytes/private IDs do not reconstruct another process's issuance/admission table |
+
+Aitia's qualified public review operation obtains current time from its selected
+trusted host/clock policy, with declared units/domain and bounded lease. It must
+not accept arbitrary caller now/until values, a backdated instant or an unlimited
+lease to pass verification. Core itself only validates the supplied nonnegative
+integers/interval; it does not provide a trusted clock or detect every rewind.
+Use the shared existing-Host mechanism specified above rather than copy a clock
+or lease manager into Scenario. The actual owner extension must retain and
+qualify its monotonic/source-currentness guards, clock units and restart domain;
+it cannot turn a restarted local counter into portable wall-clock authority.
+Fixture calls such as now=10 are logical test premises, not live clock proof.
+
+Core admission indexes receipts at the instant supplied when admission is built.
+Its admits? closure does not become a moving clock automatically. Build/check a
+fresh admission at each actual use with the real current instant; never cache a
+past admission as a verdict after expiry. Its private revocation checks remain
+useful but cannot replace that new-time check. Recheck policy/source/role/evidence
+and interval at the actual gate, not only when R was prepared or before a long
+content operation. If one receipt expires or a dependency changes between the
+two verifications, the later aggregate remains blocked.
+
+No blanket replay rule claims that any equivalent request object is invalid:
+Core validity compares the sealed value meaning, while the trusted adapter routes
+only its actual expected requests/purposes. Reusing the original receipt for the
+same permitted technical assertion is distinct from cloning a receipt object or
+replaying it at another R, operation or authority decision. Any later one-use
+submission/disposition/effect semantics belongs to its actual WP08/Runtime owner,
+not a new WP07 global nonce database.
+
+Source/status observations and two receipts are not an atomic whole-filesystem/
+authority transaction. Keep their actual input cuts, limits and checked use;
+repeat required guards before publishing a current assessment, including after
+a long verification operation when its interval may have elapsed. If a race cannot
+be excluded at the required strength, retain the unsupported guarantee. Later
+WP08/recipient operations verify again at their own use boundaries.
+
+* SPECIFIED DE-CASE-01 products, history and review artifacts
+:PROPERTIES:
+:CUSTOM_ID: aitia-review-case-artifacts
+:END:
+
+Use the actual selected design-review policy from WP05, not the bounded SWE-061
+fixture. C binds DE-CASE-01/project revision, DE-AM01/02 actual-target products,
+DE-D01-D05, D01-D10 locators and policy-derived duties. Q binds actual accepted
+program/source/request and A/E/W/U/history/gaps. R references exactly that C/Q.
+Existing unassigned Project owner/Content steward/Semantic reviewer/Aitia owner
+remain unassigned; this drafting request does not fill them.
+
+| Artifact / operation stage | Input -> output and exact limit |
+|----------------------------+---------------------------------|
+| Prepared review basis/dossier | Identified C/Q/policy/project/products/roles/history sources -> inert R and readable D10 candidate, with all gaps and prior failures; no review submission |
+| Context attempt/report | Actual R context request -> checks/role-source findings, actual receipt only when its assertion qualifies |
+| Inventory and criterion attempts/reports | Actual R/Q/products/closure/W/use/semantic findings -> per-purpose observations and actual receipts/diagnostics; no new model/workload execution merely to restate history |
+| Technical assessment/current use | Actual required request/receipt set plus fresh status -> scoped assessment and remaining authority inputs, with retained counter/conflict/pending |
+| Later deliberation/disposition/history | Exact immutable R and outputs -> WP08's actual reviewer/authority operations; no prior decision overwritten or inferred here |
+
+The E06/I04 -> T03 -> DE-D04 first chain can have mechanical evidence while
+independent correspondence/rationale findings and complete context remain missing.
+Its R must show those gaps and other required case duties. Historical 20-result
+integration and 22-record coding audits keep original subject/limits/counters;
+current integrity checks do not turn them into current DE-O content witnesses.
+A complete Q, existing design guarantee support, rendered D2 or receipt count
+cannot complete the case by itself.
+
+A technical failure/timeout keeps actual partial observations and any independently
+issued receipts. If later export fails after Core issued a receipt, do not claim
+issuance rollback; record exactly what the real owner knows. Process loss before
+a terminal association remains unknown; restored files are artifacts, not revived
+private receipts. Full history/negative decision discovery, authority resolution,
+recovery and recipient use remain qualified WP08-WP10 work.
+
+The common SdlcVerificationRequest purpose-domain migration also includes WP09's
+delivery-inventory and delivery-provenance alongside review-context,
+review-content-inventory and review-content-criterion. Author the finite supported
+domain once at Aitia's base owner; each operation retains its fixed expected facts
+and assertion/purpose semantics. Keep existing history-discovery/disposition-approval
+scopes action-specific. Standard-specific verifiers reject unsupported purposes;
+no broadened subclass constraint bypasses an incompatible inherited base.
+Receiver-owned verification and new C/Q/R reuse these mechanisms without importing
+producer private issuance or adopting a policy by construction.
+
+* SPECIFIED Positive/negative acceptance and work order
+:PROPERTIES:
+:CUSTOM_ID: aitia-review-adaptation-acceptance
+:END:
+
+These RV01-RV28 controls are future implementation obligations, not executed here.
+
+| ID / positive scenario | Required result | Matched negative / required boundary |
+|------------------------+-----------------+---------------------------------------|
+| RV01 / actual C/Q binding | Recognized same-project C and complete required determinate Q prepare scoped R | Foreign C/Q, truncated output, altered program/basis, copied JSON or ambient Session query cannot prepare a verified substitute |
+| RV02 / published policy | Actual applicable design-review policy/Contract/source and adoption bound separately from project revision | Bounded coding/NASA fixture, candidate-selected Contract or Org generation field cannot supply the missing design policy |
+| RV03 / revision dimensions | Exact project/source/worktree, Library semantic revision, document revision and generation remain distinct | Same HEAD or human label with changed dirty content, lexical revision ordering or old receipt at a new project revision refuses |
+| RV04 / independent required inventory | D01-D10/criteria/roles derived from actual policy and accounted despite gaps | Favorable product list, omitted mandatory semantic criterion or ten empty headings cannot establish completeness |
+| RV05 / actual roles | Authentic scoped appointment/delegation/status and required independence checked | Self-declared name, Git author, key possession, Agent draft authorization or two signatures by one author cannot appoint independent reviewer |
+| RV06 / framework Type boundaries | Actual CLOS expected models/returned checked values and purpose-specific fact shapes validated | Wider subclass enum under incompatible inherited base, arbitrary facts object, unknown purpose or candidate classifier refuses |
+| RV07 / actual trusted adapter | Bound source-qualified operation and actual selected Core adapter verify exact requests | A genuine same-named Core adapter with always-true operation, supplied callback/issuer or foreign adapter instance cannot satisfy the project boundary |
+| RV08 / stable complete snapshot | Exact R/policy/project/purpose/assertion/criterion/full facts and limits sealed | Omitted semantic field, mutable nested value, symbol/string collision or input change during operation cannot issue a matching receipt |
+| RV09 / context alone | Actual context receipt retained with its real scope | Context receipt reused for inventory/criterion or reviewer approval cannot establish content |
+| RV10 / content alone | Actual content/inventory/finding result retained without inventing appointment | Content hash/receipt or semantic finding cannot fill missing policy adoption/context/grant |
+| RV11 / inventory accounting | Full required/actual products/criteria/gaps faithfully bound | Valid inventory-accounted receipt cannot mean missing products or semantic criteria are fulfilled |
+| RV12 / substantive criterion | Actual scoped content/evidence/independent finding validates the exact assertion | Link/render/oracle count alone, wrong source bytes/criterion/domain/strength or absent reviewer cannot issue criterion-holds |
+| RV13 / counter semantics | M06/control success, Lean negation and QNT path meaning stay explicit | Exit zero/control success or authenticated refutation cannot turn counter into support |
+| RV14 / pending and conflict | Honest Q/R retain missing/unsupported/unknown and both comparable conclusions | Drop rows, majority green, latest-looking revision or unknown coerced to pass/fail cannot create technical eligibility |
+| RV15 / assertion meaning | Authentic negative finding or inventory check can be verified at its exact stated scope | A receipt verifying a refuted finding or accounting claim cannot become a positive adequacy/approval receipt |
+| RV16 / real lifetime | Policy-bounded lease and trusted host instant used for each operation/use | Caller backdates now, extends until, rewinds clock or uses fixture time as wall-clock proof refuses or remains unsupported |
+| RV17 / interval and revocation | Original receipt valid only in [issued-at,expires-at) and while privately issued | Boundary expiry, future/not-yet-valid, revoked/copied/edited receipt or adapter mutation cannot admit |
+| RV18 / no cached admission verdict | Fresh actual-time admission built for use | Retained admission at old instant cannot bypass later expiry even if its old admits? closure still evaluates at that old instant |
+| RV19 / live dependencies | Actual fresh content/W/use/source/policy/role/status checks accompany seal validity | Frozen request with still-valid Core seal but changed file/grant/checker or inaccessible dependency cannot remain current |
+| RV20 / observed invalidation | Known stale/revoked association remains unusable until actual fresh qualifying verification | Restoring old bytes or copied private IDs cannot resurrect the old receipt or erase withdrawal/history |
+| RV21 / honest technical reuse | Same permitted R/purpose/assertion can reuse original receipt after fresh checks within lease | Clone receipt object, replay another R/scope/criterion/operation or assume one-use action authority refuses; equivalent sealed data alone is not a different authority act |
+| RV22 / independent partial attempts | One completed receipt and another failed/incomplete attempt both retained | Fabricated bundled success, all-purpose receipt or claimed rollback of genuinely issued receipt refuses |
+| RV23 / immutable stages | Finalized R basis precedes requests/receipts/assessment; new evidence flows through new Q/R as needed | Self-input hash, late product/role appended into C, patched Q or a finding about different bytes cannot qualify original R |
+| RV24 / framework reuse limits | Genuine design/implementation/Host support used only at its actual scoped meaning | Host admission, source bytes match or flow graph cannot imply verifier independence, conformance, project review or Runtime authority |
+| RV25 / exact authority handoff | Actual R/assessment/current-use/receipts and unresolved history/grants feed WP08 | Public admitted? flag, signature-only decision, erased prior counter/denial or missing discovery cannot confer disposition/release |
+| RV26 / transport/recovery | Original artifacts/history retained and actual compatible source/custody/current verification re-established | JSON/signed bytes, same issuer label or restored files cannot deserialize private cross-host authority or prove unknown completion |
+| RV27 / DE-CASE-01 honesty | Unassigned roles, actual-target scope, content gaps and historical subjects remain visible | 17/3 totals, 22-record fixture, optional T07 or drafting permission cannot become completed project review |
+| RV28 / complete qualification | Actual source/compiled request/receipt/clock/currentness/assessment controls and required cold/recovery routes pass | Documentation/model-only success, unchanged failed route, widened budgets or rewritten historical receipts cannot close WP00/WP10 |
+
+Existing [[file:../../../t/backpressure-review-test.ss][review]], [[file:../../../t/backpressure-reassessment-test.ss][reassessment]], [[file:../../../t/producer-source-custody-test.ss][custody]], [[file:../../../t/backpressure-cross-intake-test.ss][cross-intake]] and [[file:../../../t/native-context-test.ss][Context]] tests are migration surfaces. Aitia's
+[[file:../../../../poo-flow/packages/lambda-aitia/t/sdlc/unit/nasa-lifecycle-test.ss][standard lifecycle]], [[file:../../../../poo-flow/packages/lambda-aitia/t/sdlc/unit/design-verification-test.ss][design support]] and [[file:../../../../poo-flow/packages/lambda-aitia/t/assurance/unit/lifecycle-boundary-test.ss][lifecycle boundary]] tests retain their actual scoped owner.
+Future controls must include independent expected findings, same-seal/live-input
+changes, retained-old-instant admission, exact purpose swaps and authentic role
+source negatives. Fixtures may exercise grants without appointing production
+people. No implementation test or review operation is run here.
+
+Dependency order: WP01-WP03 applicable checked policy/C and real project role/
+mandate input -> WP04-WP06 actual W/use/content and determinate Q -> Aitia expected
+review-binding/assessment/purpose fact Types and shared existing-Host factoring
+-> owned R/request snapshot and actual
+source-bound verifier adaptation -> independent context/inventory/criterion
+operations plus actual-time/current-dependency receipt use -> lossless technical
+assessment -> WP08 complete history/grants/disposition/currentness -> WP09-WP10
+recipient/joint qualification. Missing real project inputs remain explicit at
+every step; a refactor cannot author the missing appointments or decisions.
+
+* DESIGN Documentation and qualification status
+:PROPERTIES:
+:CUSTOM_ID: aitia-review-adaptation-status
+:END:
+
+This expands WP07/GA18/GA19/GA24 and its WP08 interfaces from 10.41, refining
+10.40 with the C/A/E/W/use/content/Q contracts of 10.42-10.47. New common purpose/
+fact/assessment operations and the full DE-CASE-01 adapter remain target work.
+Historical schema/revision/fixture meanings stay unchanged. Declaration generation
+still comes from the selected Library Contract; no new version literal or version
+suffix in Namespace/filename is introduced.
+
+Only Org and D2/SVG change. No implementation/directory migration, method/model/
+content/ASCENT run, review verification/receipt issuance, submission, authority
+act or delivery occurs. The old 10.34 catalog and receipts remain unchanged;
+[[file:10.35-content-validation-slice.org::#slice-input-freshness][10.35]] records static drift, actual recapture requirements and open qualification.
+
+[[file:10.49-history-authority-and-reassessment.org::#history-authority-and-reassessment][10.49 details WP08 history and decision authority]]: mandated source discovery,
+exact C/Q/R/H/action/grant bindings, accepted negative retention, repair/exception/
+supersession/withdrawal, genuine prefix custody and HA01-HA31 controls. These
+remain target operations; no authority decision or review is submitted here.
+
+[[file:10.50-library-delivery-and-recipient-use.org::#library-delivery-and-recipient-use][10.50 details WP09 Library delivery and recipient use]]: exact C/Q/R and accepted
+distribution authority, manifest/product/reference closure, actual transfer and
+acknowledgement, receiver-owned trust/verification/capture/review, adoption and
+current intended use. Missing/status/withdrawal/replay and DU01-DU30 controls
+remain future qualification; no implementation or actual delivery occurs.
+
+[[file:10.51-case-joint-acceptance-plan.org::#case-joint-acceptance-plan][10.51 details WP10 joint acceptance]]: existing entries/file owners, exact
+plan/evidence closure and G0-G8 source/compiled/cold/recovery/recipient gates;
+216 referenced contract control rows plus JA01-JA32 cross-boundary controls and
+OJ01-OJ12 open items. These are future requirements; no implementation,
+acceptance execution, review submission or actual delivery occurs.
+
+[[file:10.52-contract-consistency-and-implementation-order.org::#whole-slice-consistency-audit][10.52 reconciles the whole slice]]: policy/Scope/Config handoffs, required-unit
+and request-purpose bindings, captured/technical/current-authority lifetimes and
+private/exported provenance; S0-S9 implementation dependencies and retained OJ
+gates. Design consistency is not implemented or operational qualification.
+
+[[file:10.54-library-and-aitia-types-contracts.org::#library-aitia-types-contracts][10.54 details coordinated S1]]: complete Library/Aitia effective fields and
+inheritance, both policy/Scope associations, single declaration-generation read,
+the twelve-purpose domain with fixed expected facts and operation allowlists,
+closed Aitia payload checks and TY01-TY32 acceptance refinements. No source or
+acceptance change is performed.
+
+The S1 source audit confirms that current Core CLOS model validation checks
+expected ancestry/effective-slot predicates but not unknown candidate fields.
+New public request/facts boundaries derive their permitted semantic inventory
+from those same effective slots, check expected framework metadata and reject
+unknown names before reading values. The NASA lifecycle snapshot also needs an
+explicit operation allowlist/unsupported-purpose refusal coordinated with the
+base enum extension. Neither gap is fixed by merely widening a subclass enum;
+see [[file:10.54-library-and-aitia-types-contracts.org::#s1-validation-and-trust-boundaries][the actual validation sequence]].
+
+#+CAPTION: WP07 exact C/Q to R, independent context/content verification, current receipt use and lossless assessment; actual authority remains WP08.
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.svg]]
+
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][Editable D2 source]]. Target design and future acceptance; no verification, review or submission performed.
+
+[[file:10.60-aitia-review-adaptation.org::#s6-aitia-review-adaptation][10.60 details S6]]: exact C/Q to inert R, adopted policy/project revision/roles/
+products, purpose-specific context/inventory/criterion checks and lossless negative
+assessment, actual common Host/Core receipt/current-use/replay boundaries.
+Causal Software Engineering is the research object for critical comparison of
+claim/assumption/identification/uncertainty handling. Framework mappings are
+proposals to test, not paper authority, demonstrated superiority or an estimator. RX01-RX40 remain future controls;
+no implementation, acceptance execution or review submission occurs.

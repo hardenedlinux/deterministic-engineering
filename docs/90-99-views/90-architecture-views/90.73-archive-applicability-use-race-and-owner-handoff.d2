@@ -1,0 +1,22 @@
+# org-target: docs/10-19-design/10-architecture/10.19-standard-identities-and-aitia-review-traceability.org::#archive-race-handoff-packets
+# render-layout: elk; theme: 0; pad: 24; timeout: 30
+direction: down
+classes: {
+  owner: {style.fill: "#E6F5F3"; style.stroke: "#19756C"; style.border-radius: 10}
+  design: {style.fill: "#EAF2FF"; style.stroke: "#315B8A"; style.border-radius: 10}
+  boundary: {style.fill: "#FFF2DD"; style.stroke: "#9B6C25"; style.border-radius: 10}
+}
+input: "DESIGN / same native Aitia and domain owners\nCaptured archive, event trace or responsibility record\nExplicit governing policy and independent method review\nNew input/gold cases; no new runtime framework" {class: design}
+archive: "HA04 / archive applicability\nAuthentic original bytes + actual authority scope\nExact owners / predecessor closure / historical cut\nUnavailable current status remains pending: see 90.74\nOld serialized receipt is not new issuer authority" {class: design}
+race: "RV02 / check -> revoke -> actual use\nSaved check covers its original cut only\nRecord the real effect and causal-order evidence\nAfter-check revocation can invalidate later reliance\nRepeated checks before another gap prove no atomicity\nPast now cannot recover unknown event order: see 90.74" {class: design}
+handoff: "LS07 / unavailable original owner\nKeep last authorized assignment and open obligation\nApply actual reassignment / fallback policy\nRequire acceptance only when governing policy demands it\nNo authorized fallback means missing approval: see 90.74" {class: design}
+review: "DESIGN / independent applicability and authority oracle\nArchive coverage table / actual request and effect order\nOriginal obligation -> authorized assignment -> effective boundary\nComplete T/V lineage, scoped A and captured paragraph locators\nUnknown coverage, order or authority stays explicitly pending" {class: design}
+native: "EXISTING native request / receipt boundary\nVerify actual bundle through current trusted adapter\nNew request bindings and genuine receipts for current review\nCurrent registered fail blocks the selected requirement\nPresence, saved gate and digest alone supply no action authority" {class: owner}
+result: "DESIGN GOLD / not executed\nKeep authentic fragments, actual effects and old failures\nRe-review only affected evidence and required actions\nLimited review and owner transfer leave original proof work open\nSource/owner concurrency and recovery tests still required" {class: boundary}
+input -> archive
+input -> race
+input -> handoff
+archive -> review
+race -> review
+handoff -> review
+review -> native -> result

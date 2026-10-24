@@ -1,0 +1,397 @@
+#+TITLE: 10.64 S1-S9 Whole-Chain Consistency Audit and Implementation Order
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.64
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+TODO: AUDITED DESIGN SPECIFIED | QUALIFIED
+#+FILETAGS: :design:audit:contracts:causal-impact:research:dependencies:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.52-contract-consistency-and-implementation-order.org][Original S0-S9 order]] | [[file:10.53-source-build-and-recovery-baseline.org][Historical S0 baseline]] | [[file:10.54-library-and-aitia-types-contracts.org][S1]] | [[file:10.55-library-construction-and-scope-handoff.org][S2]] | [[file:10.56-profile-selection-and-scenario-capture.org][S3]] | [[file:10.57-method-execution-and-evidence-issuance.org][S4a]] | [[file:10.58-content-observers-and-reference-closure.org][S4b]] | [[file:10.59-ascent-projection-and-query-view.org][S5]] | [[file:10.60-aitia-review-adaptation.org][S6]] | [[file:10.61-history-authority-and-reassessment.org][S7]] | [[file:10.62-library-delivery-and-recipient-use.org][S8]] | [[file:10.63-case-joint-acceptance-plan.org][S9]]
+
+* AUDITED Conclusion and limits
+:PROPERTIES:
+:CUSTOM_ID: s1-s9-consistency-audit
+:STATUS: Design/source/link audit only; no implementation, acceptance, research experiment or delivery
+:END:
+
+The S1-S9 responsibility graph is compatible, but the chapters alone did not yet
+close all target handoffs. This audit reconciles late causal-claim refinements with
+earlier closed Contracts, specifies change-to-use/query/review/authority/receiver
+lifetimes and manifest stages, and separates mandatory correctness from selective
+reuse research. Actual issuer/reader/currentness protocols, full row-to-entry
+coverage and runtime/authority/receiver prerequisites remain unqualified. No design
+finding is an executed control, issued evidence or completed acceptance gate.
+
+There is also new real dependency drift: the local ASCENT checkout has advanced
+and three earlier referenced entry modules are absent; Core types also changed
+during the audit. Thus neither historical source
+links nor prior static-check success establish a current complete build/import
+basis. Preserve the old observation and repair the actual dependency handoff at
+its owners before runtime qualification; do not infer a replacement API.
+
+The 75 selected project source/build/runner inputs and 11 checked Aitia files are
+unchanged from S9. At recheck, nine of ten checked Core files match; Core types.ss
+has changed. Four of six previously checked ASCENT files remain present and byte-
+equal; two are absent, and the historical evidence/interface.ss is also absent.
+Upstream changed during the audit; these bounded observations at different cuts
+are not a stable full checkout/dependency inventory. Project HEAD remains
+8044732d505f84e373119a70f947df00e1767300. No source files are changed by this task.
+
+* AUDITED Current dependency drift and historical evidence
+:PROPERTIES:
+:CUSTOM_ID: audit-dependency-drift
+:END:
+
+| Observed cut / source | Exact finding / consequence |
+|------------------------+-----------------------------|
+| Earlier S5 observation | ASCENT HEAD e119827e588ea7b6d8a3195ac8e0ee8f61de6c11 and linked program/clue-exchange.ss / program/trajectory.ss were inspected then; those are historical source-owner observations |
+| Current linked ASCENT | /Users/guangtao/ghq/github.com/tao3k/gerbil-ascent at 39679ae2823b445ee2be33dbdc1907d6542f2ca4 at first pass, then b03efb55f2bfda0a7062687b6539a45f06adbabe at recheck. No stable whole-run upstream cut is claimed; commit descriptions are not replacement APIs or compatibility proof |
+| Current missing paths | evidence/interface.ss, program/clue-exchange.ss and program/trajectory.ss do not exist in that checkout; no replacement with their old names was found in the scoped current POO Flow module search |
+| Still importing old namespaces | library/.../rust/methods.ss, review/reassessment.ss and examples/gateway-evidence.ss, resource-lifecycle-evidence.ss, resource-integration-evidence.ss. modules/resource-evidence/func.ss also imports the absent evidence/interface. Source import closure is unclosed; an old compiled fallback cannot qualify current source semantics |
+| Four retained ASCENT observations | program/session.ss, source-snapshot.ss, result.ss and execution-control.ss bytes still match S9's selected hashes; this does not restore removed application protocol owners |
+| Core / Aitia observation | Core types.ss changed despite unchanged Core HEAD; its S9 digest c72b57f1c87fb974916077e3260512e313dc49888d0ef0d96724f1ad05f40a8c differs from the recheck digest 31a0bf256ebec3abd062e0807a23cd1f3e8132263c1ae9a5f7453137cf0835cd. Nine other checked Core files match at that cut. Aitia own HEAD remains cbf3f6861ef7cf66d8d02aaf71b1c89630eaf7fc. Outer Flow HEAD remains a74fc2fd63437252175b5a67649ee54b886d3bf4; do not confuse the repositories or assume committed HEAD covers dirty additions |
+| Original dossier comparison | Original 10.34 bytes and 138 catalog entries remain unchanged. Earlier 19 drifts remain; EXT01 (evidence/interface.ss) and EXT02 (clue-exchange.ss) are now unavailable; EXT08 (Core types.ss) changed during the audit. The recheck has 22 mismatches/unavailable entries (116 match), versus 21 at first pass. Do not rewrite historical digests or old recorded 19-drift observations |
+
+Library producer/application attestation, generic Session execution and Aitia/project
+review authority have distinct semantic owners. The final currently published
+upstream replacement must be inspected and its actual expected exports, dependency
+pins, build/loaded closure and trust handoff qualified. This audit does not move
+code, add aliases, downgrade dependencies, change manifests or select a convenient
+old binary. BS02-BS05/BS07/BS09 and OJ02/OJ04/OJ07/OJ11 now include this dependency
+reconciliation. The dependency drift does not prove an unexecuted runtime failure or explain
+the old restart-two timeout.
+
+* AUDITED Findings and design disposition
+:PROPERTIES:
+:CUSTOM_ID: audit-findings-and-dispositions
+:END:
+
+Rows distinguish compatible responsibilities, reconciled design gaps and still-open
+mechanism/input qualification. Closure evidence below is future evidence.
+
+| Finding / chapters | Disposition / exact owner / closure evidence |
+|---------------------+----------------------------------------------|
+| AC01 / S4-S9 source and dependency ownership changed | Actual implementation prerequisite open: resolve removed protocol imports/qualified new owner, exact source/pin/build/load cut and regression entries. Preserve old source/receipt identity; no guessed replacement or stale compiled fallback |
+| AC02 / S1-S3 generation/roles/normalization | Compatible: one Library declaration generation, Generic -> Rust -> Integration immediate parents, two sibling policies and consumer-local checked Scope candidates. Keep actual source guards and design-policy authored semantic revision; TY/SX/CX owner controls still required |
+| AC03 / S1/S3/S4 real C/producer recognition | Shape and origin remain distinct. Library common Context/A data Types cannot import Scenario to authenticate C. Scenario/qualified operation boundary must establish real producer/input association without caller validator, second capture or Types -> runners cycle. Concrete protocol/source/runtime qualification remains open (CX04/CX26/EX01/EX28) |
+| AC04 / S6-S8 assumptions versus S1 closed effective fields | Design gap reconciled: selected claim/premise/check/impact refinements belong to existing Library criterion/Context/A/Observation/use and Aitia review/reassessment/delivery Types, declared before closed validation. Do not pass undeclared late fields or add a parallel assumption registry. TY/CX/EX/OX/RX/AX/DX closure required |
+| AC05 / S3-S8 C/Q/R/H/status lifetimes | Reconciled change matrix below: captured meaning -> new C; changed technical view -> new Q/R; unchanged technical basis with later status -> current H/use. Historical W remains original. No all-object refresh or mutable current? field; CX/EX/QX/RX/AX/DX controls |
+| AC06 / S4-S5 pure facts versus causal inference | Compatible with explicit restriction: actual observers/verifiers establish scoped input findings before projection; accepted primitive refs/finite enum roles/pure predicates preserve claims. Datalog/graph arrows/proof do not identify empirical effects; OX/EX/QX/RX controls |
+| AC07 / S5 rollback versus later stale use | Reconciled guard: failed replacement retains old accepted result only historically; known invalidation must block current use at actual producer/source/Host owner even while a new Session batch is pending/rejected. Session facts cannot restore external eligibility; QX08/QX19/RX19/AX27/DX27/JX17 |
+| AC08 / S6-S7 purpose/action and negative preconditions | Compatible: twelve-purpose base once, fixed expected facts; action/stage/target assertions differ. Reject/defer/withdraw can target recognized incomplete basis under actual authority; proposal cannot prove accepted inclusion. Positive technical pass is not prerequisite to retain legitimate denial; RX06/AX10-AX14/JX22 |
+| AC09 / S4/S5/S8 cross-process assertion strength | Reconciled explicit lineage: new local verification observation refers to foreign assertion/origin, never recreates original private W/E/Q/receipt. Provenance-only observation cannot fill property/adequacy K without actual qualified semantic trust mapping and premises; EX35/QX39/DX14-DX17 |
+| AC10 / S8 manifest/authorization/receiver bootstrapping | Reconciled phase-typed closure: finalized payload/prior producer basis distinct from later distribution/ack/adoption envelopes and live status findings. Existing receiver host/mandate permits inspection/provisioning; future Library adoption cannot authorize its own prerequisite. DX08/DX19/DX20/JX29-JX32 |
+| AC11 / S7-S8 repair/denial/withdrawal/custody | Compatible with actual owner constraints: scoped repair, exception, denial replacement and withdrawal differ; accepted negatives survive unknown publication and withdrawn resolution reopens blockers. Fresh reader/prefix and local revocation give no distributed atomicity/instant recall; AX18-AX30/DX28-DX33 |
+| AC12 / S4/S7-S9 correctness versus minimality | Reconciled: soundly block known invalid uses and preserve negatives is mandatory. Conservative full revalidation is valid; minimal invalidation/cost advantage is research unless a selected qualified capability explicitly promises narrower behavior. A correct baseline is not rejected for lacking an optimization; EX30/AX38/DX39/JX38/JX41-JX42 |
+| AC13 / S9 controls/gates/budgets | Partial design closure only: 248 original and 380 overlapping S1-S9 refinement rows retain IDs. Family mapping exists; full actual per-row/entry/lane/evidence plan is still a pre-execution requirement. Current build/load/default mismatch, unset future budgets and ordinary recovery remain blockers, not passed design counts |
+| AC14 / S6-S9 semantic/project/research inputs | Open: real policy/appointments/grants/history/receiver/access and independent semantic/causal evidence where demanded. Mechanism fixture correctness is not real case acceptance; paper-inspired hypothesis is not authority or demonstrated improvement. OJ01-OJ12/BS01-BS09 remain open |
+
+* SPECIFIED Shared field/operation contract closure
+:PROPERTIES:
+:CUSTOM_ID: audit-contract-and-call-closure
+:END:
+
+The refinements below compose existing POO/Core/CLOS field owners. These are target
+field groups, not a new standalone DSL/serialization schema or current implementation.
+The same authoritative value/ref flows forward; observations and decisions are new
+outputs rather than edits to prior input values.
+
+| Boundary / existing owner | Required composed association / consumer check |
+|----------------------------+-----------------------------------------------|
+| Library assumptions / capability / ContentCriterionContract | Stable scoped premise/claim refs, exact source/meaning/domain and supported observation/required input roles, applicability and strength. Empirical identification/transport rules only for selected supported criterion; actual roles/checkers selected by trusted publication, not document callbacks |
+| Profile / C / ResourceCapturedUseContract | Selected actual declaration/criterion/premise refs and owned data/model/measurement/domain inputs; qualified source/status observation policy and missing premises. One parameter child and one C; later findings are not appended into C |
+| A / Observation / ResourceEvidenceUseContract | Exact required premise-basis bindings and actual check/finding/operation/source-cut/subject/domain/strength, original E/W and target use limits; unknown/violated/refuted are distinct. Preserve original signed/private origin and separately checked current applicability |
+| ContentFinding / ContentReviewFinding | Exact C/A/E/criterion/span/premise/findings and qualified attribution, independent semantic/identification support and limits; parser/hash or an author claim cannot manufacture causal premise truth |
+| ResourceEvidence expected-input/use/status/trace | Independently required fixed role (e.g. selected premise-basis) -> exact qualified finite binding, actual U/current check and typed gap/trace. Multiple premises can be one immutable qualified basis; an explicit bounded role/index rule is required if expanded. Never intern arbitrary premise IDs into enum roles |
+| Aitia R / Context, Inventory, Criterion Facts | Exact selected premise/claim/evidence/attribution basis and scoped conclusion/limits; seal all meaning-relevant fields. Context/inventory accounting is not causal adequacy, and unsupported identification is not false effect |
+| Aitia reassessment/action/current use | Qualified observed trigger -> actual affected technical/use/decision conditions with current H, original negatives, authorized action/stage/target/inclusion. Technical invalidation does not automatically create a signed decision withdrawal |
+| Manifest / receiver verification/adoption/use | Exact original premise scope and actual receiver comparison/check/limits/current status with local origins, not producer-private capability import. Target empirical transfer needs supported domain/identification argument or stays unsupported |
+
+Where assumption/claim kinds or trace relation kinds are selected, complete expected
+finite enums and effective field maps at their real owners before publication.
+A candidate cannot choose its classifier or inject a new accepted fact role. S1
+shape checking does not authenticate a check's origin. S2 real deferred bodies
+must exist before exposure, but need not execute or import Scenario C while
+constructing reusable Library declarations. Actual Scenario-to-method C recognition
+and result-to-projection verification are qualified operational handoffs, not
+additional public shape certificates. Their implementation remains an exit blocker.
+
+All current-use inputs come from actually qualified source/status/producer channels
+at their supported scope. A new unbound data/source dependency requires acquisition/
+new C unless already in a qualified captured immutable/observation domain. No
+arbitrary external event is silently admitted as a late method input. Each owner
+retains exact observed cuts and limits; no universal race-free global snapshot.
+
+* SPECIFIED Change-to-evidence-to-review-to-authority-to-recipient matrix
+:PROPERTIES:
+:CUSTOM_ID: audit-causal-change-lifetimes
+:END:
+
+| Change / actual qualified finding | W / target use | Q/R and review | Authority / recipient |
+|------------------------------------+----------------+----------------+-----------------------|
+| Captured model/premise/data/measurement/population/project/policy meaning changes | Keep original W historical; new C/application and affected work or genuine fresh compatible use | New Q/R for changed technical basis; separate actual context/content findings | Current H/action applicability and receiver own C/use reassessed; no old seal relabel |
+| Existing supported check finds prerequisite violated | Block affected current U; no automatic opposite W or zero-effect claim | If technical query claims current eligibility/finding, new accepted Q and R; old Q remains exact old cut | Actual policy blocks affected decision/use condition; authenticated withdrawal/resolution is separate action. Receiver checks own domain |
+| Required check/data/status missing or incomplete | Required unit remains unsupported, distinct from verified violation/refutation | Preserve gap/unknown; inventory-accounted may hold while criterion-holds cannot | No positive use requiring missing condition; genuine scoped reject/defer may remain authorized |
+| New qualified contradiction of exact comparable claim | Retain original support and counter with original bases; do not choose favorable run | S5 compares meaning, retains conflict/contrary evidence; S6 no majority/receipt-count resolution | S7 authenticates any permitted scoped resolution and preserves denial; receiver receives both relevant findings |
+| Later role/grant/decision/source status only, technical meaning unchanged | Original W unchanged; affected current use may block | R/Q can remain unchanged only if they do not claim updated status; fresh technical/current-use guards still apply | New H/current use, targeted real withdrawal owner; old signed record cannot ignore later status |
+| Technical repair / new data / valid premise restoration | Actual new finding/attempt or supported revalidation with fresh U, never revived old seal | Appropriate new Q/R/C by input impact; old failure stays historical | Denial remains until actual current authorized resolution; withdrawn resolution reopens blocker |
+| Receiver environment/interference/measurement differs | Compare original claim at exact target domain; supported transfer or actual new work | Receiver own C/Q/R and unsupported/contrary/current gaps | Producer acceptance does not adopt or authorize recipient use; no guessed transportability |
+| Pure query/program/codec or output inventory changes | Do not invent new workload execution | Actual new qualified program/request/Q and new R if reviewed meaning changes | Recheck affected use/decision conditions, not blanket rerun of unrelated methods |
+
+End-to-end path: declared scoped premise -> actual qualified check/change -> typed
+claim/impact observation -> affected target use refusal/verification -> required
+units and accepted Q -> exact R/separate criterion check -> current H/action/use ->
+receiver own basis/current operation. W/C/Q/R/history are never retroactively
+mutated. Selective dependency propagation requires complete actual qualified links;
+otherwise conservative revalidation. A known stale use cannot stay usable while
+waiting for a successful projection update: guard at actual producer/source/Host
+boundary first, then report via accepted facts. No second mutable fact mirror is
+created; a rejected Session candidate still leaves old accepted Q historical.
+
+* SPECIFIED Phase-typed content, transport and authority closure
+:PROPERTIES:
+:CUSTOM_ID: audit-transfer-and-authority-closure
+:END:
+
+Payload closure comprises finalized products and prior producer review/history
+references selected before manifest identity; it may contain status-source descriptors
+with declared trust/access/freshness rules, not future status results. Final manifest
+then feeds distribution authorization. Authorization/transfer/ack/receiver review/
+adoption/current-use observations are later envelope or accepted-owner associations.
+They have their own exact identity and current checks, never become recursive mandatory
+inputs of that same manifest. Missing immutable payload blocks content completeness;
+complete payload with unavailable current status remains unusable at that operation.
+
+Receiver's pre-existing adopted host/security/project mandate authorizes inspection
+and any explicit provisioning. Library adoption is a later action over receiver
+C/Q/R; it cannot authorize the earlier load needed to construct its own basis.
+Likewise, technical methods/qualification experiments require actual permitted
+host operation inputs, not a future review approval or paper-derived blanket consent.
+
+A foreign assertion verified locally yields a new local verification observation
+with actual E/origin and a reference to original foreign assertion/history. It is
+not the foreign original private W/E. A provenance-only W supports only that precise
+provenance assertion. Use toward a property K needs an explicit actual qualified
+semantic trust/strength/premise mapping and accessible evidence, or receiver executes
+required work. Preserve both origins; never rewrite new verification as old workload.
+
+History H is a bounded vector of real selected sources and predecessor/accepted
+records, not an atomic global ledger. Positive action needs complete required
+technical/context/history/roles; negative/defer/withdraw has its own legitimate
+prerequisites and cannot require the positive result it denies. Acceptance of the
+actual record, proposal authentication and later current use remain distinct. An
+exception never turns false into true or waives actual identity/permission. Known
+accepted negatives survive ambiguous publishing; no source rollback can erase them.
+
+* SPECIFIED Correctness requirements versus research hypotheses
+:PROPERTIES:
+:CUSTOM_ID: audit-correctness-and-research
+:END:
+
+| Mandatory correctness at declared scope | Research or conditional capability claim |
+|-----------------------------------------+------------------------------------------|
+| Independent required inventory, typed exact origin/basis, complete known impact checks and no false positive authorization | Minimal invalidation/recomputation, lower latency/work/memory and reduced manual review cost are not implied |
+| Conservative refusal/revalidation when premise/closure/current source is unqualified; original history retained | Selective reuse may improve cost or may add complexity/false blocks. Compare to correct full revalidation/manual process, not an invented weak baseline |
+| Supported formal/model/empirical/normative claim strengths and honest unknown/identification failure | A general causal platform or empirical counterfactual estimator is optional research unless actually selected and supported; six cases do not prove production causal effect |
+| If an advertised selective capability promises exact independence, its particular Contract/control must hold | No universal requirement that every conservative correct implementation provide that optional capability or globally minimal affected set |
+| Independent matched finite gold at source/compiled/receiver scope and actual case role/semantic prerequisites | Research advantage needs actual matched exogenous histories, per-variant code/C origins, failures/uncertainty and fair bounded repeated measurement |
+
+The paper remains a study object with RQ1-RQ6, not an authority root or mandatory
+architecture template. Correctness can pass at its supported scope while the proposed
+optimization loses, or mechanisms pass while real case adoption remains blocked.
+Neither a research result nor design-lint success closes operational gates.
+
+* SPECIFIED Cross-boundary acceptance sequences
+:PROPERTIES:
+:CUSTOM_ID: audit-closure-sequences
+:END:
+
+These sequences refine existing controls and future joint plan, not additional
+executed tests or a new requirements registry. Independent expected state is required.
+
+| Sequence / controls | Expected positive and paired negative boundary |
+|----------------------+-----------------------------------------------|
+| SQ01 / TY-SX-CX-EX | Complete declared selected premise basis admitted and actually consumed; undeclared late field, raw Scope/Context or forged C guard refuses before qualified use |
+| SQ02 / EX-OX-QX-RX | Known violated prerequisite blocks U, required K persists and fresh Q/R retains gap; fail the projection update deliberately and verify old Q cannot regain current eligibility |
+| SQ03 / RX-AX-DX | Valid sealed request plus later role/status change still blocks current use; unchanged technical basis may use fresh H without editing Q/R, while a query claiming new status requires a new cut |
+| SQ04 / AX-JX | Authentic scoped rejection of recognized incomplete R can be accepted; positive use blocked. Proposal receipt replay as inclusion or technical repair as denial erase refuses |
+| SQ05 / DX-JX | Final payload -> exact manifest -> distribution -> observed intake -> receiver own C/Q/R/adoption; future envelope field in payload hash or future adoption as provisioning permission refuses |
+| SQ06 / EX-QX-DX | Actual foreign verification keeps new local and original remote origins separate; provenance-only receipt cannot fill property/adequacy K or masquerade as workload rerun |
+| SQ07 / RX-AX-DX-JX | Valid premise restoration plus new review/resolution may permit exact current use; old revoked receipt cannot revive and original denied record remains; receiver domain differences are checked |
+| SQ08 / AX-DX-JX and research plan | Correct full revalidation remains eligible baseline; selective variant missing dependency fails correctness, whereas correct but slower/more conservative outcome is reported without false superiority |
+
+Original WP01-WP10: 248 rows; S1-S9 detailed refinements: TY32/SX32/CX32/EX36/
+OX36/QX40/RX40/AX44/DX44/JX44 = 380 overlapping rows. Do not add them into 628
+unique tests or a passing percentage. The next executable plan must map each
+applicable document-qualified row and selected sequence to actual API/entry/filter/
+lane/input perturbation/independent observation/owner artifacts. Family-level mapping
+in 10.63 is not that completed per-instance plan. Missing actual mapping, input,
+capability or finite budget blocks its claimed full gate, not optional exclusion.
+
+* SPECIFIED Implementation order and prerequisite graph
+:PROPERTIES:
+:CUSTOM_ID: audit-implementation-order
+:END:
+
+| Order / dependency | Required concrete work at actual owner / evidence to proceed |
+|--------------------+------------------------------------------------------------|
+| P0 / WP00 and current drift | Preserve S0/S9 observations; reconcile current ASCENT removed protocol imports with actual published upstream ownership, pins/source/build/load routes and finite budgets. Diagnose recovery separately; no assumed link to old timeout |
+| P1 / S1 expectations | Backport all selected premise/check/impact/manifest-phase/claim-strength fields into complete effective Library/Scenario/Aitia/row Contracts and finite purpose/action domains; reject unknowns, preserve normalized returns, no implementation import cycles |
+| P2 / real operation bodies + S2 | Author actual supported deferred readers/method/observer/producer/Host operations against those expectations before exposing full Scope; retain Core required-edge/final candidates and immediate parent/policy graph. Definitions do not execute tools or require future project capture |
+| P3 / S3 origin and acquisition | Qualify real Scenario C/input/producer association and host-read/status domains, own required inputs/gaps and exact once-per-occurrence binding. No raw fallback or candidate current! |
+| P4 / S4a and S4b | Common actual attempt/private issuance/use mechanics, then independent method/content units and precise complete footprints. Pure content need not wait for unrelated tool suites; real upstream inputs still required when consumed |
+| P5 / S5 | Actual owner-bound primitive projection, independent required K, qualification of live U/current checks, accepted Session batch/rollback and complete canonical Q. Open honest gaps without inventing A/W |
+| P6 / S6 | Actual fixed-purpose review/Host/current clock/source/R/request and criterion findings. Draft honest negative R allowed; positive complete context/semantic assertion waits for actual roles/adoption/premises |
+| P7 / S7 | Genuine mandated H/grants/action/stage/target/accepted inclusion/current use, scoped repair/exception/negative retention/withdrawal and custody/recovery guarantees. No positive technical precondition on legitimate denial |
+| P8 / S8 | Phase-typed immutable manifest and real recipient/purpose/channel authorization, receiver roots and prior provisioning mandate, own C/Q/R/adoption/current use/claim applicability. Local versus cross-host/offline strength remains explicit |
+| P9 / S9, continuously qualified WP00 | Map actual row/entry/lane plan and independent oracles, then full required source/compiled/load/cold/recovery/recipient/assumption sequences and joint report; real case acceptance is a separate authorized act |
+| PR / separate research | Compare only actual implementations at matched valid scope with independent correctness first; simpler full revalidation may win. No unimplemented estimator or unmeasured optimization benefit is assumed |
+
+This is an implementation dependency graph, not an instruction to defer all tests
+until P9. Each owner qualifies its real boundaries as implemented. Types may be
+prepared before downstream mechanisms; incomplete full Scope remains unpublished
+rather than permissive placeholder. Direct migration coordinates dependent callers
+without compatibility alias layers. Design iteration can continue while WP00 is
+open, but no operational phase exit is inferred from writing its document.
+
+* SPECIFIED Open items and audit closure status
+:PROPERTIES:
+:CUSTOM_ID: audit-open-items-and-status
+:END:
+
+Keep OJ01-OJ12 and BS01-BS09 as canonical open identities, with the detailed current
+closure below. No new schema, version owner, authority service or gate ledger.
+
+| Open cluster | Actual outstanding evidence / owner |
+|--------------+-------------------------------------|
+| Current dependency transition / BS02-BS05/BS07/BS09, OJ02/OJ04/OJ07/OJ11 | Actual replacement protocol publication/source/import/build/load and owner controls, not Git subject, guessed new path or old compiled image |
+| S1-S4 / OJ01-OJ03, BS08/BS09 | Complete effective Types, real Core checked handoffs, design-policy authored semantic revision, C/reader/producer recognition, input/loaded closure, actual method/content operations/independent semantic findings |
+| S5-S7 / OJ04-OJ07 | Actual program/query/request/Host receipt/current time/source/H/role/action/accepted inclusion/status, lossless negatives and live invalidation even on failed projection |
+| Runtime/recovery / OJ08/OJ09 and BS06/BS07 | Concrete diagnosed repair and all required ordinary natural exits/intentional boundaries/current custody within fixed limits; old restart-two remains failure/partial |
+| Receiver / OJ10 | Actual project/recipient/roots/roles/prior host mandate/channel/access and complete manifest/arrival/own C/Q/R/adoption/current use. No qualified general cross-host/offline route inferred |
+| Joint current evidence / OJ11/OJ12 | Full actual per-row plan/build/load/future entries/oracles and accessible current dossier/owner artifacts. Original catalog/receipts stay exact; current three additional external catalog differences require dependency/recapture handling |
+| Comparative research | Qualified assumption/dependency/transport methods if selected, independent correctness histories/gold and actual paired comparison. No advantage or empirical causal effect has been demonstrated by these documents |
+
+Fixed recorded limits remain: Gerbil heap 2 GiB at actual configured scope; build
+180 s, test-file 120 s, investigations 600 s, reassessment generation 240 s and
+review/recovery processes 180 s with recorded grace. These distinct envelopes are
+not one whole-suite budget or measured total RSS. New required finite limits must
+be specified/qualified, never unbounded default or widened to make a failure pass.
+Do not rerun unchanged failed recovery; diagnose/qualify concrete repair first.
+
+Design closure now includes explicit ownership, field/refinement and lifetime rules,
+matched cross-boundary acceptance requirements and dependency/open-item allocation.
+It does not include actual implementation compatibility, current full loaded closure,
+actual role/authority/receiver inputs or executable acceptance receipts. Only Org,
+indices and D2/SVG are edited. No implementation/directory/package/runner change,
+build, method/content/model/ASCENT/Aitia/acceptance/research execution, signing,
+review submission, authorization, adoption, withdrawal or actual delivery occurs.
+
+#+CAPTION: Whole-chain audit binds selected premise meaning to actual check/use/Q/R/H and receiver scope, preserves immutable originals, and separates live guards, future qualification and comparative research.
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.svg]]
+
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][Editable D2 source]].
+
+* SPECIFIED P0 follow-up at the newer dependency cut
+:PROPERTIES:
+:CUSTOM_ID: audit-p0-follow-up
+:END:
+
+[[file:10.65-ascent-migration-and-contract-handoff.org::#p0-ascent-migration][10.65]] supplies the requested P0 owner/import/Core-diff/build/load plan. At this newer Flow cut the application replacement sources are visible; the earlier missing-path table above remains historical. Generic declarations stay with ASCENT; Clue/history move to Flow owners and require supported public/build closure. Core read ownership changes do not repair the still-discarded normalized Scope candidates. PM01-PM14 are unexecuted; AC01 and WP00/recovery remain open.
+
+* SPECIFIED P1 effective Types follow-up
+:PROPERTIES:
+:CUSTOM_ID: audit-p1-effective-follow-up
+:END:
+
+[[file:10.66-effective-types-and-contract-closure.org::#p1-effective-contracts][10.66 P1 consolidation]] defines the effective refinement.
+P1 is consolidated there against S1-S9 and P0. Complete selected causal/check/impact/strength/delivery-phase fields precede closed validation; finite purpose/action domains, normalized returns and independent operation recognition are explicit. This closes a design refinement, not AC01/AC03 runtime qualification, WP00/recovery, real authority or research evidence.
+
+* SPECIFIED P2 complete publication follow-up
+:PROPERTIES:
+:CUSTOM_ID: audit-p2-publication-follow-up
+:END:
+
+[[file:10.67-library-construction-publication-and-scope-handoff.org::#p2-construction-publication][10.67 P2 consolidation]] defines this handoff.
+The P2 design is unified there: checked parent graph/two policies/Config, single mapping/delta semantics, real operations, checked Context/required-edge/final Scope propagation, isolation/currentness and failure controls. This is design closure only; P0/WP00 and actual S2-S9 implementation/evidence remain open.
+
+* SPECIFIED P3 selection and capture follow-up
+:PROPERTIES:
+:CUSTOM_ID: audit-p3-capture-follow-up
+:END:
+
+[[file:10.68-profile-selection-scenario-binding-and-capture.org::#p3-selection-binding-capture][10.68 P3 consolidation]] defines this boundary.
+P3 is unified there from checked Scope through fixed Profile/model/policy binding, independent acquisition and original capture-origin association to one C. It specifies a target existing-Core issuance composition and explicit reader/consumer/recovery gaps. This does not clear actual AC03/WP00/source/load/runtime qualification.
+
+* SPECIFIED P4 unified execution and evidence follow-up
+:PROPERTIES:
+:CUSTOM_ID: audit-p4-evidence-follow-up
+:END:
+
+[[file:10.69-method-content-execution-and-evidence-issuance.org::#p4-unified-execution-evidence][10.69 P4 consolidation]] defines this boundary.
+P4 is unified there: genuine same-C preparation, independently required closure, actual final launch and pure-call origin, separate method/content semantics, private W and fresh use. This is design closure only; real Ops/capture/issuer/observer and source/compiled/cold/recovery evidence remains unqualified.
+
+* SPECIFIED P5 accepted query-view follow-up
+:PROPERTIES:
+:CUSTOM_ID: audit-p5-query-follow-up
+:END:
+
+[[file:10.70-ascent-projection-and-determinate-query-view.org::#p5-projection-query-view][10.70 P5 consolidation]] defines this boundary.
+P5 is unified there from genuine C/evidence and independent required units to accepted finite consequences and complete Q. Definite Q can retain honest gaps/counters/conflicts; actual current use and Aitia authority remain separate. This design does not close execution/source/build/load/recovery gates.
+
+* SPECIFIED P6 consolidated prerequisite order
+:PROPERTIES:
+:CUSTOM_ID: p6-follow-up-64
+:END:
+
+[[file:10.71-aitia-review-adaptation-and-current-use.org::#p6-failure-and-order][10.71 P6 consolidation]] defines this boundary.
+P6 implementation depends on P0 actual dependencies/build/load/read origins, P1 typed purpose migration, P2/P3 actual checked operations/capture and P4/P5 genuine evidence/Q. Then factor Aitia Host/verification and thin Scenario handoff before P7-P9; design completion closes no runtime gate.
+
+* SPECIFIED P7 prerequisite and owner sequence
+:PROPERTIES:
+:CUSTOM_ID: p7-follow-up-64
+:END:
+
+[[file:10.72-history-authority-reassessment-and-withdrawal.org::#p7-order-and-open-gates][10.72 P7 consolidation]] defines this boundary.
+Actual source/build/load/Scope/C/Types and P4-P6 evidence/Q/review precede generic authority verification, actual serialized custody and resolution/withdrawal effects. P8/P9 then qualify recipient/current-use/recovery; design completeness grants no permission.
+
+* SPECIFIED P8 dependency and owner sequence
+:PROPERTIES:
+:CUSTOM_ID: p8-follow-up-64
+:END:
+
+[[file:10.73-library-delivery-and-recipient-adoption-use.org::#p8-order-and-open-gates][10.73 P8 consolidation]] defines this boundary.
+P0-P3 source/publication/Types/capture and P4-P7 evidence/Q/review/authority precede finalized payload/distribution and receiver protocol. Actual transport/retention/roots/build provenance and receiver domain knowledge remain owner prerequisites; research superiority is separate.
+
+* SPECIFIED P9 complete owner order and through-gates
+:PROPERTIES:
+:CUSTOM_ID: p9-follow-up-64
+:END:
+
+[[file:10.74-case-joint-acceptance-and-research-plan.org::#p9-open-items-and-order][10.74 P9 consolidation]] defines this boundary.
+P0 stays continuously qualified through P1-P8 implementation, then bounded actual unit/integrated source/compiled/cold/receiver routes and independent reconciliation. Mechanism correctness, real case readiness and research outcomes stay separate.
+
+* SPECIFIED P1-P9 audit and current prerequisites
+:PROPERTIES:
+:CUSTOM_ID: consistency-audit-75-64
+:END:
+
+[[file:10.75-contract-consistency-and-refactoring-order.org::#audit-implementation-order][10.75 P1-P9 consistency audit]] defines this refinement.
+The current follow-up retains AC01-AC14/OJ/BS and reconciles P1-P9 before implementation. Reconcile actual dependency pins/links/load, Core returned candidates and same-C origin lifetime; then proceed P1-P9 with continuous P0 qualification. No historical finding or runtime gate is marked passed.
+
+* SPECIFIED P0 unified source and normalized handoff
+:PROPERTIES:
+:CUSTOM_ID: p0-76-follow-up-64
+:END:
+
+[[file:10.76-dependency-build-load-and-normalized-handoff.org::#p0-order-and-files][10.76 unified P0]] defines this boundary.
+P0 now refines coordinated POO/Core/ASCENT/Flow/project declarations, actual build/load and Core Context/edge/final candidate handoff before positive P1-P9 claims. Dependency order, owner isolation, explicit bounded lanes and unresolved test/loader seams remain; no implementation or acceptance occurs.
+
+* SPECIFIED P1 unified effective Contract refinement
+:PROPERTIES:
+:CUSTOM_ID: p1-77-follow-up-64
+:END:
+
+[[file:10.77-effective-types-contracts-and-origin-lifetime.org::#p1-effective-origin-contracts][10.77 unified P1]] defines this boundary.
+10.77 refines complete Library/Aitia fields, ancestry, exact finite domains, normalized subjects and same-C original provenance versus verification/current use. New Yuanxu package/API observations reopen actual P0 consumer/build/load qualification; no implementation or runtime result is implied.

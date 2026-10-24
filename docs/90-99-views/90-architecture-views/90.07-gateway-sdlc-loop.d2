@@ -1,0 +1,25 @@
+# org-target: docs/20-29-cases/20-gateway/20.01-gateway-sdlc.org::#gateway-sdlc
+# Lifecycle dependencies and return paths; not a prescribed Agent reasoning order.
+direction: down
+classes: {
+  design: {style: {fill: "#E6F5F3"; stroke: "#19756C"; border-radius: 12; font-size: 17}}
+  evidence: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; border-radius: 12; font-size: 17}}
+  authority: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; border-radius: 12; font-size: 17}}
+}
+requirements: "Gateway requirements\nBudgets, trust, fault and workload scope" {class: design}
+library: "POO Library specialization\nEffective design, assumptions\nGW obligations and independent oracle" {class: design}
+work: "Lambda Aitia work package\nExact design/source, roles, criteria\nExplicit bounds and stage authority" {class: authority}
+checks: "Model and implementation work\nQNT / Lean / source correspondence\nNative fault, security and workload checks" {class: evidence}
+admit: "ASCENT evidence / domain admission\nBound result, method and premises\nSupport, counterevidence and unknown" {class: evidence}
+delivery: "Scoped delivery decision + Host\nCoherent cut + atomic/fenced use\nCurrent identity and authorization\nActual artifact/configuration effect receipt" {class: authority}
+operation: "Operational evidence\nPolicy, resource, workload and fault monitors\nIncident or premise change" {class: evidence}
+requirements -> library: "define measurable claims"
+library -> work: "versioned design and inventory"
+work -> checks: "explicit authorized work"
+checks -> admit: "results, failures and incomplete attempts"
+admit -> delivery: "required current support; no permission implied"
+delivery -> operation: "deployed identity and assumptions"
+operation -> admit: "recheck applicability; withdraw affected support"
+admit -> library: "counterexample / unmet premise / mismatch" {style.stroke-dash: 4}
+operation -> requirements: "changed goals or operating conditions" {style.stroke-dash: 4}
+library -> library: "reviewed repair -> new reusable entry"

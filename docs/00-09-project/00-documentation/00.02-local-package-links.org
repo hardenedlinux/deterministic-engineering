@@ -1,0 +1,100 @@
+#+TITLE: 00.02 Local POO Flow Package Links
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 00.02
+#+OPTIONS: toc:2 num:nil
+#+STARTUP: overview
+#+FILETAGS: :setup:gerbil:provenance:
+
+[[file:00.01-index.org][Documentation index]] | [[file:../../20-29-cases/20-gateway/20.03-gateway-design-audit.org::#audit-module-integration][Integration design]]
+
+The setup observations below retain their historical status. Current Core,
+POO, ASP and ASCENT links point directly to the original source workspaces described
+in [[file:00.03-scheme-package-bootstrap.org::#native-dependency-closure][00.03 native dependency closure]]. That record supersedes the earlier
+source-only build boundary; the POO Flow research link remains unchanged.
+
+* Recorded local setup
+:PROPERTIES:
+:CUSTOM_ID: local-package-links
+:OBSERVED_DATE: 2026-10-18
+:STATUS: linked-and-listed-not-import-qualified
+:END:
+
+The user-authorized local package links have been created with the installed
+Gerbil package manager. Both link commands and the scoped list command exited
+zero. The links are local ignored state, not tracked copies of upstream sources.
+At this original setup observation, explicit GERBIL_PATH was required because
+no root gerbil.pkg existed. The subsequent [[file:00.03-scheme-package-bootstrap.org][00.03 package bootstrap]] added the
+root declaration and verified native project-context build/import. The commands
+below preserve the original explicit-environment setup record.
+
+#+NAME: local-link-commands
+#+begin_src sh :eval never :exports code
+env GERBIL_PATH="$PWD/.gerbil" gerbil pkg link github.com/tao3k/poo-flow /Users/guangtao/ghq/github.com/tao3k/poo-flow
+env GERBIL_PATH="$PWD/.gerbil" gerbil pkg link github.com/tao3k/poo-flow-core /Users/guangtao/ghq/github.com/tao3k/poo-flow/core
+env GERBIL_PATH="$PWD/.gerbil" gerbil pkg list
+#+end_src
+
+Run from the repository root. The link commands are creation commands, not
+idempotent repair commands: an existing destination must first be inspected.
+Never uninstall a Gerbil package workspace to resolve a link or tag conflict.
+
+#+NAME: local-link-observation
+| Local destination under .gerbil/pkg/ | Resolved source directory | Observed HEAD | List label |
+|-------------------------------------+---------------------------+---------------+------------|
+| github.com/tao3k/poo-flow | /Users/guangtao/ghq/github.com/tao3k/poo-flow | a74fc2fd63437252175b5a67649ee54b886d3bf4 | research/ascent-poo-flow |
+| github.com/tao3k/poo-flow-core | /Users/guangtao/ghq/github.com/tao3k/poo-flow/core | 52130d2d338b09622a3f55e37987ddc0375b6187 | refactor/module-feature-ownership |
+
+Both source worktrees have uncommitted changes. HEAD and list labels are
+observations, not complete content identities or dependency locks. These live
+links can move with subsequent upstream edits. Source navigation now follows the package-linked files. Historical observation
+metadata and frozen gold remain records of their original inputs, not
+qualification of changed live sources.
+
+The observed parent package declares package prefix poo-flow; the separate Core
+package declares prefix core. Linking the parent alone would not establish the
+separate package identity. The linked core/init.ss was read through the local
+link and matched the target bytes: it selects Module and Scenario windows in one
+poo-flow! selection epoch. It remains an upstream example, not a gateway init.
+
+* Qualification boundary and environment limitation
+:PROPERTIES:
+:CUSTOM_ID: local-link-boundary
+:STATUS: setup-only
+:END:
+
+The unscoped global pkg list failed on an unrelated broken
+/Users/guangtao/.gerbil/pkg/gslph entry. That entry was left untouched. The explicit
+local environment lists both linked packages successfully and avoids changing
+global package state. The package manager also prints a std/net/request
+deprecation warning; it did not prevent the local link/list commands succeeding.
+
+No dependency install, compiled import, native ABI check, provider realization,
+Scenario execution or gateway init was performed. A package source link is not
+compiled module resolution. No runtime code, gerbil.pkg or init.ss was added.
+Before an eventual import demonstration, capture the chosen live source content
+and resolve its declared dependencies under the existing package workflow.
+Do not substitute a different pinned revision to make dependency resolution pass.
+
+The [[file:../../90-99-views/90-architecture-views/90.09-documentation-map.d2][documentation map]] locates this setup receipt;
+the [[file:../../10-19-design/10-architecture/10.06-poo-ascent-integration.org][POO-to-ASCENT design]] remains the semantic integration contract.
+
+* Package source navigation
+:PROPERTIES:
+:CUSTOM_ID: package-source-navigation
+:END:
+
+Documentation references source files through the local package links. It does
+not duplicate package revision resolution in per-document ASCENT/Core LINK
+shortcuts. Package management owns version selection. Actual evidence and frozen
+review inputs still retain the source/content identity that their claim requires.
+
+The local ASCENT source was also linked for this navigation with the installed
+package manager; the command completed successfully. This is local source setup,
+not dependency installation, import qualification or a change of declared dependencies.
+
+#+begin_src sh :eval never :exports code
+env GERBIL_PATH="$PWD/.gerbil" gerbil pkg link github.com/tao3k/gerbil-ascent /Users/guangtao/ghq/github.com/tao3k/gerbil-ascent
+#+end_src
+
+[[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-ascent/gerbil.pkg][ASCENT package declaration]] and
+[[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/init.ss][Core init]] are resolved through that environment.

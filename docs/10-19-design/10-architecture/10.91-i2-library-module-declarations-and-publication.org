@@ -1,0 +1,443 @@
+#+TITLE: 10.91 I2 Library and Module Declarations, Construction and Publication
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.91
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+FILETAGS: :design:library:module:types:contracts:publication:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.88-declarative-slice-consistency-and-order.org::#coherence-order][10.88 I2]] | [[file:10.83-a1-effective-declarations-and-contracts.org][A1 effective declarations]] | [[file:10.89-i0-source-cohort-dependencies-and-load-boundaries.org][I0 source baseline]] | [[file:10.90-i1-normalized-context-and-scope-handoffs.org][I1 returned values]] | [[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][D2]]
+
+* Scope, authority and prerequisites
+:PROPERTIES:
+:CUSTOM_ID: i2-scope
+:END:
+
+I2 unifies effective declarations, POO Types/Contracts, authored values, deferred
+implementation binding and Core Scope publication in existing files. Library owns
+reusable meaning; actual execution owners bind implementations; Core owns selection,
+source/context/edge/final admission and currentness. Profile chooses advertised
+capabilities and Scenario later binds actual project inputs into C. No declaration,
+Config, callable or published model is itself a captured occurrence or an approval.
+
+The target uses 10.83's sole Library generation owner and 10.90's K1/SD/S1. Earlier
+10.43/10.67/10.77 proposals that put V1 in backpressure abstract/types.ss are refined
+by 10.83; they are not parallel authorities. Historic revision strings/receipts remain
+unchanged. No Namespace, filename or Module ID gains a contract-version suffix.
+
+This is a source-grounded design update only. No source/model/package change,
+construction workload, tool run, inference, build/load/acceptance/recovery,
+publication effect or orchestration expansion occurs. Org/D2 checks and rendering
+are document checks. The I0 compatible tuple and I1 runtime return-retention/load
+qualification remain open prerequisites, not completed by specifying I2.
+
+* Current implementation and source observation
+:PROPERTIES:
+:CUSTOM_ID: i2-current
+:END:
+
+Read-only observation on 2026-10-21: adjacent Core
+1107677e53b0c3096958edc83429ddf9f1e1257e, ASCENT
+18751d5c513fd7ae6e768f580866b9e1fb34d2d3 and Flow
+e20e93236ca7a04275d1293cdc9ce770401efd7f retain the previous observed HEADs. Relevant
+Core handoff/Type/admission/artifact bytes overlapping the I1 inspection are unchanged.
+Dirty checkouts, nested dependencies and actual load provenance still need I0/I1
+qualification. This is not a fresh build or a complete immutable cohort observation.
+
+| Existing source | Observed current behavior | I2 target disposition |
+|------------------+---------------------------+------------------------|
+| [[file:../../../library/project-organization/types.ss][Organization Types]] and [[file:../../../library/project-organization/objects.ss][objects]] | Scope checks declaration/object presence; ProjectOrganization holds positional role/owner/product/duty/capability rows | Complete neutral declaration Types and organization refinements; keep authored organization meaning separate from family descriptor, catalog and policy associations |
+| [[file:../../../library/project-organization/config.ss][Organization Config]] / [[file:../../../library/project-organization/interface.ss][interface]] | Config is the raw ProjectOrganization object; exports only declaration=Config | Normalize closed Config selections and export family declaration plus actual model/catalog/policy/method expectations; migrate old declaration.roles consumer directly |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/abstract/types.ss][Generic Types]] / [[file:../../../library/concurrency/resource-control/backpressure-memory/abstract/objects.ss][objects]] | Fixed literal rules/dependencies predicate; BackpressureModel has identity/revision/lifecycle/rules/dependencies/qualification | Complete family/model/parameter/Config/Scope Contracts and authored premises/assets/capabilities; inherit neutral generation once |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/objects.ss][Rust objects]] / [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/interface.ss][interface]] | specialize-backpressure extends supplied Parent with generic-entry, appends rules/dependencies; current state-map uses parent-to-child shorthand | Construct/check Rust over actual consumer Parent, one immediate parent field and complete child-to-parent map; construct Integration and policies in this owner |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/config.ss][Rust Config]] / [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/types.ss][Types]] | Unused purpose marker; shallow entry/Profile/Context and procedure-presence method checks | Closed no-options Config; full sibling model/policy refinements, effective fields, typed Function bindings and cross-export relations |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/correspondence.ss][correspondence]] / [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/func.ss][ResourceMethods]] | Integration is resource-slice-entry factory; case/factor/mapping literals and cancelQueued behavior in generators; factory exported through methods | One published integration-entry; objects own case/mapping/delta meaning, algorithms consume it; typed deferred methods replace unbound semantic factory |
+| [[file:../../../modules/project-formation/types.ss][Formation Types]] / [[file:../../../modules/project-formation/objects.ss][objects]] / [[file:../../../modules/project-formation/interface.ss][interface]] | Procedure-presence Scope; separate LR01--LR08 semantics list; empty requires | Explicit Library dependency, actual Program/schema/limits/operation association and expected Function wrappers; no independently maintained rule-label catalog |
+| [[file:../../../scenarios/resource-lifecycle/review/profile.ss][review Profile]] / [[file:../../../scenarios/resource-lifecycle/review/func.ss][adapter]] | Coding-policy label, project subject/revision/scope/class/target and SWE fixture adaptation are mixed | Publish reusable coding/design criteria at Library owners; project adoption, actual roles/classification/authority remain downstream |
+
+** Bounded source-byte observation
+
+Hashes identify inspected implementation inputs, not new semantic revisions or
+loaded-code qualification. Earlier audit observations remain unchanged.
+
+| Source | SHA-256 |
+|--------+---------|
+| ../poo-flow/core/types.ss | 1559423111a660c47fbc42a74a6f707b8c2268ea7b24f93e0679f6926fb56a5a |
+| ../poo-flow/core/module-system/source/declaration.ss | 99286f55f49c2d265206fa800a22bb4728134f1e39d7cb3d494593b35d1db94e |
+| ../poo-flow/core/module-system/source/link.ss | 606b1b044c379d1f16ee8174217693c05af08a1949becadf2687124a5c3230ac |
+| ../poo-flow/.gerbil/pkg/github.com/tao3k/gerbil-poo/validation-rebinding.ss | 610bdf4d9bb78af14de9508e960653927774334b0551d410a537f173effab3ea |
+
+* Type ownership, effective fields and inheritance
+:PROPERTIES:
+:CUSTOM_ID: i2-types
+:END:
+
+Use actual POO Type/ObjectContract/Function composition and selected Yuanxu contextual
+Contracts. Do not add a schema parser, universal builder, role registry, copied
+validator or declaration interpreter. Field validation executes no external workload.
+Compute the complete inherited field map before closed-field rejection; inspect
+unknown semantic names before demanding getters. A child may add supported fields,
+but cannot hide an inherited obligation or relax its expected family constraint.
+
+| Existing Types owner | Target descriptor/shape responsibility | Dependency limit |
+|-----------------------+----------------------------------------+------------------|
+| library/project-organization/types.ss | LibraryDeclarationContract; common reference/revision/model/policy/method/capability shapes; OrganizationDeclarationContract, OrganizationModelContract, OrganizationConfigContract, OrganizationScopeContract and formation Profile expectations | Only qualified POO/Core primitives and neutral data Types; no authored objects, Module implementation, Config, Profile, Scenario or init |
+| backpressure-memory/abstract/types.ss | BackpressureDeclarationContract; shared backpressure model/parameter/claim/premise/strength/input-demand shapes; BackpressureModelContract, BackpressureConfigContract and BackpressureScopeContract | Consume neutral Types, retain own family identity; no organization authored values or Rust implementation import |
+| backpressure-memory/rust/types.ss | RustResourceModelContract, BackpressureIntegrationContract; sibling BackpressureReviewPolicyContract and BackpressureDesignReviewPolicyContract; mapping/delta/case/asset/Function and complete Rust Config/Scope refinements | Consume common/abstract Types; never import objects/methods/interface to discover expected meaning |
+| modules/project-formation/types.ss | Effective method binding, Program/relation/source/output/limit, C-consumer request/result/view/plan/model-bundle operation Types; Formation Config/Scope expectations | Consume neutral/library declaration Types and actual generic ASCENT Types; no duplicate Library version, policy schema or application evidence issuer |
+| Profile/Scenario/Aitia Types | Later selection/acquisition/C and review/authority refinements consume these exports | They do not redefine Library generation/model ancestry, invent methods or enlarge Aitia purpose/action domains |
+
+Three graphs must remain distinct:
+
+| Graph | Required relation |
+|-------+-------------------|
+| Declaration descriptor inheritance | LibraryDeclarationContract -> sibling OrganizationDeclarationContract / BackpressureDeclarationContract; each fixes its own family constraints |
+| Model Contract shape refinement | Common model shape -> appropriate concrete Generic/Rust/Integration siblings; no Rust inheritance of Generic's fixed identity or parent=false predicate |
+| Actual model values | Admitted Generic -> checked Rust -> checked Integration through actual POO prototype composition and explicit immediate parent; both associations agree |
+
+Coding/design policy Contracts are sibling refinements of common policy shape.
+Concrete policy values have parent=false; policy applicability is composition, not
+model ancestry. Organization and backpressure can publish distinct applicable design
+policy definitions under these shapes. Sharing a policy requires explicit supported
+family/model applicability, not copied identities or a forced universal policy.
+
+** Single version source and actual revisions
+:PROPERTIES:
+:CUSTOM_ID: i2-version
+:END:
+
+LibraryDeclarationContract in existing library/project-organization/types.ss owns
+the sole authored contract-version=V1 value/constraint. Family descriptors inherit
+that metadata through POO composition. Actual declarations/roles reference their
+trusted expected descriptors; objects, Config, Module, Profile, Scenario, manifests,
+Org and D2 do not own an independently editable generation field.
+
+Read generation through admitted Scope -> expected role descriptor/family declaration
+association -> inherited neutral metadata. A submitted contract slot, matching name
+or V1 string cannot select its own validator or establish the original owner. Core
+source/publication associations must agree with the actual expected descriptor.
+The common declaration base must not fix one concrete model/family identity.
+
+Preserve ownership-budget/v1, backpressure/v3 and backpressure-integration/v1 as
+opaque existing semantic revision values, not Library V2/V3. Organization model,
+policy/catalog/mapping and each method/program association require their own actual
+source-authored semantic revisions before full publication. No new revision strings
+are invented by this plan. Source hashes, Git pins, Core generations, document
+revision and wire protocol tags are separate; missing revision blocks the relevant
+complete capability rather than receiving a guessed default.
+
+** Effective required field groups
+
+These are target POO fields/relations, not a wire schema. Absence is explicitly typed.
+References are inert identity/role/owner/revision associations; validating a reference
+does not recursively execute referenced models, descriptors or methods.
+
+| Role | Required fields / effective constraints |
+|------+-----------------------------------------|
+| Family declaration | identity, family, expected contract/role descriptors, inherited generation association, supported applicability and source owner; family identity fixed by expected refinement |
+| Model | identity, role, family/declaration-ref, contract, parent, revision, lifecycle/rules/dependencies, premise/input/obligation demand, supported claims/strength/limits, assets/capabilities/method refs; child preserves inherited meaning |
+| Organization definition | Model fields plus roles/allowed owners, owner categories, protected owners, product/content/duty/capability demand and supported mapping/catalog references; no acquired repo observations or candidate-specific winning allocation |
+| Policy | identity, contract/family, parent=false, revision, applicability to model/slice/purpose, required criteria/products/duties/method strength, negative/conflict/causal applicability and responsibility/history/use/delivery conditions; no actual principal, adoption or grant |
+| Method declaration | identity, revision, kind, actual supported model/policy/claim/mode domain, expected input/output Function Types, operation/provider reference, complete required input/premise/asset footprint and finite limits; program/catalog/mapping/validator references where relevant |
+| Bound operation | Actual expected method definition, implementation owner/source/revision and admitted provider association, normalized Function, supported input/output meaning and mode. Actual execution/current-use evidence is separate |
+| Catalog / model mapping | identity, revision, actual owner/asset refs, supported model/element kinds and qualified-name segments, definitions versus usages, dependency/reference closure, role/edge/obligation links, projection loss and supported validation profile |
+| Integration mapping/deltas | Sole source-owned case/factor/claim links, observed-state/cut semantics and loss, typed guard/effect/frame/affected model/premise and required verification duties; no generic prose-to-transition language |
+| Scope | Exact checked declaration/model/policy/catalog/method/Contract associations and supported actual bound operations, plus Core source/dependency/currentness lineage; no project selection or successful result synthesized by publication |
+
+Finite method kinds remain application-reasoning, model-projection, content-observation,
+implementation-execution, model-verification and theorem-check. Claim, execution,
+validation, conclusion, control and current-use domains remain distinct as specified
+in 10.83/10.77. Formation's design-reasoning purpose is not a new Aitia request
+purpose. Object/candidate/product identities are open typed references within
+supported catalogs; LIB-C01--C03, D01--D10 or case M01--M06 are not engine enums.
+Unsupported semantic tags or cross-domain combinations refuse at their owner Type.
+
+* Authored model graph, policies and semantic assets
+:PROPERTIES:
+:CUSTOM_ID: i2-objects
+:END:
+
+| Existing value owner / target value | Construction and association |
+|------------------------------------+------------------------------|
+| abstract/objects.ss / BackpressureModel | Generic identity concurrency.resource-control.backpressure-memory; revision ownership-budget/v1; parent=false; authored generic obligations/premises/assets and conditional scope, including model.qnt and budget.lean references |
+| rust/objects.ss / Rust specialization | Identity rust.resources.backpressure-memory; revision backpressure/v3; extend the exact checked Parent.entry received by this consumer, parent=that value; preserve Generic duties/dependencies/premises and add actual Rust responsibilities |
+| rust/objects.ss / Integration | Identity rust.resources.backpressure-memory.integration; revision backpressure-integration/v1; extend checked exported Rust, parent=that Rust; add integration cases/mapping/deltas/SI/TM assets and bounded strengths |
+| rust/objects.ss / bounded coding policy | Planned identity rust.resources.backpressure-memory.review-policy; parent=false; applicable admitted Rust/Integration roles; source-authored revision and complete bounded coding criteria required |
+| rust/objects.ss / design policy | Planned identity rust.resources.backpressure-memory.design-review-policy; parent=false; separate source-authored revision and design/content/decision/history/causal/authority/delivery requirements |
+| project-organization/objects.ss | Authored organization family/model, applicable design policy, catalog/mapping and application method expectations; no Engine object imports, repo capture, actual project reviewer or mandate |
+
+Keep one immediate parent field. Remove the live generic-entry/parent dual source
+and the public integration factory when migrating callers. Integration is an object
+role assembled within existing rust files, not a new directory or independent
+Library family. Private pure composition helpers may remain; public extensibility
+is the POO object/descriptor and checked Scope, not a second builder API.
+
+The engineering child-to-parent state map is waiting->waiting, queued->queued,
+cpu-running->active, result-pending->returned, cleanup->cleanup, released->released.
+It replaces the current shorthand direction; observed Rust event/QNT running/done
+mapping is separate. This declaration is not a proof of full Rust refinement.
+
+One selected Integration owns mapping, deltas and exactly the six RL-M01/SI-M01/TM-M01
+through RL-M06/SI-M06/TM-M06 associations and factors. correspondence.ss consumes
+these values; remove its independent semantic case/factor/mapping authority and
+cancelQueued transition literal as a second source of meaning. Keep bounded rendering
+algorithms and independent native oracle expectations. A checker must not derive all
+its expected answers from the same declaration/renderer and thereby become tautological.
+
+The queued-cancellation delta declares queued guard, queued removal and cleanup
+addition, with unchanged limit/queueLimit/admitted/running/returned/done frame. Its
+own model/premise/duty links and projection loss remain explicit. Renderers refuse
+unsupported semantics; no general transition DSL or synthesized proof engine is added.
+Methods bind the actual generator/checker source footprint, not only mapping labels.
+
+Policy combination is explicit applicable-set composition. Full Rust/design
+DE-CASE-01 activity requires both relevant coding and design definitions. Formation-only
+design activity can select its applicable design policy without claiming coding
+qualification. Neither case discards inherited mandatory duties. The bounded M01--M05
+worker-owned review and M06 investigation remain distinct; NASA class-a/SWE fixture
+choices do not become universal Library policy or actual institutional attestation.
+
+* Method, Program, model and catalog bindings
+:PROPERTIES:
+:CUSTOM_ID: i2-bindings
+:END:
+
+The logical Library/implementation distinction does not force a new directory split.
+Rust methods can keep their implementation bodies in current rust/methods.ss and
+pure correspondence algorithms in correspondence.ss. Their actual provider/issuance
+operations follow I0's Core/Flow ownership. rust/func.ss privately assembles checked
+deferred operations for rust/interface.ss; it does not publish an unbound global
+ResourceMethods table as authority or issue results during declaration construction.
+
+| Binding | Definition owner | Actual implementation/publication boundary |
+|---------+------------------+---------------------------------------------|
+| Generic/Rust/Integration meaning | Existing Library Types/objects | Explicit Generic Scope Parent edge and local checked construction; not inferred from algorithm behavior |
+| Rust/QNT/Lean/SysML domain methods | Library method declarations and expected Function/claim/strength/input/limit Types | Existing Rust func/method/oracle/correspondence owners bind actual source and selected Core/Flow operations; bodies deferred until later same-C request |
+| Application reasoning | Organization publishes inert expected provider/operation and semantic domain, without importing Engine values | modules/project-formation binds actual generic ASCENT Program, source/output/schema/codec/predicate/limit metadata and real reason operation |
+| SysML materialization | Organization catalog and expected projection/mapping/validation declaration | Module binds actual supported selected-plan serializer/validator capability; later request carries C and accepted view. Pure render is distinct from validation and explicit Project publication |
+| Content observation / review | Published required content/criterion/strength and operation expectations | Actual observer and Aitia/Host owner bindings remain separate; declaration validation cannot manufacture A/E/W/use, Q, R or role grants |
+
+A supported method offering is not a current installed-tool attestation. I2 binds
+the actual implementation provider, expected tool/validator profile and declared
+input/asset requirements; Scenario later observes actual executable, environment,
+resources and catalog bytes in C. Mandatory packaged assets must belong to the
+qualified Library source/build closure, but field validation cannot certify their
+content by reopening ambient files. Keep definition completeness, implementation
+availability and actual invocation eligibility as separate claims.
+
+Complete the Formation Module's existing requires with an explicit Library alias,
+module-id project-organization and OrganizationScopeContract. Its core.exports binds
+operations against that actual checked Library Scope. The Library's method reference
+to provider project-formation is inert data, not a Core requires edge or import;
+there is no Library -> Engine -> Library cycle. Scenario can still require Library
+and Engine independently. It later corroborates their actual source/descriptor/
+semantic revisions and bindings; consumer SD wrappers may differ, so raw Scope
+pointer equality across edges is not the source-lineage test.
+
+Module Config references the actual bound Program/operation definitions and finite
+supported limits, not a second LR01--LR08 list. Extracting actual Program metadata
+can be inert construction; it must not evaluate a fact batch. Program source/schema,
+codec and input/output coverage are bound to the real implementation before C;
+I3 captures that association, I4 supplies complete C-bound facts and performs inference.
+
+The existing project.sysml and docs/10.78-case-organization.sysml are current Project
+model assets, not automatically a reusable Library catalog. Catalog declaration
+requires actual source-owned element/kind/name/reference and mapping semantics.
+Project-specific companion bytes, actual architecture allocations and revisions are
+later Scenario inputs when selected. Do not reclassify their captured facts as
+Library definitions. A string such as DECaseOrganization is not an admitted catalog.
+Missing actual catalog assets, semantic revisions or supported implementations block
+full publication of that capability. A predeclared reduced design capability can
+express missing/unimplemented support; a callable placeholder or label cannot claim
+full method availability or quietly remove a mandatory capability after failure.
+
+* Config, construction and normalized Scope exports
+:PROPERTIES:
+:CUSTOM_ID: i2-publication
+:END:
+
+Config selects authored values, not its validator, parent source, arbitrary callback,
+project revision, tools or grants. Reuse core.exports lowering and deferred linking;
+current Core source/declaration.ss generates core.link and rejects authoring both.
+No new linker, global initializer or Library cache is introduced.
+
+| Existing Config / complete target offering | Checked construction / exports |
+|---------------------------------------------+--------------------------------|
+| Organization Config | Closed OrganizationConfigContract with entry=authored ProjectOrganization and supported catalog/policy/method-declaration references. Scope exports declaration (family declaration bound to expected descriptor), entry (actual model), policies, catalogs, method-declarations, capabilities and contracts. These are shared references, not copied semantics |
+| Generic Config | Closed BackpressureConfigContract with entry. Scope exports declaration, entry, contracts and actually supported method-declarations/capabilities/methods/assets associations; parent=false verified. No Rust or project choices |
+| Rust Config | Closed no-options Rust Config; remove unused purpose marker, no custom parent/policy/tool knobs. Scope exports declaration, entry=checked Rust, integration-entry=checked Integration, policies keyed by coding/design, method-declarations, methods, catalogs/capabilities where offered, and contracts including Profile/Context/role/Function expectations |
+| Formation Module Config | Checked actual semantics/program/operation/limit associations selected against Library offerings; no duplicate rule/catalog/version authority. Scope retains semantics, typed reason and render/projection operations and applicable request/result/view/plan/bundle Contracts and actual source bindings |
+
+The family declaration association and model entry are separate roles. Current
+Organization declaration=raw ProjectOrganization is directly migrated; I3 consumers
+read admitted model/catalog demand rather than preserving declaration.roles as a
+second compatibility path. Map/asset/contract indexes may reference the same checked
+definition objects; no Scope.mapping/delta/catalog row copy becomes another authoring
+site. Supported offering keys are exact Types, not ad hoc optional extras.
+
+| Construction boundary | Exact returned subject used next |
+|------------------------+----------------------------------|
+| Expected Config validation | Retain the normalized Config and its selected checked fields; no raw Config alias enters assembly |
+| Generic final publication -> required Parent | Core retains provider S1; consumer alias receives I1's SD. Rust uses that actual Parent.entry rather than importing abstract objects or init |
+| Role construction | Normalize Generic/Rust/Integration/policy definitions at actual boundaries; build descendants from returned checked predecessors, with coherent inherited obligations and immediate parents |
+| Bound operation validation | Keep expected Function wrappers and actual implementation association; validate signatures/results without executing workload merely to publish a declaration |
+| core.exports assembly -> bind-exports -> Scope admission | Assemble from these checked values; Core performs opt-in export binding then admits S0. Complete Scope value normalization precedes contextual cross-export association checks |
+| Final S1 -> future dependent SD -> consumers | record.scope=scope-evidence.candidate; namespace facade.scope and selected-record.scope retain S1. Edge candidate is consumer-local; no Library precheck conceals I1 gaps |
+
+Final Scope normalization can return another receiver or wrapped fields. References
+inside effective descendants, policy applicability and bound operations must refer
+to the final checked predecessor/definition fields through actual POO receiver-aware
+rebinding. Do not assume validators are identity-preserving or repair relationships
+by revalidating every referenced object, mutating parents, copying raw fields back,
+or running another post-publication assembly. A mismatch must fail contextual
+admission; a demonstrated primitive rebinding gap belongs to POO/Core qualification,
+not a Library-specific graph repair layer. Verify preforced parent caches, shared
+references and Function wrappers with nonidentity controls at all real boundaries.
+
+Construction is once per actual successful linked Scope, not a global singleton or
+exactly-once effect guarantee. New source sessions and package relinks have their
+own admissions. Preserve lazy siblings, current source/Contract/wrapper read coverage,
+I1's failure poisoning and no usable partial cache insertion. Apart from Core's mandatory source/admission/currentness guards, authored declaration assembly
+performs bounded pure value construction/checking; it acquires no repository C,
+reads no project tools, runs no Rust/QNT/Lean/SysML/ASCENT workload and grants no review.
+
+* File-level sequence and responsibility
+:PROPERTIES:
+:CUSTOM_ID: i2-order
+:END:
+
+| Order / existing owner | Complete target adjustment when implementation is authorized | Dependency / exit |
+|------------------------+--------------------------------------------------------------+-------------------|
+| I2.1 neutral/family Types | project-organization/types.ss then backpressure abstract/rust Types; Module Types consume expected shared shapes and actual ASCENT API | I0 source/API baseline and I1 return protocol; single V1, concrete sibling constraints, effective fields/domains and expected descriptor ownership |
+| I2.2 authored definitions | organization objects and backpressure abstract/rust objects; actual parent, policy, revision and catalog/method/asset references | Typed immutable authored meaning; one mapping/delta/case owner, no project occurrence/adoption or method execution |
+| I2.3 Config and actual bindings | organization/abstract/rust Config; rust func/method/correspondence; Formation objects/Config/func | Normalize Config, closed Rust options, real deferred implementations and actual Program/catalog/limit associations; migrate old issuers/imports under I0 semantic owners |
+| I2.4 checked interface publication | Existing Library interfaces and Formation interface typed Library requires/core.exports | Checked Parent -> Rust -> Integration -> policies/bindings -> Scope; actual normalized S1/SD and contextual cross-export relations; no custom core.link or generation copy |
+| I2.5 consumer migration and controls | profiles/library-formation.ss, profiles/resource-lifecycle.ss, Scenario interfaces/helpers, review adapter and examples; existing t/library-owner-test.ss, library-selection-test.ss, module-design-test.ss, project-formation-test.ss and entry test | Remove generic-entry and methods.integration-entry construction routes, raw declaration.rows and LR-only authority. Preserve oracle meaning, negative history and supported selection. I3 supplies genuine C; no mock origin |
+| I2.6 qualified lane handoff | Project selected roots/Justfile plus upstream I0/I1 verification owners | Proposed controls below pass in advertised actual source/compiled/load/cold/restoration lanes before runtime publication is claimed; then I3 can consume real checked offerings |
+
+Types import no authored objects or Config; objects receive actual parent parameters
+from assembly and import no interface/init. Implementation units consume definitions
+and Types; interface joins actual dependencies. This acyclic ownership, not textual
+role discovery order, determines construction. No directory reorganization or
+automatic orchestration is required by this design update.
+
+* Proposed positive and negative acceptance conditions
+:PROPERTIES:
+:CUSTOM_ID: i2-controls
+:END:
+
+No controls are run here. Retain independent expected semantics and existing failure
+history. Correct refusal qualifies a negative control, not the complete positive case.
+
+| Control / existing verification seam | Positive requirement | Negative requirement / refusal |
+|---------------------------------------+----------------------+--------------------------------|
+| I2-C01 generation/descriptor / neutral and family Types | One inherited V1 source resolves through actual admitted expected role/family association; original semantic revision strings retained | Copy/override generation in Config/Module/Profile/Org, versioned Namespace, counterfeit descriptor name or wrong-family declaration fails |
+| I2-C02 effective Types / shared and family Types | Full inherited allowed/required map, exact tuples/keys/finite domains and real Function normalization; supported incomplete variants explicit | Unknown getter remains undemanded; duplicate/conflicting fields, unsupported tag/pair or candidate-selected validator fails; no broad metadata-prefix exemption |
+| I2-C03 actual parent graph / library-owner | Generic parent=false; Rust parent=actual consumer Parent.entry; Integration parent=actual checked Rust; child-to-parent map and inherited demand preserved | Skip Rust, stale/raw/equal-looking foreign parent, generic-entry alias, dropped/duplicated/conflicting duty or incompatible fixed-identity Contract inheritance fails |
+| I2-C04 policies / Library and review consumer | Separate coding/design values with parent=false, real revisions/applicability and required negative/history/causal/strength semantics; selected activity determines mandatory set | Model inheritance used as policy composition, policy field treated as adoption/grant, copied NASA/class/target fixture or missing mandatory design criteria cannot pass full activity |
+| I2-C05 mapping/delta/cases / objects, correspondence and independent oracle | One declaration drives supported generated guard/effect/frame/cut representation; all six RL/SI/TM links and explicit loss preserved | Independent generator mapping label/case/transition authority, missing M06, undeclared semantic delta, hidden frame mutation or derived-from-self gold fails |
+| I2-C06 actual implementation / rust and Formation bindings | Bound operation references actual selected declaration/provider/source/revision, supported mode/Function footprint and real Program or catalog/mapping/validator association | Procedure-only placeholder, forged semantic tag, wrong provider, detached Function wrapper, missing source/revision or label-only catalog cannot qualify full capability |
+| I2-C07 graph and deferred assembly / interface and selection tests | Library inert method refs coexist with explicit Module Library edge; Parent and Library aliases use actual checked Scopes; unrelated sibling stays cold | Library imports Engine to resolve its own declarations, custom core.link beside exports, raw Config/init lookup or failed required provider pruned by Profile fails |
+| I2-C08 normalized Config/Scope / I1 + library-owner | Nonidentity Config/entry/Function/final Scope retain coherent actual parent/policy/method/shared-child associations; final facade.scope/record.scope and dependent SD use returned candidates | Discarded validate return, stale lexical predecessor after normalization, repeated wrapper construction, raw-field restoration or private Library cache masking I1 fails |
+| I2-C09 no publication workload / constructor and Method Function tests | Authored construction performs pure validation, with Core source/admission/currentness guards retained; methods defer real tools/inference/capture/issuance until supported request | Validation launches tool/process, acquires real project input, hashes ambient tool roots, issues a result/approval or invokes callbacks as proof of method availability fails |
+| I2-C10 candidate and model semantics / formation tests | Well-formed LIB-C02 conflict and LIB-C03 gaps remain expressible; independently required demand survives proposed omissions; catalog distinguishes definitions/usages and actual/target | Type rejection hides valid architecture conflict, a model file proves implementation, candidate IDs select winner/provider or missing required product is silently dropped fails |
+| I2-C11 actual source/load and recovery / I0/I1 and Project entry | Exact compatible graph/build phases/loaded sources, normalized candidate semantics and currentness qualified per advertised lane; restored build receives fresh real admission | Old compiled API/POO/Scope fallback, matching wrapper hiding changed named section, hot result relabelled cold, serialized ED/ES restored as authority or partial marker before timeout fails |
+| I2-C12 downstream contract / Profile/Scenario interfaces | Advertised checked offerings expose sufficient exact parents/policies/models/method/catalog/demand for later unique C and full input footprint | Declaration/capability assertion relabelled current evidence, Scope fields used as C issuer, design policy inflated into Aitia purpose/action, implicit model/root publication or delivery fails |
+
+Use I0/I1 actual lane receipts with fixed 2 GiB and applicable 120-second focused,
+180-second complete build and 30-second static-model bounds; narrower owner lanes
+retain their caps. No widening, unchanged failed-route rerun or acceptance execution
+occurs here. Require exact nonzero case inventory, independent oracle, complete
+process exit/logs and preserved failure state. Do not infer complete source/build/load
+or method availability from existing shallow tests or historical counts.
+
+* Open items and completion boundary
+:PROPERTIES:
+:CUSTOM_ID: i2-open
+:END:
+
+Open: immutable I0 API/source tuple; I1 K1/SD/S1/currentness/load/recovery qualification;
+actual effective Type/Function/rebinding behavior; source-authored missing model,
+policy/catalog/mapping/method revisions; real reusable catalog assets; complete
+policy criteria and implementation bindings at their migrated owners. Those gaps
+block the corresponding full publication. A reduced design capability must be
+predeclared and cannot rewrite the full case's mandatory obligations after failure.
+
+The design assigns each field, constructor, validation and export to an existing
+owner. It does not claim that I2 values are implemented/published or that a genuine C,
+accepted view, valid model, review, authority or delivery exists. Correct ownership,
+normalization and declared strengths are correctness requirements; improved Agent
+proposals or reduced review effort remain separately tested research hypotheses.
+
+* I3 Project, selection and capture follow-up
+:PROPERTIES:
+:CUSTOM_ID: i2-i3-followup
+:END:
+
+[[file:10.92-i3-project-profile-scenario-and-capture.org::#i3-project][10.92]] unifies declared provider/Scope consumption and [[file:10.92-i3-project-profile-scenario-and-capture.org::#i3-selection][effective selection]]
+with I2's separate declaration/model/catalog offerings. Its [[file:10.92-i3-project-profile-scenario-and-capture.org::#i3-acquisition][actual acquisition]] and
+[[file:10.92-i3-project-profile-scenario-and-capture.org::#i3-capture][origin/C lifecycle]] require genuine expected producer, immutable basis and separate
+current use; no generic snapshot or private-issuer recovery is presumed. [[file:10.92-i3-project-profile-scenario-and-capture.org::#i3-calls][Same-C calls]]
+replace independent Profile-to-batch preparation; [[file:10.92-i3-project-profile-scenario-and-capture.org::#i3-controls][controls]] remain unexecuted.
+
+* I4 complete projection and accepted-view follow-up
+:PROPERTIES:
+:CUSTOM_ID: i2-i4-followup
+:END:
+
+[[file:10.93-i4-application-projection-and-accepted-inference-view.org::#i4-inputs][10.93]] unifies same-C/actual-Program coverage and [[file:10.93-i4-application-projection-and-accepted-inference-view.org::#i4-sources][internal source fields]],
+adding explicit expected-use-check association and plan/edge provenance refinements.
+[[file:10.93-i4-application-projection-and-accepted-inference-view.org::#i4-consequences][Derived consequences]] preserve declaration/evidence separation and all negatives;
+[[file:10.93-i4-application-projection-and-accepted-inference-view.org::#i4-calls][actual native acceptance and frozen-view handoff]] retain the successful producer
+association. [[file:10.93-i4-application-projection-and-accepted-inference-view.org::#i4-controls][Controls]] are planned only; no execution, model promotion or new authority exists.
+
+* I5 SysML candidate and validation follow-up
+:PROPERTIES:
+:CUSTOM_ID: i2-i5-followup
+:END:
+
+[[file:10.94-i5-sysml-selection-materialization-and-validation.org::#i5-selection][10.94]] unifies same-C/accepted-view/candidate/plan/catalog/mapping fields using
+I4's exact role/edge provenance. [[file:10.94-i5-sysml-selection-materialization-and-validation.org::#i5-names][Names/identity]], [[file:10.94-i5-sysml-selection-materialization-and-validation.org::#i5-closure][reference closure]] and
+[[file:10.94-i5-sysml-selection-materialization-and-validation.org::#i5-validation][actual independent validation]] remain separate from
+[[file:10.94-i5-sysml-selection-materialization-and-validation.org::#i5-invalidation-publication][I6 explicit publication]]. [[file:10.94-i5-sysml-selection-materialization-and-validation.org::#i5-controls][Controls]] are planned only;
+no implementation, validator run, model rewrite or promotion is performed.
+
+* I6 joint acceptance and explicit publication follow-up
+:PROPERTIES:
+:CUSTOM_ID: i2-i6-followup
+:END:
+
+[[file:10.95-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-handoffs][10.95]] unifies the same-C/accepted-view/candidate-validation joins and
+[[file:10.95-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-publication][explicit guarded publication]]; [[file:10.95-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-recovery][failure/replay/recovery]] separates build issuance,
+original C/view and actual effect provenance. Its [[file:10.95-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-current-entries][existing entry mapping]] corrects the
+historical runner filename to t/project-formation-entry-test.ss without creating an
+entry. [[file:10.95-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-controls][Joint controls]] and [[file:10.95-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-order-open][ordered exits/open gates]] are planned only;
+I7 acceptance execution remains separate. No implementation, runtime acceptance,
+model promotion, historical receipt rewrite or expanded orchestration is performed.
+
+* Integrated coherence and current-source follow-up
+:PROPERTIES:
+:CUSTOM_ID: i2-slice-audit-followup
+:END:
+
+[[file:10.96-declarative-slice-coherence-and-current-upstream-audit.org::#slice-audit-findings][10.96]] audits I0--I6 owner/contract/control correspondence and records
+[[file:10.96-declarative-slice-coherence-and-current-upstream-audit.org::#slice-audit-upstream][current upstream changes]], including generic TestingScript refinement and actual
+recipe/product ownership. [[file:10.96-declarative-slice-coherence-and-current-upstream-audit.org::#slice-audit-chronology][Same-C chronology]] captures selectable definitions before
+reasoning and keeps later validation/findings/views distinct. [[file:10.96-declarative-slice-coherence-and-current-upstream-audit.org::#slice-audit-publication][Transition-aware publication]]
+requires exact B -> O with genuine origin and unaffected support checks; no blanket
+freshness bypass. [[file:10.96-declarative-slice-coherence-and-current-upstream-audit.org::#slice-audit-order][Implementation dependencies]] and [[file:10.96-declarative-slice-coherence-and-current-upstream-audit.org::#slice-audit-controls-open][refined controls/open gates]] remain
+planned; original C/view, build and effect recovery are independent. No implementation,
+acceptance, publication or expanded orchestration is performed.
+
+* I2 effective declarations and checked Scope follow-up
+:PROPERTIES:
+:CUSTOM_ID: i2-i2-effective-followup
+:END:
+
+[[file:10.99-i2-effective-library-module-declarations-and-scope-publication.org::#i2-effective-version-inheritance][10.99]] unifies the sole neutral V1 source and distinct descriptor/model/policy
+graphs. [[file:10.99-i2-effective-library-module-declarations-and-scope-publication.org::#i2-effective-objects][Authored objects]] retain actual Generic -> Rust -> Integration and one
+mapping/delta owner; [[file:10.99-i2-effective-library-module-declarations-and-scope-publication.org::#i2-effective-bindings][actual bindings]] preserve inert Library expectations and the
+Module's typed Library edge. [[file:10.99-i2-effective-library-module-declarations-and-scope-publication.org::#i2-effective-publication][Normalized publication]] consumes I1 SD/S1 and checks
+final receiver-aware associations without lexical-capture repair. [[file:10.99-i2-effective-library-module-declarations-and-scope-publication.org::#i2-effective-order][Order]] and
+[[file:10.99-i2-effective-library-module-declarations-and-scope-publication.org::#i2-effective-controls][positive/negative controls]] remain planned; no implementation, workload, acceptance,
+Scope/model effect, delivery or expanded orchestration is performed.

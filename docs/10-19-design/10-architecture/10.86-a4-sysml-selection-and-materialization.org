@@ -1,0 +1,365 @@
+#+TITLE: 10.86 A4 SysML Model Selection, Materialization, Validation and Publication
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.86
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+FILETAGS: :design:sysml:models:projection:publication:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.81-declarative-chain-audit.org::#chain-audit-order][10.81 A4]] | [[file:10.82-a0-dependencies-and-normalized-handoff.org][A0 sources/handoff]] | [[file:10.83-a1-effective-declarations-and-contracts.org][A1 declarations]] | [[file:10.84-a2-project-selection-and-capture.org][A2 C]] | [[file:10.85-a3-application-projection-and-ascent.org][A3 accepted view]] | [[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][D2]]
+
+* Target and source boundary
+:PROPERTIES:
+:CUSTOM_ID: a4-scope
+:END:
+
+A4 consumes the same admitted C and actual accepted application consequence view,
+selects an eligible candidate under an explicit policy, resolves its captured plan
+against the selected published catalog/mapping, and produces a deterministic model
+candidate with complete reference and validation records. A separate explicit
+project operation may promote that exact candidate against an expected current
+baseline. Rendering, language validation, current-use eligibility and publication
+are different results; none grants Aitia approval or Library delivery authority.
+
+This chapter specifies target fields, calls, ownership and controls in existing
+files. No implementation, generated SysML, package, acceptance run, validator run,
+publication or automatic orchestration is performed. The current root/companion
+and historical receipts retain their original bytes and qualification limits.
+
+Read-only observation on 2026-10-21 retains Project HEAD
+8044732d505f84e373119a70f947df00e1767300 plus the working-tree formation slice;
+Core 1107677e53b0c3096958edc83429ddf9f1e1257e; ASCENT
+18751d5c513fd7ae6e768f580866b9e1fb34d2d3; isolated Core
+44a99d45396d1a23e850105ffe8af442a61b2780 and POO
+0df023fd9e15192156935c971f0f1940028c5277. A0--A3 runtime prerequisites remain open.
+
+The local OpenSysML research checkout is clean at
+188f222055755fa9deca1c1095e0727ed46f0628 at inspection. The installed sysml path
+resolves to /opt/homebrew/Cellar/opensysml/0.10.1/bin/sysml. This is filesystem
+identity, not a freshly executed version query or proof that the installed binary
+matches that checkout. Its source/docs inform the design only; actual selected
+validator/library/load compatibility still requires qualification.
+
+* Current implementation and file owners
+:PROPERTIES:
+:CUSTOM_ID: a4-files
+:END:
+
+| Existing file / current behavior | Target responsibility |
+|----------------------------------+-----------------------|
+| [[file:../../../modules/project-formation/func.ss][render-formation-model]] accepts raw rows-of result, chooses unique structural candidate, writes DE-PROJECT, de-duplicates type labels and concatenates reference suffixes | Pure selected-plan resolution/name encoding/serialization functions plus one checked projection operation; no implicit policy, provider selection, raw-result trust or case identity in the renderer |
+| [[file:../../../modules/project-formation/types.ss][Module Types]] / objects/config/interface | A1 effective request/resolved-plan/bundle/validation and wrapped operation expectations; bind real projection implementation, selected method/source and supported validator route. Do not keep a second rule/catalog authority in Config |
+| [[file:../../../library/project-organization/objects.ss][Library objects]], types/config/interface | Publish actual model/catalog/element/mapping/projection/validation capabilities, revision and required content/trace policy. Current role lists are not yet that complete published catalog |
+| [[file:../../../profiles/library-formation.ss][Profile]] | Select actual advertised catalog/mapping and materialization policy; capture candidate-specific or explicitly shared plan refinements and project identity. Catalog name and labels alone cannot select the expected model |
+| [[file:../../../scenarios/project-formation/func.ss][Scenario]] / types/interface | Bind same C, accepted view, candidate/plan and expected actual projection operations; acquire required model/catalog/product inputs through A2, not inside rendering |
+| [[file:../../../examples/library-formation-output.ss][output helper]] / [[file:../../../examples/library-formation.ss][runner]] | Write owned candidate/report/closure/validation records in a fresh investigation location; retain partial/refused runs. Promotion is a separate explicit operation, not FORMATION-OK or file existence |
+| [[file:../../../project.sysml][project.sysml]] / [[file:10.78-case-organization.sysml][companion]] | Root is the current generated design projection; companion is authored actual/target/requirement/decision detail. Preserve distinct authority/meaning and stable IDs; no automatic rewrite of companion into an already published model Library |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/correspondence.ss][resource-trace-sysml]] / methods.ss | Keep bounded six-case trace projection and actual tool-result ownership separate from repository architecture generation. Consume the sole declared Integration mapping/delta, not another authoritative model factory |
+| Core build/artifacts and installed tool owners | Core owns compiled build issuance/currentness; OpenSysML owns its parser/resolver/diagnostics and supported semantic evaluation. Neither currently implements a generic atomic publication of this repo's SysML/Org/D2 products |
+
+Use existing POO Type/ObjectContract/Function and Core admission mechanisms. Public
+values are ordinary POO values; resolution/serialization helpers are pure named
+functions. No parallel symbol server, arbitrary model interpreter, version registry,
+artifact issuer or repository synchronization framework is introduced. Internal
+OpenSysML source is reference evidence, not a private Go API that Gerbil may assume
+it can import; bind supported actual tool/client operations only.
+
+* Same C, accepted view and selection fields
+:PROPERTIES:
+:CUSTOM_ID: a4-selection-fields
+:END:
+
+| Target value group / owning boundary | Complete required associations |
+|--------------------------------------+--------------------------------|
+| Materialization request / Scenario + Module Types | Exact C/basis/original origin and required current-use association; actual accepted consequence view/request/program/source cut; candidate/plan/catalog/mapping/method and semantic revisions; materialization policy; output intent, validation profile and finite limits. No caller-selected renderer/validator or ambient model path |
+| Candidate selection / Profile policy | explicit-candidate fixes the requested X; unique-structural-candidate requires exactly one eligible X. Both require actual eligibility, original basis and plan join; neither means approval. Zero/multiple/foreign/invalidated selection returns refusal with alternatives retained |
+| Bound plan / Library/Profile/A2 | Project/root element identity; package/instance; candidate or declared common-plan applicability; exact admitted catalog/element/mapping/source revisions; node/edge/type declarations, source/product/duty trace and name/validation support. All were captured before generation |
+| Resolved model plan / pure operation result | Complete expected element inventory and supported kinds, symbol/identity/reference map, exact node/edge/type relationships and input-to-output trace, conflicts/gaps/limits. No best-effort omissions to make syntax pass |
+| Candidate bundle / actual producer | Root bytes plus every required supporting model/resource, relative destination/base, role/digest/source provenance, complete reference closure, C/view/selection/plan/method association and mapping trace. Manifest is product data, not private receipt authority |
+| Validation attempt/result / actual method owner | Exact bundle bytes/closure and selected validator executable/library/config/load identity; actual operation/argv/cwd/env/limits, launch/completion/log/diagnostic records; separate binding/projection/language/model-property outcomes and unresolved findings. Planned command is not an executed result |
+| Publication request/result / Project operation | Exact candidate and accepted validation/current-use association, explicit target and expected previous bytes/source/worktree cut, permitted owned write set, actual operation/intent and pre/post observations. Record completed/refused/drift/interrupted/unknown completion distinctly; no inferred Git commit or external delivery |
+
+The sole Library generation remains A1's LibraryDeclarationContract V1, read through
+actual admitted family/role descriptors. Catalog, mapping and method revisions are
+source-authored semantic revisions; tool/standard library/build identities and output
+content digests are different fields. Org, generated Namespace, filenames, Profile,
+model IDs and publication records do not create new generations or version suffixes.
+
+A3's accepted model_context(candidate,plan,root-element,package,instance,catalog-ref,
+project,basis) joins candidate_plan and the exact selected plan in C. Plan-scoped
+layout_node/layout_edge, product_node/duty_node and required-unit/trace relations
+supply the complete structure and its basis. Recover originating roles/edge identities
+only from that admitted plan and actual projected lineage, not by guessing from a
+slot label. Extend the checked A3 row/view contract wherever a necessary plan/role/
+edge association is not yet carried; do not synthesize a foreign row after acceptance.
+
+The request recognizes the actual A3 producer/accepted-return association, not merely
+finished=true, equal row counts, a matching digest or a forged rows-of object. A view
+from another capture/program/plan refuses. Expected required inventories and all
+negative alternatives remain in the source view even when one candidate is rendered.
+A fresh read of repo files or discovery of another catalog during rendering would
+change the input basis; acquire an appropriate new C instead.
+
+* Catalog, mapping and stable identity
+:PROPERTIES:
+:CUSTOM_ID: a4-catalog-mapping
+:END:
+
+| Published definition / mapping field | Validation and allowed refinement |
+|-------------------------------------+-----------------------------------|
+| Catalog identity / source / revision / expected Contract | Actual admitted Library catalog, dependency/asset/element inventory and supported family/model/method association. DECaseOrganization text alone is insufficient; current companion bytes are an explicitly selected asset |
+| Element identity / qualified segments / kind / owner | Stable identity, actual namespace path, definition versus usage kind, source/base/selector and actual/target/historical meaning. A dependency reference may target a usage; a type annotation needs an appropriate supported definition |
+| Mapping identity / source / revision / domain | Declared role-to-element/type/dependency/product/duty interpretation and applicable plan/claim limits. Profile may select supported refinements; it cannot quietly rewrite the published semantic mapping |
+| Node / local type / root identity | Stable declared identity or a supported published identity rule over project/plan/role meaning; slot/display name is separate. DE-PROJECT comes from the captured declaration, never the serializer |
+| Edge / source trace identity | Declared edge/trace role and endpoint identities, direction and required reference. Do not use sort position as persistent identity; adding an edge must not silently relabel unrelated elements |
+| Local definition versus catalog reuse | Reuse a real supported catalog type where selected. A locally emitted descriptive part definition needs declared meaning/kind; empty wrapper types cannot be presented as implementation semantics or substitute for missing catalog definitions |
+
+The authored companion keeps DE-E01--DE-E19, DE-R, DE-O and decision identities and
+actual/target boundaries. A valid projected dependency to actual::methods does not
+prove its implementation, and a target element cannot be relabelled actual simply
+because it renders. The root is a bounded selected view, not a duplicate complete
+source of every companion declaration. Missing supported elements/mapping semantics
+remain explicit gaps/refusal; no invented stub silently repairs closure.
+
+Mapping ownership follows A1/A3: Library authors reusable meaning once; Profile
+selects/refines; Scenario captures exact associations; Module interprets them with
+its actual selected implementation; ASCENT supplies accepted consequences. Six-case
+trace/Rust-QNT correspondence remains its own declared Integration mapping and claim
+domain. Do not copy its case lists/state map into the formation renderer.
+
+* Names, collisions and deterministic serialization
+:PROPERTIES:
+:CUSTOM_ID: a4-names
+:END:
+
+The current whitelist treats names, paths and intent prose alike, and validates a
+reference suffix before emitting it raw. Replace this with typed identities,
+qualified segment lists and separate textual documentation encoding under the
+selected language method. Do not implement a second complete SysML grammar.
+
+| Case / required check | Target behavior |
+|------------------------+-----------------|
+| Qualified segments and quoted names | Preserve segment boundaries; one quoted segment containing :: is not two namespace segments. Handle reserved words, quotes, escapes, whitespace and supported Unicode through the selected language profile; unsupported spelling refuses with a precise diagnostic |
+| Stable identity versus display name | Identity and scope determine element correspondence; labels can change without silently merging distinct elements. A mapping/plan change retains an explicit semantic change association |
+| Local duplicate / short name / imported name | Build a finite plan-local identity/symbol map, apply selected resolver semantics and check unique intended targets. Duplicate functional keys or distinct identities colliding in the same required scope refuse; no first/last wins or type-name de-duplication |
+| Same type label across definitions | Reuse only the same admitted definition under supported equivalence. Different structure/kind/source with the same label is a conflict, even if the current renderer would emit one empty part def |
+| Aliases / shadowing / wildcard import | Resolve to the intended actual element, not the first available name. Prefer explicit qualified references; wildcard imports require a captured bounded namespace and explicit ambiguity handling, never permission to load arbitrary libraries |
+| Documentation text | Encode as text/documentation with safe delimiters; intent strings and arbitrary comments cannot inject declarations or escape a generated comment. Do not run model-name on prose |
+| Ordering / repeated materialization | Canonical finite set order and declared trace order produce identical bytes for identical admitted plan/view/method inputs. Execution timestamps/paths belong in associated records, not nondeterministic model identifiers |
+
+The local OpenSysML [[file:../../../.data/OpenSysML/internal/frontend/repl/qualname.go][qualified-name code]] distinguishes parsed segments, including
+quoted single segments, and [[file:../../../.data/OpenSysML/internal/translate/export/names.go][name export logic]] checks that emitted spellings resolve
+to the intended element. These are inspected implementation examples, not proof of
+an installed API association or a request to copy its private resolver into this
+Library. Source-qualified language validation must confirm generated spellings.
+
+Numeric edge0/source0 names may be serialization-local names only where the selected
+mapping explicitly needs no cross-run semantic identity. If stable cross-model trace
+is required, use its declared identity rule or report missing identity support. Never
+hide collisions by adding an unselected generation suffix, random UUID or ordinal.
+
+* Artifact and reference closure
+:PROPERTIES:
+:CUSTOM_ID: a4-closure
+:END:
+
+The model bundle includes a complete bounded inventory: entry/root, selected companion
+and catalog/dependent model sources, required standard-library/tool resources or their
+qualified immutable identities, source-to-element/product/duty trace and validation
+inputs. Each reference has an owning base, role, actual target identity/kind and
+access/stability basis. Exact file bytes alone do not prove that a selector resolves
+uniquely or that its contents discharge a duty.
+
+Closure validation checks all expected generated elements/edges, imported or qualified
+symbols, aliases, transitive model dependencies, relevant external references and
+required trace targets. Preserve supported legitimate reference cycles; do not use
+an acyclic-tree requirement as a shortcut. Resolve within the selected bounded domain
+and declared resource limits; unsupported/unavailable target/access stays a gap or
+refusal. No auto-fetch/install, cwd fallback, hidden search root or undeclared stub.
+
+Capture path/base/case/symlink/relocation policy and included/excluded/negative inputs
+through A2. Reopening mutable original paths after hashing is not consuming the same
+bundle. If a validator discovers project metadata, library roots or additional
+resources, their actual acquisition/load association must already be supported and
+accounted for; otherwise the route is incomplete. Disabling a record cache does not
+by itself remove every implicit loader/config dependency.
+
+The candidate root is a later output over C's baseline project.sysml and companion;
+it is never inserted into its own captured input snapshot. The bundle content manifest
+is finalized before validation/publication outputs that reference it. A manifest need
+not contain its own digest, future validation result or future publication record in
+its self-input. Keep those later envelopes associated separately.
+
+* Validation layers and exact tool outcome
+:PROPERTIES:
+:CUSTOM_ID: a4-validation
+:END:
+
+| Required layer / actual owner | Input and acceptance meaning |
+|-------------------------------+------------------------------|
+| Binding / Module + Scenario | Same recognized C/view/eligible candidate/plan/catalog/mapping/method and applicable current-use guards; complete required input and reference inventory. Type conformance alone authenticates none of those origins |
+| Projection conformance / selected method | Expected versus emitted elements, kinds, identities, endpoints and traces agree; no dropped duty/product/negative limit or actual-target relabelling. Independent semantic inventory checks are separate from serializer self-checks |
+| Language and resolution / actual OpenSysML route | Exact staged candidate plus all selected model/library/load inputs parse/analyse under the recorded supported strict profile; no unacceptable diagnostic and every required symbol resolves to the intended target |
+| Selected model-property checks / actual verifier | Only where demanded and supported: exact instantiated subject/parameters/constraint/claim/input footprint and actual evaluation outcome. These are separate bounded method attempts/results, not inferred from language analysis |
+| Architecture/content duties / actual observer/Aitia owner | Actual source/document/decision content and trace obligations remain independently required. Language-valid SysML or a complete node inventory cannot substitute for content observation, code correspondence or review |
+
+The existing recorded route in 10.80 is -no-record-cache -strict -validate with root
+and companion, under its recorded 30-second static check cap. Do not rerun it here.
+Local [[file:../../../.data/OpenSysML/docs/guide/03-command-line.md][CLI guide]] and [[file:../../../.data/OpenSysML/docs/reference/cli.md][reference]] distinguish -validate from evaluating model
+conditions; -validate with no evaluated object/property does not establish those
+conditions. Strictness also does not make every warning an error: imported-name
+ambiguity may remain a warning with hidden candidates. Application-required unique
+target resolution therefore cannot be replaced by exit 0 or an empty error count.
+The actual selected installed version/flags/diagnostics behavior must be qualified.
+
+A validation attempt records executable target/bytes and relevant dependency/ABI/
+resource identity, argv/cwd/env/search roots/cache profile, exact staged input digests,
+limits, start/completion/exit/log/diagnostic locations and required checks. Record
+execution status, validation accepted/rejected/incomplete and any actual property
+holds/refuted/undetermined separately. Timeout, tool failure, diagnostic truncation,
+unsupported check or changed input cannot become a successful validation receipt.
+
+Verify required input/output identity and current guards before and after actual
+tool execution. A successful run over different companion/stdlib bytes or an earlier
+candidate does not validate the target bundle. Keep stdout/stderr/raw findings and
+refused attempts; do not fabricate A/E/W or a Core receipt from tool exit status.
+If a policy requires actual signed/admitted method evidence, that producer's qualified
+issuance/current-use protocol remains a prerequisite, not an always-true validation
+adapter in the model writer.
+
+* Explicit publication into the current repository
+:PROPERTIES:
+:CUSTOM_ID: a4-publication
+:END:
+
+Model publication here means explicit promotion of a validated project artifact into
+the selected repository target. It is not Git commit/push, Library distribution,
+receiver adoption or a new generic Aitia action/purpose. Selected policy determines
+which independent review/mandate conditions are required; a design candidate may
+retain open capability duties, but cannot waive conditions of its selected publication
+activity. This task authorizes design only and performs no promotion.
+
+| Stage / Project-owned operation | Required behavior and failure boundary |
+|---------------------------------+----------------------------------------|
+| Candidate staging | Write into a fresh owned investigation/staging location, retain exact validated bytes and closure records. An interrupted directory or report written before rendering is partial, never current root |
+| Explicit promotion request | Bind exact C/view/candidate/plan/bundle/validation, target repo/worktree/path and expected prior root/supporting inputs, permitted write set and actual intent/mandate/current conditions. A successful renderer never implicitly calls this operation |
+| Precondition and exclusion | Recheck target/base/alias policy, expected baseline and selected closure/current use. Acquire actual qualified exclusive write ownership covering check-and-replace, or refuse publication; hashing then unconditional rename alone cannot prevent a concurrent overwrite |
+| Replacement unit | For the root-only route, replace exact owned project.sysml bytes using supported filesystem semantics while required companion/catalog inputs remain unchanged. Preserve prior root and associated records. No overwrite of unrelated dirty work |
+| Completion record | Observe actual target bytes/closure and permitted effects; record completed, refused/drift, interrupted or unknown completion with prior/new artifact association. A copied marker, stdout success or staged bundle is not evidence the target changed correctly |
+| Failure / reconsideration | Preserve old/new/partial evidence. Validation/precondition failure leaves prior root untouched. A post-replacement failure does not claim automatic rollback; diagnose actual state, and any explicit restore also checks its expected current baseline |
+
+The root-only route is inapplicable if selected companion/catalog/resources also
+need replacement. Multiple independent renames or a Git worktree do not constitute
+an atomic multi-file transaction. A coordinated multi-file publication requires a
+qualified existing workspace/artifact owner with explicit completion and crash/
+recovery semantics; that support remains open. Without it, keep the complete candidate
+bundle and report unpublished/incomplete. Do not invent a parallel publication engine
+or silently promote root first against incompatible support files.
+
+Core building/artifacts.ss already checks compiled-source issuance and copies build
+products, but is not a generic atomic SysML/Org/D2 publisher. Reuse applicable actual
+source/currentness and operation mechanisms without claiming its compiled Graph
+receipt certifies model validation or multi-file publication. An existing output
+helper can own candidate writing; the explicit Project promotion operation must still
+be implemented and qualified at its real effect boundary.
+
+Current root changes are an expected output effect of the promotion, not a retroactive
+mutation of C's original baseline. Verify exactly that permitted transition; later
+analysis of the new current repo requires an appropriate new acquisition/C. Historical
+views remain bound to their original cuts. Source/policy/premise invalidation blocks
+current reliance even if a model was previously published; withdrawal does not erase
+its history or silently overwrite a newer target.
+
+Org and D2 display the exact selected architecture, obligations, decisions, artifact
+and validation/publication status, preserving actual/target/history distinctions.
+Their paired maintenance is explicit. If the selected product contract requires
+updated Org/D2 as part of a complete publication, absent updates keep that delivery
+incomplete; one root write is not whole-repository completion. No automatic document
+synchronizer, decision authorizer or Aitia submission is added here.
+
+* Call order, implementation dependencies and prospective controls
+:PROPERTIES:
+:CUSTOM_ID: a4-controls
+:END:
+
+The target call sequence is Scenario checked request -> selected Module projection
+method -> resolve candidate/plan/catalog/mapping -> deterministic candidate bundle ->
+actual selected validation -> explicit Project promotion request/effect. Library
+publishes expectations; Profile selects; Scenario binds/acquires; ASCENT already
+supplies the accepted view. None of these calls discovers a new provider or changes
+C to accommodate missing model inputs.
+
+| Step / existing files and owner | Positive acceptance design | Matched negative control |
+|--------------------------------+----------------------------+--------------------------|
+| A4.1 request/selection / Scenario, Module Types and Profile | Actual same C/view producer and explicit or unique eligible candidate/plan/policy recognized; all alternatives retained | Foreign rows-of result, stale source/current use, zero/multiple unique candidates, explicit ineligible candidate or mismatched plan/catalog refuses |
+| A4.2 catalog/mapping / Library Types/objects/interface | Actual published definition/kind/revision/Contract/mapping closure resolves exact admitted elements; meaningful local types declared | Catalog-name-only binding, changed mapping/source, usage used as definition, missing type stub, target relabelled actual or raw Config bypass refuses |
+| A4.3 names/identity / pure Module helpers | Supported quoted/Unicode/reserved names and qualified segments resolve uniquely; stable IDs/edges survive unrelated additions; same inputs yield same bytes | Quoted :: split, comment/quote injection, duplicate slot/ID, same-label incompatible type, hidden imported ambiguity or ordinal-based trace relabelling fails |
+| A4.4 complete projection/closure / Module and actual input owners | Independent expected inventory matches candidate; all required model/asset/product/duty references are present and intended, with actual acquired bytes/base/limits | Dropped obligation/source edge, inaccessible/foreign reference, unrecorded search root, symlink escape, implicit download or mutable-path reopen cannot produce complete validated bundle |
+| A4.5 actual validator / method/Host tool owner | Recorded supported tool profile validates exact staged closure; semantic property check runs only if separately selected and supported; all dimensions retained | Exit 0 treated as property proof, stale binary/stdlib, earlier model receipt, unresolved warning, cache/implicit dependency mismatch, timeout/truncation or unsupported check fails acceptance |
+| A4.6 candidate/refusal records / output helper and runner | Successful and failed attempts are retained, candidate remains unpublished until explicit request; actual producer association recognized | Partial directory/FORMATION-OK/render string/hash reused as publication credential or fake tool receipt refuses |
+| A4.7 explicit root publication / Project effect owner | Expected baseline and actual exclusive write ownership, stable companion closure, validated bytes and exact completed target observed; prior root preserved | Concurrent unrelated edit, target alias change, wrong recipient repo/path, unqualified check/rename window, crash/unknown completion or incompatible multi-file update cannot claim complete publication |
+| A4.8 complete declared slice / existing t files and bounded entry | Independent name/reference/structure cases, actual qualified entry/C/view and future tool/publication controls agree; Org/D2 statuses match evidence limits | Shared serializer oracle, declaration-only readiness, historical static receipt, unobserved recovery or A0--A3 gaps cannot close runtime/whole-product acceptance |
+
+Allocate model-selection/serialization cases to existing t/project-formation-test.ss
+and actual Scope consumption to t/project-formation-entry-test.ss; provenance/current
+input cases use t/native-context-test.ss and actual producer tests. Tool and publication
+controls belong to their actual selected method/effect owner. Current rename/ambiguity/
+extra-role controls do not establish name round trips, catalog closure or atomic
+publication. No test or validator is executed in this documentation update.
+
+Source design may proceed now; implementation depends on qualified A0 source/API/
+normalized Scope/build/load, A1 full declarations/revisions/bound methods, A2 recognized
+C/acquisition/current use and A3 complete accepted consequence view. Keep the existing
+2 GiB / 120-second focused and 180-second build gates, and 10.80's separate static
+model-check limit. No widening, row truncation or unchanged failed-route rerun closes
+a gate. Existing model/receipt bytes remain historical rather than regenerated here.
+
+* Open implementation inputs and A5 handoff
+:PROPERTIES:
+:CUSTOM_ID: a4-open
+:END:
+
+Still required: actual published catalog/mapping/element inventory and revisions;
+supported name profile and stable identity rules; exact complete artifact/reference
+and validation Types; actual tool/bundled-library/load association; real accepted-view
+recognition/current use; and qualified Project promotion exclusion/completion/recovery.
+Multi-file atomic publication and root/companion reconciliation are not assumed
+implemented. Missing support keeps candidates unpublished with explicit limitations.
+
+A5 joint acceptance must distinguish binding, pure projection, language analysis,
+selected property/content checks, current use and actual publication. A language-valid
+model can retain unresolved assurance duties. Whether the LLM/ASCENT/SysML loop improves
+architecture or review effort is a separate research comparison; neither deterministic
+bytes nor successful promotion establishes that result or Aitia approval.
+
+* A5 joint acceptance of the declared publication slice
+:PROPERTIES:
+:CUSTOM_ID: a4-a5-acceptance
+:END:
+
+[[file:10.87-a5-declarative-slice-joint-acceptance.org][10.87]] maps these model/closure/validation/publication conditions together with
+A0--A3 to actual entry owners and proposed lane/evidence/positive-negative controls.
+It distinguishes complete root promotion from candidate writing, build recovery
+from capture-origin recovery, and correctness from research advantage. No validator,
+publication or joint acceptance is run in this design update.
+
+* Publication transition consistency
+:PROPERTIES:
+:CUSTOM_ID: a4-coherence-followup
+:END:
+
+The original C retains prior root B. A guarded explicit publication records B -> exact validated O, with supporting inputs unchanged and live eligibility checked over the defined effect interval. Postchecks verify O rather than incorrectly requiring the old root to remain unchanged. This exception applies only to the exact permitted effect, never unrelated source/policy/support drift. Actual exclusion and crash semantics remain open; subsequent analysis of O acquires a new C.
+
+See [[file:10.88-declarative-slice-consistency-and-order.org::#coherence-findings][10.88 consistency findings]], [[file:10.88-declarative-slice-consistency-and-order.org::#coherence-controls][joint controls]] and
+[[file:10.88-declarative-slice-consistency-and-order.org::#coherence-order][implementation prerequisites and ownership]]. These are target commitments, not executed acceptance.
+
+* I5 SysML candidate and validation follow-up
+:PROPERTIES:
+:CUSTOM_ID: a4-i5-followup
+:END:
+
+[[file:10.94-i5-sysml-selection-materialization-and-validation.org::#i5-selection][10.94]] unifies same-C/accepted-view/candidate/plan/catalog/mapping fields using
+I4's exact role/edge provenance. [[file:10.94-i5-sysml-selection-materialization-and-validation.org::#i5-names][Names/identity]], [[file:10.94-i5-sysml-selection-materialization-and-validation.org::#i5-closure][reference closure]] and
+[[file:10.94-i5-sysml-selection-materialization-and-validation.org::#i5-validation][actual independent validation]] remain separate from
+[[file:10.94-i5-sysml-selection-materialization-and-validation.org::#i5-invalidation-publication][I6 explicit publication]]. [[file:10.94-i5-sysml-selection-materialization-and-validation.org::#i5-controls][Controls]] are planned only;
+no implementation, validator run, model rewrite or promotion is performed.

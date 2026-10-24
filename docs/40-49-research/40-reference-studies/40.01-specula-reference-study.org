@@ -1,0 +1,137 @@
+#+TITLE: 40.01 Specula References: Local Research Scope and Design Transfers
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 40.01
+#+OPTIONS: toc:3 num:nil
+#+STARTUP: overview
+#+TODO: OPEN REVIEW | RESOLVED
+#+FILETAGS: :research:specula:evaluation:
+#+LINK: cases https://github.com/specula-org/specula-case-studies/blob/d419b3f72bd593e8f9ec04f5a98bffbdeaa7727b/%s
+#+LINK: tlaps https://github.com/specula-org/TLAPS-Bench/blob/d29eb13a6c2ec49c9980abc794f13e44fc9415a9/%s
+
+[[file:../../../README.org][Overview]] | [[file:../../30-39-evaluation/30-benchmarks/30.01-benchmark-design.org][Evaluation protocol]] | [[file:../../20-29-cases/20-gateway/20.02-gateway-obligation-ledger.org][Gateway controls]]
+
+* Checkout receipt
+:PROPERTIES:
+:CUSTOM_ID: research-checkouts
+:INSPECTED_ON: 2026-10-18
+:METHOD: shallow partial clone and sparse source inspection
+:STATUS: inspected-not-executed
+:END:
+
+The user authorized local research checkouts under ~.data/~. Both repositories
+were cloned with depth one, blob filtering and sparse checkout. Their HEADs match
+the revisions already cited in the evaluation design. The tracked ~.gitignore~
+excludes ~.data/~; upstream content is not vendored or treated as this Library's
+implementation. Native README formats inside research clones remain upstream-owned.
+
+#+NAME: local-research-receipt
+| Local checkout | HEAD | Materialized research scope |
+|----------------+------+-----------------------------|
+| .data/specula-case-studies | d419b3f72bd593e8f9ec04f5a98bffbdeaa7727b | Root/docs/catalog, historical etcd metadata/provenance/controls, complete available etcd case-studies run and the rejected concurrentqueue record candidate |
+| .data/TLAPS-Bench | d29eb13a6c2ec49c9980abc794f13e44fc9415a9 | Root files, docs, src, tests, config, etcd_raft source and module-proof task directory |
+
+Sparse checkout includes some ancestor-level files but not the full archive or all
+proof tasks. Absent files may be outside the selected working tree; inspect Git's
+tree before classifying them as absent upstream. Shallow history cannot establish
+a complete evolution history. These are research checkouts, not qualified execution
+images. No dependencies, model checkers, proofs, native reproductions, or upstream
+tests were executed for this study.
+
+The [[file:40.02-selected-system-and-proof-case.org][selected-case dossier]] records the later complete materialization of the
+available etcd/raft run, its detailed inflights/harness audit, one exact
+CommitLiveness proof unit and content identities. Complete Git materialization
+does not remove the archive's partial-report and missing-native-input limits.
+The [[file:../../30-39-evaluation/30-benchmarks/30.02-gateway-minimal-benchmark.org][minimal gateway protocol]] uses these assets as references within the existing
+ASCENT/SMP and QNT-oriented architecture.
+
+* Case-study archive: identity and qualification
+:PROPERTIES:
+:CUSTOM_ID: case-archive-observations
+:STATUS: source-inspected
+:END:
+
+The earlier [[file:../../30-39-evaluation/30-benchmarks/30.01-benchmark-design.org::#external-references][external reference summary]] records the archive and historical-study
+boundaries. Local inspection additionally read the selected run's
+[[cases:systems/etcd/modules/raft/runs/etcd-raft-ci-evolution-20260923/.record/manifest.json][record manifest]] and
+[[cases:systems/etcd/modules/raft/runs/etcd-raft-ci-evolution-20260923/provenance/upstream-versions.json][upstream version index]].
+
+The manifest identifies a curated historical-evaluation collection and marks
+report presence. Its top-level ~source_revision~ is null; actual system revisions
+come from the separate version index. That index explicitly distinguishes
+standalone raft revisions from old etcd monorepo identities. The manifest also
+flags the curated subset and retained historical-path limitations.
+
+Implications for our record contract:
+
+- Archive commit, wrapper commit, run ID and actual system revision are distinct fields.
+- A non-null archive identity cannot fill an unknown system revision.
+- A report-present status and a metadata confidence label are not replay or acceptance verdicts.
+- A file inventory supports provenance checking, not completeness of the execution environment.
+- Each missing dependency/artifact gets a qualification state; unresolved source identity blocks source-specific scoring.
+
+For the gateway, apply the same distinction to Library revision, design snapshot,
+implementation tree, tested binary, deployment configuration and runtime attempt.
+An accepted report about G1 cannot silently become source evidence for G2.
+
+* TLAPS-Bench: grader boundaries in code and controls
+:PROPERTIES:
+:CUSTOM_ID: grader-observations
+:STATUS: source-and-test-inspected
+:END:
+
+#+NAME: inspected-grader-controls
+| Source | Inspected behavior / boundary | Transfer to our evaluation contract |
+|--------+-------------------------------+-------------------------------------|
+| [[tlaps:src/common/check_proof.py][check_proof]] | Independent canonical-target check, official-library shadowing check, context staging and fixed-region integrity | Canonical target/context outside editable Agent workspace; dependency substitution must be checked |
+| [[tlaps:tests/common/test_canonical_replay.py][canonical replay tests]] | Staged submitted target uses canonical dependencies and excludes workspace-only modules; fixed scaffold/marker changes are negative controls | A private workspace copy is insufficient; exercise altered dependencies and target-alias cases |
+| [[tlaps:src/tlacheck/rules/statement_modified.py][statement rule]] | Compare normalized baseline theorem statements using structured source locations | Check proposition identity independently of proof insertion and shifted lines |
+| [[tlaps:src/tlacheck/rules/extra_axiom.py][axiom rule]] | Compare structured assumptions against baseline allowances | Preserve reviewed premises; combine checks rather than treating one detector as complete |
+| [[tlaps:src/common/proof_from_scratch_manifest.py][module manifest]] | Declared task/context paths, regular-file checks and canonical task validation | Freeze exact dependency closure and reject ambiguous paths or context leakage |
+| [[tlaps:tests/evaluator/test_proof_unit_scoring.py][proof-unit scoring tests]] | A control supplies inconsistent persisted trust counts and a validated module report; the report governs the score | Grade from checked underlying evidence, not self-reported totals |
+
+The context-staging function chooses dependency source according to its required
+canonical mode. The integrity function compares fixed segments outside editable
+regions. Their presence is source evidence of those mechanisms, not a fresh test
+pass or a proof that every invocation enforces them. A caller's mode, manifest and
+isolation policy must be bound in the run receipt. Likewise, individual statement
+or axiom detectors are parts of a gate suite, not a complete anti-tampering proof.
+
+For engineering tasks, the canonical target includes requirements, obligation
+methods, assumptions, standard tailoring and expected outcome. An Agent may propose
+a reviewed design revision in a design task; it cannot receive proof-task credit
+by silently weakening the original claim. Evaluate revision quality in its own
+lane with the original unmet requirement still visible.
+
+* Additions to the independent control inventory
+:PROPERTIES:
+:CUSTOM_ID: transferred-controls
+:STATUS: proposed-not-run
+:END:
+
+#+NAME: transferred-negative-controls
+| ID | Proposed adverse case | Required grading behavior |
+|----+-----------------------+---------------------------|
+| EXT01 | Archive metadata exists but actual system revision is unknown | Mark source qualification unresolved; do not score as replayed source case |
+| EXT02 | Report is present but dependencies or runtime image are incomplete | Keep replay unqualified; distinguish documentation from execution |
+| EXT03 | Agent workspace modifies a model/helper dependency | Grade only the frozen canonical context; reject substitution |
+| EXT04 | Canonical target aliases the submitted target | Reject grader setup as an independence failure |
+| EXT05 | Submitted proof changes target or reviewed premise outside allowed work | Refuse fixed-task success, preserving the actual reason |
+| EXT06 | Result reports trusted counts inconsistent with checked artifacts | Recompute from independently validated evidence; reject misleading totals |
+| EXT07 | Canonical-mode or method-policy selection is absent/changed | Treat protocol binding as unresolved or invalid, not an ordinary proof result |
+| EXT08 | Sparse checkout omits an asset present in the upstream Git tree | Record local materialization gap; do not misreport upstream absence |
+
+Map EXT03-EXT07 to B0/B2/B3/B5/B6 as applicable. They complement the gateway's
+GAP controls and do not imply external code or checker reuse has been integrated.
+
+* OPEN Next research questions :research:
+:PROPERTIES:
+:CUSTOM_ID: research-open-work
+:STATUS: open
+:END:
+
+- [ ] Select representative additional systems by design/failure family rather than archive size.
+- [ ] Review source licenses and availability before importing any executable asset.
+- [ ] Define independent gateway oracles, exact editable regions and immutable context.
+- [ ] Specify which canonicality and trusted-checker controls apply to each projection/method.
+- [ ] Qualify selected external cases with actual replay before treating them as executable benchmarks.
+- [ ] Evaluate the composed Library's added value independently of upstream proof/replay capability.

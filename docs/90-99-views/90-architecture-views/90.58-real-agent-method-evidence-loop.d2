@@ -1,0 +1,31 @@
+# org-target: docs/10-19-design/10-architecture/10.13-real-method-results-and-agent-evidence-loop.org::#real-agent-evidence-responsibilities
+direction: down
+classes: {
+  input: {style.fill: "#EAF2FF"; style.stroke: "#315B8A"; style.border-radius: 10}
+  process: {style.fill: "#E6F5F3"; style.stroke: "#19756C"; style.border-radius: 10}
+  boundary: {style.fill: "#FFF2DD"; style.stroke: "#9B6C25"; style.border-radius: 10}
+}
+agent: "LLM-based AI agent\nDiscover Library / inspect obligations\nChoose tool requests and interpret counters\nReplay records host actions, not invented model calls" {class: input}
+library: "Existing POO Library + Profile + Scenario\nGateway is one qualified application slice\n10.14 defines mechanism-domain ownership\n10.15 adds native source-owned lifecycle case\nCatalog factors and rule/dependency metadata\nCapacity / queue / cache / intended Tokio + Rayon" {class: input}
+obligation: "Native ASCENT query\nEight obligations for baseline\nBP-O02 QNT / BP-O03 Lean selected for investigation" {class: process}
+host: "Host supplies Core ProcessScript\nExplicit argv / 45-second child deadline / logs\nOwned captured inputs and file hashes" {class: process}
+qnt: "Real QNT -> TLC\nFive-job complete finite graph\nC1 1632 / C2 6582 independent oracle states\nOwn-scope early-release counter + ITF trace" {class: process}
+lean: "Real Lean kernel + .olean\n384 / 512 within declared budget\n640 over-budget: proof of negation\nThree declarations audited without axioms" {class: process}
+observer: "Case observer validates actual results\nCompletion + property + exact footprint\nIndependent oracle + input / artifact hashes\nJSON cannot construct an issued run\nSerialized capture; no filesystem atomicity" {class: boundary}
+exchange: "Native ASCENT trajectory + clue exchange\nIssuer-owned verifier callback\nContent-bound observation / attested view\nUnavailable when recorded artifact changes" {class: process}
+query: "Existing domain Evidence DSL + Session\nReal witness / witness_input / checked rows\nSupport / counter / pending / new T-use\nRetain history; reject mismatched applicability" {class: process}
+changes: "Capacity -> fresh checks\nCache -> reuse model / real budget counter\nSource -> reuse conditional results\nLate old scope -> retained without backflow" {class: process}
+open: "Remaining engineering work\nReal Rust source / Cargo.lock correspondence\nNative Tokio + Rayon cancellation / cleanup\nPerformance and operational evidence\nSDLC decision and effect authorization" {class: boundary}
+agent -> library
+library -> obligation
+obligation -> agent: "actual evidence gaps"
+agent -> host: "selected requests"
+host -> qnt
+host -> lean
+qnt -> observer
+lean -> observer
+observer -> exchange
+exchange -> query
+query -> changes
+changes -> agent: "evidence informs the next hypothesis"
+query -> open: "method results do not close native claims"

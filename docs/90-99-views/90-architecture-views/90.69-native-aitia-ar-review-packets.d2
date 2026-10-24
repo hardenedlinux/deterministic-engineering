@@ -1,0 +1,25 @@
+# org-target: docs/10-19-design/10-architecture/10.19-standard-identities-and-aitia-review-traceability.org::#native-aitia-review-packets
+# render-layout: elk; theme: 0; pad: 24; timeout: 30
+direction: down
+classes: {
+  owner: {style.fill: "#E6F5F3"; style.stroke: "#19756C"; style.border-radius: 10}
+  design: {style.fill: "#EAF2FF"; style.stroke: "#315B8A"; style.border-radius: 10}
+  boundary: {style.fill: "#FFF2DD"; style.stroke: "#9B6C25"; style.border-radius: 10}
+}
+selection: "EXISTING native Scheme owners\nNasaSdlcModule / nasa-sdlc-npr7150_2\nProject + class/context + focused stage policy\nDomain Library Profile / concrete review Scenario" {class: owner}
+packets: "DESIGN input bundles / independent gold\n061/p1, 080/p1, 081/p1, 088/p1-p5\nEight paragraph bindings for each AR case\nNo new framework or installed adapter" {class: design}
+ar05: "AR05 / participant boundary\nOne immutable checker result can serve two views\nTwo views do not mean two independent reviewers\nLocal policy + roster + attestations decide p5\nOpen participant defect also blocks completion" {class: design}
+ar06: "AR06 / source boundary\nB -> C plain-comment change\nWording may survive; source bytes differ\n080 change ledger / 081 controlled-item versions\nOld native result is not C correspondence" {class: design}
+ar08: "AR08 / opposing-evidence boundary\nWake-only sample cannot cover all callbacks\nCounter and pending may coexist\np4 tracking may pass while p3 completion fails\nCurrent matching fail is not erased by pass" {class: design}
+closure: "EXISTING criterion / verification owners\nCaptured bytes + selected policy + actual review\n-> artifact digest / paragraph locator / record\n-> exact request / genuine receipt\nNASA chapter digest differs from Rust source identity" {class: owner}
+assessment: "Assessment and stage have different precedence\nApplicable assessment: fail before evidence-present\nAssessment applicability precedes failure\nStage keeps all selected current fail records\nContext/scope status never removes failure list" {class: boundary}
+result: "Existing nasa-stage-gate / saved result\nFocused admission requires verified content\nRetain complete opposing closure and old history\nNew revision: independently verify inherited action closure\nRebind affected review; reuse stable evidence\nNo release authority or NASA compliance inferred" {class: owner}
+qualification: "QUALIFICATION BOUNDARY\nExisting native review + lifecycle tests passed\nAR packet steps are authored gold, not executed receipts\nNo production verifier or new Scenario installed" {class: boundary}
+selection -> packets
+packets -> ar05
+packets -> ar06
+packets -> ar08
+ar05 -> closure
+ar06 -> closure
+ar08 -> closure
+closure -> assessment -> result -> qualification

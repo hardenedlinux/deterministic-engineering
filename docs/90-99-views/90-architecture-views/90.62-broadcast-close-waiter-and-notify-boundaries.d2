@@ -1,0 +1,41 @@
+# org-target: docs/10-19-design/10-architecture/10.16-tokio-broadcast-close-and-wake-library.org::#broadcast-source-qnt-mapping
+# render-layout: elk; theme: 0; pad: 24; timeout: 30
+direction: down
+classes: {
+  source: {style.fill: "#EAF2FF"; style.stroke: "#315B8A"; style.border-radius: 10}
+  protected: {style.fill: "#E6F5F3"; style.stroke: "#19756C"; style.border-radius: 10}
+  boundary: {style.fill: "#FFF2DD"; style.stroke: "#9B6C25"; style.border-radius: 10}
+}
+qualification: "SOURCE-MAPPED DESIGN; QNT / NATIVE EXECUTION PENDING\nFinal sender closure and temporary receiver absence are different protocols" {class: boundary}
+rx: "Receiver waiting for data / final sender close" {
+  count: "LastTxDecrement\nAtomic num_tx becomes zero\nReceiver::is_closed may observe it" {class: source}
+  publish: "PublishFinalClose under tail lock\nSet tail.closed = true\nEmpty recv rechecks under same protection" {class: protected}
+  enroll: "PollEmptyAndRegister\nOpen + empty -> live waiter\nClosed + empty -> Ready Closed\nRetained unread values drain first" {class: protected}
+  detach: "notify_rx: detach current live list\nEach notifier owns its captured generation\nNew live registrations are not old members" {class: protected}
+  take: "Under tail lock\nTake waker before queued=false\nUnshare node only after extraction" {class: protected}
+  wake: "Unlock tail, then invoke owned wakers\nOld-waker drop also leaves slot/tail locks\nClone callbacks are a separate scope" {class: source}
+  cancel: "Cancel future / unlink while shared\nIf already extracted, waker may still run\nReady future retains node/borrow until disposal" {class: boundary}
+  result: "Fair re-poll under stable final closure\nDrain data -> empty -> Closed\nWake alone does not mean Ready" {class: source}
+  count -> publish: "in-flight count/flag window"
+  enroll -> detach
+  publish -> detach
+  detach -> take -> wake -> result
+  detach -> cancel: "cancel may unlink detached node"
+  take -> cancel: "no shared-node dereference after release"
+}
+tx: "Sender::closed waiting for receiver absence" {
+  birth: "Create Notified with birth epoch\nBefore checking tail.closed\nA live Sender remains borrowed" {class: source}
+  check: "Read current tail.closed under lock\nTrue -> Ready; false -> await birth epoch" {class: protected}
+  zero: "LastRxPublish under tail lock\nrx_cnt becomes zero; tail.closed=true\nReceiver cleanup follows outside the lock" {class: protected}
+  epoch: "NotifyGuard -> notify_waiters\nNotification may follow cleanup\nAlready-created unpolled Notified is covered" {class: source}
+  reopen: "Live Sender subscribes after zero\nnew_receiver clears tail.closed\nA notification does not guarantee current zero" {class: boundary}
+  repoll: "Await eligible epoch, then loop/recheck\nStable zero + declared progress -> completion\nTransient-zero API interpretation needs review" {class: source}
+  birth -> check
+  check -> zero: "possible concurrent receiver drop"
+  zero -> epoch
+  zero -> reopen: "possible before closed future re-poll"
+  epoch -> repoll
+  reopen -> repoll
+}
+qualification -> rx.count
+qualification -> tx.birth

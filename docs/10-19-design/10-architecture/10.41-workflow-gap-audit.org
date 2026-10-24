@@ -1,0 +1,366 @@
+#+TITLE: 10.41 Workflow Gap Audit and Refactoring Plan
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.41
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+TODO: AUDITED DESIGN SPECIFIED | QUALIFIED
+#+FILETAGS: :audit:architecture:refactoring:library:scenario:ascent:aitia:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.37-library-declarations-and-contract-design.org][10.37 declarations]] | [[file:10.38-profile-selection-scenario-capture-and-evidence-use.org][10.38 selection/capture]] | [[file:10.39-method-execution-evidence-issuance-and-ascent-projection.org][10.39 methods/query]] | [[file:10.40-aitia-review-and-recipient-delivery.org][10.40 review/delivery]]
+
+* AUDITED Conclusion and evidence boundary
+:PROPERTIES:
+:CUSTOM_ID: integrated-native-workflow-gap-audit
+:STATUS: Source audit and complete target refactoring plan; no implementation or executable qualification
+:END:
+
+The current repository has working pieces of the intended workflow, not the
+complete 10.37-10.40 association. Native Contract admission, process execution,
+ASCENT Session/source handling, private evidence issuance and Aitia verification/
+history/authority already have owners. The principal gap is that declarations,
+selection, capture, applications, query interpretation and review are assembled
+through different paths with different input and trust boundaries. Complete
+refactoring must join those responsibilities under their existing native owners,
+not add another Scheme configuration language, state store or approval manager.
+
+The common target chain is:
+
+Library publication -> independent Profile request -> Scenario native binding
+and capture C -> method application A / actual attempt E / issued result W ->
+qualified evidence use -> application-scoped ASCENT program -> identified Q ->
+project-bound review R -> verified context/content/history and authenticated
+disposition -> authorized delivery -> fresh recipient-owned adoption/use.
+
+C/A/E/W/Q/R are the explanatory associations from 10.38-10.40. They are not new
+wire formats, namespaces or global registries. The native shared declaration
+Contract designed in 10.37 remains the sole requested V1 generation owner;
+semantic revisions, project revisions and event identities keep their own meaning.
+
+| Inspected checkout | Source identity / qualification limit |
+|--------------------+---------------------------------------|
+| deterministic-engineering | HEAD 8044732d505f84e373119a70f947df00e1767300 plus active dirty sources, including untracked design documents; HEAD alone does not identify the candidate |
+| Locally linked POO Flow Core | Resolves to the sibling poo-flow/core checkout at HEAD 52130d2d338b09622a3f55e37987ddc0375b6187; dirty source and actual loaded objects still require capture |
+| Local Aitia package | Inspected packages/lambda-aitia source checkout at HEAD cbf3f6861ef7cf66d8d02aaf71b1c89630eaf7fc; this package has its own Git identity and is not identified by the Core HEAD |
+| Locally linked gerbil-ascent | HEAD e119827e588ea7b6d8a3195ac8e0ee8f61de6c11 plus local source state; no fresh engine run is asserted |
+| Evidence scope | Static source inspection and documentation checks only. Existing historical results, failed/timeout attempts, native cold-path/recovery limits and actual role vacancies remain unchanged |
+
+Status in this audit is deliberately multidimensional. /Present/ means the
+inspected source has a bounded mechanism; it does not mean every use is qualified.
+/Refactor/ means a current association/ownership/API must change. /Domain missing/
+means the Library or project must publish/select/supply actual engineering or
+governance meaning. /Qualification open/ means executable evidence is still
+needed. One row may carry several of these states. Absence from this audited
+path is not a claim that no analogous facility exists anywhere upstream.
+
+* AUDITED Framework capability and change boundaries
+:PROPERTIES:
+:CUSTOM_ID: framework-capability-boundaries
+:END:
+
+| Native owner and inspected source | Present reusable capability | What it does not supply / target action |
+|-----------------------------------+-----------------------------+---------------------------------------|
+| POO [[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-poo/object-contract.ss][ObjectContract]] | Effective required field Types, constraints/obligations, extra-field policy, inherited receiver-local preparation and validation | Does not know backpressure identity, role, parent chain, method semantics or project authority. Define those native domain Contracts; do not duplicate field validation in a new schema system |
+| Core [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/types.ss][PooFlowContract and NativeObjectContract]] | value-contract normalization, contextual classification/responsibility admission and real declared prototype ancestry | Does not own this Library's generation or required domain validator. Use trusted expected descriptors and returned admitted values; candidate contract labels cannot choose validation authority |
+| Core [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/module-system/source/publication.ss][module source publication]] | Publication/requirement/scope descriptor checks and native source-owned publication contracts | Publication identity/revision guards are framework internals, not the Library contract-version. Extend Library exports/requires coherently; do not repurpose Core object revision as domain generation |
+| Core [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/ops/process-script.ss][ProcessScript]] | Deferred process operation with configured directory, environment, timeout, logs and status handling | Does not establish a model claim or a complete transitive tool footprint. Methods own capture consumption, interpretation and issuance; no new scheduler is required |
+| ASCENT [[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-ascent/program/session.ss][Session]] and [[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-ascent/program/source-snapshot.ss][source snapshots]] | Accepted source cuts, prospective replacement and recovery/rollback around retained program/engine state | Does not own domain obligation meaning or deep-freeze arbitrary mutable cell values. Keep Session; refactor project relations and project-owned primitive projection values. New relation program requires a qualified new program/Session |
+| ASCENT [[file:10.64-contract-consistency-and-implementation-order.org::#audit-dependency-drift][clue exchange (historical path; currently absent)]] | Host verifier, retained clue/source/prefix/rule association and source-scoped query/attestation | Does not authenticate arbitrary public checked rows or decide policy/roles. Preserve private producer verification and construct domain facts only through qualified projection |
+| Core [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/contribution/verification.ss][verification]] | Private adapter/receipt/admission association, copied snapshot seal, time interval and revocation | Trusted operation must actually verify content/context/authority and policy validity. This is local process issuance, not exportable authority or an atomic global filesystem snapshot |
+| Aitia [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/types.ss][types]], [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/review.ss][review preparation]] and [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/standards/nasa-lifecycle.ss][standard-specific lifecycle]] | Project subject/revision/scope binding, pure review packet assessment, standard-specific context/content requests and verified stage gates | Generic review is inert; NASA classification/criteria do not describe DE-CASE-01 by default. Factor common policy-neutral verification under Aitia and retain actual standard meaning in its provider; qualify any necessary native type/gate extension |
+| Aitia [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/review-authority.ss][history and review-authority gate]] | Exact available required-source coverage, verified approvals, retained negative decisions and explicit current-policy denial supersession | Completeness depends on the actual trusted inventory and supplied verified history. Generic gate does not enforce every project quorum, semantic exception or distribution rule. Trusted policy/authority adapter supplies them; release-authorized? stays false |
+
+[[file:10.43-library-objects-and-publication.org::#object-publication-source-audit][WP02's closer link audit identifies a checked-value propagation gap]]:
+required-edge bindings and final Scope storage currently retain pre-normalization
+values despite admission evidence containing a checked candidate. Core's existing
+link owner must propagate those candidates; Library scope assembly cannot replace
+that correction. This refines GA03/GA16 and WP02's acceptance, not the engine or
+publication mechanism ownership.
+
+[[file:10.45-method-execution-and-evidence-issuance.org::#method-execution-source-audit][WP04's closer execution audit identifies actual launch/environment seams]]:
+the current method helper drops raw Ops result details, while Core internally
+samples inherited environment and does not return its complete prepared launch
+association. Retain actual command results and qualify actual launch-context
+reporting/captured-environment policy in existing Ops; a separate preview or
+public argv summary cannot prove the used environment. This refines GA10/GA11
+and WP04 qualification without replacing the process owner.
+
+No inspected requirement justifies replacing the POO Type system, Core source
+publication/process/verification owners or ASCENT engine. The identified upstream
+extension seam is Aitia's native representation and policy-neutral review binding
+where current standard-specific requests and pass/fail evidence cannot express
+selected project duties/statuses. Its exact API must be qualified with real callers;
+it must not become a second decision engine in this Library.
+
+* AUDITED Library declaration, Profile and Scenario gaps
+:PROPERTIES:
+:CUSTOM_ID: declaration-selection-capture-gaps
+:END:
+
+| Gap / design obligation | Current implementation evidence | Status and correct target owner |
+|-------------------------+---------------------------------+---------------------------------|
+| GA01 / 10.37 shared generation and role descriptors | [[file:../../../library/concurrency/resource-control/backpressure-memory/abstract/types.ss][BackpressureScopeContract]] checks identity/rules/dependencies by predicates; [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/types.ss][Rust scope Types]] check selected slot/list/procedure shapes. No shared BackpressureDeclarationContract or four published role descriptors | Domain missing + refactor. Library Types owns one shared V1 generation descriptor and effective generic/Rust/integration/policy value Contracts, using POO/Core; no Org or model-owned replacement version |
+| GA02 / model inheritance and policy composition | [[file:../../../library/concurrency/resource-control/backpressure-memory/abstract/objects.ss][generic model]] and [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/objects.ss][Rust specialization]] exist; Rust exposes generic-entry. [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/correspondence.ss][resource-slice-entry]] constructs integration identity/rules/case-links within mapping code and does not publish an explicit immediate-parent field | Present semantic material + refactor. Library objects own generic -> Rust -> integration parent association and composed review policy; Types own checks. Preserve duties/deltas; move semantic slice construction out of the generator's responsibility |
+| GA03 / publication and callable Contracts | [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/interface.ss][RustResources]] requires an admitted parent and exports one entry, parameter/Context Contracts and ResourceMethods. Integration is constructed by a method; callable checks mostly require procedure? | Present publication mechanism + domain missing. Library publishes role descriptors, integration/policy definitions and capability/function input/output Contracts through existing scopes. Do not reimplement module discovery or validate on candidate-selected labels |
+| GA04 / semantic revision and namespace ownership | Native identities/revisions exist; backpressure/v3 and ownership-budget/v1 are opaque current semantic revisions. Wire schema strings and tool versions appear in methods/review | Retain correct semantic/event/schema/tool meanings; refactor actual namespace-version coupling and missing native declaration metadata per 10.36/10.37. Do not reset every historical suffix or introduce another global version constant |
+| GA05 / independent Profile selection | [[file:../../../profiles/resource-lifecycle.ss][LifecycleProfile/LargerPayloadProfile]] select actual parameters/factors. They do not select native model role, integration capability and review policy or case document/reviewer requirements | Present independent POO values + domain missing. Profile requests published choices and supported parameters/products/roles; Library declares allowed choices. Profile cannot grant authority, define Library validators or choose its own generation |
+| GA06 / one admitted Scenario selection | [[file:../../../scenarios/resource-lifecycle/func.ss][resource-lifecycle-scope]] captures the fixed Rust domain entry and checks exact entry identity/currentness; [[file:../../../scenarios/resource-lifecycle/interface.ss][Core requires]] already links Domain/Evidence | Present bounded base route + refactor. Scenario binds selected native role/parent/policy/capability association under expected Contracts and preserves generic/base/opt-in routes. Rename or clarify current open-review as an inference-session operation; it is not Aitia approval |
+| GA07 / complete C and acquisition guarantee | [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/methods.ss][resource-native-context/current!]] holds root, entry, Profile, tools, scopes and snapshot. Current Context Contract fixes seven keys; no complete policy/role/project/document association or separately captured provider/target repo | Present source/currentness guards + refactor/domain missing. Scenario owns C; method observers retain their specialized input observations. Capture relevant project/provider source/build/loaded/tool/config/environment/content premises and gaps through existing native mechanisms; owned inputs with guarded origins, no unqualified atomic snapshot claim |
+| GA08 / driver-owned second capture | [[file:../../../examples/resource-integration-evidence.ss][integration driver]] constructs entry, appends scopes, computes a second snapshot and directly opens Evidence; methods also take separate root/Profile/tools | Misallocated composition + refactor. Move binding/capture behind Scenario and published native method application Contracts. Drivers choose and invoke; methods consume the same C. No parallel helper capture or compatibility facade |
+| GA09 / architecture, document and decision knowledge | [[file:10.30-current-repository-engineering-case.org][C1/decisions]], [[file:10.31-architecture-document-and-decision-contracts.org][product contracts]], [[file:10.33-case-actual-and-target-architecture.org][actual/target model]] and [[file:10.34-case-design-review-dossier-draft.org][D01-D10 dossier]] are authored design products. There is no native published case product/duty policy and complete content-observer route | Domain missing + qualification open. Library publishes reusable architecture/product/decision relation rules; Profile selects requirements; Scenario captures actual sections/models/references. Project supplies its topology, DE-R links, assumptions, actual role grants and decisions. Org is content, not native declaration authority |
+
+A predicate Contract is not itself a defect. The gap is the missing effective
+public role/type/relationship protocol and insufficiently explicit semantic
+ownership, not the use of a predicate function. Retain pure relational predicates
+where appropriate, under one authoritative effective native value Contract.
+Actual prototype checks apply only to declarations that promise real ancestry;
+normalized compatible admitted values must not be rejected merely for not being
+the original pre-validation input object.
+
+* AUDITED Method, evidence and ASCENT gaps
+:PROPERTIES:
+:CUSTOM_ID: method-evidence-inference-gaps
+:END:
+
+| Gap / design obligation | Current implementation evidence | Status and correct target owner |
+|-------------------------+---------------------------------+---------------------------------|
+| GA10 / native applications and actual dependency closure | [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/methods.ss][resource-run-native/qnt/lean/integration]] execute real bounded methods and check inputs/artifacts. One methods.ss and integration before list bind both SysML and QNT tools although facet scopes differ | Present methods + refactor. Library capabilities declare input/claim roles; method implementations own actual execution/observer closure. Separate real implementation dependencies before claiming independent invalidation; include relevant validator/loaded implementation/tool dependencies, not just version command output |
+| GA11 / claim interpretation and status dimensions | Native oracle, QNT checks, Lean proposition selection and mapping checks exist in [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/oracle.ss][oracle]], [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/correspondence.ss][mapping]] and methods. Result observation is principally pass/fail; attempts/diagnostics are not the full proposed A/E/W protocol | Present bounded interpretation + refactor. Library defines claim/domain/premises; actual method attempts retain execution, interpretation, semantic outcome, control expectation and applicability separately. M06, negated budget and unfinished reachability retain their actual polarity/strength |
+| GA12 / private issuance and fresh reuse | Private final resource-result, issue/current!, file closure checks and registration/verifier callbacks exist; public JSON is explicitly not a constructor. No general fresh cross-C applicability association is published | Preserve issuer + refactor its use boundary. Method owner issues W; qualified native use operation associates W with C/A and complete expected/actual footprint. Historical origin remains fixed; digest equality or copied flags cannot issue a new run |
+| GA13 / same-run derived evidence | Integration verifies six native results, shared footprint and observations.json path, then produces SI/TM facets | Present bounded same-run guard + refactor/domain missing. Capture A/basis explicitly, retain one exact issued upstream run association, mapping/delta/parameters and complete observer inputs. Do not weaken current same-run checks during migration; equal filenames/digests alone are not a universal execution origin |
+| GA14 / domain relation keys and duty coverage | [[file:../../../modules/resource-evidence/func.ss][application/scope/candidate relations]] key scopes by usage/key and join witnesses by obligation/method. Required obligations derive from factors/catalog independently of witnesses, which is valuable | Preserve independent required duties + refactor project program. Required duties come from selected native declarations/C; application-specific expected roles/basis and checked uses must distinguish concurrent runs/derived bases. No empty-role vacuity, duplicate/conflicting keys or silent pending-duty loss |
+| GA15 / checked facts, conflicts and readiness | Registration attests private results before source replacement and retains witness history; checked rows are public relations. supported is existential support; pending is absence of supported. There is no explicit application-level conflict/readiness policy | Present guarded registration + refactor projection/assessment. Trusted projected use facts require actual current attestation. Support+counter can coexist; pending alone is not readiness, and raw relation injection is not authority. Add explicit required conflict/pending assessment in the project policy/program, preserving Session as sole fact store |
+| GA16 / owned source cut and rule/program identity | Native Session has accepted cuts/batch recovery; current open-resource-review constructs program separately and registration hashes rules-path. Snapshot/rule labels and JSON query outputs do not bind the entire proposed Q closure | Present engine ownership + refactor adapter. Project owns primitive immutable row values and accepted program/catalog/engine/source/query associations. Rules/source-set/schema changes require a qualified new program/view, not relabeling a cached engine. Rollback cannot publish prospective source facts as accepted |
+| GA17 / determinate query and downstream handoff | Example query checks finished and extracts selected relations, then serializes views; no complete shared native Q -> R adapter exists | Refactor/domain missing. Evidence/Scenario adapter publishes exact finite Q, required query coverage, filters, limitations and C/A/W/use provenance. Determinate inference is separate from deterministic Rust execution or human approval; Aitia must consume this Q rather than recreate favorable rows |
+
+The current implementation already rejects several mismatched/missing/extra
+footprints and has honest negative controls. This audit does not claim those
+protections are absent. It identifies why they are insufficient for multiple
+applications, new product duties and one common target review association. A
+historical 20-witness / 17-support / 3-counter result is not a current Q, general
+refinement proof or acceptance criterion that must stay numerically constant.
+
+* AUDITED Aitia, history, delivery and qualification gaps
+:PROPERTIES:
+:CUSTOM_ID: review-delivery-qualification-gaps
+:END:
+
+| Gap / design obligation | Current implementation evidence | Status and correct target owner |
+|-------------------------+---------------------------------+---------------------------------|
+| GA18 / actual reusable policy and project authority | [[file:../../../scenarios/resource-lifecycle/review/profile.ss][BackpressureReviewProfile]] and [[file:../../../scenarios/resource-lifecycle/review/func.ss][make-backpressure-review]] bind local coding-method identity, subject/revision/scope, class a and SWE-061 separately from Scenario Context | Present bounded fixture + misallocated meaning. Library publishes actual reusable design-review policy; project authority adopts and appoints real roles; Profile requests; Scenario binds. NASA semantics remain only for genuine standard adoption. Do not declare DE-CASE-01 class A to fit the fixture |
+| GA19 / Q-bound native context/content review | Current review snapshots exact constructed requests and audits actual report/source dependencies; Aitia has native request/verification owners. Generic evidence has pass/fail and generic review is inert | Preserve real verification + refactor native Aitia policy binding and case adapter. Represent required pending/conflict/unknown without dropping or calling them pass; bind R to exact C/Q/W/use/project/policy/products/roles. Common mechanics belong to Aitia; engineering criteria belong to Library/project |
+| GA20 / complete history and authority coverage | [[file:../../../scenarios/resource-lifecycle/review/cross-intake.ss][cross-intake]] has required-source discovery, signed directory/decisions, retained denials and guarded actual owner. Native authority gate checks verified discovery/current approval and unresolved denials | Present bounded mechanism + generalization/qualification open. Keep actual source/grant/signature custody; migrate fixture names and mechanical packet binding to real R. Trusted authority operation enforces actual roles/delegation/quorum/independence/exception scope; native gate alone does not supply these semantics |
+| GA21 / repairs, reassessment and withdrawal | [[file:../../../scenarios/resource-lifecycle/review/reassessment.ss][reassessment]] retains failures and bounded same-case/payload/changed-source repair matching; Core can revoke receipts. No full project/recipient impact association is qualified | Present bounded repair + domain missing/refactor. Policy defines permitted resolution/impact; project supplies actual risk/decision authority. Fresh affected C/use/Q/R, explicit authorized denial supersession, retained counters and current withdrawal discovery remain separate acts |
+| GA22 / custody, recovery and freshness | [[file:../../../scenarios/resource-lifecycle/review/archive.ss][archive]], signed accepted prefixes and host activation/handover code exist. Historic ordinary compiled/cold recovery limitations remain documented | Preserve custody + qualification open, with reusable bindings refactored under actual owner. Recovery re-establishes current root/head/prefix/reader/grants and fresh native verification; archived receipt bytes or consistency checks do not recreate live authority |
+| GA23 / recipient delivery/adoption | Current packet/JSON/artifact references and local review artifacts exist; no qualified full Library distribution -> recipient verification/adoption/use route in this audited path | Domain missing + adapter/qualification gap. Delivery owner binds exact content/access/recipient/purpose and actual distribution mandate; recipient owns fresh native verification, Profile/C/policy adoption and use. General transport or exportable attestation support must be genuinely qualified, not inferred from local signature tests |
+| GA24 / case content and actual people | DE-CASE-01 documents distinguish actual/target architecture and retain unanswered appointments/adoption/content/semantic obligations | Project input missing + qualification open. Actual project/content/semantic/decision/delivery/recipient owners must supply records and findings. A library refactor cannot appoint reviewers or author their acceptance; document lint is not a DE-O semantic witness |
+| GA25 / native qualification and executable source identity | Existing tests/oracles/receipts and fixed-budget qualification records exist. Current sources and historical C4 catalog differ; prior native cold Scenario/recovery gates are not closed by 10.37-10.40 | Qualification open. Framework and project owners must establish compatible current source/compiled/loaded closure and complete required bounded native/control acceptance. Preserve exit 137/124 and stale failures; no timeout widening, source-guard removal, expectation rewriting or historical receipt relabeling |
+
+The maintained [[file:10.23-native-aitia-backpressure-content-review.org::#two-gib-recovery-observation][two-GiB recovery observation]] records a specific remaining gate:
+the second ordinary restart timed out after partial DR07-DR14 progress; complete
+restart and handover acceptance and fresh cross-intake/reassessment regressions
+remain required. The selected limit is a 2 GiB Gerbil heap ceiling and 180 seconds
+per process, not a total RSS limit or preallocation. Preserve the successful
+bounded repair/intake observations and the failed restart separately. This audit
+reads that record; it does not rerun or close it.
+
+Cross-host authority, project-specific semantic judgments and global revocation
+are not solved by concatenating existing APIs. Reuse local issuance and signed
+custody at their qualified scope; add only the actual selected recipient route
+and its verification obligations. Offline current-status limitations remain
+explicit under the adopted policy. Recipient use, distribution and deployment
+require their actual owners, even if every producer-side review check succeeds.
+
+* SPECIFIED Single ownership and retained/replaced responsibilities
+:PROPERTIES:
+:CUSTOM_ID: integrated-ownership-and-domain-knowledge
+:END:
+
+| Responsibility | Retain | Replace / move / supply |
+|----------------+--------+------------------------|
+| Native shape and contextual admission | POO effective Types, Core required publication/scope Contracts and returned normalized values | Flat duplicated slot validators where native value Contracts apply; add Library semantic role/parent/policy constraints under those Contracts |
+| Reusable engineering knowledge | Existing generic/Rust semantics, six-case oracle, bounded QNT/Lean model, explicit mapping and negative controls | Publish method/duty/product/decision criteria and single slice/delta owner in Library. A generator or driver cannot own the public engineering definition |
+| Profile request | Independently importable POO values and parameter variants | Add supported selection/product/role requirements; remove no-longer-needed reconstruction. No live init/source authority, versions or grants in Profile |
+| Scenario composition | Existing Core Domain/Evidence requires and source-current checks | Own complete admitted association/C and method/query/review operation bindings; remove driver-side second capture and ambient fallback inputs |
+| Execution and observations | Core Ops and real method-specific interpretation/private issuance | Separate actual method closures and explicit A/E/W/use associations; do not move every domain oracle into Core or mistake tooling for semantic criteria |
+| Inference | ASCENT engine, Session, source transactions and clue verifier | Refactor this project's domain relations/projection/Q wrapper, not the inference runtime. Required products/duties remain independent from observed witnesses |
+| Review mechanics and standards | Core receipt authority; Aitia native review/history/authority; genuine standard providers | General native context/content/policy adapter belongs to Aitia; no new Library review engine, fixture class substitution or raw checked-flag authority |
+| Actual project governance/content | Real project adoption, architecture, documents, responsibility grants, semantic findings and decisions | Supply missing project inputs. Library publishes constraints on such inputs, not fictional people, grant directories or universal architecture conclusions |
+| Delivery and recovery | Existing custody/authority operations at their qualified scope | Bind actual distribution/access and recipient verification/adoption. No second log, portable reconstruction of private receipts or implicit deployment authority |
+| Documentation/views | Org product text, stable model/decision IDs and paired D2/SVG | Display actual selected/native associations and qualified limitations; no schema/generation/approval authority moves into the documents |
+
+For a future network-service repo, the Library can publish concurrency/backpressure,
+GC/distributed-system method capabilities and applicability rules only when such
+knowledge really exists. That repo supplies its own protocols, topology, runtime,
+failure assumptions, trust boundaries, service requirements and project authority.
+Selecting a QNT method is warranted by its declared domain/duties; networking or
+multithreading alone does not prove the existing six-case model covers the service.
+Existing SysML projections cover bounded trace cuts. A repository architecture
+projection/mapping and its checks are a separate optional DE-T07 capability, not
+an already implemented consequence of adopting OpenSysML.
+
+* SPECIFIED Dependency order, ownership and acceptance
+:PROPERTIES:
+:CUSTOM_ID: integrated-refactoring-dependency-order
+:END:
+
+Work-package IDs below denote refactoring tasks, not contract versions. There is
+one implementation dependency plan across 10.37-10.40. Existing local plans are
+specializations of these boundaries, not four independent rewrites or approval
+pipelines. Owners are code/semantic responsibilities, not newly appointed people.
+
+| Package / dependencies | Accountable owner and deliverable | Acceptance / negative boundary | Audit allocation |
+|------------------------+-----------------------------------+--------------------------------+------------------|
+| WP00 / baseline lane; precedes executable qualification claims | Core/ASCENT/Aitia integration maintainers + project qualification owner: exact current source/compiled/loaded/tool/dependency basis and retained failures | Resolve incompatible artifacts/cold native defects under recorded supported budgets. Native cold Scenario and required recovery paths must finish correctly; no pass inferred from interpreted/model runs or a timeout. Design/static work and source refactoring need not wait idle | GA25 |
+| WP01 / Types and Contract foundation | Library Types owner: shared declaration owner, effective role/capability/parameter/product Contract shapes and trusted expected boundaries | Requested V1 has one native owner; missing/foreign/forged family/role/version/descriptor, wrong ancestry and unknown fields fail; inherited effective fields and admitted normalized values behave correctly | GA01,GA03,GA04 |
+| WP02 / WP01 | Library semantic/publication owner: generic/Rust/integration parent chain, sole mapping/delta/policy meaning and complete scope exports; project authority identifies required adoption/role inputs | No parent cycle, dropped duty or conflicting identity/case link; Types -> objects -> methods/interface dependencies stay acyclic; no process at declaration time; actual adoption still required | GA02,GA03,GA09,GA18 |
+| WP03 / WP02 | Profile owner + Scenario owner: independent selection and one complete C with actual project/provider/input/product/mandate association | Base/generic/opt-in choices checked against capabilities; unsupported parameters/policy/role refused. Wrong root, dirty/untracked source, absent expected product/grant or acquisition gap stays explicit. Driver cannot add a second authoritative snapshot | GA05-GA09,GA24 |
+| WP04 / WP03 and published method Contracts | Library method/observer and producer/use owners: separated actual closures, C-bound applications, attempts, issuance and fresh applicability | Preserve positive and negative controls and failed attempts; refuse mixed C/run/facet/input/proposition; timeout is not semantic support. Prove actual tool/implementation dependency independence before asserting selective reuse | GA10-GA13 |
+| WP05 / WP03 and published product/policy Contracts | Library content-criteria + project content/architecture/decision owners: bounded architecture/Org/decision observers and substantive review inputs | DE-O-ARCH/DOC/DEC/TRACE inventory/relations/assumptions checked on actual products; target is not labeled implemented. Syntax/hash success cannot establish rationale truth or replace missing reviewer findings; optional DE-T07 explicitly selected | GA09,GA24 |
+| WP06 / WP03,WP04,WP05 for the selected required scope | Project Evidence adapter/program owner using ASCENT: application-scoped required/expected/actual/use relations and accepted finite Q | Missing/extra/conflicting roles, multiple run bases, support+counter and empty observations handled conservatively; pending duties cannot vanish. Owned row values, failed-batch rollback and changed-rule/program/query controls preserve exact accepted identity | GA14-GA17 |
+| WP07 / WP06 plus policy/mandate and native Aitia extension | Aitia native review owner + Scenario case adapter: policy-neutral native request/assessment support and exact R, context/content verification | No NASA fixture substitution, context/content interchange, grant-free role or unknown-as-pass; copied/mutated/expired/revoked receipt and wrong C/Q/project/policy replay fail. Prepared dossier remains inert | GA18,GA19,GA24 |
+| WP08 / WP07 plus actual authority/history sources | Existing Aitia/history/custody adapter owners + actual project reviewer/decision authority: authenticated complete history, findings, policy coverage, repair/reconsideration/withdrawal | Missing source, unverified denial, forged grant, unmet independence/quorum, unauthorized supersession or head rollback blocks current admission. Changing policy or passing repair cannot erase a denial/counter; release remains separate | GA20-GA22,GA24 |
+| WP09 / WP08 plus qualified custody/provenance and actual recipient | Delivery adapter/owner + recipient project owner: exact authorized package/access, acknowledgement, fresh recipient verification and project adoption/use | Missing referenced artifact, wrong recipient/purpose, unsupported cross-host trust or cloned receipt cannot admit use. Restarts need current custody and fresh verification. Provider approval/transport success never imply recipient deployment | GA22,GA23 |
+| WP10 / WP00 and all required prior packages | Joint framework/Library/Scenario and actual project/recipient qualification owners: complete DE-CASE-01 slice with executable receipts and successor-project use controls | Current source-bound capture -> method/content duties -> Q -> real context/content/history/decision -> authorized handoff -> recipient use succeeds at its declared scope. Matched negative controls and all required cold native paths pass; open gates remain explicit | GA01-GA25 |
+
+WP04 and WP05 can proceed independently once their Contracts and capture exist;
+WP06 accepts only the required selected facets, not an arbitrary all-green subset.
+Policy-neutral Aitia type/mechanics design and custody/provenance qualification
+can start alongside WP01-WP03, but their usable review/delivery associations depend
+on WP07-WP09. Actual project adoption/appointments are external inputs: missing
+mandates permit draft preparation, never fabricated authority or final admission.
+WP00 is a qualification lane, not permission to claim an unqualified method works.
+
+Scope-preserving refactoring means direct migration of active callers and tests,
+with no compatibility facade that leaves two capture/program/policy paths alive.
+Keep historical schemas/receipts as historical facts with their original validated
+meaning. This task selects logical ownership and dependencies, not a new directory
+tree or an already applied source migration.
+
+** SPECIFIED Acceptance evidence and stop conditions
+:PROPERTIES:
+:CUSTOM_ID: integrated-acceptance-evidence
+:END:
+
+| Evidence level | Required future receipt / stop condition |
+|----------------+------------------------------------------|
+| Native declaration/publication | Actual expected-Contract controls and source-linked exports; structural acceptance alone stops before semantic support |
+| Capture/application | Exact project/provider/selected-native association, owned input basis, expected inventory and guarded acquisition/currentness; missing required premise stops affected use |
+| Method and content semantics | Actual attempts, independent bounded interpretations, observer footprints and original producer issuance; claim strength and native/model/content evidence remain separate |
+| Inference/Q | Qualified selected program and accepted source cut, finished required query and explicit support/counter/pending/conflict with trace to C/A/E/W/use; incomplete/filtered/favorable-only views stop readiness |
+| Review/disposition | Actual adoption/roles, separate context/content/history verification, semantic findings and authenticated scoped decision; public packet or stage label alone stops before authority |
+| Delivery/recipient use | Actual distribution mandate, exact accessible package, recipient acknowledgement/verification/adoption and fresh intended-use decision; no deployment implied |
+| End-to-end qualification | All required supported cold native/runtime/recovery paths and negative controls under recorded limits; historical passes, source drift, cancellation or killed attempts do not close current acceptance |
+
+Future joint controls must cross boundaries, rather than merely mirror field
+accessors: swap provider/project roots; change policy/grant while holding V1;
+mutate an inherited declaration; mix two native runs under one usage; change only
+one actual method dependency; omit a required product; inject forged checked rows;
+combine support/counter; fail a source replacement; replay an old Q/R or revoked
+receipt; hide a predecessor denial; restart against a stale archive head; and
+transfer a package missing a .data artifact. Each control must demonstrate the
+specific native refusal/pending/history result and preserve unrelated valid scope.
+No successful model or lint result can supply a missing authority act.
+
+* SPECIFIED Case and design coverage
+:PROPERTIES:
+:CUSTOM_ID: integrated-case-design-coverage
+:END:
+
+| Design segment | Audit gaps / work | Existing case obligation and target |
+|----------------+-------------------+------------------------------------|
+| 10.37 native definition/publication | GA01-GA04 / WP01-WP02 | DE-R01/R03; DE-T01; DE-O-ARCH/TRACE; original VA declaration/namespace audit |
+| 10.38 selection/capture/products | GA05-GA09 / WP03,WP05 | DE-R02/R03/R06; DE-T02/T03/T04; DE-O-ARCH/DOC/DEC/TRACE |
+| 10.39 execution/evidence/Q | GA10-GA17 / WP04,WP06 | DE-R01/R03/R04; DE-T03/T04; DE-O-TRACE and declared method duties |
+| 10.40 policy/review/history/delivery | GA18-GA24 / WP07-WP09 | DE-R05; DE-T05/T06; DE-O-REVIEW/TRACE and actual role/adoption/content inputs |
+| All segments / real case qualification | GA25 and all gaps / WP00,WP10 | DE-R01-R06; actual DE-AM01/target DE-AM02; no target completion inferred from this audit |
+
+The authored design decisions DE-D01-D05 retain their meanings and statuses.
+This audit allocates implementation work to them; it does not claim an actual
+supersession, reviewer appointment, accepted dossier or completed project gate.
+Every required D01-D10 product keeps its explicit section/input/reference and
+current/historical/missing classification from 10.34, subject to actual future
+recapture rather than refreshing an old expected hash catalog.
+
+* AUDITED Documentation and execution status
+:PROPERTIES:
+:CUSTOM_ID: integrated-audit-documentation-status
+:END:
+
+This audit and paired view are design products. The 10.34 retained 138-entry
+catalog is unchanged; newly authored 10.37-10.41 documents are not inserted into
+that historical evidence. [[file:10.35-content-validation-slice.org::#slice-input-freshness][10.35]] records current byte drift and why recapture is
+required. Source observations above are not a native test receipt, semantic
+witness, role grant, approval, distribution or recipient acceptance.
+
+Only Org and D2/SVG are changed. No implementation/directory migration, method,
+model or ASCENT run, Aitia verification/submission, signature, revocation or
+external delivery is performed. Full target acceptance remains future work.
+
+[[file:10.42-library-types-and-contracts.org::#library-types-and-contracts][10.42 details WP01 by existing file, effective fields and role Contracts]],
+with the sole generation owner, separate shape/definition relationships and
+matched acceptance controls. Its responsibility-based naming replaces the
+ambiguous adjective in maintained design filenames; source API names remain
+exact references until implementation migration.
+
+[[file:10.43-library-objects-and-publication.org::#library-objects-and-publication][10.43 details WP02 object/configuration/publication responsibilities]],
+including actual checked parent bindings, single mapping/delta ownership, complete
+Scope exports and the Core checked-value handoff prerequisite. Declaration
+admission and completed method/review qualification remain distinct.
+
+[[file:10.44-profile-selection-and-scenario-capture.org::#profile-selection-scenario-capture][10.44 details WP03 by existing Profile/Scenario fields and operation boundaries]],
+including checked Scope consumption, actual ancestor/policy binding, separate
+provider/project/reference subjects, qualified acquisition and one owned C.
+Required gaps and downstream evidence/review qualification remain explicit.
+
+[[file:10.45-method-execution-and-evidence-issuance.org::#method-execution-evidence-issuance][10.45 details WP04 method execution and evidence issuance]],
+including actual same-C A/E/W association, complete input/execution origins,
+separate outcome dimensions, private issuance, invalidation and fresh qualified
+reuse. Existing Ops launch/environment seams need actual qualification.
+
+[[file:10.46-content-observers-and-reference-closure.org::#content-observers-and-reference-closure][10.46 details WP05 content observers]]: selected product/criterion policy, same-C
+bounded Org/architecture/decision/reference checks, actual A/E/W and historical
+versus current evidence, qualified semantic findings, invalidation/reuse and
+CO01-CO24 controls. This is target design, not executed content qualification.
+
+[[file:10.47-ascent-projection-and-query-view.org::#ascent-projection-and-query-view][10.47 details WP06 application projection and Q]]: independent required units,
+exact C/A/E/W/U/basis/run relations, current eligibility/coverage/conflict/gap
+semantics, existing Session acceptance/rollback and owned determinate Q for
+Aitia; PQ01-PQ26 are future controls, not an executed inference or review.
+
+[[file:10.48-aitia-review-adaptation.org::#aitia-review-adaptation][10.48 details WP07 Aitia review adaptation]]: exact C/Q to R, actual policy/
+project/role/product bindings, separate context/inventory/criterion checks,
+shared existing-Host mechanics, current Core receipt use, lossless findings and
+RV01-RV28 controls. Preparation is inert; no verification or submission occurs.
+
+[[file:10.49-history-authority-and-reassessment.org::#history-authority-and-reassessment][10.49 details WP08 history and decision authority]]: mandated source discovery,
+exact C/Q/R/H/action/grant bindings, accepted negative retention, repair/exception/
+supersession/withdrawal, genuine prefix custody and HA01-HA31 controls. These
+remain target operations; no authority decision or review is submitted here.
+
+[[file:10.50-library-delivery-and-recipient-use.org::#library-delivery-and-recipient-use][10.50 details WP09 Library delivery and recipient use]]: exact C/Q/R and accepted
+distribution authority, manifest/product/reference closure, actual transfer and
+acknowledgement, receiver-owned trust/verification/capture/review, adoption and
+current intended use. Missing/status/withdrawal/replay and DU01-DU30 controls
+remain future qualification; no implementation or actual delivery occurs.
+
+[[file:10.51-case-joint-acceptance-plan.org::#case-joint-acceptance-plan][10.51 details WP10 joint acceptance]]: existing entries/file owners, exact
+plan/evidence closure and G0-G8 source/compiled/cold/recovery/recipient gates;
+216 referenced contract control rows plus JA01-JA32 cross-boundary controls and
+OJ01-OJ12 open items. These are future requirements; no implementation,
+acceptance execution, review submission or actual delivery occurs.
+
+[[file:10.52-contract-consistency-and-implementation-order.org::#whole-slice-consistency-audit][10.52 reconciles the whole slice]]: policy/Scope/Config handoffs, required-unit
+and request-purpose bindings, captured/technical/current-authority lifetimes and
+private/exported provenance; S0-S9 implementation dependencies and retained OJ
+gates. Design consistency is not implemented or operational qualification.
+
+[[file:10.53-source-build-and-recovery-baseline.org::#source-build-recovery-baseline][10.53 details S0]]: live dirty source/dependency identities, current selected
+byte map, build/default-route versus q34 loading evidence, BS01-BS09 WP00
+blockers/repair owners and explicit S1 entry conditions. Static inventory does
+not close the remaining build/load/recovery qualification gates.
+
+#+CAPTION: Existing native owners and the dependency-ordered 10.37-10.40 refactoring/qualification chain.
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.svg]]
+
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][Editable D2 source]]. The audit table is the detailed source/ownership/acceptance account; the view is its dependency projection.

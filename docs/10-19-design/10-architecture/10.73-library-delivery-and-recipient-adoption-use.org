@@ -1,0 +1,401 @@
+#+TITLE: 10.73 P8 Library Delivery and Recipient Adoption and Use
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.73
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+TODO: AUDITED SPECIFIED | QUALIFIED
+#+FILETAGS: :design:library:delivery:recipient:authority:causality:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.64-contract-consistency-and-implementation-order.org::#audit-implementation-order][P0-P9 order]] | [[file:10.62-library-delivery-and-recipient-use.org][S8 detailed foundation]] | [[file:10.65-ascent-migration-and-contract-handoff.org][P0 sources]] | [[file:10.66-effective-types-and-contract-closure.org][P1 effective Types]] | [[file:10.67-library-construction-publication-and-scope-handoff.org][P2 publication]] | [[file:10.68-profile-selection-scenario-binding-and-capture.org][P3 capture]] | [[file:10.69-method-content-execution-and-evidence-issuance.org][P4 evidence]] | [[file:10.70-ascent-projection-and-determinate-query-view.org][P5 Q]] | [[file:10.71-aitia-review-adaptation-and-current-use.org][P6 R]] | [[file:10.72-history-authority-reassessment-and-withdrawal.org][P7 authority]]
+
+* SPECIFIED Deliver claims and products without transferring private authority
+:PROPERTIES:
+:CUSTOM_ID: p8-delivery-recipient-use
+:STATUS: Source/design and static documentation only; no implementation, acceptance execution, provisioning, review submission or actual delivery
+:END:
+
+P8 consolidates 10.62 against P0-P7. Producer C0/Q0/R0, checked Library publication,
+actual accepted decisions and current authority bind a finalized manifest for an
+identified recipient/project/intended purpose. Transfer, arrival, verification,
+adoption and use are separate actual occurrences. Recipient C1/Q1/R1 belongs to its
+own project; producer review and signatures do not import that project's authority.
+
+Library publishes reusable model/Integration/policy/Contract/method/product and
+claim-applicability knowledge. Profile selects supported intent. Scenario binds real
+project inputs and channel/custody/recipient operations. Aitia owns phase-specific
+verification and P7 exact distribution/adoption/use authority; Core owns actual
+source/build/load/Scope and local receipt primitives; custody/Runtime owns real
+transport, retained access and effects. No second package manager, delivery ledger,
+portable private-token format or global recall service is introduced.
+
+Sole Library declaration generation remains V1 at the checked declaration Contract.
+Payload records reference that declaration; they do not own another version. Stable
+Namespace, model/policy semantic revision, package/dependency pins, project/dirty
+revision, document revision and accepted status cuts keep their separate meanings.
+
+* AUDITED Existing files and actual capability boundary
+:PROPERTIES:
+:CUSTOM_ID: p8-current-source
+:END:
+
+Initial observation: . HEAD 8044732d505f84e373119a70f947df00e1767300; ../poo-flow HEAD 20ca0903bdbb67ed3682dc0a732f1a435e716770; ../poo-flow/core HEAD 251ff282e2aa9cc8f6d2b194e5f26615cd042f58; ../poo-flow/packages/lambda-aitia HEAD 87fb8f17c8ea7af5e553f3bd86140b3c5b1cab03; ../gerbil-ascent HEAD 5054f6d8b97ae0e1fa266f2d80f7ddb66c99e367.
+
+The initial bounded observation covers 75 selected project/dependency source files.
+Inherited P7 bytes matched. These separate source/hash observations do not establish
+an atomic checkout, compiled provenance or actual loaded process. Earlier P0/P6 Core
+read-projection/source-reader changes and build/recovery gates remain unqualified;
+no prior receipt, failure or source observation is rewritten.
+
+| Existing source | Actual support / complete target |
+|-----------------+-----------------------------------|
+| [[file:../../../gerbil.pkg][gerbil.pkg]] / [[file:../../../manifest.ss][manifest.ss]] | Package dependency/pin metadata exists. manifest.ss is version-manifest, not a delivery inventory, recipient, review or adoption manifest; pins are not the Library generation owner |
+| [[file:../../../init.ss][init.ss]] / [[file:../../../build.ss][build.ss]] | Explicit Core module/provider/Scenario selection and build owners. Preserve explicit authorized bootstrap; incoming data cannot implicitly import Scheme, install, build or load |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/abstract/interface.ss][Generic interface]] / [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/interface.ss][Rust interface]] | Published entries/parent and checked-operation seams. P1/P2 complete normalized model/policy/parent/Scope construction remains required; wire data cannot reconstruct a checked Scope |
+| [[file:../../../profiles/resource-lifecycle.ss][Profile]] / [[file:../../../scenarios/resource-lifecycle/types.ss][Scenario Types]] / [[file:../../../scenarios/resource-lifecycle/func.ss][func.ss]] | Actual selection/application adapters are the migration entry. Profile selection is not receiver mandate/adoption; Scenario forms own C1 only from real checked publication and acquired project inputs |
+| [[file:../../../scenarios/resource-lifecycle/review/func.ss][producer source custody]] | load/validate-producer-source-custody checks exact acceptance/report/declarations, original-copy byte/path correspondence and execution cwd. Retain bounded custody; it is not general recipient trust, current adoption or portable W issuance |
+| [[file:../../../scenarios/resource-lifecycle/review/archive.ss][archive.ss]] / [[file:../../../scenarios/resource-lifecycle/review/cross-intake.ss][cross-intake.ss]] / [[file:../../../scenarios/resource-lifecycle/review/signatures.ss][signatures.ss]] | Actual signed closed prefix/origins, predecessor/reader and Core Ops crypto seams. Qualify actual transport/custody/receiver sources; local archive/signature behavior proves no cross-host CAS, instantaneous recall or receiver permission |
+| [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/types.ss][Aitia Types]] / [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/objects.ss][objects.ss]] / [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/review-authority.ss][review-authority.ss]] | P1 phase Types/requests and P6/P7 generic Host/authority are target migration owners, not already installed receiver protocol. Keep genuine standard routes separate |
+| [[file:../../../modules/resource-evidence/func.ss][ResourceEvidence func.ss]] / [[file:../../../modules/resource-evidence/types.ss][types.ss]] | Future P5 projection of genuine manifest/intake/adoption/use/status associations if a later query requires them. Rows explain accepted facts; they cannot grant authority or recreate original issuer objects |
+| [[file:../../../t/package-metadata-test.ss][package metadata]] / [[file:../../../t/dependency-compatibility-test.ss][dependency compatibility]] / [[file:../../../t/producer-source-custody-test.ss][custody tests]] | Existing source/installed-artifact/finite ABI/relocation seams, not current full provenance or receiver qualification. Compatibility test still imports old ASCENT Evidence API; P0 migration is prerequisite. No tests were run here |
+
+Proposed scenarios/resource-lifecycle/review/delivery.ss is a thin future channel/
+materialization/intake adapter, not an existing file or a new public Module. Shared
+semantic constructors/verifiers stay in Aitia's existing sdlc Types/objects/review/
+authority owners and P6 proposed common Host factoring. Side effects remain at actual
+project custody/Core Ops/Runtime owners. No delivery transport/people/grants enter
+Library Config: Generic selects its authored entry; Rust stays closed no-options.
+
+* SPECIFIED Phase-typed records and immutable lineage
+:PROPERTIES:
+:CUSTOM_ID: p8-phases-and-fields
+:END:
+
+The expected output Type fixes each phase; an editable phase field cannot promote
+one object to another. Use complete P1 neutral bound/identified facts and retained
+normalized Contract/CLOS/Function returns. Own mutable semantic cells/bytes or bind
+actual qualified retained access with source guards. Public IDs/digests are indexes,
+not private producer/custody associations. No copied C/Q/R schema or ad hoc wire DSL.
+
+| Phase / target value | Required input and resulting binding |
+|----------------------+--------------------------------------|
+| payload / SdlcDeliveryManifest | identity; actual finalized producer C0/Q0/R0/project/dirty basis/publication/parents/policies/Contracts/prior review; independent required products and actual typed inventory/reference/access/retention/negatives; source/build/dependency/runtime/platform/ABI and method interfaces; exact recipient/project/intended-purpose/redistribution and claim/premise/strength/compatibility constraints; status-source descriptors |
+| distribution / P7 accepted decision | Final manifest/recipient/project/intended-purpose/action/scope, actual principal/grants/policy/current H/technical use/conditions/validity, actual acceptance/inclusion/current-use associations. Prior review approval does not authorize sending |
+| transfer / actual delivery occurrence | Exact manifest/distribution, sender/receiver/channel/destination, actual operation/input/artifact/time/custody and attempt/outcome/unknown state. Send intent is not observed arrival |
+| acknowledgement / SdlcDeliveryAcknowledgement | Exact transfer/manifest/receiver/channel, actual observed bytes/access inventory and omissions/time/authentication/custody. Sender success is not receiver acknowledgement; arrival is not adequacy |
+| verification / SdlcRecipientVerification | Actual intake/manifest/origins and receiver-owned trust/policy/roots/status/source/clock; separate integrity/inventory/provenance/access/compatibility/content/causal/authority findings, real local receipts/use, gaps/counters/conflicts/limits |
+| adoption / SdlcLibraryAdoption | Receiver/project/revision/subject/purpose, actual own checked publication/parents/policy, incoming manifest/origin, own C1/Q1/R1/current H and technical use, actual accepted adoption decision/inclusion/conditions. Future adoption is not captured into C1 |
+| use / SdlcLibraryUse | Accepted adoption/publication/manifest and own C1/Q1/R1/current authority; exact principal/project/revision/operation/target/purpose/owned inputs and fresh source/history/status/clock/premise/transport checks, actual effect-owner authorization and limits |
+
+Manifest identity covers finalized payload and intended recipient/purpose before
+its distribution action exists. Future distribution/transfer/acknowledgement/receiver
+verification/adoption/live-status findings are later envelopes/owner associations,
+not mandatory self-inputs. Prior producer review may be a payload product; its future
+receiver review cannot be. Changed payload/subset/redaction/recipient/purpose requires
+new manifest and scoped authorization; later observations do not mutate old payload.
+
+Materialization may relocate identical bytes with exact original/target association.
+It cannot silently repair or change reviewed product meaning: changed producer basis
+needs affected new C0/Q0/R0 before approved delivery. New packaging-only descriptors
+have their real derivation/custody association, not a false claim of prior capture.
+
+* SPECIFIED Independent products, reference closure and compatibility
+:PROPERTIES:
+:CUSTOM_ID: p8-products-and-closure
+:END:
+
+Required inventory derives from actual adopted publication/policies/delivery purpose,
+then receiver independently supplies expected demand. Offered files cannot define
+completeness. D01-D10 are product roles, potentially sharing exact sections; include
+required architecture model, Org requirements/process/role records, DE-D01-D05 decisions,
+model/mapping/delta knowledge, original methods/results/negatives, full Q explanations,
+R/prior decisions, source/build/dependency instructions and status/access descriptors.
+Required historical records stay visibly historical; view rendering is not proof.
+
+| Closure dimension | Required check and gap handling |
+|-------------------+--------------------------------|
+| Product/selector | Role/occurrence, exact whole-file bytes/revision and unique chapter/element/selector/parser. Duplicate heading/anchor or changed bytes cannot satisfy the role by title |
+| Typed reference | Actual required edge/target/owning base/selector and original origin. P4 finite traversal retains incoming demands under dedup/cycles; bounds/unsupported target leave explicit gaps, not silent closure |
+| Included or retained access | Owned bytes or actual authorized accessible retention route with identity, availability/lease/status/limits. A producer-local .data/worktree path or digest of a subset is not receiver-accessible closure |
+| Relocation and intake | Qualified original-to-copy correspondence, base/path/symlink/alias rules, bounded archive extraction and immutable intake. Reject escaping/ambiguous/substituted targets; do not follow supplied links or fetch implicitly |
+| Confidential/redacted content | Actual authorized controlled-access route or explicitly bounded new subset with unmet demand/exception retained. Hidden content is not verified by absence or a hash |
+| Source/compiled/runtime | Qualified source -> actual build invocation/dependencies/tool/runtime/platform -> artifact/load association, or explicit authorized qualified receiver rebuild. Same filename/source hash/pin/finite ABI result is insufficient |
+| Publication compatibility | Actual checked Core publication with P1/P2 full normalized expected Contracts/parents/policies/Function bodies. Serialized Scope or copied declaration generation never substitutes for this |
+
+Intake is inert: no Org Babel/include evaluation, Scheme initializer/import, package
+install, build or tool execution. Only explicitly authorized acquisition/provisioning
+at actual host/Core owners performs effects. Source-only inspection is possible while
+compiled adoption/use is blocked. Receiver's pre-existing project/host mandate must
+authorize provisioning; future Library adoption cannot authorize its own prerequisite.
+Keep proposed build instructions as data, never as a command selected by the manifest.
+
+* SPECIFIED Producer preparation, authority and transfer operations
+:PROPERTIES:
+:CUSTOM_ID: p8-producer-operations
+:END:
+
+| Target operation / actual owner | Input -> output and required boundary |
+|---------------------------------+---------------------------------------|
+| prepare-delivery / Scenario + Aitia | Recognized C0/Q0/R0/publication/prior authority and independent demand + proposed recipient/purpose -> inert typed candidate with gaps; no permission to send |
+| materialize/finalize / actual custody | Candidate + permitted source/access operations -> exact retained payload/typed closure and immutable manifest, or incomplete/refusal. No amended C0 or checksum-of-subset completeness |
+| authorize-distribution / P7 authority + custody | Final manifest/recipient/project/purpose, current technical/review/history/roles/grants -> exact accepted distribution decision/inclusion/current use. Incomplete diagnostic transfer requires its own genuine bounded scope and remains draft |
+| transfer / actual channel/Runtime owner | Exact immutable content/envelope/destination, principal and fresh distribution use at actual effect boundary -> actual attempt/outcome. Recheck redirect/receiver/channel binding and required serialization/fencing |
+| acknowledge / actual receiving owner | Actual bounded intake/inspection -> authenticated observed arrival/access/omissions for this exact occurrence. No acknowledgement fabricated by sender |
+| retain/reconcile / actual custody owners | Exact attempts/arrival/ack and selected prior state -> retained associations or unknown. No multiowner atomic send/receive/adopt transaction |
+
+The generic P7 action is distribution targeting the finalized manifest. Distinguish
+review action, distribution action and actual transport permission/effect. Genuine
+negative/defer distribution decisions can retain incomplete basis with their own
+authentic target/authority checks; positive distribution requires full prerequisites
+or a genuinely policy-permitted explicit diagnostic scope, never a disguised pass.
+
+Actual retransmission is another attempt, even if content repeats. Lost acknowledgement
+does not establish no arrival. Reconcile actual channel/receiver custody; never retry
+an ambiguous effect as though it failed. Exact prior accepted operation retry can
+report original inclusion; it cannot create duplicate adoption/effect or change payload
+under an old operation identity. Actual owner qualifies idempotency/fencing/recovery;
+P8 adds no global exactly-once service. Sent/accepted state survives later export or
+acknowledgement failure with the real failure/unknown retained.
+
+* SPECIFIED Recipient verification and local assertion provenance
+:PROPERTIES:
+:CUSTOM_ID: p8-recipient-verification
+:END:
+
+| Target operation / actual owner | Input -> output and required boundary |
+|---------------------------------+---------------------------------------|
+| receive/inspect / receiver adapter | Actual incoming bytes/channel/envelope + receiver expected demand -> owned inert intake/omissions. Bind actual receiving principal/project/route; reject malformed or ambiguous identities without executing supplied instructions |
+| verify-delivery / actual receiver Host | Intake and receiver-adopted policy/trust/roots/clock/readers/status -> independent verification axes and genuine local assertions/use. Candidate manifest/root/verifier cannot authenticate itself |
+| provision/publish / receiver host/Core | Prior host-authorized source/dependencies/build/load -> actual checked publication/Scope under real source/runtime guards, or explicit unavailable/unsupported route |
+| select/capture / Profile + Scenario | Checked publication + own selections, actual repo/dirty bytes/products/roles/mandate/intake -> C1 with real origin. Producer C0 remains original provider basis, never receiver capture |
+| verify-project / actual P4-P7 owners | Own independent duties/units and C1 -> new observations/executions or qualified fresh reuse, complete accepted Q1/immutable R1, actual context/content/history/authority use |
+| adopt / receiver authority + custody | Incoming publication/manifest and own C1/Q1/R1/H/grants/purpose -> actual accepted adoption decision/inclusion/current conditions or reject/defer. Profile choice/import/byte arrival is no adoption |
+| admit-use / receiver use owner | Exact accepted adoption and own C1/Q1/R1/current authority, principal/operation/target/purpose -> bounded current use and accepted use action where policy requires |
+| execute / actual Runtime/host | Exact authorized checked operation/owned inputs/source/status cut -> actual effect attempt/outcome. Review/adoption/Cedar-shaped preflight alone does not authorize deployment |
+
+P1's common twelve purposes remain one source. P8 uses only delivery-inventory with
+SdlcDeliveryInventoryRequest -> SdlcDeliveryInventoryFacts and delivery-provenance
+with SdlcDeliveryProvenanceRequest -> SdlcDeliveryProvenanceFacts. The former binds
+manifest/intake/receiver/project/purpose and all required-versus-observed closure/
+omissions; truthful missing-item accounting can verify without proving completeness.
+The latter binds exact original assertion/polarity/issuer/credential/root/signature/
+custody/status plus actual local verifier/source cut; signed refutation stays refuted.
+Neither is a content-adequacy, adoption or use authorization receipt. P6 review purposes
+and P7 history/disposition purposes retain their independent exact stages/facts.
+No new recipient, causal or provisioning purpose/action enum is introduced.
+
+Same-process reuse requires original recognized owner/receipt/W/Q associations and
+fresh P4/P6/P7 guards. Cross-process/host JSON, signature, private ID or archived Scope
+cannot recreate original local issuance/Session acceptance. A qualified portable
+assertion may support its exact original claim with receiver-trusted provenance and
+status, producing a new local verification/observation association. It does not
+re-observe foreign execution, deserialize W/E or convert original producer operation
+into local execution. If required strength/origin is unavailable, retain gap and use
+an actual receiver observation/execution route; do not invent a producer seal.
+
+A receiver target use relates exact original C0/A0/E0/G/W or qualified portable
+assertion, claim/domain/strength/premises/footprint to C1/A1/independent K through a
+real checked binding. Original W/U remains immutable. QNT finite model property,
+conditional Lean theorem, Rust execution, SysML named checks, content, provenance and
+empirical causal claims keep their distinct strengths. M06 control/Lean negation
+cannot become positive ownership or budget evidence. Networking/distributed/GC/thread
+knowledge absent from the selected Library becomes an independent receiver gap,
+not implicitly covered by importing the backpressure six-case package.
+
+* SPECIFIED Causal transport and later applicability changes
+:PROPERTIES:
+:CUSTOM_ID: p8-causal-applicability
+:END:
+
+| Claim or actual change | Required recipient result / retained limit |
+|------------------------+-------------------------------------------|
+| Descriptive/formal/model claim | Exact subject/domain/premises and supported interpretation checked. A theorem at identical qualified premises need not be empirically re-estimated; finite model evidence stays finite/model-scoped |
+| Empirical effect/incident counterfactual | Compare actual intervention/comparator/outcome definitions/units, measurement, workload/topology/population/window, assignment/identification/confounding/interference/stability and actual data/model/estimator/uncertainty basis. Same Library identity is not transport proof |
+| Qualified compatibility within supported domain | Actual method/verifier and transport/applicability argument -> fresh target use at declared strength, or a new bounded analysis. Metadata resemblance alone is insufficient |
+| Known failed identification/transport premise | Block affected causal support/use at actual receiver owner; preserve original evidence/producer acceptance historically. Failure to identify is not zero effect or invented opposite W |
+| Missing/stale measurement/status/check | Support/use unestablished with retained required K and reason. Missing data is neither proven violation nor permission to proceed |
+| Actual comparable counter/uncertainty-condition failure | Keep support and counter/limits, reassess exact review/adoption/operation conditions. No favorable-only summary or automatic signed withdrawal |
+| Actual supported repair/restoration | New observation/use and current P5/P6 review, rediscovered P7 history and required accepted resolution -> exact eligible target use. Recovered premise alone cannot cancel denial, revive seal or make exception into truth |
+
+Retain actual premise/check/impact -> original claim/W -> receiver U/K/Q1/R1 ->
+accepted adoption/current operation conditions with both producer and local origins.
+Only qualified dependency closure permits selective recheck; incomplete closure needs
+conservative relevant-basis revalidation. Known external invalidity blocks current
+use even if P5 eligibility projection fails. Unaffected formal claims need not become
+false because a distinct empirical effect loses applicability. Technical use blocking
+and authorized withdrawal are separate actual owner operations.
+
+Captured receiver meaning/project/selection/mandate changes need new C1; changed
+technical basis needs new Q1/R1; history/status-only changes can retain original
+C1/Q1/R1 with new H/use. A Q claiming new history needs a new accepted projection.
+Do not mutate producer or receiver past evidence, or rerun unrelated methods merely
+to refresh a clock/history. For a network retry example, new autoscaling/cache/traffic
+can defeat a latency-effect transfer premise without refuting formal permit ownership
+or proving zero retry effect. DE-CASE-01's E06/I04 -> T03 -> DE-D04 source/capture chain
+remains the architecture case, not empirical network-effect evidence.
+
+The paper and 10.61 research questions remain study objects, not authority/template
+or demonstrated superiority. Compare full recipient revalidation, qualified selective
+reuse and simpler/manual review under identical policies, histories and independent
+impact gold. Require no missed stale use/unjustified permission before measuring
+false-blocked use, rework/latency and trust/custody complexity. Reject selectivity that
+misses dependencies or exceeds justified cost. Sound invalidation is correctness;
+minimal affected sets or causal/efficiency improvement requires separate evidence.
+
+* SPECIFIED Missing data, expiry, withdrawal, replay and partial recovery
+:PROPERTIES:
+:CUSTOM_ID: p8-status-replay-recovery
+:END:
+
+| Event | Required scoped result and actual owner response |
+|-------+--------------------------------------------------|
+| Required product/reference/access/history missing | Incomplete verification/use with independent demand preserved. Checksum/signature of subset or removed input cannot establish full closure |
+| Payload/parent/policy/recipient/project/purpose/subset changes | New manifest and distribution scope as required, appropriate new receiver C/Q/R/use. No altered package under old reviewed identity or inherited whole-package permission for redaction/redistribution |
+| Receipt expired/future/revoked/modified, Host lost or clock rollback | Refuse current assertion use; preserve historical verification. Core fixed-instant admission is not a live clock; fresh actual Host/source/status checks required |
+| Later denial/veto/conflict or status-source disappearance | Retain accepted originals and protected scope, rediscover history and block unsupported positive use. Fresh favorable evidence/new policy does not erase the denial |
+| Distribution authority withdrawn | Stop affected new sends, retain actual arrival and recipient associations. Receiver adoption/use follows actual effective policy/status; no retroactive deletion or automatic permanent permission |
+| Publication/grant/credential/decision/adoption/use withdrawal | Authenticate exact target/real owner/effective scope and check affected receiver operations. Core-local revoke, file deletion or advisory notice alone is no global recall |
+| Status offline/inaccessible | No positive current use unless actually adopted policy permits bounded stale operation/scope/expiry/follow-up. Known invalidity is not waived by offline grace; never invent grace or instant disconnected revocation |
+| Old manifest/head/receipt or wrong recipient/project/purpose replay | Fresh actual identity/inclusion/history/status/action checks; valid repeated inspection is distinct from authority/effect replay. Different target/content under same operation identity refuses |
+| Partial transfer/verification/adoption/save or lost acknowledgement | Preserve actual attempt/intake/accepted decision and unknown completion. Reconcile actual custody before retry; no fabricated receiver acknowledgement, duplicate adoption/effect or cross-owner rollback |
+| Process/custody recovery | Actual current selected closed prefix/origins/root/lineage and fresh activation/retirement, new qualified local verification or explicit gap. Restored JSON/private IDs cannot revive original process-private authority |
+
+Notifications are advisory until verified through actual receiver status/trust sources;
+a list of recipients is not delivered notice. Sending any future notice is its own
+authorized effect. A received notification can prompt actual bounded verification,
+not appoint an actor or sign a withdrawal. P8 promises no global instantaneous recall.
+
+Check-at-use and an effect are not automatically atomic. Actual Runtime/channel/use
+owner binds principal/action/target/owned inputs/current source/status through its
+qualified authorization/serialization/fence, or refuses a guarantee it cannot meet.
+A before/after hash alone proves neither closed races nor cross-host CAS. Later
+revocation does not undo completed operation; containment/rollback needs its own
+actual authorization and retained outcome. Pre-existing host authorization governs
+initial provisioning/intake; future Library use cannot authorize its own bootstrap.
+
+* SPECIFIED Implementation order, artifacts and open gates
+:PROPERTIES:
+:CUSTOM_ID: p8-order-and-open-gates
+:END:
+
+| Order / owner | Prerequisite and target deliverable |
+|---------------+------------------------------------|
+| 1 / P0-P3 Core/Library/Scenario | Actual dependency/build/load/read origins; P1 complete effective phase Types and fixed purposes; P2 real normalized publication/Contracts/parents/policies; P3 same genuine producer and independent receiver capture mechanisms |
+| 2 / P4-P7 actual producers/Aitia/custody | Actual evidence/use, full Q/R and independent context/content, complete history/grants/action acceptance/current use. Shared Host factoring and producer association must be qualified, not public flags |
+| 3 / Library/Profile/Scenario/Aitia | Required delivery/receiver roles/purpose/closure/applicability demand and pure owned phase constructors; thin future delivery adapter consumes checked Scope/real products, with no Config transport authority |
+| 4 / Actual custody/channel + P7 | Final payload/access retention and exact manifest, real scoped distribution acceptance/current use and qualified bounded transport/arrival/ack/retry. Preserve all omissions/unknown effects |
+| 5 / Receiver trust/Host/Core owners | Inert intake, actual roots/status/provenance/inventory/content/compatibility, explicitly authorized provisioning and real local checked publication; no imported private seals |
+| 6 / Receiver Profile/Scenario/P4-P7 | Actual C1 and independent domain duties, qualified reuse or new observations, Q1/R1/history, accepted adoption/current use and real operation authorization; causal impact/repair/withdrawal follow actual owners |
+| 7 / P9 and research owners | Source/compiled/cold/recovery/receiver-action/causal-change lanes under fixed budgets; independent expected outcomes and separate matched research comparison |
+
+Future artifacts are exact manifest/typed closure, prior decision refs and current
+distribution inclusion/use, actual transfer/ack/omissions, local verification axes,
+receiver C1/Q1/R1/H, accepted adoption/operation use and withdrawal/causal-impact/
+recovery findings. Org/D2 display these contracts; neither issues an artifact,
+authority or version. No transport or real recipient has been selected by this design.
+Actual grants, access/retention/channel guarantees, portable assertion trust routes,
+source-to-compiled provenance, receiver domain knowledge and executable lane mapping
+remain open. Fixed historical recovery failures and missing empirical data stay open.
+
+* SPECIFIED Prospective matched positive and negative controls
+:PROPERTIES:
+:CUSTOM_ID: p8-acceptance-controls
+:END:
+
+DL01-DL44 refine DX01-DX44 with EF/LP/BC/EV/PV/AR/AU/PM. They are design obligations,
+not executed tests or actual deliveries. Future executable rows identify real owner/
+operation/expected Contract, controlled input difference, independent expected finding/
+absence of effect, exact source/load/clock/custody cut and retained unknown/failure.
+A truthful missing-item inventory or verified refutation is a positive verification
+control; it is not positive adequacy, adoption or permission.
+
+| Control | Positive / matched negative and required outcome |
+|---------+---------------------------------------------------|
+| DL01 | Actual normalized checked publication/Contracts/parents/policies recognized; serialized Scope or copied declaration generation cannot establish origin |
+| DL02 | Exact producer C0/Q0/R0/prior authority/publication agree; swapped dirty revision/policy/parent or mixed basis refuses |
+| DL03 | Owned normalized phase records/Function returns retained coherently; discarded returns or public phase tag promotes no authority |
+| DL04 | Independent policy/purpose and receiver product demand retained; offered subset or removed D01-D10 role cannot define completeness |
+| DL05 | Exact whole-file bytes and unique section/element resolve; duplicate heading/anchor or same title with changed bytes leaves gap |
+| DL06 | All typed required references close at qualified retained access; checksum-only subset/producer-local .data/denied mandatory target remains incomplete |
+| DL07 | Qualified base/relocation/path/symlink/origin association preserved; substituted or escaping target refuses affected content |
+| DL08 | Bounded inert intake/Org/archive parsing succeeds; Babel/Scheme/import/build/link-fetch or traversal exhaustion cannot execute or qualify |
+| DL09 | Final payload and recipient/purpose precede manifest identity; future distribution/ack/adoption in self-input hash refuses |
+| DL10 | Changed subset/redaction/purpose has new manifest/authorization; altered package under old identity or inherited redistribution scope refuses |
+| DL11 | Actual accepted current distribution binds final manifest/receiver/purpose; review approval/test signer/public approved flag alone cannot send |
+| DL12 | Genuine bounded diagnostic transfer retains draft omissions; incomplete draft relabeled approved Library/use refuses |
+| DL13 | Actual channel/destination/receiving owner/project binds transfer; display-name match/redirect/wrong project cannot claim expected arrival |
+| DL14 | Receiver authenticates exact observed arrival/access omissions; sender success/lost ack/partial arrival cannot fabricate complete acknowledgement |
+| DL15 | Actual retry reconciles original occurrence/current target; ambiguous completion repeated blindly or duplicate adoption/effect refuses |
+| DL16 | Receiver-adopted actual roots/status/issuer verify provenance; manifest-provided root/same-name issuer cannot authenticate itself |
+| DL17 | Exact delivery inventory/provenance typed purpose pairs admitted; unsupported purpose/hidden semantic field/wrong-purpose receipt refuses |
+| DL18 | Truthful missing-item inventory or refutation provenance verifies; inventory/provenance receipt used as adequacy/positive effect refuses |
+| DL19 | Same-owner private association or qualified new local assertion recognized; JSON/signature/ID cannot recreate original W/Q/Scope/Core receipt authority |
+| DL20 | Actual source-build-artifact-load route or qualified local rebuild closes provenance; source hash/unrelated binary/pin/finite ABI check alone cannot qualify compiled use |
+| DL21 | Prior real host mandate explicitly authorizes provisioning; inert parse or future adoption cannot authorize install/build/load |
+| DL22 | Own acquired repo/dirty products/mandate/publication forms C1; producer C0 or future adoption output substitutes no receiver capture |
+| DL23 | Receiver independently derives network/resource/domain duties; backpressure Library import alone cannot fill distributed/GC/network gaps |
+| DL24 | Exact original evidence/claim/footprint with real fresh receiver use qualifies; same model/generation/hash or replayed producer U cannot support target claim |
+| DL25 | Rust/QNT/Lean/SysML/content/causal polarity and strengths preserved; M06 control/Lean negation/tool completion cannot become positive ownership |
+| DL26 | Own full determinate Q1/R1 and current review axes/history bind; producer Q0/R0/favorable subset cannot fill receiver roles/gaps |
+| DL27 | Actual receiver grant/action/target/acceptance authorizes adoption; Profile/import/arrival/Agent appointment/provider decision cannot adopt |
+| DL28 | Current own use binds exact principal/operation/purpose/target/inputs; adoption alone or substituted command cannot authorize unrelated effect |
+| DL29 | Fresh Host clock/lease/source/history/status gate use; fixed-instant old admission/backdating/expired interval/rollback refuses |
+| DL30 | Typed exact owner/effective withdrawal affects scoped operations; local revoke/deleted file/advisory notification is no global recall |
+| DL31 | Withdrawn distribution stops affected sends while retaining arrival; retroactive deletion or implicit permanent receiver permission refuses |
+| DL32 | Accepted denials/veto/counters remain with actual unresolved scope; favorable result/new policy/dropped intake cannot erase them |
+| DL33 | Actually adopted bounded offline policy allows exact stale operations; unknown grace/expired bound or known invalidity under grace refuses |
+| DL34 | Actual accepted adoption/arrival persists through export failure; invented rollback/ack or JSON restoration of private seal refuses |
+| DL35 | Exact valid read assertion may repeat with fresh checks; wrong receiver/project/purpose/target or effect replay refuses |
+| DL36 | Formal/model reuse checks exact premises without empirical promotion; source checksum/architecture arrow cannot establish empirical effect |
+| DL37 | Actual intervention/outcome/domain/design/identification comparison supports transfer; same identity/label/metadata resemblance cannot prove transportability |
+| DL38 | Known changed identification premise blocks affected causal use; zero effect/invented opposite W or unrelated formal invalidation refuses |
+| DL39 | Missing receiver measurement/check remains unsupported with required unit; no-data treated as violation/positive applicability/waiver refuses |
+| DL40 | Comparable contrary finding/uncertainty condition retained; favorable-only causal summary or invented interval refuses continued authority |
+| DL41 | Qualified impact maps producer claim to receiver U/K/Q/R/adoption/use; incomplete cone requires conservative recheck, not missed dependency/selectivity claim |
+| DL42 | Actual premise repair + current review/history/required resolution may restore exact use; recovered assumption/exception cannot cancel denial or revive revoked seal |
+| DL43 | Actual policy technical block and authorized decision withdrawal remain distinct; event label/Agent trigger cannot grant experiment/withdrawal/adoption authority |
+| DL44 | Matched full/selective/manual research follows sound receiver/current-use controls; paper label/unmeasured cost/local finite tests/widened limits cannot prove improvement or full cross-host qualification |
+
+Keep original source/compiled/cold/recovery/recipient lanes and independent expected
+closure/denial/impact oracles from 10.53/10.63. Retain 2 GiB per Gerbil process,
+180s build/recovery plus 5s termination grace, 120s focused test, 600s integration
+and current 45s method-command limits. Aggregate concurrency needs explicit memory
+budget. No widened watchdog, unchanged failed-route retry, historical total or finite
+ABI/doc/model-only result closes receiver, cross-host or actual effect qualification.
+
+Original 10.34 dossier/catalog and all historical receipts remain unchanged. This
+chapter executes no acceptance, method/verification, provisioning, review submission,
+notification, withdrawal or delivery. [[file:10.63-case-joint-acceptance-plan.org][P9 joint qualification]]
+consumes exact phase origins and explicit pending/negative/causal/recovery boundaries.
+
+* SPECIFIED P8 recipient applicability and effect qualification
+:PROPERTIES:
+:CUSTOM_ID: p9-follow-up-73
+:END:
+
+[[file:10.74-case-joint-acceptance-and-research-plan.org::#p9-correctness-and-research][10.74 P9 consolidation]] defines this boundary.
+Future G7/JT controls use actual receiver-owned trust/publication/capture/adoption/use and qualified causal impact across original and local origins. Check-at-use is no atomic effect guarantee; actual Runtime/custody scope and research superiority need separate evidence.
+
+* SPECIFIED Receiver assertions and causal applicability closure
+:PROPERTIES:
+:CUSTOM_ID: consistency-audit-75-73
+:END:
+
+[[file:10.75-contract-consistency-and-refactoring-order.org::#audit-handoff-ledger][10.75 P1-P9 consistency audit]] defines this refinement.
+Incoming C0/Q0/R0/portable assertions remain producer basis. Receiver local verification and prior authorized provisioning yield own C1/Q1/R1 and required domain duties, adoption/exact use; no restored private W/Scope/Q/receipt or metadata-only causal transfer. Offline policy cannot override known invalidity.
+
+* SPECIFIED Receiver publication source and normalization
+:PROPERTIES:
+:CUSTOM_ID: p0-76-follow-up-73
+:END:
+
+[[file:10.76-dependency-build-load-and-normalized-handoff.org::#p0-build-load-plan][10.76 unified P0]] defines this boundary.
+Receiver needs its own authorized actual source/build/load route and normalized Scope/Functions. Producer pins, serialized Scope or future adoption cannot qualify receiver bootstrap or current private authority; source-only inspection remains distinct from compiled use.
+
+* SPECIFIED P1 phase and receiver origin refinement
+:PROPERTIES:
+:CUSTOM_ID: p1-77-follow-up-73
+:END:
+
+[[file:10.77-effective-types-contracts-and-origin-lifetime.org::#p1-fields-and-generation][10.77 unified P1]] defines this boundary.
+Payload/transport/verification/adoption/use expected Types retain full original and receiver lineage, exact recipient/purpose/access/causal limits. Foreign assertion yields new local verification origin, no private receipt import; future adoption/receipt never becomes prior C/manifest self-input.

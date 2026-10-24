@@ -1,0 +1,39 @@
+# org-target: docs/10-19-design/10-architecture/10.28-network-service-agent-design-walkthrough.org::#network-walkthrough-stages
+# render-layout: elk; theme: 0; pad: 24; timeout: 30
+direction: down
+label: "Network repo design walkthrough\nProposed workflow; no model execution or approval"
+intent: "1. Repo intent and policy\nD01 requirements / scope / unknowns"
+selection: "2-3. Scheme / native POO-Core\nLibrary + independent Profile + Scenario\nD02 composition; D03 investigation"
+architecture: "4. Architecture first\nSysML subjects, interfaces and ownership\nD04 model; D05 Org decisions + D2"
+duties: "5. Existing ASCENT owner\nExplicit facts and rules derive duties\nD06 traceability; new adapters remain proposed"
+capture: "6. Scenario capture\nActual source, model, mapping, tools and budgets\nD03 capture; D07 inventory"
+investigation: {
+  label: "7. Selected investigations / D07-D08"
+  structural: "OpenSysML\nSupported structure / assertions"
+  temporal: "QNT\nFinite transitions and invariants"
+  native: "Native + independent oracle\nActual behavior / correspondence"
+  repair: "Counterexample and repair\nRetain unsafe alternative and raw results"
+  temporal -> repair: counter or missing coverage
+  native -> repair: mismatch
+}
+evidence: "8. Existing ASCENT owner\nIssued results + current applicability\nD06 ledger; D09 evidence explanation"
+review: "9. Existing Aitia owners\nExact content / policy / unresolved duties\nD10 dossier; actual review required"
+recapture: "Repair branch\nReturn to architecture (4), then new capture (6)"
+next: "10. Maintain next revision\nRevisit requirements and affected stages\nPreserve prior results and review"
+intent -> selection
+selection -> architecture
+architecture -> duties
+duties -> capture: required input roles
+capture -> investigation.structural
+capture -> investigation.temporal
+capture -> investigation.native
+investigation.structural -> evidence: scoped issued result
+investigation.temporal -> evidence: scoped issued result
+investigation.native -> evidence: scoped issued result
+investigation.repair -> recapture: revise and recapture {
+  style.stroke-dash: 4
+}
+evidence -> review: current evidence and gaps
+review -> next: changed content / premises {
+  style.stroke-dash: 4
+}

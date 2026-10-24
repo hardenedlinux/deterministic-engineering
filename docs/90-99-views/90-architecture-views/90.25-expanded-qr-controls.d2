@@ -1,0 +1,21 @@
+# org-target: docs/20-29-cases/20-gateway/20.08-qr-identity-and-reuse-controls.org::#expanded-qr-controls
+# Review control families; colors do not indicate executed passes or native enforcement.
+grid-columns: 4
+grid-gap: 22
+classes: {
+  identity: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; border-radius: 10; font-size: 16}}
+  binding: {style: {fill: "#E6F5F3"; stroke: "#19756C"; border-radius: 10; font-size: 16}}
+  boundary: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; border-radius: 10; font-size: 16}}
+}
+QR01: "QR01: Immutable usage / cut identity\nInput: Changed tuple or self-dependent CutSpec\nGold: Refuse association / cyclic setup; retain original\nBQ01 / BQ02 / BQ04" {class: identity}
+QR02: "QR02: Native content binding\nInput: sL:dOther or missing required host map\nGold: RJ05 attempted projection; unprojected work pending\nBQ02 / BQ03 / BQ04" {class: binding}
+QR03: "QR03: T-use and shared native identity\nInput: Same N_L / TL, different owner / use cut\nGold: Stale use RJ10; native equality is permitted\nBQ03 / BQ04 / BQ06 / BQ08" {class: binding}
+QR04: "QR04: Gold and review closure\nInput: Wrong I / G / output, or back-reference cycle\nGold: Setup discrepancy; no manufactured comparison\nBQ02 / BQ05" {class: identity}
+QR05: "QR05: Absence / unknown / broken input\nInput: AppCap absent versus required RL missing\nGold: Pending method / binding versus setup defect\nBQ02 / BQ04 / BQ05" {class: boundary}
+QR06: "QR06: Late-prefix substitution\nInput: New intake inserted into old Pfx0\nGold: Frozen snapshot unchanged; new history allowed\nBQ02 / BQ03 / BQ05 / BQ08" {class: identity}
+QR07: "QR07: Old / late target promotion\nInput: S0 / C1 result offered for a new target\nGold: RJ03 direct application; retain old record\nBQ03 / BQ04 / BQ07" {class: boundary}
+QR08: "QR08: Invalidation output erasure\nInput: Valid H0 then RL lost or EL overwritten\nGold: Gold disagreement; old bodies must survive\nBQ02 / BQ06" {class: binding}
+QR09: "QR09: Law verifier trust changes\nInput: Same dL, issuer revoked or trust unknown\nGold: Withdraw known stale use / pending trust\nBQ04 / BQ06 / BQ07" {class: boundary}
+QR10: "QR10: Ground loss / unknown footprint\nInput: Active base removed; graph cycle remains\nGold: RJ09 proof attempt / conservative pending impact\nBQ04 / BQ06 / BQ07" {class: binding}
+QR11: "QR11: Owned shown history\nInput: Forged checksum or actual shared L0 content\nGold: Host RJ11; honest raw reuse is not admission\nBQ03 / BQ06 / BQ08" {class: boundary}
+QR12: "QR12: Stale result / effect promotion\nInput: Changed required revision or plan-only effect\nGold: RJ10 present use / RJ12 scope promotion\nBQ01 / BQ05 / BQ06 / BQ07" {class: boundary}

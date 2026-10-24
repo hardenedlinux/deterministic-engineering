@@ -1,0 +1,230 @@
+#+TITLE: 10.36 Version, Revision and Namespace Audit
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.36
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+TODO: AUDITED PLANNED | QUALIFIED
+#+FILETAGS: :design:audit:library:profile:scenario:version:evidence:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.26-backpressure-public-contracts.org::#contract-version-source][Native ownership/read design]] | [[file:10.33-case-actual-and-target-architecture.org][Actual/target architecture]] | [[file:10.35-content-validation-slice.org][C5 validation design]]
+
+* AUDITED Scope and decision boundary
+:PROPERTIES:
+:CUSTOM_ID: native-version-usage-audit
+:RECORDED_ON: 2026-10-20
+:STATUS: Read-only source audit and adjustment design; no implementation or review submission
+:END:
+
+This audit compares the existing backpressure Library, gateway/resource Profiles,
+Scenarios, method observations and local Aitia consumer against 10.26. The source
+baseline is HEAD =8044732d505f84e373119a70f947df00e1767300= plus the active dirty
+checkout. HEAD alone does not identify these inputs. Source links below locate
+the inspected definitions; they are not immutable evidence references.
+
+The public contract generation requested for this work remains V1. The proposed
+native Library slot is absent, so there is no qualified native version read.
+This document does not declare its value, introduce a registry or change package
+versions. Findings concern ownership and use, not a blanket renaming of strings
+containing digits. No runtime, QNT, Lean, ASCENT or Aitia check is executed here.
+
+Inspected surfaces are native declarations/Contracts, selection and exports,
+Scenario capture, digest construction, observation/registration, review packets,
+reassessment and archive readers/writers. Relevant test sources are inspected as
+future regression controls, not reported as passing. Upstream internals are
+sampled only where needed to establish the existing POO/Core ownership boundary.
+
+* AUDITED Distinct meanings and rightful owners
+:PROPERTIES:
+:CUSTOM_ID: version-meaning-and-owners
+:END:
+
+| Meaning | Native owner / reader | Required interpretation |
+|---------+-----------------------+-------------------------|
+| Public Library contract generation | Owning Library declaration; consumer reads the selected admitted export | Proposed contract-version metadata; not yet present; Profile cannot override it |
+| Model/specialization semantic revision | Library definition of that model, extension or mapping | Identifies engineering meaning; no ordering or compatibility is inferred from its suffix |
+| Selected project revision | Project occurrence selected by a Profile and bound by Scenario/review | Revision of the reviewed subject; independent of the reusable Library contract generation |
+| Wire schema or digest-domain tag | Producer/reader or algorithm that owns the representation | Selects decoding/validation or hash interpretation; not a package namespace or Library release |
+| POO object-revision / Core source generation | Native POO/Core state and admission mechanisms | Invalidation/currentness identity; not a user-maintained revision counter |
+| Package, dependency and executable version | Native package manifest, Cargo metadata/lock and tool observations | Identifies dependency/tool inputs; a displayed version is insufficient without its applicable source/binary/configuration closure |
+| Content digest and receipt identity | Captured bytes and issuing evidence/review owner | Equality binds the actual content/occurrence; matching contract labels do not authorize receipt reuse |
+| Namespace / Module / semantic identity | Existing package/import declarations and native identity fields | Stable routing and subject identity; place contract generation in native metadata, not in new paths or suffixed identities |
+
+A selected project revision is a legitimate independent Profile parameter. It
+must not be replaced by the Library contract generation. Conversely a Profile's
+identity must not act as the authority for reusable policy meaning. Public policy
+identity, project revision, Profile identity and evidence encoding are separate
+responsibilities even when today's fixture places them in one object.
+
+The framework boundary is already explicit: [[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-poo/object.ss][POO object-revision]] tracks native
+state; [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/module-system/source/publication.ss][Core publication validation/currentness]] checks its own native descriptors;
+[[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/module-system/authoring/admission.ss][Core authoring admission]] keeps stable diagnostic kinds separate from source
+revisions. Keep these mechanisms. Domain contract metadata is a Library concern,
+not a reason to extend Core with another release registry.
+
+* AUDITED Source-by-source disposition
+:PROPERTIES:
+:CUSTOM_ID: version-audit-findings
+:END:
+
+Keep means retain the mechanism and its meaning; complete means add missing
+binding/validation using native facilities; relocate means move semantic ownership
+into an appropriate declaration. All adjustments below are proposals. The
+[[file:10.37-library-declarations-and-contract-design.org][comprehensive first-step design in 10.37]] expands the target beyond minimal edits;
+observed source facts below remain unchanged.
+
+| Finding | Inspected source and observed use | Disposition and target boundary |
+|---------+-----------------------------------+--------------------------------------------|
+| VA-01 / Library contract metadata | [[file:../../../library/concurrency/resource-control/backpressure-memory/abstract/objects.ss][BackpressureModel]] declares identity and semantic revision; [[file:../../../library/concurrency/resource-control/backpressure-memory/abstract/types.ss][backpressure-model?]] does not require revision or contract-version | Complete: retain the existing object; reference the proposed shared native declaration Contract at the revised 10.26/10.37 address and validate required metadata/role association through existing Contracts. Org is never the source |
+| VA-02 / specialization revision | [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/objects.ss][specialize-backpressure]] owns backpressure/v3 and generic-entry; [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/types.ss][entry?]] checks inherited rules/dependencies, not contract generation | Keep the distinct semantic revision and explicit parent association; complete inherited contract-metadata validation. Do not replace this revision with the public contract generation |
+| VA-03 / publication and namespaces | [[file:../../../init.ss][explicit Module selection]], [[file:../../../gerbil.pkg][root package]], [[file:../../../library/gerbil.pkg][Library package]], [[file:../../../profiles/gerbil.pkg][Profile package]], [[file:../../../scenarios/gerbil.pkg][Scenario package]], [[file:../../../library/concurrency/resource-control/backpressure-memory/abstract/interface.ss][generic interface]] and [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/interface.ss][Rust interface]] | Keep: inspected Module IDs, package/import namespaces and core.exports/requires use stable names without contract-version suffixes. No namespace or directory migration is indicated |
+| VA-04 / integration definition | [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/correspondence.ss][resource-slice-entry]] declares integration identity, backpressure-integration/v1, SI/TM rules, dependencies and case-links in a projection helper | Relocate that engineering definition to the existing Rust native object owner. Keep its semantic identity/revision and opt-in meaning; correspondence generates projections from the published definition rather than owning its duties |
+| VA-05 / independent parameter Profiles | [[file:../../../profiles/resource-lifecycle.ss][LifecycleProfile/LargerPayloadProfile]] and [[file:../../../profiles/gateway.ss][LocalProfile and variants]] | Keep independent parameters/identities. Gateway fixture/Cargo.lock-v1, fixture runtime and owners-v1 are authored fixture labels, not measured source closure or contract metadata. Native-method placeholders remain requests to capture, not actual digests |
+| VA-06 / fixture basis labels | [[file:../../../scenarios/gateway-review/func.ss][gateway-scope-rows]] uses owners-v1, sum-v1 and cache-v1 to serialize finite fixtures | Keep the bounded fixture meaning and existing fixture evidence. If reused as real model semantics, relocate the basis definition to its Library method; the Scenario should bind selected inputs. Do not promote a fixture label to a source digest or version authority |
+| VA-07 / real context snapshot | [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/methods.ss][resource-native-context/resource-context-current!]] hashes native-resource/v2, selected entry revision/rules/dependencies, Profile fields and scopes; [[file:../../../scenarios/resource-lifecycle/func.ss][ResourceLifecycle]] checks selected entry association | Keep the snapshot domain and recomputation guards. Complete the missing native owner/contract association in the same capture. The snapshot preimage does not explicitly carry contract-version or entry identity; an entry object reference is not a portable declaration/source binding |
+| VA-08 / mapping and method basis | [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/correspondence.ss][mapping output]] and [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/methods.ss][resource-integration-scopes/model-basis/arithmetic-basis]] contain single-job-observed-cuts/v1, quint-tlc/safe/v1 and lean/selected-budget/v1 | Keep method/hash-domain tags and their byte dependencies. The repeated mapping identifier should come from its native Library mapping definition, not independent literals in generator and scope builder. Do not derive every algorithm tag from the public contract version |
+| VA-09 / issued result and ASCENT use | [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/methods.ss][issue/resource-register-results!]] binds recorded bytes and private issued results; [[file:../../../modules/resource-evidence/func.ss][open-resource-review]] seeds application with usage/snapshot/entry identity and selected rules/dependencies | Keep issuance, exact footprints and existing support/counter/pending/mismatch inference. Contract-owner/generation validation is absent; add it at the native capture/projection admission boundary. Do not pretend a raw ASCENT row or a schema label authenticates that association |
+| VA-10 / review policy versus Profile | [[file:../../../scenarios/resource-lifecycle/review/profile.ss][BackpressureReviewProfile]] uses identity backpressure-coding-method/v1 while also selecting subject/revision/scope/class/target | Relocate reusable policy identity/meaning to the Library's native published review-policy declaration. Profile keeps independent selection values and references that policy. Give its own semantic identity a stable role; do not encode contract generation in that identity |
+| VA-11 / consumer literals and initial baseline | [[file:../../../scenarios/resource-lifecycle/review/func.ss][make-backpressure-review]] hardcodes the same policy token in checks/packet and accepted-owner-slice/r1 for initial review; [[file:../../../scenarios/resource-lifecycle/review/reassessment.ss][make-backpressure-reassessment]] repeats the policy check/token | Replace independent policy literals with the selected published policy reference. Move the initial project-revision pin into explicit trusted Scenario/project baseline selection; keep prior-review, same-subject/new-revision and carried-failure requirements. Do not remove the pin without an equivalent validated baseline |
+| VA-12 / review history and wire formats | [[file:../../../scenarios/resource-lifecycle/review/cross-intake.ss][review-history-wire/review-mechanical-basis/persistence]] and [[file:../../../scenarios/resource-lifecycle/review/archive.ss][archive validation]] use review-family/v1 and aitia.review-archive/v1/v2 | Keep the exact historical encodings and reader distinctions. The archive reader distinguishes sealed records from accepted-prefix records using closure/head/count checks. These are wire formats, not Namespace versions or a new Library contract release |
+| VA-13 / tools, Cargo and formal names | [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/native/Cargo.toml][Cargo.toml]], [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/native/Cargo.lock][Cargo.lock]], [[file:../../../library/concurrency/resource-control/backpressure-memory/model.qnt][BackpressureOwners]], [[file:../../../library/concurrency/resource-control/backpressure-memory/budget.lean][RustResources]] and generated [[file:../../../manifest.ss][Gerbil manifest]] | Keep package/dependency versions, executable observations, stable QNT/Lean names and native manifest generation. Cargo package version is not the Library contract version. Do not rename dependencies, schema strings or namespaces to make all textual suffixes match |
+| VA-14 / historical and negative-control IDs | [[file:../../../t/backpressure-review-test.ss][revision-bound review tests]], [[file:../../../t/backpressure-cross-intake-test.ss][approval/v1 versus approval/v2 fixtures]] and [[file:../../../t/backpressure-owner-recovery-test.ss][owner recovery fixtures]] | Keep distinct project/policy targets used to test isolation and historical behavior. Their labels do not establish current releases. Future positive public-identity assertions must follow the native declaration; historical payloads and their expected digests must stay exact |
+
+The actual Namespace finding is VA-03: no contract-version suffix is present in
+the inspected public package/Module paths. VA-10 is a version-bearing semantic
+policy identity, not a Gerbil namespace. Both distinctions matter: no package
+renaming is needed, but new public policy publication must separate identity and
+metadata. Historical producer/adapter identifiers and wire records retain their
+original bytes; do not rewrite them to simulate the target design.
+
+In particular, the existing policy token in an evidence packet may remain an
+explicit producer-owned encoding identifier. Its native policy declaration must
+reference that encoding deliberately; a wire token does not become the stable
+public policy identity or a second contract-generation source. Do not silently
+rename a signed/hash-bound token, reinterpret its decoder or create an identity
+alias registry. Any changed packet representation needs its own qualified
+producer/reader contract before use.
+
+* PLANNED One native association through the existing evidence chain
+:PROPERTIES:
+:CUSTOM_ID: version-evidence-association
+:END:
+
+The proposed flow is the existing 10.26 path: native Library declaration ->
+Config/core.exports -> admitted required scope -> Scenario capture -> issued
+method results and ASCENT projection -> local Aitia request -> Org/D2 explanation.
+
+The capture must associate the owning Library declaration/source identity,
+selected entry identity and semantic revision, observed contract metadata,
+validated Profile selection, project subject/revision/scope where applicable,
+and actual method/content closure. These are logical responsibilities, not a
+new Scheme record, registry or serialized schema. Reuse the native objects,
+existing Context Contracts and producer-owned evidence references.
+
+There are two current paths: ResourceLifecycle checks its Context and selected
+entry; the integration projection is opt-in; GatewayReview still permits a
+caller-supplied snapshot/source/scopes for its fixture route. They must not be
+described as one already completed capture. Retain the fixture route's bounds;
+qualify the real native association for the selected production-facing route.
+
+The current project ASCENT program compares required input keys/digests and
+checked witnesses. It does not contain a Library contract-version relation.
+Validate the association before projecting selected catalog rows; do not add a
+second version resolver or assume Core publication admission already checks the
+missing domain metadata. Only add an obligation input when its declared semantic
+footprint needs it: appending a version key to every witness would conflict with
+existing extra-input rejection and unnecessarily invalidate unrelated results.
+
+Reuse remains governed by applicability and actual input identity. The same
+contract generation cannot justify reusing a receipt for changed bytes. A changed
+project revision does not erase a counter; any permitted content reuse still
+requires fresh revision-bound review verification. Different owners or contracts
+cannot be treated as equivalent by comparing their version strings. No implicit
+compatibility range or lexical ordering of revision labels is introduced.
+
+The local Aitia adapter consumes the exact selected occurrence and policy
+association. Native Aitia project/rebase/disposition authority remains external
+to this Library; a local class-a fixture is not institutional classification or
+approval. Protocol decoding and cryptographic/history checks remain with their
+existing producers/readers. Moving reusable policy meaning does not move those
+trust boundaries into a Profile or an ASCENT fact.
+
+* PLANNED Refactoring dependency order and acceptance gates
+:PROPERTIES:
+:CUSTOM_ID: version-adjustment-order
+:END:
+
+The steps refine DE-T01/T02/T03/T05 in 10.33 and the C5 slice in 10.35. They are
+future implementation gates, not completed refactors or version increments.
+The user has removed the smallest-diff constraint. [[file:10.37-library-declarations-and-contract-design.org::#declaration-contract-architecture][10.37 now specifies the full
+native Contract architecture]], replacing the flat model version-slot proposal
+with a shared Library declaration Contract and distinct role Contracts. Engineering
+parent relations and composed review policy remain separate. The order below is
+a dependency sequence, not a restriction on refactoring scope.
+[[file:10.38-profile-selection-scenario-capture-and-evidence-use.org][10.38 expands Select/Capture and evidence/review use]] into the full target
+architecture: request versus bound selection, one captured basis, method-specific
+applicability and identified query/review outputs. No new implementation is implied.
+[[file:10.39-method-execution-evidence-issuance-and-ascent-projection.org][10.39 expands methods, issuance and projection]], including the distinction between
+declared footprints and the broader actual implementation/validation closure, and
+application-scoped expected inputs. These refinements require future refactoring,
+not a change to the native generation or historical schema labels.
+
+| Order / owner | Target responsibility and finding coverage | Acceptance required before advancing |
+|---------------+----------------------------------------+--------------------------------------|
+| Declare / Library | VA-01/02/04/08/10: native shared declaration Contract owns generation; separate role Contracts reference it; abstract/Rust objects own semantic definitions, mapping/delta and composed review policy; refactor existing scope Contracts as specified in 10.37 | One native source for each public contract/policy declaration; valid selected entry exposes it through current exports. Missing/malformed metadata, unauthorized inherited override or a foreign owner association is rejected. Rust/integration semantic revisions retain their own meaning; no directory/namespace migration |
+| Select / Profile and Scenario | VA-05/06/10/11: keep independent Profile values; select published policy and Library; make the initial project baseline an explicit trusted occurrence selection | Profile cannot mint Library metadata or satisfy policy selection by copying an identity string. A selected project revision is validated as a project revision, not forced equal to contract generation. Wrong initial pin or missing required prior review blocks use; fixtures stay visibly fixtures |
+| Capture / Scenario and native methods | VA-07/08/09: add the admitted native association to the same actual input capture and currentness checks; generator/scope read the same mapping definition | Swapping Library owner/entry, changing contract metadata, semantic definition, Profile, mapping or relevant bytes invalidates the affected binding. Replacing an entry by another with equal-looking labels cannot authenticate it. All supported capture routes enforce this association; old snapshots are historical |
+| Project and verify / evidence adapters | VA-09/11/12: consume the same association in result admission, selected catalog projection and exact Aitia request/policy binding | Reject raw/forged/foreign bindings before admitted support; preserve missing/extra/mismatch rules. A changed project revision needs the appropriate fresh receipt and retains unresolved counters. Same version does not admit changed bytes; historical schemas retain their original validated interpretation |
+| Display and qualify / Org, D2 and maintainers | VA-03/12/13/14: project observed native metadata/provenance and keep historical references; run focused controls after implementation | Editing a view or Org property cannot alter the native value or create support. Missing native metadata stays unavailable. Namespaces/imports stay stable. Existing source-bound tests and the new association controls pass on the actual changed baseline before any broader qualification claim |
+
+The first two steps establish owners and trusted selection; the third establishes
+what was actually used; the fourth checks that association at use; the last
+renders and qualifies it. Refactoring must follow the semantic boundaries in 10.37. No manager,
+compatibility facade or automatic version increment is needed. Consolidate only duplicated
+meaning owned by the same native declaration; do not centralize every private
+wire tag, executable version or project revision into a global constant.
+
+** Focused future controls
+
+| Control | Required distinction / expected refusal |
+|---------+------------------------------------------|
+| Missing or overridden native version | An absent slot, malformed value or unauthorized specialization override cannot create a qualified binding; Org defaults cannot repair it |
+| Same label, foreign owner | Equal contract/revision labels from another Library or entry are not the selected admitted declaration |
+| Meaning changed, labels unchanged | Changed rules, mapping or source bytes require affected checks/recapture; unchanged labels do not preserve currentness |
+| Project revision changed | Preserve carried counters and prior-review requirements; an old receipt cannot answer a fresh revision-bound request |
+| Initial baseline mismatch | An arbitrary Profile revision cannot bypass the explicit trusted initial selection after removing a consumer literal |
+| Policy or Profile impersonation | Copying a policy identity/contract label into a Profile or packet cannot replace the selected native association |
+| Footprint controls | Wrong, missing or extra declared inputs still yield mismatch/non-applicability; no unrelated global version input is injected |
+| Historical schema and packet replay | Preserve each reader's sealed/prefix/head/signature checks; replacing a schema token or relabeling an old packet does not upgrade evidence or authority |
+| View-only alteration | Changing an Org property/D2 label cannot change the native value, admit a witness or issue a review receipt |
+
+Useful existing source controls include [[file:../../../t/library-selection-test.ss][Library selection]],
+[[file:../../../t/library-owner-test.ss][owner boundaries]], [[file:../../../t/resource-lifecycle-test.ss][native lifecycle]],
+[[file:../../../t/resource-integration-test.ss][integration]], [[file:../../../t/backpressure-review-test.ss][review revision/counter checks]],
+[[file:../../../t/backpressure-cross-intake-test.ss][policy target isolation]], [[file:../../../t/backpressure-owner-recovery-test.ss][archive recovery]] and
+[[file:../../../t/package-metadata-test.ss][native package metadata]]. This is a future selection of checks; no execution
+or native acceptance is claimed by listing them.
+
+* AUDITED Documentation and evidence boundary
+:PROPERTIES:
+:CUSTOM_ID: version-audit-documentation-boundary
+:END:
+
+This document and the updated 90.99 view are explanatory design products. They
+are not added retrospectively to the C4 byte catalog or an earlier review packet.
+The catalog in [[file:10.34-case-design-review-dossier-draft.org][10.34]] stays unchanged; [[file:10.35-content-validation-slice.org::#slice-input-freshness][10.35 records its current static drift]].
+The workspace changed during documentation checks in [[file:../../../scenarios/resource-lifecycle/review/reassessment.ss][reassessment.ss]],
+[[file:../../../t/backpressure-cross-intake-test.ss][cross-intake tests]], [[file:../../../t/backpressure-owner-handover-test.ss][handover tests]] and
+[[file:../../../t/backpressure-owner-recovery-test.ss][recovery tests]]. This documentation task did not edit those files. The
+policy/project-revision uses relevant to this audit were rechecked; the findings
+above still apply. There is no claim of a frozen source baseline or a clean
+checkout. Future executable qualification must bind the then-current bytes.
+
+A future candidate inventory must explicitly include this audit/view if required
+by its Profile, with actual bytes and dependencies. There is no native capture,
+ASCENT query result, new evidence witness or Aitia submission in this change.
+
+#+CAPTION: Native ownership/read path, audited responsibility gaps and future adjustment order.
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.svg]]
+
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][Editable D2 source]]. Dashed edges describe future integration.

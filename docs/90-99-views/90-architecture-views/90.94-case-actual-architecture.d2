@@ -1,0 +1,55 @@
+# org-target: docs/10-19-design/10-architecture/10.33-case-actual-and-target-architecture.org::#case-actual-elements
+# render-layout: elk; theme: 0; pad: 24; timeout: 30
+direction: down
+e01: "DE-E01\ninit.ss selection/build"
+e02: "DE-E02\nGeneric backpressure"
+e03: "DE-E03\nRustResources"
+e04: "DE-E04\nResourceEvidence"
+e05: "DE-E05\nGatewayReview fixture"
+e06: "DE-E06\nResourceLifecycle context"
+e07: "DE-E07\nIndependent Profiles"
+e08: "DE-E08\nMethod observers / private issuer"
+e09: "DE-E09\nOracle / mapping / facets"
+e10: "DE-E10\nIntegration driver / split capture"
+e11: "DE-E11\nLocal review consumer"
+e12: "DE-E12\nRust / QNT / Lean inputs"
+e13: "DE-E13 / I11\nAuthored Org + D2/SVG\nNo automatic fact ingestion"
+external: {
+  label: "External owners / assumptions A01-A08 in Org"
+  x01: "DE-X01\nPOO"
+  x02: "DE-X02\nCore"
+  x03: "DE-X03\nASCENT"
+  x04: "DE-X04\nAitia"
+  x05: "DE-X05\nTools/runtime"
+  x06: "DE-X06\nFilesystem/custody"
+}
+e01 -> e02: I01
+e01 -> e03: I01
+e01 -> e04: I01
+e01 -> e05: I01
+e01 -> e06: I01
+e03 -> e02: I02 requires Parent
+e05 -> e03: I03 Domain
+e05 -> e04: I03 Evidence
+e06 -> e03: I04 Domain
+e06 -> e04: I04 Evidence
+e07 -> e05: value
+e07 -> e06: value
+e07 -> e10: value
+e03 -> e08: I05 publishes
+e06 -> e08: I04
+e10 -> e08: I09 invokes
+e10 -> e04: I09 direct open-review
+e08 -> e09: I07 checks/maps
+e08 -> e12: I07 reads/runs
+e08 -> e04: I08 registers
+e03 -> external.x01: value protocol
+e01 -> external.x02: selection/build
+e08 -> external.x02: I06 ProcessScript
+e08 -> external.x05: I06 argv/results
+e04 -> external.x03: evidence/session
+e08 -> external.x03: I08 clue exchange
+e11 -> external.x04: I10 existing review
+e11 -> external.x02: I10 verification
+e08 -> external.x06: I12 capture/check
+e11 -> external.x06: I12 content/custody

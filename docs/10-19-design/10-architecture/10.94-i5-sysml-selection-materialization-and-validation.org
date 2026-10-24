@@ -1,0 +1,405 @@
+#+TITLE: 10.94 I5 SysML Selection, Materialization and Validation
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.94
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+FILETAGS: :design:sysml:models:validation:closure:publication:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.88-declarative-slice-consistency-and-order.org::#coherence-order][10.88 I5/I6]] | [[file:10.86-a4-sysml-selection-and-materialization.org][A4 design]] | [[file:10.89-i0-source-cohort-dependencies-and-load-boundaries.org][I0]] | [[file:10.90-i1-normalized-context-and-scope-handoffs.org][I1]] | [[file:10.91-i2-library-module-declarations-and-publication.org][I2]] | [[file:10.92-i3-project-profile-scenario-and-capture.org][I3]] | [[file:10.93-i4-application-projection-and-accepted-inference-view.org][I4]] | [[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][D2]]
+
+* Scope, verdicts and design-only boundary
+:PROPERTIES:
+:CUSTOM_ID: i5-scope
+:END:
+
+I5 consumes the actual same C and I4 accepted inference view, selects a supported
+candidate/plan/catalog/mapping, materializes an exact bounded SysML candidate bundle
+and obtains independent conformance/language/property outcomes at their actual owners.
+Candidate production and validation are separate from I6's explicit Project promotion.
+Neither a successful inference nor a syntax-valid file grants publication authority.
+
+#+begin_example
+I0 qualified source/load -> I1 normalized Scopes -> I2 actual declarations/bindings
+ -> I3 original C -> I4 actual accepted view
+ -> selected candidate/plan/catalog/mapping -> resolved element/name/reference plan
+ -> exact candidate bytes + closure -> actual independent validation outcomes
+ -> explicit I6 publication request only if its own conditions are satisfied
+#+end_example
+
+This update changes Org/D2 only. No implementation/model/package change, actual C,
+inference, model generation, validator/version command, acceptance/build/load/recovery,
+promotion or orchestration is executed. Reading files/tool bytes is source inspection,
+not a validation receipt. All proposed controls and operational calls remain planned.
+
+Keep four distinct verdicts: binding/projection completeness, actual language and
+resolution validity, selected model-property conclusions, and current eligibility
+for an explicitly permitted publication activity. Actual architecture/content/review
+and receiver obligations remain independently required. Negative and incomplete
+results are products of the process, not reasons to silently weaken its contract.
+
+* Current sources, models and tool observation
+:PROPERTIES:
+:CUSTOM_ID: i5-current
+:END:
+
+Read-only observation on 2026-10-21: clean .data/OpenSysML checkout
+188f222055755fa9deca1c1095e0727ed46f0628; adjacent ASCENT
+18751d5c513fd7ae6e768f580866b9e1fb34d2d3, Core
+1107677e53b0c3096958edc83429ddf9f1e1257e and Flow
+e20e93236ca7a04275d1293cdc9ce770401efd7f. I0--I4 prerequisites remain open; HEAD and
+these inspected files do not establish an immutable loaded cohort or real C/view.
+
+| Existing file / actual observation | Target disposition |
+|------------------------------------+--------------------|
+| [[file:../../../modules/project-formation/func.ss][render-formation-model]] | Raw rows-of result; unique structural selection, hardcoded DE-PROJECT, type-label de-duplication, ordinal edge/source names and raw qualified-reference suffix. Replace with checked request/plan/name/reference resolution and bounded pure serialization |
+| [[file:../../../modules/project-formation/types.ss][Module Types]] / objects/config/interface | Procedure-presence reason/render checks and LR metadata. I2/I4 real operation binding and complete materialization/validation Function/value Contracts replace them |
+| [[file:../../../library/project-organization/objects.ss][Organization Library]] and [[file:../../../profiles/library-formation.ss][Profile]] | Role/duty offerings and string catalog/layout selections. Publish actual semantic catalog/mapping/capability definitions, then select supported refs; strings alone are not catalogs |
+| [[file:../../../scenarios/project-formation/func.ss][Scenario]] / interface/Types | Current render accepts a raw result. Target same-C accepted-view/candidate/plan request, captured model/tool/input closure and independently expected operation |
+| [[file:../../../examples/library-formation-output.ss][Output helper]] / [[file:../../../examples/library-formation.ss][runner]] | Report written before raw model rendering; partial directory possible. Stage exact candidates and attempts with actual C/view association, never infer promotion from FORMATION-OK |
+| [[file:../../../project.sysml][project.sysml]] / [[file:10.78-case-organization.sysml][companion]] | Current generated design root plus authored actual/target/requirements/decision details. Preserve both as captured baseline inputs; neither is automatically a reusable Library catalog or new runtime proof |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/correspondence.ss][resource-trace-sysml]] / methods.ss | Bounded six-case assertions and actual instantiate/validate target calls are a separate Integration method domain; retain actual claim polarity/source ownership, not an architecture renderer shortcut |
+| OpenSysML CLI/frontends/export sources | Supported tool surfaces differ from internal Go code. Inspect parser/resolver/name/resource behavior to design qualification; do not import private Go packages into Gerbil or copy a full grammar |
+
+The existing root's nine parts and eleven dependencies, fixed IDs and empty local
+part definitions are historical design projection content. They are not the exact
+complete target inventory or evidence of implemented architecture. New rendering
+must use actual captured identities and declared local-definition meaning.
+
+The inspection shell resolved sysml to /opt/homebrew/bin/sysml, then
+/opt/homebrew/Cellar/opensysml/0.10.1/bin/sysml, 46960962 bytes, SHA-256
+8eeda728835fadd73ff6e6cf35ce86f3a2cce53849b6e4166e65a9ccd097c4e9.
+It was not executed. The path's version label and local checkout HEAD are independent
+observations; neither proves executable/source parity, actual loaded resources or
+supported flags. The recorded historical strict/no-record-cache/validate route in
+10.80 remains historical and is not rerun or promoted to I5 acceptance.
+
+** Bounded inspected source bytes
+
+These are local source observations, not executable/load parity or new revisions.
+Older dossier/model/validation receipts remain unchanged.
+
+| Source | SHA-256 |
+|--------+---------|
+| .data/OpenSysML/internal/frontend/repl/qualname.go | 7ee9acce62303ebd265348927a19c26182360a2919ba6fecace1c28d27ef2661 |
+| .data/OpenSysML/internal/translate/export/names.go | 0726e684a7a52ce8a89fbd5b14b6b8d3d67cafb19b69f161fefba67c7f1bf1dc |
+| .data/OpenSysML/cmd/sysml/usage.go | ef56915f290e41fc7ed57778027d6e76008c29e401256754b04ccaeb9107e49c |
+| .data/OpenSysML/cmd/sysml/validate_report.go | 9b6b6a2254f9e7b7c4f92890e1c93ab5204a761b24ea20d93be0b98a90bac31e |
+
+* Request, selection and exact input fields
+:PROPERTIES:
+:CUSTOM_ID: i5-selection
+:END:
+
+Use existing Library Types and modules/project-formation/types.ss for POO value/
+Function Contracts; Scenario Types compose C/request/current-use expectations.
+Expected descriptors/operations come from admitted owners, not submitted callbacks.
+Retain normalized requests, parent/definition references and Function wrappers.
+
+| Target value / owner | Required fields and association |
+|----------------------+---------------------------------|
+| Materialization request / Scenario + Module | Actual C/basis/occurrence/original origin and required current-use observation; actual accepted view/request/Program/source binding; selected policy/model/method, candidate selection, plan/catalog/mapping refs/revisions; output intent, validation profile and finite limits |
+| Selection policy / Profile | explicit-candidate or unique-structural-candidate. Explicit selection still requires eligibility; unique selection requires exactly one supported eligible candidate/plan. No first, latest or best fallback |
+| Bound plan / captured selection | Project/root identity, package/instance, candidate or explicit common-plan applicability, complete supported node/type/edge/product/duty inventory, exact catalog/mapping/asset/source refs, actual/target/historical classifications and validation obligations |
+| Resolved model plan / pure Module operation | Exact expected identity/kind/scope inventory; supported name spellings; actual intended target refs and collision/closure results; source-to-element/obligation trace and declared projection loss. No invented model facts |
+| Candidate bundle / actual producer | Exact root/support bytes or qualified immutable resource bindings, owned staging/base/relative paths, manifest and input-output trace, C/view/candidate/plan/catalog/mapping/method/source/limit association. Content digests are integrity data, not issuance |
+| Validation request / selected method | Exact candidate/closure, actual expected validator operation and profile, supported check subjects/arguments/claims, actual tool/resources/load/config/current-use association and limits. A caller cannot replace executable, renderer, expected Contract or acceptance predicate |
+| Validation attempt/outcome / actual owner | Actual invocation source/argv/cwd/env/profile/input/load identity, process/exit/log/diagnostic/completion state; independent conformance/language/property findings and separate use eligibility. A proposed command is not a result |
+| I6 handoff / Project | Exact validated candidate and current-use refs, explicit target/worktree/write set, expected prior root/support/source cut and policy/intent/mandate conditions, with permitted B -> O transition. No implicit commit/push/review/delivery |
+
+The sole Library V1 is read through admitted family/role declarations from
+LibraryDeclarationContract in organization Types. Catalog/mapping/method semantic
+revisions, model identities, tool/resource digests, Git/dirty source cut and output
+content identities remain distinct. No generated Namespace or filename gains V1/V2.
+
+Selection verifies actual I4 producer/accepted-return association, not finished=true,
+row counts, matching hash or forged view fields. Preserve all candidates, gaps,
+conflicts and invalidation in the full view. A bounded design candidate may retain
+explicit evidence gaps only under its preselected policy; it may not omit mandatory
+model inputs or silently waive broader case duties. Zero/multiple/foreign/invalidated
+selection yields refusal with alternatives retained, not a generated fallback model.
+
+** I4 relation joins consumed by I5
+
+| Actual accepted relation / fields | I5 join/check |
+|-----------------------------------+---------------|
+| model_context(candidate,plan,root-element,package,instance,catalog-ref,project,basis) | Same C/project/intent basis, actual candidate_plan and requested exact selected plan/catalog; one supported context, never serializer default |
+| layout_node(candidate,plan,role,slot,type-ref,owner,element-ref) | Exact role/definition or usage/kind/source association in captured plan/catalog; no duplicate slot/type-label merge |
+| layout_edge(candidate,plan,edge-ref,from-role,to-role,from-slot,to-slot) | Exact edge identity, direction and both role/slot endpoints; no sort-index reconstruction or cross-plan endpoint join |
+| product_node(candidate,plan,product); duty_node(candidate,plan,duty) | Selected model facets match actual plan; full independently required units and negative evidence remain visible even if not rendered as nodes |
+| required-unit/input/trace and candidate states | Required source/element/obligation/decision lineage and limitations preserved; relevant missing mandatory model-input support blocks materialization, not hidden by structural coverage |
+
+If an identity/kind/trace necessary for the selected mapping is not actually carried
+by C and the accepted view, refuse or obtain a genuinely new qualified upstream
+capture/view. Do not edit accepted rows or reacquire a catalog during rendering.
+
+* Catalog, mapping and name/identity resolution
+:PROPERTIES:
+:CUSTOM_ID: i5-names
+:END:
+
+Library owns reusable catalog/mapping meaning; Profile selects supported refinements;
+Scenario captures actual definitions/assets/project inputs; Module interprets them
+with its qualified implementation. Plan-local symbol checks are bounded domain
+algorithms, not a second model registry or full SysML parser.
+
+| Declared item or conflict | Required resolution behavior |
+|---------------------------+------------------------------|
+| Catalog identity/Contract/revision/source | Bind actual admitted element/kind/namespace/asset/dependency inventory and supported mapping/profile; DECaseOrganization label or companion filename alone cannot qualify |
+| Stable root/node/edge identity | Use captured identity or supported published identity rule over actual project/plan/role meaning. Display labels and serialization order are separate; adding an edge cannot renumber unrelated identities |
+| Local definition versus reused catalog type | Reuse only actual supported definition/meaning; local descriptive definitions need explicit declared kind/semantics/limits. A usage can be a dependency target but not silently substituted as a type definition |
+| Qualified names | Preserve typed segment lists. One quoted segment containing :: differs from two namespace segments; never validate a flat suffix then emit it raw |
+| Quotes/reserved words/Unicode/whitespace | Use supported selected language spelling and separate text encoding. Refuse unsupported spelling precisely; Unicode normalization/case/filesystem alias policy must not collapse distinct identities |
+| Duplicate scoped name/short ID/import alias | Require intended unique target under actual selected resolution semantics. Distinct identities colliding in required scope refuse; no first/last wins, guessed import or de-duplication by label |
+| Shared type label | Reuse only a proven same admitted definition under supported equivalence. Different structures/kinds/owners with equal labels remain a conflict |
+| Wildcard/shadowing | Prefer exact qualified references. Wildcard is permitted only with captured bounded namespace and demonstrable unique intended target; hidden imported candidates cannot be ignored |
+| Documentation/prose | Encode as supported text/documentation with safe delimiters, separate from names; intent strings/comments cannot inject declarations or terminate a generated comment |
+| Determinism | Identical admitted plan/view/method inputs yield identical candidate bytes under declared set/trace ordering. Invocation timestamps and staging paths remain in attempt envelopes, not semantic names |
+
+The local OpenSysML qualified-name frontend preserves quoted segment boundaries;
+export/names.go checks spellings against actual intended elements. These are
+source references to behavior that the selected actual tool/adapter must qualify,
+not exported Gerbil APIs. CLI -convert api-json and -id spelling options may be
+possible observation routes only when supported and qualified on the actual tool.
+Name-derived qualified/UUID export IDs do not automatically provide rename-stable
+Library identity; retain original declared semantic IDs and explicit trace mapping.
+
+Do not write a full parser to compensate for an unavailable observation surface.
+If the supported adapter cannot demonstrate required unique binding/kind/reference
+conformance, report that check as unestablished/incomplete, never infer it from
+exit 0 or a guessed public name. Missing source-owned catalog revisions or mapping
+semantics remain I2 prerequisites; I5 cannot repair them with empty stub definitions.
+
+* Exact candidate bundle and reference closure
+:PROPERTIES:
+:CUSTOM_ID: i5-closure
+:END:
+
+| Closure class | Required captured/staged association and check |
+|---------------+-----------------------------------------------|
+| Generated root/elements/edges | Complete selected plan inventory and exact emitted bytes, owning relative path/base, semantic ID/kind and source-to-output trace |
+| Companion/catalog/transitive model inputs | Actual selected bytes or qualified immutable resources, intended target IDs/kinds, import/alias/reference closure and original-to-staging mapping |
+| Standard library and tool resources | Exact supported loaded resource/library/ABI/profile identities and search/cache/config basis; not assumed identical to local checkout or filename version |
+| Project metadata/discovery | Actual enclosing/ancestor project metadata and installed-library roots/archive dependencies, including relevant absence/enumeration/case/symlink observations. Record only the supported actual domain, not an asserted global snapshot |
+| External source/Org/decision links | Required URI/base/section/selector/role/provenance and availability/content class. A comment's source path is an observer obligation; SysML language resolution does not verify that document's content |
+| Negative/partial inputs | Retain exact missing/inaccessible/unstable/conflicting target and selected variant. No hidden fetch/install, cwd fallback or undeclared stub to make closure appear complete |
+
+Preserve legitimate supported reference cycles with bounded visited/identity handling;
+closure is not an acyclic-tree requirement. Unknown semantic relation/kind or invalid
+encoding refuses; recognized missing content stays an explicit gap where permitted.
+All mandatory input/reference units remain independently accounted for.
+
+Finalize content manifest after exact candidate bytes/support closure and before
+validation/publication outcomes. It need not include its own digest, a future
+receipt or a result that cites it. The candidate root is output over C's captured
+baseline B, not another input appended to that same C. Staging acquires no new
+semantic inputs and must not reopen mutable originals after hashing.
+
+If the tool discovers another resource during validation, the source owner must
+prove it belongs to the already captured qualified input domain; otherwise the
+attempt is incomplete/drifted and requires appropriate new acquisition. It cannot
+extend C silently. Staging relocation must preserve declared references and document
+base semantics; output locations cannot select a different catalog or ancestor project.
+
+* Independent validation and actual execution provenance
+:PROPERTIES:
+:CUSTOM_ID: i5-validation
+:END:
+
+| Layer / actual owner | Required input and bounded conclusion |
+|-----------------------+---------------------------------------|
+| Binding / Scenario + Module | Same genuine C/current-origin and accepted view/Program/candidate/plan/catalog/mapping/method; complete mandatory model-input/closure and retained normalized values |
+| Projection conformance / selected independent checker | Actual emitted elements/kinds/IDs/endpoints/trace and required products/duties/limits match independent expected plan inventory. Serializer self-check or row count alone is insufficient |
+| Language/resolution / actual OpenSysML route | Exact staged bytes and actual complete loaded inputs parse/analyse under selected strict/diagnostic profile; all required references resolve uniquely to intended targets |
+| Model property / actual selected evaluator | Explicit instantiated subject/parameters/constraint or assertion, assumptions, claim/polarity/domain and actual supported evaluation; not implied by language diagnostics |
+| Architecture/content/review / actual observer/Aitia | Independently observed implementation/document/decision content, code correspondence, obligations and authorization; model validity cannot substitute |
+
+The target separates candidate materialization from explicit validation invocation.
+Keep render as a checked candidate-producing operation; a selected checked validate
+operation can be exported/bound through existing Module/Scenario interfaces when
+its actual implementation is available. These are target signatures, not current
+exports. Do not retain a raw rows-of render compatibility path or imply rendering
+alone executes a tool. I6 promotion remains a separate Project effect.
+
+Actual invocation uses the bound existing process/Host operation owner and selected
+validator adapter. Add only its real declared typed dependency where supported;
+no invented executor/service API or caller-selected command fills a missing binding.
+The six-case resource method remains a distinct bounded assertion/evidence path,
+not the general architecture validator.
+
+Current local CLI source distinguishes bare -validate (diagnostics) from
+-validate=<object> (assertions about that object), -instantiate and explicit
+-constraint evaluation. -strict can leave warnings; selected intended-target checks
+cannot be replaced by error count. Check actual tool/version support before assigning
+these meanings to the installed executable. No validation command is run here.
+
+The same source supports -baseline suppression, -disable-lint, enabled lint settings
+and -warnings-as-errors. A controlled diagnostic profile must record flags, exact
+baseline/filter content, suppressed counts and stopping/unsupported tiers. Required
+binding/content findings cannot be suppressed into a pass. A policy-permitted known
+finding remains explicit with its scope; suppressed output alone cannot establish
+full required findings. No baseline/waiver is invented by this update.
+
+Record executable realpath/bytes, selected source/build association if available,
+actual argv/cwd/env, adapters/libraries/resources/search roots/project metadata,
+cache/profile/limits, exact bundle digests, start/completion/exit and stdout/stderr/raw
+diagnostics. Actual loaded bytes/resources, not only intended paths, must be
+accounted for. Existing local CLI load/discovery sources show enclosing project and
+installed-library discovery, while -no-record-cache only addresses interface record
+cache. An isolated HOME/env or complete explicit file arguments do not by themselves
+prove every implicit load dependency is disabled.
+
+Execution, validation, property conclusion, negative-control outcome and current use
+stay distinct under I2 Types. A deliberate false property may be the expected
+negative control; it does not become a positive architecture verdict. Timeout, tool
+failure, truncated diagnostics, unknown completion, unsupported property or input
+drift is not accepted validation. Process exit alone does not prove every requested
+check actually ran or every subprocess terminated; qualify actual owner behavior.
+
+Check exact byte/load/input identity and required currentness before/after execution.
+Tool-created cache/report files are separate owned outputs with declared effects,
+never model inputs masquerading as immutable originals. If a required signed/admitted
+A/E/W/use result is demanded, use that actual producer's qualified protocol; no
+always-true adapter or model writer creates a validation credential.
+
+* Invalidation, reuse and candidate versus explicit publication
+:PROPERTIES:
+:CUSTOM_ID: i5-invalidation-publication
+:END:
+
+| Event/stage | Required state and boundary |
+|-------------+-----------------------------|
+| Fresh candidate staging | Owned fresh location contains exact bundle/manifest and attempts; partial report/directory is not complete candidate or root promotion. Retain failure artifacts/status truthfully |
+| Wrong/expired/unrecognized C/view or foreign plan | Refuse current trusted materialization/use, retaining actual diagnostics and historical negative alternatives. A copied accepted flag/report/hash cannot repair origin |
+| Captured plan/catalog/mapping/tool/Program/input semantics change | New qualified binding/acquisition/C/view as needed, then appropriate new materialization/validation. Do not update a revision label to revive the old outcome |
+| Same bytes with new C or request | Prior result retains original basis. Reuse only through actual target-use/complete footprint/non-impact/currentness association supported by its producer; otherwise validation remains unestablished until a real new attempt |
+| Live origin/policy/premise/check changes | Preserve original C/candidate/result history; block affected current reliance and retain counterevidence/uncertainty. Model language success does not adjudicate causal truth or authority |
+| Explicit I6 publication request | Bind exact validated bundle/outcomes/current use, selected target/worktree/write set, expected prior B/support and actual policy/intent/mandate/exclusion conditions. Candidate selection or validation never calls promotion implicitly |
+| Guarded root transition B -> O | I6 must establish actual exclusion/check-and-replace and stable supporting inputs. Observe exactly O afterward; C keeps historical B. No blanket staleness exemption, and later analysis of O uses a new C |
+| Effect interruption/postwrite failure | Inspect actual target/support state and record refused/drifted/interrupted/unknown completion. A completed file replacement is not proof of valid current use; do not claim rollback of external writes |
+| Required multi-file or Org/D2 product completion | Root-only promotion cannot claim atomic companion/Org/D2 update, complete review or delivery. Unsupported transaction/closure keeps the full activity incomplete |
+
+Core build-artifact issuance is not a generic SysML/Org/D2 publisher. Reuse actual
+source/operation mechanisms without claiming its graph receipt validates model
+bytes or atomic multi-file effects. I5 defines a reviewable validated candidate and
+I6 handoff; I6 still qualifies the actual effect primitive/crash/currentness behavior.
+Model publication is not Git commit/push, Library distribution, receiver adoption
+or a new Aitia purpose/action. No such action is performed here.
+
+Org/D2 display actual/target/historical architecture, selected obligations/decisions,
+C/view/candidate/validation/publication associations and open findings. Mandatory
+paired-document updates remain part of their selected product contract, not an
+automatic synchronizer or proof that those content obligations are satisfied.
+
+* Existing files and implementation order
+:PROPERTIES:
+:CUSTOM_ID: i5-order
+:END:
+
+| Step / existing owner | Adjustment when implementation is authorized | Required exit |
+|-----------------------+----------------------------------------------+---------------|
+| I5.1 / I0--I4 owners and Library Types | Qualify actual source/load/Scope/C/view and catalog/mapping/validator capabilities; define effective request/resolved-plan/bundle/validation Contracts in existing owner Types | Genuine expected binding/producer association and actual required inputs; missing catalog/revision/tool support stays open |
+| I5.2 / Profile and Scenario Types/func/interface | Select supported policy/candidate/plan/catalog/mapping and consume exact C/view with normalized request/current-use checks | One coherent selected plan or explicit refusal, no recapture/foreign result/raw callback/provider fallback |
+| I5.3 / modules/project-formation/func.ss | Pure selected-plan resolution, bounded symbol/identity map, names/text encoding and complete deterministic serialization using I4 role/edge refs | No case ID/type-label/ordinal semantic shortcuts or stub repair; independent plan/conformance oracle |
+| I5.4 / example output helper and actual source owners | Stage exact candidate/support inputs/manifest/trace and closure in owned base; keep partial/refused state distinct | Complete qualified immutable load/reference domain and original-to-staging association, not new ambient input discovery |
+| I5.5 / Module bound validation operation and actual executor/tool owner | Explicit independent conformance/language/property attempts, full executable/load/diagnostic/profile/limit provenance and qualified result/use handling | Actual precise outcomes with complete required checks, no false success from exit/suppression/cache or tool-path labels |
+| I5.6 / Module/Scenario/report consumers | Retain candidate/validation/current-use associations and all negative limits; construct only explicit I6 request when requested/eligible | Reviewed candidate versus effect boundary; no implicit root/companion/document write or review/authority grant |
+| I5.7 / existing t/project-formation-test.ss, entry test, output helpers and selected upstream tests | Direct caller/schema migration and independent positive/negative controls in actual qualified lanes; preserve historical model/receipts | Exact nonzero case inventory, actual completed processes/loads and truthful open gates before claiming I5 acceptance |
+
+Expected Types stay in existing library/project-organization and Module/Scenario
+Types; authored catalog/mapping in Library objects; Config selects checked supported
+values; interface binds actual implementation and source. Do not add a new directory
+family, duplicate version manager, model interpreter, symbol server or artifact issuer.
+Pure helpers remain named functions and public operations retain POO Function wrappers.
+
+* Proposed positive and negative acceptance conditions
+:PROPERTIES:
+:CUSTOM_ID: i5-controls
+:END:
+
+No controls are run here. Each requires independently expected semantics, actual
+source/tool/load identity, complete bounded exit/logs and retained failure state.
+
+| Control / existing seam | Positive requirement | Negative control / required state |
+|-------------------------+----------------------+-----------------------------------|
+| I5-C01 exact binding / Scenario and Module | Same genuine C/accepted view/Program/method/source/current use and normalized request, with all required model-input units | Raw rows-of/accepted flag, foreign C/view/plan, expired origin, stale method or missing mandatory input refuses |
+| I5-C02 candidate/plan / Profile and selection tests | Explicit candidate or exactly one eligible structural candidate resolves actual candidate_plan and context; alternatives/negative duties retained | Zero/multiple/invalidated candidate, cross-plan row or implicit best/default selection fails; selected evidence gaps cannot waive mandatory conditions |
+| I5-C03 catalog/mapping / Library Types/objects | Actual admitted revisions/definition-kind/element/role/edge mapping and supported refinement/claim loss join exact selected assets | String-only catalog, wrong kind/owner/usage-as-type, missing revision/stub, duplicate semantic mapping or target relabelled actual fails |
+| I5-C04 names and stable IDs / pure serializer | Segment-correct quoted/qualified/reserved/Unicode names, distinct safe documentation text and stable edge/source identity; identical inputs yield identical bytes | Flat :: confusion, delimiter/comment injection, scope/import/case-normalization collision, label de-dup or ordinal edge renumbering fails |
+| I5-C05 closure / source owner and checker | Complete bounded actual imports/aliases/resources/trace/source/document targets, legitimate cycles handled, owned staging relocation preserves identity | Missing/foreign/hidden dependency, symlink/base change, uncaptured metadata/library root, unsupported cycle semantics, mutable reopen or auto-fetch fails |
+| I5-C06 independent conformance / selected checker | Exact generated element/kind/root/edge/endpoint/product/duty/source inventory matches independent expected plan and actual intended resolved targets | Count-only/self-derived gold, dropped negative/obligation/edge, wrong reference target or empty type used as semantic proof fails |
+| I5-C07 actual tool/language / validator adapter | Actual executable/resources/config/load/profile and exact bundle parse/analyse; required intended targets uniquely resolve with complete diagnostics | Local checkout treated installed parity, exit-0 shortcut, old loaded catalog/stdlib, wrong cache root, suppressed mandatory finding or truncated/stopped tier fails |
+| I5-C08 property/polarity / selected evaluator | Explicit actual object/arguments/assumptions and required property results; deliberate false control retains expected refutation and raw attempt | Bare -validate claimed assertion evaluation, unknown/unexecuted property, successful harness treated positive claim or unsupported evaluator fails |
+| I5-C09 drift/reuse / method and current-use owner | Exact old basis retained, genuine supported target-use footprint/non-impact/currentness controls before reuse; unaffected and affected cases distinct | Same bytes/hash/revision reused as new receipt, changed generator/tool/policy/premise ignored or causal unknown treated true fails |
+| I5-C10 candidate/validation failures / output helper | Partial/refused/timeout/tool-failure/unknown completion artifacts retained without completed-validation or publication claim | FORMATION-OK/file existence/partial directory as success, tool-launched extra input hidden or failed attempt overwritten fails |
+| I5-C11 explicit publication boundary / I6 handoff | Exact validated candidate/O plus expected B/support and real selected policy/intent/write set/exclusion guards; outcome records actual transition | Implicit render/validate promotion, concurrent target/support edit, stale current use, fake rollback or root-only write claimed multi-file completion fails |
+| I5-C12 qualified lanes and downstream products / I0/I1 and real entry | Actual source/compiled/load/cold/restoration lanes preserve same-C semantics and exact candidate/validation provenance; mandatory Org/decision/product closure remains explicit | Old ABI/tool/source fallback, no-case/partial-marker pass, build restore claimed original C/model authority or language check substituted for Aitia/delivery fails |
+
+Existing OpenSysML source/test seams include internal/translate/export/names_identity_test.go,
+duplicate_names_test.go, cmd/sysml/api_json_load_test.go, lint_test.go and
+verification_test.go. These sources guide independent controls; their existence
+proves neither this installed tool's behavior nor a completed DE-CASE-01 acceptance.
+Existing t/project-formation-test.ss covers structural/unique/name-extension cases
+but does not already qualify the new binding/closure/actual-tool/effect contracts.
+
+Retain fixed 2 GiB and applicable 120-second focused/180-second complete-build/
+30-second static-model caps plus narrower owner limits. Expanded closure/property
+work needs actual bounded qualification; no silent timeout/heap/fact-limit increase.
+Negative-control success does not establish positive case completion or research
+advantage; preserve all failed/stale/timeout attempts.
+
+* Open gates and I6 handoff
+:PROPERTIES:
+:CUSTOM_ID: i5-open
+:END:
+
+Open: actual I0--I4 prerequisites and returned-value/currentness/producer association;
+source-authored catalog/mapping/method revisions and real assets; qualified name/
+resolved-target observation surface; complete actual tool/resource/discovery closure;
+independent conformance and explicit property validation/issuance; safe current-use
+reuse; I6 exclusion/crash and any promised multi-file publication capability.
+
+I5 hands I6 only an exact candidate, complete associated validation outcomes and
+current-use/closure/limit information, or an explicit refusal/incomplete result.
+No diagram, proposed command or public manifest closes these gates. Library V1
+remains declaration-owned; source/semantic/document/tool identities remain distinct.
+Correct binding, honest validation and effect boundaries are correctness requirements;
+better LLM architecture/review/reuse performance remains a separate research hypothesis.
+
+* I6 joint acceptance and explicit publication follow-up
+:PROPERTIES:
+:CUSTOM_ID: i5-i6-followup
+:END:
+
+[[file:10.95-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-handoffs][10.95]] unifies the same-C/accepted-view/candidate-validation joins and
+[[file:10.95-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-publication][explicit guarded publication]]; [[file:10.95-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-recovery][failure/replay/recovery]] separates build issuance,
+original C/view and actual effect provenance. Its [[file:10.95-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-current-entries][existing entry mapping]] corrects the
+historical runner filename to t/project-formation-entry-test.ss without creating an
+entry. [[file:10.95-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-controls][Joint controls]] and [[file:10.95-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-order-open][ordered exits/open gates]] are planned only;
+I7 acceptance execution remains separate. No implementation, runtime acceptance,
+model promotion, historical receipt rewrite or expanded orchestration is performed.
+
+* Integrated coherence and current-source follow-up
+:PROPERTIES:
+:CUSTOM_ID: i5-slice-audit-followup
+:END:
+
+[[file:10.96-declarative-slice-coherence-and-current-upstream-audit.org::#slice-audit-findings][10.96]] audits I0--I6 owner/contract/control correspondence and records
+[[file:10.96-declarative-slice-coherence-and-current-upstream-audit.org::#slice-audit-upstream][current upstream changes]], including generic TestingScript refinement and actual
+recipe/product ownership. [[file:10.96-declarative-slice-coherence-and-current-upstream-audit.org::#slice-audit-chronology][Same-C chronology]] captures selectable definitions before
+reasoning and keeps later validation/findings/views distinct. [[file:10.96-declarative-slice-coherence-and-current-upstream-audit.org::#slice-audit-publication][Transition-aware publication]]
+requires exact B -> O with genuine origin and unaffected support checks; no blanket
+freshness bypass. [[file:10.96-declarative-slice-coherence-and-current-upstream-audit.org::#slice-audit-order][Implementation dependencies]] and [[file:10.96-declarative-slice-coherence-and-current-upstream-audit.org::#slice-audit-controls-open][refined controls/open gates]] remain
+planned; original C/view, build and effect recovery are independent. No implementation,
+acceptance, publication or expanded orchestration is performed.
+
+* I5 unified SysML candidate and validation handoff
+:PROPERTIES:
+:CUSTOM_ID: i5-unified-handoff
+:END:
+
+[[file:10.102-i5-sysml-selection-materialization-and-validation.org::#i5-unified-selection][10.102]] unifies exact same-C/accepted-view and candidate/plan/catalog/mapping selection,
+[[file:10.102-i5-sysml-selection-materialization-and-validation.org::#i5-unified-names][identity/name resolution]], [[file:10.102-i5-sysml-selection-materialization-and-validation.org::#i5-unified-closure][owned reference closure]],
+[[file:10.102-i5-sysml-selection-materialization-and-validation.org::#i5-unified-validation][actual independent validation]] and [[file:10.102-i5-sysml-selection-materialization-and-validation.org::#i5-unified-invalidation][invalidation/explicit I6 handoff]].
+[[file:10.102-i5-sysml-selection-materialization-and-validation.org::#i5-unified-controls][Proposed controls]] retain the original scope of historical sources and receipts.
+No implementation, acceptance, model publication or expanded orchestration is performed.

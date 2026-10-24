@@ -1,0 +1,16 @@
+# org-target: docs/10-19-design/10-architecture/10.11-live-capacity-full-cleanup-and-joint-budgets.org::#full-cleanup-ownership-packet
+direction: down
+classes: {
+  input: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; border-radius: 10; font-size: 17}}
+  state: {style: {fill: "#E6F5F3"; stroke: "#19756C"; border-radius: 10; font-size: 17}}
+  gate: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; border-radius: 10; font-size: 17}}
+}
+full: "CF00 full modeled resources\nh64 cleanup / a256 active\nExact request / attempt / slot occupant identities\nOld r65 active state still retained" {class: input}
+cancel: "CF01 / CF02 cancellation at full cleanup\nCaptured capacity guard false\nNo h65 and no premature source-charge release\nKeep bounded active ownership until covered disposition\nClient timeout not remote no-effect" {class: gate}
+progress: "CF03 progress audit; main worker contract unknown\nFull state alone need not invalidate covered model proof\nCycle fork: active waits cleanup / cleanup waits active\nIf no transition enabled: modeled resource deadlock\nFairness cannot remove that cycle" {class: gate}
+free: "CF04 exact occupant c1 actually released\nh64 ->63 for covered c1 only\nOld callback cannot release later occupant r65\nLate records keep original attempt and snapshot scope" {class: input}
+transfer: "CF05 / CF06 current covered handoff\nRecheck/reserve actual availability at transfer\nh63 ->64; a256 ->255 without accounting gap\nStale free-slot observation insufficient\nNew overflow path rechecks model/source applications" {class: gate}
+reuse: "CF07 separate retained claims\nExisting full-state model may reuse under real guards\nActual retention release not operational retry authority\nOld proof/trace history retained\nCurrent ownership / progress / effect kept distinct" {class: state}
+full -> cancel -> progress
+progress -> free: "separate actual release companion"
+free -> transfer -> reuse

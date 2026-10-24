@@ -1,0 +1,24 @@
+# org-target: docs/30-39-evaluation/30-benchmarks/30.03-gateway-variant-contracts.org::#variant-completion-boundary
+direction: down
+classes: {
+  current: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; border-radius: 10; font-size: 16}}
+  conditional: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; border-radius: 10; font-size: 16}}
+  stale: {style: {fill: "#FCE8E8"; stroke: "#A23D3D"; border-radius: 10; font-size: 16}}
+}
+artifact: "Immutable evidence artifact\nOriginal inputs + producer + outcome" {class: current}
+applicability: "Current applicability\nSource, rules, claim, witness\nGrounded point + absence/scope dependencies" {class: conditional}
+current: "Scoped current support\nNo wider guarantee inferred" {class: current}
+change: "Changed dependency\nSource / policy / method / context" {class: conditional}
+withdrawn: "Affected admission withdrawn\nOld packet cannot support new target\nCompleted historical effects remain facts" {class: stale}
+history: "History retained\nFailure and counterevidence preserved" {class: current}
+transfer: "Checked transfer or new validation\nStable/frame or explicit relation\nNew target application" {class: conditional}
+open: "Open investigation\nNew question, alternative or deliberate repeat" {class: current}
+artifact -> applicability: "candidate support"
+applicability -> current: "coherent cut + required method/scope checks"
+change -> applicability: "re-evaluate affected bindings"
+applicability -> withdrawn: "changed / unknown / invalid"
+withdrawn -> history: "retain original record"
+withdrawn -> transfer: "unmet obligation, not a prescribed repair"
+transfer -> current: "new bound admission when justified"
+history -> open: "conditional knowledge remains useful"
+open -> applicability: "new evidence / new premises"

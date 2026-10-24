@@ -1,0 +1,38 @@
+# org-target: docs/10-19-design/10-architecture/10.17-domain-libraries-and-atomic-specialization.org::#domain-library-organization
+# render-layout: elk; theme: 0; pad: 24; timeout: 30
+direction: down
+classes: {
+  domain: {style.fill: "#EAF2FF"; style.stroke: "#315B8A"; style.border-radius: 10}
+  proposed: {style.fill: "#FFF2DD"; style.stroke: "#9B6C25"; style.border-radius: 10}
+  existing: {style.fill: "#E6F5F3"; style.stroke: "#19756C"; style.border-radius: 10}
+}
+status: "DOMAIN ORGANIZATION / bounded delivery\n10.22 installs the backpressure parent/Rust slice\nWider hierarchy and broadcast execution remain open" {class: proposed}
+engineering: "Software engineering" {class: domain}
+concurrency: "Concurrency Library\nDiscovery categories; not one universal model\nCategory metadata does not imply semantic inheritance" {class: domain}
+communication: "Communication Library" {class: domain}
+execution: "Execution Libraries\nAsync runtime / parallel execution / multiprocess" {class: domain}
+resources: "Resource-control Libraries\nBackpressure / memory budget / cleanup" {class: domain}
+backpressure: "Backpressure-memory parent / DELIVERED\nGeneric model + three rules + required dependencies\nIndependent Core Module publication" {class: existing}
+rust_resources: "Rust resource specialization / DELIVERED\nRequires parent; POO extension preserves obligations\nBounded native admission and actual method owners" {class: existing}
+broadcast: "Bounded broadcast Library" {class: domain}
+close: "Close/wake mechanism entry\nGeneric semantics + rules + obligations\nOwn model/proof sources, if authored" {class: proposed}
+tokio: "Rust / Tokio specialization\nPOO extension of generic entry\nBorrow / drop / actual-source mapping\nNative tests and source-specific model" {class: proposed}
+profile: "Independent Profile\nScope / objective / workload / callback premises" {class: proposed}
+select: "EXISTING Core explicit-root selection\n(module @ domain-path)\nPublish selected Module and dependency closure\nNo new loader or copied entries" {class: existing}
+scenario: "Consuming Scenario\nSelected entry + method capabilities\nLLM-based AI agent chooses outstanding questions" {class: proposed}
+check: "Owned verification obligations\nQNT model / Lean proof / independent native tests\nActual results required; no inherited acceptance" {class: proposed}
+evidence: "EXISTING ASCENT evidence reasoning\nCurrent support / counter / pending / applicability\nT / V / A and exact source closure" {class: existing}
+reuse: "Lean-Poo reuse principle\nDeclared stable dependencies + Patch.frame\nUnaffected proof transport; affected / added proofs required\nSource correspondence remains separately checked" {class: existing}
+status -> engineering -> concurrency
+concurrency -> communication -> broadcast -> close
+close -> tokio: "explicit semantic specialization"
+concurrency -> execution
+concurrency -> resources
+tokio -> select
+execution -> select: "explicit dependencies"
+profile -> scenario
+select -> scenario -> check -> evidence
+close -> reuse: "owned proof obligations"
+reuse -> evidence: "conditional reuse; not automatic acceptance"
+
+resources -> backpressure -> rust_resources -> select

@@ -1,0 +1,519 @@
+#+TITLE: 10.38 Profile Selection, Scenario Capture and Shared Evidence Use
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.38
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+TODO: DESIGN SPECIFIED | QUALIFIED
+#+FILETAGS: :design:profile:scenario:capture:contracts:evidence:aitia:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.37-library-declarations-and-contract-design.org][Native declaration architecture]] | [[file:10.36-version-revision-and-namespace-audit.org][Source audit]] | [[file:10.35-content-validation-slice.org][C5 slice]] | [[file:10.34-case-design-review-dossier-draft.org][Unsubmitted case dossier]]
+
+* DESIGN Objective and existing implementation boundary
+:PROPERTIES:
+:CUSTOM_ID: profile-selection-and-scenario-capture
+:STATUS: Comprehensive target design; no implementation, directory migration or review submission
+:END:
+
+This design continues 10.37 from native declaration to selected occurrence and
+its use by ASCENT and Aitia. The [[file:10.39-method-execution-evidence-issuance-and-ascent-projection.org][10.39 continuation]] specifies complete method
+footprints, execution/issuance and application-scoped projection/query handoff. Refactoring follows semantic and trust boundaries,
+not the smallest diff. Profile expresses choices; Scenario binds actual admitted
+Library objects and captures the applicable project inputs; consumers use that
+same association rather than reconstructing it independently.
+
+The sole declaration-generation owner remains the proposed native
+BackpressureDeclarationContract. The requested generation stays V1. Model,
+integration, policy, project and evidence identities/revisions remain distinct;
+no version literal, resolver or new serialization protocol is defined here.
+The logical responsibilities below are ordinary native POO values/Contracts and
+existing owner-bound evidence references, not a new Scheme DSL or manager.
+
+| Current source surface | Existing support / missing target |
+|------------------------+-----------------------------------|
+| [[file:../../../profiles/resource-lifecycle.ss][LifecycleProfile and variant]]; [[file:../../../profiles/gateway.ss][gateway Profiles]] | Independent parameters and native specialization premises exist; no complete model-role/policy selection Contract is published |
+| [[file:../../../scenarios/resource-lifecycle/interface.ss][ResourceLifecycle requires]] and [[file:../../../scenarios/resource-lifecycle/func.ss][capture/open-review]] | Native selected-entry check and context-current! exist; entry is fixed to the base Rust export and review means an ASCENT session |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/methods.ss][resource-native-context and resource-context-current!]] | Snapshot/scopes include actual source/tool/config inputs and Profile data; the full 10.37 family/role/parent/policy association is absent |
+| [[file:../../../examples/resource-integration-evidence.ss][integration driver]] | Builds an integration entry, appends scopes and computes another snapshot outside Scenario; target moves this composition behind the same Scenario binding/capture boundary |
+| [[file:../../../modules/resource-evidence/func.ss][open-resource-review / relations]] | Selected rules/dependencies/factors/scopes and exact footprint inference exist; callers still supply independently reconstructible arguments |
+| [[file:../../../scenarios/resource-lifecycle/review/profile.ss][review Profile]], [[file:../../../scenarios/resource-lifecycle/review/func.ss][review adapter]] and [[file:../../../scenarios/resource-lifecycle/review/reassessment.ss][reassessment]] | Project revision/scope and source-bound requests are checked; policy and project inputs are read separately from the native Scenario Context |
+| [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/types.ss][Core value-contract/admission]], [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/contribution/verification.ss][verification owner]] and [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/standards/project-context.org][project context standard]] | Reuse native validation, qualified source ownership and private adapter/admission associations; none already provides the complete proposed project capture |
+
+The baseline is HEAD 8044732d505f84e373119a70f947df00e1767300 plus the current dirty
+checkout. These are source observations, not an immutable release or passing
+native qualification. Historical six-case evidence is not rerun by this document.
+
+* SPECIFIED Profile is a reusable selection request
+:PROPERTIES:
+:CUSTOM_ID: profile-selection-responsibilities
+:END:
+
+A Profile is an independently importable native parameter value. It may reference
+Library-published Types/stable choices; it does not import init or obtain authority
+from a live Module graph. A candidate cannot supply its own expected Contract or
+classifier. The Scenario obtains those from admitted Library/provider declarations.
+
+| Profile responsibility | Allowed choice / independent value | What it does not establish |
+|------------------------+------------------------------------+----------------------------|
+| Model choice | One supported published role: generic model, Rust model or integration slice; optional explicit immutable provider/declaration constraint | No arbitrary file/module loading, latest lookup, parent construction or merging entries from different providers |
+| Model parameters | Capacity, queue, item, budget and other values accepted by that model's parameter Contract | No source/tool measurement, runtime truth or proof that a requested method supports every value |
+| Review policy and purpose | An applicable published policy choice or explicit no-review purpose when the trusted project mandate permits it; selected stage/viewpoints | No policy definition, adoption, reviewer appointment, version authority or permission to remove mandatory review |
+| Investigation request | Supported methods/questions, native/formal modes and budgets within published/trusted limits | No deletion of inherited obligations, timeout inflation, or conversion of a negative control into a safe implementation |
+| Document/product selection | Stage-required product roles, optional views and requested references under the trusted C1 policy | No complete inventory merely because all supplied files were listed; missing required products remain missing |
+| Project constraints, if supplied | Expected subject/revision/baseline or applicability choices as independent request parameters | No second authoritative project record; the actual occurrence is bound once from project inputs and checked against those constraints |
+
+Profile identity names that reusable parameter choice. Profile content/source
+identity binds its actual value; it does not introduce another version counter.
+Use validation's returned normalized value. Model parameters and review selections
+can be composed as native child values instead of flattening duplicate fields.
+Project subject/revision may be supplied as a choice, as earlier documents allow;
+its verified association with actual inputs belongs to the bound occurrence.
+Capture must own the effective parameter data, not retain a mutable raw request
+as its only value. Evaluate permitted lazy parameter slots under the existing
+native read/currentness guards and capture their declared dependencies. Arbitrary
+callbacks, hidden external reads or a matching Profile identity cannot be assumed
+to be closed, stable input values.
+
+A model choice is exclusive at the selected leaf. Choosing integration selects
+its published Rust and generic ancestors; it does not construct a second Rust
+entry beside the one in its parent chain. Independent investigations can create
+separate occurrences, not a single Context with contradictory selected leaves.
+
+** Role compatibility and method capability
+
+| Selected role | Parent/parameter binding | Integration/policy consequence |
+|---------------+--------------------------+--------------------------------|
+| Generic model | Admitted generic entry and expected generic role/parameter Contracts | No Rust runtime assumptions or SI/TM duties are fabricated. The current bounded Rust review policy is inapplicable; use an actually published applicable policy or an allowed no-review analysis purpose |
+| Rust model | Admitted Rust entry, its actual generic parent and appropriate parameter Contract | Generic plus Rust duties apply. Integration remains unselected. Bounded review policy must match the actual target and requested stage |
+| Integration slice | Admitted integration entry with its actual Rust -> generic chain and integration parameter/method requirements | SI/TM duties, six-case associations, mapping and declared queued-cancellation delta are retained. Omitting SysML/QNT from a run request leaves the affected duties pending; it does not remove them |
+
+Complete the 10.37 Library interface with model-specific parameter Contracts:
+a generic BackpressureProfileContract, the existing Rust ResourceProfileContract,
+the existing narrower ResourceNativeProfileContract for the controlled six cases,
+and a ResourceIntegrationProfileContract combining the native premises with the
+declared integration selection. These are proposed expected Types in existing
+Library Types roles, not copied defaults or new Modules. The generic scope must
+publish its parameter Contract; the Rust scope publishes the applicable variants.
+Method availability is also a native scope responsibility: the generic scope
+publishes its generic capability surface and expected callable/input Contracts;
+the Rust scope adds supported specialization/native/integration capabilities.
+An absent or unqualified implementation remains unavailable, even when its
+obligation is published. Do not import a Rust Scenario into the generic Library
+to manufacture generic method availability, or infer execution support from the
+presence of a QNT/Lean file. An empty analysis-only capability surface never
+discharges the outstanding duties.
+
+Distinguish parameter validity from method capability. For example, today's QNT
+initializer supports only explicitly enumerated capacity/queue/mode combinations;
+today's native six-case path requires one permit/queue/worker and bounded payload.
+Method-specific limits belong to supported capability/input Contracts. Do not
+silently generalize them or make every future generic Profile depend on one
+method's finite initializer. An unsupported mandatory method prevents completion
+of that policy/stage; an exploratory run can still expose an honest pending duty.
+
+The expected required-factor set comes from Library meaning, selected premises
+and trusted project policy, not solely from caller-supplied Profile.factors.
+Checks of actual runtime/source applicability remain observation obligations;
+selection does not turn requested factors into measured facts.
+
+* SPECIFIED Scenario binds a native selection
+:PROPERTIES:
+:CUSTOM_ID: scenario-selection-binding
+:END:
+
+Core Module selection and Profile model choice are different operations. Existing
+explicit requires determine which source-qualified providers a Scenario can use.
+A Profile chooses only among published roles that this Scenario advertises. If
+a Scenario offers the generic route independently, it must declare that provider
+requirement; it cannot load a new Module because a Profile names it.
+
+The binding operation receives those admitted scopes, the Profile request and
+trusted project-purpose constraints. It resolves an ordinary published value and
+its expected role Contract together, validates the Profile, and checks policy
+applicability and actual parent associations. Duplicate/ambiguous providers,
+foreign parents, incompatible role/policy choices and forged descriptors refuse
+binding; no precedence or latest-version rule resolves them implicitly.
+
+A bound selection associates the following logical responsibilities. It is a
+normalized native value, not a serializable authority token or a captured project.
+
+| Association | Source of authority / validation |
+|-------------+----------------------------------|
+| Provider and effective scope | Actual Core required scope, admitted source/dependency generation and relevant overrides; not a Profile path or package label |
+| Selected definition and role Contract | Published entry/entry-contract or integration-entry/integration-contract pair from that scope |
+| Shared declaration Contract/generation | The selected role's declaration-contract reference, associated with the same native owner from 10.37 |
+| Ordered immediate parent chain | Actual admitted leaf -> Rust -> generic references where applicable; each identity/revision/role/source association checked; acyclic and bounded |
+| Applicable policy and expected Contract | Published review-policy/review-policy-contract pair with its own identity/revision and applies-to relations; no engineering parent |
+| Effective Profile and allowed method request | Returned normalized values, applicable parameter/capability Contracts and trusted mandatory policy requirements |
+| Required obligations/product inventory | Closure of Library inherited duties, selected integration meaning and trusted project/stage policy; requested extras are added explicitly |
+
+Do not validate a Rust role by overriding a generic fixed-identity constraint,
+or infer compatibility from equal V1 labels. The expected native role and parent
+preservation checks in 10.37 remain necessary. If both a generic provider and the
+Rust provider are required, their effective generic-parent association must agree;
+consumer-specific Core overrides do not justify mixing two different parents.
+
+The binding may hold native references within one selected graph. It cannot
+freeze later mutation or serialize Contract procedures across processes. Before
+capture/use, recheck its expected source/admission association under existing
+Core currentness guards. A restored public label does not undo native descriptor
+invalidation. Rebinding creates a new selection; it does not update a captured use.
+
+* SPECIFIED Project inputs and one capture basis
+:PROPERTIES:
+:CUSTOM_ID: scenario-capture-basis
+:END:
+
+The project supplies the actual occurrence inputs separately from reusable Library
+knowledge. A Library provider checkout and the target project repo can be different
+repositories. Keep both identities/roots: today's example uses one checkout, but
+the target Library must be usable from a network-service repo without treating
+that repo as the Library's source root. Resolve relative paths against the explicit
+owning source/project context, not a later ambient cwd.
+
+| Captured responsibility | Required association |
+|-------------------------+----------------------|
+| Selected native knowledge | Provider/source/descriptor identities; selected leaf, role Contract, shared generation observation; full parent and policy applicability closure, semantic revisions and mapping/delta definitions |
+| Loaded implementation basis | Actual Library/framework/observer/generator/reader implementation and relevant compiled artifact/source association under the compatible Core build/currentness boundary; a source file link alone does not identify loaded code |
+| Normalized Profile | Actual parameter/selection value and its source/content identity; applicable expected parameter/method Contracts and bounded request |
+| Project occurrence | Repo/worktree/source-root association, explicit subject/revision/scope, purpose/stage, usage/occurrence identity and trusted initial baseline or required prior-review reference |
+| Project implementation inputs | Actual selected source/model/build/lock/config/environment/executable identities and declared external inputs needed by the selected obligations/methods |
+| Expected and actual inventory | Trusted product/duty/input-role requirements versus actual supplied references; missing, conflicting, inaccessible and optional roles remain distinguished |
+| Architecture, Org and decision products | Required D01-D10 section/input/reference closure, actual/target architecture and decision/assumption links where the selected stage requires them |
+| Review/project context | Actual applicable project classification, responsible roles/assignees or gaps, recipient/access constraints and selected Aitia policy/adoption references as required |
+| Historical references | Exact prior results, review packets, counters and dispositions with original source/subject/revision/scope; retained as historical until applicability is established |
+
+Expected inventory is derived before inspecting the supplied file list. The list
+cannot make its own omissions disappear. Reachability follows declared reference
+roles with duplicate/conflict detection and bounded traversal; model relations may
+be cyclic even though engineering parent chains and Core Module dependencies may
+not. An unresolved external reference remains a gap, not an empty successful read.
+Only declared relevant source closure is required; do not hash every unrelated
+repository file or drop dirty/untracked inputs that the declared closure needs.
+Observed import/load roots, configuration, environment and trusted callback inputs
+belong to that closure when relevant. An unbounded or unqualified external read
+remains an open acquisition obligation; do not call a handwritten path list a
+complete transitive closure. The compatible compiled/Core/Scenario prerequisite
+from 10.35 must actually qualify before any native acceptance claim.
+
+The input basis contains expected method/generator definitions and their inputs,
+not results that have not been produced. Generated QNT/SysML source is a derived
+artifact: its actual bytes and derivation are bound in the subsequent method
+observation. The serialized Aitia request, its receipt and a query-generated D2
+view are later outputs. They cannot be their own capture inputs or hashes.
+Authored dossier/view files required as inputs remain separately identified.
+
+** Acquisition and currentness guarantee
+
+1. Validate/recheck the selected native providers, expected Contracts and returned
+   normalized Profile. Derive the trusted required inventory and acquisition plan.
+2. Acquire declared inputs through the responsible host/source providers. Retain
+   owned bytes or immutable content references for inputs that execution/readers
+   must consume, together with origin, path, digest and acquisition limitations.
+3. Validate actual inventory, associations, source guards and per-role closure.
+   Record required gaps rather than filling them with defaults or fixture strings.
+4. Admit the resulting native Context under the expected contextual Contract.
+   Return that normalized captured value and its owner/source-bound input identity.
+   Do not derive authority from a public captured?/complete? field.
+5. At observation, result registration, query publication and review use, perform
+   the relevant producer/currentness checks. A source change may leave historical
+   snapshot evidence meaningful while refusing current applicability.
+
+The chosen guarantee is one explicitly bound byte/input basis consumed throughout
+the occurrence, with declared origin/currentness guards. It is not a claim that
+all filesystem inputs existed simultaneously at one wall-clock instant. Copying
+files or comparing hashes before/after does not prove a linearizable snapshot or
+exclude every change-and-restore race. Where the selected policy/method requires
+a stronger acquisition guarantee, require an actually qualified immutable-source
+or source-owner snapshot facility; otherwise that operation remains unsupported.
+Do not invent a new lock/snapshot service or claim Core already supplies that
+whole-project guarantee. Core native generation guards retain their own scope.
+
+Execution must use the acquired inputs or an equivalently qualified immutable
+source provider, not silently reopen changed ambient paths. Mutable origin reads
+require applicable checks at their actual use boundary. If only unqualified
+path-based acquisition exists, retain a descriptive candidate and explicit gap;
+do not expose the corresponding strong runnable/current guarantee.
+
+Draft capture can retain missing reviewers/products or unavailable evidence. Its
+permitted uses are determined by purpose and applicable Contracts: an exploratory
+analysis may be valid while a method cannot run and a review cannot be ready.
+A native value can pass structural validation while carrying explicit gaps;
+operation-specific expected Context/Function Contracts must reject it for any
+use whose required acquisition/input roles are not qualified. Structural admission
+of that descriptive value is not method issuance or ready-review admission.
+There is no universal boolean that promotes draft -> executable -> reviewed.
+Changing selection, parameters or required inputs creates a new capture basis;
+the old one stays immutable in meaning and is never silently refreshed in place.
+
+* SPECIFIED Public operations and native Contract responsibilities
+:PROPERTIES:
+:CUSTOM_ID: selection-capture-operations
+:END:
+
+Operation names below are proposed public responsibilities, not implemented APIs.
+They replace ambiguous or independently reconstructible call paths directly in
+a future refactor. Ordinary pure calculations remain named functions.
+
+| Boundary / operation | Input | Output / expected checks |
+|----------------------+-------+--------------------------|
+| Scenario bind | Admitted provider scopes, Profile request and trusted project mandate | Bound selection with actual entry/role/parent/policy references; native field, role, compatibility and required-inventory checks |
+| Scenario capture | Bound selection plus actual project inputs/acquisition providers | Expected Context's normalized captured use; input identity, actual closure, explicit gaps and qualified acquisition/currentness limits |
+| Library method observation | That captured use and the method's bounded request | Scoped issued result tied to actual method inputs/derivations and the captured selection; execution uses Core Ops |
+| Scenario open-evidence | That captured use plus producer-validated applicable results | ASCENT session/query view of that occurrence, selected catalog and exact witness/input associations |
+| Project prepare-review | That captured use, the identified query/evidence view and actual stage/authority bindings | Aitia request candidate bound to those exact inputs; readiness, verification, disposition and submission remain actual owner operations |
+
+ResourceProfileContract and narrower parameter Contracts validate reusable values.
+ResourceNativeContextContract and the appropriate broader Scenario Context
+Contracts validate the occurrence's selected role and complete applicable input
+association. Refactor today's exactly-seven-scope assumption: use the selected
+Library's declared method/dependency roles with unique keys and exact applicable
+closure, not an untyped extra-scopes append. A generic analysis and an integrated
+six-case occurrence need different effective requirements under explicit Contracts.
+
+Use ObjectContract field Types and effective role constraints, Core value-contract
+and contextual child admission, and native Function Types at operation boundaries.
+Normalize once and use the returned values. Context validation does not reselect
+Modules, call a candidate-supplied classifier or turn copied JSON into producer
+issuance. No second generic validator, lifecycle engine or boolean registry is
+needed. Contract/source association, result issuance and review authority remain
+separate checks with their existing owners.
+
+* SPECIFIED Same association in ASCENT and Aitia
+:PROPERTIES:
+:CUSTOM_ID: shared-capture-evidence-and-review
+:END:
+
+For explanation only, C denotes the captured input basis, W an issued method
+result, Q an identified query view and R the prepared review request. These are
+references to native values/artifacts, not new serialized record types. The input
+basis and occurrence/usage identity are associated; matching content digests alone
+do not make two different project occurrences the same authorized use.
+
+The acyclic product relation is C -> W -> Q, with R referencing C, the selected W
+and Q. Q also binds its catalog/rule/source-set identity and C. Outputs never
+rewrite C. A query/request identity includes the actual evidence set it used;
+additional results create another identified view/request under the same input
+basis instead of silently changing a previously presented result.
+
+** ASCENT projection and evidence applicability
+
+The native projection boundary takes C and its qualified method applications/
+derivations, not independently supplied entry/Profile/snapshot/scopes. It rechecks
+the association and projects the captured required inventory plus per-application
+expected inputs and checked uses. The inspected [[file:../../../modules/resource-evidence/func.ss][project evidence program]] supplies
+today's relation pattern; [[file:10.39-method-execution-evidence-issuance-and-ascent-projection.org::#application-scoped-ascent-projection][10.39 refactors its domain relations]] to distinguish
+multiple application/upstream bases without replacing the ASCENT engine. Facts about observed applicability are
+accepted only from their declared producers; desired Profile factors are not
+substituted for observed runtime truth.
+
+Only validated private method issuance/currentness and existing clue-exchange
+attestation may produce witness/witness_input/checked rows. No caller-supplied
+capture hash, JSON checked flag or raw ASCENT row establishes issuance. The rule
+implementation and selected catalog/dependency interpretation are themselves
+identified inputs to Q. A finished query is necessary for a complete view;
+finite budgets, incomplete evaluation and unavailable evidence remain visible.
+
+The inspected [[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-ascent/program/session.ss][native ASCENT Session]] already retains accepted source snapshots,
+qualifies prospective batch replacement and preserves prior completed state on
+failure. Use that owner rather than a parallel fact store. It copies row spines,
+not arbitrary nested host values: the project projection must supply owned,
+typed primitive values/strings and retain the qualified source-basis association.
+Do not put mutable raw Profile/Contract objects into inference rows and assume
+that Session makes them immutable. Failed/partial updates cannot relabel a prior
+completed Q as a result for new C/evidence. Publish a view only for its actual
+accepted projection/source set and current applicable producer checks.
+
+Keep application-scoped exact missing/extra/mismatch checks and retain support, counter, pending and
+conflict separately. Current pending means no support and can coexist with a
+counter. A pass/fail pair is not reduced to success. No single mechanical facet
+closes all architecture, decision or review duties. Any aggregate policy question
+needs its actually declared conjunction/conflict rules and cannot authorize Aitia
+submission or disposition merely because ASCENT derives a fact.
+
+The 10.37 selection association is validated before catalog projection; do not
+invent a second inference-based version resolver. Do not append a global version
+input to every witness: each method keeps its declared semantic footprint.
+
+** Selective reuse without mixing occurrences
+
+C binds the whole selected occurrence; a method's basis is its declared projection
+of relevant definition/method semantics, parameters and actual inputs. Changes to
+unrelated captured document roles need not rerun a native method whose entire
+basis remains valid. Conversely, equal generation/revision labels never justify
+reuse when that method's code, mapping, source/tool inputs or claim domain changed.
+
+An older W is retained with its original origin. Reuse for a new C requires a
+fresh trusted applicability/use association through the existing producer/exchange
+boundary, with the complete declared footprint, source/currentness and claim
+strength checked. Do not rewrite W to name the new occurrence or treat an old
+public JSON/hash as that attestation. If that boundary cannot qualify reuse, keep
+it historical or rerun the method. Review receipt reuse is separately constrained
+by its exact owner-issued request/project revision/policy/validity association.
+
+** Aitia request and review boundary
+
+prepare-review reads the same C and its associated W/Q. It does not reload a
+standalone review Profile and reconstruct subject/revision/scope/policy from
+ambient defaults. It binds the selected native policy identity/revision/role/family
+source association, actual project subject/revision/scope/purpose, trusted required
+inventory, actual evidence/query references, gaps/conflicts, prior review/counters,
+responsible roles and actual Aitia adoption/recipient/authority context.
+
+The existing local [[file:../../../scenarios/resource-lifecycle/review/func.ss][review adapter]], [[file:../../../scenarios/resource-lifecycle/review/reassessment.ss][reassessment]] and
+[[file:../../../scenarios/resource-lifecycle/review/cross-intake.ss][history/intake]] patterns are reused at their actual boundaries. Native Core's
+private adapter/admission association remains authoritative; an object that looks
+like an adapter or packet is not an issued verification or disposition. Context
+verification, content verification, semantic review, disposition and delivery are
+distinct operations. Missing reviewers/criteria, stale or revoked references,
+unsupported policy or unresolved required counters block the relevant ready use.
+
+The project supplies the trusted initial subject/revision/baseline selection;
+changing revision needs the applicable explicit prior-review/rebase association
+and retained failures. A Profile constraint cannot bypass those rules. A narrower
+new scope cannot erase unresolved historical counter evidence or forgedly mark a
+repair/disposition complete. Actually inapplicable evidence stays retained with
+its original scope and an explicit applicability explanation.
+
+A request must identify C/Q/W and their relevant native selection/source closure
+in the producer's qualified packet/mechanical-basis interpretation. Binding only
+the current old packet fields or checking a matching policy string is insufficient.
+Any changed encoding/basis interpretation requires explicit producer/reader
+qualification; old signed packets, wire schemas and receipt meanings are preserved.
+Native Contract procedures and in-process pointers are not serialized as authority;
+across processes, load/admit expected declarations and use owner-verified immutable
+references/source associations instead of reconstructing trust from labels.
+
+For DE-CASE-01, do not convert the local NASA class-a fixture into project
+classification merely to call an available gate. The actual project policy must
+be expressible by the selected Aitia/SDLC owner. If a narrow owner/adapter extension
+is needed, readiness remains unsupported until it is qualified; do not create a
+parallel approval engine. Preparing this design submits no request.
+
+* SPECIFIED Backpressure walkthrough and isolation controls
+:PROPERTIES:
+:CUSTOM_ID: selection-capture-six-case-walkthrough
+:END:
+
+| Step | Six-case selected use | Required distinction |
+|------+-----------------------+----------------------|
+| Request | Reuse resource-64 parameters; choose the published integration role and applicable bounded coding-method review policy; request native/QNT/Lean/SysML/correspondence under supported budgets | These are choices, not a constructed integration object, version authority or result |
+| Bind | Select the admitted integration entry and its actual Rust/generic chain; pair role/parameter/policy Contracts; read the native declaration owner | Retain ownership-budget/v1, backpressure/v3 and backpressure-integration/v1 as separate semantic revision tokens; observe the shared generation only through the native descriptor |
+| Supply project occurrence | Explicit crate/source/lock/build/tool/environment inputs, workload/mode, subject/revision/scope, stage baseline and required document/review roles | Library provider and target repo roots are separately identified even when they coincide in this case |
+| Capture | One returned normalized Context owns the actual selected input basis and trusted expected/actual inventory | No external integration-entry constructor, untyped extra-scopes append or second snapshot assembled by the example driver |
+| Observe and infer | Execute supported methods on the acquired basis; admit issued results under the declared footprints; query the selected catalog | Positive native/formal facets, M06 unsafe/correspondence counter distinctions, mapping losses and pending broader duties stay visible; no historic counts asserted as a new result |
+| Prepare review | Reference that same occurrence, policy, exact identified query/evidence view and current project/authority inputs | Worker-owned and caller-owned review targets remain distinct; missing actual reviewers or policy adoption prevents corresponding ready review |
+| Explain | Org/D2 show the native selection/closure and the particular query/request state with provenance | Current authored diagrams are design views, not that future query result or an Aitia approval |
+
+A base Rust selection instead leaves SI/TM unselected. A policy requiring those
+checks cannot be satisfied by choosing the base route. A generic selection does
+not gain Rust review eligibility because its parameters resemble resource-64.
+The larger-payload variant creates another input basis; only independently
+qualified unchanged method footprints can be reused.
+
+| Negative or change control | Required outcome |
+|----------------------------+------------------|
+| Foreign provider or identical-looking role descriptor | Refuse the selected native association; equal version/identity labels are insufficient |
+| Wrong/mixed parent chain, cycle, dropped duty or policy applied to wrong role | Refuse binding or retain an explicit unresolved obligation; never synthesize a compatible parent |
+| Profile deletes a required factor/product/method or supplies a fake expected Contract | Trusted Library/project requirements remain; the candidate cannot choose admission or erase missing roles |
+| Changed Profile after validation or capture | Do not reread the mutable request into C; recheck association and require a new basis for the changed effective value |
+| Wrong project root/revision, missing dirty input or ambient tool/config substitution | Detect affected mismatch/currentness/closure failure; labels, cwd and HEAD alone do not repair it |
+| Unsupported parameter/mode/tool method or stronger snapshot requirement | Explicit unsupported/incomplete result; no silent fallback, timeout inflation or invented acquisition guarantee |
+| Stale compiled observer or mutable projected source value | Loaded source/artifact association or actual accepted query basis must fail the relevant check; source labels and shallow row copies are insufficient |
+| Failed/partial Session source replacement | Retain the prior committed result as its original identified view; never present it as completion for the new projection |
+| Different occurrence or changed mapping with old results | No direct registration/replay; qualify a fresh use association under exact footprints or retain history/rerun |
+| Forged checked rows, copied Context/JSON/adapter or unrelated Q | No native issuance or review verification; derived evidence/query/request must be associated with the selected C and exact source set |
+| Pass and fail, timeout, unfinished query or missing semantic reviewer | Preserve distinct scoped outcomes and gaps; no success-only whole-duty or review claim |
+| Project rebase/scope narrowing with unresolved counter or old receipt | Retain history and require actual owner-bound fresh verification/disposition; no erased failure or relabeled approval |
+| Additional results after Q/R, changed required roles or newly assigned reviewers | Create the appropriate new identified view/request or new capture when captured inputs change; do not mutate previously presented provenance |
+| View-only version/identity edit | No change to the native selected association, admitted evidence or Aitia authority |
+
+* SPECIFIED Refactoring ownership, work packages and acceptance
+:PROPERTIES:
+:CUSTOM_ID: selection-capture-refactoring
+:END:
+
+| Existing owner | Target responsibility / direct refactor |
+|----------------+----------------------------------------|
+| Library Types and objects | Publish 10.37 declarations plus applicable parameter/method/Context requirements, semantic mapping and inventory meanings. Keep project acquisition outside reusable semantic definitions |
+| profiles/gateway.ss and profiles/resource-lifecycle.ss | Independently reusable parameter choices; model/policy/purpose requests composed under expected Contracts; no live init scope, measured digest or policy-definition authority |
+| Scenario interface/types/func | Explicit provider requirements; native bind/capture/open-evidence boundaries; coherent normalized Context and purpose-specific gaps. Replace the fixed base-entry and caller-snapshot call paths directly |
+| Library methods/host source providers/Core Ops | Domain-specific footprint/projection and actual observation; qualified acquisition/currentness/owned bytes from their owners. Refactor resource-native-context's project orchestration into Scenario while retaining its domain checks/input roles |
+| modules/resource-evidence | Consume the admitted occurrence and issued results through a narrow projection; keep the existing inference owner and explicit policy/footprint rules |
+| Scenario review adapters/Aitia owners | prepare-review consumes C/Q/W and actual project authority inputs; revise packet/basis validation as qualified; keep private issuance, history, revocation and disposition with existing owners |
+| Example drivers and maintained Org/D2 | Select a Profile, supply project inputs and invoke Scenario/owner operations. No hand-built slice, duplicated scopes/snapshot or independent review reconstruction |
+
+Implementation dependency order and acceptance are:
+
+1. Complete 10.37 native declarations/role/source admission and the model-specific
+   parameter/capability Contracts. Acceptance: every offered selection has an
+   actual expected Contract/provider and preserves parent/policy distinctions.
+2. Refactor Profile validation and Scenario binding. Acceptance: generic/base/
+   integration positive routes and incompatible/foreign/mixed selections behave
+   distinctly; returned normalized values and trusted mandatory inventory are used.
+3. Implement the Scenario capture/acquisition boundary with qualified purpose
+   guarantees. Acceptance: project/Library roots, dirty inputs, parent/policy/source
+   closure, method domains and per-role gaps are exact; no stale caller-supplied
+   snapshot or scopes can replace it. Stronger unqualified guarantees refuse use.
+4. Refactor observation/ASCENT projection and query identity. Acceptance: same
+   capture association, actual issued witnesses, selective footprint invalidation,
+   fresh reuse attestation and incomplete/conflict controls hold; old evidence stays
+   historical. Changing evidence sets cannot silently change a named query view.
+5. Refactor Aitia preparation and qualification. Acceptance: exact C/Q/W/policy/
+   project/baseline/authority association; initial/rebase/counter/revocation/replay
+   controls preserved; unsupported project policy stays unsupported. Local packet
+   verification, disposition, submission and delivery remain separately evidenced.
+6. Update drivers/Org/D2 and run the focused end-to-end controls on the actual
+   compatible baseline. Acceptance: native source/selection/capture, model-method
+   evidence, inference and actual review boundaries are reported separately; no
+   presentation edit can change native version or manufacture a completed duty.
+
+[[file:10.39-method-execution-evidence-issuance-and-ascent-projection.org::#method-evidence-refactoring-acceptance][10.39 expands method and projection refactoring]]: actual implementation closure
+separation, C-bound applications/attempts, producer-qualified use and exact query
+views are required before claiming independent reuse.
+
+No compatibility facade, global selection registry, copied version field, new
+approval service or parallel fact store is proposed. Existing native objects,
+Contracts, required scopes, sessions and verification owners remain the execution
+architecture; domain/source adapters fill their stated missing responsibilities.
+
+| Existing case allocation | Design coverage |
+|--------------------------+-----------------|
+| DE-R01/R03; DE-T01/T03; VA-01/02/05/07/10/11 | Native role/policy selection, parameter validation, complete occurrence/source association |
+| DE-R02/R04; DE-T02/T04; VA-04/08/09 | Parent/mapping/product closure, trusted inventory and exact scoped observation/inference |
+| DE-R05; DE-T05/T06; VA-09/11/12 | Exact review/project/recipient association, retained history and existing authority boundary |
+| DE-R06; DE-O-ARCH/DOC/DEC/TRACE/REVIEW | This repository as the real design case; explicit authored products, scoped evidence limits and view provenance |
+
+* DESIGN Document and qualification status
+:PROPERTIES:
+:CUSTOM_ID: selection-capture-design-status
+:END:
+
+This document expands the Select/Capture and consumer-use stages of 10.36 and
+completes the target continuation of 10.37. All names above describe proposed
+responsibilities; no bind/capture/projection/request implementation is added.
+No native/model/ASCENT test or review submission is performed. Static document,
+link and diagram checks do not produce obligation witnesses or owner receipts.
+
+The C4 expected byte catalog in [[file:10.34-case-design-review-dossier-draft.org][10.34]] remains unchanged. This design and the
+updated view are not inserted retrospectively into historical evidence. See
+[[file:10.35-content-validation-slice.org::#slice-input-freshness][10.35 current drift observation]]. A future actual candidate inventory must
+explicitly select this document/view and the then-current required source closure.
+
+[[file:10.40-aitia-review-and-recipient-delivery.org::#review-policy-project-and-roles][10.40 expands captured review mandates and downstream authority]]: a Profile
+requests role/policy selections; actual project adoption/grants and recipient use
+remain separately verified owner operations over the same captured basis.
+
+[[file:10.41-workflow-gap-audit.org::#integrated-refactoring-dependency-order][10.41 integrates the source gap audit and dependency-ordered refactoring]]
+across declarations, capture, methods/query, review and recipient use. Its work
+packages share the native owners above; they do not constitute a second pipeline.
+
+[[file:10.44-profile-selection-and-scenario-capture.org::#profile-selection-scenario-capture][10.44 details WP03 by existing Profile/Scenario fields and operation boundaries]],
+including checked Scope consumption, actual ancestor/policy binding, separate
+provider/project/reference subjects, qualified acquisition and one owned C.
+Required gaps and downstream evidence/review qualification remain explicit.
+
+#+CAPTION: Native selection, one captured input basis, and separately identified evidence/query/review outputs.
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.svg]]
+
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][Editable D2 source]]. Target architecture only; implementation and qualification remain future work.

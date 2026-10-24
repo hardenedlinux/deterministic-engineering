@@ -1,0 +1,22 @@
+# org-target: docs/20-29-cases/20-gateway/20.04-query-and-change-fixtures.org::#six-query-fixtures
+# Paper fixtures only. No native query outcome or admission was executed.
+direction: down
+classes: {
+  input: {style: {fill: "#E6F5F3"; stroke: "#19756C"; border-radius: 10; font-size: 17}}
+  evidence: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; border-radius: 10; font-size: 17}}
+  gate: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; border-radius: 10; font-size: 17}}
+}
+request: "Caller query / hypothesis\nExact target or open discovery\nNo prior proof needed to explore" {class: input}
+selector: "Q2 / Q4: selector\nConjunction joins one ID + digest\nOutputs question claims and matched witnesses" {class: evidence}
+read: "Native claim-level read\nReads all projected witnesses for each claim\nmatched is not an automatic witness filter" {class: evidence}
+observations: "Q1 / Q4: o+ and o- for P0\nBoth content-attested; conflict visible\nPositive method filter cannot hide counter" {class: evidence}
+unknown: "Query and display distinctions\nQ2 empty questions -> no unknown row\nQ3 conditional H3 + unknown H3\nQ4 acknowledge only complete shown families" {class: evidence}
+applicability: "Domain applicability / method admission\nEnvelope-bound metadata + typed T / V / A\n10.07 target / witness / reference guards\nNo clean admission with unresolved conflict" {class: gate}
+references: "Q5 / Q6: reference scope\nOld S0 result stays historical\nUniversal law is not a C2 / W1 measurement" {class: gate}
+request -> selector: "optional caller predicates"
+request -> read: "or explicit question"
+selector -> read: "question set, not matched-row restriction"
+read -> observations: "support / counter evidence"
+read -> unknown: "query-local result"
+observations -> applicability: "checked witness and conflict policy"
+references -> applicability: "method / target compatibility required"

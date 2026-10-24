@@ -1,0 +1,22 @@
+# org-target: docs/10-19-design/10-architecture/10.09-rust-backpressure-memory-library-entry.org::#backpressure-workload-reuse
+direction: down
+classes: {
+  input: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; border-radius: 10; font-size: 17}}
+  state: {style: {fill: "#E6F5F3"; stroke: "#19756C"; border-radius: 10; font-size: 17}}
+  gate: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; border-radius: 10; font-size: 17}}
+}
+pattern: "Shared Library rule / conditional arithmetic\nActual project factors and complete holder scope\nAll numeric values are authored assumptions\nNo run or formal result supplied" {class: input}
+a: "W-A API gateway\n1904 MiB plan <= 8192 MiB budget\nConditional arithmetic fit only\nInventory / source / actual evidence pending" {class: input}
+b: "W-B large-body ingestion\n12320 MiB plan > 8192 MiB budget\nCannot certify this plan fits\nActual violation needs a justified lower-bound witness" {class: gate}
+b2: "W-B2 explicit capacity refinement\n4256 MiB plan <= 8192 MiB budget\nNew caps / lifecycle assumptions need evidence\nNo automatic throughput or p99 improvement" {class: input}
+faults: "W-C burst / W-D downstream stall\nSame symbolic sum only under unchanged real bounds\nRequalify load / cleanup / progress / performance\nNo assumed service rate or unconditional drain" {class: gate}
+extra: "W-E new retry holder\nMissing category or bound: memory claim pending\nW-F eight processes on one 8 GiB host\n15232 MiB planned sums; host scope separate\nNo inferred actual host violation" {class: gate}
+reuse: "Dependency-scoped reuse\nRules / patterns / exact conditional lemma may reuse\nModel result needs exact model and current mapping\nRun remains source/workload/platform-scoped history\nNew holders / counters / replicas recheck aggregates\nCurrent argument / authority not copied across projects" {class: state}
+pattern -> a
+pattern -> b
+b -> b2: "actual Profile replacement; new application"
+a -> faults
+b2 -> faults
+pattern -> extra
+faults -> reuse
+extra -> reuse

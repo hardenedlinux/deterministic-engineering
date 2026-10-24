@@ -1,0 +1,47 @@
+# org-target: docs/10-19-design/10-architecture/10.30-current-repository-engineering-case.org::#case-decision-allocation
+# render-layout: elk; theme: 0; pad: 24; timeout: 30
+direction: right
+baseline: "C3 / each DE-D01-D05\nNative Library metadata pending; recorded design; supersedes none\nOwner/steward/reviewer assignments unresolved\nAuthorship is not review"
+decisions: {
+  label: "Actual E / target T / assumptions A: 10.33"
+  d01: "DE-D01 / native owners\nE01-E06,E11; T01,T04,T05\nA01,A02; R01; DEC/ARCH/TRACE"
+  d02: "DE-D02 / Org and paired views\nE13; T04,T07 optional\nA07; R02,R06; DEC/DOC/TRACE"
+  d03: "DE-D03 / actual repo first\nE10,E12,E13; T04\nA06-A08; R06; DEC/TRACE"
+  d04: "DE-D04 / one capture\nE03,E04,E06-E10; T01-T03\nA01-A03,A06,A08; R03,R04; DEC/ARCH/TRACE"
+  d05: "DE-D05 / recipient qualification\nE01,E03,E11,E13; T05,T06\nA02,A04,A06; R05; DEC/TRACE/REVIEW"
+}
+triggers: {
+  label: "Conditions reopen review; no automatic reversal"
+  d01: "Demonstrated missing native primitive\nBounded reproducer on compatible baseline"
+  d02: "Unresolved authoritative meaning conflict\nOr required projection cannot convey semantics"
+  d03: "Required concern has no actual case path\nOr policy requires another real first demonstrator"
+  d04: "Mutation admitted as current / mixed inputs\nOr stronger atomicity/custody requirement"
+  d05: "Recipient trust/policy boundary changes\nOr reference access / authority mapping fails"
+}
+response: "Future response to observed trigger\nRetain issue and exact affected revision\nReview assumptions, alternatives and scope\nRecord revised decision or explicit supersession"
+gate: "C3/C4 documented; C5 remains\nNo trigger executed, submission or new disposition\nHistory, counters and prior receipts retained"
+baseline -> decisions.d01
+baseline -> decisions.d02
+baseline -> decisions.d03
+baseline -> decisions.d04
+baseline -> decisions.d05
+decisions.d01 -> triggers.d01
+decisions.d02 -> triggers.d02
+decisions.d03 -> triggers.d03
+decisions.d04 -> triggers.d04
+decisions.d05 -> triggers.d05
+triggers.d01 -> response {
+  style.stroke-dash: 4
+}
+triggers.d02 -> response {
+  style.stroke-dash: 4
+}
+triggers.d03 -> response {
+  style.stroke-dash: 4
+}
+triggers.d04 -> response {
+  style.stroke-dash: 4
+}
+triggers.d05 -> response {
+  style.stroke-dash: 4
+}

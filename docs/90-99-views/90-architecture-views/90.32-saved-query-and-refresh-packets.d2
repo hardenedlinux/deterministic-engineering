@@ -1,0 +1,33 @@
+# org-target: docs/20-29-cases/20-gateway/20.11-expanded-boundary-review-packets.org::#d04-full-packet
+# ASCENT 46a46bbe paper companions. Native mode/delta and owned delivery are separate.
+grid-columns: 2
+grid-gap: 32
+classes: {
+  input: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; border-radius: 10; font-size: 17}}
+  state: {style: {fill: "#E6F5F3"; stroke: "#19756C"; border-radius: 10; font-size: 17}}
+  gate: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; border-radius: 10; font-size: 17}}
+}
+resume: "D04: effective query over independent cache owner" {
+  direction: down
+  prior: "D04-00 exact authentic CP-cap\nSaved L0 / Pcap / PerfCap; previous F-L\nCache owner has same N_L / RC-L\nCurrent questions absent; budget overridden" {class: input}
+  restored: "D04-01 / 02 native restores cap query\nSame A-cap -> incremental\nL0 support; Pcap / PerfCap unknown\nAdded 2 unknowns; retained 4 F-L items" {class: state}
+  refuse: "D04-03 claimed cache-target response\nKnown effective scope mismatch: refuse binding\nRaw cap question itself remains legitimate\nNo hidden retarget or new RJ taxonomy" {class: gate}
+  explicit: "D04-04 independent explicit cache query\nRescope; CacheAuth / Pcache unknown\nD04-05 present [] means empty scope\nEmpty scope is not unknown(Pcache)" {class: state}
+  limits: "Separate input / stage companions\nExpand-only keeps old cap questions\nSelected reads require selector closure\nMissing saved query / corrupt body: native error\nUnknown owned provenance: pending reuse" {class: gate}
+  prior -> restored: "merge saved query with actual field presence"
+  restored -> refuse: "compare declared consumer target"
+  prior -> explicit: "independent request override"
+  explicit -> limits: "no direct gold copied to selected surface"
+}
+refresh: "D05: historical late projection and owned display" {
+  direction: down
+  old: "D05-00 authentic CP0 / O0\nPrevious P0 + L0 = 10 shown items\nComplete factory includes Corr0 / Perf0 too\nCurrent prior ownership independently checked" {class: input}
+  late: "D05-01 / 02 fresh OH-late adds oLate\nChanged source + same RC0 -> refresh\nOld O0 / Pfx0 / gold retained\nCompatibility field is not authority" {class: state}
+  delta: "D05-03 exact sixteen-item gold\nAdded 6 late items; retained 10\nRemoved empty; changed {P0}\nNo native delta proves external delivery" {class: state}
+  shown: "D05-04 / 05 changed P0 family\nOld 6 shown items != current 12-item family\nActual full delivery can qualify exact 12\nPartial / unknown delivery stays pending\nNever auto-ack unseen late items" {class: gate}
+  forks: "Independent discriminator inputs\nMissing / different RC: reset, all 16 added\nChanged source + anchor: refresh precedence\nLate counter: 17 items + conflict\nUnknown / false ownership checked separately" {class: gate}
+  old -> late: "capture / intake / completion stay distinct"
+  late -> delta: "independent current item worksheet"
+  delta -> shown: "complete changed-family coverage required"
+  late -> forks: "separate I / gold / closure for each fork"
+}

@@ -1,0 +1,25 @@
+# org-target: docs/20-29-cases/20-gateway/20.13-binding-confirmation-use-race-and-counter-disposition.org::#counter-disposition-full-packet
+# Existing VerificationRecord / ReviewDisposition scopes; no checker or admission implementation.
+direction: down
+classes: {
+  input: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; border-radius: 10; font-size: 17}}
+  state: {style: {fill: "#E6F5F3"; stroke: "#19756C"; border-radius: 10; font-size: 17}}
+  gate: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; border-radius: 10; font-size: 17}}
+}
+raw: "CD00 / CD01 raw counter and full required intake\nOH-counter = B0 + oLateCounter\n17 items; P0 full family has 13\nTCounter / full delivery is not VCounter" {class: input}
+method: "CD02 actual method and issuer / subject checks\nNo result label or native receipt creates validity\nExact Q artifact / source / model / assumption scope\nNo executable countertrace or proof supplied here" {class: gate}
+valid: "Authentic complete counterexample\nVerifiedCounter in exact scope\nNever positive slot satisfaction: RJ07\nConflicting producer inputs need scope review" {class: state}
+invalid: "Authentic complete invalid-artifact result\nActual checked reason and coverage\nNo VerifiedCounter or positive proof\nDifferent from checker failing to finish" {class: state}
+pending: "Absent / incomplete / unknown method\nPending or inconclusive at actual stage\nRequired review member retained\nWrong offered result / issuer RJ06" {class: gate}
+review: "CD03 / CD04 authorized reasoned disposition\nExact counter / intake / origin review cut / policy\nAccepted / rejected-invalid / inapplicable / pending\nNew immutable record, then later current-use epoch" {class: gate}
+use: "CD05 / CD06 current scope / guards\nAccepted local counter keeps clean P0 blocked\nOne invalid/inapplicable item closed != all gates\nKnown stale disposition use RJ10; unknown pending\nNo new A or operational authority" {class: gate}
+history: "CD07 raw and historical records retained\nSame raw support / counter / conflict and 17 items\nDisposition changes review status, not raw bytes\nNo last-writer choice or history erasure" {class: input}
+raw -> method: "separate actual checker work / inputs"
+method -> valid: "independently authenticated result"
+method -> invalid: "complete rejection work"
+method -> pending: "no fabricated verdict"
+valid -> review: "actual subject and evidence references"
+invalid -> review: "invalidity reason must be genuine"
+pending -> review: "pending cannot justify ignoring a counter"
+review -> use: "fresh association / target and current policy"
+use -> history: "prospective qualification separate from retention"

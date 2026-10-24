@@ -1,0 +1,16 @@
+# org-target: docs/20-29-cases/20-gateway/20.14-partial-delivery-consumption-authority-and-blocker-closure.org::#counter-blocker-packet
+direction: down
+classes: {
+  input: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; border-radius: 10; font-size: 17}}
+  state: {style: {fill: "#E6F5F3"; stroke: "#19756C"; border-radius: 10; font-size: 17}}
+  gate: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; border-radius: 10; font-size: 17}}
+}
+raw: "BL00 full counter and required intake\nOH-counter / 17 items / P0 family13\nTCounter binds bytes, not method validity\nRaw conflict and history retained" {class: input}
+method: "BL01 / BL02 authentic completed method\nValid counter != positive Q satisfaction\nInvalid artifact != incomplete checker\nWrong offered subject / issuer: RJ06" {class: gate}
+review: "BL03 authorized exact disposition\nCounter / target / intake / reason / policy\nEarlier method -> review cut -> disposition\nThen fresh current-use cut; no own-result cycle" {class: gate}
+closed: "BL04 / BL05 item-scoped closure\nRejected-invalid may close this review item\nPsrc inapplicability closes only justified Psrc scope\nAccepted-valid keeps applicable P0 defeat" {class: state}
+remaining: "BL05 independent remaining guards\nFull intake and opposing coverage\nAll positive slots / argument / current use\nA and operational authority still unestablished\nNo automatic Eligible or all-clear" {class: gate}
+change: "BL06 dependency-scoped reuse\nNew member rechecks aggregate coverage\nOld exact item/body history may remain reusable\nStale use RJ10; unknown current scope pending\nConflicting dispositions require authorized resolution" {class: input}
+paths: "Three independent paths\nC-CAP: P0 resolution not Pcap validity\nC-CACHE: cache access / counters remain separate\nC-SOURCE: Psrc relevance cannot erase P0 review\nNo new scored variant or runtime qualification" {class: input}
+raw -> method -> review -> closed -> remaining -> change -> paths
+raw -> change: "retain immutable raw evidence"

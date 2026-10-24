@@ -1,0 +1,305 @@
+#+TITLE: 10.80 Declarative Project Formation: First ASCENT Slice
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.80
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+FILETAGS: :library:ascent:sysml:organization:implementation:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.79-current-library-project-formation.org][10.79 intent and alternatives]] | [[file:../../../project.sysml][Root model]] | [[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][D2]]
+
+* Ownership is declared before execution
+:PROPERTIES:
+:CUSTOM_ID: formation-organization
+:END:
+
+This slice makes the current Library repository the actual example. The native
+application reasoning controls run separately from Project Scope publication;
+the source-stage-observed entry now passes its fixed 120-second gate. Earlier
+unobserved attempts exceeded that gate and remain failed observations. It evaluates
+LIB-C01--LIB-C03 with the existing ASCENT rule declaration and Session APIs. It does
+not build a second framework, generic workflow engine or automatic LLM orchestrator.
+The user-confirmed reusable-Library intent and LLM-authored alternatives from 10.79
+are explicit Profile data. They are design assertions, not authenticated evidence.
+
+| Owner | Existing organization and concrete files | Public responsibility |
+|-------+------------------------------------------+-----------------------|
+| Project | [[file:../../../projects/library-formation/init.ss][projects/library-formation/init.ss]] | poo-flow! declares three selected Modules and their literal source locations; Core owns linking, dependency Scope Contracts and final Scope publication |
+| Library | [[file:../../../library/project-organization/objects.ss][library/project-organization/objects.ss]], types.ss, config.ss, interface.ss | Publish independent required roles, compatible owners, protected framework owners, products, duties and capability demands through Config and a checked Scope |
+| Profile | [[file:../../../profiles/library-formation.ss][profiles/library-formation.ss]] | Select this project's confirmed intent, all three candidate allocations, model package/instance/catalog, role layout and dependencies; candidate offers cannot delete independent Library demand |
+| Module | [[file:../../../modules/project-formation/func.ss][modules/project-formation/func.ss]], objects.ss, types.ss, config.ss, interface.ss | Own the application LR01--LR08 program and pure SysML renderer; generic rule evaluation remains upstream ASCENT |
+| Scenario | [[file:../../../scenarios/project-formation/func.ss][scenarios/project-formation/func.ss]], objects.ss, types.ss, config.ss, interface.ss | Require Library and Engine Scopes, adapt declarations/Profile to typed source rows, reject ambiguous identities and empty demand, invoke a fresh Session, expose inputs/run/render |
+| Explicit execution | [[file:../../../examples/library-formation.ss][Project runner]], [[file:../../../examples/library-formation-consequences.ss][algorithm probe]], [[file:../../../examples/library-formation-output.ss][shared output function]], [[file:../../../Justfile][Justfile]] | The Project runner demands the Scenario Scope. The separately labelled probe exercises named Module functions with Library Config/Profile data; it does not qualify Scope publication. Both preserve actual rows in fresh output directories |
+| Qualification | [[file:../../../t/project-formation-test.ss][t/project-formation-test.ss]] and [[file:../../../t/project-formation-entry-test.ss][entry test]] | Separately check real declared entry, exact baseline consequences and declaration perturbations with fixed heap/watchdog limits |
+
+The root entry for this slice is init.ss in its Project directory. Source: is the
+single source root; each @ location is relative to that init.ss, as Core defines.
+The legacy repository init.ss and its older package imports remain separate and
+unmigrated. A successful slice does not qualify that legacy entry or all P0--P9.
+
+The Types files use the selected Core cohort's poo-flow-predicate-contract. They check slice Scope
+availability, not the complete effective Types and origin/lifetime Contracts of
+10.77. No new contract version, version namespace or Org-owned version registry is
+introduced. The selected checkout and source bytes remain execution observations.
+
+* Input and rule boundaries
+:PROPERTIES:
+:CUSTOM_ID: formation-facts-rules
+:END:
+
+The Scenario reads ordinary POO objects and copies string cells into the existing
+ASCENT batch source interface. Those internal relation rows are not a second public
+configuration DSL. Candidate identities occur in Profile data and expected test
+outcomes, never as branch conditions in the rule program or renderer.
+
+| Relation group | Source | Meaning |
+|----------------+--------+---------|
+| intent; candidate | Profile project/intent and candidate project/basis | Bind alternatives to the confirmed project goal; changed basis invalidates old proposals |
+| proposed_owner/product/duty; capability | Candidate offers | Hypothetical allocations and explicit capability assertions; not attestations |
+| required_role; allowed_owner; role_scope; owner_kind; protected_owner | Library roles, owner kinds and protected owners | Independent compatibility and responsibility boundaries |
+| required_product/duty/capability | Library demand | Required D01--D10, five DE-O duties and four currently unestablished capability gates |
+| project_layout; role_layout; role_dependency | Profile model selection and project layout/dependency declarations | Data-driven package/instance/catalog, model slots, type names, detailed-model references and edges |
+
+| Rule | Actual slice consequence |
+|------+--------------------------|
+| LR01 | Project-scoped capture assigned to a definition owner yields project-input-in-definition |
+| LR02 | Assigning reasoning, review or receipt issuance away from its declared protected owner yields duplicate-framework-owner; incompatible or undeclared allocations also remain explicit conflicts |
+| LR03 | Missing compatible required role, required product, duty or role layout yields a gap; candidates cannot erase the demand |
+| LR04 | Matching intent plus complete structural coverage and no conflict permits structurally_covered; positive role_support explains allocations |
+| LR05 | Every required capability needs an explicit established assertion; missing or non-established states block readiness |
+| LR06 | Different intent basis or absent project intent yields invalidated; no layout is generated for it |
+| LR07 | All candidate_state, conflict, gap and invalidated rows remain in the result; elaboration is not review approval |
+| LR08 | runtime_ready is derived only when the declared structural/capability conditions hold; mixed positive/negative capability states remain blocked |
+
+The four capability gates describe full qualification, not isolated source presence:
+source-load includes the required build/load/recovery closure; capture-origin needs
+authenticated origin/currentness; method-validation needs actual selected-method
+receipts; authority needs real roles/grants and applicable review/use decisions.
+The observed Scope run supplies useful source evidence but does not close those
+full gates. Candidate capability assertions in this model are not their issuers.
+
+The finite program uses existing typed string relations, stratified negation and
+bounds (4096,4096,4096). A fresh native Session receives the full Scenario batch;
+incomplete evaluation is rejected. Closed-world gaps concern this declared batch,
+not omniscient knowledge about the repository. The application does not scan prose,
+infer source truth from an LLM statement, issue A/E/W/use, authenticate capabilities,
+run Aitia or grant authority. Even a future declared runtime_ready row would only
+mean these model premises hold; authenticated runtime acceptance remains P0--P9.
+
+* Deterministic consequences and model materialization
+:PROPERTIES:
+:CUSTOM_ID: formation-results-model
+:END:
+
+The executed module-functions-probe reports eight conflicts and 34 gaps, matching
+the independent baseline expectation:
+LIB-C01 covers all structural demand but lacks four capability gates;
+LIB-C02 has eight conflict rows, four incompatible required-role gaps and four
+capability gaps; LIB-C03 lacks eight roles, six products, four duties and four
+capabilities. These are counts of relation tuples, not severity scores, ranking,
+probability, or independent claims about actual runtime defects.
+
+Only a unique structurally_covered candidate can be materialized. Zero or multiple
+eligible candidates refuse rendering rather than taking the first name. The result
+contains nine layout_node and eleven layout_edge rows for the baseline, plus ten
+product_node and five duty_node rows. model_context retains the selected package, instance, catalog, project and confirmed
+intent basis in the same result. The generated SysML doc identifies that basis and
+the structural candidate without treating a conversation as runtime authority.
+Sorted result rows drive root part definitions,
+slots, source-reference dependencies, product/duty groups and open capability groups.
+The renderer contains language syntax, not a winning candidate or role catalog.
+
+The Profile selects references into the existing
+[[file:10.78-case-organization.sysml][DECaseOrganization companion]]. This is an explicit model selection for this
+slice, not a claim that a complete independently published SysML Library catalog
+already exists. The companion retains actual/target distinctions and detailed IDs. New actual
+DE-E14 groups the formation slice; DE-E15--DE-E19 identify its Library, Profile,
+application reasoning Module, Scenario and declared Project entry. Root source
+references select these new elements without relabelling the historical E01--E13
+backpressure inventory as the formation implementation.
+OpenSysML validates the generated root together with that companion; it does not
+prove the proposed allocations are implemented.
+
+To add a concern, extend Library required roles and compatible owners, then extend
+the Profile's selected layout/dependencies and a candidate's offered allocation. To add a required product or duty,
+extend independent demand and candidate offers. To add a candidate, extend the
+Profile. The same rules then compute the changed conflicts, gaps, nodes and edges.
+An LLM may propose those declaration edits for review; it cannot silently change
+protected owner policy or treat its own capability assertions as evidence.
+
+Org owns explanation, selected policy rationale and limits; D2 displays this declared
+organization and recorded outcomes. Their updates in this slice are explicit paired
+maintenance. Automatic Org/D2 synchronization and model merge/reconciliation are open.
+
+* Reproduction and controls
+:PROPERTIES:
+:CUSTOM_ID: formation-controls
+:END:
+
+The local source checkouts under .data are prerequisites, not committed dependencies.
+Core's revision is read from the selected ASCENT declaration, and POO's revision
+from that Core declaration. For a fresh checkout, prepare those exact revisions
+using the project's configured source workspaces and the normal Git client, then
+let formation-runtime verify their identities and clean state. The recorded Core
+copy came from the local Core repository at 44a99d4; the isolated POO repository
+came from its configured Git origin and was checked out at the declared 0df023f.
+No upstream working tree, package Tag or shared installation was changed.
+The focused kernel command is a repair/reproduction entry for the recorded local
+runtime; clean bootstrap from no artifacts remains unqualified.
+
+#+begin_example
+just build-formation-kernel
+just test-project-formation
+just investigate-formation-consequences .data/library-formation-<fresh-run>
+# Source-stage-observed integration gate, same fixed 120-second cap:
+just test-project-formation-entry
+# Full declared-Project runner with the same source-stage observation:
+just investigate-project-formation .data/library-formation-<another-fresh-run>
+timeout --signal=TERM --kill-after=5s 30s sysml -no-record-cache -strict -validate \
+  .data/library-formation-<fresh-run>/project.sysml \
+  docs/10-19-design/10-architecture/10.78-case-organization.sysml
+#+end_example
+
+| Control | Required observable result |
+|---------+----------------------------|
+| Declared entry / observed pass | Core links Library and Engine -> Scenario dependencies, returns the actual Scenario Scope, and executes its run/render procedures. The observed path passes; earlier unobserved timeouts are not reclassified |
+| 01 baseline | Exact eight conflicts, 34 gaps, nine layout nodes and eleven role edges; only LIB-C01 is structurally covered and no candidate runtime_ready |
+| 02 rename | Renaming an otherwise identical candidate changes its returned identity, not its eligibility |
+| 03 missing role | Removing capture leaves an explicit gap and removes structural eligibility |
+| 04 intent | Changing confirmed intent invalidates all three old proposals |
+| 05 ambiguity | Two fully covered alternatives remain visible; model generation refuses |
+| 06 obligation | Adding independent NEW-DUTY creates three gaps without editing rules |
+| 07 extension | Adding a compatible role and layout declaration creates a tenth model node without editing rules |
+| 08 malformed selection | Empty required roles or duplicate candidate identities refuse before evaluation |
+| 09 boundary | Assigning capture to Library retains two conflict reasons and refuses a model |
+| 10 capability model | All four explicit established assertions derive the model readiness condition; adding a contradictory stale assertion blocks it. These synthetic assertions grant no runtime authority |
+
+The entry test is separate from the pure reasoning controls; both keep the same
+fixed per-invocation budget. Each suite runs serially through the heap-fenced formation-test-file recipe, 2 GiB
+and 120 seconds per invocation. A combined multi-case run previously exceeded its
+120-second budget; its partial checks are not a complete pass. Separate bounded
+suites retain the same limit and independent failure status.
+
+* Recorded execution and current qualification
+:PROPERTIES:
+:CUSTOM_ID: formation-execution
+:END:
+
+The earlier eight-role probe [[file:../../../.data/library-formation-20261021-probe2/report.json][report.json]] records entry=module-functions-probe,
+authority=design-consequences-only, finished=true, structurally_covered=LIB-C01,
+runtime_ready=[], eight conflicts and 33 gaps. This earlier report precedes the
+Project-entry role addition; it is retained rather than rewritten. Its actual model_context binds
+LIB-C01 / DeterministicEngineering / libraryProject / DECaseOrganization /
+DE-CASE-01 / reusable-library. The probe passes the very same prepared batch to
+ASCENT and records that batch; it does not synthesize expected rows in Python.
+
+The earlier eight-role [[file:../../../.data/library-formation-20261021-project/report.json][Project report]] then completed through the declared Core-linked Scenario
+Scope, entry=declared-project-scope-observed, FORMATION-OK and exit 0. Its recorded
+inputs and every query relation equal the independent probe's values; its generated
+model bytes are identical. That earlier model is retained as its own receipt; the final root is generated
+again from the extended declarations below.
+The comparison is entry-route agreement, not an independent proof of the evaluator.
+
+The final declaration additionally requires project-entry, owned by Project
+composition. Profile selects its actual SysML source and three Module dependencies.
+No rule/renderer code changes are needed. The original eight-role receipts above
+retain their original 33 gaps; the final nine-role result has 34 gaps.
+
+The final [[file:../../../.data/library-formation-20261021-final-project/report.json][nine-role Project report]] completed with FORMATION-OK and exit 0 through
+the observed declared Scope path. It has eight conflicts, 34 gaps, nine layout nodes,
+eleven role edges, ten products and five duties; only LIB-C01 is structurally covered
+and runtime_ready is empty. The final independent probe is kept separately at
+[[file:../../../.data/library-formation-20261021-final-probe/report.json][nine-role probe report]]. Its inputs and every query relation equal the final
+Project report, and its model bytes equal both the Project output and root
+project.sysml; [[file:../../../.data/library-formation-20261021-final-project/entry-agreement.json][entry agreement]] records this comparison. The original
+inference/renderer source bytes are unchanged
+by the actual Project-entry role addition: Library/Profile declarations alone add
+the obligation, allocation and edges. The final ten control suites and baseline
+suite passed at the same fixed per-process resource limits.
+
+The final result contains nine role nodes, eleven role dependency edges, ten product
+nodes and five duty nodes. The generated candidate replaced root project.sysml
+only after strict static validation with the existing companion, exit 0; the
+Project-generated root was validated again. The old authored root is retained beside the eight-role probe report as
+project-before.sysml. The
+candidate model is a language-valid design projection, not an assurance approval.
+
+All ten control suites and the direct baseline suite produced CASE-OK, SUITE-OK,
+MODULE-OK, HARNESS-OK and final OK, with no error markers. The later Profile-owned
+model-context projection is additionally exercised by the fresh probe and static
+model check. The earlier unobserved Project entry reached its 120-second cap, exit 124.
+The source-stage-observed entry and the corresponding Project runner then completed the run/render path
+with all required success markers and exit 0, under the same 120-second cap. Their actual
+link-stage events show factory/admission for all three Scopes. No manual Scope
+construction or weaker assertion replaced that gate. No controlled performance
+study explains the difference between the two observations; unobserved/cold-route
+parity remains open.
+
+The first probe attempt failed because its output helper used the older JSON
+writer argument order. That failed directory remains separate; the corrected fresh
+probe uses the installed writer-first API and produced FORMATION-OK and exit 0.
+Neither incomplete output nor a failed Project entry is counted as a pass.
+
+* Source/load limitations and remaining gates
+:PROPERTIES:
+:CUSTOM_ID: formation-source-boundary
+:END:
+
+formation-runtime reads the dependency revision from ASCENT's gerbil.pkg, checks
+its isolated Core checkout against that revision, then reads Core's POO revision
+and checks its isolated POO checkout. Neither version is owned by Org or invented
+in a namespace. At this observation ASCENT declares Core 44a99d4, whose package
+still exports :core and the PooFlow contract API; it requires POO 0df023f.
+The adjacent shared Core checkout bdd4c13 exports :yuanxu and requires another POO
+revision. It is not substituted for the declared cohort. The slice uses the
+selected cohort's actual API, without aliases or upstream checkout mutation.
+
+The test/runtime path is isolated under .data/formation-cohort. It
+mounts ASCENT, the selected Core and POO sources, with only this cohort's isolated POO artifacts ahead of source fallback. Native prelude.ss and gerbil.pkg
+are copied as regular files at their actual :tao3k/yuanxu identity and compared
+byte-for-byte on reuse. System Gerbil dependencies remain installed runtime inputs. The full POO library
+build reached its fixed 180-second cap and left an incomplete object macro artifact;
+loading that incomplete artifact correctly failed. Focused object/mop unit compilation
+uses the same source revision and 180-second cap per unit. Both focused units completed with exit 0 and FORMATION-UNIT-OK. A unit result cannot
+be promoted to a successful full-library build.
+This is not a package installation, compiled-source parity or complete P0 repair.
+The three owner directories inherit the existing Library/Module/Scenario parent
+package declarations and their :core prelude; no redundant child package layer is
+added. This cohort matches those declarations.
+
+Earlier observations are retained: a combined-suite watchdog expiry; wrong init
+filename and source-relative-path attempts; a rejected symlink compiler tool;
+a current-Core/old-POO keyword arity failure; a mixed source/compiled route process
+signal 11; and an all-source attempt exposing ASCENT's actual :core import. These
+failures motivate dependency-cohort selection, not compatibility code or weakened
+guards. They are not transferred as receipts to the selected-cohort execution.
+
+The observed Project Scope path is distinct from unobserved/cold-route parity.
+The generated root remains a design model, not captured C, determinate Q or an
+Aitia review/authorization receipt. Existing Scope admission here checks the
+slice Contracts, not all the effective Types and lifetime obligations of 10.77.
+Source/compiled artifacts from another revision must not be admitted merely
+because they are on a search path. Complete compiled-source association and clean
+bootstrap remain P0 gates, not a new version registry in this example.
+
+Remaining: coordinated dependency/package migration; full effective Scope/field
+Contracts; genuine project origin and currentness; immutable execution/capture
+association; authenticated method/capability receipts; durable restart/recovery;
+Aitia independent review, authorization and receiver adoption/use; causal-assumption
+revalidation; and comparative research. This slice does not close those gates,
+submit review or perform delivery. Source changes invalidate the recorded execution
+basis and require a new bounded run, not rewriting old receipts.
+
+* Whole-chain audit and next refactoring boundary
+:PROPERTIES:
+:CUSTOM_ID: formation-chain-audit
+:END:
+
+[[file:10.81-declarative-chain-audit.org][10.81]] audits the implemented slice against its declarative goal. It identifies
+remaining case identity in rendering, repeated project context, incomplete field
+Contracts, separate input preparation, symbolic catalog/provider claims and partial
+build/load provenance. Its target boundaries and proposed controls are design only;
+this chapter's receipts, capability gaps and qualification limits remain unchanged.
+The statement above that rendering contains language syntax is scoped to the absence
+of candidate-name/role-catalog branch logic: the current DE-PROJECT short identity
+and implicit unique-candidate policy are still renderer literals to refactor.

@@ -1,0 +1,41 @@
+# org-target: docs/10-19-design/10-architecture/10.35-content-validation-slice.org::#native-content-validation-slice
+# render-layout: elk; theme: 0; pad: 24; timeout: 30
+direction: down
+input: "C4 dossier + trusted C1 policy\nPreserve prior hashes; qualify fresh selected inputs\nDE-R03/R04 -> E06/I04 -> T03 -> DE-D04"
+baseline: "Baseline prerequisite\nCompatible native baseline and cold Scenario gate\nActual policy/role bindings; no assumed pass"
+capture: "Native Scenario capture / target\nSelected Library metadata + normalized Profile + roles\nDossier, source/model/decision/view bytes and method closure"
+observers: {
+  label: "Scoped trusted observers / not implemented"
+  mechanical: "F-DOC\nInventory / anchor / byte binding\nMechanical claim only"
+  semantic: "F-ARCH + F-DEC\nIndependent source/model and rationale review\nMissing reviewer means no semantic positive"
+}
+inference: "Existing ASCENT owner + narrow adapter\nFacet scope, issuer and dependencies checked\nSupport / counter / pending / mismatch; F-TRACE"
+verification: "Existing verification owner + case adapter\nExact context/content/policy/inventory binding\nF-REVIEW packet verification is not disposition"
+explanation: "Retained Org/D2 explanation\nActual query/verification scope and gaps\nNo parent-family pass from a mechanical facet"
+controls: "N01-N10 / future isolated controls\nOmission, wrong actual/target, stale/foreign/forged inputs\nMissing reviewer, conflict, history and receipt replay"
+boundary: "Current work: design and document checks only\nNo native capture, observer/query run or request issued\nNo Aitia submission; prior input drift remains explicit"
+input -> baseline
+baseline -> capture {
+  style.stroke-dash: 4
+}
+capture -> observers.mechanical {
+  style.stroke-dash: 4
+}
+capture -> observers.semantic {
+  style.stroke-dash: 4
+}
+observers.mechanical -> inference {
+  style.stroke-dash: 4
+}
+observers.semantic -> inference {
+  style.stroke-dash: 4
+}
+inference -> verification: current facets and explicit gaps {
+  style.stroke-dash: 4
+}
+verification -> explanation: scoped owner outcome only {
+  style.stroke-dash: 4
+}
+controls -> inference: refuse laundering and retain conflicts {
+  style.stroke-dash: 4
+}

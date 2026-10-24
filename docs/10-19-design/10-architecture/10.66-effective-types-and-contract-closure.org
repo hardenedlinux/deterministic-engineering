@@ -1,0 +1,533 @@
+#+TITLE: 10.66 P1 Complete Effective Types and Contract Closure
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.66
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+TODO: AUDITED SPECIFIED | QUALIFIED
+#+FILETAGS: :design:types:contracts:causality:evidence:delivery:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.64-contract-consistency-and-implementation-order.org::#audit-implementation-order][P0-P9 order]] | [[file:10.54-library-and-aitia-types-contracts.org][S1 foundation]] | [[file:10.65-ascent-migration-and-contract-handoff.org][P0 owners/build/load]] | [[file:10.63-case-joint-acceptance-plan.org][Joint acceptance]]
+
+* SPECIFIED P1 contract baseline and limits
+:PROPERTIES:
+:CUSTOM_ID: p1-effective-contracts
+:STATUS: Design and static documentation only; no implementation, acceptance execution or delivery
+:END:
+
+P1 consolidates the complete expected receiver Types from 10.54 with the premise,
+check, impact, evidence-strength and delivery-phase refinements in 10.55-10.65.
+The target is ordinary POO Types/ObjectContract/Function, Core contextual Contract
+admission and Aitia's existing CLOS class composition. Tables specify fields of
+those existing owners; they introduce no schema language, parallel object registry,
+generic assumption service or replacement verification engine.
+
+10.54's identities, immediate parents, sibling policies, sole declaration generation
+and twelve verification purposes remain. This chapter is the consolidated effective
+refinement for P1: apply it before closed validation, rather than treating later
+S6-S8 fields as optional unknown payload. Existing 10.54-10.65 semantics and control
+IDs remain; this chapter makes their target field and call constraints explicit.
+Unknown, incomplete, refuted and conflicting findings are valid data where their
+variant permits them, but cannot satisfy a positive property or action prerequisite.
+
+Current source inspection confirms P0's 19 selected source hashes unchanged at this
+turn's observation; this is not a full dependency or loaded-process qualification.
+Project HEAD remains 8044732d505f84e373119a70f947df00e1767300. Core types.ss is
+still the dirty 3b1182030502571fcf4c54a458871b9e4160d5fe8da55c3c54159dad481129be
+cut described in 10.65; the request base still has seven purposes and facts:object?.
+The full Types below are targets, not current exported capabilities. P0 public
+publication/build/load and normalized Scope defects, WP00 and recovery stay open.
+
+* SPECIFIED Files, inheritance and single ownership
+:PROPERTIES:
+:CUSTOM_ID: p1-files-and-inheritance
+:END:
+
+| Existing owner | Complete effective target / dependency boundary |
+|----------------+--------------------------------------------------|
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/abstract/types.ss][Library abstract/types.ss]] | BackpressureDeclarationContract; shared model/policy shapes; primitive reference, claim/premise/check/strength/product/input/demand field Types; shared C/A/E/Observation/use data contracts. Import POO/Core only, not authored values, Config, Scenario, runners or Aitia |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/types.ss][Library rust/types.ss]] | Generic/Rust/Integration and two policy role refinements, exact identity/parent/applicability, parameters/runtime/mapping/delta, concrete capability/function/Scope expectations; import abstract Types. No second family generation or copies of generic fields |
+| [[file:../../../profiles/resource-lifecycle.ss][Profile]] / [[file:../../../scenarios/resource-lifecycle/types.ss][Scenario types.ss]] | Selection consumes fixed expected Scope contracts. Scenario composes project acquisition/C/authority/delivery input fields and expected callable signatures. Project inputs and recognition remain Scenario-owned, not Library-authored facts |
+| Library objects/config/interface and Scenario func/interface | Construct and expose actual checked values/operations from expected Types. Retain normalization/wrappers and actual source/producer links; never publish a shape-correct fake method awaiting a later body |
+| [[file:../../../modules/resource-evidence/types.ss][ResourceEvidence types.ss]] / func/interface | Closed source-row/projection/query-call/Q expectations consuming recognized C/A/E/W/use and independently required D/K. No policy/action grants or duplicate Library field definitions |
+| [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/types.ss][Aitia sdlc/types.ss]] | Policy-neutral review/history/disposition/delivery/receiver effective CLOS fields; request/facts expected pairs; one purpose domain, generic action/target/assertion-stage domains and pure relation checks. Reference foreign C/Q/W through typed associations, do not import backpressure classes |
+| Aitia sdlc/objects.ss / review-authority.ss / review-verification owner | Owned constructors; actual source/role/clock/verification/history acceptance/current use. Move shared classes once to Types if required; do not register duplicate CLOS identities or invoke operations from field predicates |
+| Standard-specific Aitia verifiers/snapshots | Keep existing standard-specific classes/purposes, narrower allowlists and real semantic checks. Base expansion must include explicit unsupported refusal; generic review is not a fictitious standard |
+| Core types.ss / POO Type/ObjectContract / poo-clos/model | Upstream primitive validation, effective field metadata, inheritance, normalized candidate, contextual diagnostics/evidence and actual read retention. Domain fields do not redefine these facilities |
+
+Value-shape reuse is separate from value ancestry. Model shapes share common
+fields; concrete Generic, Rust and Integration constraints are sibling refinements
+of the shared shape, so Rust does not inherit Generic's fixed identity/parent=false
+check. Published values retain Generic -> Rust -> Integration immediate parents.
+Both policies derive from common policy shape, parent=false, with distinct fixed
+expected descriptors. Policy composition does not change that model parent chain.
+
+Complete fields are the union of declared inherited fields and supported child
+fields; all applicable inherited constraints conjoin. Derive the effective map
+before closing it. CLOS allowed names come from the same effective class metadata,
+including the exact framework marker; do not maintain a second field list or allow
+all percent-prefixed slots. Cyclic declaration/input references, unknown enum tags,
+extra semantic fields and wrong role ancestry refuse before unknown value demand.
+
+The generation read remains checked Scope -> expected role descriptor -> admitted
+BackpressureDeclarationContract -> contract-version V1. No policy/Scenario/Aitia/
+manifest owns another generation. Semantic revision, project/document revision,
+dependency commit/dirty hash, input/read generation and epoch remain separate.
+Namespace names and Org/D2 only reference these associations.
+
+* SPECIFIED Shared effective field algebra
+:PROPERTIES:
+:CUSTOM_ID: p1-shared-field-types
+:END:
+
+Names below denote target slots/refinements on existing owner Types, not a new
+serialization format. Each field is required in its selected variant unless an
+explicit optional/tagged alternative is stated. Empty required lists need an
+independently checked no-demand basis; absent does not mean empty, false or pass.
+
+| Field group / owning value | Required fields and value rules | Pure relational constraint |
+|---------------------------+----------------------------------+----------------------------|
+| Typed reference | identity, expected role/kind, actual owner/source association, source-cut and exact subject/revision/scope where bound; content reference additionally full-byte digest, base and unique selector/access basis | Symbol/string namespaces remain distinct. A name/digest/class tag is not real owner recognition. Resolution and origin authentication occur at qualified operation boundary |
+| Required demand / input binding | duty/criterion/claim/unit ref, finite role, exact occurrence/index under selected bounded multiplicity, expected input Type, required basis, provenance/adequacy requirement and limits; observed binding carries actual value/ref or explicit gap | Requirements derive from selected definition/policy before offered results. Unique functional keys; no dropping required unit and offered row together or interning premise IDs into role symbols |
+| Claim / declared capability | identity, subject, proposition/polarity, claim-kind, domain, coverage, premise-basis, required input/observation roles, declared strength/limits and expected operation/Contract/source refs | Claims/capabilities describe supported scope, not actual outcomes or authority. All inherited duties remain; unsupported domain cannot be enabled by candidate parameters |
+| Premise declaration / existing assumptions field | identity, source/semantic revision, proposition, applicable claim/domain refs, required check/input roles, supported applicability/transfer limits and reconsideration rules | Stable premise identity is not global truth. Library publishes reusable assumptions; Scenario captures actual project premise inputs; identical name with different source/meaning is not same premise |
+| Selected causal claim refinement | question, intervention, comparator, outcome, units/population/service boundary/window, estimand or model-counterfactual proposition, model/measurement refs, premise-basis and identification/transport demand | Required when claim-kind is empirical-causal or model-counterfactual. Conditional presence is determined by trusted claim Type, not a caller causal? flag. Other claim kinds do not silently become causal |
+| Causal basis / existing criterion-input refinement | Variable/measurement definitions; data/model/source lineage; experimental/observational/model route; assignment/comparison/adjustment, confounding/concurrent change, missingness/selection/interference/stability premises; actual supported identification argument and domain/transport limits or explicit gaps | A DAG, code dependency, trace, theorem or successful parser is not empirical identification. Model-counterfactual and empirical intervention observations retain different meanings |
+| Check finding / existing Observation or ContentFinding | C/A/E refs as applicable, claim/premise/criterion refs, exact subject/domain/basis/source-cut, actual check operation/observer/inputs/artifacts, execution/validation/conclusion, uncertainty/diagnostics/contrary findings and limits | Definition contains no check result. Genuine findings bind original occurrence; declared checker procedure/name alone supplies no observation or independent evidence |
+| Impact finding / existing reassessment/use/status refinement | trigger/change refs, old and observed premise/input/source cuts, affected claim/W/U/K/Q/R/action-use/adoption/operation refs by kind, dependency coverage, qualified compatibility/impact basis, required rechecks, unresolved targets and actual observer origin | No mutation of old evidence. Unqualified dependency coverage requires conservative blocking/revalidation, not invented minimal cone or safe unaffected conclusion |
+| Product/content/reference row | independently required product role/occurrence, exact file/model/decision/chapter/selector, full bytes/parser/semantic basis, actual-target/historical-current classification, typed dependency/reference demands, retained access/relocation/origin/limits | Offered subset or title cannot define completeness. Bounded cyclic reference traversal retains incoming demands and gaps; one section may satisfy several roles only with actual coverage |
+
+Identity/text fields use their declared symbol or owned nonempty string Type, never
+implicit interchange. Indices/counts use bounded nonnegative exact integers; time
+and duration bind their actual clock domain/units and supported encoding. Validity
+is the declared half-open [issued-at, expires-at) interval checked against a genuine
+clock occurrence later, not caller-supplied now. Numerical findings require the
+actual supported finite numeric/units/uncertainty representation; missing values
+use a typed gap and are not zero/NaN/string sentinels. Collections/reference closure
+obey selected finite cardinality/traversal limits with explicit incomplete results;
+the candidate cannot widen those limits. These are domain field refinements on
+upstream primitive Types, not replacements for them.
+
+** Evidence strength is scoped and multidimensional
+
+The strength field composes claim-kind, subject/proposition/domain, coverage,
+premise-basis, supported method/semantic interpretation, uncertainty and limitations.
+It is not a numeric confidence/rank. The target finite claim-kind domain at Library's
+shared Types owner is content, execution, model-property, conditional-theorem,
+empirical-causal, model-counterfactual, provenance. Actual policy may select a
+narrower supported subset; new kinds require owner Contract changes, not arbitrary
+symbols in records. Aitia's generic strength reference consumes the qualified
+descriptor; it does not import/copy this Library enum into a generic base class.
+
+| Kind / illustrative existing method | Qualified meaning / required limit |
+|------------------------------------+------------------------------------|
+| content / SysML or Org observer | Exact syntax/structure or independently established semantic assertion. Parsing/link closure alone does not prove architecture or causal adequacy |
+| execution / Rust run | Actual bounded run/property/facet under complete launch/input/validator origin. Harness success and tested proposition polarity remain separate |
+| model-property / QNT | Exact bounded state/action/invariant/path/domain/complete run; not Rust refinement or empirical causal effect |
+| conditional-theorem / Lean | Exact theorem/polarity/axioms/kernel/imports and premises; proof of negation refutes the corresponding positive claim |
+| empirical-causal / supported actual analysis | Defined target and actual data/intervention/identification/estimator/uncertainty/diagnostics/transport limits. No actual supported analysis means undetermined/unsupported, not an invented zero or interval |
+| model-counterfactual / qualified model analysis | Precise alternative under stated model and identification assumptions; not observation of another historical outcome |
+| provenance / source/receiver verification | Exact issuer/origin/content/signature/custody assertion and trust limits; authentic provenance is not property adequacy or permission |
+
+Observed strength is checked against the independently required target claim at
+actual use. No total ordering promotes provenance -> content -> theorem -> causal
+truth. A supported cross-kind mapping must be explicitly qualified at its real
+semantic owner with preserved origins and premises, or it refuses. Foreign source
+verification creates a new local observation, never recreates private original W.
+Comparable contrary claims retain both origins; different model/domain/polarity
+or scope is not automatically a contradiction. Independence groups retain actual
+method/source/author dependence; two records do not constitute independent support.
+
+* SPECIFIED Complete capture, execution and query receiver shapes
+:PROPERTIES:
+:CUSTOM_ID: p1-capture-execution-query-fields
+:END:
+
+These are effective additions/compositions with the complete S1/S3-S5 base fields,
+not reduced stand-alone schemas. Shared field groups above expand at their owners.
+
+| Existing expected Contract / value | Complete effective subject and required associations |
+|-----------------------------------+------------------------------------------------------|
+| Declaration/model/policy/parameter/Scope Contracts | Retain all 10.54 fixed role/identity/family/parent/version/lifecycle/rules/dependency/mapping/delta/asset/qualification/capability/Config/parameter/export/callable fields. Add complete claim/premise/demand/strength and allowed policy intent/action/product/impact/transfer conditions before closed validation. No project principal, result or grant in declaration |
+| ResourceSelectionProfileContract / ResourceSelectionContract | Admitted Scope/model/slice/parents/two policy refs, expected descriptors/source/revisions, one normalized parameter child, supported claim/criterion/product/intent selections and project-input demand. Selection cannot choose another validator or delete inherited obligations |
+| ResourceCapturedUseContract / C, composing ResourceContextContract data | Identity/occurrence, selection/Profile/Scope/parents/policies, subject/project revision/dirty source/environment/provider/tool/mandate/product/acquisition refs, actual required premise/model/measurement/data/domain inputs, owned/read-guarded basis and explicit gaps. No later result/check/decision appended to captured inputs; no second Rust Context as authoritative capture |
+| ResourceMethodApplicationContract / A | Identity, same actual C, selected expected capability/operation/Contract/source, subject/claim or bounded claim set, unit/domain/parameters/mode/strength, complete role-bound expected inputs/premise-basis, derivation/upstream requirements and execution/interpretation limits |
+| ResourceMethodAttemptContract / E and run group G | Identity, actual A/G, ordered actual prepare/derive/build/probe/run/check operations/results, effective launch executable/argv/cwd/environment/limits/source/load origins, wait status/completion/interruption, raw input/output/log/artifact refs and diagnostics. No reconstructed preview as execution proof |
+| ResourceMethodObservationContract / Observation | Actual C/A/E/G/claim/unit/subject/basis; complete observed input/artifact/validator/source origins, execution/validation/semantic/control dimensions, strength/premise/check/uncertainty/limits. ContentFinding also binds product span/criterion/parser versus substantive attribution and reference closure |
+| Private W / original result | Immutable original C0/A0/E0/G, claim/polarity/subject/domain/basis/strength/conclusion, exact original footprint/artifacts/accepted observation and qualified issuer. Public explanatory records do not mint it |
+| ResourceEvidenceUseContract / use U | Original W/origin plus target C/A/K/claim/basis, exact expected demand/strength/premise comparison, actual artifact/issuer/semantic compatibility/current source/status/check refs and current operation/cut/limits. A structural use value is not recognized fresh U |
+| ResourceEvidence rows / Q | Closed typed selection/duty/unit/expected-input/application/claim/input/attempt/observation/witness/use/required-use/gap/status/comparison/trace fields from 10.59. Premise/check/impact refs use declared finite roles and recognized basis, not a parallel relation vocabulary. Q binds actual C/policy/program/accepted source/result/projection/closure cuts, required/observed sets and all gaps/counters/conflicts/limits |
+
+The result axes remain separate. execution uses not-started/refused/completed/
+tool-failure/timeout/cancelled/drift/interrupted/unknown-completion; validation uses
+accepted/rejected/incomplete; semantic conclusion uses holds/refuted/undetermined;
+control uses met/failed/not-applicable with an explicit no-control basis. Fresh use
+records eligible/ineligible/unestablished at a specified operation cut; it is never
+a mutable global current? field. Existing raw tool outcomes are retained alongside
+normalized values; unrecognized causes cannot be coerced to a known enum.
+
+Premise checks use the same execution/validation axes and their declared proposition
+conclusion. Refuted prerequisite, incomplete check, stale source, opposed comparable
+findings and unsupported checking capability remain distinguishable. holds is
+conditional evidence at a cut, not eternal premise truth. An impact record supplies
+typed observations and required action; it cannot independently execute a recheck,
+revoke another owner's receipt or approve an exception.
+
+Q is a complete finite query result including pending/negative/conflict, not a
+claim all duties passed. Accepted Session batch publication and definite Q formation
+belong to S5. Failed replacement leaves earlier Q historical once known external
+invalidation blocks live use. Closed row validation cannot repair batch atomicity,
+authenticate a fabricated E/W/use or establish empirical causality.
+
+* SPECIFIED Aitia effective fields and finite request purposes
+:PROPERTIES:
+:CUSTOM_ID: p1-aitia-purpose-and-facts
+:END:
+
+Compose SdlcBoundFact for subject/revision/scope and SdlcIdentified where identity
+is required. Policy-neutral records must not inherit standard/requirement/pass-fail
+from SdlcEvidence just to reuse slots. CLOS class ancestry is real expected ancestry;
+required fields, full effective slot validation and pure relational checks all apply.
+
+| Expected value / request-facts binding | Required effective fields and constraints |
+|----------------------------------------+-------------------------------------------|
+| SdlcReviewBinding / R | identity, actual C/Q/origins, project/revision/dirty source/scope/review-stage/intended-use, selected policy/Contract/source/semantic revision/parents, independently required and actual products/criteria/roles/mandates/history, claim/premise/strength basis, gaps/trust/limits. Finalize before downstream verification outputs |
+| SdlcReviewContextFacts | exact R/assertion and project/policy adoption/applicability, actual appointment/delegation/independence/credential/root/status/source/time-cut findings and gaps; context only |
+| SdlcReviewInventoryFacts | exact R/assertion, required-versus-observed products/criteria/Q/closure, historical/current/missing/conflict classifications, retained access/limits; accounted inventory may remain incomplete |
+| SdlcReviewCriterionFacts | exact R/criterion/subject/proposition/conclusion/domain/strength, original C/A/E/G/W/U/content/check/attribution refs and input/premise/identification/uncertainty/contrary/transport limits. Established refutation is not criterion-holds |
+| SdlcReviewAssessment / review-use | exact R/C/Q/policy/project and separate context/inventory/criterion/independence/current-use findings, all unresolved/negative/conflict/authority conditions. Review-use adds actual expected request/receipt/verifier/clock/interval/source/status/Core-admission occurrence; never edits R |
+| SdlcReviewHistorySource / Discovery and HistoryFacts | exact C/Q/R/policy/subject/revision/scope, independent required sources and actual owner/root/head/prefix/predecessor/accepted records, authenticated origins, coverage/budgets/negative/unknown-order/conflict/gaps. No directory absence as clean history |
+| Role/grant and DispositionFacts | actual principal/appointment/delegation/root/credential/parent grant/status, finite action/target/assertion-stage and exact scope/conditions/validity/quorum/independence; C/Q/R/H and exact assertion, proposal/inclusion/current-use refs appropriate to stage |
+| ReviewDecision / Exception / Reassessment / Withdrawal | exact basis/policy/action/target/principal/grants/H/conditions/source/origin. Decision adds conclusion/reasons/predecessor/denial links; Exception adds retained unmet duty/risk owner/mitigation/expiry. Reassessment adds old/new trigger/premise/check/impact/repair/technical refs and explicit unresolved/resolution associations. Withdrawal adds exact target kind/owner/effective scope/status; no universal erase |
+
+The base SdlcVerificationRequest purpose domain remains exactly twelve symbols,
+authored once in Aitia types.ss. The table documents that target; Org is not its
+runtime source. Every operation selects expected request/facts class and assertion
+before inspecting candidate values; base membership cannot route a request.
+
+| Purpose | Fixed intended operation / expected facts |
+|---------+-------------------------------------------|
+| criterion-content | Genuine adopted standard criterion operation and its standard-specific facts |
+| classification-and-context | Genuine standard context/classification operation and exact facts |
+| tailoring-decision | Genuine standard tailoring operation, authority and exact facts |
+| structured-inventory | Genuine standard inventory operation and exact facts |
+| certification-decision | Genuine certification operation, authority and exact facts |
+| history-discovery | Generic SdlcReviewHistoryRequest -> SdlcReviewHistoryFacts, or separately supported genuine standard history operation |
+| disposition-approval | Generic SdlcReviewDispositionRequest -> SdlcReviewDispositionFacts, or separately supported genuine standard authority operation |
+| review-context | SdlcReviewContextRequest -> SdlcReviewContextFacts |
+| review-content-inventory | SdlcReviewInventoryRequest -> SdlcReviewInventoryFacts |
+| review-content-criterion | SdlcReviewCriterionRequest -> SdlcReviewCriterionFacts |
+| delivery-inventory | SdlcDeliveryInventoryRequest -> SdlcDeliveryInventoryFacts |
+| delivery-provenance | SdlcDeliveryProvenanceRequest -> SdlcDeliveryProvenanceFacts |
+
+Each new request derives from the existing request base and fixes one purpose and
+expected facts class. Bound project/revision/scope, R or manifest, policy, assertion,
+criterion/action/target must agree as applicable. Extend the existing seven-purpose
+base and all affected snapshots together, including explicit NASA lifecycle
+unsupported-purpose refusal. A wider subclass predicate cannot bypass inherited
+constraints. No causal/receiver/withdrawal verification purpose or suffix is added;
+claim, intended use, action and assertion have their own typed fields.
+
+* SPECIFIED Finite action, conclusion and stage domains
+:PROPERTIES:
+:CUSTOM_ID: p1-actions-and-stages
+:END:
+
+P1 makes the policy-neutral action domain concrete at Aitia types.ss: review,
+exception, supersession, withdrawal, distribution, adoption, use. These target
+symbols are a design refinement, not a claim that current exports implement them.
+The trusted operation and actual adopted policy select a supported subset and
+target kind. Existing standard-specific action formats keep their genuine route;
+do not reinterpret historical signed actions through this new generic enum.
+
+| Action / exact target | Required association and permitted meaning |
+|-----------------------+--------------------------------------------|
+| review / review-binding | Exact technical/context/content/history basis; conclude approved/rejected/deferred. approved is scoped review disposition, not distribution or receiver permission |
+| exception / criterion | Exact retained unmet duty/negative, permitted scope/risk authority/mitigation/expiry; conclude approved/rejected/deferred. Approved exception does not change property truth |
+| supersession / decision or exception | Exact predecessor/denial and proposed replacement/resolution, compatible scope and authority; approved replacement retains original and supersession edge. No last-write-wins deletion |
+| withdrawal / receipt, evidence-use, grant, decision, exception, publication, adoption or owner | Exact target/real issuer or authorized owner/effective scope and status. Accepted decision must still reach the actual target owner's revocation/retirement boundary; no generic toggle |
+| distribution / manifest | Finalized payload/recipient/project/intended-purpose and current scoped accepted authority; cannot be inferred from producer review |
+| adoption / publication | Exact incoming manifest and receiver's own checked selection/C/Q/R/H/policy/mandate; pre-existing host mandate authorizes earlier inspection/provisioning |
+| use / operation | Exact adoption/publication/manifest, receiver project/principal/purpose/immutable operation inputs/current premises and effect-owner conditions. Accepted adoption alone is insufficient |
+
+The generic decision-conclusion domain is approved/rejected/deferred. Target-kind
+domain is review-binding, criterion, decision, exception, receipt, evidence-use,
+grant, publication, adoption, owner, manifest, operation. Reject mismatched action/
+target pairs even if both tags are individually valid. Technical repair and
+reassessment are findings/workflows, not authorizing actions. Repair may supply
+new evidence for review or supersession; it never replaces a denial itself.
+
+The assertion-stage domain is proposal, accepted-inclusion, current-use. Proposal
+verification cannot assert storage inclusion; inclusion requires actual accepted
+source/record/head binding; current-use requires fresh actual owner/status checks.
+Decision conclusion, action, assertion-stage, review-stage and intended use have
+different slots. review-stage is selected from the finite supported stage set in
+the actual policy; this does not globally narrow legacy standard lifecycle text.
+Intended use is constrained by that adopted policy/recipient/operation, not converted
+into another verification-purpose enum or arbitrary permission-bearing string.
+
+Authentic rejection/defer/withdrawal can target recognized incomplete or negative
+technical basis under an operation that explicitly permits it. Required missing
+associations are represented as typed gaps in that supported negative input variant;
+they do not forge a complete Q/R or waive real target/source/authority checks.
+Positive review/distribution/adoption/use requires its full positive prerequisites.
+An authentic denial is retained even when the positive technical property is unproved.
+
+* SPECIFIED Phase-typed delivery and recipient fields
+:PROPERTIES:
+:CUSTOM_ID: p1-delivery-phase-fields
+:END:
+
+Delivery phase is determined by the expected output Type at its operation. The
+finite phase labels below document the variants; there is no mutable phase field
+that turns one record into another. If encoded, the tag is fixed by that Type.
+Only prior finalized values may enter a later record's identity; no future output
+is a mandatory self-input of the same manifest/C/R.
+
+| Phase / existing target Type | Required effective fields / permitted dependency |
+|------------------------------+---------------------------------------------------|
+| payload / SdlcDeliveryManifest | identity, finalized producer C0/Q0/R0/publication/parents/policy/prior review basis, source/build/dependency/ABI closure, independent required products and actual typed inventory/reference/access/retention basis, recipient/project/intended-purpose/redistribution/compatibility/claim/premise/strength constraints, all original negatives and status-source descriptors. No future distribution decision/ack/adoption or live-status result in its self-hash |
+| distribution / S7 decision | exact finalized manifest/recipient/project/purpose/action, current H/principal/grants/policy/conditions and genuine authorization/inclusion/status. Authorization is a later envelope; manifest payload does not need its future decision identity |
+| transfer / delivery occurrence | exact manifest/distribution/channel/sender/receiver, actual transfer operation/input/artifact/custody/origin/time or retained failure. Intent is not observed arrival |
+| acknowledgement / SdlcDeliveryAcknowledgement | exact transfer/manifest/receiver/channel, actual observed bytes/access inventory/omissions/time/authentication/custody basis. Arrival is not adequacy, adoption or use |
+| verification / SdlcRecipientVerification | exact intake/manifest/origin and receiver trust/policy/roots/current sources/time; separate integrity/inventory/provenance/content/compatibility/causal-applicability/authority findings, real local receipts/use, gaps/counters/conflicts/limits. delivery-inventory and delivery-provenance requests each fix their own exact facts/assertion |
+| adoption / SdlcLibraryAdoption | receiver identity/project/revision/subject/intended-purpose, own selected checked publication/parents/policy, incoming manifest/origin, own C1/Q1/R1/H1 and technical/current use, actual accepted adoption decision and live conditions. Receiver C contains prior mandate/proposals, never its own future adoption result |
+| use / SdlcLibraryUse | actual accepted adoption/publication/manifest, same receiver C1/Q1/R1/current authority, precise principal/project/revision/operation/target/purpose/owned inputs, fresh source/history/clock/status/premise/transport/effect-owner findings and limits |
+
+DeliveryInventoryFacts bind exact manifest/intake/receiver/project/purpose and
+independently required-versus-observed accessible closure/omissions. Correctly
+accounting for missing items may verify; it does not establish complete payload.
+DeliveryProvenanceFacts bind original assertion/conclusion/issuer/credential/root/
+signature/custody/status plus real local verifier/operation/source cut. Verified
+provenance of a refutation remains refutation; it is not a property-support receipt.
+
+Changed payload/subset/recipient/intended-purpose requires a new manifest and
+scoped distribution decision. Acknowledgements, fresh status and receiver reviews
+retain their own identities; do not append them back into an already finalized
+manifest. Unavailable current status can block use of an otherwise byte-complete
+payload. No manifest claims immediate global recall, cross-host atomicity or trust
+in a producer-local inaccessible .data path.
+
+* SPECIFIED Validation, normalized returns and snapshot boundary
+:PROPERTIES:
+:CUSTOM_ID: p1-normalization-and-validation
+:END:
+
+| Boundary in order | Expected check / actual returned subject | Cannot establish by shape alone |
+|--------------------+------------------------------------------+---------------------------------|
+| Trusted operation entry | Resolve source-qualified expected Contract/class/Function, exact operation purpose/action/phase and supported domain before candidate dispatch | Candidate chooses no validator, trust root, now callback or favorable subclass |
+| Effective receiver inventory | Expected ancestry/kind and full inherited allowed/required names; inspect unknown names before demanding values; own exact supported metadata | CLOS check-model alone does not close extras; no blanket metadata escape |
+| Value Contract / nested Types | Primitive/enumerated/tagged shapes, bounded collections/keys, conditional field groups, typed refs and complete POO value-contract normalize under expected producer; retain returned object/wrapped callable | Missing empirical input never defaults to zero; structural ref is not private origin |
+| Pure relational refinement | Parent/family/sole version agreement; claim/basis/premise/check/strength/demand joins; request/facts/purpose/action/target/stage/phase and no recursive output dependencies | No IO, process/tool execution, history discovery or semantic estimator in field predicates |
+| Core contextual admission | Actual candidate plus expected contextual responsibilities/obligations -> evidence.candidate; validate returns this normalized candidate, not boolean/precheck input | New default successful classifier needs a complete value-contract; it does not authenticate actual C/W/Q/grant |
+| Aitia expected-model check | Full expected effective class, closed names and all inherited slot predicates, then pure relations; retain check-model's returned candidate and composed checked nested values | No custom facts object's own method can choose acceptance or mint a receipt |
+| Caller publication/call | Bind checked Context, dependency Scope, final Scope, Profile/request and prepared launch value; retain currentness and actual call/result association | Core linker return-retention defects are still implementation prerequisites; Types cannot mask them |
+| Runtime verification/current use | Genuine source/producer/clock/role/premise/receipt/status checks at real operation owner -> actual finding/use or refusal; preserve original seals and negative attempts | Shape checks, saved admission, frozen receipt interval or ledger event cannot authorize a later effect |
+
+Root value normalization precedes contextual checks. Contextual child responsibilities
+describe that checked root's actual child; they cannot replace a child with a detached
+normalized object. Do not run normalization independently at every step, replace
+identity-bearing private handles with copied objects, or convert symbol/string/ordered
+trace/set distinctions for convenience. Failed admission/normalization publishes
+neither a partial object nor an eligible cache replacement. Existing constructor
+read ownership/copy rules and conservative open-callback trace from P0 are retained;
+no project replica or false closed-hook declaration.
+
+Snapshots include every semantic selected field and normalized nested basis,
+required gaps/negative conclusions, exact action/target/assertion-stage/purpose,
+phase-specific prior dependencies, source/premise/strength/limits and operation trust
+associations. Use qualified typed canonical encoding and owned immutable data or
+real guarded references. Do not hash private handles into portable authority or
+omit uncertainty/limitations to make two incompatible requests compare equal.
+Encoding never grants authority or replaces actual live dependency verification.
+
+* SPECIFIED Premise change, lifetime and research distinction
+:PROPERTIES:
+:CUSTOM_ID: p1-lifetimes-and-correctness
+:END:
+
+| Change | Required typed result and next boundary |
+|--------+-----------------------------------------|
+| Captured selection/meaning/parameter/source/product or adopted mandate meaning changes | New C/selection and newly prepared affected A; retain original C0/E/W |
+| New technical/content/premise/impact findings change required query basis | Recognized new observations/use -> S5 new Q -> new R as needed; no findings appended into old C |
+| Later source/role/premise/status drift with unchanged captured meaning | Fresh scoped check/impact finding blocks invalid current U/review/action/receiver use at real owner immediately when known; old W/Q/R remain historical even if replacement Session transaction fails |
+| Receiver domain/measurement/intervention/transport assumptions differ | Exact qualified comparison/identification/transport finding or explicit unsupported gap; producer acceptance does not transfer empirical effect |
+| Premise recovers, repair succeeds or resolution is withdrawn | Fresh actual verification/review/authorized resolution as required. Retain denials and reopen uncovered blockers; never resurrect revoked old seal or accept byte restoration as renewed authority |
+
+Soundly blocking known-invalid uses, honest missing/unsupported evidence, preserved
+counterevidence/denials and actual scoped authority are correctness obligations.
+Minimal invalidation, reduced recheck cost or superiority over a simpler complete
+revalidation design remain research hypotheses. No field carries paper-endorsed,
+causally-proved or universally-current status. The paper remains a research object;
+this chapter does not estimate causal effects or claim a better research result.
+If a selected qualified capability explicitly promises scoped selective behavior,
+its own advertised bound must still be met; that is not a universal requirement
+imposed on a baseline which promises complete revalidation.
+
+* SPECIFIED Positive and matched negative acceptance conditions
+:PROPERTIES:
+:CUSTOM_ID: p1-acceptance-controls
+:END:
+
+EF controls below refine existing TY/SX/CX/EX/OX/QX/RX/AX/DX/JX and P0 PM controls.
+They are prospective obligations, not executed tests or additions to historical
+248/380 counts. Existing entry names identify implementation/qualification seams;
+they do not claim current tests already cover these future expectations.
+
+| Control / owner and existing seam | Positive condition | Negative control / required refusal or retained gap |
+|-----------------------------------+--------------------+----------------------------------------------------|
+| EF01 / Library Types, library-owner-test | Complete child field map validates at expected descriptor | Parent-only closing rejects child fields, unknown slot forced before name check or inherited constraint dropped; fail |
+| EF02 / same / sole generation | Checked family/role/parent descriptors resolve sole V1 declaration | Policy/manifest/Org/Namespace supplying alternate generation or equal-symbol forged owner refuses |
+| EF03 / same / parents and policies | Generic -> Rust -> Integration plus distinct sibling policy descriptors | Inherited Generic fixed identity on Rust, skipped parent or coding/design policy substitution refuses |
+| EF04 / Scope/capture, library-selection-test | One parameter child, independent required claim/product/premise duties retained | Candidate removes duty/result together, chooses Contract or injects role/grant; refuse |
+| EF05 / shared premise Types | Scoped identity/proposition/source/domain and required check roles compose | Global Boolean premise, changed meaning under old basis or arbitrary premise symbol as role refuses |
+| EF06 / causal criterion effective map | Complete question/model/design/measurement/identification demand or explicit allowed gap | causal? tag bypass, missing comparator/window/domain, DAG used as identification proof; refuse positive support |
+| EF07 / method/content observation seam | Qualified real check has exact C/A/E/claim/premise/basis/input/observer origin | Declared checker name, author text or synthetic command result treated as actual check refuses |
+| EF08 / execution/result Types, real-results controls | Execution/validation/semantic/control/current-use axes retained separately | M06 harness pass means property holds, Lean negation means positive theorem, or timeout becomes refutation; refuse |
+| EF09 / empirical strength refinement | Actual supported estimate/uncertainty/diagnostics and limits or explicit undetermined | Missing estimate -> zero, invented interval, robustness alone -> identified effect; refuse positive causal claim |
+| EF10 / strength/use comparison | Exact independently demanded kind/domain/coverage/premises match qualified use | Provenance/formal proof/run observation automatically upgraded to causal truth; refuse |
+| EF11 / W/use producer boundary | Private original preserved with fresh target U and independently verified foreign assertion | JSON/clone recreates W, new verifier E rewritten as original workload or copied eligibility reused; refuse |
+| EF12 / content closure, observer seam | Required model/Org/decision spans/refs/accounting preserve historical/current/missing | Parser/hash implies adequacy, offered files define demand or inaccessible required refs disappear; retain gap |
+| EF13 / projection Types, ResourceEvidence controls | Complete required D/K/roles/basis and typed check/impact/strength refs | Valid individual rows with mixed C/basis or missing required roles refuse; no row-derived permission |
+| EF14 / Session/Q boundary | Complete finite Q retains pending/counter/conflict and source/program cut | Unfinished/rejected batch called definite Q or known invalid use kept live on rollback; refuse |
+| EF15 / Aitia purpose base and snapshots | Twelve base symbols plus fixed request/facts and per-operation allowlists | Subclass-only widening, unknown purpose, NASA unsupported fallthrough or candidate dispatch refuses |
+| EF16 / Aitia effective CLOS fields | Expected ancestry/closed names/inherited conjunction/pure relations all hold | object?-only facts, unknown semantic field, broad percent metadata or SdlcEvidence policy-neutral shortcut refuses |
+| EF17 / R/request binding | Same C/Q/project revision/policy/criterion/assertion and precise gaps | Mixed revision, foreign Q, wrong criterion or stripped uncertainty snapshot collision refuses |
+| EF18 / separate review verification | Context, inventory and criterion findings verify only exact assertions | Context seal proves content or complete accounting means no missing products; refuse |
+| EF19 / action domain owner | Supported action/target/conclusion combination under adopted policy | Valid enum tags in unsupported pair, technical repair as grant or approval as distribution; refuse |
+| EF20 / assertion-stage and authority seam | Proposal, actual accepted inclusion and fresh current use are independently bound | Proposal receipt substitutes for accepted storage, old head/current check or authority; refuse |
+| EF21 / legitimate negative action | Authentic scoped rejection/defer/withdrawal preserves recognized incomplete basis | Requires positive property to record denial, or forged unbound denial accepted; fail |
+| EF22 / history/role/disposition seam | Actual source/grant/principal/validity/quorum/independence and retained veto | Same name/key, missing source, old prefix or unauthorized late backdating creates permission; refuse |
+| EF23 / repair/exception/supersession seam | New technical fix and authorized resolution separately bind original denial | Digest change erases denial, exception proves property or replacement withdrawal leaves blocker closed; fail |
+| EF24 / delivery phase Types | Manifest finalized from prior payload/review basis; later records bind it | Future distribution/ack/adoption mandatory in same self-hash or public phase edit advances state; refuse |
+| EF25 / delivery inventory/provenance | Exact independent required-vs-observed and signed assertion scope retained | Inventory/provenance receipt becomes adequacy/adoption/property support; refuse |
+| EF26 / manifest/receiver binding | Exact recipient/project/purpose/subset/closure and scoped distribution | Reuse authorization for new recipient/redaction/use or hidden inaccessible closure; refuse |
+| EF27 / receiver bootstrap/adoption | Prior Host mandate supports inspection; receiver own C/Q/R supports actual adoption | Future adoption authorizes its prerequisite load or producer acceptance adopts for receiver; refuse |
+| EF28 / receiver current use | Same receiver operation/principal/inputs and fresh status/premise/transport/effect owner | Adoption grants all later effects, missing receiver measurement or unknown transport becomes safe; refuse |
+| EF29 / normalized return, Core/Scenario seams | Checked Context/dependency/final Scope/Profile/request/callable passed onward | Distinguishable normalized result discarded or detached child substituted; refuse publication |
+| EF30 / pure Types and open-read boundary | No operation execution during shape checks; custom obligations retain full read trace | Fake closed hook loses dependency, candidate callback performs checks or default classifier replaces full value Type; fail |
+| EF31 / failure/cache/snapshot boundary | Refusal retains diagnostics/negatives and no partially published replacement | Failed normalization overwrites eligible cache, private-handle serialization grants authority or omitted negative collision; fail |
+| EF32 / causal lifetime/rollback seam | Scoped change blocks affected current use; new C/Q/R follows actual changed meaning | Mutating old W/C, old Q rollback bypass, revived revoked seal or guessed zero effect; fail |
+| EF33 / cross-domain comparison and conflict | Real comparability/qualified transfer basis, both contrary origins retained | Majority green resolves conflict, equal labels establish transport or unrelated domain called contradiction; fail |
+| EF34 / correctness versus research controls | Conservative full revalidation may meet all mandatory duties; selected explicit selective promises remain enforceable | Reject otherwise conforming baseline solely for nonminimal work, ignore advertised selective bound or claim advantage without comparison; fail the corresponding claim |
+| EF35 / source/build/load qualification, P0 seams | Actual full Types/Contract/value/callable publication and compatible producer origins qualify later | Source-only enum/table/placeholder body, old binary or import-only success called complete P1; refuse |
+| EF36 / joint/source/compiled/cold/recovery gates | Required per-control lane/artifact/budget map, genuine outputs and owner evidence | 248/380/EF row count as test pass, widened limits or unchanged failed recovery as closure; refuse |
+
+* SPECIFIED Implementation handoff and remaining open work
+:PROPERTIES:
+:CUSTOM_ID: p1-handoff-and-open-items
+:END:
+
+1. At Types owners, compose effective shared primitives/refinements and conditional
+   fields before fixed concrete descriptors. Keep complete expectation code independent
+   of values/Config/method bodies. Define the purpose/action domains once at Aitia's
+   actual owner and coordinate standard snapshot refusal and expected facts.
+2. Qualify complete normalizing value Types plus contextual contracts, typed callable
+   signatures and negative controls. Retain all returned candidates and actual sources;
+   repair Core Context/requirement/final Scope handoff at Core, not in a project shim.
+3. Implement real S2 values/Config/public Scope and S3 selection/C together with actual
+   deferred operation bindings. Keep any incoherent or placeholder body unpublished.
+   Then S4 actual findings/W/use, S5 definite Q, S6 independent R checks, S7 authority
+   and S8 phased receiver operations consume exactly those expected associations.
+4. Map EF obligations to actual existing owner entries/artifacts and original controls
+   before future execution. P0 dependency/public/build/load qualification and WP00
+   budgets remain prerequisites; S9 cross-boundary acceptance is still separate.
+
+Open implementation evidence includes actual C/producer recognition, complete
+effective value/class metadata, supported causal/semantic checker inputs, qualified
+source/trust/clock/role/history/receiver operations, live invalidation and all executed
+per-row results. Real appointments/grants and missing measurements cannot be supplied
+by Types. Research comparisons need their own independent baselines and outcomes.
+This chapter does not create those facts, run controls, issue receipts or deliver code.
+
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][D2 source]] and [[file:../../90-99-views/90-architecture-views/90.99-library-contracts.svg][SVG]] show the effective field owners, finite domain separation,
+normalized return boundary and phase/lifetime constraints. Historical 10.34 catalog
+and prior recovery receipts retain their original bytes and meanings.
+
+* SPECIFIED P1 expectations consumed by coherent P2 construction
+:PROPERTIES:
+:CUSTOM_ID: p1-p2-publication-handoff
+:END:
+
+[[file:10.67-library-construction-publication-and-scope-handoff.org::#p2-order-failure-currentness][10.67 P2 consolidation]] defines this handoff.
+Complete effective Types govern constructed definitions/policies and real method bindings. Checked values/wrappers must survive every publication edge; nested root normalization must preserve/rebind the entire graph coherently before admission or refuse. Real C/issuer/source/role/status recognition remains separate from structural admission.
+
+* SPECIFIED P1 acquisition and origin effective field refinement
+:PROPERTIES:
+:CUSTOM_ID: p1-p3-origin-fields
+:END:
+
+[[file:10.68-profile-selection-scenario-binding-and-capture.org::#p3-origin-protocol][10.68 P3 consolidation]] defines this boundary.
+Existing C acquisition/origin composition expands to basis-ref, actual acquisition operation/result, selected producer/source/generation, qualified read support, genuine Core receipt binding, clock/lease limits and diagnostics. Declare this effective map before closed validation; no unknown late field or new Contract generation. Sealed input-basis and later origin association form one C without self-seal recursion.
+
+* SPECIFIED P1 fields consumed by P4 execution and use
+:PROPERTIES:
+:CUSTOM_ID: p1-p4-result-dimensions
+:END:
+
+[[file:10.69-method-content-execution-and-evidence-issuance.org::#p4-issuance-and-results][10.69 P4 consolidation]] defines this boundary.
+P4 uses complete independently typed execution/validation/semantic/control/current-applicability fields and scoped multidimensional strength. Original W remains immutable; target use has new actual comparison/current-check origin. Unknown/incomplete inputs cannot become zero/pass/refutation or a promoted empirical causal conclusion.
+
+* SPECIFIED P1 effective Q and canonical primitive fields
+:PROPERTIES:
+:CUSTOM_ID: p1-p5-effective-query
+:END:
+
+[[file:10.70-ascent-projection-and-determinate-query-view.org::#p5-q-fields-and-determinism][10.70 P5 consolidation]] defines this boundary.
+Complete Q preserves capture/project/program/source/request/completion/rows/explanation/limits and actual private accepted-origin association. Deep-own primitive string cells and preserve typed scalar/set/order distinctions; complete missing-product accounting differs from missing required Q outputs. No new generation, Aitia purpose or acceptance-from-kind field.
+
+* SPECIFIED P6 exact request and facts boundary
+:PROPERTIES:
+:CUSTOM_ID: p6-follow-up-66
+:END:
+
+[[file:10.71-aitia-review-adaptation-and-current-use.org::#p6-purposes-and-calls][10.71 P6 consolidation]] defines this boundary.
+The common twelve purposes and seven actions remain authored once. P6 uses only review-context, review-content-inventory and review-content-criterion with exact typed pairs; every old narrower consumer explicitly refuses unsupported purposes. No purpose/action/stage enum is added by P6.
+
+* SPECIFIED P7 finite purposes actions and stages
+:PROPERTIES:
+:CUSTOM_ID: p7-follow-up-66
+:END:
+
+[[file:10.72-history-authority-reassessment-and-withdrawal.org::#p7-fields-and-requests][10.72 P7 consolidation]] defines this boundary.
+Use only history-discovery/disposition-approval with exact typed generic facts and distinct proposal/accepted-inclusion/current-use assertions. Seven action/target pairs remain fixed; technical reassessment and storage-prefix repair are not invented generic actions.
+
+* SPECIFIED P8 exact phases and finite purpose pairs
+:PROPERTIES:
+:CUSTOM_ID: p8-follow-up-66
+:END:
+
+[[file:10.73-library-delivery-and-recipient-adoption-use.org::#p8-phases-and-fields][10.73 P8 consolidation]] defines this boundary.
+Payload excludes future distribution/ack/adoption outputs. P8 consumes only delivery-inventory and delivery-provenance typed pairs; P6 review and P7 history/disposition stages retain separate meaning. No purpose/action/Namespace version source is added.
+
+* SPECIFIED P1 control instance mapping
+:PROPERTIES:
+:CUSTOM_ID: p9-follow-up-66
+:END:
+
+[[file:10.74-case-joint-acceptance-and-research-plan.org::#p9-plan-and-artifacts][10.74 P9 consolidation]] defines this boundary.
+Document-qualified original/refined controls map to exact actual API/suite/filter/lane/independent oracle and owner artifacts before execution. Overlapping row counts are not added as tests/receipts; no normalized return or semantic field may be silently discarded.
+
+* SPECIFIED Complete current-origin observations and lifecycle
+:PROPERTIES:
+:CUSTOM_ID: consistency-audit-75-66
+:END:
+
+[[file:10.75-contract-consistency-and-refactoring-order.org::#audit-capture-origin-lifetime][10.75 P1-P9 consistency audit]] defines this refinement.
+P1 existing acquisition/origin/current-use groups must declare original occurrence/receipt and later actual verification/use observation refs before closed checks. Expiry does not change captured meaning or revive issuance. An expected source-bound owner may independently verify retained original association; no arbitrary submitted C seal, hidden field or new purpose/version is allowed.
+
+* SPECIFIED Expected normalization and actual returned subjects
+:PROPERTIES:
+:CUSTOM_ID: p0-76-follow-up-66
+:END:
+
+[[file:10.76-dependency-build-load-and-normalized-handoff.org::#p0-scope-handoffs][10.76 unified P0]] defines this boundary.
+Core consumes actual accepted evidence candidates; Library Contracts supply domain parent/model/method consistency. Default predicate-only Context usually preserves identity, so owner nonidentity fixtures need real supported seams and cannot forge evidence or alter production Contract for a fake pass.
+
+* SPECIFIED Unified P1 effective fields and same-C lifetime
+:PROPERTIES:
+:CUSTOM_ID: p1-77-follow-up-66
+:END:
+
+[[file:10.77-effective-types-contracts-and-origin-lifetime.org::#p1-fields-and-generation][10.77 unified P1]] defines this boundary.
+10.77 retains this complete field foundation, explicitly refines acquisition/origin/current-use observation groups and coordinates actual Yuanxu/POO/CLOS imports. Original receipt, later independent verification and target use remain separate from immutable C; no new generation or purpose.

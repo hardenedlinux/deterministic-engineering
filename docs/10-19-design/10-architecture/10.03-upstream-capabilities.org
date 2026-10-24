@@ -1,0 +1,411 @@
+#+TITLE: 10.03 Upstream Capabilities and Integration Boundary
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.03
+#+OPTIONS: toc:3 num:nil
+#+STARTUP: overview
+#+TODO: OPEN REVIEW | RESOLVED
+#+FILETAGS: :design:sources:
+#+LINK: leanpoo https://github.com/tao3k/lean-poo/blob/1b015d0037ad30c44adbbb37d4f79a50bb9d9287/%s
+#+LINK: aitia https://github.com/tao3k/lambda-aitia/blob/cbf3f6861ef7cf66d8d02aaf71b1c89630eaf7fc/%s
+#+LINK: smp https://github.com/tao3k/gambit-SMP/blob/2125416e8809b0fab86fd8341876cb984e937589/%s
+
+[[file:../../../README.org][Overview]] | [[file:10.01-core-model.org][Core model]] | [[file:../../20-29-cases/20-gateway/20.01-gateway-sdlc.org][Gateway case]]
+
+* Inspection scope
+:PROPERTIES:
+:CUSTOM_ID: inspection-scope
+:INSPECTED_ON: 2026-10-18
+:METHOD: local source and contract inspection
+:STATUS: inspected-not-requalified
+:END:
+
+This document records capabilities found in selected upstream sources. Links are
+pinned to the inspected commits. The original ASCENT/Lean selected files matched
+their then-HEAD content; their unrelated local changes were excluded. The later
+Core and Aitia readings use committed Git objects, excluding concurrent edits.
+Inspection time and evidence scope are retained rather than silently advancing
+the earlier source references.
+
+#+NAME: inspected-revisions
+| Project | Inspected HEAD |
+|---------+----------------|
+| gerbil-ascent | 166d003d5160de97506fd328e855e33121c75726 |
+| lean-poo | 1b015d0037ad30c44adbbb37d4f79a50bb9d9287 |
+| poo-flow-core, PR 19 | 80e2e74022c9c4053445475402856c5f369aec48 |
+| lambda-aitia | cbf3f6861ef7cf66d8d02aaf71b1c89630eaf7fc |
+| gerbil-ascent, later PR 1 evidence-workflow inspection | fdabdc37731fa85088f96cb9e0b0901c799986ae |
+| gerbil-ascent, subsequent progressive-discovery inspection | 144ed6e55110c4ccd1fa2a825f79007d1a3317d6 |
+| Gambit SMP application contract | 2125416e8809b0fab86fd8341876cb984e937589 |
+
+No upstream build, proof checker, test suite, remote CI, or performance experiment
+was run for this documentation task. A theorem declaration and its proof body
+were inspected where cited; this is not a fresh kernel-check receipt. Upstream
+contract documents describe their own qualification, which remains separate from
+fresh qualification of this repository or a composed engineering system.
+
+The initial name-based search missed the intended lifecycle project. Its canonical
+repository name is ~lambda-aitia~, mounted at ~poo-flow/packages/lambda-aitia~.
+The earlier executor-only description is refined below: Aitia owns SDLC and
+assurance policy, not merely task scheduling. Its README at the pinned revision
+was inspected; concrete execution and standards mappings remain to be validated.
+
+Core was read directly from committed objects at the current
+[[https://github.com/tao3k/poo-flow-core/pull/19][PR 19]], whose remote head matched the local HEAD during inspection. Its large
+concurrent working-tree changes are excluded. Neither that identity check nor
+source inspection constitutes exact-head CI acceptance. Earlier ASCENT and Lean
+observations retain their original pinned revisions; no claim is made that they
+represent a subsequently advanced upstream HEAD.
+
+* gerbil-ascent
+:PROPERTIES:
+:CUSTOM_ID: ascent-capabilities
+:STATUS: inspected
+:END:
+
+** Checked relational language and candidate boundary
+:PROPERTIES:
+:CUSTOM_ID: ascent-language
+:END:
+
+Sources: [[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-ascent/program/interface.ss][public Scheme interface]], [[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-ascent/docs/library-acceptance.org][Library admission contract]],
+[[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-ascent/candidate/reasoning.ss][candidate execution and receipt binding]].
+
+The public interface exports the checked relational language and operator/session
+facilities. The contract describes finite program values, positive atoms,
+lower-stratum negation, a fixed filtering/computation subset, checked reductions,
+finite pointwise views, and min/max lattice declarations. Trusted Scheme constructs
+program values before admission; arbitrary host callbacks are not accepted as
+checked rule bodies.
+
+The inert candidate path is narrower. It accepts data in a declared subset,
+rejecting host value expressions, arbitrary callbacks, finite views, and lattice
+declarations. This distinction matters when an Agent proposes new rules: a trusted
+host program and an untrusted candidate are different admission surfaces.
+
+~reasoning-receipt-bound?~ checks receipt type, snapshot validity, identity,
+generation, snapshot digest, and candidate digest. Its source comments explicitly
+limit digest binding to local content consistency, not source authority.
+~reasoning-attempt~ distinguishes complete, rejected, and unknown outcomes. Optional
+finite or founded evidence has a separate verifier and completion boundary.
+
+For the engineering model this supports explicit facts, scoped rule admission,
+bound candidate execution, and method-specific result checking. The engineering
+vocabulary, authority rules, obligation templates, and admission semantics are
+still project-owned work. Native admission does not generally prove termination;
+finite rule structure alone is insufficient for unrestricted scalar recursion.
+
+** Update and invalidation granularity
+:PROPERTIES:
+:CUSTOM_ID: ascent-updates
+:END:
+
+Source: [[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-ascent/docs/scheme-session-deletion-design.org][native dependency invalidation and atomic deletion contract]].
+
+The contract assigns replacement validation to ~program/admission.ss~, eligibility
+and dependency closure to ~program/update-selection.ss~, and completed-result reuse
+to ~program/reuse.ss~. Eligible source replacement recomputes affected downstream
+relations, including recursive components, while independent completed relations
+seed the new engine. Negation, reductions, and lattice projections participate in
+impact analysis. Failed prospective updates retain the previous completed state.
+
+This is relation-level invalidation and affected-component rederivation. It is
+not universal fact-level deletion maintenance. Closed builder-created procedures
+qualify for the reuse interpretation; opaque generators, callbacks, patterns, and
+custom storage providers require full prospective recomputation. General deletion
+speedup and complete lineage are not implied.
+
+Engineering change propagation can adopt this conservative shape, but must add
+dependencies for requirements, contracts, profiles, evidence producers, acceptance
+policies, and decisions. A relational evaluator cannot infer these domain edges
+from arbitrary prose or arbitrary external artifacts.
+
+** Local evidence and interaction
+:PROPERTIES:
+:CUSTOM_ID: ascent-evidence
+:END:
+
+Sources: [[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-ascent/docs/features/interactive-evidence-reasoning.org][interactive evidence contract]],
+[[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-ascent/docs/features/candidate-feedback/acceptance.org][candidate feedback qualification contract]].
+
+The interaction contract describes registered finite local predicates, explicit
+bindings, current source/result references, and supported/contradicted/unknown
+feedback. Models select operations and bindings; they do not change registered
+rules or submit arbitrary Scheme through that interaction surface. Source
+replacement invalidates references. Evidence dependencies and the temporal
+interaction trajectory serve distinct purposes.
+
+Candidate feedback compares completed, bound results with a caller-owned finite
+reference or same-source gold result. A match applies to that query and source;
+it does not establish the reference's authority or natural-language fidelity.
+A wrong gold compared with itself can match. The contract documents a bounded
+finite Scheme/Lean/Quint correspondence corpus; it explicitly excludes general
+compiler correctness, concurrent source mutation, and model-language intent.
+
+For this repository, a reusable checked fragment may support a design subclaim.
+The architecture argument and obligation policy must still determine what that
+subclaim means and whether its support is sufficient for the engineering decision.
+Model benefit or whole-task success is not inferred from local support.
+
+* lean-poo
+:PROPERTIES:
+:CUSTOM_ID: lean-capabilities
+:STATUS: inspected
+:END:
+
+** Typed construction and precedence
+:PROPERTIES:
+:CUSTOM_ID: lean-composition
+:END:
+
+Sources: [[leanpoo:README.org][project scope]], [[leanpoo:LeanPoo/Object/Definition.lean][typed object definitions]],
+[[leanpoo:docs/contracts/c3-graph.org][ordinary C3 graph coherence contract]].
+
+~Object.defineIn~ builds typed declarations in an existing schema with ordered
+parents through the C4 construction path. Strict variants reject duplicate direct
+writes before compilation. First-class parent composition is available through
+~Memoized.defineFrom~; the result retains the plan and receiver resolution mode.
+These are typed Lean constructions, not a Scheme parser or a domain DSL.
+
+The ordinary C3 contract lists complete cached/reference result equality on finite
+graphs, including errors, and semantic certificates for graph interpretation.
+This ordinary C3 result must not be silently identified with all C4 extensions or
+all engineering contract semantics.
+
+The upstream README explicitly permits divergence of general open-recursive
+computation. Bounded debug reads do not establish termination of arbitrary object
+observations. Our design snapshot therefore needs its own completion and effect
+policy before exposing effective facts to ASCENT.
+
+** Explicit structural contract strengthening
+:PROPERTIES:
+:CUSTOM_ID: lean-contracts
+:END:
+
+Source: [[leanpoo:LeanPoo/Functional/ObjectContractRefinement.lean][ObjectContract refinement]].
+
+~refine~ retains the original shape, constraints, and obligation phase, then adds
+a gated phase. ~refine_accepts_iff~ states that acceptance requires the original
+contract and the added phase on the same value/path. ~refine_preserves_rejection~
+prevents refinement from admitting a value rejected by the original contract.
+~diagnose_refine~ and ~refine_assoc~ preserve the specified sequencing semantics.
+
+The source explicitly states that ordinary descriptor inheritance remains
+override. These laws concern a supplied pure interpretation. They do not prove
+behavioral substitutability of a changed gateway, nor authorize a child to weaken
+an inherited security guarantee without new compatibility work.
+
+** Dependency-certified proof transport
+:PROPERTIES:
+:CUSTOM_ID: lean-proof-reuse
+:END:
+
+Sources: [[leanpoo:LeanPoo/Proof/Types.lean][proof types]], [[leanpoo:LeanPoo/Proof/Patch.lean][patches]],
+[[leanpoo:LeanPoo/Proof/Reuse.lean][reuse and closure]], [[leanpoo:LeanPoo/Proof/Invalidation.lean][pending obligations]],
+[[leanpoo:Examples/ProofReuse.lean][independent quota-change example]].
+
+~Obligation~ stores typed dependencies, a proposition over state, and a ~stable~
+proof transporting that proposition across equality of its dependencies.
+~Patch~ stores a state transformer, touched keys, a ~frame~ proof for untouched
+keys, and added obligations. Sequential patches compose their transformation and
+write footprint. ~Certificate~ covers every obligation owned by the proof object.
+
+~unaffected~ requires dependencies to avoid touched keys. ~reuse~ transports an old
+owned proof under that premise. ~close~ needs fresh proofs for affected old and
+added obligations. ~pending~, ~mem_pending_iff~, and ~closePending~ connect the
+executable pending list with that criterion. The example changes quota while
+retaining an identity theorem whose dependency is unchanged.
+
+This is stronger than trusting a declared list alone: ~stable~ and ~frame~ are
+proof obligations. However, interpreting all relevant engineering inputs as typed
+state, extracting dependencies from Scheme or external tools, and establishing
+artifact validity are not supplied automatically.
+
+** Registered graph invalidation
+:PROPERTIES:
+:CUSTOM_ID: lean-invalidation
+:END:
+
+Sources: [[leanpoo:LeanPoo/Proof/Invalidation.lean][reverse graph closure]],
+[[leanpoo:LeanPoo/Object/CacheInvalidation.lean][revision cache invalidation]].
+
+~invalidatedNodes~ propagates through registered reverse inheritance edges.
+~invalidateCaches_descendant~ clears reached descendants under its path/bound
+premises; ~invalidateCaches_once~ advances an affected owner once;
+~invalidateCaches_frame~ preserves unaffected owners. ~guardedEdit~ and
+~publishEdit_sealed~ describe refusal and preservation of the old source.
+
+The file explicitly requires correct edge registration, sequential evaluation,
+and graph finiteness. It does not certify arbitrary concurrent mutation or a
+complete engineering evidence graph. These premises become integration obligations
+rather than hidden assumptions in our model.
+
+* Later ASCENT PR 1: evidence-chain-driven reasoning
+:PROPERTIES:
+:CUSTOM_ID: ascent-evidence-primary
+:STATUS: committed-source-inspected
+:ASCENT_PR: https://github.com/tao3k/gerbil-ascent/pull/1
+:END:
+
+The remote PR head and local HEAD matched ~fdabdc37731fa85088f96cb9e0b0901c799986ae~
+at this inspection. This later observation supplements the earlier capability
+readings; it does not silently relabel their receipts. No upstream build, proof,
+checker run or exact-head CI qualification was performed here.
+
+Sources: [[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-ascent/docs/scheme-design-framework.org][evidence-driven progressive discovery]],
+[[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-ascent/docs/features/evidence-responsibilities.org][Evidence Chain/DAG/Trajectory responsibilities]],
+[[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-ascent/docs/features/trajectory-exploration.org][open-exploration contract]],
+[[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-ascent/evidence/interface.ss][native Evidence declarations]],
+[[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-ascent/python/src/ascent/clue_query_rules.ss][Scheme clue, slice and read-acknowledgement rules]],
+[[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-ascent/packages/proofs/quint/TrajectoryClueScope.qnt][QNT scope and adverse controls]],
+[[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-ascent/docs/features/qualification/quint.org][Quint/TLC and Lean qualification contract]].
+
+ASCENT is an evidence-chain-driven reasoning system. It owns current support,
+source/premise applicability, reusable derivation components, invalidation and
+observable Trajectory feedback. The domain rules in this repository are a
+downstream specialization, not the entirety of ASCENT or a second evidence engine.
+
+The inspected Scheme rules join evidence and factors by observation ID/digest,
+retain support and counterevidence, keep hypotheses conditional, derive conflict
+and unknown, compute view deltas, and acknowledge displayed units. Registration
+does not authenticate observations or grant authority. A query's local unknown
+does not prove global absence. Selected facts and associations remain downstream
+DSL responsibilities; Python is transport rather than a relevance engine.
+
+The trajectory contract distinguishes available reads and the implemented thin
+event index from the richer arbitrary relation-delta/handoff contract still needing
+qualification. The application must expose and test the actual interface; no
+mandatory navigator, hypothesis ranking or closed action menu follows from evidence.
+
+The committed [[smp:docs/smp-trajectory-application.md][SMP application contract]] supplies an existing downstream example
+of this discipline. Native SMP acceptance is not reassessed here. The
+[[file:10.04-evidence-driven-workflow.org][primary architecture document]] specifies the gateway mapping and makes QNT the
+maintained authoring language with generated TLC backend artifacts, alongside Lean
+and source/native correspondence. Specula/TLAPS remain reference inputs.
+
+** Subsequent progressive-discovery observation
+:PROPERTIES:
+:CUSTOM_ID: ascent-progressive-observation
+:REVISION: 144ed6e55110c4ccd1fa2a825f79007d1a3317d6
+:STATUS: committed-source-inspected
+:END:
+
+The subsequent local and PR 1 head matched this revision. The committed
+[[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-ascent/docs/scheme-design-framework.org][framework]] and [[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-ascent/docs/features/trajectory-exploration.org][trajectory contract]] preserve caller-selected questions,
+expandable bounded views, same-witness evidence associations, and deeper reads
+without a mandatory navigator. A current trajectory reference requires matching
+context and verified bound evidence; ordinary hypotheses remain explorable.
+Arbitrary richer relation-delta qualification stays separate from the available
+interface. This is source inspection, not a fresh upstream execution receipt.
+The [[file:10.05-agent-reasoning-and-design-convergence.org][engineering rationale]] and its paired D2 views apply these boundaries.
+
+* poo-flow-core module and testing mechanisms
+:PROPERTIES:
+:CUSTOM_ID: core-module-system
+:STATUS: committed-source-inspected
+:END:
+
+Sources: [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/README.org][ownership map]], [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/module-system/types.ss][Module and role Contracts]],
+[[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/module-system/config.ss][interface construction]], [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/module-system/interface.ss][selected-scope entry]],
+[[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/profile-composition/README.org][bounded scope and Profile selection]],
+[[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/module-system/building/test-projection.ss][selected test projection]],
+[[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/observability/testing-case.ss][POO Case policy]], [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/t/module-testing-test.ss][native testing controls]],
+[[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/scenarios/README.org][Scenario boundary]], [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/standards/README.org][draft standards]].
+
+The inspected Core revision owns native Module values, schemas, SourceRef,
+selection and shared composition mechanisms. Its role-indexed authoring Contract
+covers types, objects, funs, config and interface responsibilities. Product identity
+and policy are caller-owned. Native POO supplies ancestry; Core does not introduce
+a second general merge evaluator. Explicit graph contributions run once in order;
+their receipts do not claim idempotence or convergence.
+
+The bounded ~use-module~ form binds an already available native scope once and
+preserves its identity without forcing source, prototype or Profile slots merely
+to bind an alias. Profile selection is distinct from a bounded expression body.
+Retaining a source slot does not authenticate its origin or authorize execution.
+
+~module-test-projection~ takes the existing selected Graph and validates requested
+owners. It observes test directories and Scheme helpers, selects ~*-test.ss~
+inputs, and exposes currentness checks. Normal and integration suites are distinct.
+The native controls include empty-selection refusal, unselected poison sources,
+test additions/edits, and source-window separation around package effects.
+These controls were inspected, not run here.
+
+~poo-flow-test-case~ projects through native ~std/test~ with a POO policy for
+duration and memory watchdogs. Process-wide heap sampling is not independent
+per-thread allocation attribution. Import/discovery, selection, explicit execution,
+natural process completion, and accepted engineering evidence remain separate
+events. A clean selected suite cannot qualify an unselected domain.
+
+The [[file:../../20-29-cases/20-gateway/20.03-gateway-design-audit.org::#audit-source-boundary][subsequent audit]] distinguishes this committed Graph-based API from
+uncommitted root-selection/lazy-Graph and qualification-suite edits observed in
+the live worktree. It also records package dependency mismatches that must be
+resolved before an integration demonstration can qualify the chosen combination.
+
+These mechanisms support organizing engineering concerns as Modules, reusable
+policy as Profiles, and bounded executable work as Scenarios/Cases. Organization
+roles, standards clauses and assurance policy remain domain objects. Their meaning
+must not be inferred merely from directory placement or a Module name.
+
+** Subsequent Core PR 19 integration inspection
+:PROPERTIES:
+:CUSTOM_ID: core-integration-inspection
+:REVISION: 52130d2d338b09622a3f55e37987ddc0375b6187
+:STATUS: committed-source-inspected-not-executed
+:END:
+
+Remote PR 19 now matches local HEAD at 52130d2d. The previously observed
+root-selected/lazy-Graph projection and qualification suite are now committed;
+the earlier 80e2e740 observations above retain their historical identity.
+The [[file:10.06-poo-ascent-integration.org][Module/Profile/Scenario integration design]] pins and maps the new
+init/role/test/Scenario source contracts, including the remaining automatic
+package-to-Scenario integration boundary. No upstream test or integration result
+is claimed by this inspection.
+
+* Lambda Aitia lifecycle ownership
+:PROPERTIES:
+:CUSTOM_ID: aitia-lifecycle
+:STATUS: pinned-readme-inspected
+:END:
+
+Source: [[aitia:README.org][Lambda Aitia purpose, relation planes, and implementation limits]].
+
+Aitia owns software engineering, lifecycle assurance, ADRs, NASA and GitOps source
+modules. Its vocabulary separates provenance, structural, temporal/causal,
+assurance and authority planes. POO Flow supplies reusable mechanisms. Mounting
+the contribution does not import, select, verify, authorize, or execute it.
+
+The README describes executable snapshot/invalidation and pure planning, and an
+implemented ~SdlcRuntime.plan()~ projection. It explicitly leaves the connected
+design/trajectory experiment, upstream Recipe qualification, Python-to-Host
+admission and Runtime effect gate open. We inspected that declaration, not a
+runtime or proof execution. This repository proposes design Library vocabulary,
+rule templates, case obligations and evaluation contracts to compose with Aitia;
+it does not replace its assurance kernel or claim its open gates are complete.
+
+The [[file:10.02-domain-and-rules.org::#organizational-composition][organizational composition model]] and
+[[file:../../30-39-evaluation/30-benchmarks/30.01-benchmark-design.org::#module-benchmarks][module benchmark lane]] state how to evaluate this integration without adding a
+second resolver, runner or assurance authority.
+
+* OPEN Cross-project correspondence :integration:
+:PROPERTIES:
+:CUSTOM_ID: integration-gaps
+:STATUS: open
+:END:
+
+#+NAME: integration-obligations
+| ID | Missing correspondence | Required result |
+|----+------------------------+-----------------|
+| INT-01 | Scheme POO design to typed Lean state | Defined observations, resolver interpretation, effects, and preservation relation |
+| INT-02 | Domain rules to obligation inventory | Finite derivation semantics, origin support, negative-scope interpretation, coverage review |
+| INT-03 | Design edits to dependency footprints | Registered-edge completeness or conservative fallback and checked frame/transport conditions |
+| INT-04 | External artifacts to admitted evidence | Method-specific completeness, identity, premise, authority, and verifier checks |
+| INT-05 | New snapshot to current decision | Atomic publication and stale-result rejection under task concurrency |
+| INT-06 | Library work/assurance contract to lambda-aitia | Verified semantic mapping to Aitia planning/admission/authority, task results and standards |
+| INT-07 | Gateway model to real execution | Algorithm/protocol/source correspondence plus workload and fault evidence |
+| INT-08 | Core Module/Profile/Scenario to engineering domain | Selected responsibility, dependency and test coverage mapping without duplicate mechanisms |
+| INT-09 | Org/D2/QNT/Lean/JSON projections | Stable identity, semantics and stale-projection checks |
+| INT-10 | Benchmark cases to independent evaluation | Frozen tasks, independent oracles, leakage controls, budget and denominator policy |
+
+No line in this map marks these obligations as discharged. The
+[[file:../../20-29-cases/20-gateway/20.01-gateway-sdlc.org::#case-review][gateway review matrix]] uses them to identify which lifecycle transitions remain
+conceptual and what evidence would be required before claiming closure.

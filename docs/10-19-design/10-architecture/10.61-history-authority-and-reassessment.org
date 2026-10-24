@@ -1,0 +1,524 @@
+#+TITLE: 10.61 S7 History Discovery, Decision Authority and Reassessment
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.61
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+TODO: AUDITED DESIGN SPECIFIED | QUALIFIED
+#+FILETAGS: :design:aitia:history:authority:reassessment:causal-research:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.52-contract-consistency-and-implementation-order.org::#consistency-implementation-order][S0-S9]] | [[file:10.49-history-authority-and-reassessment.org][WP08]] | [[file:10.53-source-build-and-recovery-baseline.org][S0]] | [[file:10.54-library-and-aitia-types-contracts.org][S1]] | [[file:10.55-library-construction-and-scope-handoff.org][S2]] | [[file:10.56-profile-selection-and-scenario-capture.org][S3]] | [[file:10.57-method-execution-and-evidence-issuance.org][S4a]] | [[file:10.58-content-observers-and-reference-closure.org][S4b]] | [[file:10.59-ascent-projection-and-query-view.org][S5]] | [[file:10.60-aitia-review-adaptation.org][S6]]
+
+* DESIGN Objective and research boundary
+:PROPERTIES:
+:CUSTOM_ID: s7-history-authority-reassessment
+:STATUS: File/field/call/research/acceptance design only; no implementation, authority operation or review submission
+:END:
+
+S7 binds actual C/Q/R and current S6 technical use to authoritative history H,
+authenticates action-specific roles/grants, accepts records only through actual
+custody owners, and reassesses or withdraws affected current use without deleting
+counter evidence or denials. Repair, exception, denial supersession and revocation
+remain distinct. Authored DE-D01-D05 are design choices, not accepted authority
+records. No policy definition, paper citation, proof or receipt appoints a principal.
+
+Causal Software Engineering is our research object, not a normative architecture
+source. Our proposed extension is an explicit lifecycle for supported claim
+assumptions and their effect on evidence, review and authority under change. Its
+benefits over simpler alternatives are hypotheses requiring comparative evidence.
+This document does not claim superior causal inference or empirical results.
+
+Library owns permitted claim/coverage/history/role/action meaning; Scenario owns
+actual project bindings; producers establish technical claims; Aitia owns common
+discovery/action/current-use semantics; source/custody owners accept and preserve
+records; Core owns graph algorithms and local receipt primitives. ASCENT projects
+accepted associations only; Runtime/recipient owners decide their own effects/use.
+No new ledger, grant directory, consensus service or universal revocation engine.
+
+The 75 selected implementation/build/runner files still match S0-S6 at inspection.
+Project HEAD remains 8044732d505f84e373119a70f947df00e1767300; linked dirty Core is
+52130d2d338b09622a3f55e37987ddc0375b6187; Aitia own repository HEAD remains
+cbf3f6861ef7cf66d8d02aaf71b1c89630eaf7fc. Source bytes are not compilation/loading,
+actual authority, full history or recovery proof. WP00/BS01-BS09 stay open.
+
+* DESIGN Research questions, competing choices and falsification
+:PROPERTIES:
+:CUSTOM_ID: s7-research-questions
+:END:
+
+[[https://arxiv.org/html/2605.02454v1][Causal Software Engineering: A Vision and Roadmap]], Sections 2-4, discusses
+explicit assumptions, evolving models, governance and evaluation under change.
+It leaves an open engineering question for this project: how should an observed
+assumption change invalidate a particular use while preserving historical evidence
+and legitimately accepted negative decisions? The following is our analysis of
+that design problem, not a claim that the paper implemented a deficient protocol.
+
+| Research question / candidate refinement | Alternative and proposed comparison / rejection condition |
+|------------------------------------------+-----------------------------------------------------------|
+| RQ1: Is causal framing appropriate for every engineering claim? | Compare uniform causal treatment with typed descriptive/formal/model/empirical/normative claims. Reject our split if it permits empirical overclaim or adds ambiguity without reducing irrelevant obligations; no arrow/proof becomes empirical cause |
+| RQ2: Can explicit assumption-to-use dependencies improve change handling? | Compare conservative complete revalidation with selective qualified dependency propagation on identical event histories. Both must block every independently known stale use; measure false-current and false-blocked uses, invalidation scope, rework and latency. Reject selectivity if closure misses a dependency or costs exceed the justified benefit |
+| RQ3: Does separating evidence truth, review eligibility and action authority prevent invalid reuse? | Compare explicit boundaries with a simpler equivalent scoped approval design on expiry, policy/role change, late denial and repaired evidence. Equal inputs/requirements are essential; keep the simpler design if equally correct with less complexity |
+| RQ4: What can counterfactual benchmark labels establish? | Separate known intervention/model ground truth, independently observed effects and incident narrative labels. A narrative can test explanation agreement, not alone validate counterfactual truth. Reject causal-strength claims without appropriate identification or experimental/model basis |
+| RQ5: What happens when identification or transport conditions fail? | Compare honest unsupported/current-use blocking with a declared bounded fallback policy. Measure unjustified action, retained uncertainty and cost; neither automatic zero-effect conclusion nor a receipt can repair identification |
+| RQ6: Can negative history remain usable through repair and revocation? | Use independent event-sequence gold for denial -> technical repair -> authorized resolution -> resolution withdrawal. Check immutable origins and exact reopening, not only final positive counts; reject designs that erase denial or revive stale seals |
+
+These are proposed experimental questions, not executed acceptance or performance
+results. A straightforward artifact-based realization of the paper is a possible
+baseline, not a known reference implementation. Do not invent a weak paper baseline
+to claim superiority. Candidate choices are (a) manual structured review with full
+revalidation, (b) qualified dependency-driven claim/use lifecycle, or (c) a general
+causal-model/estimation platform. We provisionally choose (b) for this Library's
+existing owner boundaries, with conservative full revalidation whenever dependency
+closure is unqualified. Choice (c) requires evidence of actual domain need and
+qualified estimators; it is not justified by the paper alone. Choice (a) remains
+valid if it meets correctness/cost requirements more simply.
+
+A future research protocol must fix input histories, independent ground truth,
+comparison requirements and resource budgets, retain all failures/unknowns, and
+report correctness before selective cost. Paper terminology or CRL labels are not
+our acceptance metric. Our six-case ownership mechanism tests bounded technical
+and authority transitions, not population-level latency effect or real incident
+prevention; such claims need separately supported data/design/methods. No experiment
+or benchmark is run here. The main S7 design below is a candidate to evaluate.
+
+* AUDITED Existing history, authority and custody seams
+:PROPERTIES:
+:CUSTOM_ID: s7-source-audit
+:END:
+
+| Existing source / operation | Present support / complete target boundary |
+|-----------------------------+--------------------------------------------|
+| [[file:../../../scenarios/resource-lifecycle/review/cross-intake.ss][cross-intake federation/frame/current guards]] | Actual independently required intakes, exact packet/source views, predecessor inventory and changed-frame refusal exist. Replace fixed SWE packet equivalence and raw technical flags with actual C/Q/R/S6 assessment/use |
+| Same file / authorized-document? | Real root signature, exact target and explicit known supersedes IDs; fixed test-reviewer-a and bounded test-reviewer-b delegation. Keep credential checks but replace fixture identities with actual project root/grant/action/quorum/independence meaning |
+| Same file / submit!, persist-prefix!, seal-history! | Accepted negatives retained; failed/ambiguous persistence makes owner unavailable. Expected prior selection reaches actual host publisher; no demonstrated global CAS, crash-atomic multi-owner transaction or consensus |
+| [[file:../../../scenarios/resource-lifecycle/review/reassessment.ss][reassessment.ss]] | Actual failures/closure/current history and bounded same-case/payload/source-change repair matching. Changed source alone is not generic semantic repair or denial replacement |
+| [[file:../../../scenarios/resource-lifecycle/review/archive.ss][archive.ss]] | Exact selected head/prefix/origins, fresh reader/activation, predecessor retirement and prefix repair. Archive integrity is custody, not revived authority; storage repair cannot edit decision semantics |
+| [[file:../../../scenarios/resource-lifecycle/review/signatures.ss][signatures.ss]] | Actual OpenSSL operations through Core Ops and binary currentness; test keys or valid signatures do not establish appointments, current grants or trusted root selection |
+| [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/review-authority.ss][Aitia review-authority.ss]] | Required source inventory, discovery receipts, current-policy approvals and unresolved denials survive policy changes. Public technical.admitted? and supersedes-list membership lack full target/action/quorum/scope/acyclicity qualification |
+| [[file:../../../../poo-flow/packages/lambda-aitia/modules/assurance/host.ss][Assurance Host]] | Real current-source/support, decision preflight/revocation and Cedar handoff remain scoped. Preflight/permit-shaped request is not accepted review decision or Runtime effect permission |
+| [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/contribution/verification.ss][Core verification]], [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/graph/algorithms.ss][Core graph algorithms]] | Private receipt/interval/revocation and pure cycle/dependency/topology analysis exist. Seal does not discover live history; graph analysis does not authenticate its edges |
+
+Historical signed formats/origins stay exact. Their version/schema tokens are not
+Library declaration generation and are not rewritten. No names, directories or
+implementation change in this task.
+
+* SPECIFIED File and trust responsibility
+:PROPERTIES:
+:CUSTOM_ID: s7-files-and-ownership
+:END:
+
+| Existing owner | Target fields / responsibility |
+|----------------+--------------------------------|
+| Library abstract/rust Types and objects | Adopted history/source coverage, action/grant/quorum/independence/exception/repair/supersession/withdrawal meaning; criterion assumptions and supported recheck/impact rules. Definitions grant nobody authority |
+| Profile and Scenario types/func/interface | Select permitted intent, capture actual project/mandate/roles/source inputs once, and compose proposed ResourceAuthorityInputContract over recognized C/Q/R/current S6 use. No alternate root/key/source list/technical Boolean |
+| Aitia sdlc/types.ss and objects.ss | Common history/decision/exception/reassessment/withdrawal Types and owned constructors from S1. Existing history classes migrate from review-authority.ss once if needed; no duplicate CLOS identities or copied C/Q/R schemas |
+| Aitia sdlc/review-authority.ss | Actual generic discovery/action verification, accepted inclusion/current use, negative retention, scope-correct exception/replacement/withdrawal. Use actual source/producer/grant operations, not public flags |
+| Aitia sdlc/review.ss and S6 shared Host/review-verification factoring | Actual technical use, purpose-specific receipt/clock/source semantics; authority adds its exact discovery/action checks, not another Host or receipt table |
+| Project review/cross-intake.ss | Thin actual mandate/source/root/credential/predecessor/publisher adapter. Move generic authorization semantics into Aitia; preserve host-selected custody and accepted origins, remove production test-person/NASA fallback |
+| Project review/reassessment.ss | Actual changed-basis/assumption/repair impact adapter; methods/content establish new technical findings, Aitia checks permission and resolution. No approval from digest/case equality |
+| Project review/archive.ss | Exact source custody/selected head/reader/activation/retirement and authorized byte-prefix repair; no property fix, grant or denial erase via storage operations |
+| Project review/signatures.ss | Qualified bounded crypto-tool/key-verifier references and actual invocation provenance; grant/root/status policy comes from actual adopted project authority |
+| Core graph and verification owners | Reuse pure dependency/acyclicity algorithms and local seal primitives, qualify actual supplied graph/operation association. No second traversal/issuance system |
+| ResourceEvidence | S5 projects genuine accepted history/status/repair refs when query demands them; rule rows cannot appoint reviewer, accept decision or create grant |
+| Runtime / recipient owners | Independently verify current exact authorized use/effects. Review decision does not perform distribution/deployment or grant recipient action |
+
+Trusted source readers, current status, credentials and publisher are bound through
+actual host/publication ownership, not candidate JSON or injected current! callbacks.
+Retain returned normalized Types/Functions/records and actual origin associations.
+No new domain-specific ledger, wildcard reviewer manager or global invalidation
+registry is needed; ordinary pure checks and relation records stay at actual owners.
+
+* SPECIFIED History, action and reassessment fields
+:PROPERTIES:
+:CUSTOM_ID: s7-fields-and-request-purposes
+:END:
+
+| Expected value | Required fields / binding invariant |
+|----------------+-------------------------------------|
+| Authority input / proposed ResourceAuthorityInputContract | Actual C/Q/R, current S6 technical assessment/use, adopted policy/project mandate, required role/source demand and exact requested action. Drafting and recognized incomplete technical basis remain distinct from positive eligibility |
+| SdlcHistorySource | Stable source/owner/kind/relevance, actual acquisition/reader authority, selected head/prefix/cut/origin/accepted inventory, predecessor/lineage, availability/freshness/status/access and declared boundary |
+| SdlcHistoryDiscovery / H | Exact C/Q/R/project/family/policy/purpose, trusted mandate/directory/current selection, independently required versus actual source vector and accepted records, missing/conflicting/unverified findings, real clock/source/verifier/limits |
+| Role/grant binding | Actual principal/credential/appointment/delegation/root/status, exact action/project/family/R/scope/conditions/validity, parent grant bounds, quorum/independence and effective withdrawal; no key possession or name-only authority |
+| SdlcReviewDecision | Record identity/origin, exact C/Q/R/technical assertion and policy, action/purpose/scope, predecision H0/expected prior selection, principal/grant/verified authorization, approved/rejected/deferred conclusion/reasons/limits/conditions, exact predecessor/denial/exception links |
+| Repair finding | Exact old failed claim/A/E/W/basis, actual new inputs/A/E/W/use, supported old-to-new subject/domain/correspondence/strength and independent interpretation; neither source change nor same case proves fix |
+| SdlcReviewException | Exact retained unmet duty/criterion/counter/gap, permitted operation/scope, actual risk/decision authority, rationale/mitigation/conditions/expiry/reopen/status and approvals. Exception-requested, accepted and currently usable are separate |
+| SdlcReassessment | Old C/Q/R/decision/H/failure refs, actual change/trigger/affected dependency cone, new technical/review/repair/exception associations as required, preserved denials and explicit resolution proposal/accepted result |
+| SdlcReviewWithdrawal | Actual target kind/identity/issuer/action/scope/effective conditions/reason/status/origin. Receipt, evidence use, grant, decision and owner retirement invoke different actual owners |
+| Authority current use | Exact R/current H/accepted records/technical use/roles/status/receipts/instant, denied/conflicting/excepted/missing conditions and limits. Public explanation is not portable authorization token |
+| Assumption impact finding / existing criterion and reassessment refinement | Exact claim/criterion/assumption identity and source basis, observed change/check status/time-cut/origin, affected W/U/K/Q/R/decision-use links, diagnosis/uncertainty and required recheck. No new assumption version service or inference from public event label |
+
+Compose SdlcBoundFact/SdlcIdentified and S1 common field Types. Use existing
+history-discovery and disposition-approval purposes with fixed expected
+SdlcReviewHistoryFacts and SdlcReviewDispositionFacts/request refinements. Full
+snapshots bind C/Q/R/H/policy/action/stage/target/conditions/grants and assertion.
+Proposal verification, accepted-inclusion and current-use assertions cannot
+substitute for each other. S1's common twelve-purpose domain stays one source;
+no causal-trigger purpose, Namespace generation or review-standard fiction.
+Keep existing SdlcAuthorityAttestation semantics for its genuine standard route.
+
+* SPECIFIED Required history discovery and negative preservation
+:PROPERTIES:
+:CUSTOM_ID: s7-history-discovery
+:END:
+
+Actual adopted project mandate/source custody defines relevant technical/counter/
+failure, decision/denial/exception/withdrawal, role/grant/key-status and predecessor
+sources independently of submitter. Genuine initial state needs authenticated
+no-predecessor/source mandate, not an absent directory treated as clean history.
+
+Discovery resolves actual selected heads/prefixes/accepted inventories and original
+origin/signature/grant/lineage through qualified source operations, with owned
+values and declared finite budgets. Conflicting identities/forked heads, missing
+predecessor, unavailable source or older/smaller prefix blocks required completeness.
+Retain offending candidates and all known accepted records. H is an observed source
+vector, not proof of global absence or atomic distributed time. Unsupported stronger
+freshness/consistency is a gap; offline grace requires actual bounded adopted policy.
+
+| Record/source state | Required retained meaning |
+|----------------------+--------------------------|
+| Accepted authenticated counter/denial | Preserve original claim/scope/revision/policy/origin across favorable evidence or policy changes |
+| Accepted inventory names unavailable negative proof | Incomplete discovery/current authority; absence cannot become approval or delete the known record |
+| Untrusted malformed/forged rejection | Diagnostic intake only, not accepted denial merely because its text says rejected |
+| Source removed/shrunk/forked or new policy excludes old scope | Require actual continuity/retirement/lineage/impact authority and explicit relevance reasoning; no reset by new label/latest timestamp/hash |
+| New accepted record/status after H | Old H remains historical; actual current use rediscovers/reverifies relevant source cuts |
+
+Each operation verifies its declared discovery prerequisites. Positive admission
+requires complete relevant history and technical conditions; legitimate negative/
+defer/withdraw actions have their own authenticated target/source/authority checks
+and must not require the positive technical success they deny. This does not let
+unauthorized or unbound rejection text become accepted history.
+
+* SPECIFIED Action verification and acceptance call boundaries
+:PROPERTIES:
+:CUSTOM_ID: s7-action-calls-and-acceptance
+:END:
+
+| Operation / real owner | Input -> output / boundary |
+|-------------------------+----------------------------|
+| Discover / source adapter + Aitia | Actual C/Q/R/mandate and source capabilities -> H/findings; independent required source inventory, no raw directory/root override |
+| Verify discovery / Aitia -> Core | Exact typed H/current source/root/lineage -> scoped receipt or incomplete/refusal; every supplied signature valid does not prove missing-source completeness |
+| Prepare action / actual principal through adapter | Exact R/H/technical/roles/limits plus supported intent -> inert typed record/request; Agent proposal is not acceptance or appointment |
+| Verify action / Aitia | Exact action/stage/target/conditions/grants/credential and actual technical/history prerequisites -> real finding/receipt or refusal; authenticate principal, delegation, quorum and independence |
+| Accept / actual custody owner | Verified exact record and expected prior selected head -> accepted immutable prefix/head or refusal/unknown; recheck source/grant/current basis under qualified serialization |
+| Assess use / Aitia | Current H plus original accepted decision and fresh technical/role/status/receipt use -> scoped usable/blocked/unknown; old preflight cannot establish accepted inclusion |
+| Reassess / project + method/content/Aitia | Old basis/negatives and actual change/repair/assumption findings -> new scoped C/use/Q/R/H as affected and authorized resolution or remaining blockers |
+| Withdraw/revoke / target owner | Authenticated exact target action -> retained status/current-use effect; local receipt revoke and accepted project withdrawal are different operations |
+
+A grant/delegation chain cannot widen parent actions/scope/validity or allow
+unauthorized redelegation. Reject cycles, ambiguous roots, incorrect rotation,
+unsupported conditions and false quorum. Distinct keys/signatures from one principal
+are not distinct principals. Historical validity at record acceptance and current
+permission are separate: ordinary expiry need not erase old denial, while targeted
+withdrawal/compromise must affect use according to actual policy. Caller backdating,
+self-selected trust root or public technical.admitted? cannot establish any of this.
+
+Positive admission needs actual policy-defined technical/context/content/roles and
+permitted conditions/exceptions. Negative/defer/withdraw actions retain truthful
+incomplete basis, do not require positive technical success, and grant no positive
+permission. Reuse genuine Host preflight/Cedar mapping only at its qualified action;
+preflight/technical support remains distinct from accepted decision/Runtime effect.
+
+Decision binds immutable C/Q/R and predecision H0; actual append yields H1; current
+H2 verifies original H0 lineage, accepted inclusion and later relevant records.
+Never sign a future prefix containing the signature itself or insert the new
+decision into its own Q/R input hash. Postacceptance assertion is separate from
+proposal verification even for equal record bytes.
+
+Expected prior -> verified action -> write/close/sign/head selection -> current
+accepted prefix is serialized by actual host custody at its qualified scope. Hash
+comparison or rename alone is not cross-host CAS/durability. If head/grant/basis
+changes before acceptance, refuse/reprepare. If an accepted negative is known but
+publication fails/ambiguous, retain it and block positive use of that owner until
+genuine recovery; never rewind to favorable old frame. Other genuine operations
+and receipts are not rolled back across owners. Unknown completion stays unknown.
+
+* SPECIFIED Repair, exception, supersession and withdrawal
+:PROPERTIES:
+:CUSTOM_ID: s7-resolution-and-withdrawal
+:END:
+
+| Operation | Exact obligation / retained limit |
+|-----------+-----------------------------------|
+| Technical repair | New supported A/E/W/use and old-new claim/domain/correspondence plus independent rationale; retain old counter/failure. A fix for M04 cannot repair M06 or unrelated content adequacy |
+| Missing evidence supplied | Actual new qualified observation/coverage creates affected Q/R; old missing/timeout history is not rewritten |
+| Exception | Actual policy permits exact bounded unmet duty and risk authority/mitigation/expiry/reopen. False remains false; cannot waive identity/authentic authority/truth or non-exceptable conditions |
+| Denial supersession / decision replacement | Exact accepted prior IDs, scope/lineage/impact, genuine authority to replace each affected denial and explicit new accepted record. Favorable result, new policy label or unsigned forward ref cannot replace it |
+| Resolution withdrawn/ineligible | Recompute affected live coverage; original denial blocks again unless another actual currently eligible scoped resolution covers it |
+| Receipt/use/grant/decision/owner withdrawal | Dispatch to actual issuer/producer/project trust/custody owner, retain distinct target/status/effective scope and current consequences; no generic erase toggle |
+
+Use Core's pure cycle/dependency algorithms on qualified scope-correct replacement
+edges; algorithm success authenticates none. Supersession must be acyclic and
+unambiguous; independent concurrent approval/rejection remain retained until real
+policy-authorized resolution. Technical repair and accepted denial replacement
+are separate acts. Accepted exceptions are not property support or deployment
+permission and expire when required conditions fail.
+
+Fresh current-time Core admission and S6 source/clock/status checks apply at each
+actual use. Old admission is fixed at its old instant; valid frozen seal does not
+rediscover live grants/decisions. Returning old bytes cannot revive known revoked
+receipts or retired owners. Status withdrawal propagation to recipients is not
+instantaneous global revocation; S8/recipient verifies its own current conditions.
+
+Recovery requires genuine selected closed prefix/origins/trust/lineage, fresh actual
+reader/activation and known predecessor retirement. Exact authorized storage-prefix
+repair preserves all accepted content/signatures; it changes no project claim or
+authority decision. Replayed old repair/head/activation after current selection
+advances refuses. Local fresh reader bookkeeping is not global single-reader proof.
+No new recovery run or external notification occurs here.
+
+* SPECIFIED Causal assumption invalidation and reassessment transitions
+:PROPERTIES:
+:CUSTOM_ID: s7-assumption-impact-transitions
+:END:
+
+Assumption declarations belong to selected criterion/model/project basis; observed
+status comes from actual qualified checks. Status is contextual to a claim/domain/
+source cut, not a global true/false flag on an assumption name. Retain exact dependency
+relations through original W/target U/required K/Q/R and accepted decision conditions.
+Conservative impact is required where those relations are not qualified; do not
+claim minimal propagation merely because Core can compute a dependency cone.
+
+| Trigger / observed state | Required technical/review/authority response |
+|--------------------------+---------------------------------------------|
+| Known prerequisite violated (e.g. declared isolated intervention changed concurrently) | Block affected causal use at its real currentness/policy owner; retain original W/history. Lack of identification is not proof of no effect or automatic opposite W |
+| Evidence for prerequisite unavailable, stale or check incomplete | Mark affected support/use unestablished at declared scope; preserve reason and required unit. A missing measurement is not a verified assumption violation or positive claim |
+| New qualified result contradicts exact claim | Retain scoped counter alongside support; S5 compares actual claim/basis before conflict, S6/S7 retain unresolved findings and block unsupported positive use |
+| Model, data, measurement, population, environment, interference or transport scope changes | Qualify impact and supported transfer/identification; new C/Q/R or fresh use as actually required. Same title/hash/revision label cannot transfer an empirical effect |
+| Sensitivity/robustness deteriorates or uncertainty violates actual decision condition | Record actual finding/limits and re-evaluate affected criterion/decision-use. Do not invent an effect interval or infer universal invalidity from one heuristic |
+| New qualified repair/design/experiment resolves prerequisite | Actual new method/content finding and current applicable basis, then S5/S6 review and S7 resolution if needed; old denial/counter remains and does not disappear automatically |
+| Assumption recovers, or resolution is withdrawn | Actual fresh supported verification can restore eligible technical use; accepted denial still needs genuine current resolution. Revoked historical receipt is never resurrected |
+| Noncausal grant/role/history/custody failure | Apply exact authority/source invalidation regardless of whether causal estimate is unchanged; technical validity cannot override missing permission |
+
+Operational sequence: observe actual qualified change -> identify affected original
+claim and dependent uses/decision conditions -> invalidate/block affected current
+eligibility under actual policy -> retain diagnosis/unknown/counter separately ->
+acquire/recheck at actual method/content owners -> new qualified C/use/Q/R as affected
+-> rediscover current H -> authenticate any required action/resolution -> actual
+acceptance -> fresh current-use check. Trigger data is not a signed decision or
+agent mandate; automatic technical eligibility change and authorized decision
+withdrawal are separate, each at its real owner.
+
+Whole-chain lifetime: changed captured meaning/project/selection/mandate inputs
+requires new C; changed technical demands/evidence/query interpretation requires
+new Q/R; history-only status/inclusion with unchanged technical meaning may use
+same C/Q/R with new H/current use. Any query claiming the new history must itself
+have a new accepted cut/Q. No mutation of prior C/Q/R/H/W or rerun of unrelated
+Rust/QNT/Lean/SysML merely to rediscover a record.
+
+For a network retry-policy example, detected concurrent scaling may defeat a
+particular effect identification premise without showing retries have zero effect.
+Reassess that empirical claim and any approval conditioned on it; do not revoke
+unrelated formal ownership evidence or invent an incident counterfactual. For
+DE-CASE-01, E06/I04 -> T03 -> DE-D04 remains the first architecture/capture chain.
+Its assumptions can trigger scoped source/capture review; that does not establish
+latency effects. Unassigned actual roles, optional T07, historical 20-result/22-record
+subjects, fixed recovery failures and missing empirical data remain explicit.
+
+* SPECIFIED S7 dependency impact and legitimate negative actions
+:PROPERTIES:
+:CUSTOM_ID: s7-audit-impact-authority
+:END:
+
+Qualified impact edges do not authenticate themselves through graph analysis.
+Conservative recheck is correct when closure is incomplete; selective cost advantage
+is separate research. Technical eligibility loss and actual authorized decision
+withdrawal differ. Legitimate reject/defer/withdraw uses its own target/provenance/
+authority prerequisites, not the positive technical success it denies.
+
+[[file:10.64-contract-consistency-and-implementation-order.org::#s1-s9-consistency-audit][10.64 whole-chain audit]] supplies exact change/closure rules and remaining gates.
+
+* SPECIFIED Positive and negative controls, not executed
+:PROPERTIES:
+:CUSTOM_ID: s7-acceptance-controls
+:END:
+
+AX01-AX44 refine HA01-HA31 and related RX/QX/OX/EX/CX/WP10 requirements; they
+are future controls, not new executed passes or changes to the original 248 rows.
+Each needs supported positive and paired refusal/gap/history/state observations.
+Independent event-sequence gold must retain origins and exact accepted/current
+boundaries, not mirror production logic or check only final approved counts.
+
+| ID / actual future seam | Positive case / negative control and required observation |
+|--------------------------+-----------------------------------------------------------|
+| AX01 / Scenario / Aitia authority input | Actual C/Q/R/current S6 use binds; foreign scope/revision/policy or edited technical.admitted? refuses positive authorization |
+| AX02 / POO/CLOS/Function boundaries | Nonidentity normalized history/action/record/request/Function values retained coherently; copied shapes/IDs or discarded return cannot authenticate owner |
+| AX03 / Independent source mandate | Actual technical/decision/status/predecessor source demand satisfied; submitter-favorable list or absent directory cannot become complete clean history |
+| AX04 / Source selection/lineage controls | Genuine current heads/prefix/origins close; smaller/older prefix, missing predecessor, fork or lexical latest selection blocks completeness |
+| AX05 / Accepted negatives / cross-intake tests | Original accepted denial/counter survives policy/revision/favorable result change; new label or source omission cannot erase it |
+| AX06 / Missing accepted proof controls | Inventory-known unavailable negative keeps discovery blocked; arbitrary forged rejection remains diagnostic, never accepted authority |
+| AX07 / Principal/action controls | Actual trusted root/current credential grants exact action/R/scope; same name, key possession/self-selected root or wrong target signature refuses |
+| AX08 / Delegation controls | Bounded parent-permitted delegation accepted; widened action/scope/validity, cycle or forbidden redelegation refuses |
+| AX09 / Quorum/independence controls | Real distinct principals/roles meet policy; two keys/duplicate signatures or author-as-independent-reviewer cannot fill missing role |
+| AX10 / Action snapshot controls | Exact C/Q/R/H/policy/action/stage/target/conditions/grants sealed; swapped target/action or omitted semantic field cannot authorize |
+| AX11 / Action-specific negative path | Authentic scoped reject/defer/withdraw can retain recognized incomplete technical basis; requiring positive technical pass or using rejection as positive permission fails protocol |
+| AX12 / Proposal versus inclusion controls | Verified proposal remains inert until actual accepted prefix; equal bytes/preflight receipt cannot become postacceptance authority |
+| AX13 / H0/H1/H2 lifecycle controls | Decision binds predecision H0 and genuine inclusion in H1/H2; future self-prefix hash or patched old Q/R cannot certify itself |
+| AX14 / Current history use controls | Current discovery sees all relevant subsequent records; old successful frame/receipt cannot ignore later denial/withdrawal/source advance |
+| AX15 / Serialized publisher controls | Actual expected prior selection and qualified custody accept; stale concurrent writer/hash-only CAS assertion refuses or remains unsupported |
+| AX16 / Ambiguous negative persistence controls | Known accepted negative retained and owner blocks positive use after failed publish; favorable rollback or erasing denial refuses |
+| AX17 / Postacceptance export controls | Actual accepted/issued state retained with export uncertainty; failure cannot invent cross-owner rollback or successful acknowledgement |
+| AX18 / Technical repair / reassessment tests | Actual old-new A/E/W/use and claim/domain/correspondence establish scoped fix; changed digest/same payload/M04 fix cannot repair M06 |
+| AX19 / Repair versus denial controls | Qualified repair and independent authorized denial resolution both required where applicable; favorable W alone cannot cancel rejection |
+| AX20 / Exception authority controls | Policy-permitted bounded unmet duty/risk owner/mitigation/expiry qualifies; generic waiver/non-exceptable identity/truth or missing authority refuses |
+| AX21 / Exception currentness controls | Actual live mitigation/scope/status permits exact use; expired exception cannot become general project/deployment permission |
+| AX22 / Explicit supersession controls | Exact accepted denial IDs and qualified scope/lineage/authority resolved; unnamed/unrelated/unknown forward predecessor leaves denial blocking |
+| AX23 / Core graph / replacement controls | Authenticated acyclic scope-correct edges accepted; cycle/incompatible identity/fork cannot be resolved by last-file or graph topology alone |
+| AX24 / Resolution withdrawal controls | Actual withdrawal reopens affected denial absent another eligible resolution; permanent erase bit or revoked resolution receipt cannot retain admission |
+| AX25 / Historical versus current grants | Acceptance-time valid original denial retained through ordinary expiry; historical signature cannot bypass targeted effective withdrawal/compromise |
+| AX26 / Typed withdrawal dispatch | Actual issuer/producer/trust/custody owner handles correct target; deleting key/file/public status or revoking unrelated receipt cannot create/erase authority |
+| AX27 / Clock/status use controls | Actual trusted clock/bounded lease/new-time admission and fresh sources gate use; old admission/backdating/stale within-lease grant cannot pass |
+| AX28 / Observed invalidation controls | Fresh supported operation may establish new eligibility; restored bytes/private IDs cannot resurrect revoked seals or retired live owner |
+| AX29 / Archive/recovery controls | Genuine closed selected prefix/origins/root and fresh activation qualifies; restored JSON/private receipt or old head/reader replay cannot revive authority |
+| AX30 / Exact storage repair controls | Authorized interrupted-prefix repair preserves all signed records/origins; changed semantic bytes/dropped denial or replayed old repair grant refuses |
+| AX31 / Host support/Runtime boundary | Qualified preflight/Cedar support stays scoped; support flag or review approval cannot itself grant deployment/Runtime effect |
+| AX32 / Assumption status/claim association | Actual qualified check binds exact claim/assumption/domain/cut; public trigger name or unrelated same-named assumption cannot invalidate or authorize another claim |
+| AX33 / Identification violation controls | Actual failed isolation/identification prerequisite blocks affected empirical use; it cannot be converted into zero-effect conclusion or invented opposite W |
+| AX34 / Missing premise controls | Unavailable/stale/incomplete assumption check keeps affected use unestablished; missing data is neither verified violation nor supportive waiver |
+| AX35 / Causal contradiction controls | Qualified comparable refutation retained with support; model/formal/empirical or distinct-scope findings cannot be conflated or favorable-majority resolved |
+| AX36 / Transport/change controls | Actual new data/measurement/environment/population impact checked; same revision/hash/model title cannot transfer old effect or incident counterfactual |
+| AX37 / Uncertainty/robustness controls | Actual selected condition breached triggers scoped review; missing/heuristic interval cannot invent measured effect or universal invalidation |
+| AX38 / Impact closure/selectivity controls | Qualified dependency cone blocks every independently known affected use; unqualified graph must conservatively recheck, not claim minimal propagation or ignore shared dependency |
+| AX39 / Assumption repair/restoration controls | Actual new supported finding plus current review/authority may permit reuse; assumption recovered alone cannot cancel old denial or revive old receipt |
+| AX40 / Triggered action authority controls | Owner-qualified policy may block technical use on trigger; arbitrary event/Agent response cannot create accepted decision withdrawal or exception |
+| AX41 / Lifetime mapping controls | History-only change can retain unaffected C/Q/R with new H/use; technical/captured meaning change requires appropriate new Q/R/C, never patched historical basis |
+| AX42 / Research comparison controls | Same independent histories/gold/requirements and fixed budgets compare full versus selective revalidation; paper label/artifact mapping or unmeasured cost cannot demonstrate superiority |
+| AX43 / Recipient/current-use controls | Later Q/recipient binds actual accepted authority/status and original origins; rule row/provider approval cannot mint recipient permission or instantaneous global revocation |
+| AX44 / WP00/WP10 case qualification | Actual source/compiled/discovery/grant/negative/repair/exception/assumption/withdrawal/custody/cold controls qualify; doc/model-only/test people/historical totals/widened or unchanged failed route cannot close gates |
+
+Actual project seams: t/backpressure-cross-intake-test.ss,
+t/backpressure-reassessment-test.ss, t/backpressure-owner-recovery-test.ss,
+t/backpressure-owner-handover-test.ss, t/backpressure-archive-cache-test.ss and
+t/backpressure-registration-batch-test.ss. Their scoped fixtures are not actual
+project people/roots or existing coverage of every AX case. Generic Aitia/Core
+controls stay at their actual owners; new causal-impact/research comparisons need
+future independent fixtures and entries. No test/acceptance is executed here.
+
+* SPECIFIED Dependencies, artifacts, exit and research limits
+:PROPERTIES:
+:CUSTOM_ID: s7-order-and-open-gates
+:END:
+
+1. Qualify S1 common authority Types/purposes, S2 actual policy/Scope meaning and
+   S3 recognized project inputs. S5 full Q/S6 technical use supplies actual scoped
+   positive prerequisites; honest negative/defer action has its own valid basis.
+2. Refactor reusable history/action/current-use semantics into existing Aitia owner;
+   keep real project source/grant/predecessor/crypto/publisher custody adapters.
+   Migrate directly from test-person/fixed-standard route, without fallback facade.
+3. Qualify independently mandated discovery, authentic source/grant lineage, exact
+   action/stage/target/quorum/independence and proposal versus inclusion assertions.
+   Reuse common Host/Core receipts with fresh actual time/status at every use.
+4. Qualify serialized expected-prior acceptance, immutable negative retention,
+   scope-correct repair/exception/acyclic replacement and targeted withdrawal.
+   Preserve ambiguous/unknown publication and real accepted operations across owners.
+5. Bind actual assumption/change findings to qualified technical/use/decision
+   dependencies; conservative recheck where incomplete. Implement evidence/review/
+   authority transitions at actual owners, not public trigger labels or new ledger.
+6. S7 exits only with actual source/compiled/load and AX matched owner/state controls,
+   complete required discovery, genuine action authorization/inclusion/current use
+   and required recovery qualification. Research advantage is a separate claim:
+   require independent comparisons and retain simpler alternatives if they suffice.
+
+Design artifacts specify H/source-demand/discovery reports, inert action proposals,
+actual verification or refusal diagnostics, accepted record/prefix/head references,
+reassessment/repair/exception/withdrawal records, current authority-use reports and
+actual recovery observations. This task creates none of those runtime objects.
+D07/D08 retain old evidence/failures; D09 explains technical/authority states; D10
+references exact R and any actually produced later records. No authored DE decision
+becomes authenticated by being listed in Org.
+
+Open items: real adopted project policy/mandate/appointments/grants/status roots,
+complete independent source/lineage/custody, qualified publisher/reader selection,
+source/build/load/private-origin/current clock and full recovery, semantic/causal
+claim support and dependency completeness, actual AX evidence and comparative
+research results. Until supplied, do not infer positive authority or superiority.
+
+WP00/BS01-BS09, q34/current-default build/load gaps and historical restart-two
+failure remain open. Preserve fixed 2 GiB/180-second acceptance limits, original
+138-entry historical catalog and receipt bytes. Changed Org/view inputs require
+future fresh capture; do not rerun unchanged failed recovery or widen budgets.
+Only Org and paired D2/SVG change: no implementation/directory adjustment, build,
+acceptance/method/model/content/ASCENT/Aitia execution, signing, appointment,
+review submission, authorization, adoption, external withdrawal or delivery.
+
+#+CAPTION: S7 authenticates source discovery and action-specific authority, preserves negatives through accepted-prefix transitions, and reassesses affected use when assumptions or status change.
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.svg]]
+
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][Editable D2 source]].
+
+[[file:10.62-library-delivery-and-recipient-use.org::#s8-library-delivery-recipient-use][10.62 details S8]]: exact producer C/Q/R/authority and finalized manifest,
+product/reference/access closure, actual arrival and receiver-owned verification,
+new receiver C/Q/R/adoption/current use. Missing/withdrawn/replayed status and
+claim-specific causal applicability remain explicit; selective reuse is a research
+hypothesis compared against full revalidation. DX01-DX44 are future controls;
+no implementation, acceptance execution, review submission or actual delivery.
+
+[[file:10.63-case-joint-acceptance-plan.org::#s9-case-joint-acceptance][10.63 details S9]]: actual file/entry/lane and owner-artifact matrix, G0-G8
+source/compiled/load/cold/recovery/receiver through-gates, exact finite budgets,
+negative/assumption-change correctness and separate critical research comparison.
+Original 248 rows and stage refinements retain identity; JX01-JX44 are future
+joint controls. OJ01-OJ12/BS01-BS09 remain open until actual owner evidence;
+no implementation, acceptance/research execution or actual delivery occurs.
+
+* SPECIFIED S7 finite action and impact refinement
+:PROPERTIES:
+:CUSTOM_ID: s7-p1-finite-actions
+:END:
+
+[[file:10.66-effective-types-and-contract-closure.org::#p1-actions-and-stages][10.66 P1 consolidation]] defines the effective refinement.
+The generic target action domain is review, exception, supersession, withdrawal, distribution, adoption, use; decision conclusions are approved/rejected/deferred and assertion stages are proposal/accepted-inclusion/current-use. Exact action-target pairs and real grants remain required. Repair/reassessment are technical findings/workflows, not authorization. Earlier standard-specific signed actions keep their genuine semantics. Scoped premise/check/impact fields and retained negative basis follow P1 lifetime rules.
+
+* SPECIFIED P3 mandate meaning and later authority status
+:PROPERTIES:
+:CUSTOM_ID: s7-p3-mandate-lifetime
+:END:
+
+[[file:10.68-profile-selection-scenario-binding-and-capture.org::#p3-calls-and-lifetimes][10.68 P3 consolidation]] defines this boundary.
+Capture can retain actual prior mandate/role/history/policy meaning and explicit gaps, never future decisions or grants inferred from Profile. Later status/premise findings affect current use without mutating C; changed captured meaning requires new C. Legitimate denial, resolution and withdrawal retain their independent S7 origin/authority conditions.
+
+* SPECIFIED P4 immutable originals and later impact
+:PROPERTIES:
+:CUSTOM_ID: s7-p4-impact-and-origin
+:END:
+
+[[file:10.69-method-content-execution-and-evidence-issuance.org::#p4-invalidation-and-reuse][10.69 P4 consolidation]] defines this boundary.
+Actual new premise/refutation/uncertainty findings retain their own origin, block affected live use and trigger required Q/R/authority work without rewriting C/W or erasing denial. Validation-only recheck is not workload rerun. Semantic repair, exception and authorized supersession remain separate S7 operations.
+
+* SPECIFIED P5 external status versus transaction rollback
+:PROPERTIES:
+:CUSTOM_ID: s7-p5-live-status-guard
+:END:
+
+[[file:10.70-ascent-projection-and-determinate-query-view.org::#p5-rollback-and-live-use][10.70 P5 consolidation]] defines this boundary.
+Known source/role/premise/receipt invalidity blocks affected use at its actual producer/Host regardless of rejected Session update. Accepted external negatives/history/Clue effects are not rolled back by engine failure. Historical Q/W remain immutable and cannot restore denied/revoked current authority.
+
+* SPECIFIED Review findings and action authority handoff
+:PROPERTIES:
+:CUSTOM_ID: p6-follow-up-61
+:END:
+
+[[file:10.71-aitia-review-adaptation-and-current-use.org::#p6-current-use-and-replay][10.71 P6 consolidation]] defines this boundary.
+P7 consumes same original C/Q/R and all actual receipts/use findings, pending/counters/conflicts and veto. Changed causal premise/mandate/source status can block use while historical issuance stays intact. Action authorization and exactly-once effect replay remain P7/Runtime.
+
+* SPECIFIED P7 unified history and authority scheme
+:PROPERTIES:
+:CUSTOM_ID: p7-follow-up-61
+:END:
+
+[[file:10.72-history-authority-reassessment-and-withdrawal.org::#p7-history-authority][10.72 P7 consolidation]] defines this boundary.
+10.72 consolidates this S7 design against P0-P6: real source/role/grant operations, H0/H1/H2, exact authorization/acceptance/replay, bounded resolutions and causal invalidation. AX01-AX44 stay unchanged; AU01-AU44 refine them without execution.
+
+* SPECIFIED Distribution adoption and use are separate authority
+:PROPERTIES:
+:CUSTOM_ID: p8-follow-up-61
+:END:
+
+[[file:10.73-library-delivery-and-recipient-adoption-use.org::#p8-producer-operations][10.73 P8 consolidation]] defines this boundary.
+P7 exact accepted/current distribution targets finalized manifest/recipient/purpose; receiver adoption/use have own mandate/decision/history. Producer review, receipt or preflight cannot grant transport/deployment or receiver permission.
+
+* SPECIFIED History and authority qualification
+:PROPERTIES:
+:CUSTOM_ID: p9-follow-up-61
+:END:
+
+[[file:10.74-case-joint-acceptance-and-research-plan.org::#p9-gates-and-lanes][10.74 P9 consolidation]] defines this boundary.
+G5 retains actual required sources, grants/roles/quorum, proposal/inclusion/current-use separation and authentic negative actions. Repair/exception/supersession/withdrawal cannot erase denial; causal trigger is no signed action.

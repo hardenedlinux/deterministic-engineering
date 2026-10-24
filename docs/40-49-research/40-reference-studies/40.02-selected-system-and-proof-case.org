@@ -1,0 +1,231 @@
+#+TITLE: 40.02 Selected System Case and Proof Task: Assets and Semantic Mapping
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 40.02
+#+OPTIONS: toc:3 num:nil
+#+STARTUP: overview
+#+TODO: OPEN REVIEW | RESOLVED
+#+FILETAGS: :research:case:semantics:
+#+LINK: spec https://github.com/specula-org/specula-case-studies/blob/d419b3f72bd593e8f9ec04f5a98bffbdeaa7727b/systems/etcd/modules/raft/runs/case-studies-etcd-raft/%s
+#+LINK: tlaps https://github.com/specula-org/TLAPS-Bench/blob/d29eb13a6c2ec49c9980abc794f13e44fc9415a9/%s
+
+[[file:40.01-specula-reference-study.org][Checkout study]] | [[file:../../10-19-design/10-architecture/10.04-evidence-driven-workflow.org][Evidence-driven architecture]] | [[file:../../30-39-evaluation/30-benchmarks/30.02-gateway-minimal-benchmark.org][Minimal benchmark contract]]
+
+* Selection and qualification boundary
+:PROPERTIES:
+:CUSTOM_ID: selected-case-scope
+:INSPECTED_ON: 2026-10-18
+:STATUS: source-inspection-only
+:END:
+
+Select the complete available etcd/raft archived run as the system case and its
+~progress_inflights~ scenario as the detailed resource-control slice. Select
+~CommitLiveness~ within TLAPS-Bench's etcd_raft module task as the formal-task
+reference. They are reference assets for our ASCENT evidence-driven, POO-composed,
+QNT-authored engineering workflow, not a replacement workflow or required TLA+
+authoring stack. No reference harness, checker, proof or benchmark was run here.
+
+#+NAME: selected-reference-identities
+| Identity | Value |
+|----------+-------|
+| Case repository commit | d419b3f72bd593e8f9ec04f5a98bffbdeaa7727b |
+| Complete archived run | systems/etcd/modules/raft/runs/case-studies-etcd-raft |
+| Detailed scenario | scenarios/progress_inflights |
+| Proof repository commit | d29eb13a6c2ec49c9980abc794f13e44fc9415a9 |
+| Benchmark module task ID | etcd_raft/etcd_raft.tla |
+| Selected proof unit ID | etcd_raft/etcd_raft_CommitLiveness.tla |
+| Unit statement digest in manifest | 180e0fe63faa15175f80a0e07b90e16f4aadf9c6074261699bceb4f21e801dce |
+| Original source digest in manifest | 8c0822bfc40a2af2a0578f2943fb9c448904b59ab27a1e3d812b282ca7004caa |
+| Declared local task context | etcd_raft/etcd_raftDefs.tla; etcd_raft/etcd_raftModel.tla |
+
+All 83 tracked files under the selected archived run were materialized and checked
+for presence. This establishes completeness of that Git working-tree selection,
+not completeness of the experiment or native execution image. The run's
+[[spec:README.md][README]] and [[spec:.record/manifest.json][manifest]] declare partial reports, provisional run identity and
+unproved completion. The selected harness's relative raft replacement and testdata
+are not present in this archived run. Its exact executable source baseline remains
+unresolved. No partial record is promoted to a complete replay receipt.
+
+The concurrentqueue curated run was also inspected as a selection alternative;
+its entire tracked record contains only README and metadata, so it was not chosen
+as an executable-asset case. Sparse absence was distinguished from upstream-tree
+absence during selection. Keep the historical CI collection studied earlier as a
+separate record, not a source of missing facts silently merged into this run.
+
+The TLAPS [[tlaps:source/etcd_raft/README.md][source notes]] reference implementation commit
+~3cbf6a74be3fa392edd8b64253fcd11c3ce5649b~. That reference is not proof that this
+Specula archive used the same implementation. The benchmark context contains
+recovery and property repairs; the two models must not be equated by shared name.
+
+* System dossier and reusable assets
+:PROPERTIES:
+:CUSTOM_ID: selected-assets
+:STATUS: inspected-unqualified-for-replay
+:END:
+
+The archived run includes analysis/modeling reports, baseline specifications,
+lease-read, progress/inflights and snapshot scenarios, trace specifications,
+Go harnesses, instrumentation patches, historical checker output and metadata.
+The asset inventory below covers the case pipeline, then narrows to flow control
+for a concrete gateway correspondence. Report assertions retain report modality.
+
+#+NAME: system-asset-disposition
+| Asset | Inspected role | Reuse disposition and remaining condition |
+|-------+----------------+------------------------------------------|
+| [[spec:analysis-report.md][analysis report]] and [[spec:modeling-brief.md][modeling brief]] | Source concerns, historical issues and candidate properties | Reference for coverage questions; labels and inferred defects are not a blind oracle |
+| [[spec:scenarios/progress_inflights/spec/etcdraft_progress.tla][progress model]] | Probe/Replicate/Snapshot state and inflight bookkeeping | Extract reviewed concepts; re-author relevant gateway semantics in QNT |
+| [[spec:scenarios/progress_inflights/spec/MCetcdraft_progress.cfg][checker configuration]] | Finite domains, faults, selected properties | Preserve actual values as reference metadata; no new handwritten CFG workflow |
+| [[spec:scenarios/progress_inflights/harness/main.go][Go harness]] and [[spec:scenarios/progress_inflights/harness/parser.go][parser]] | Datadriven actions, expected output and NDJSON traces | Trace/event contract reference; compilation and replay qualification open |
+| [[spec:scenarios/progress_inflights/harness/go.mod][dependency declaration]] | Relative replacement to an external raft tree | Recover exact source/dependency closure before execution reuse |
+| [[spec:scenarios/progress_inflights/patches/instrumentation.patch][instrumentation patch]] | Adds observable protocol state | Needs applicability, state-mapping and noninterference checks |
+| [[spec:scenarios/progress_inflights/spec/Traceetcdraft_progress.tla][trace specification]] | Matches observed trace to model behavior | Reference for trace-membership obligation; does not establish all behavior equivalence |
+| [[spec:scenarios/progress_inflights/bugs/MC.out.txt][historical checker log]] | Recorded random simulation and property failure | Counterevidence candidate about that recorded model; current binding unresolved |
+| [[spec:spec/bug-report.md][bug report]] | Historical claims with mixed exploration modes | Review as claims; do not inherit words such as verified as universal proof |
+| Archived prebuilt harness | Opaque historical executable | Exclude from qualified execution until build/source identity is independently established |
+
+The checked configuration declares initial servers {1,2,3}, a five-server universe,
+MaxInflightMsgs = 4, term/request/fault bounds and disabled deadlock checking.
+Comments suggesting three total nodes or a limit of two are not the actual values.
+These are archived exploration settings, not the proposed gateway pilot profile.
+
+** Concrete abstraction hazards
+
+The progress model declares inflights as a set of last-entry indices. Its own
+comments identify loss of duplicate-index behavior and ring-buffer implementation
+details. ~AddInflight~ uses set union; ~FreeInflightsLE~ retains indices greater
+than an acknowledged index. A cardinality bound on this set is insufficient to
+check repeated retries consuming distinct resources under the same business key.
+
+~InflightsMonotonicInv~ checks maximum >= minimum for a nonempty set; it does not
+establish that successive additions strictly increase. The source comments also
+recognize that ordering of additions is temporal. The gateway must instead track
+unique attempt/incarnation identities, event order and explicit resource ownership.
+A set of those unique owners can be suitable; a set keyed only by request or
+payload index can silently merge real allocations.
+
+The historical log identifies random simulation and a ~ProgressSafety~ failure in
+the initial state. Its paths/name differ from the checked-in MC wrapper, and the
+wrapper's active invariant list differs from the log's aggregate property. Without
+source/config hashes and an exact diagnostic, classify it as historical model
+counterevidence with unresolved binding. It is neither a current source bug nor
+an exhaustive completed result for the archived configuration.
+
+** Harness assumptions exposed by source inspection
+
+The harness supports skipping expected-output validation; empty expected blocks
+also bypass comparison. It warns when tracing hooks are disabled and then may
+produce empty NDJSON, while metadata writes a declared build-tag list. Therefore
+completion text and tag metadata alone cannot establish tracing or validation.
+A qualified replay must bind actual build options, enabled hooks, nonempty expected
+observations, selected scripts, all validation settings and process completion.
+
+The source uses reflection/unsafe access for a RawNode field and requires an
+instrumented raft tree. These are version-specific dependencies. The relative
+~../raft~ replacement and ~testdata~ scripts are missing here. Record those as
+replay prerequisites, not evidence that the archived code has been compiled or
+that the missing paths are available under a modern upstream version.
+
+* Formal task: exact progress claim and premises
+:PROPERTIES:
+:CUSTOM_ID: selected-proof-task
+:STATUS: inspected-no-proof-run
+:END:
+
+Sources: [[tlaps:benchmark/proof-from-scratch-module/manifest.json][module manifest]], [[tlaps:benchmark/proof-from-scratch-module/etcd_raft/etcd_raft.tla][target]],
+[[tlaps:benchmark/proof-from-scratch-module/etcd_raft/etcd_raftDefs.tla][definitions]], [[tlaps:benchmark/proof-from-scratch-module/etcd_raft/etcd_raftModel.tla][transition model]],
+[[tlaps:tests/fixtures/etcd_raft/CommitProgress.tla][finite witness fixture]], [[tlaps:tests/dataset/test_etcd_progress.py][positive/adverse controls]].
+
+The target quantifies a leader l, a quorum Q of the initial server set and every
+positive natural index n. It states that ~LiveSpec(l,Q,n)~ implies
+~CommitProgress(l,n)~. The latter eventually reaches a suffix where a current-term
+entry at n leads to that leader's commit index reaching n. It is not unconditional
+availability, leader election progress, or a bound on response latency.
+
+#+NAME: formal-premise-register
+| Premise/action | Meaning in the selected definitions | Gateway adaptation boundary |
+|----------------+-------------------------------------+-----------------------------|
+| Spec | Init and stuttering Next with modeled faults | Define gateway Init/Next separately; do not import Raft state |
+| StableReplication | Eventually a stable leader/term and restricted quorum faults/actions | Explicit eventual service/cleanup stability assumption, if required |
+| Ready weak fairness | Persistence work is eventually taken when continuously enabled | Resource/cleanup executor fairness needs its own action-level meaning |
+| Send/self-append weak fairness | Continuously enabled replication work is not starved | Per-attempt queued/cleanup work cannot rely on aggregate worker fairness |
+| Receive/ack strong fairness | Recurrently enabled relevant message classes are processed | Preserve strong versus weak distinction if claiming corresponding progress |
+| Commit weak fairness | Continuously enabled commitment is eventually advanced | A fair scheduler cannot compensate for a no-op completion transition |
+| CurrentTermEntry | The progress antecedent is actually present | Show a reachable admitted request/owned resource trigger |
+
+The finite fixture starts from real model election and requests, then explores a
+restricted continuation. It checks non-vacuity and a deterministic fair witness.
+The test source enumerates entry indices 1/2 and progress, witness, unfair and
+fault variants. Removing commit weak fairness or replacing commitment with a no-op
+expects a temporal-property violation. These are read test expectations, not new
+results; their finite scope is not the quantified theorem. The target contains
+~PROOF OMITTED~ in the shipped task, so the task file itself is not a proof artifact.
+
+The selected unit belongs to a nine-unit module. A one-unit derived evaluation
+must record an explicit selected-unit scope and validated dependency closure;
+it cannot be reported as a whole-module TLAPS pass or compared to nine-unit totals.
+The source digest in the manifest hashes the original source specification,
+verified locally as an identity check. It is not the raw generated-target hash.
+
+* Gateway semantic correspondence
+:PROPERTIES:
+:CUSTOM_ID: gateway-correspondence
+:STATUS: proposed
+:END:
+
+#+NAME: reference-to-gateway-map
+| Reference concept | Gateway concept | Property to preserve | What is not transferred |
+|-------------------+-----------------+----------------------+-------------------------|
+| Inflight replication message | One locally resource-owning upstream attempt | Unique ownership, acquisition/release and cap | Raft log ordering or business idempotency |
+| Replication ack / FreeLE | Confirmed local transport termination / release | Release must have an owned attempt and correct incarnation | An ack is not arbitrary cancellation, and timeout is not remote stop |
+| Progress reset / snapshot transition | Retry/transport teardown or process incarnation transition | Old callbacks cannot release a new owner's permit | Resetting local state does not revoke remote execution |
+| Model-to-trace matcher | Gateway event-to-transition correspondence | Ordered pre/post states and allowed stuttering | Finite trace acceptance is not universal source refinement |
+| Stable-period replication progress | Conditional queue/cleanup progress | Reachable antecedent plus sufficient action fairness | No quorum or Raft leader is invented in a local gateway |
+| Persisted model state | Durable evidence/operation record where required | Distinguish retained versus volatile state | No automatic exactly-once effect or authenticated persistence |
+| Fixed theorem context | Fixed gateway claim/assumptions/methods | Agent cannot silently weaken the target | Reviewed design revision is a separate lifecycle result |
+
+Define the new gateway model in QNT with typed attempt/replica/epoch state and
+explicit resource accounting. Use TLC through the established Quint compilation
+and checker path, retaining generated artifacts as derived evidence. Lean covers
+parameterized laws and justified proof transport. Equal TLC verdicts on a TLA+
+reference and QNT output are useful correspondence controls, not independent
+validation of their common backend.
+
+The small gateway reference semantics should enumerate attempt records and count
+actual owned resources independently of a free-counter implementation. A separate
+trace validator checks guards, event identities, pre/post state and allowed
+stuttering. Human-reviewed contracts and threat cases define expected obligations.
+No oracle derives its expected answer from the same R01-R15 rule output it grades.
+
+* Content identities for reproducible follow-up
+:PROPERTIES:
+:CUSTOM_ID: selected-artifact-digests
+:STATUS: locally-hashed-only
+:END:
+
+#+NAME: selected-raw-digests
+| Artifact | SHA-256 of raw bytes |
+|----------+---------------------|
+| Specula progress model | 90bdbfaf436b71afd723b9668d2adc74fdc9e010a67ddf003c0172e5674b5886 |
+| Specula progress configuration | 87c2897ae40e5ab13452817416c05be885a4ed051b4b0f9aa4be0e078d84679d |
+| Specula progress harness main.go | 1b1b0a775b56426974cfbe7f6694f7b37289a3812d8b5e73d7da44aa6f9f701b |
+| Generated TLAPS module target | 6fc00fbb5b566ca641cec581b827fced8537de462993894b382617eff5b8b085 |
+| TLAPS definitions context | 7a6726c6aab02f056b2120b994c4c39c2612be3c5cead9f968a9090c1b6123e5 |
+| TLAPS transition context | ed0f5a06b3c167c6213d666113e4b7c84387928c01d0ac31469acdc8e1531dbf |
+| CommitProgress finite fixture | f9239b88ed8c71104b5cb5521545b872420d3fe93d122d43adb1f693694b547a |
+
+Hashing and source inspection are the only checks represented here. Before copying
+assets, review per-file licensing: the TLAPS [[tlaps:NOTICE][NOTICE]] attributes etcd/Specula
+sources to Apache-2.0; the benchmark tool's MIT license is not a blanket license
+for every input. Existing archived reports and models remain reference-only.
+
+* OPEN Qualification work :research:
+:PROPERTIES:
+:CUSTOM_ID: selected-open-work
+:STATUS: open
+:END:
+
+- [ ] Bind actual Specula implementation revision, instrumentation base and scripts.
+- [ ] Establish model/config/log correspondence or leave the historical log unqualified.
+- [ ] Review duplicate identity, event ordering, epoch and cleanup semantics for gateway QNT.
+- [ ] Review action-specific fairness, trigger reachability and fair-witness satisfiability.
+- [ ] Specify independent state/trace/coverage oracles and selected proof-unit context.
+- [ ] Discharge the minimal benchmark and GAP01-GAP12 exit criteria before claiming closure.

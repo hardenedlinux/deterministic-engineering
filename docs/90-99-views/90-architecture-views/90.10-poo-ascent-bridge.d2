@@ -1,0 +1,27 @@
+# org-target: docs/10-19-design/10-architecture/10.06-poo-ascent-integration.org::#gateway-module-organization
+# Native design publications; downstream inference and execution remain proposed.
+direction: down
+classes: {
+  native: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; border-radius: 10; font-size: 17}}
+  domain: {style: {fill: "#E6F5F3"; stroke: "#19756C"; border-radius: 10; font-size: 17}}
+  boundary: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; border-radius: 10; font-size: 17}}
+}
+init: "Consumer init selection\nLiteral Module / Scenario windows\nOne selection epoch; no automatic run" {class: native}
+domain: "gateway-domain (declared)\nTypes, Contracts, design objects\nReusable parameter Profile values" {class: domain}
+evidence: "gateway-evidence (declared)\nNative ASCENT schema constructor\nDomain projection / association rules pending\nDeclared domain dependency + ASCENT import" {class: domain}
+scenario: "Scenario plans (declared)\nLocal Profile + explicit review purpose\nExecution and method binding pending\nExisting Cases and execution owners" {class: domain}
+ascent: "Existing ASCENT\nEvidence Program / Session / Clue\nSource-bound projection and reasoning" {class: native}
+results: "Immutable attempt results\nSource, method, target and outcome\nFailures and incomplete work retained" {class: native}
+admission: "Method verification / domain admission\nRequired slots, scope, currentness\nSeparate from content attestation" {class: boundary}
+authority: "Aitia + actual Host\nCurrent decision and authorization\nExplicit effect and receipt" {class: boundary}
+init -> domain: "select admitted publication"
+init -> evidence: "select admitted publication"
+init -> scenario: "select; do not execute"
+domain -> evidence: "Domain requirement; fact projection pending"
+domain -> scenario: "explicit Profile occurrence"
+evidence -> ascent: "native schema; domain rules pending"
+scenario -> results: "planned explicit authorized execution"
+results -> ascent: "host-bound records and references"
+results -> admission: "independent method/result checks"
+ascent -> admission: "support, counterevidence and unknown"
+admission -> authority: "current scoped support; not permission"

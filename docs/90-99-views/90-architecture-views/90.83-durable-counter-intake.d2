@@ -1,0 +1,17 @@
+# org-target: docs/10-19-design/10-architecture/10.23-native-aitia-backpressure-content-review.org::#durable-counter-intake
+# render-layout: elk; theme: 0; pad: 24; timeout: 30
+direction: down
+proposal: "Signed proposal\nExisting Aitia owner validates original target and authority\nDurable predecessor must be a closed archive source\nRetain accepted negative in append-only inventory"
+intent: "Trusted host persistence capability\nExpected prior head / serialized publication\nSelect signed WRITING intent before file IO"
+write: "Complete accepted-prefix archive\nExisting native cut + records / origins / references\nWrite, close and rename fresh file\nOwner remains live"
+checkpoint: "Signed CHECKPOINT head + selected pin\nExact prefix digest, inventory count and prior head\nRead back actual closure before confirming"
+ack: "submit! returns ID only here\nCaller records acknowledgment after return\nSame signed retry adds no duplicate"
+restart: "New actual process / fresh reader activation\nSame archive source and Aitia handover\nFresh native ASCENT queries / Core receipts"
+verdict: "Current native gate\nUnresolved counter -> rejected\nCurrent named disposition -> admitted\nIncomplete custody -> pending"
+partial: "SIGKILL during partial write\nNo acknowledgment\nKeep previous complete negative evidence\nLatest WRITING stays pending; no rollback"
+unknown: "SIGKILL after checkpoint / before return\nNo caller acknowledgment\nRecover complete counter conservatively"
+authority: "Old receipt / old positive head / old target replay\nCannot restore current authorization\nEvidence reuse still checks exact applicability"
+proposal -> intent -> write -> checkpoint -> ack -> restart -> verdict
+write -> partial -> verdict
+checkpoint -> unknown -> restart
+authority -> verdict

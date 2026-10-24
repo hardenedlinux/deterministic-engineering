@@ -1,0 +1,26 @@
+# org-target: docs/10-19-design/10-architecture/10.05-agent-reasoning-and-design-convergence.org::#design-convergence-definition
+# Arrows are evidence dependencies and feedback, not a required research sequence.
+direction: down
+classes: {
+  design: {style: {fill: "#E6F5F3"; stroke: "#19756C"; border-radius: 12; font-size: 17}}
+  later: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; border-radius: 12; font-size: 17}}
+  boundary: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; border-radius: 12; font-size: 17}}
+}
+proposal: "Design proposal\nGoals, alternatives, unknowns" {class: design}
+contract: "Reviewable design contract\nClaims, premises, dependencies\nIndependent oracle and method plan" {class: design}
+model: "Model qualification\nAuthored QNT -> generated TLC input\nLean laws + adverse / non-vacuity controls" {class: later}
+source: "Implementation qualification\nSource/model mapping + native checks\nSecurity, resources and performance" {class: later}
+operation: "Operational admission\nCurrent environment, authorization\nHost execution and monitored assumptions" {class: boundary}
+agent: "Agent-chosen exploration\nMay enter, branch or revisit any question" {class: design}
+proposal -> contract: "clarify and review"
+contract -> model: "defines property and premises"
+contract -> source: "defines observable implementation claim"
+contract -> operation: "defines authority and operational scope"
+model -> source: "model evidence needs correspondence"
+source -> operation: "exact artifact and environment evidence"
+model -> proposal: "counterexample / missing premise" {style.stroke-dash: 4}
+source -> proposal: "source result / measured tradeoff" {style.stroke-dash: 4}
+operation -> proposal: "assumption change / incident" {style.stroke-dash: 4}
+agent -> proposal: "new design"
+agent -> model: "new discriminating question"
+agent -> source: "new experiment"

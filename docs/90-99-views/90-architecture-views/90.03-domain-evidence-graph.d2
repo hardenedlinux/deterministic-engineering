@@ -1,0 +1,26 @@
+# org-target: docs/10-19-design/10-architecture/10.05-agent-reasoning-and-design-convergence.org::#existing-mechanisms
+direction: down
+classes: {
+  base: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; border-radius: 10; font-size: 16}}
+  domain: {style: {fill: "#E6F5F3"; stroke: "#19756C"; border-radius: 10; font-size: 16}}
+  authority: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; border-radius: 10; font-size: 16}}
+}
+core: "Core mechanisms\nPOO Module / Profile / selected Graph" {class: base}
+design: "Domain design\nGateway or Rust networking\nGoals, contracts, assumptions" {class: domain}
+composition: "POO extension\nOrdered parents, final receiver\nCompatibility obligations" {class: domain}
+relations: "Downstream Evidence DSL\nClaims, factors, obligations\nSame-witness associations" {class: domain}
+evidence: "ASCENT Evidence Chain / DAG\nApplicable support + counterevidence\nInvalidation and reuse" {class: base}
+trajectory: "Trajectory\nObserved queries, attempts, costs\nHistory is not proof" {class: base}
+case: "Explicit Scenario / native Case\nPinned Graph API + selected tests\nComplete source-current execution" {class: base}
+authority: "Aitia + Host\nAdmission, decision, permission\nActual effect receipt" {class: authority}
+core -> composition: "supplies mechanisms"
+design -> composition: "specialize"
+composition -> relations: "effective domain interpretation"
+relations -> evidence: "checked domain inference"
+evidence -> relations: "current support / unmet premises"
+core -> case: "selected source + test projection"
+case -> evidence: "bound result references"
+evidence -> trajectory: "observable evidence use"
+trajectory -> evidence: "historical references need recheck" {style.stroke-dash: 4}
+evidence -> authority: "scoped support; no permission implied"
+authority -> case: "authorized explicit work only"

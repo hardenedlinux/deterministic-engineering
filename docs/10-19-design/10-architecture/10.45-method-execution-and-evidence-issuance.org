@@ -1,0 +1,484 @@
+#+TITLE: 10.45 Method Execution and Evidence Issuance: WP04 Detailed Design
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.45
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+TODO: AUDITED DESIGN SPECIFIED | QUALIFIED
+#+FILETAGS: :design:methods:rust:quint:lean:sysml:evidence:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.41-workflow-gap-audit.org::#integrated-refactoring-dependency-order][Work packages]] | [[file:10.42-library-types-and-contracts.org][Types/Contracts]] | [[file:10.43-library-objects-and-publication.org][Objects/publication]] | [[file:10.44-profile-selection-and-scenario-capture.org][Profile/capture]] | [[file:10.39-method-execution-evidence-issuance-and-ascent-projection.org][Execution/evidence/query architecture]]
+
+* DESIGN WP04 objective and retained owners
+:PROPERTIES:
+:CUSTOM_ID: method-execution-evidence-issuance
+:STATUS: File/field/call/semantic design only; no implementation, method run or evidence issuance
+:END:
+
+WP04 turns a checked captured basis C into a concrete method application A, an
+actual attempt E and qualified scoped result W. Rust observation, QNT invariant
+checking, Lean budget checking, SysML cut assertions and QNT mapped-path checking
+consume that same C while using their actual declared input subsets and derived
+upstream observations. C is never modified to contain their outputs.
+
+POO/Core Types and returned checked values define boundaries. Core Ops owns
+execution, deadlines/cancellation and its actual command results. The method's
+trusted producer owns interpretation/issuance and private result recognition.
+ASCENT Session/clue exchange owns accepted evidence sources; Aitia owns review
+verification/authority. There is no second executor, result registry, scheduler,
+version service, signing/key service or approval engine.
+
+The declaration generation stays V1 at the one owner from 10.42. Public data and
+function names describe their responsibility. Legacy method/schema tokens and
+historical files retain their original meaning; they are not rewritten to match
+new target field names or treated as execution provenance.
+
+* AUDITED Existing execution and issuance gaps
+:PROPERTIES:
+:CUSTOM_ID: method-execution-source-audit
+:END:
+
+This is a source audit of HEAD 8044732d505f84e373119a70f947df00e1767300 plus the
+active dirty checkout and linked Core. No current tool execution or qualification
+is inferred from source inspection or earlier receipts.
+
+| Inspected source | Present behavior / target consequence |
+|------------------+---------------------------------------|
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/methods.ss][command / issue / resource-result]] | Real Core Ops invocation, checked input/artifact files and private final result handle exist. command reduces the returned Ops value to argv/exit/seconds/log fields; issue creates records only after successful interpretation. Retain actual command results and failed/interrupted attempts, not only public summaries |
+| [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/ops/func.ss][Core execute-script/run-script]] and [[file:../../../.gerbil/pkg/github.com/tao3k/poo-flow-core/ops/process-script.ss][ProcessScript]] | Actual returned result includes status, wait-status, elapsed time, output and log. Effective argv/cwd/environment are prepared internally; run-script samples and merges inherited environment at execution. A preview or caller argv is not proof of that effective launch context |
+| methods.ss / process-script parameter | Current runners receive a process operation as a separate argument; examples supply Core ProcessScript, but the argument itself is not the full target source-bound Ops association. Resolve the actual trusted operation from the checked host/publication boundary, not a request-supplied .run callback |
+| methods.ss / resource-run-native | Copies a bounded crate, checks Cargo config, runs metadata/build/executable and an independent event oracle. Dependencies are discovered after initial context; source scans/lock/offline flags alone do not prove complete build/runtime read closure. C-bound acquisition must cover the actual supported inputs |
+| methods.ss / resource-run-qnt | Copies model, selects initializer/action, checks TLC structured status and independently explores the finite model. Early-release also runs TypeScript to obtain an ITF trace. That trace belongs to the TypeScript command, not an invented TLC-exported witness |
+| methods.ss / resource-run-lean | Generates a parameter-specific positive or negated budget theorem, invokes Lean, checks output/axiom text and produced olean. Bind exact statement/import/kernel/checker basis and distinguish proved negation from support for the positive budget |
+| methods.ss / resource-run-integration | Checks six issued Rust results, common observation artifact and footprint; produces SI/TM together. One before list and monolithic code bind both tools; SI and TM cannot claim tool independence merely because their public footprint lists differ |
+| methods.ss / SysML interpretation | Checks expected exit/status and check count, principally inspecting the first check. Target interpretation must bind actual required element/assertion IDs and every required check, not only count or one favorable status |
+| methods.ss / QNT path interpretation | Uses violation of unfinished as path completion, and compares it with independently projected ownership outcome. Retain tool conclusion and expectation comparison separately; an expected label cannot choose the actual conclusion |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/oracle.ss][oracle.ss]] and [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/correspondence.ss][correspondence.ss]] | Finite ownership, budget and Rust oracles plus mapping/renderers exist. Broad code containers couple otherwise different method closures; mapping/delta authority moves to objects under WP02 while implementations consume it |
+| methods.ss / registration | Private results and clue-exchange attestation precede Session source replacement; history is retained. Candidate claim/footprint keys still lack the complete A/E/origin/use association required by WP04/WP06 |
+
+Two Core execution seams need qualification at their existing owner. First,
+retain a launch description from the actual prepared value used to spawn,
+associated with the returned command result: effective argv including wrappers,
+resolved directory/environment, limits and output routing. Do not fabricate it
+from another preview afterwards. Second, support an explicit captured-environment
+execution policy: the current inherited/override merge is not environment replacement.
+A replace policy, if required by the method, must be implemented/validated in
+Core Ops and its Types/Config, or that stronger execution route remains unavailable.
+An inherit policy is usable only when its actual relevant inherited inputs are
+qualified and bound. No Library adapter may claim isolation from overrides alone.
+
+These are targeted existing Ops responsibilities, not a new process framework.
+Its result is still an operation result under host trust, not a cryptographic
+execution certificate. Actual producer invocation/retention and source association
+establish the local origin. An arbitrary copied POO Ops-shaped object does not.
+
+* SPECIFIED Existing owners and necessary implementation separation
+:PROPERTIES:
+:CUSTOM_ID: method-file-and-source-ownership
+:END:
+
+| Existing owner/file | Refactored responsibility and dependency direction |
+|---------------------+---------------------------------------------------|
+| abstract/types.ss and rust/types.ss | Common application/attempt/observation/use field Types, capability/input/result/claim/domain Contracts; Rust/integration case, projection and upstream-run constraints. No import of runners to authenticate results |
+| abstract/objects.ss and rust/objects.ss | Authored claim/capability/input-role meaning, parent/policy/mapping/delta definitions and subject limits from WP02. No process effects or command-dependent declarations |
+| rust/methods.ss | Replace the monolithic all-method pipeline with thin specialization operations/use adapters; no generic formal runner implementation or independent Scenario capture. Private result issuance becomes a common producer responsibility, not Rust-only semantic ownership |
+| rust/func.ss and existing interfaces | Bind actual source-qualified method operations, expected Function Contracts and their result owners to checked declarations. No public issue(record) or caller-selected runner/observer; no eager tool execution |
+| rust/oracle.ss | Retain the controlled Rust event/cut oracle. Move generic finite ownership and arithmetic algorithms into separate generic owners so arithmetic edits need not change the Rust checker |
+| rust/correspondence.ss | Retain the shared selected-mapping event/state/cut projection algorithm and checks. QNT/SysML render/interpret logic separates by actual consumption; no slice constructor/catalog/delta authority |
+| rust/native/src/main.rs and its Cargo files | Actual controlled observation workload, build/runtime inputs and output protocol. It emits observations; it does not emit gold, approvals or a universal network-service implementation guarantee |
+| model.qnt / budget.lean | Authored finite model and conditional arithmetic propositions. Their actual domain/import/source inputs and generated specializations are distinct from observed Rust execution |
+| Scenario func/types and project Evidence adapter | C-bound application preparation, trusted use gates and later application-scoped projection. Existing Session/clue verifier remain owners; no independent snapshot/source arguments |
+| Core ops/types/config/func/progress | Actual launch context/result association, captured environment policy, existing deadlines/cancellation and process resource handling. Preserve supported limits and all failure/termination information |
+
+Separate procedures in the same loaded monolith do not establish independent
+implementation inputs. The complete target therefore allocates these future
+compilation units within the current abstract/rust source directories; no files
+or directories are created in this task:
+
+| Future unit / extracted current responsibility | Dependency/issuance boundary |
+|-----------------------------------------------+------------------------------|
+| abstract/methods.ss / common command/result coordination and private result owner | Shared source-qualified operation/issuance mechanics; retain compact private resource-result recognition and public POO observations. Does not import every runner or choose a method by an untrusted label |
+| abstract/qnt-method.ss / resource-run-qnt | QNT invariant/early-release execution and interpretation, using the finite ownership oracle |
+| abstract/ownership-oracle.ss / resource-ownership-oracle and resource-counter-oracle | Independent bounded BFS and actual ITF counter interpretation; no ASCENT or generated-model renderer dependency |
+| abstract/lean-method.ss / resource-run-lean | Exact budget statement generation, Lean execution and kernel/import/axiom-policy interpretation |
+| abstract/budget-oracle.ss / resource-budget-oracle | Pure exact-integer accounting; no QNT/Rust runtime dependencies |
+| rust/rust-method.ss / resource-run-native | Actual controlled Rust build/run/observation, Rust oracle and declared dependency/environment acquisition |
+| rust/sysml-method.ss / SysML branch and renderer | Selected mapping/cut assertions, SysML tool/runtime and complete check interpretation; no QNT executable merely to run SI |
+| rust/qnt-path-method.ss / TM branch and renderer | Actual upstream Rust run, ordered mapping/model delta and QNT/TLC path interpretation; no SysML executable merely to run TM |
+
+These units are ordinary imported implementation modules, not new independently
+published Library Modules or a universal plugin hierarchy. Common producer
+operations bind the actual fixed runner/observer/source association during trusted
+publication; their private issuance functions are not a public arbitrary-record
+constructor. A caller-created owner or supplied classifier cannot stand in for
+the actual selected operation/result owner. Function output recognition that
+needs private issuance is bound at that owner/publication boundary, avoiding a
+Types -> methods -> Types import cycle.
+
+Actual import/initializer/compiled closure must be qualified after extraction.
+If an assembly facade still loads/reads an unrelated runner or shared source,
+retain that real dependency. Shared Types, issuer, Core/runtime and actual source
+admission guards remain shared where applicable. Module/source eligibility can
+change C even when a particular execution basis is reusable; fresh cross-C use
+qualification still applies. Do not narrow hashes by naming a smaller semantic
+role while continuing to execute the old broad code.
+
+* SPECIFIED A, E, observations and W fields
+:PROPERTIES:
+:CUSTOM_ID: method-application-attempt-result-fields
+:END:
+
+Public applications, attempts, observations and use records are extensible POO
+values with expected Contracts; only the issuer's compact handle is private.
+These field groups specify responsibilities, not another serialized schema.
+
+| Subject / proposed Contract | Required fields and invariant |
+|-----------------------------+-------------------------------|
+| A / ResourceMethodApplicationContract | identity; actual C reference; selected capability/expected Contract/operation owner; observed subject and claim or declared claim set; case/cut/theorem/path, mode/domain/parameters and strength; exact expected input roles/bindings; derivation/upstream run references; execution/interpretation policy and relevant source/loaded association |
+| A.expected-inputs | Method-specific role-to-qualified-input associations from C or declared actual upstream results. Required roles derive from the capability/claim, not from whatever fields a caller supplies. Missing/extra/duplicate/conflicting/empty required roles prevent the affected executable application |
+| E / ResourceMethodAttemptContract | Actual A reference and attempt identity; preflight/derivation/build/probe/run sequence; actual invocation results and launch contexts; effective limits; owned raw inputs/outputs/logs and their origins; observed failures/cancellation/completion; execution and interpretation findings separately |
+| E.commands | Actual Core Ops result references, status and raw wait-status where returned, effective argv/cwd/environment/limits/routing from that invocation, elapsed observations and output references. Shared acquired tool observations retain their real acquisition origin; they are not copied as commands supposedly executed again |
+| Observation / ResourceMethodObservationContract | Actual C/A/E/subject/claim/basis, complete observed input footprint/derivation and artifact inventory, exact interpreted proposition/element/path, execution/validation/semantic/control dimensions, observer/source identity, diagnostics and strength/premise limits |
+| W / private resource-result plus its expected owner-bound output Contract | Immutable original C/A/E/subject/claim/facet, actual semantic conclusion and scope, observed footprint/artifact/validation references and actual selected issuer association. Public record/reference/hash is a presentation, not a constructor |
+| Qualified use / ResourceEvidenceUseContract | W and original origin; target C/A/claim/basis; actual current source/artifact/issuer/interpretation checks and policy/domain/strength comparison; fresh verification/use association and limitations. Does not rewrite W or pretend an old execution happened again |
+
+Generic common Types belong in abstract/types.ss; domain/case/input refinements
+belong in rust/types.ss. Scenario uses those expected Types and adds actual C/
+project associations without copying the field maps. POO Function validation
+uses its returned checked/wrapped values and does not execute method bodies while
+publishing the Library. Observation shape alone does not authenticate a private W.
+
+A method request can be prepared/refused before execution. Preflight refusal
+records that no tool invocation took place, and issues no execution-backed W.
+Every actual retry has its own E; identical bytes or a repeated usage/case label
+do not make two attempts the same event. One Rust suite application A can declare
+six scoped claims and have one actual E yielding six W, all referring to the same
+qualified observations/run. SI/TM applications bind exact facets of that run;
+no path/hash-only aggregation manufactures common origin.
+
+Not every E produces W. A timeout, malformed result, observer disagreement or
+unclosed input basis retains E and diagnostic observations without a qualified
+property W. Only an accepted scoped holds/refuted observation under complete
+required premises can enter support/counter. Missing evidence stays a required
+pending duty in later projection; it is not dropped because issuance failed.
+
+* SPECIFIED Same-C calls and actual execution origin
+:PROPERTIES:
+:CUSTOM_ID: method-call-and-origin-boundaries
+:END:
+
+| Operation / owner | Input -> output | Actual boundary |
+|-------------------+-----------------+-----------------|
+| Prepare application / Scenario + Library capability | C + supported bounded claim/request + actual qualified upstream results when required -> checked A or explicit refusal | Resolve operation/Contracts from the checked Scope. Read C.selection and captured input owners; no replacement root/Profile/tools/policy/mapping arguments |
+| Derive inputs / selected method | A + owned inputs -> owned copied/generated inputs and derivation association | Exact parent input/recipe/case/delta bytes; generated artifacts are outputs of this step and inputs to the actual attempt, not retroactive C inputs |
+| Execute / trusted method operation through Core Ops | Checked A + actual destination under captured policy -> actual E invocation results/raw artifacts | Own attempted operation before spawn; actual commands/limits/context/loaded implementation captured from the used execution boundary. No arbitrary raw Ops-shaped receipt accepted from a caller |
+| Interpret / bound independent observer | E + exact input/derivation/output inventory -> checked scoped observation or rejection | Validate completion and actual structured result/target/proposition/domain, then semantic interpretation and expectation separately. No preferred control label determines truth |
+| Issue / selected producer | Accepted observation + retained actual E and closure -> W | Private constructor/owner association only along the real bound execution/interpretation path. No public issue(JSON), checked flag or copied issuer name |
+| Check/revalidate use / actual producer/verifier | Original W + target C/A and retained artifacts -> fresh qualified use or refusal | Recheck full footprint, subject/claim/strength/domain, source/currentness and real issuer; preserve origin. A recheck invocation is recorded as that check, not an original workload rerun |
+| Project / Scenario Evidence adapter | C + required duties + actual A/E/W/uses -> later WP06 committed inputs/Q | No direct unverified checked-row publication. Keep Session, trusted clue verification and application-scoped relations; Aitia consumes the exact Q later |
+
+The output location is an execution/storage request, not a way to alter C.
+Validate effective Cargo ancestor config, HOME/PATH/cache/backend settings and
+other relevant execution context at the real destination. A hidden dependency
+outside the acquired basis stops the use and requires proper acquisition/new C,
+or a qualified already-captured immutable domain. No late ambient file is simply
+appended to C after the run.
+
+Source -> owned/generated input -> metadata/build command -> produced executable
+or model/proof -> actual tool/process -> raw output -> observer -> W is the
+required provenance chain. Bind the exact executable output selected for launch,
+not merely a file with the expected name; retain build/source/tool association.
+For wrappers/interpreters/backends, record the actual chain and its qualified
+input scope. Before/after digests and local-host source guards do not establish
+atomic exec-file identity against all races; stronger required guarantees need
+an actually qualified immutable/custody facility. No remote attestation is claimed.
+
+The trusted Ops operation is bound by publication/host source ownership, not
+selected from C's public fields or passed as an arbitrary process-script argument.
+C supplies qualified inputs/tool premises; it cannot replace the operation that
+creates execution-origin findings. Capture actual stdout/stderr routing, whether
+streams are merged and which structured artifact each observer reads; do not
+reconstruct missing stream information from a combined log.
+
+A partial multi-method run retains independently completed attempts/W and the
+actual uncompleted obligations. The required suite/output inventory determines
+when an aggregate is complete. A missing Rust case cannot qualify the whole
+six-case observation; a later independent TM timeout cannot erase already
+qualified SI evidence. Narrower partial claims require an explicitly declared
+capability, not an invented success-only subset or a blanket group status.
+
+Retain attempt/preflight/command/raw-artifact references before presenting success.
+Core can unwind cancellation and terminate supported descendants, but host SIGKILL
+cannot run cleanup. Missing terminal receipt after interruption remains incomplete/
+unknown completion, even if a file or some expected events exists. Preserve the
+raw available evidence; never invent a completion receipt during recovery.
+
+The current helper's fixed 45 seconds applies per command, not automatically to
+an entire build/suite/cut pipeline. The target derives per-command and aggregate
+attempt limits from captured method/host policy and remaining budget, retaining
+idle/cancellation limits and actual overruns. Existing acceptance budgets stay
+fixed; retry or changed controls do not enlarge them. No synthetic progress event
+or swallowed nonzero status changes a stall into a completed check. Resource
+limits are recorded only at their actual enforceable scope; a declared heap or
+memory ceiling without a qualified enforcing mechanism remains an unsupported
+premise, not a property supplied by the time-limit API.
+
+A normalized status of 124/137 alone cannot establish precise termination cause.
+Keep raw wait-status, actual timeout/watchdog/cancellation findings and logs. The
+wait-status of a timeout wrapper is not proof of every descendant's termination.
+Preserve supported termination guarantees and explicit gaps; no stronger process
+cleanup or timing claim follows from a partial receipt.
+
+* SPECIFIED Complete input footprints and per-method meaning
+:PROPERTIES:
+:CUSTOM_ID: method-footprints-and-claim-semantics
+:END:
+
+Each A keeps the full C association but consumes a precise declared input basis.
+The manifest distinguishes required input roles, actual acquired bindings, derived
+inputs and produced outputs. The role names below describe the target responsibilities;
+legacy artifact tags are interpreted under their original qualified format.
+
+| Method / claim | Required semantic/execution/validation inputs | Accepted conclusion / limit |
+|----------------+-----------------------------------------------+-----------------------------|
+| Rust / RL-M01-M06 | Actual workload subject source/instrumentation/manifest/lock/dependencies; runtime/compiler/linkage/config/environment; payload/worker/permit/case domain; inventory/oracle; Rust runner and shared issuer/source/loaded closure | Observed bounded event/cut ownership under the actual controlled protocol. M01-M05 may hold; M06 refutes the ownership property while the negative-control harness succeeds. No production throughput, all-schedules or arbitrary-project claim |
+| QNT / BP-O02 | Captured base model and exact initializer/action/invariant/domain/mode; relevant parameters; actual QNT/Node/TypeScript/Java/TLC/import/config/environment where used; finite-model/ITF observer, runner and shared issuer | Completed finite safety check or actual early-release counter under that exact model. Independent oracle agreement does not establish Rust refinement or cover an unverified integration delta |
+| Lean / BP-O03 | Arithmetic source, exact integer parameters/units and positive target property; actual generated checked statement; Lean/kernel/import/compiled/axiom policy; budget oracle, runner and issuer closure | Kernel-checked positive statement supports the stated arithmetic bound; kernel-checked negation refutes it. Neither establishes that source inventory, ownership or measured bytes satisfy external premises |
+| SysML / SI-M01-M06 | Original Rust source/runtime/workload/inventory and qualified run/observation/facet refs; selected cut mapping and relevant premises; generated SysML bytes, exact element/assertion set and actual semantic library/runtime/config; mapper, renderer, checker/runner and issuer | Exact required assertions hold/fail on declared observed cuts. It is not whole-architecture, all-interleaving or Rust behavioral refinement evidence; no QNT tool input solely due to old shared implementation |
+| QNT path / TM-M01-M06 | Same actual Rust origin; ordered projection/event mapping; base model plus explicit selected delta, actual generated trace model/initial/action/unfinished target/domain; QNT backend/tool/import/config, mapper/path observer/runner/issuer | Qualified completion path exists or does not exist under that finite generated model. Violation of unfinished establishes completion reachability; completed ok establishes no such completion under the qualified exhaustive scope, not safety support by itself. Current route exports no TLC ITF path witness |
+
+For every method, include the expected descriptor/claim interpretation and actual
+validator/loaded implementation/source association. CLI version text or a wrapper
+hash is not the whole toolchain. Cargo build scripts/macros/non-Rust assets,
+compiler/system linkage, QNT interpreters/backends and imported modules, Lean
+compiled imports/kernel, SysML semantic libraries/plugins and environment/cache
+configuration must be qualified where relevant. Offline/locked flags, recursive
+.rs enumeration or an accepted Cargo.lock do not prove all reads are closed.
+Unqualified transitive inputs leave the affected strong claim unsupported.
+
+Rust-observation inputs for SI/TM materialize from actual C-bound W/E and retained
+raw telemetry after the Rust run. Required derived roles are declared before
+execution; actual bindings are A-specific afterwards. Changing run origin/order
+constructs new derived applications even when some bytes match. Multiple Rust
+runs must not be merged into one supposed run merely because all six cases exist.
+
+A mapping change affects both relevant derived methods. A QNT-only delta can be
+independent of SysML only if the actual mapping/renderer/source closure supports
+that distinction. A shared Types/issuer/assembly/source eligibility change still
+requires fresh association/qualification; separation is established by actual
+closed dependencies and controls, not by the table alone.
+
+* SPECIFIED Method-specific interpretation controls
+:PROPERTIES:
+:CUSTOM_ID: method-interpretation-and-outcome-dimensions
+:END:
+
+Rust must verify the exact produced observation schema, six-case inventory,
+payload/runtime/workload/subject, event uniqueness/order and synchronized cuts,
+and bind all facets to one actual executed binary/run. The Rust producer emits
+observations rather than expected answers. A changed project workload needs an
+actually supported instrumentation/correspondence contract; passing the provider
+reference suite remains evidence about that reference subject.
+
+QNT BP-O02 must establish the actual requested source/initializer/action/property
+and finite completion/coverage under its qualified backend. A status from another
+mode, truncated/partial evaluation, parse/type failure or unrelated invariant
+cannot establish the claim. The independent five-job oracle remains separately
+implemented and domain checked. The early-release ITF is associated with its real
+TypeScript command; agreement with TLC is a separately checked association, not
+permission to label the trace as TLC output.
+
+Lean binds the positive property A asks about, the actual generated theorem and
+its polarity, parameters, units, imported artifacts and supported axiom policy.
+Check the actual expected theorem/artifact and every required axiom observation;
+exit zero, file existence, the absence of sorryAx in selected text or an unrelated
+successful theorem is insufficient alone. An over-budget negated theorem can be
+correctly proved while the requested positive budget property is refuted.
+
+SysML checks exact package/instance/element/assertion IDs, required cut inventory,
+every required semantic check/status and the selected tool/library interpretation.
+A report with the right check count but wrong target, missing second failure,
+extra ambiguous assertion or merely syntactic success is not accepted cut evidence.
+Required checks cannot be reduced to only those that happened to return holds.
+
+QNT TM interprets actual completed unfinished status before comparing independent
+mapping expectations. Reachable/unreachable is a path-property conclusion; it
+is not automatically the safety polarity of another claim. The bridge to the
+published TM duty must be explicitly qualified. An oracle/renderer/tool disagreement
+retains actual outputs and mismatch findings and blocks qualified target issuance;
+it is not silently coerced to the expected pass/fail. If a narrower independently
+validated observation is useful, it needs its own declared claim/strength.
+
+| Outcome dimension | Required distinction |
+|-------------------+----------------------|
+| Execution | Not started/refused, completed, tool failure, deadline/idle timeout, cancellation, source drift or interrupted/unknown completion; preserve actual cause evidence rather than infer from one exit number |
+| Interpretation/validation | Accepted, rejected or incomplete for the exact schema/property/target/input basis. A valid JSON file does not make its semantics or origin accepted |
+| Semantic claim | Holds, refuted or undetermined at declared finite scope/premises. Only qualified holds/refuted W enter support/counter |
+| Control expectation | Expected safe/unsafe control met or failed, separately from the actual property conclusion. Harness success may intentionally produce property counter evidence |
+| Current applicability | Original observation remains historical versus qualified current use for the target C/A now; this is not a mutation of its execution/claim |
+
+* SPECIFIED Invalidation, revalidation and reuse
+:PROPERTIES:
+:CUSTOM_ID: method-invalidation-and-evidence-reuse
+:END:
+
+| Change | Required action and retained boundary |
+|--------+---------------------------------------|
+| Project/docs/roles change while method inputs/premises stay equal | New C and appropriate Q/R/authority checks. Original method W may be reusable only through fresh qualified target use; it never becomes a new execution |
+| Rust source/instrumentation/lock/runtime/environment/compiler/workload change | Re-execute/requalify affected Rust claim and dependent actual-run facets. Abstract QNT/Lean need no automatic rerun only when their complete actual bases remain unaffected |
+| Another actual Rust run or event sequence | New E and affected SI/TM A/basis; retain original W and failure/control history. Equal observations do not manufacture independent repeated execution coverage |
+| Mapping/generator/semantic delta changes | Requalify affected SI/TM derivation and interpretation. Retained raw Rust telemetry may support regeneration under an actual qualified route; do not claim the original derived artifact already used the new mapping |
+| SysML-only or QNT-only or Lean-only tool/checker change | Affects the actual consuming methods after real code/tool dependency separation. Current monolith/broad input lists remain broad until migrated/qualified |
+| Observer/axiom/issuer/shared implementation or descriptor changes | Fresh trust/meaning/source qualification. Retained artifacts can be rechecked only when that check establishes the required claim at its real strength; no digest equality shortcut |
+| Artifact absent/changed, producer unavailable, receipt revoked or origin incomplete | No affected current use; retain original attempt/history and actual missing trust/input. Re-download/recovery or signed bytes alone do not reconstruct an unobserved execution |
+| Selected policy/duty/claim strength changes | Fresh target applicability and required coverage assessment; an old finite/control result cannot meet a broader project/refinement duty by relabeling it |
+| Rule/query/history/evidence arrival changes only | WP06/WP07 rebuild/check affected Q/R and authority association. Do not rerun or modify unrelated raw method executions merely to refresh a query |
+
+Qualified use compares exact subject/claim/domain/strength, complete expected and
+actual input roles, acquired/derived/artifact references, operation/issuer/observer
+source association and target C/A requirements. It is created by the actual trusted
+producer/verifier operation, never by setting a checked row. No vacuous empty
+footprint, matching V1/semantic label or same digest admits a foreign result.
+
+Original W always retains its original C/A/E. Revalidation records the actual
+new validation/use basis and any newly performed commands while preserving the
+old origin. Rechecking an artifact is not rerunning the original Rust workload.
+A different claim/checker with sufficient retained artifacts may establish only
+its explicitly supported narrower conclusion; it cannot retroactively certify
+unobserved execution or semantic premises.
+
+Local private handles are not portable. Across process/host boundaries, existing
+qualified source/custody/verification mechanisms must establish actual producer
+attestation and artifact access at the selected trust strength. A signature binds
+a statement to an issuer, not the truth of a method. If no qualified route exists,
+retain inspectable artifacts and an unsupported-use gap or perform a real new
+method; do not deserialize another host's private issuance.
+
+WP06's required unit K is the project projection's duty-instance key, not an
+extra semantic field to append to an already issued W. The trusted application/
+use adapter binds each target C/A/claim/basis to its independently required K and
+records the actual qualified U; retries preserve distinct E/G/W/U origins. Direct
+API Types must preserve this association rather than join by obligation/method.
+At a foreign process/host, verified attestation content is a new local observation
+of that precise assertion under its verifier/provenance. It is not reconstruction
+of the original private W or proof the old execution was re-observed. Keep the
+original historical origin and new verification origin separately, as WP09 requires.
+
+* SPECIFIED Positive/negative acceptance and work order
+:PROPERTIES:
+:CUSTOM_ID: method-execution-issuance-acceptance
+:END:
+
+These are future implementation controls, not tests executed here.
+
+| ID / positive scenario | Required result | Matched negative control / required limit |
+|------------------------+-----------------+-------------------------------------------|
+| ME01 / same-C method call | Actual checked operation derives A from C, supported claim and qualified derived inputs | Raw root/Profile/crate/tool/mapping/policy override, fake process-script or caller-selected observer/validator refused |
+| ME02 / actual attempt identity | Every retry/real run has its own E; six Rust facets share the one executed observation origin | Hash-identical artifact, repeated case ID or copied command summary cannot count as another execution |
+| ME03 / real Ops association | Actual used prepared launch context and raw command result retained through trusted producer | Fake receipt, another preview/argv/cwd/environment or discarded wait-status cannot establish launch provenance |
+| ME04 / environment policy | Captured replace or actually qualified inherited environment controls tool execution | Current override merge alone cannot claim replacement; changed PATH/HOME/wrapper/backend input blocks affected use |
+| ME05 / full footprint | All required semantic/tool/runtime/loaded/observer/issuer roles bind exact inputs | Missing/extra/duplicate/conflicting roles, wrapper-only identity, unsupported transitive read or vacuous empty footprint refuses issuance/use |
+| ME06 / owned derivation | Generated/copied inputs and actual executable bind their original inputs, recipe, invocation and output bytes | Ambient re-read, late dependency append to C, wrong build artifact or unbound output-directory config refused |
+| ME07 / failure retention | Deadline, cancellation, malformed output and partial artifacts remain E/diagnostics; retries preserve them | Successful prefix, exit 124/137 alone or a surviving log cannot become semantic support/completed receipt |
+| ME08 / actual limits | Per-command and total attempt/idle/cancellation constraints enforced under captured limits | Per-command timer mistaken for whole-suite bound, timeout widening or synthetic heartbeat cannot pass |
+| ME09 / Rust case scope | Exact actual binary/protocol/payload/runtime/event/cut/case inventory accepted at its bounded subject | Missing/duplicate/reordered event, changed worker/payload/protocol, wrong executable or fixture-to-project relabeling refused |
+| ME10 / M06 control | Harness succeeds while ownership W is scoped refutation | Expected unsafe behavior cannot be emitted as property support or erased from required history |
+| ME11 / QNT finite invariant | Actual model/init/action/invariant/domain/backend completion and independent oracle agree | Wrong mode/initializer/property, cut-off run or parse/type error cannot count as safety support |
+| ME12 / QNT counter origin | Actual early-release property refutation and independently checked TypeScript ITF retain their separate origins | ITF from another mode/run or a TypeScript trace labeled TLC output refused |
+| ME13 / exact Lean theorem | Actual positive/negative theorem, integer units/parameters/import/kernel/axiom policy accepted | Unrelated theorem, wrong parameters/polarity, sorry/unsupported axiom or stale compiled import cannot qualify |
+| ME14 / proved negation | Over-budget negated theorem proves a counter to the positive budget property | Lean exit zero cannot automatically mean budget support |
+| ME15 / exact SysML checks | Every required target/element/assertion/cut and actual semantic status checked | Correct count with wrong target, unexamined second failure, missing/extra ambiguous assertion or syntax-only success refused |
+| ME16 / mapped-path polarity | Actual unfinished violation maps to completion reachability; exhaustive ok has its explicit no-path meaning | Treating violation as generic failure, ok as blanket safety or inventing an exported TLC path witness refused |
+| ME17 / explicit delta | Declared queued-cancellation guard/effect/frame and exact extended model checked | Hidden transition, admitted-ownership drop, changed unrelated field or base-invariant evidence standing in for delta proof refused |
+| ME18 / same actual upstream run | SI/TM preserve exact C-bound Rust E/W/raw observation, order/case associations and full footprint | Six facets mixed across runs/Cs or equal observations.json path/digest without origin cannot qualify |
+| ME19 / oracle disagreement | Actual tool finding and control mismatch retained; target W blocked until interpretation justified | Choosing the expected label, suppressing mismatch or issuing a favorable narrower result without declared claim refused |
+| ME20 / private producer boundary | Only the actual selected source-qualified operation/result owner issues/recognizes W | Public JSON/hash/issuer string, foreign owner, raw constructor facade or injected checked flag cannot mint admitted evidence |
+| ME21 / separated closure | Tool/method-only changes invalidate actual consumers; shared dependencies retained honestly | Dropping hashes while old monolith/eager loads remain cannot establish selective invalidation |
+| ME22 / fresh reuse | Actual verifier admits original W for a new matching C/A with original execution origin | Direct old checked-use replay, stronger claim, missing artifact or changed issuer/semantic basis refused |
+| ME23 / recheck versus rerun | New artifact validation/use records only operations actually performed | Artifact reparse, copied signature/receipt or recovered record cannot claim a new/previously unobserved workload execution |
+| ME24 / complete qualification | Source/compiled loading, actual method/control/execution/issuance/use checks pass at declared scope | Historical counts, documentation pass, interpreted/model-only success or unchanged failed cold/recovery route cannot close WP00/WP10 |
+
+Implementation order is: WP01-WP03 checked capability/C/input expectations ->
+common A/E/observation/private result/use Types and owner-bound operations ->
+Core actual-launch/environment/result seams and failure retention -> real runner/
+oracle/renderer source separation -> C-bound Rust/QNT/Lean execution -> exact-run
+SI/TM derivations and semantic interpretation -> private issuance/current use and
+fresh reuse -> WP06 application-scoped projection and exact Q/R handoff -> full
+source/compiled execution and matched negative qualification. Bind/migrate actual
+callers directly; no split-input compatibility layer or always-true result Type.
+
+Existing [[file:../../../t/resource-lifecycle-test.ss][lifecycle]], [[file:../../../t/resource-integration-test.ss][integration]], [[file:../../../t/native-context-test.ss][Context]], [[file:../../../t/producer-source-custody-test.ss][producer custody]] and related review/
+reassessment tests are future regression surfaces. Core launch/environment/
+cancellation tests belong with its actual Ops owner. Independent model/arithmetic/
+event/render controls must not merely repeat the production interpreter's branch.
+Physical source separation and declared smaller footprints require actual loaded-
+closure evidence before any independence/cost claim.
+
+* DESIGN Documentation and qualification status
+:PROPERTIES:
+:CUSTOM_ID: method-execution-design-status
+:END:
+
+This expands WP04/GA10-GA13 and execution-facing GA03/GA07/GA16/GA25 from 10.41,
+using the Types, publication and captured basis from 10.42-10.44. It refines 10.39
+into file/field/call/semantic/qualification boundaries; it does not declare any
+future compilation unit or Ops extension already implemented.
+
+The current v1 wire artifacts remain historical under their original qualified
+interpretation. POO A/E/W/use responsibilities do not silently change their schema
+meaning or introduce another generation literal. Any eventual persisted format
+change needs its actual owner/compatibility decision; no new schema generation,
+namespace suffix or historical receipt rewrite is introduced by this design.
+
+Only Org and D2/SVG are edited. No implementation/file-layout migration, tool
+probe, method/model/ASCENT/Aitia run, evidence issuance, review submission or
+delivery occurs. Retained 10.34 catalog and original receipts remain unchanged;
+[[file:10.35-content-validation-slice.org::#slice-input-freshness][10.35]] records current static drift and actual recapture requirements.
+
+[[file:10.46-content-observers-and-reference-closure.org::#content-observers-and-reference-closure][10.46 details WP05 content observers]]: selected product/criterion policy, same-C
+bounded Org/architecture/decision/reference checks, actual A/E/W and historical
+versus current evidence, qualified semantic findings, invalidation/reuse and
+CO01-CO24 controls. This is target design, not executed content qualification.
+
+[[file:10.47-ascent-projection-and-query-view.org::#ascent-projection-and-query-view][10.47 details WP06 application projection and Q]]: independent required units,
+exact C/A/E/W/U/basis/run relations, current eligibility/coverage/conflict/gap
+semantics, existing Session acceptance/rollback and owned determinate Q for
+Aitia; PQ01-PQ26 are future controls, not an executed inference or review.
+
+[[file:10.48-aitia-review-adaptation.org::#aitia-review-adaptation][10.48 details WP07 Aitia review adaptation]]: exact C/Q to R, actual policy/
+project/role/product bindings, separate context/inventory/criterion checks,
+shared existing-Host mechanics, current Core receipt use, lossless findings and
+RV01-RV28 controls. Preparation is inert; no verification or submission occurs.
+
+[[file:10.49-history-authority-and-reassessment.org::#history-authority-and-reassessment][10.49 details WP08 history and decision authority]]: mandated source discovery,
+exact C/Q/R/H/action/grant bindings, accepted negative retention, repair/exception/
+supersession/withdrawal, genuine prefix custody and HA01-HA31 controls. These
+remain target operations; no authority decision or review is submitted here.
+
+[[file:10.50-library-delivery-and-recipient-use.org::#library-delivery-and-recipient-use][10.50 details WP09 Library delivery and recipient use]]: exact C/Q/R and accepted
+distribution authority, manifest/product/reference closure, actual transfer and
+acknowledgement, receiver-owned trust/verification/capture/review, adoption and
+current intended use. Missing/status/withdrawal/replay and DU01-DU30 controls
+remain future qualification; no implementation or actual delivery occurs.
+
+[[file:10.51-case-joint-acceptance-plan.org::#case-joint-acceptance-plan][10.51 details WP10 joint acceptance]]: existing entries/file owners, exact
+plan/evidence closure and G0-G8 source/compiled/cold/recovery/recipient gates;
+216 referenced contract control rows plus JA01-JA32 cross-boundary controls and
+OJ01-OJ12 open items. These are future requirements; no implementation,
+acceptance execution, review submission or actual delivery occurs.
+
+[[file:10.52-contract-consistency-and-implementation-order.org::#whole-slice-consistency-audit][10.52 reconciles the whole slice]]: policy/Scope/Config handoffs, required-unit
+and request-purpose bindings, captured/technical/current-authority lifetimes and
+private/exported provenance; S0-S9 implementation dependencies and retained OJ
+gates. Design consistency is not implemented or operational qualification.
+
+#+CAPTION: WP04 C-bound A/E/W, actual Ops provenance, per-method claim interpretation and fresh evidence use.
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.svg]]
+
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][Editable D2 source]]. Target design and acceptance plan, not an executed method or issued witness.
+
+[[file:10.57-method-execution-and-evidence-issuance.org::#s4a-method-execution-issuance][10.57 details S4a]]: actual same-C applications/attempts/run groups, complete
+acquired/derived/execution/validation footprints, Core launch/environment boundary,
+method-specific semantics, private W and fresh use, failure retention and selective
+reuse. EX01-EX36 refine existing controls; no implementation, acceptance execution,
+review submission or actual delivery occurs.

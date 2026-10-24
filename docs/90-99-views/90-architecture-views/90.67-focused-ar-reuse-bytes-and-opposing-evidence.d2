@@ -1,0 +1,25 @@
+# org-target: docs/10-19-design/10-architecture/10.18-agent-authored-engineering-and-review-contracts.org::#focused-ar-input-packets
+# render-layout: elk; theme: 0; pad: 24; timeout: 30
+direction: down
+classes: {
+  design: {style.fill: "#FFF2DD"; style.stroke: "#9B6C25"; style.border-radius: 10}
+  context: {style.fill: "#EAF2FF"; style.stroke: "#315B8A"; style.border-radius: 10}
+  existing: {style.fill: "#E6F5F3"; style.stroke: "#19756C"; style.border-radius: 10}
+}
+status: "COMPLETE DESIGN INPUTS / PROSPECTIVE GOLD\nNo new code, admission adapter, evidence issuance or standard assessment" {class: design}
+inputs: "Captured inputs before validation\nExact contract / policy / oracle / schema and transitive closure\nCut excludes method outputs, reviews and A; local names are not hashes" {class: context}
+ar05: "AR05: identical frozen review views\nTwo explicit holder rows + pure predicate + one-result policy\nOne V may serve two independently bound uses\nRetain role multiplicity and final live-use rechecks" {class: design}
+ar06: "AR06: exact one-comment transform\nMeaning review and source-byte applicability are separate\nOld issuer refuses changed input or old capture mismatches new cut\nUnchanged model/proof knowledge does not restore native support" {class: design}
+ar08: "AR08: three separately scoped claims\nAll callbacks outside lock / O(1) shutdown / complete checked proof\nClone context, cost domain and missing proof reviewed independently\nWake-only sample cannot satisfy a clone-inclusive claim" {class: design}
+oracle: "Independent oracle and method review\nExact inputs / effects / coverage / source context\nNo author-comment oracle; no invented proof failure\nAdmission remains conditional on actual validated results" {class: design}
+relations: "EXISTING ASCENT algebra: AR08 diagnostic gold\nNo result: support=0 / counter=0 / pending=3\nChecked callback fail only: 0 / 1 / 3\nIf matching bad pass is also checked: 1 / 1 / 2\nAbsent pending does not resolve opposing evidence" {class: existing}
+standard: "EXISTING Aitia standard review owner\nProper criterion / subject / revision / scope / source binding\nIf applicable, current failure precedes evidence-present\nUnknown applicability stays unknown; no assessment was run" {class: existing}
+closure: "History and effort boundaries\nSaved queries keep their captured cut; late old results stay scoped\nReuse unaffected evidence; retain necessary race / role / action checks\nAvoid duplicate pure runs, unrelated proof reruns and copied Catalogs" {class: context}
+status -> inputs
+inputs -> ar05
+inputs -> ar06
+inputs -> ar08
+ar05 -> oracle
+ar06 -> oracle
+ar08 -> oracle
+oracle -> relations -> standard -> closure

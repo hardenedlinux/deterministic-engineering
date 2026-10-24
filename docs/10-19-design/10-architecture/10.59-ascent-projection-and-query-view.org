@@ -1,0 +1,538 @@
+#+TITLE: 10.59 S5 ASCENT Application Projection and Determinate Query View
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.59
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+TODO: AUDITED DESIGN SPECIFIED | QUALIFIED
+#+FILETAGS: :design:ascent:projection:query:transactions:evidence:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.52-contract-consistency-and-implementation-order.org::#consistency-implementation-order][S0-S9]] | [[file:10.47-ascent-projection-and-query-view.org][WP06]] | [[file:10.53-source-build-and-recovery-baseline.org][S0]] | [[file:10.54-library-and-aitia-types-contracts.org][S1]] | [[file:10.55-library-construction-and-scope-handoff.org][S2]] | [[file:10.56-profile-selection-and-scenario-capture.org][S3]] | [[file:10.57-method-execution-and-evidence-issuance.org][S4a]] | [[file:10.58-content-observers-and-reference-closure.org][S4b]]
+
+* DESIGN Objective and authority boundary
+:PROPERTIES:
+:CUSTOM_ID: s5-ascent-projection-query
+:STATUS: Existing-file/relation/call design only; no implementation, Session execution or Q issuance
+:END:
+
+S5 projects recognized C, independently required duties, actual A/E/G/W and fresh
+qualified uses into the existing ResourceEvidence ASCENT program. A completed,
+owned Q identifies the actual accepted program/source/result/request cut for
+Aitia. Determinate means complete finite consequences at that cut, including
+pending, counter, conflict and unsupported findings; it does not mean all green,
+approved, adopted or delivered. No technical view grants project authority.
+
+Library owns catalog/claim/coverage meaning; Scenario owns project C association;
+method/content producers own actual W/use recognition; ResourceEvidence owns
+trusted projection and query publication. ASCENT Session remains sole application
+fact/transaction owner. Aitia independently verifies exact C/Q and policy/products/
+roles/history under later stages. No second fact database, generic schema engine,
+executor, evidence signer or review/disposition engine is introduced.
+
+The 75 selected project implementation/build/runner inputs still match S0/S4b.
+Project HEAD is 8044732d505f84e373119a70f947df00e1767300; dirty linked Core HEAD
+remains 52130d2d338b09622a3f55e37987ddc0375b6187. Linked ASCENT checkout HEAD is
+e119827e588ea7b6d8a3195ac8e0ee8f61de6c11; actual dirty bytes and loaded provenance
+still matter. Source inspection supplies no new compilation/loading, transaction,
+method/content or acceptance evidence. WP00/BS01-BS09 remain open.
+
+* AUDITED Existing program, registration and Session seams
+:PROPERTIES:
+:CUSTOM_ID: s5-source-audit
+:END:
+
+| Existing source / seam | Actual behavior / complete target change |
+|-------------------------+------------------------------------------|
+| [[file:../../../modules/resource-evidence/func.ss][make-resource-evidence]] | Independently derives obligations/requires from application/factor/catalog, with missing/extra/mismatch input rules. Preserve independent demand; replace global usage/key and obligation/method joins with actual C/A/K/W/use/basis |
+| Same file / applicable, support, counter, pending | Applicability can be vacuous with empty required roles; no explicit application identity, same-run group, comparison conflict or whole-duty coverage. pending is no support, not readiness; support and counter must remain independently visible |
+| Same file / open-resource-review | Accepts raw entry/Profile/usage/snapshot/scopes and returns raw Session. Directly migrate to recognized C-bound owner/prepare/commit/query operations; no raw replacement sources can issue Q |
+| [[file:../../../modules/resource-evidence/types.ss][Types]], [[file:../../../modules/resource-evidence/objects.ss][EvidencePolicy]], [[file:../../../modules/resource-evidence/interface.ss][interface]] | Procedure checks and recorded-only/exact-required-inputs/pass-fail labels exist. Replace labels with admitted operation/row/query/limit meaning; Config is not another engineering review policy |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/methods.ss][resource-register-results!]] | Private W integrity and clue attestation precede domain batch; by-id can overwrite, rules-path is separately supplied, witness/input history is unioned and checked replaced. Move project row construction/commit into Evidence; keep actual producer recognition/attestation |
+| [[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-ascent/program/session.ss][Session replace-sources!]] | Copies prospective sources, checks duplicate names/fields, evaluates fresh engine, requires finished, invokes optional callback and exact #t, then final publication acceptance and adoption. Reuse this actual transaction; callback cannot publish accepted Q |
+| Session / copy-source-rows and result retention | Outer/row spines copied and accepted result retained; nested mutable values are not universally detached. Adapter owns primitive cells and returned Q presentations, not arbitrary embedded POO graphs |
+| [[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-ascent/program/source-snapshot.ss][source-snapshot.ss]], [[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-ascent/program/result.ss][result.ss]] | Persistent preparation and result row snapshots exist; no claim of a public Session commit-ID accessor or portable private cut authority |
+| [[file:../../../.gerbil/pkg/github.com/tao3k/gerbil-ascent/program/execution-control.ss][execution-control.ss]] and run-timeout | Actual acceptance/partial-result mechanisms exist. Batch evaluates via .run; timing a later cached read does not bound earlier batch execution or materialization |
+| [[file:10.64-contract-consistency-and-implementation-order.org::#audit-dependency-drift][clue-exchange.ss (historical path; currently absent)]], [[file:10.64-contract-consistency-and-implementation-order.org::#audit-dependency-drift][trajectory.ss (historical path; currently absent)]] | Real verifier/source/prefix/rule guards remain their owners; accepted operations/history here do not roll back with a failed ResourceEvidence batch |
+| [[file:../../../examples/resource-lifecycle-evidence.ss][lifecycle driver]], [[file:../../../examples/resource-integration-evidence.ss][integration driver]], Scenario/review callers | Existing selected exports/count gold and symbol/string conversion are scoped fixtures, not complete typed current Q; remove split session/scope/rules construction from the production path |
+
+Current clean-session and reentry checks do not establish a general concurrent
+writer protocol, cross-owner distributed transaction or atomic filesystem/status
+snapshot. The qualified adapter serializes ownership of its own actual Session.
+
+* SPECIFIED File, Contract and operation ownership
+:PROPERTIES:
+:CUSTOM_ID: s5-files-and-calls
+:END:
+
+| Existing owner | Target fields / responsibility |
+|----------------+--------------------------------|
+| Library abstract/types.ss and rust/types.ss | Domain/claim/coverage/input/observation/use and comparison semantics from S1/S4; no dependency on project relation representation |
+| Library objects | Independently required model/method/content duties, exact case/role/strength and all/alternative/correlated/repeat policy meaning; never derive mandatory catalog from available W |
+| modules/resource-evidence/types.ss | ResourceProjectionRequestContract, ResourceProjectionContract, ResourceQueryRequestContract, ResourceQueryViewContract; complete effective row/functional-key/primitive/reference/operation checks, composing C/A/E/W/use Types |
+| modules/resource-evidence/objects.ss and config.ss | EvidencePolicy supplies admitted projection/query interpretation and finite limits/options. No force-pass, ignore-counter, unknown-as-success, review-policy replacement or generation setting |
+| modules/resource-evidence/func.ss | Actual-program C-bound owner, trusted prepare/commit/query, independent inventory expansion, pure primitive row/rule/canonical presentation helpers and effectful producer/Session boundary. No method execution or second mutable fact mirror |
+| modules/resource-evidence/interface.ss | Export checked open/prepare-projection/commit-projection/query-view operations, expected Contracts and actual owner-bound outputs. Keep raw Session mutation private; debug handles do not issue Q |
+| S4a/S4b producer units and rust/methods.ss | Actual W/observation/use/source recognition and attestation, not project source union/replacement. Remove duplicate legacy resource-register-results! path when callers migrate |
+| Scenario func/types/interface | Pass same actual C and qualified results/uses/diagnostics to admitted Evidence Scope; no raw rules-path/entry/Profile/snapshot/scopes/checked rows |
+| Scenario review/func.ss and reassessment.ss | Consume exact Q with real policy/project/product/roles/history for R; no fresh ambient Session query or fixture total substitution |
+| Examples, gateway callers and tests | Direct C-bound workflow and owned Q rendering; finite raw relation fixtures remain explicitly tests, not attestation or production fallback |
+| ASCENT program/session/result/source-snapshot/execution-control | Existing rule admission, prospective source/result acceptance, engine execution and actual accepted snapshots. Engine defects or missing budget mechanisms are fixed/qualified at this owner |
+
+Target calls refine 10.47, not implemented APIs: open checked program/C owner;
+prepare-projection(C, bounded-request, actual-outcomes, qualified-uses) -> returned
+checked candidate; commit-projection(owner, candidate) -> actual accepted projection/
+result or failed-attempt diagnostic; query-view(owner, accepted-projection,
+checked-query-request) -> owned Q or refusal. Candidate cannot provide predicates,
+validators, rule paths, source identities or raw rows. Returned normalized Contracts/
+Function wrappers and primitive values must be the ones actually consumed.
+
+Owner retains actual program/source/producer association and accepted result/Q
+metadata, not a second copy of mutable Session facts. New C normally creates a
+new target owner; any supported rebind needs atomic replacement of every C-sensitive
+source and its own qualification. Changed rule/schema/predicate/provider semantics
+requires a new actual qualified program/Session, not facts under a new filename.
+
+* SPECIFIED Source relations and exact identity domains
+:PROPERTIES:
+:CUSTOM_ID: s5-source-relations
+:END:
+
+C = acquired occurrence; D = required duty instance; K = required coverage unit;
+A = concrete application; E = actual attempt; W = original private result;
+U = fresh target use; B = exact semantic/input basis; G = actual run/derivation
+group. K exists before any A/W. One Rust A/E can issue six W, while SI/TM have
+their own attempts and bind the exact original upstream Rust G. These identities
+are not interchangeable with a case name, digest, version or observation filename.
+
+| Source relation / fields retained from 10.47 | Trusted invariant |
+|--------------------------------------------+-------------------|
+| capture(C, selection, project, revision, scope, purpose) | Actual recognized C and checked model/parents/policy/Profile association |
+| required_duty(C, D, subject, claim, coverage_policy) | Independently derived mandatory Library/project demand; no result needed |
+| required_unit(C, D, K, subject, claim, capability, domain, strength) | Finite required facet/criterion/method/case and supported coverage meaning |
+| required_role(C, K, role) | Independent complete material input demand, including semantic/execution/validation/upstream roles |
+| application(C, A, capability, domain, application_basis) | Actual prepared application, never a caller label |
+| application_claim(C, A, K, subject, claim, B) | One supported target claim/unit/basis; no mutable latest run slot |
+| expected_input(C, A, K, role, binding) | Unique qualified expected captured/derived input at that claim |
+| attempt(C, A, E, G, execution, interpretation, diagnostic) | Actual attempt, no invented execution before A; missing application stays gap |
+| witness(W, C0, A0, E0, subject, claim, basis, G, strength, conclusion, issuer) | Actual recognized original W and immutable origin, holds/refuted scoped meaning |
+| witness_input(W, role, binding) | Complete real observation footprint; imported report arrays do not choose it |
+| qualified_use(U, C, A, K, W, B, G, verification) | Actual fresh verifier/producer operation for exact target and sufficient meaning |
+| use_status(C, A, K, W, verification, state, finding) | Exact verification identity/status/cut; old failed check cannot name-join a newer U |
+| upstream_use(C, A, K, role, U, W, G) | Qualified required original facet/run/derivation, not equal-byte common origin |
+| comparison_group(C, K, U, group) | Trusted comparable proposition/subject/domain/strength/basis, not arbitrary run equality |
+| control_observation(U, expectation, result, finding) | Independent actual control dimension; never changes semantic polarity |
+| projection_gap(C, target_kind, target, category, subject, finding) | Exact missing/unsupported/inaccessible/stale/invalid operation/role/product diagnostic |
+| historical_reference(C, reference, subject, revision, scope, category, origin) | Original evidence/history/custody limits, no implicit current eligibility |
+| trace_link(C, from_kind, from_id, relation, to_kind, to_id, basis) | Typed checked-strength product/model/decision/duty/application/evidence association |
+
+Cells are declared finite enum symbols, bounded exact integers or owned nonempty
+reference strings. Reject floats/NaN, arbitrary objects, hash tables, callbacks,
+unknown enum values and unbounded IDs; never intern arbitrary supplied IDs. Copy
+string cells/spines on ingress and public presentation. Large artifacts/ordered
+traces stay exact immutable owner references or explicit bounded ordinal rows.
+Set admission may deduplicate exact repeated rows but never distinct E/W/U origins.
+
+Functional keys: C selection; C/D/K definition; C/A identity; C/A/K claim/basis;
+C/A/E group; C/A/K/role binding; W original identity/origin; W/role binding; U
+complete target/verification. Incompatible duplicate identity refuses the candidate
+transaction, not latest-row-wins. Compare complete target and original bases via
+actually qualified compatibility maps if supported; such a map is itself an input.
+Fresh cross-C reuse can be valid, but neither C0=C equality nor digest equality
+alone establishes the use. Missing/extra/conflicting/empty material role inventories
+cannot become applicable through vacuous negation.
+
+Old sources migrate directly: usage/snapshot/entry application -> capture plus
+independent D/K; catalog/factor/dependency -> checked finite required expansion;
+global scope -> exact A/K expected_input; checked -> actual qualified_use/status;
+old witness -> original W or explicit historical reference. Historical output
+files retain old semantics; no permanent legacy alias or raw checked-row route.
+
+* SPECIFIED Derived meaning, missing evidence and coverage
+:PROPERTIES:
+:CUSTOM_ID: s5-derived-relations
+:END:
+
+| Derived relation / exact fields | Required interpretation |
+|--------------------------------+-------------------------|
+| missing_application(C, K) | Independent required K lacks supported A |
+| missing_expected(C, A, K, role) | Independent required input has no expected binding, even without W |
+| missing_input(C, A, K, W, role); extra_input(C, A, K, W, role) | Actual W footprint omits required role or exceeds complete supported expected role map |
+| mismatch(C, A, K, W, role, expected, actual) | Qualified role bindings disagree at exact comparison basis |
+| blocked_use(C, A, K, W, reason) | Actual input/subject/domain/strength/upstream/source/currentness issue, not proof of false property |
+| applicable(C, A, K, W, U) | Positive valid inventory/A/U/meaning/complete-role/upstream/current eligibility conjunction; not absence of failure alone |
+| support(C, K, A, E0, W, U); counter(C, K, A, E0, W, U) | Applicable holds/refuted W preserving original actual E0 |
+| observed(C, K); missing_observation(C, K) | Applicable semantic observation exists or not; a counter-only unit is observed |
+| pending_support(C, K); counter_present(C, K) | No qualified support and independent actual counter; neither is a global ready state |
+| conflict(C, K, group, support_U, counter_U) | Opposed comparable qualified claims with both originals retained |
+| missing_unit(C, D, K); duty_coverage(C, D, state) | Required all/alternative/correlated/repeat coverage per actual policy, not favorable subset |
+| duty_finding(C, D, category, reference) | Exact remaining pending/counter/conflict/currentness/coverage/trace finding |
+| explanation_edge(C, subject_kind, subject, reason, reference) | Finite provenance chain to actual units/inputs/attempts/W/uses/findings |
+
+Rules stay finite, safe and stratified under actual ASCENT admission. Pure qualified
+comparators/predicates read accepted primitive values only: no filesystem, network,
+clock, ambient state or hidden mutable classifier in rule evaluation. Typed malformed
+facts refuse admission; supported gaps and honest negative findings remain queryable.
+
+One favorable support never removes a counter, conflict or required independent
+semantic-review unit. M06 control success stays ownership counter; Lean proved
+negation stays budget counter; QNT path polarity retains its exact reachability
+claim. Policy can require observing/documenting unsafe alternatives without demanding
+ownership support from them; technical rules cannot silently decide disposition.
+Correlated RL/SI/TM requires actual same upstream G; alternatives/repeats combine
+only under explicit coverage meaning. Unsupported factors/coverage remain gaps,
+not a reduced catalog. Different run-local/actual-target/integrity/adequacy meanings
+are compared explicitly before conflict or aggregate contrary findings are derived.
+
+* SPECIFIED Candidate transaction, rollback and publication states
+:PROPERTIES:
+:CUSTOM_ID: s5-transaction-boundaries
+:END:
+
+1. Actual serialized Evidence owner resolves checked program/C/catalog/provider/
+   predicate/codec/source/load association and query scope. Independently expands
+   complete required relations before outcomes; refuses malformed mandatory catalog.
+2. Actual producers/verifiers supply recognized W and fresh uses/status; retain A/E/G,
+   failed attempts, missing applications/products/reviewers and original history.
+   Validate/copy primitive facts and functional keys, exclude invalid uses with
+   diagnostics. Honest pending/counter/conflict does not make Q nonconforming.
+3. Build a complete dependent batch: required inventory, applications/inputs/attempts,
+   original witnesses/history, current uses/status, traces and gaps, including named
+   empty relations. Replace current eligibility as a whole; omission cannot preserve
+   withdrawn/stale U. Read history from actual accepted owners, not a shadow union.
+4. Call existing gerbil-ascent-session-replace-sources! under actually qualified
+   execution control. Trusted accept-result receives prospective finished result;
+   check actual source rows versus complete prepared set, expected program/outputs,
+   exact eligibility/currentness association, and bounded materialization. Return
+   exact #t only for conformance; no reentry, caller predicates or external publication.
+5. After successful Session return, bind projection metadata to the actual accepted
+   returned result and owner, then freeze/publish complete Q for checked request.
+   Candidate rows prepared in callback remain private until actual final acceptance.
+
+| Transition / failure | State and permitted external observation |
+|-----------------------+------------------------------------------|
+| Preflight malformed fields/keys/required inventory | No source change; retain diagnostic and previous accepted association |
+| Later source validation, duplicate replacement name, provider/predicate/budget/evaluation failure | Prospective batch refuses with prior accepted sources/result retained; no partial accepted Q |
+| Callback false, truthy non-#t, exception or Session reentry | No commit; no prospective Q leak. Reentry protection is not independent-writer serialization |
+| Partial/timeout/interrupted unknown completion | Preserve actual partial/diagnostic at its scope; last finished old result is not this cut's complete answer |
+| Final Session acceptance succeeds; later view/export/write fails | Session remains committed. Retain exact accepted association; recover/freeze that same result or report unavailable publication, never invent rollback or duplicate commit |
+| Failed update after external source/role/receipt drift | Old Q remains immutable history; rollback cannot restore external validity or automatic current use |
+| Counter/history/withdrawal changes declared query input | Replace accepted source cut and issue new Q with obligations/history/negatives intact; no edit to prior Q |
+
+The trusted owner binds actual returned result/source association; do not invent
+public engine commit-ID accessors or serialize private source-snapshot objects as
+authority. Accept-result compares set/field semantics and names all required source/
+output relations, including empty ones. No query inside callback invokes Session
+again. Only actual supported execution-control bounds the real batch; a timed
+read of a later cached result cannot bound earlier evaluation. Row preparation,
+callback copies and canonical export also need finite qualified bounds. Current
+4096 labels alone do not justify expanded cardinalities or whole-operation limits.
+
+Clue exchange/trajectory issuance, producer observations and files can precede the
+project batch; they retain their actual history after a failed transaction. No
+multi-owner rollback or deletion of counters is claimed. Host loss may leave
+completion/publication unknown; retained in-process snapshots are not automatic
+crash-durable file transactions. Recovery must genuinely re-admit source/program/
+use and record any new evaluation as new, never reconstruct private acceptance
+from a surviving JSON. Source/status checks expose their actual cut and limits,
+not an atomic global filesystem/authority transaction.
+
+* SPECIFIED Complete Q and deterministic presentation
+:PROPERTIES:
+:CUSTOM_ID: s5-query-fields-and-determinism
+:END:
+
+ResourceQueryRequestContract checks purpose/subject/scope, complete required relation
+inventory, supported filters/set-order interpretation, domain/coverage and finite
+limits. Narrow inspection is allowed only as explicitly narrow. Aitia handoff
+requires full policy-required view; counts/support-only selection cannot claim it.
+
+| Q / ResourceQueryViewContract field group | Required actual binding |
+|------------------------------------------+-------------------------|
+| identity / owner / provenance | Accepted projection and returned finished result, actual publication owner/source and qualified reproducible content reference; public hash/identity alone is not issuance |
+| capture / selection / project | Exact C, checked model/parent/Contract owner and semantic revisions, Profile/policy/project revision/subject/scope/purpose; no copied generation authority |
+| program | Actual admitted rules/fields/queries, relevant predicates/codec/catalog/provider/engine/runtime/source/compiled/loaded association and supported limits; not separately supplied rules-path or package label |
+| source-basis | Complete normalized accepted relation names and owned values/refs, explicit empties, exact A/E/G/W/U/history/status/gap/trace and observed currentness limitations |
+| request | Exact query/output inventory, filters, scope, finite domain/limits and coverage/set/ordering semantics |
+| completion / limitations | Actual finished evaluation plus complete required extraction/encoding; honest missing/unsupported/unknown, source/trust/currentness limits and authority exclusions |
+| rows / explanation | All required named result sets and exact C/D/K/A/E/W/U/B/G/input/finding references; no live callback or mutable Session view pretending to be frozen |
+| applicability / use | Original immutable cut plus actual later owner-qualified current-use checks when requested, not self-asserted current? or Aitia receipt |
+
+Admitted missing/inaccessible product facts may yield a complete honest Q. Missing
+required Q rows/provenance or incomplete extraction cannot be replaced with empty
+arrays and called complete. Engine finished alone is insufficient. Q owns public
+strings/spines; getters must not expose mutable aliases into accepted rows or
+private metadata. Artifact serialization is not portable private authority.
+
+Pure typed canonical encoding belongs to Evidence owner: scalar type tags and
+field boundaries, exact finite types/sizes, named empty sets, stable declared set
+ordering and exact-repeat dedup. Symbol/string must remain distinct; no floats/NaN,
+arbitrary printing/interning/hash iteration/timestamp-derived logical identity.
+Distinct E/W/U remain distinct; ordered traces preserve ordinals or exact artifact
+refs. Codec and normalization basis are themselves admitted program/Q inputs.
+Fixed accepted primitive sources/program/request/codec yield the same consequences
+and logical content reference under qualified controls. This does not imply
+external execution, scheduling, acquisition or human reasoning is deterministic.
+Actual publication/attempt identities and timing may differ while logical content
+is equal. New evidence/uses/status/catalog/query/program creates the appropriate
+new projection/Q; equivalent rereads do not invent new execution or new truth.
+
+* SPECIFIED Exact Q handoff, case limits and invalidation
+:PROPERTIES:
+:CUSTOM_ID: s5-aitia-case-and-invalidation
+:END:
+
+Scenario supplies actual C/Q plus accessible products, A/E/W/U, historical and current
+verification findings to WP07. Aitia must bind exact project/revision/policy/parents,
+program/completion/full required scope, actual producer/use, adoption/roles/content/
+history. It cannot query another ambient Session, rebuild a favorable table, use
+chart/counts as proof or coerce pending/conflict into generic pass/fail. Unsupported
+request representation blocks that route; no NASA fixture substitution or approval.
+
+For DE-CASE-01 derive D01-D10 and DE-O-ARCH/DOC/DEC/TRACE from the actual design
+policy. E06/I04 -> T03 -> DE-D04 may have qualified mechanical findings while role/
+rationale/architecture adequacy remains pending. Optional T07 is required only
+when actually selected; RL/SI/TM are bounded method subjects, not project-content
+adequacy. Historical 20-result integration and 22-record coding totals stay scoped.
+Old dossier may be captured input; new Q/R/dossier remain later outputs outside C.
+
+| Change / invalidity | Required response |
+|--------------------+-------------------|
+| Captured product/project/selection/required meaning changes | New C as affected and target owner/batch/Q; fresh producer uses for any reusable original W |
+| Current use withdrawal, new evidence/counter/technical history/status input | Complete replacement of affected eligibility/dependent facts, retain W/history/required gaps and new accepted Q |
+| Rule/schema/predicate/provider/codec semantics change | New genuinely qualified program/Session, evaluate actual basis; no renamed rule path or version on old result |
+| Query filter/scope/output inventory/domain changes | New checked request and exact complete Q at its declared scope, not relabeled old rows |
+| Failed update or missing external artifact/role/issuer | Previous accepted Q historical only; block affected current handoff/use until genuine validation, regardless of engine rollback |
+| Purely later authority H/status not part of technical query | WP08 checks current use on unchanged technical Q/R; if query claims that later status, new source cut/Q is required |
+
+Determinism, content identity and current authority are distinct. Org/D2 display
+identified views only when actually produced; this design diagram is not Q or a
+receipt. Re-import/cross-process use needs actual compatible program/source/use/
+custody verification and accessible dependencies, never private-handle deserialization.
+
+* SPECIFIED S5 live-use guard and assumption projection
+:PROPERTIES:
+:CUSTOM_ID: s5-audit-live-use-guard
+:END:
+
+Use fixed independently declared premise input roles with exact qualified finite
+basis refs, actual U/check/status and supported typed gaps/trace kinds. Do not intern
+arbitrary premise IDs or accept undeclared enums. Known stale U is blocked by its
+actual producer/source/Host guard even if replacement batch fails; old accepted Q
+remains historical, never renewed by rollback. No extra mutable fact mirror.
+
+[[file:10.64-contract-consistency-and-implementation-order.org::#s1-s9-consistency-audit][10.64 whole-chain audit]] supplies exact change/closure rules and remaining gates.
+
+* SPECIFIED Positive and negative controls, not executed
+:PROPERTIES:
+:CUSTOM_ID: s5-acceptance-controls
+:END:
+
+QX01-QX40 refine PQ01-PQ26 and related CX/EX/OX/WP10 controls, not additional
+executed passes or changes to the original 248 WP01-WP10 rows. Each row needs
+supported positive case and its paired rejection/gap/state observation. Independent
+relation gold must check complete named rows, retained prior sources/results,
+actual owner/origins and side effects, not merely final Boolean/count or a copy
+of production rules. No test or ASCENT evaluation is run by this document task.
+
+| ID / actual future seam | Positive case / negative control and required observation |
+|--------------------------+-----------------------------------------------------------|
+| QX01 / Evidence Types/interface + t/resource-lifecycle-test.ss | Actual C/program/Scope owner binds; fake Session, supplied rules-path/digest/validator/policy cannot issue projection/Q |
+| QX02 / POO operation/row/query boundaries | Nonidentity request/projection/query/Function returns are retained coherently; discarded normalized value or copied owner fields cannot gain origin |
+| QX03 / Required catalog expansion controls | D/K/roles exist before any A/W; empty outcomes/favorable-only manifest cannot erase duty or yield ready |
+| QX04 / Primitive admission controls | Owned bounded primitive cells pass; nested POO/hash/callback/mutable alias/unknown enum/unbounded ID or arbitrary interning refuses |
+| QX05 / Functional identity controls | Exact repeated set row normalizes; incompatible C/A/E/W/U/key binding refuses with no latest-row overwrite |
+| QX06 / t/resource-integration-test.ss | One Rust A/E six W and SI/TM own E reference actual upstream G; case/obligation/hash-only joins or mixed runs refuse correlated coverage |
+| QX07 / Input-role conformance controls | Independent required and complete expected roles match actual W; empty/missing/extra/duplicate/conflicting bindings cannot become applicable by negation |
+| QX08 / Producer-use adapter controls | Actual recognized W and fresh U populate target C/A/K; JSON/receipt/checked row/candidate verifier cannot mint eligible use |
+| QX09 / Cross-C use controls | Fresh qualified target U preserves original C0/A0/E0/W; naive equality prohibition, digest-only reuse or replayed old U fails boundary |
+| QX10 / Verification identity controls | New qualified check selects exact eligible U; older failed name-only check cannot block it or become current by timestamp selection |
+| QX11 / Withdrawal / ascent-withdrawal-session-test.ss seam | Complete batch removes every affected stale U while retaining W/history/D/K; omitted status/use source cannot leave support eligible |
+| QX12 / Exact semantics controls | M06 control met still counter, Lean negation budget counter and TM reachable claim remain scoped; tool success cannot become blanket safety support |
+| QX13 / Missing versus support controls | Counter-only K is observed/pending_support/counter_present; missing_observation or readiness classification cannot conceal actual counter |
+| QX14 / Content facet controls | Mechanical W fills exact mechanical K; missing reviewer/semantic unit remains pending despite successful locator checks |
+| QX15 / Comparison/conflict controls | Opposed comparable uses both survive; last-row/green-majority or blind cross-run/actual-target comparison cannot adjudicate truth |
+| QX16 / Coverage controls | Declared all/alternative/repeat semantics and exact group coverage pass; existential favorable run cannot satisfy conjunction/required repeat |
+| QX17 / Pure rule admission controls | Finite typed safe stratified predicates evaluate primitive basis; hidden filesystem/clock/mutable callback or self-negating applicability refuses |
+| QX18 / Gap/diagnostic projection controls | Missing A/product/access/method or failed E remains required typed gap; invalid A/U never becomes valid qualified fact or fabricated W |
+| QX19 / ASCENT source transaction owner controls | Complete batch accepted; malformed later source/duplicate replacement name retains prior accepted source/result without partial projection |
+| QX20 / accept-result conformance controls | Exact prospective finished source/result names and rows match; wrong cut/missing output/false callback rejects before commit |
+| QX21 / accept-result exact return controls | Exact #t conforms; truthy symbol, exception or callback reentry refuses with prior accepted state |
+| QX22 / Serialized owner controls | Qualified serialized access preserves one owner cut; raw Session/debug mutation or independent-writer assumptions cannot issue authoritative Q |
+| QX23 / ASCENT provider/predicate failure controls | Actual supported evaluation succeeds; provider/predicate error retains old accepted state and real failure diagnostics |
+| QX24 / Execution-control and materialization limits | Actual batch/preparation/callback/encoding bounds qualify; partial/timeout or timed cached read after unbounded batch cannot produce complete Q |
+| QX25 / Prospective publication controls | Candidate remains private before final Session acceptance; callback publication or prospective export cannot appear as accepted Q |
+| QX26 / Postcommit publication failure controls | Failed export preserves identified committed result recoverable at exact cut; claim of source rollback or fabricated second commit refuses |
+| QX27 / External freshness controls | Fresh source/use permits handoff; failed update rollback cannot restore changed file/role/receipt validity or relabel old Q current |
+| QX28 / Clue/trajectory + t/backpressure-registration-batch-test.ss | Actual prior producer/history operations survive failed project batch; pretending multi-owner rollback or deleting counters refuses |
+| QX29 / Crash/recovery owner controls | Genuine re-admission records actual new evaluation; surviving JSON without terminal/private association cannot reconstruct old commit or claim rollback |
+| QX30 / Q completeness controls | Finished engine plus every required source/output/empty name and extraction completes; count-only/truncated/unavailable rows cannot be silently empty complete view |
+| QX31 / Q alias isolation controls | Owned returned strings/lists detach; mutation of submitted/public cells cannot change accepted source/result/Q or retained metadata |
+| QX32 / Typed canonical codec controls | Fixed scalar tags distinguish symbol/string and fields; lossy string conversion, floats/NaN, hash iteration or timestamp ordering refuses logical identity |
+| QX33 / Set/order determinism controls | Equivalent admitted set permutations/exact repeats yield same logical content; distinct E/W/U or ordered trace ordinals cannot be collapsed/sorted away |
+| QX34 / Program change controls | Actually qualified new rule/schema/predicate/provider/codec program evaluates; changed filename/version or facts cannot relabel old engine semantics |
+| QX35 / Query scope controls | Declared narrow inspection remains narrow; support-only filter/missing required relation cannot be presented as full Aitia view |
+| QX36 / Aitia adapter / t/backpressure-review-test.ss | Exact actual C/Q/products/uses/history supports preparation; ambient second query/chart/NASA fixture or unsupported pending mapping blocks route |
+| QX37 / DE-CASE-01 controls | D01-D10 and current mechanical/semantic gaps survive; historical 17/3 counts, coding 22-result audit or RL/SI/TM cannot stand for current project-content completeness |
+| QX38 / Q/R/history lifetime controls | Later authority status checked at actual H/use; technical Q claiming that new status needs a new accepted cut, not current label on old rows |
+| QX39 / Dossier/portable verification controls | Actual identified Q/W are later outputs and foreign assertion verified at own strength; self-input hashing, private serialization or copied authority refuses |
+| QX40 / WP00/WP10 verification cuts | Actual source/compiled/loading, independent relation gold, transaction/withdrawal/alias/negative controls and cold/recovery qualify with fixed bounds; doc/model-only/historical/widened or unchanged failed route cannot close gates |
+
+Project seams include t/resource-lifecycle-test.ss, t/resource-integration-test.ss,
+t/backpressure-registration-batch-test.ss and t/backpressure-review-test.ss.
+Actual ASCENT qualification seams include ascent-source-transaction-test.ss,
+ascent-withdrawal-session-test.ss, ascent-result-publication-test.ss,
+ascent-source-snapshot-test.ss and clue-exchange-test.ss under its t/qualification.
+These exist as source seams, not proof they already cover all target QX cases.
+Engine controls remain at ASCENT owner; application relation gold belongs here.
+
+* SPECIFIED Dependency order, exit and open gates
+:PROPERTIES:
+:CUSTOM_ID: s5-order-and-open-gates
+:END:
+
+1. Require actual S1/S2 checked catalog/coverage/policy/operation meanings and S3
+   recognized C. S4a/S4b supply actual qualified applications/outcomes/uses for claims
+   that have them; opening honest required gaps does not require inventing results.
+2. Complete Evidence Types/Config/Scope operations and primitive/functional-key
+   admission, trusted program ownership and independently expanded D/K/roles.
+   Replace old relations and raw Session exposure directly, without a legacy alias.
+3. Migrate producer registration to actual W/use/attestation operations, and Scenario/
+   examples to the same C-bound Evidence adapter. Qualify full provenance/subject/
+   footprint and current eligibility; no alternate rules-path or copied receipt.
+4. Implement finite pure application rules, exact comparison/coverage/gap semantics,
+   then complete prospective batch/conformance and actual execution-control cuts.
+   Qualify old accepted state and external failure behavior independently.
+5. Implement typed deterministic bounded Q materialization/publication after commit;
+   qualify exact owner/result/codec/request/rows, alias isolation, full Aitia scope
+   and honest postcommit failure recovery. No parallel mutable facts/cache store.
+6. S5 exits only with actual source/compiled/load program and owner qualification,
+   independent full relation gold, QX positive/negative state observations, complete
+   exact Q and same-C producer/use handoff. Pending/counter/conflict Q is valid;
+   complete case acceptance and Aitia verification remain later independent gates.
+
+Open items remain actual new relation/Contract/adapter implementations, real producer
+recognition/acquisition/load closure, whole-operation finite budget support, canonical
+codec, current history/use status, qualified recovery and exact Aitia pending/conflict
+representation. Address engine gaps at ASCENT, query adaptation here, and review
+semantics at Aitia; no project workaround claims missing upstream guarantees.
+
+WP00/BS01-BS09, q34 versus current default build/load gaps and historical restart-two
+failure stay open. Preserve 2 GiB/180-second acceptance limits and original 138-entry
+10.34 catalog/receipt bytes; changed Org/view inputs require future fresh capture.
+Do not rerun unchanged failed recovery or widen budgets. Only Org and D2/SVG change:
+no implementation/directory change, build, acceptance, Session/query/method/content/
+model/Aitia execution, signing, review submission, authorization, adoption or delivery.
+
+#+CAPTION: S5 independently retains required units, projects actual same-C applications and uses through Session's accepted batch, then publishes complete owned Q for later Aitia checks.
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.svg]]
+
+[[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][Editable D2 source]].
+
+[[file:10.60-aitia-review-adaptation.org::#s6-aitia-review-adaptation][10.60 details S6]]: exact C/Q to inert R, adopted policy/project revision/roles/
+products, purpose-specific context/inventory/criterion checks and lossless negative
+assessment, actual common Host/Core receipt/current-use/replay boundaries.
+Causal Software Engineering is the research object for critical comparison of
+claim/assumption/identification/uncertainty handling. Framework mappings are
+proposals to test, not paper authority, demonstrated superiority or an estimator. RX01-RX40 remain future controls;
+no implementation, acceptance execution or review submission occurs.
+
+[[file:10.61-history-authority-and-reassessment.org::#s7-history-authority-reassessment][10.61 details S7]]: exact C/Q/R/H, independently required history, scoped
+principal/grant/action checks, accepted inclusion/current use, immutable negatives,
+repair/exception/supersession/withdrawal and qualified custody. Assumption failure
+triggers scoped reassessment without false zero-effect or authority inference.
+The paper is critically studied through competing designs/falsifiable RQ1-RQ6,
+not treated as a normative source or demonstrated improvement. AX01-AX44 are
+future controls; no implementation, acceptance execution or review submission.
+
+[[file:10.62-library-delivery-and-recipient-use.org::#s8-library-delivery-recipient-use][10.62 details S8]]: exact producer C/Q/R/authority and finalized manifest,
+product/reference/access closure, actual arrival and receiver-owned verification,
+new receiver C/Q/R/adoption/current use. Missing/withdrawn/replayed status and
+claim-specific causal applicability remain explicit; selective reuse is a research
+hypothesis compared against full revalidation. DX01-DX44 are future controls;
+no implementation, acceptance execution, review submission or actual delivery.
+
+[[file:10.63-case-joint-acceptance-plan.org::#s9-case-joint-acceptance][10.63 details S9]]: actual file/entry/lane and owner-artifact matrix, G0-G8
+source/compiled/load/cold/recovery/receiver through-gates, exact finite budgets,
+negative/assumption-change correctness and separate critical research comparison.
+Original 248 rows and stage refinements retain identity; JX01-JX44 are future
+joint controls. OJ01-OJ12/BS01-BS09 remain open until actual owner evidence;
+no implementation, acceptance/research execution or actual delivery occurs.
+
+* SPECIFIED P0 generic declaration versus assessment
+:PROPERTIES:
+:CUSTOM_ID: s5-p0-generic-declaration
+:END:
+
+[[file:10.65-ascent-migration-and-contract-handoff.org::#p0-owners-and-interfaces][10.65]] identifies rules/interface define-program and rules/declaration rule-module-program as the generic declaration/extraction route. ResourceEvidence keeps its application obligation program; EvidenceAssessmentCase. is a distinct optional hypothesis API, not its replacement. Actual Program bindings/bounds and Session rollback semantics need qualified controls. Recorded declaration dependencies do not become per-row proof, C origin or Aitia authority. QX controls remain unexecuted.
+
+* SPECIFIED S5 effective projection and Q contracts
+:PROPERTIES:
+:CUSTOM_ID: s5-p1-effective-query-fields
+:END:
+
+[[file:10.66-effective-types-and-contract-closure.org::#p1-capture-execution-query-fields][10.66 P1 consolidation]] defines the effective refinement.
+Project row/Q contracts consume recognized C/A/E/W/use and complete independently required D/K/input/premise/strength associations. Use existing finite typed roles and trace/status refinements rather than arbitrary premise IDs as role enums. Definite Q may contain gaps/counters/conflicts; Types do not establish Session atomicity or live eligibility after rollback.
+
+* SPECIFIED P2 producer and projection handoff
+:PROPERTIES:
+:CUSTOM_ID: s5-p2-actual-bindings
+:END:
+
+[[file:10.67-library-construction-publication-and-scope-handoff.org::#p2-real-method-bindings][10.67 P2 consolidation]] defines this handoff.
+Project projection keeps generic ASCENT rule/Session APIs while supported Flow application capabilities remain at their actual owners. Definite Q still needs actual recognized C/A/E/W/use and complete independent obligations; a successfully published Library Scope or real method binding supplies neither execution evidence nor current use.
+
+* SPECIFIED P3 capture recognition before projection
+:PROPERTIES:
+:CUSTOM_ID: s5-p3-c-origin
+:END:
+
+[[file:10.68-profile-selection-scenario-binding-and-capture.org::#p3-origin-protocol][10.68 P3 consolidation]] defines this boundary.
+ResourceEvidence consumes a recognized original capture occurrence and actual qualified A/E/W/use. It does not reconstruct C from flat rows/snapshot hashes, choose the expected producer from candidate fields or manufacture Q during capture. Core origin issuance and source/current-use eligibility remain different assertions.
+
+* SPECIFIED P4 actual observations and uses consumed by P5
+:PROPERTIES:
+:CUSTOM_ID: s5-p4-input-association
+:END:
+
+[[file:10.69-method-content-execution-and-evidence-issuance.org::#p4-issuance-and-results][10.69 P4 consolidation]] defines this boundary.
+P5 consumes real C/A/E/G/W/U and scoped findings against independently required K. K remains a target binding, not mutation of W. Failed/incomplete execution is not support; qualified negative remains counter. Known live invalidation blocks use independently of Session replacement success.
+
+* SPECIFIED P5 unified accepted projection and definite Q
+:PROPERTIES:
+:CUSTOM_ID: s5-p5-unified-view
+:END:
+
+[[file:10.70-ascent-projection-and-determinate-query-view.org::#p5-projection-query-view][10.70 P5 consolidation]] defines this boundary.
+P5 consolidates this relation/query foundation with P0-P4. Complete dependent source replacement, true single-writer ownership, exact-#t callback acceptance, separate external live guards, post-commit Q publication and immutable privately associated Q are explicit. PV01-PV40 refine QX controls without executing them.
+
+* SPECIFIED Complete query consumed without reconstruction
+:PROPERTIES:
+:CUSTOM_ID: p6-follow-up-59
+:END:
+
+[[file:10.71-aitia-review-adaptation-and-current-use.org::#p6-purposes-and-calls][10.71 P6 consolidation]] defines this boundary.
+Same genuine C and complete policy-required privately associated Q enter R without ambient requery/favorable filtering. Determinacy can include missing/counter/conflict; independent review does not append itself into its own input Q.
+
+* SPECIFIED History inputs and query lifetime
+:PROPERTIES:
+:CUSTOM_ID: p7-follow-up-59
+:END:
+
+[[file:10.72-history-authority-reassessment-and-withdrawal.org::#p7-calls-and-acceptance][10.72 P7 consolidation]] defines this boundary.
+Unchanged technical C/Q/R may remain input to a new H/use. Any Q claiming new accepted decisions/history needs a new actual projection cut; decision/inclusion outputs never retroactively edit Q/R or its own H0 basis.
+
+* SPECIFIED Later receiver facts need actual accepted projection
+:PROPERTIES:
+:CUSTOM_ID: p8-follow-up-59
+:END:
+
+[[file:10.73-library-delivery-and-recipient-adoption-use.org::#p8-causal-applicability][10.73 P8 consolidation]] defines this boundary.
+P5 may project genuine manifest/adoption/use/status associations only after their actual origins exist. New history asserted by a Q needs a new accepted cut; unchanged old technical Q can remain an input, never a receiver authority token.
+
+* SPECIFIED Projection and review boundary qualification
+:PROPERTIES:
+:CUSTOM_ID: p9-follow-up-59
+:END:
+
+[[file:10.74-case-joint-acceptance-and-research-plan.org::#p9-gates-and-lanes][10.74 P9 consolidation]] defines this boundary.
+G4 requires independent D/K demand, full accepted Q and immutable R with all required outputs and negatives. Precommit rollback, postcommit export failure and independent live use have separate oracles.

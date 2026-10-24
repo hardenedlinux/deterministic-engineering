@@ -1,0 +1,281 @@
+#+TITLE: 10.81 Declarative Project-to-SysML Chain: Ownership and Refactoring Audit
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.81
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+FILETAGS: :design:audit:project:library:ascent:sysml:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.80-declarative-project-formation.org][10.80 executed slice]] | [[file:10.77-effective-types-contracts-and-origin-lifetime.org][Effective Contracts]] | [[file:10.76-dependency-build-load-and-normalized-handoff.org][Dependency and normalized handoff]] | [[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][D2]] | [[file:../../../project.sysml][Current root model]]
+
+* Audit conclusion and evidence boundary
+:PROPERTIES:
+:CUSTOM_ID: chain-audit-scope
+:END:
+
+The first slice already uses ordinary POO declarations, Core Module selection and
+Scope Contracts, and a real ASCENT program/Session. Its candidate identities are
+not algorithm branches. Keep that foundation. The remaining problem is incomplete
+binding between declarations, actual providers, captured inputs, inference and
+materialization. Moving every literal to Config would not establish that binding.
+
+This chapter audits the current Library repository against 10.80. It specifies a
+refactoring, not an implemented pipeline. No implementation, dependency, generated
+SysML model or test is changed; no runtime acceptance or automatic orchestration
+is run. Org and D2 are updated explicitly. Existing model/receipt bytes retain
+10.80's meaning and limits. Earlier plans remain target requirements; they do not
+become available APIs merely by appearing in a design table.
+
+Source observation on 2026-10-21: repository HEAD
+8044732d505f84e373119a70f947df00e1767300, with the existing staged/untracked formation
+slice inspected as working-tree source, not as committed HEAD content. ASCENT is
+18751d5c513fd7ae6e768f580866b9e1fb34d2d3; its declaration selects Core
+44a99d45396d1a23e850105ffe8af442a61b2780; the isolated Core selects POO
+0df023fd9e15192156935c971f0f1940028c5277. These are the currently read cohort,
+not the different earlier upstream observations in 10.76/10.77. The selected Core
+still exports :core and poo-flow-* identities. Do not mix a newer :yuanxu API into
+this slice without qualifying the complete migration.
+
+The recorded baseline remains eight conflicts, 34 gaps, nine role nodes and eleven
+role edges. LIB-C01 is structurally covered, with four open capability gates;
+runtime_ready is empty. Scope-route/probe agreement is route parity through shared
+code, not an independent semantic oracle. Observed Scope execution passes; earlier
+unobserved timeouts, full POO build timeout and unqualified clean recovery remain.
+These observations are inherited receipts from 10.80, not re-executed here.
+
+* What is a declaration, and what is accidental hardcoding?
+:PROPERTIES:
+:CUSTOM_ID: chain-audit-classification
+:END:
+
+| Keep as authored declarations or framework reuse | Required distinction |
+|------------------------------------------------+----------------------|
+| Project source paths, explicit Module IDs and example runner's chosen Profile | Concrete composition is legitimate. A reusable entry must expose its supported selections; fixed example imports do not demonstrate dynamic Library selection |
+| LIB-C01--C03, D01--D10, role/owner names and project model names | These describe this case. Publish domain policy in Library, select applicable policy in Profile, bind project occurrences in Scenario |
+| Independent Library demand and candidate offers | Preserve both sides. Deriving all offers automatically from required items would hide missing coverage; common identity references may be shared without sharing the truth of satisfaction |
+| ASCENT relation declarations, finite result states and fixed resource limits | These are executable semantics and execution policy. They need ownership and validation, not arbitrary user-editable strings or unbounded execution |
+| Native define-program, open-session and replace-sources! | Retain upstream evaluation, incomplete-result handling and transactional semantics. A domain-to-relation adapter is necessary and is not a second inference framework |
+| SysML keywords, sorting and serialization helpers | Language syntax belongs in the projection adapter. Project identity, catalog resolution and authority to choose a candidate do not belong there |
+
+Declarative does not mean that an LLM can rewrite protected rules or choose a
+provider by an unchecked string. The LLM proposes intent/candidate/model edits;
+confirmed intent and selected policy constrain them. ASCENT computes consequences
+from the admitted inputs. Core binds actual providers. Explicit selection and
+validation determine which consequence can become a model candidate.
+
+* Findings against current files
+:PROPERTIES:
+:CUSTOM_ID: chain-audit-findings
+:END:
+
+Each row names a concrete current boundary and its adjustment. Priorities express
+implementation dependencies, not new runtime results.
+
+| ID | Current file / observed behavior | Classification and target owner |
+|----+----------------------------------+---------------------------------|
+| DA01 | [[file:../../../projects/library-formation/init.ss][Project init.ss]] selects three providers; [[file:../../../init.ss][root init.ss]] selects the older backpressure tree. [[file:../../../examples/library-formation.ss][runner]] imports one Profile and asks for one literal Scenario Scope | Two explicit entries are not a dynamic Project selection protocol. Project must declare the supported provider set and entry bindings, and document which entry has which qualification. Profile selects within that admitted set; it cannot bypass Core selection or turn incoming LLM paths into imports. Keep examples as explicit fixtures |
+| DA02 | [[file:../../../profiles/library-formation.ss][candidate helper]] repeats project=DE-CASE-01 and basis=reusable-library separately from Profile.project/intent | Real duplicate project context. Bind the confirmed context once and derive each candidate association from that context; a changed intent must retain/invalidate older proposals explicitly, never silently relabel them |
+| DA03 | [[file:../../../library/project-organization/objects.ss][Library objects.ss]] publishes roles, owner-kinds and protected rows with overlapping owner information; products/duties are DE-CASE-specific; the adapter mandates all four demand lists nonempty | Retain independent policy, but distinguish reusable organization definitions from this selected case's product/duty requirements. Declare applicability and cross-reference integrity once. Profile selects required policy; Scenario cannot impose an undocumented universal nonempty-list policy on every future Library |
+| DA04 | Library/Engine/Scenario [[file:../../../library/project-organization/types.ss][Scope predicates]] check object/slot/procedure presence; [[file:../../../scenarios/project-formation/func.ss][formation-inputs]] performs scattered tuple checks | Partial guards, not complete effective Contracts. Put field shape, inheritance, identities, finite domains, exact arity and reference closure at their owning Types/Contracts. Preserve Core's accepted normalized value. Scenario keeps project association checks; ASCENT keeps semantic conflict/gap derivation. Do not replace Core with a new schema validator |
+| DA05 | Profile combines candidate allocations, catalog name, role-to-slot/type/reference mapping and dependencies; mapping is shared by all candidates | Some case mapping is legitimate Profile selection, but a catalog string does not select a published SysML Library or validate its elements. Library publishes model element/method capabilities and mapping definitions; Profile selects supported definitions and explicit project refinements. Scenario binds actual repo inputs. If alternatives require different topology, bind each plan to its candidate; document a common layout when it is intentionally shared |
+| DA06 | Scenario.inputs and Scenario.run separately call formation-inputs; runner records the first batch but executes a second preparation; render accepts any result | String copying is useful isolation, not a single authenticated capture C. Prepare/admit once, execute that same value, associate result and render plan with it. Distinct equal batches must not substitute for the same captured occurrence. Inputs/run/render need coherent calling Contracts, not three unrelated callable slots |
+| DA07 | Scenario [[file:../../../scenarios/project-formation/config.ss][Config]] exports FormationCase but interface does not consume it | Dead declaration, not enforced purpose or identity. Bind it through the declared Scenario configuration only if it actually controls admitted behavior; otherwise remove it during refactoring. Do not keep parallel metadata that appears authoritative but is unread |
+| DA08 | [[file:../../../modules/project-formation/func.ss][rules]] protect symbolic owner=ascent/aitia/yuanxu and accept capability status=established from candidate data | Symbolic allocation does not authenticate the selected provider or issue capability evidence. Separate responsibility category, application rule owner, actual engine/provider binding and trusted evidence issuer. Library owns application LR semantics; ASCENT owns evaluation; Aitia owns review; Core owns its supported capture/admission provenance. Preserve hypothetical assertions as hypotheses |
+| DA09 | The same func.ss reasons and renders; renderer automatically chooses the unique structurally_covered result and emits literal DE-PROJECT | Project identity and candidate-selection policy are hidden in rendering. Move root element identity to the admitted project model declaration. Profile declares the permitted materialization selection policy; Scenario binds it to the result. Unique structural eligibility can remain an explicitly selected design-only policy; it is not approval |
+| DA10 | model-name uses one whitelist for names and intent prose; qualified-reference validates the full suffix but emits it raw; renderer de-duplicates type names | Incomplete SysML symbol resolution. The projection method must handle qualified segments, quoting, distinct identifiers versus text, collisions, supported element kinds and target closure using the selected model Library and actual language validator. Duplicate names must not silently merge incompatible definitions |
+| DA11 | [[file:../../../modules/project-formation/objects.ss][FormationSemantics.rules]] duplicates LR labels; [[file:../../../examples/library-formation-output.ss][output helper]] repeats the program output list | Drift-prone metadata. Bind the actual rule program and its source/revision to the selected method; derive supported output metadata through the existing program API where available. Otherwise retain one checked application declaration, not two independently maintained lists. Do not invent a generic program registry |
+| DA12 | Output helper writes report before rendering and has no bound materialization manifest or typed refusal; root project.sysml was explicitly copied from a successful run | Reports are valid investigation artifacts, not an atomic current-model publication. Preserve failed/refused runs. The model producer needs a complete candidate manifest and validation status before an explicit promotion step; a partial output directory must never mean the root is current |
+| DA13 | [[file:../../../Justfile][formation-runtime/build recipes]] resolve mounts, parse package pins and copy prelude/metadata locally; runtime/lib precedes source; source checks do not establish compiled artifact identity | A bounded local reproduction lane, with partial duplication of generic dependency/build/load responsibility. Project gerbil.pkg remains unpinned and build.ss still names the older four roots; neither currently declares this complete formation build lane. Retain its receipts; move reusable resolution, build/load provenance and invalidation to their existing Core/package/build owners. Just remains an explicit bounded launcher. Do not build a project-local package manager, load registry or compatibility layer |
+| DA14 | Source-stage observation is enabled in the successful entry route; prior unobserved attempts timed out; focused tests share adapter/rules/renderer | Observability and entry-mode qualification are execution concerns, not declarations that prove semantics. Keep route-labelled evidence and fixed limits. Require source/build/load closure and independent semantic controls before broader claims; no claim that logging repairs runtime behavior |
+
+The words project/definition in LR01, established in LR05 and the fixed bound are
+not equivalent to DE-PROJECT in the renderer. The former are semantic vocabulary
+or execution policy; declare and validate their finite domains and applicability.
+The latter is a case identity that must come from the captured project declaration.
+Likewise, policy allowing one owner per required role is currently intentional but
+cannot represent every future multi-owner architecture without a declared semantic
+extension. More rows alone cannot add a new modeling meaning.
+
+* Target organization and call boundaries
+:PROPERTIES:
+:CUSTOM_ID: chain-audit-target
+:END:
+
+The following are responsibility boundaries for the existing owners, not a new
+directory scheme, universal pipeline object or public tuple-based configuration
+language. Public extensible values remain ordinary POO objects with inherited
+Types/Contracts. Pure projection/serialization algorithms remain named functions.
+
+| Owner | Publishes / selects / captures | Consumes and returns |
+|-------+--------------------------------+----------------------|
+| Project | Explicit source root, supported Modules and their dependency bindings; declared Profile/Scenario entry selections | Core selection/linking returns admitted Scopes. Unsupported providers refuse before reasoning. Root model describes the project; it is not an executable loader |
+| Library | Reusable organization/model vocabulary, obligations and applicability, two policy definitions where required, LR method definition and SysML projection method/catalog; sole contract generation source | Publishes through Config/interface and Core Scope Contracts. Identity, contract generation and semantic revision remain separate. No version in Namespace or Org-owned registry |
+| Profile | Select Library/model/policy/method identities from published capabilities, candidate allocations, proposed refinements, explicit materialization policy | Consumes admitted Scopes; does not reconstruct Library Config behind Scope checks. Project goal and selection are references, not claims that runtime evidence already exists |
+| Scenario | Bind confirmed intent occurrence, actual repo/input acquisition, selected parent/policy/method closure and candidate-specific plan to one C | Retain admitted normalized subjects and origin associations under the supported Core/producer protocols. Project associations are checked here; fresh verification/current use is separate from immutable C |
+| Application reasoning Module | LR01--LR08 domain program, fact projection and bounded query interpretation | Consume the same C through the checked adapter; call upstream ASCENT; retain all conflicts/gaps/invalidated alternatives, declared source coverage, method/program identity and result association. This slice's result is not yet the complete determinate Q of 10.70 |
+| SysML projection method | Supported language/model mapping and deterministic rendering/validation | Consume the selected candidate/plan and C-bound consequences; resolve actual catalog elements, validate candidate bytes and closure, return candidate artifacts/status. No provider selection, capture issuance or review authority |
+| Org/D2 and content observation | Explain goal, selected architecture, decisions, obligations, source references and current/historical status | Display the same declared identities and recorded associations. Future content observers check actual bytes/references. Existence of a generated file cannot discharge a content or verification duty |
+| Aitia / downstream assurance | Independently review applicable policy, content and evidence when that later boundary is implemented | Receives its required C/Q/evidence association, never a ready string as authority. Remains outside this refactoring slice's execution |
+
+The selected Core's module-system/selection/init-syntax.ss already exposes the
+literal poo-flow! entry, profile/extends forms and init.build-spec/init.build-run
+projections, with profile composition delegated to its existing user-profile owner.
+Use those supported mechanisms where the selected cohort qualifies them; do not
+introduce a parallel Project registry or another provider-resolution loop. Core
+user-profile settings and the domain LibraryFormationProfile have different
+responsibilities; reuse supported composition without treating them as one schema.
+At the Contract boundary, selected Core types.ss already normalizes through value-contract,
+classifies, collects responsibilities/obligations, and returns evidence.candidate;
+poo-flow-contract-validate returns that accepted value. Reuse this algebra rather
+than duplicating field Types in a Scenario-specific validator. This source inspection
+does not establish that every downstream Context/Scope caller preserves the return.
+
+Library owns an application rule definition; the executable Module exposes it using
+ASCENT. This is compatible with preserving the existing engine owner. It does not
+require moving LR code into upstream ASCENT or adding an application evaluator.
+Similarly, publishing a SysML model Library is distinct from an adapter writing
+SysML text: both must be selected and their associations checked.
+
+The intended manual call sequence is:
+
+1. Project declares providers; Core admits Context, dependency Scopes and final
+   Scope. Preserve each normalized return; the known handoff repair requirements
+   in 10.76 must be qualified rather than assumed fixed in this cohort.
+2. Profile selects published organization/model/policy/method definitions. Record
+   the user-confirmed intent and candidate provenance separately from observations.
+3. Scenario acquires actual inputs and prepares one admitted C. The report and
+   execution consume that same C; no second invocation manufactures its substitute.
+4. Application projection produces a complete declared batch and calls the existing
+   ASCENT Session. Record coverage and result-to-C/program association. A partial
+   caller batch must not be promoted to a complete project interpretation.
+5. Explicit selected policy permits a candidate to be materialized. The SysML method
+   consumes its bound plan, resolves the catalog and validates generated bytes.
+6. An explicit publication operation may promote a validated candidate, retaining
+   the previous root and failed alternatives. Org and D2 record the corresponding
+   selection, obligations and evidence status; automatic synchronization is not added.
+
+No step here authorizes an LLM to manufacture observations, authorize its own
+candidate, silently weaken demand, treat absent facts as global absence, or mutate
+Core's provider set at runtime. Adding supported declarations can extend a model;
+new semantics or new executable providers require their own reviewed declarations
+and qualified implementation.
+
+* Refactoring order and acceptance design
+:PROPERTIES:
+:CUSTOM_ID: chain-audit-order
+:END:
+
+These controls are proposed, not executed. They supplement 10.80 without rewriting
+its successful or failed receipts. Keep the existing per-suite 2 GiB / 120-second
+limits; full build keeps its separate recorded limit. No wider timeout makes a
+failed route acceptable.
+
+| Step / dependency | Files and responsibility | Positive control | Negative control / refusal |
+|-------------------+--------------------------+------------------+----------------------------|
+| A0: source and handoff prerequisites | gerbil.pkg, build.ss, Justfile and upstream Core/ASCENT/POO build/admission owners; follow 10.76 | One explicitly selected source cohort, real artifact/load association, qualified normalized Context/dependency/final Scope handoffs; preserve historical receipts | Wrong pin, dirty/changed source, stale compiled artifact or discarded nonidentity normalized return cannot qualify the route. Unobserved cold/recovery behavior remains open until actually checked |
+| A1: effective declarations, after identifying A0 API cohort | Existing Library/Module/Scenario types.ss, objects.ss, config.ss, interface.ss; Profile objects; DA02--DA05, DA07--DA08, DA11 | Complete inherited field/identity/domain/reference checks; one Library-owned contract generation; selected program/catalog/policy/method association; actual normalized values passed onward | Malformed/extra tuple fields, dangling/duplicate refs, unsupported purpose/status/provider, conflicting owner definitions, unused authoritative Config or independently edited output metadata refuse or yield precise contract diagnostics |
+| A2: declared composition and one capture, after A1 and required A0 runtime repairs | Project init.ss, Profile, Scenario func/interface, explicit example entry; DA01, DA06 | Two supported Profiles can use the same declared entry without editing engine/renderer; report, reasoning and projection retain the same C and selected input closure | Unsupported Library selection, changed intent with old proposal, cross-project capture, expired provenance or render result from another C cannot pass through. Re-verification never silently relabels the original capture |
+| A3: application projection and trust, after A2 | Module func.ss and selected method definition; Scenario private adapter; DA08, DA11, DA14 | Preserve baseline consequences and independent required obligations; declaration-only extension alters relevant results without candidate-name branches; independent small reference cases corroborate semantics | Incomplete source batches, foreign program result, forged established capability and mixed positive/negative support cannot establish authenticated readiness; conflicts and gaps remain visible |
+| A4: model selection and materialization, after A3 | Projection functions currently in modules/project-formation/func.ss, Profile mapping selection, output helper; DA05, DA09--DA12 | A second project identity/catalog and compatible candidate-specific plan produce correctly bound validated SysML without source edits; deterministic bytes for identical admitted inputs | Zero/multiple eligible candidates follow explicit policy; name collision, bad qualified name, missing catalog element, mismatched C/plan or validator failure prevents promotion and preserves refusal evidence |
+| A5: complete explicit slice, after A0--A4 | Existing t/project-formation*.ss, examples and bounded Just entry; Org/D2 paired view | Real Project Scope route, reference semantic controls, model validation and content/reference checks agree on admitted identities and evidence limits; preserve route-specific receipts | Stale root, interrupted/partial artifact write, replayed foreign result, divergent probe/Scope result or a model-only readiness assertion never becomes current architecture or review approval |
+
+A1's source design can proceed while A0 is being repaired; runtime qualification
+of A2--A5 cannot bypass A0. Mapping/projection responsibility can be separated in
+existing files first; directory changes are not a prerequisite. No compatibility
+facade is proposed. Directly migrate callers and their Contracts together when
+implementation is authorized.
+
+* Open items and bounded completion
+:PROPERTIES:
+:CUSTOM_ID: chain-audit-open
+:END:
+
+The current slice has no published general SysML catalog selection, full effective
+Contracts, authenticated C/result binding, trusted capability admission, complete
+build/load/recovery qualification or model publication protocol. The exact supported
+Core origin/currentness API and any upstream gap must be established against the
+chosen cohort before implementation; 10.77's design is not proof of that facility.
+These are explicit refactoring prerequisites, not reasons to build parallel issuers.
+
+Still to decide in declarations: reusable versus case-specific policy inheritance;
+which materialization policy each Profile selects; candidate-specific versus shared
+layout applicability; supported SysML element kinds/qualified-name behavior; and
+which previously authored root changes must be preserved or reconciled on promotion.
+Keep unresolved choices visible. No automatic LLM loop, repository scanner, arbitrary
+provider discovery, model merge engine, review submission or delivery is added here.
+
+Correctness requires identity/closure, declared semantics, preserved negative
+outcomes and honest current-use boundaries. Whether an LLM assisted by ASCENT improves
+architecture quality, review cost or decision robustness remains a research question
+requiring separate comparisons. Baseline gap counts, route parity and static SysML
+validation do not establish that research result.
+
+* A0 source and normalized-handoff refinement
+:PROPERTIES:
+:CUSTOM_ID: chain-audit-a0-refinement
+:END:
+
+[[file:10.82-a0-dependencies-and-normalized-handoff.org][10.82]] refines A0 against the newly observed adjacent Core 1107677 and the
+unchanged isolated formation cohort. It separates declared dependencies, actual
+checkout/source, complete compiled sections, configured paths and actual process
+loading. Both observed Core versions still discard normalized Context, consumer
+requirement Scope and final Scope returns. The coordinated file owners, six-step
+order and positive/negative controls are specified there; no repair or acceptance
+has been executed, and 10.80's receipts remain historical evidence.
+
+* A1 effective declaration refinement
+:PROPERTIES:
+:CUSTOM_ID: chain-audit-a1-refinement
+:END:
+
+[[file:10.83-a1-effective-declarations-and-contracts.org][10.83]] unifies A1 with 10.77 and A0's actual API/handoff requirements. It specifies
+a single neutral Library generation declaration, sibling family/role/policy
+refinements, complete effective fields, actual policy/model/method bindings and
+finite operation domains. It preserves malformed-input refusal separately from
+valid candidate conflicts/gaps, and allocates proposed controls to existing owners.
+No implementation, runtime acceptance or automatic orchestration is added.
+
+* A2 declared composition and single-capture refinement
+:PROPERTIES:
+:CUSTOM_ID: chain-audit-a2-refinement
+:END:
+
+[[file:10.84-a2-project-selection-and-capture.org][10.84]] unifies A2 over A0/A1: actual admitted provider composition, normalized
+Profile/parent/policy/model/method selection, independent project-input demand,
+real source-bound acquisition and one recognized capture C. It separates current-use
+verification from recapture and specifies coherent report/reason/render consumers.
+All implementation and runtime controls remain proposed; no orchestration is added.
+
+* A3 application projection and native reasoning refinement
+:PROPERTIES:
+:CUSTOM_ID: chain-audit-a3-refinement
+:END:
+
+[[file:10.85-a3-application-projection-and-ascent.org][10.85]] unifies A3 over A0--A2 with explicit C/program/source coverage, the current
+17 source and 13 output schemas, candidate-plan joins, declaration versus qualified-use
+paths and native acceptance/frozen-view boundaries. It specifies direct readiness-name
+clarification, preserved negatives/invalidation and proposed controls. No implementation,
+reasoning execution or automatic orchestration is added; historical receipts remain.
+
+* A4 selected SysML materialization and explicit publication
+:PROPERTIES:
+:CUSTOM_ID: chain-audit-a4-refinement
+:END:
+
+[[file:10.86-a4-sysml-selection-and-materialization.org][10.86]] unifies A4 over A0--A3: same C and accepted view, explicit candidate/plan/
+catalog/mapping binding, stable identities and names, complete artifact/reference
+closure, distinct validation layers and separate explicit Project publication.
+It specifies existing-file ownership, concurrent-edit/crash limits and proposed
+positive/negative controls. Current model bytes and historical receipts are unchanged;
+no implementation, validator/acceptance run or automatic orchestration is added.
+
+* A5 joint acceptance and research separation
+:PROPERTIES:
+:CUSTOM_ID: chain-audit-a5-refinement
+:END:
+
+[[file:10.87-a5-declarative-slice-joint-acceptance.org][10.87]] unifies A5 over A0--A4 with existing entry/file mappings, actual evidence
+roles and cross-stage joins, source/compiled/cold/bootstrap/recovery/current-use/
+publication lanes, matched negative controls and open exits. It separates mechanism
+correctness, real case-positive completion and research comparison. All runtime
+controls remain unexecuted; no implementation or orchestration is added.

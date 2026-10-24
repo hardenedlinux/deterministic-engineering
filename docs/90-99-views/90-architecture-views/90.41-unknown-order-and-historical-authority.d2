@@ -1,0 +1,16 @@
+# org-target: docs/20-29-cases/20-gateway/20.16-unknown-order-negative-dependencies-and-defensive-engineering.org::#unknown-delivery-order-packet
+direction: down
+classes: {
+  input: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; border-radius: 10; font-size: 17}}
+  state: {style: {fill: "#E6F5F3"; stroke: "#19756C"; border-radius: 10; font-size: 17}}
+  gate: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; border-radius: 10; font-size: 17}}
+}
+delivery: "DO00 / DO01 authentic original delivery\nP2 / occ2 / ex2 / exact units and Kunit\nP2 < completion < arrival; k3 < arrival\nCompletion versus k3 and revocation unknown" {class: input}
+facts: "DO02 historical physical completion known\nNew qualified permitted ownership pending\nPrior permitted r2m history retained\nNo retroactive membership in frozen k3" {class: state}
+use: "DO03 / DO04 / DO05 bounded qualification\nOld units cannot confirm P3 / sigma3\nCurrent denied read stays refused\nReal order evidence may resolve timing\nReal access evidence may resolve historical permission" {class: gate}
+action: "CO00 / CO01 independent original action\nExact Host completion and covered effect known\nActual authority at consumption unknown\nDrop parent denied-at-use premise" {class: input}
+unknown: "CO02 no invented grant or violation\nPreserve authentic covered occurrence\nIncomplete guards block qualified permitted use\nCurrent renewal cannot authorize the past" {class: gate}
+resolve: "CO03 / CO04 / CO05 actual evidence\nMatching allowed boundary: historical permission\nMatching denied boundary: historical violation\nExisting sufficient order + authority history can qualify\nFresh use / remediation retains its own scope" {class: state}
+delivery -> facts -> use
+action -> unknown -> resolve
+facts -> unknown: "same distinction; independent inputs"

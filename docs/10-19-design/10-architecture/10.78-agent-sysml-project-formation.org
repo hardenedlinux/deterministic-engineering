@@ -1,0 +1,196 @@
+#+TITLE: 10.78 Agent-Driven SysML Project Formation
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.78
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+FILETAGS: :design:agent:sysml:organization:architecture:documents:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.78-case-organization.sysml][Authored SysML model]] | [[file:10.30-current-repository-engineering-case.org][DE-CASE-01]] | [[file:10.33-case-actual-and-target-architecture.org][Existing element/source inventory]] | [[file:10.77-effective-types-contracts-and-origin-lifetime.org][Runtime Contract boundaries]]
+
+* Proposed main path: conversation to the repository's architecture layout
+:PROPERTIES:
+:CUSTOM_ID: agent-project-formation
+:STATUS: Authored SysML organization and workflow model; static language diagnostics only; orchestrator not implemented
+:END:
+
+The entry is a user creating a repo and discussing intent with an LLM. After actual
+confirmation of goals/constraints, the LLM generates a candidate architecture. ASCENT
+reasons over that proposed structure under selected real Library rules; the resulting
+selection/coverage/gaps guide SysML Library selection and project-specific formation.
+The repo receives its own SysML architecture/document organization, with linked Org
+rationale and D2 views. This connects the LLM to the model lifecycle; it is not merely
+a retrospective file inventory or automatic directory rearrangement.
+
+The primary conceptual sequence in the authored model is:
+
+#+begin_example
+Repo + conversation -> confirmed intent -> LLM candidate
+  -> ASCENT design reasoning -> selected SysML Library definitions
+  -> current repo SysML layout -> linked Org products and D2 views
+                     ^                         |
+                     +-- gaps/conflicts/revision+
+#+end_example
+
+The existing DE-CASE-01 inventory is a concrete model instance for this path, not a
+claim that an actual LLM/ASCENT/bootstrap workflow has run. The authored action
+definition models the successful ordering; rejection/unknown/feedback conditions are
+specified below, not silently interpreted as a successful transition. No property
+satisfaction, actual implementation, review disposition or delivery is asserted.
+
+* Step inputs, outputs and actual owner boundaries
+:PROPERTIES:
+:CUSTOM_ID: formation-step-contracts
+:END:
+
+| Stage / model subject | Required input -> output artifact | Boundary and feedback |
+|-----------------------+----------------------------------+-----------------------|
+| Repo + discussion | Actual repo/dirty source occurrence, user goals/non-goals/context -> identified intent draft | LLM asks/records open questions; a generated summary is not evidence of human confirmation |
+| Confirm / DE-WF-INTENT | Actual confirmed scope/constraints and remaining unknowns -> confirmed intent basis | Permission is bounded model drafting, not appointment, deployment, delivery or acceptance authority. Changed material goals require reconfirmation |
+| Generate / DE-WF-CANDIDATE | Confirmed intent, actual repo observations and supported Library catalog -> candidate architecture: elements/interfaces/data flow, requirements, alternatives, assumptions, proposed roles/products and explicit gaps | LLM may propose several candidates. Every proposed versus source-observed assertion remains labeled; generated code/text/model cannot self-attest truth |
+| Reason / DE-WF-REASONING | Candidate facts + actual qualified applicability/requirement/role/closure constraints and independent demand -> finite deterministic selection/coverage/conflict/gap view | ASCENT applies actual rules; it cannot invent network/GC/distributed knowledge or empirical causality. Inconsistent/unsupported inputs return feedback, never a favorable-only view |
+| Select / DE-WF-SELECTION | Actual reasoning basis + checked Library/SysML definitions/parameters/constraints -> exact model/Integration/two-policy/definition selection and rationale | Profile selects supported intent; Scenario binds actual project inputs. Required unavailable definition remains an open domain obligation, not an invented Library capability |
+| Form / DE-WF-LAYOUT | Selected definitions + actual repo facts/confirmed intent -> repo-specific SysML architecture and document-role layout, source and Org locators | New project occurrence has its own identities/capture. Preserve actual versus target, pending evidence and unresolved real roles. No serialized runtime Scope/private receipt is trusted |
+| Views / products D01-D10 | Identified model structure and exact Org rationale/content -> documentation navigation and selected D2 diagrams | Views do not rewrite model relationships or issue evidence. Later code/method/QNT/Lean/content checks consume real project basis through P3-P9, not generated success flags |
+
+Library definitions must be inspectable before reasoning: their supported descriptors,
+applicability rules and required duties constrain the candidate. The main sequence's
+SysML Library step is actual selection/instantiation after reasoning, not hiding the
+rules until then. The return edge carries missing concepts to LLM/user for explanation,
+revision or genuine Library authoring; no guessed threshold becomes a trusted rule.
+
+Scheme remains the intended checked POO/Yuanxu runtime entry/orchestration boundary
+for prepared candidate values and actual operations. The conversational LLM is the
+proposal author outside that trust boundary. This model adds no replacement loader,
+reasoner, framework schema or public callback that can approve arbitrary proposals.
+
+* Structural organization and each source of meaning
+:PROPERTIES:
+:CUSTOM_ID: organization-ownership
+:END:
+
+| Owner | What it owns / what other artifacts reference |
+|-------+-----------------------------------------------|
+| POO/Yuanxu Library declaration | Contract identity, sole contract-version V1, model/policy/parameter/method definitions and actual checked publication. SysML refers to these; it does not mint a second runtime declaration/version |
+| SysML Library | Reusable architecture/part/interface/requirement/allocation/view definitions and supported interpretation associated with those declarations. Domain coverage must actually exist; the standard SysML library alone is not network/distributed knowledge |
+| Current repo SysML model | Repo-specific identified architecture and organization relationships. This first file explicitly authors dependencies/trace allocations and workflow order, keeping documented baseline and proposed targets separate |
+| Org | Authoritative prose requirements, rationale, alternatives, status, reviewer discussions and exact source locators. Prose clauses remain here; a dependency arrow does not replace their meaning |
+| D2/SVG | Selected presentation of named model nodes/relationships; updated and inspected together. This first projection is maintained explicitly, not an implemented automatic model-to-D2 service |
+| ASCENT | Qualified deterministic consequence/coverage view for actual input facts and rules. Early design-reasoning view is distinct from later evidence-backed Q; mapping into an actual Program/Session remains implementation work |
+| Aitia / receiver | Independent content/context/currentness, accepted authority and own receiver/project use. Authored workflow, structural checks or user intent confirmation cannot supply these outcomes |
+
+An assertion has one owner per meaning: relationship structure in SysML, rationale
+and prose clause at its Org selector, runtime declaration at Library, observed evidence
+at its issuer. Conflicts are retained for resolution, not silently resolved by whichever
+file changed last. There is no format that owns all truth and no blanket conversion
+of every hyperlink into a required dependency. Exact demand/reference closure still
+comes from adopted policies and actual capture.
+
+This refines DE-D02's model/view organization direction without claiming an authorized
+replacement decision. Earlier Org/D2 baseline remains historical content; current
+structural counterpart and open synchronization limits are declared here. No directory
+or earlier signed/hash-bound dossier is changed. Migrating every past table or generating
+all views requires a separately qualified adapter; this first model is a bounded start.
+
+* DE-CASE-01 authored model contents and locators
+:PROPERTIES:
+:CUSTOM_ID: case-model-bindings
+:END:
+
+The model is [[file:10.78-case-organization.sysml][10.78-case-organization.sysml]], package DECaseOrganization,
+with stable existing project IDs. Nested package names are structural, not versions.
+
+| Package / stable subject | Current representation and authoritative explanation |
+|--------------------------+-------------------------------------------------------|
+| workflow / DE-WF-* | Eight formation artifacts plus RepoArchitectureFormation action definition, explicit successful order and dependencies for candidate basis, Library rules, selection/layout and feedback |
+| actual / DE-E01-E13 | Documented source responsibilities from [[file:10.33-case-actual-and-target-architecture.org::#case-actual-elements][actual elements]]; not a new execution claim or complete fresh source audit |
+| boundaries / DE-I01-I12 | Boundary records with original endpoint/contracts/limits; selected baseline dependencies and explicit capture-boundary endpoints. Not all I usages are modeled as typed executable SysML ports yet |
+| target / DE-T01-T07 | Proposed changes allocated to existing owners; none is relabeled implemented by inclusion. T07 now has a first organization artifact, not complete lossless projection or executable adapter |
+| external / DE-X01-X06 | POO, Core/Yuanxu, ASCENT, Aitia, tools and custody. Historical baseline names are explained with current package/API qualification in 10.76/10.77 |
+| requirements / DE-R01-R06 | Named requirement usages with original Org clause refs; no satisfy/assert-satisfy claims |
+| products / D01-D10 | Artifact roles with exact current Org selectors; one section may serve several roles. Product existence/locator is not semantic adequacy or accepted review |
+| decisions / DE-D01-D05 | Stable decision nodes and requirement links; actual rationale/alternatives/roles/revision/reopen conditions remain in [[file:10.30-current-repository-engineering-case.org::#case-decision-allocation][decision records]] |
+| assumptions / DE-A01-A08 | Existing declared premise/limit nodes; a2/a6 expose the capture/receiver impact chain. No global true flag or invented effect estimate |
+| obligations / DE-O-ARCH,DOC,DEC,TRACE,REVIEW | Planned verification usages with requirement objectives; no implementation body, run, evidence or verdict. A verification objective specifies work, not proof that it completed |
+| organization / DE-ORG-* | Library/Profile/Scenario, SysML/Org/D2, ASCENT/Aitia/receiver owner roles. Roles are responsibilities, not named assignees or grants |
+
+Selected impact path is boundaries::captureBoundary -> target::oneCapture ->
+decisions::oneCaptureAndScopedEvidence -> assumptions::a2, corresponding to
+DE-I04/DE-T03/DE-D04/DE-A02 with actual lifecycle/method/evidence endpoints. A real
+change still requires qualified observation and current-use/authority handling from
+10.75/10.77; these model dependencies do not authenticate an impact event.
+
+The product locators materialized in the model are:
+
+| Role | Org content locator |
+|------+---------------------|
+| D01 | [[file:10.30-current-repository-engineering-case.org::#case-design-review-scope][D01 brief and scope]] |
+| D02 | [[file:10.26-backpressure-public-contracts.org::#backpressure-public-contracts][D02 composition]] |
+| D03 | [[file:10.31-architecture-document-and-decision-contracts.org::#case-content-binding][D03 Scenario capture plan]] |
+| D04 | [[file:10.33-case-actual-and-target-architecture.org::#case-architecture-models][D04 architecture model]] |
+| D05 | [[file:10.30-current-repository-engineering-case.org::#actual-case-decisions][D05 decision records]] |
+| D06 | [[file:10.31-architecture-document-and-decision-contracts.org::#content-obligations-and-evidence][D06 obligation ledger]] |
+| D07 | [[file:10.34-case-design-review-dossier-draft.org::#case-evidence-inventory][D07 evidence inventory]] |
+| D08 | [[file:10.30-current-repository-engineering-case.org::#case-decision-reconsideration][D08 repair and negative record]] |
+| D09 | [[file:10.34-case-design-review-dossier-draft.org::#case-draft-review-questions][D09 query explanation]] |
+| D10 | [[file:10.34-case-design-review-dossier-draft.org::#case-product-input-bindings][D10 dossier draft]] |
+
+* OpenSysML use and actual static diagnostics
+:PROPERTIES:
+:CUSTOM_ID: model-diagnostics
+:END:
+
+OpenSysML supplies SysML v2 language diagnostics/model services; it is not another
+LLM. Research checkout .data/OpenSysML remains at
+188f222055755fa9deca1c1095e0727ed46f0628. Actual PATH executable used for this model
+is /opt/homebrew/bin/sysml, reporting v0.10.1, commit
+1c45b6e1749fc8adc9b82d4af22fbe180b56a0e2. These are different source/binary identities;
+no claim that this development checkout built the executable is made.
+
+The authored model passed static diagnostics with this actual invocation:
+
+#+begin_example
+timeout --signal=TERM --kill-after=5s 30s sysml -no-record-cache -strict -validate \
+  docs/10-19-design/10-architecture/10.78-case-organization.sysml
+#+end_example
+
+Result: package DECaseOrganization, no errors, exit 0. No object-specific validation,
+verification case execution, LLM generation, ASCENT program, property satisfaction,
+Aitia review, acceptance or delivery was run. Initial diagnostics rejected an unquoted
+reserved name and package paths using dot instead of ::; those authoring errors were
+corrected in the final model. This result proves only the supported static diagnostic
+scope, not lossless modeling, domain adequacy, actual role authority or automation.
+
+* Next executable boundaries and bounded completion
+:PROPERTIES:
+:CUSTOM_ID: formation-open-work
+:END:
+
+| Needed owner work | Current limit / future meaningful control |
+|-------------------+-------------------------------------------|
+| Intent/candidate adapter | No installed chat-to-Scheme orchestrator; actual confirmation provenance and proposed/observed separation need positive/wrong-repo/changed-intent controls |
+| Library catalog/rules | No complete network/distributed/GC SysML Library or candidate formation rules yet. Real declared applicability/input/role requirements must be authored by their owner; missing domain must remain visible |
+| ASCENT design projection | Existing framework seams only; no formation result was issued. Qualify exact Program/Session/required outputs and conflict/unknown/negative retention without confusing candidate view with evidence Q |
+| SysML selection/materialization | This authored case is the first instance, not a generator. Qualify supported definition/parameter/model mapping, unique IDs and refusal of unsupported/lossy constructs; no runtime receipt from metadata |
+| Org/D2 synchronization | Selected manually maintained projections pass static checks; complete deterministic extraction/render/diff and trace coverage remain future adapter work. Detect a changed model endpoint instead of silently keeping a stale diagram |
+| Downstream method/review/receiver | P0-P9 implementation/roles/custody/recovery gaps remain. After genuine project formation, actual same C drives method evidence/Q/R/authority and receiver use at their existing owners |
+
+The immediate authored output is a real SysML file, linked Org organization and a
+formation-first D2 view, with existing case identities preserved. No implementation,
+directory migration, package mutation, automatic code generation or actual external
+project/review/delivery is performed in this step.
+
+* Current repository is the first concrete formation instance
+:PROPERTIES:
+:CUSTOM_ID: current-repo-first-instance
+:END:
+
+[[file:10.79-current-library-project-formation.org][10.79]] starts with the actual confirmed idea to build this reusable Library,
+compares candidate organizations and specifies concrete ASCENT input/rule expectations.
+[[file:../../../project.sysml][Top-level project.sysml]] is the new structural entry; this chapter's model
+is its explicit companion. A separate hypothetical repo is not needed for this first
+instance. No formation-engine run or runtime acceptance is inferred from static checks.
+
+The executable declarative owner map and first bounded reasoning slice are tracked
+in [[file:10.80-declarative-project-formation.org][10.80]]. Its source-cohort and execution limits remain separate from this
+full automatic formation design.

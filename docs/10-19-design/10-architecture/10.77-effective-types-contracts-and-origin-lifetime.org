@@ -1,0 +1,362 @@
+#+TITLE: 10.77 P1 Effective Types, Contracts and Capture-Origin Lifetime
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.77
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+TODO: AUDITED SPECIFIED | QUALIFIED
+#+FILETAGS: :design:types:contracts:library:aitia:origin:lifetime:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.66-effective-types-and-contract-closure.org][Complete P1 field foundation]] | [[file:10.75-contract-consistency-and-refactoring-order.org][Whole-chain audit]] | [[file:10.76-dependency-build-load-and-normalized-handoff.org][P0 actual source and handoff]]
+
+* SPECIFIED Complete effective Contracts before construction and issuance
+:PROPERTIES:
+:CUSTOM_ID: p1-effective-origin-contracts
+:STATUS: Source/design and static documentation only; no implementation, package operation, acceptance execution, provisioning or actual delivery
+:END:
+
+This chapter unifies 10.66 with 10.75-10.76. Retain that complete field inventory,
+finite semantic domains and P2-P9 associations; the tables below refine their actual
+file/ancestry/field/current-use boundaries, not a reduced replacement schema. Public
+values remain ordinary POO objects, existing value Contracts and Aitia CLOS classes.
+Pure field/relational validation cannot authenticate acquisition, clock, signature,
+issuer, actual execution or permission. Actual expected source-bound operations do so.
+
+One C captures an actual acquisition occurrence and immutable meaning. Its original
+provenance, expiring verification receipt and later re-verification/current use are
+separate associated values. Fresh checking can preserve that C only when the original
+owner association and required current conditions are actually verifiable. No mutable
+current flag, second capture, seal renewal by editing timestamps or generic nonce/
+version/assumption registry substitutes for this boundary.
+
+* AUDITED Current upstream names, source changes and consumer gap
+:PROPERTIES:
+:CUSTOM_ID: p1-current-source-and-apis
+:END:
+
+Initial source observation: . HEAD 8044732d505f84e373119a70f947df00e1767300; ../poo-flow HEAD e20e93236ca7a04275d1293cdc9ce770401efd7f; ../poo-flow/core HEAD a6a7c9d2fca3ea2cb13e7bb287c232b6fd0e77ae; ../poo-flow/packages/lambda-aitia HEAD 87fb8f17c8ea7af5e553f3bd86140b3c5b1cab03; ../gerbil-ascent HEAD 71408ec3dc20510416ddbac9f5d4e8f5ed68b854.
+
+Core now declares package yuanxu with prelude :tao3k/yuanxu/prelude; ASCENT declares
+github.com/tao3k/yuanxu@45817d938961e2ad9ca90e1fd56ff843bb53541e. Flow still declares
+POO 0df023fd and ASCENT 0f99da9e; project declares old poo-flow-core. Actual checkout
+identities above and package links are separate from these declarations. This is a
+new observation after 10.76, not a rewrite of its historical pin observations.
+
+| Existing source | Current observed API / target dependency boundary |
+|-----------------+--------------------------------------------------|
+| [[file:../../../../poo-flow/core/types.ss][Core types.ss]] | Exports YuanxuType., YuanxuContract., YuanxuObjectContract., yuanxu-contract-admit, yuanxu-contract-validate and yuanxu-predicate-contract. Value-contract normalization still precedes classification/context checks; accepted evidence.candidate and validate's return are the subject to retain |
+| [[file:../../../../poo-flow/core/contribution/verification.ss][Core verification.ss]] | Now exports yuanxu-verification-adapter, yuanxu-verify, yuanxu-verification-valid?, yuanxu-revoke-verification!, yuanxu-verification-admission and yuanxu-verification-admission-valid?. Observed private issuer/receipt/interval/snapshot mechanics remain; rename alone qualifies no actual load or semantic operation |
+| [[file:../../../../poo-flow/core/module-system/source/link.ss][link.ss]] / [[file:../../../../poo-flow/core/module-system/source/publication.ss][publication.ss]] | Source/import names changed; Context admission result, required-edge binding and final pre-admission scope still have 10.76 handoff gaps. Current Context predicate normally preserves identity; nonidentity qualification needs real owner seam |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/abstract/types.ss][abstract/types.ss]] / [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/types.ss][rust/types.ss]] | Still import :core/types poo-flow-predicate-contract and expose predicate/slot/procedure-presence contracts including old ResourceNative names. Direct migration to actual qualified Yuanxu Types/API is P0/P1 work; do not add aliases or new Native names |
+| [[file:../../../scenarios/resource-lifecycle/types.ss][Scenario Types]] / [[file:../../../modules/resource-evidence/types.ss][Evidence Types]] | Still consume old Core/project contracts. Compose complete owner fields and actual expected Function/Scope checks after P0 migration, not a parallel Type framework |
+| [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/types.ss][Aitia Types]] / [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/objects.ss][objects]] / [[file:../../../../poo-flow/packages/lambda-aitia/modules/sdlc/review-authority.ss][authority]] | Still import old :core/poo-clos and/or call poo-flow verification APIs. Seven-purpose base with object? facts and standard pass/fail evidence remain. Coordinate genuine current class/model/verification imports and all consumers; source leaf presence is no installed compatibility guarantee |
+
+Against the preceding P0 cut, selected changes include Core types, verification,
+graph algorithms, Ops Types, source declaration/objects/publication/reader/link,
+issued-read test, package declaration and Flow clue-exchange. Actual APIs must be
+re-audited at their owner; no semantic parity of uninspected changes is assumed.
+Earlier poo-flow-* spellings in 10.66/10.75/10.76 are historical references, not a
+compatibility route or recommended new import. P0 must reconcile package identity,
+prelude/import namespace, exact export/collection/build/load and all actual consumers
+before a positive P1 runtime claim. No implementation/package change occurs here.
+
+Historical dossier recheck retains all 138 catalog rows and their original hashes.
+Two additional current mismatches are EXT05 (Core verification.ss, old
+e190bcb2d426f9d730d172facd417011b669c0c647e15b7db3056bf0b5b8456c ->
+515f049d6bfbcb7af662b9c69d28c8738f68f50aec007c842ad40f60482bb590) and
+EXT06 (selection/init-syntax.ss, old
+ce33358d239eb330602f5f52dfcb2b53e708dc9886fb3be403b249f946caf3ff ->
+d658116517d6650eeac5d2e281f1f0e913323c09ae5ae792bb8b08f8ef8d04c2). Thus the current mismatched/unavailable set is
+24, following the earlier 22-entry observation; original catalog hashes and earlier
+observations remain unchanged. This is source drift evidence, not a failed runtime
+acceptance run, and never licenses refreshing old hashes to make the dossier current.
+
+* SPECIFIED File owners and inheritance graph
+:PROPERTIES:
+:CUSTOM_ID: p1-files-and-inheritance
+:END:
+
+| Owner / existing files | Complete target and allowed dependencies |
+|------------------------+------------------------------------------|
+| Library abstract/types.ss | BackpressureDeclarationContract and shared model/policy/value/ref/claim/premise/check/impact/strength/demand/input/acquisition/origin/current-use Types. Depends on actual qualified POO/Yuanxu Type/ObjectContract primitives only; no objects/Config/Aitia/Scenario/runners |
+| Library rust/types.ss | Fixed Generic/Rust/Integration and coding/design policy refinements, parameter/runtime/mapping/delta/asset/capability/Function/Scope expectations. Consume abstract fields once, never copy its version or normalize project authority |
+| Library objects/config/interface | Author and validate actual declaration/model/policy/parent/config/operation values and retain returned candidates/wrappers. No real principal/grant/result in Library definitions; P1 is not method implementation or publication |
+| Profile + Scenario types/func/interface | Profile intent/checked selection; Scenario project demand/acquisition/basis/C/current-origin request/use/authority/delivery input composition and operation signatures. Actual source-bound origin recognition stays at operation owner, not common data Type |
+| ResourceEvidence types/func/interface | P5 closed primitive rows/projection/request/Q/Function maps and independent D/K; retain actual C/W/U origins without inventing a public issuer or duplicate policy schema |
+| Aitia sdlc/types.ss | Neutral review/history/grant/disposition/exception/reassessment/withdrawal/delivery/receiver CLOS classes, shared bound/identified fields and exact purpose/action/stage/phase expectations. References foreign claims/strength through qualified associations; no import of backpressure Types |
+| Aitia objects/review/authority and verifier/Host owners | Owned constructors and pure relation checks; actual verification, roles/status/custody/current use at explicit operation boundaries. Move existing history classes once if centralizing; keep one CLOS identity, no duplicate class declarations |
+| Aitia standard-specific Types/verifiers | Existing genuine standard/clause/pass-fail semantics and narrow operation allowlists. Do not make generic review a fake NASA criterion or broaden old inherited predicates only in a child |
+
+Model shape reuse is not published value ancestry. Generic/Rust/Integration Contract
+refinements are siblings of the shared model shape so Rust does not inherit Generic's
+fixed identity/parent=false constraint. Actual values retain Generic -> Rust ->
+Integration immediate parents. Coding/design policy Contracts are siblings of common
+policy shape, parent=false, distinct identities and applicable purposes; combining
+policies changes neither model chain nor grants. POO primitive Type dispatch remains
+upstream; Yuanxu adds evidence/context obligations; Aitia classes retain real CLOS
+ancestry/effective-slot conjunction rather than a second schema DSL.
+
+Effective allowed/required fields derive from all admitted parent declarations plus
+supported local fields before closing. Conjoin inherited constraints; a child cannot
+silently loosen a parent's purpose/identity. Aitia neutral R/H/decision/phase facts
+compose SdlcBoundFact + SdlcIdentified, not SdlcEvidence standard/requirement/pass-fail.
+Use actual effective metadata including exact framework marker, not a second copied
+name list or wildcard percent-prefix exemption. Reject unknown semantic names before
+demanding their getters; bounded typed recursive references are checked by selected
+relation semantics, not blanket rejection of legitimate product-reference cycles.
+
+* SPECIFIED Sole generation, shared fields and complete receiver maps
+:PROPERTIES:
+:CUSTOM_ID: p1-fields-and-generation
+:END:
+
+The read path is actual checked Scope -> expected role descriptor -> admitted
+BackpressureDeclarationContract -> contract-version V1. Only abstract/types.ss owns
+the family generation constraint; other role descriptors reference that declaration.
+Policy semantic revision, project/dirty/source/build/load identity, product revision,
+input/native generation, clock interval and status epoch remain separate fields.
+Org/D2, package manifests, namespaces, Profile and Aitia neither assign nor override it.
+
+| Existing target Contract / record group | Required complete fields / pure invariant |
+|----------------------------------------+-------------------------------------------|
+| Declaration/model/policy/parameter/Scope | All 10.66 role/identity/family/immediate-parent/declaration-ref/rules/dependencies/lifecycle/mapping/delta/assets/parameters/Config/export/capability/method-Contract fields. Exact expected values/Function wrappers, full inherited map and policy applicability; no result or actual grant |
+| Selection/Profile | Actual checked Scope/model/Integration/immediate parents/two policies/expected descriptor/source/semantic refs, one normalized parameter child, claim/criterion/product/intended-use demand. Selection cannot delete inherited requirements or choose another validator |
+| Typed reference/input/demand | identity/kind/role, actual owner/source/cut/subject/revision/scope, role/occurrence/multiplicity/expected Type/required basis/access/limits. Demand derives independently before results; missing represented explicitly, not absent=empty/pass |
+| Claim/premise/check/impact | Exact proposition/polarity/domain/claim-kind/strength/coverage, premise basis/check capability/required data/model/measurement/identification; actual check findings and impact refs have their own origin/cut/uncertainty. No global assumption truth or event label authorizing action |
+| ResourceCapturedUseContract C | Occurrence/identity, actual selection/Scope/parents/policies/project/dirty source/products/environment/tools/mandate/acquired input basis and typed gaps, immutable original acquisition/origin association. No future A/E/W/Q/R/decision/status appended to captured meaning |
+| ResourceMethodApplicationContract A | Same actual C, expected capability/Contract/operation/source, bounded claims/unit/subject/domain/mode/parameters/strength, complete inputs/premises/derivations/upstream/control/limits. Actual fresh origin verification is a later call input, not a new C field mutation |
+| ResourceMethodAttemptContract E / group G / Observation | Actual A/G, ordered acquisition/derive/build/run/check, final launch executable/argv/cwd/env/limits/source/load/wait/artifact/log/result refs; exact semantic/control/validation dimensions, full footprint and observer/validator/issuer origins. Planned launch is not observed E |
+| Original private W / target U | W keeps original C0/A0/E0/G/claim/polarity/domain/basis/strength/accepted observation/issuer. U binds actual target C/A/K/claim/demand, full premise/strength/footprint/origin compatibility and fresh verifier/source/status/clock/current-origin-use association. Shape does not mint W/U |
+| Q / R | Q actual accepted program/source/result/request/completion/required D/K/full named rows/gaps/counters/conflicts/limits; R freezes exact C/Q/policy/project/products/roles/trust/criterion basis before requests. Subsequent origin-use/receipt/assessment outputs are separate refs at their own cut |
+| H/grant/decision/exception/reassessment/withdrawal | Exact C/Q/R/project/policies and independent required history/source lineage; real principal/root/delegation/quorum/action/target/stage/conditions; actual acceptance/inclusion/current use. Repair and supersession keep negatives, withdrawal dispatches to actual target owner |
+| Delivery/receiver phases | Payload finalized C0/Q0/R0/prior decision/publication/typed product closure/recipient/purpose/access/status descriptors; later distribution/transfer/ack/verification/receiver C1/Q1/R1/adoption/exact operation use. Expected Type fixes phase, future output is never self-input |
+
+Shared claim-kind remains content, execution, model-property, conditional-theorem,
+empirical-causal, model-counterfactual, provenance at Library shared Types; Aitia
+consumes qualified strength descriptors without importing/copying the domain enum.
+Keep execution not-started/refused/completed/tool-failure/timeout/cancelled/drift/
+interrupted/unknown-completion; validation accepted/rejected/incomplete; conclusion
+holds/refuted/undetermined; control met/failed/not-applicable with real no-control
+basis; use eligible/ineligible/unestablished at exact cut. Raw outcomes and limits
+remain alongside these values. Distinct evidence kinds are not a confidence ranking.
+
+* SPECIFIED Same C: original origin, interval and re-verification fields
+:PROPERTIES:
+:CUSTOM_ID: p1-origin-lifetime-fields
+:END:
+
+The following are complete refinements of existing acquisition/origin/current-use
+field groups, not a public registry or new generation. Field names specify target
+slots for implementation; current Core receipt field names are observed below.
+
+| Value / lifetime owner | Required field group and validation boundary |
+|------------------------+---------------------------------------------|
+| Owned acquisition basis / Scenario | occurrence-ref, selection/producer/reader/source-generation refs, acquired input/product/mandate/gap values and actual operation/result/guard refs, canonical basis and limits. Normalize before any seal; no origin receipt inside its own input snapshot |
+| Original origin assertion / actual Scenario owner | exact basis/occurrence/expected producer-source and original qualified acquisition association; assertion/snapshot identity and actual trusted operation. Core checks snapshot equality, actual owner independently recognizes acquisition/source; arbitrary C-shaped input cannot be sealed |
+| Core receipt presentation / Core private issuer | Current fields identity, issuer, issued-at, expires-at plus genuine original adapter/receipt association. issued-at and expires-at are exact nonnegative integers with issued-at < expires-at; valid interval [issued-at,expires-at). Public equal fields do not recreate private storage |
+| Final C / Scenario | normalized immutable basis-ref + original origin-ref/receipt association and declared provenance/clock/lease limits. Final admission preserves sealed meaning and actual occurrence. Later re-verification is not patched into C |
+| Origin re-verification request / Scenario operation data | exact original C/basis/occurrence/origin, expected source-bound operation/adapter, requested assertion, retained acquisition/support refs, applicable clock-domain/lease/required live source guards and limits. Candidate cannot choose verifier, clock or own renewal interval |
+| Origin verification observation / actual owner | new observation/operation/attempt ref, same original C/basis/occurrence/origin; actual new receipt/issuer association, observed clock-domain/instant/interval/source-cut/status/check refs, result/diagnostics/limits. Original receipt immutable, rejected/no-spawn attempts retained |
+| Current-origin use / later consumer | exact C and original origin plus actual original-still-valid or new verification observation; target operation/request/assertion, actual required source/role/premise/status checks/instant/lease/expected owner and result. This later value is consumed separately at method/final issuance/review/use boundary |
+
+A new verification observation is not a new acquisition. Reverify same occurrence
+only through the actual qualified owner retaining independently checkable original
+acquisition/basis/source association. Verify that assertion with the current Yuanxu
+adapter/verify/valid? operation; a registered adapter alone is not trusted, the actual
+expected operation source/Host is. Operation must return exactly #t and pre/post owned
+snapshots must agree; actual native/external guards still supply required stability.
+Snapshot equality alone proves neither universal ABA absence nor historical IO truth.
+
+No general renewal API is assumed implemented. Successful actual re-verification
+creates a new receipt/observation with actual now/until selected by trusted Host;
+it does not extend or revive old receipt, change captured meaning, restore revoked
+authority, rewrite R/Q or create a second authoritative C. Normalize later observation
+and call inputs retaining genuine issuer association; if transformation changes sealed
+assertion meaning, refuse/reverify appropriately, never patch after checking.
+
+Expiry alone does not change historical acquisition or captured meaning. It blocks
+current reliance on that receipt. If retained original association cannot be verified,
+report unestablished/expired/unavailable use; real reacquisition has appropriate new
+occurrence/C, and foreign assertion verification has a new local origin/target binding.
+Process loss, restored bytes or JSON cannot reconstruct original private issuer. Same
+normalized presentation of original meaning can be supported only with actual qualified
+association; neither raw eq? nor equal printed IDs is the general origin rule.
+
+Long methods need actual prelaunch/checkpoint/final guards under qualified operation
+clock/source semantics. If current gate fails after execution, retain A/E/raw outputs
+and exact workload origin; issue no positive W/use by pretending lease covered the
+whole envelope. Fresh verification does not re-observe/rerun workload. Core admission
+indexes its supplied fixed instant, never a moving clock. Known source/role/premise
+invalidity blocks affected use regardless of still-valid historical seal or failed P5
+transaction. Captured meaning change requires new C, technical view change new Q/R,
+status-only refresh a later H/use; no output goes into its own sealed input.
+
+* SPECIFIED Finite purpose, action, stage and phase domains
+:PROPERTIES:
+:CUSTOM_ID: p1-purpose-action-domains
+:END:
+
+Aitia sdlc/types.ss owns one twelve-purpose domain. Existing seven plus five target
+additions must migrate with every actual request constructor/verifier/snapshot. Each
+operation fixes expected request/facts/purpose before candidate dispatch and explicitly
+refuses unsupported purposes. Inherited CLOS constraints conjoin; widening a subclass
+cannot bypass the base. No capture-renewal/causal/withdrawal/provisioning purpose is added.
+
+| Purpose | Exact supported route / expected facts |
+|---------+-----------------------------------------|
+| criterion-content | Genuine adopted standard criterion and its standard facts |
+| classification-and-context | Genuine standard context/classification facts |
+| tailoring-decision | Genuine standard tailoring/authority facts |
+| structured-inventory | Genuine standard inventory facts |
+| certification-decision | Genuine certification/authority facts |
+| history-discovery | SdlcReviewHistoryRequest -> SdlcReviewHistoryFacts, or separate supported standard route |
+| disposition-approval | SdlcReviewDispositionRequest -> SdlcReviewDispositionFacts, or separate supported standard route |
+| review-context | SdlcReviewContextRequest -> SdlcReviewContextFacts |
+| review-content-inventory | SdlcReviewInventoryRequest -> SdlcReviewInventoryFacts |
+| review-content-criterion | SdlcReviewCriterionRequest -> SdlcReviewCriterionFacts |
+| delivery-inventory | SdlcDeliveryInventoryRequest -> SdlcDeliveryInventoryFacts |
+| delivery-provenance | SdlcDeliveryProvenanceRequest -> SdlcDeliveryProvenanceFacts |
+
+| Action | Exact target kind / allowed meaning |
+|--------+-------------------------------------|
+| review | review-binding; scoped approved/rejected/deferred disposition, not distribution |
+| exception | criterion; bounded retained unmet duty/risk/mitigation/expiry, not truth |
+| supersession | decision or exception; exact accepted predecessor/compatible scope/authority, acyclic and negatives retained |
+| withdrawal | receipt, evidence-use, grant, decision, exception, publication, adoption or owner; exact target/real owner/effective scope/actual dispatch result |
+| distribution | manifest; final payload/recipient/project/purpose/current accepted authority |
+| adoption | publication; receiver own C1/Q1/R1/H and actual mandate/current decision; prior host mandate governs provisioning |
+| use | operation; exact principal/project/purpose/target/owned inputs/current conditions and actual effect authorization |
+
+Conclusions are approved/rejected/deferred, not property holds/refuted. Assertion
+stages proposal/accepted-inclusion/current-use fix distinct assertions within an allowed
+purpose. Review-stage/intended-use stay policy-constrained fields, not extra purposes.
+Payload/distribution/transfer/acknowledgement/verification/adoption/use are fixed by
+expected output Type, not a mutable phase switch. Authentic negative/defer/withdrawal
+may bind recognized incomplete basis only through explicit supported gap variants and
+actual target/source/authority checks; positive technical success is not a prerequisite
+to reject, and no missing Q/R may be forged complete. Repair/reassessment is a workflow,
+not an extra action. No blanket legacy standard reinterpretation is authorized.
+
+* SPECIFIED Validation order and normalized-return ownership
+:PROPERTIES:
+:CUSTOM_ID: p1-validation-and-normalization
+:END:
+
+| Ordered boundary | Actual retained value / owner limit |
+|------------------+------------------------------------|
+| Expected operation | Actual checked Scope selects expected Contract/class/Function/source/purpose/action/assertion/phase and supported domain. Candidate chooses no root/validator/clock/renewal adapter |
+| Effective names and primitive shapes | Derive allowed/required inherited metadata before value demand; reject extras/wrong ancestry, wrong enum/symbol-string/integer bounds and malformed nested variants. Empty demand requires real no-demand basis, not absent field |
+| Value normalization | Upstream validate over actual value-contract returns normalized root/nested values/Function wrappers. Consume them exactly once; no re-running normalizer to recover a discarded result or post-check payload patches |
+| Pure relation checks | Validate immediate parents/sole generation, exact C/basis/origin-observation/assertion/target joins, complete footprint/demand and no self-input dependency. Field predicates perform no file/clock/tool/issuer/history work |
+| Yuanxu contextual admission | yuanxu-contract-admit -> accepted validation evidence.candidate, with actual contextual responsibilities/diagnostics; yuanxu-contract-validate returns candidate. Core transports generic subjects; Library/Aitia own semantic constraints |
+| Aitia expected model | Actual qualified CLOS effective ancestry/slot predicates plus closed names and pure relations. Retain model-check return and checked nested values; check-model alone is not extra-field closure or trust authentication |
+| Publication/link/call | Checked Context before state, consumer requirement-evidence.candidate without provider rewrite, final scope-evidence.candidate. Preserve actual export/parent/Function/Contract/source coherence and current guards; three Core fixes remain P0 work |
+| Real origin/current use | Trusted Scenario/Host validates actual acquisition/clock/retained owner/receipt/source/status/premises, producing actual observation/use or refusal. Private original/new receipt association belongs to Yuanxu, not a copied field table |
+
+R/H/manifest/decision snapshot all meaning-changing positives/negatives/gaps/limits/
+role/source/clock/assertion associations in typed owned canonical values; finite set
+ordering differs from trace ordering, symbol differs from string. Framework annotations
+are admitted only by actual expected metadata. Genuine normalized equivalent meaning
+may share original issuer association where supported; any changed assertion needs
+new verification. No global object identity or hash-only rule replaces these checks.
+
+* SPECIFIED Implementation dependencies and remaining gates
+:PROPERTIES:
+:CUSTOM_ID: p1-order-and-open-gates
+:END:
+
+| Order / actual owner files | Required target work and advance condition |
+|----------------------------+-------------------------------------------|
+| P0 continuous / package declarations, actual imports/build/load and Core handoff | Reconcile current Yuanxu package/prelude/exports and ASCENT dependency, stale project/Aitia calls, transitive POO origins and three returned-candidate paths. Qualified source/compiled/reader evidence before runtime claims; historical names stay historical |
+| P1a / Library abstract/types.ss | Complete declaration generation/shared field algebra/effective metadata and acquisition/origin/current-use observation refinements; real POO/Yuanxu value Contracts, not ad hoc slots? schema engine |
+| P1b / rust/types.ss + Scenario/Evidence Types | Sibling role refinements and complete Scope/Function/selection/capture/application/use/row contracts; source-bound expected operations declared, actual recognition not encoded as structural flags |
+| P1c / Aitia sdlc/types/objects + standard consumers | Neutral effective class inheritance, fixed typed facts/requests and finite purpose/action/stage/phase constraints. Move history classes once, coordinate all old snapshot allowlists and actual current CLOS/verification imports |
+| P1d / pure relation/constructor owners | Owned canonical inputs and retained normalized nested/root/Function returns, original provenance versus later receipt/use joins; forbid circular outputs/unknown semantics before real effects |
+| P2-P8 / actual source/Host/issuer/publication/custody owners | Real method bodies, capture-origin/fresh verification and current-use/clock/read guards, full Q/R/H/phase/receiver/effect protocols; Type publication cannot substitute for them or publish required fake body |
+| P9 / actual bounded tests/oracles/loader | Complete per-instance source/compiled/cold/recovery/receiver mapping and independent expected outcomes, including interval endpoint/same-C/new-receipt/process-loss/final-failure controls. No implementation or acceptance run here |
+
+OJ01/BS08/BS09 retains effective Types/normalization; OJ11/BS01-BS05 current package/
+import/load drift; OJ02-OJ05 actual origin/method/Host/Q/review; OJ06 real roles and
+semantic contents; OJ07-OJ10 actual authority/recovery/receiver. Observed rename/API
+availability is not an automatic repair or execution pass. Keep historical catalog/
+failures and fixed heap/watchdogs; better causal/selective/cost outcomes remain research,
+while sound binding/invalidation/negative retention are correctness requirements.
+
+* SPECIFIED Prospective positive and matched negative acceptance
+:PROPERTIES:
+:CUSTOM_ID: p1-acceptance-controls
+:END:
+
+TC01-TC40 refine EF/CI/DH/BC/EV/AR/AU/DL/JT at document-qualified owner seams, not
+executed test counts. Each future instance names real file/API/expected Type/operation,
+controlled difference/lane/source/load/clock/cut and independent output/effect oracle.
+
+| Control | Positive / matched negative and required outcome |
+|---------+---------------------------------------------------|
+| TC01 | Actual Yuanxu package/import/export/loaded set qualified; old :core/poo-flow calls or mixed renamed producer cannot claim runtime parity |
+| TC02 | Complete inherited allowed/required fields derived before closing; child omitted ancestor fields or copied alternate slot list refuses |
+| TC03 | Concrete model Contracts are sibling role refinements; Rust inherits fixed Generic identity/parent=false refuses |
+| TC04 | Published value chain has exact immediate Generic/Rust/Integration parents; skipped/mixed family/foreign parent refuses |
+| TC05 | Two sibling policies remain separate declarations; policy appended to model ancestry or grants in Library refuses |
+| TC06 | Checked declaration owns V1 read through actual Scope; Org/manifest/Namespace/Profile duplicated generation refuses |
+| TC07 | Semantic/project/dirty/document/dependency/interval dimensions remain distinct; HEAD or schema label substitutes captured bytes/version refuses |
+| TC08 | Neutral Aitia facts compose BoundFact/Identified; pass/fail/standard inheritance forced onto pending/conflict refuses |
+| TC09 | One effective CLOS identity and expected ancestry retained; duplicated class or child-widened inherited enum refuses |
+| TC10 | Closed unknown names rejected before unknown getter demand; wildcard metadata/hidden semantic callback accepted refuses |
+| TC11 | Independent demand and bounded typed refs retain legitimate closure; offered subset erases required unit or product cycle is silently dropped refuses |
+| TC12 | Strength/domain/polarity/result axes stay separate; completed control/refutation or theorem promoted to property/empirical pass refuses |
+| TC13 | Actual immutable acquisition basis normalized before seal; receipt/future output recursively hashed into own basis refuses |
+| TC14 | Original C/occurrence/origin join preserves actual association; arbitrary C-shaped data/copied IDs/foreign adapter refuses |
+| TC15 | Core original receipt private association and exact interval established; equal public fields/edited issuer/timestamps cannot recreate authority |
+| TC16 | At issued-at receipt may qualify; at expires-at cannot; inclusive expiry/future time or caller-backdated instant refuses |
+| TC17 | Actual trusted Host selects clock/domain/lease with current guards; candidate now/until/clock/verifier cannot authorize |
+| TC18 | Same retained original occurrence gets real new verification observation; automatic recapture/modified C or old receipt extension refuses |
+| TC19 | New actual re-verification receipt binds same qualified basis; operation merely echoes public checked flag cannot issue |
+| TC20 | Old receipt immutable after expiry or revocation; fresh seal revives revoked receipt/withdrawn authority refuses |
+| TC21 | Missing original owner/support yields unavailable current use; restored bytes/process-loss/JSON clone cannot reconstruct original association |
+| TC22 | Actual reacquisition has new occurrence or imported assertion new local origin; new capture presented as same original acquisition refuses |
+| TC23 | Long workload checks actual prelaunch/final source/lease conditions; investigation timeout envelope assumed equal receipt lifetime refuses |
+| TC24 | Actual A/E retained when final issuance/use refuses; failure erases run or fresh verifier pretends rerun refuses |
+| TC25 | Core fixed-instant admission plus fresh actual use gates recognized; saved admits? used as moving clock/current permission refuses |
+| TC26 | Known source/premise/role invalidity blocks affected use; valid interval/failed projection restores eligibility refuses |
+| TC27 | Canonical snapshots own all meaningful positive/negative/limit/origin cells; mutable alias/omitted hidden semantic input keeps seal refuses |
+| TC28 | Twelve base purposes and exact request/fact pairs migrate together; unknown/wrong pair/new renewal purpose or child-only widening refuses |
+| TC29 | Every narrower standard operation explicitly refuses unsupported purpose; NASA unsupported case silently snapshots generic payload refuses |
+| TC30 | Seven action-target pairs with real stage/conclusion domain hold; repair action/arbitrary withdrawal target/approved equals property holds refuses |
+| TC31 | Proposal/inclusion/current-use and phase-specific outputs are distinct; verified proposal/phase flag promotes to accepted authority refuses |
+| TC32 | Authentic negative path uses explicit incomplete variant and real authority; missing Q forged complete/technical success required to reject refuses |
+| TC33 | Normalized root/nested/Function return retained once; raw receiver or repeated normalizer creates other wrapper refuses |
+| TC34 | Yuanxu actual validation evidence.candidate consumed; boolean acceptance or original precheck receiver substitutes refuses |
+| TC35 | Core Context/edge/final candidate with provider isolation coherent; wrapper workaround/raw provider.scope/cache pre-admission scope refuses |
+| TC36 | Aitia model check plus effective closed names/relations retain return; model? or shape/identity alone authenticates receipt/grant refuses |
+| TC37 | Final normalized basis still matches sealed assertion and operation; post-admission patch silently changes source/meaning refuses |
+| TC38 | C/Q/R/H and payload later outputs retain acyclic input lifetime; new receipt/decision/adoption inserted into immutable prior input refuses |
+| TC39 | Causal violated/missing/counter/restored checks preserve exact scope; missing identification equals zero effect or restored premise cancels denial refuses |
+| TC40 | Actual owner source/compiled/cold controls map to real TC evidence; static docs/renamed API/test grants/research speedup cannot close P1 runtime/case gates |
+
+No implementation, dependency mutation, method/model/ASCENT/verifier run, acceptance,
+provisioning, review submission, notification or actual delivery occurs here. Org lint/
+export and D2 render are static documentation checks only, not any TC runtime result.
+
+* SPECIFIED Agent candidate versus runtime Contract
+:PROPERTIES:
+:CUSTOM_ID: types-agent-formation-boundary
+:END:
+
+[[file:10.78-agent-sysml-project-formation.org::#agent-project-formation][10.78 Agent-driven formation]] defines the workflow.
+LLM candidates and early ASCENT design views select supported SysML definitions for a repo model; they do not create a genuine capture/private receipt or override Library declarations. Actual checked selection/capture and downstream Q/R/authority stay at their existing owners.
+
+* SPECIFIED A1 organization-family unification
+:PROPERTIES:
+:CUSTOM_ID: p1-a1-declaration-unification
+:END:
+
+[[file:10.83-a1-effective-declarations-and-contracts.org][10.83]] extends this design to the organization/formation Library, Module, Profile
+and Scenario. It explicitly refines the generation ownership described above:
+LibraryDeclarationContract in existing library/project-organization/types.ss becomes
+the single neutral V1 owner; BackpressureDeclarationContract inherits that metadata
+while retaining its own family constraints, alongside OrganizationDeclarationContract.
+The old proposed abstract/types.ss literal is replaced during coordinated refactoring,
+not copied. This is a target design adjustment; current implementation is unchanged.
+All complete origin/strength/policy/request constraints here remain applicable;
+10.83 specifies role-field migration, finite domains, binding and normalized returns.

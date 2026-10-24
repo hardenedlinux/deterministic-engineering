@@ -1,0 +1,346 @@
+#+TITLE: 10.85 A3 Application Fact Projection and ASCENT Reasoning
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.85
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+FILETAGS: :design:ascent:projection:contracts:evidence:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.81-declarative-chain-audit.org::#chain-audit-order][10.81 A3]] | [[file:10.82-a0-dependencies-and-normalized-handoff.org][A0 sources/handoff]] | [[file:10.83-a1-effective-declarations-and-contracts.org][A1 declarations]] | [[file:10.84-a2-project-selection-and-capture.org][A2 original C]] | [[file:10.70-ascent-projection-and-determinate-query-view.org][Full evidence Q design]] | [[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][D2]]
+
+* Result and implementation boundary
+:PROPERTIES:
+:CUSTOM_ID: a3-scope
+:END:
+
+A3 projects one admitted C and separately recognized current-use/findings into a
+complete application-controlled source batch, evaluates the actual selected ASCENT
+program, and returns an owned, bound consequence view. Every candidate, conflict,
+gap, invalidation and evidence limit remains inspectable. Declaration assertions
+and trusted observations have different sources and derivation paths. Neither an
+ASCENT result nor a structurally eligible model grants execution or review authority.
+
+This is the complete target for the formation reasoning boundary, coordinated with
+10.70's later resource-evidence projection. It does not replace that full C/A/E/W/use/Q
+contract or claim that a formation result is already Aitia-ready Q. Proposed relation
+changes and operation expectations below are design only: no implementation, package,
+model, inference run, acceptance or automatic orchestration is changed or executed.
+
+Source observation on 2026-10-21 still has Project HEAD
+8044732d505f84e373119a70f947df00e1767300 plus working-tree formation source; Core
+1107677e53b0c3096958edc83429ddf9f1e1257e, ASCENT
+18751d5c513fd7ae6e768f580866b9e1fb34d2d3, isolated Core
+44a99d45396d1a23e850105ffe8af442a61b2780 and POO
+0df023fd9e15192156935c971f0f1940028c5277. A0 API/source/build/load and A1/A2
+publication/capture qualification remain open, not assumed fixed by this design.
+
+The current program has 17 source names and 13 declared outputs. Its rule variable
+C denotes a candidate ID, not the capture C of A2. This chapter uses X for a candidate
+and capture-ref for captured occurrence associations to avoid that ambiguity.
+
+* Current files, real APIs and responsibility allocation
+:PROPERTIES:
+:CUSTOM_ID: a3-files
+:END:
+
+| Existing file / owner | Actual behavior and target adjustment |
+|-----------------------+---------------------------------------|
+| [[file:../../../modules/project-formation/func.ss][make-formation-program / reason-project-formation]] | Actual define-program and fresh native Session; public function accepts arbitrary replacements, checks only finished, and returns raw result. Replace that boundary with checked C/request/program/coverage association; retain native evaluator |
+| [[file:../../../scenarios/project-formation/func.ss][formation-inputs / Scenario Scope]] | Projects Library/Profile strings, not recognized C; separate input/run preparation. A2 acquisition stays Scenario-owned; make projection a private C-consuming helper with no ambient IO or recapture |
+| [[file:../../../modules/project-formation/types.ss][Module Types]], objects.ss, config.ss, interface.ss | Procedure-presence Scope and independent LR labels. Complete A1 operation/projection/view Types and bind actual method/program/schema/limits/source; no second rule catalog |
+| [[file:../../../library/project-organization/objects.ss][Library definitions]] / Profile | Publish independent role/product/duty/capability requirements and applicable policies/methods; Profile offers alternatives and plans. Neither directly mutates Session sources or issues evidence |
+| [[file:../../../examples/library-formation-output.ss][output helper]] / Project runner | Repeats output labels and accepts raw result. Consume the owned bound view and actual metadata; report complete named outcomes and retained input association, not matching counts alone |
+| [[file:../../../modules/resource-evidence/func.ss][ResourceEvidence]] / types.ss | Still uses obsolete evidence imports, flat usage/snapshot/scope/witness/checked relations and raw Session exposure. Migrate directly to its qualified rules and full 10.70 contracts; do not add aliases or make formation another evidence issuer |
+| [[file:../../../library/concurrency/resource-control/backpressure-memory/rust/methods.ss][Method/result owner]] | Existing registration mutates application evidence rows. Actual result recognition/issuance belongs here; application projection/Session replacement belongs to its consuming Module, not Library registration |
+| ASCENT [[file:../../../../gerbil-ascent/rules/declaration.ss][rules/declaration.ss]] | rule-module-program, rule-module-bindings and explanation are available; Program source-handles and relation metadata are actual executable inputs. Public labels are metadata, not complete application scope or a trust boundary |
+| ASCENT [[file:../../../../gerbil-ascent/program/session.ss][program/session.ss]] / [[file:../../../../gerbil-ascent/program/result.ss][result.ss]] | Native replace-sources! validates rows, evaluates a prospective engine and commits after completion/callback/checkpoint. Unnamed sources retain old rows; nested host cells need application ownership. Result APIs expose rows and execution observations, not a public application commit credential |
+
+Types use shared Library primitive/reference/demand/strength contracts and qualified
+ASCENT Types. Private pure preparation, encoding, validation and freezing functions
+remain in existing application func.ss; actual acquisition/origin/current checks stay
+with Scenario and source/issuer owners. No generic evaluator, mutable fact mirror,
+transaction scheduler, proof issuer or global handle/epoch registry is introduced.
+
+* Same C, actual program and complete input coverage
+:PROPERTIES:
+:CUSTOM_ID: a3-input-program
+:END:
+
+| Application input / prepared value | Complete association and validation boundary |
+|------------------------------------+-----------------------------------------------|
+| Reasoning request | Same original C/basis/occurrence and recognized origin, expected selected method/Scope/policy/model/plan, supported operation/domain, actual current-origin use and separate later findings where supported. Raw Profile, caller Session, callback or rules path cannot replace these |
+| Program binding | Actual checked rule-module/program from the bound implementation; Library method/source/semantic revision, rules/relations/source-handles/label map, predicate/provider/codec and load association, independent input/derived/output limits. LR01--LR08 metadata alone cannot select semantics |
+| Prepared projection | Normalized checked request, independent demand, primitive rows for every controlled source, typed reference encoding, row-origin/lineage association, source coverage and limits, expected output inventory. Retain checked roots/nested values and Function wrappers |
+| Coverage record | For every actual expected source handle: declared domain, whether accounting is complete, actual row set/count including empty, originating C field/qualified finding or explicit unavailable-role gap, dependency and owned-input footprint. Checked by trusted projection owner, not a self-certifying LLM coverage fact |
+| Accepted consequence view | Actual C/request/program/source association, actual successful returned finished result, complete detached named rows, capture/current-use cut and gaps/negatives/explanations/limits. Saved result is historical when current guards fail; no live Session getter masquerades as frozen view |
+
+Use one capture and one selected program binding per private Session. All source rows
+belong to that prepared request; no implicit mixing of projects, captures or method
+semantics through equal IDs. References encoded into primitive rows have an immutable,
+bounded association to actual admitted values in that prepared projection. This is a
+local codec, not origin authentication or a public registry; unknown/foreign handles
+refuse. Copy mutable strings/containers as required. Native row-spine copying is not
+ownership of arbitrary nested host objects.
+
+Derive mandatory roles/products/duties/coverage units and input multiplicities from
+selected definitions/policies before candidate offers or available outcomes. Each
+required input is represented by an actual binding or a permitted typed gap. Complete
+accounting may correctly conclude missing support; it does not mean every input was
+available or every requirement passed. Unsupported projection/reader domain prevents
+a complete claim; supported partial variants retain exact limitations.
+
+The application supplies every controlled source exactly once, explicitly empty
+when appropriate. Compare that set to actual Program source-handles and the expected
+application schema. Labels alone, table counts or finished=true cannot establish
+coverage. Coverage validation also checks joins/keys/required-unit expansion; merely
+listing every relation name cannot detect a deleted duty or swapped source row.
+Closed-world negation is sound only for the accounted declared finite domain. It
+never proves that an unobserved repository obligation or contrary finding does not exist.
+
+Fresh Sessions are sufficient for the current synchronous slice. If the same bound
+operation retains a Session for later current-use cuts, require qualified single-writer
+serialization and replace the entire application-controlled batch, including explicit
+empty current-status/use relations. Native reentry rejection is not a multi-writer
+lock. A different C, rule/schema/codec/predicate/provider meaning needs a new qualified
+binding/Session; changed captured method/selection meaning needs an appropriate new C.
+No update smuggles new proposals or definitions into an old sealed capture.
+
+* Current relation fields and target migration
+:PROPERTIES:
+:CUSTOM_ID: a3-relations
+:END:
+
+All target schemas are internal application relations using declared primitive cells;
+qualified refs resolve through the admitted projection association. They are not new
+public POO configuration records or an external fact-upload API. Rows are scoped by
+the single-C Session/request; repeating capture columns on every legacy row is not
+required. A capture relation plus the checked envelope makes that scope explicit.
+
+| Current source schema (17 names) | Target source and exact meaning |
+|---------------------------------+--------------------------------|
+| intent(project,basis); candidate(id,project,basis) | Preserve both with exact confirmed-intent/proposal-basis references and distinct project/selection association. Candidate original basis is not overwritten to match current intent |
+| project_layout(project,package,instance,catalog) | Refine to project_layout(plan,project,root-element,package,instance,catalog-ref); add candidate_plan(candidate,plan). Bind every candidate to one supported plan, allowing an explicitly shared plan |
+| proposed_owner(id,role,owner); proposed_product(id,product); proposed_duty(id,duty) | Preserve proposal semantics and original source/occurrence lineage. Allocation conflict remains a consequence; known required products/duties are independently sourced |
+| capability(id,cap,status) | Directly migrate to declared_capability(candidate,cap,status,assertion-ref). This is hypothetical offered status, with established/unestablished/stale and contrary assertions retained; never a trusted issuer row |
+| required_role(role); allowed_owner(role,owner); role_scope(role,scope); owner_kind(owner,kind); protected_owner(role,owner) | Preserve actual selected organization definitions and finite semantic dimensions. Protected symbolic allocation is distinct from the actual engine/review/receipt provider association |
+| required_product(product); required_duty(duty); required_capability(cap) | Preserve structural facets of the complete independently expanded demand. Do not author a second inconsistent demand catalog; link these facets to required units and their definition/policy sources |
+| role_layout(role,slot,type,reference); role_dependency(from,to) | Refine to role_layout(plan,role,slot,type,element-ref) and role_dependency(plan,from,to). Only join through candidate_plan and actual selected catalog; no cross-plan edge or implicit common mapping |
+
+The target adds the following scoped source families where required by the selected
+activity. Absent later evidence is explicit empty input plus corresponding demand/gap;
+no placeholder evidence or invocation is created. Use 10.70's complete evidence row
+contracts at the ResourceEvidence boundary; formation consumes qualified associations,
+not a second partial witness protocol.
+
+| Target relation / fields | Origin, key and completeness invariant |
+|--------------------------+----------------------------------------|
+| capture(capture-ref,occurrence,project,revision-cut,purpose,selection-ref,basis-ref) | Exactly one actual C association per Session. Values come from admitted C, never a supplied snapshot string treated as a seal |
+| required_unit(unit,duty,subject,claim,domain,strength,capability,definition-ref,policy-ref) | Finite independently expanded mandatory unit. Functional unit key includes semantic meaning; multiple duties cannot collapse by display label |
+| expected_input(unit,role,occurrence,expected-basis-ref) | Every required input role/multiplicity/adequacy bound before outcomes; use stable role identity plus occurrence, not an input list inferred from a witness |
+| input_binding(unit,role,occurrence,observed-basis-ref,acquisition-ref) | Actual recognized captured input binding with complete role/footprint association, or a projection_gap for that expected input. Differing logical reference/project roles stay distinct |
+| unit_projection(candidate,unit,structural-kind,item) | Checked applicability of independently required units to a candidate and its role/product/duty/capability facets. Cannot be deleted by the candidate to erase failed requirements |
+| projection_gap(target-kind,target,reason,input-ref,origin-ref) | Required unavailable/unstable/unsupported/malformed-domain limitation from its actual recognized owner or checked projection. Invalid raw encoding refuses, rather than becoming a plausible domain gap |
+| qualified_use(use,unit,witness-ref,claim,conclusion,strength,basis-ref,origin-ref) | Only an actual recognized current target-C use association from its issuer/consumer boundary. Exact subject/domain/complete footprint/premise/current checks precede projection; raw W or declared capability cannot populate this relation |
+| use_status(use,check-ref,outcome,status-cut,reason,origin-ref) | Exact admitted use/check and current-use outcome at that cut. Contrary, expired, withdrawn or unestablished findings remain separate; a different check cannot silently join as its positive result |
+| historical_reference(target,kind,source-ref,cut,limit-ref); trace_link(from-kind,from,to-kind,to,role,origin-ref) | Preserve historical reports and finite required definition/input/product/decision/evidence lineage. Historical link grants no current support; explanation must expose unresolved origins/limits |
+
+Shared claim/strength/footprint/premise/impact semantics remain the full 10.77 and
+10.70 contracts. Formation cannot discard their dimensions to fit a shorter row.
+Where the above qualified_use references those values, its associated owner-bound
+value must retain and validate the complete meaning. Actual A/E/W/input/premise/check/
+impact relations and recognition remain at their full ResourceEvidence/producer seam.
+No empirical causal estimator or proof checker is added to Datalog guards.
+
+* Derived consequences, declarations and trusted support
+:PROPERTIES:
+:CUSTOM_ID: a3-consequences
+:END:
+
+| Current output (13 names) / target view | Required derivation and retention |
+|----------------------------------------+----------------------------------|
+| conflict(id,role,reason); gap(id,kind,item) | Keep all current LR allocation/coverage findings. Target adds unit/input/trace links through its view, not a count-only summary; multiple reasons remain distinct |
+| role_support(id,role,owner); structurally_covered(id) | Structural declared allocation only, requiring independent demand, compatible owners and no structural gap/conflict/basis invalidation. This is not verified implementation support |
+| invalidated(id) | Retain intent/basis invalidation; expose reason and original versus expected basis through the owned view/trace. Do not delete invalidated candidate rows |
+| runtime_blocked(id); runtime_ready(id) | Directly rename in the target program to declared_blocked(candidate), declared_ready(candidate). Preserve their model-condition meaning; no compatibility alias presenting declared assertions as runtime acceptance. Historical receipts keep old names |
+| candidate_state(id,state) | Retain all applicable elaborate/conflict/gap/invalidated states. No last-state-wins reduction, best-candidate filter or positive majority erases contrary outcomes |
+| model_context(id,package,instance,catalog,project,basis) | Refine to model_context(candidate,plan,root-element,package,instance,catalog-ref,project,basis) through actual candidate_plan. Context eligibility follows explicit declared materialization semantics |
+| layout_node(id,slot,type,owner,reference); layout_edge(id,from,to) | Refine with plan association; structural support selects only that plan's nodes/edges/catalog elements. Preserve distinct required source refs and collision/closure findings for A4 |
+| product_node(id,product); duty_node(id,duty) | Retain independently demanded products/duties for eligible structural projection; obligations also remain in the full view for ineligible candidates |
+| qualified_support(unit,use,claim); qualified_counter(unit,use,claim) | Target derived support only from genuine compatible qualified_use plus eligible exact current check. Holds and refuted remain distinct, with actual basis/strength/footprint/currentness |
+| evidence_gap(unit,reason); evidence_conflict(unit,reason); use_blocked(use,reason) | Keep missing/unestablished/contradictory/invalid current support even if structural candidate is complete or a different witness supports the unit. No silent priority for green evidence |
+
+For each use, select its expected required check/status cut at the trusted operation
+boundary. Eligible current use needs that actual check, complete compatible footprint
+and required premise/strength basis, with no applicable blocking or contradictory
+finding for the same use. Missing status means unestablished, not eligible. Do not
+join one favorable historical check while ignoring the required newer check. Distinct
+valid positive and refuting uses can both remain recognized observations; their unit
+has an evidence conflict and cannot become an unqualified successful conclusion.
+
+LR01--LR04 and LR06--LR07 keep domain responsibility/structural/basis meanings.
+LR05/LR08 derive only declared condition outcomes after the explicit naming change.
+Adding trusted support is a separate admitted-input/rule path with its own required
+units and checks. A forged trusted? flag is rejected before projection, not interpreted
+as a new kind of support. A valid missing/negative use finding remains inspectable.
+An unknown status or unsupported semantic pair refuses at its expected Contract.
+
+A captured source assertion can support the narrow claim that this declaration was
+observed; it does not prove the declaration's proposition. A genuine capture-origin
+receipt proves only its precise operation assertion. A method witness proves only
+its bounded claim; QNT state exploration is not Rust refinement, and SysML language
+validation is not implemented architecture or review approval. Aitia authorization
+and runtime effects remain independent later owners.
+
+The structural baseline from 10.80 remains historical: eight conflicts, 34 gaps,
+nine role nodes, eleven edges and four open capability gates for LIB-C01. The old
+synthetic all-established control proves only the declared condition. Target tests
+preserve those structural semantics over matching declared inputs, while separately
+checking new origin/coverage/evidence outputs. Expanded schema/coverage does not
+inherit old counts or the fixed 4096 bound's adequacy without qualification.
+
+* Call boundary, native transaction and consequence publication
+:PROPERTIES:
+:CUSTOM_ID: a3-calls-transaction
+:END:
+
+| Stage / actual owning file seam | Target input -> output / failure behavior |
+|--------------------------------+------------------------------------------|
+| Scenario run / Module reason interface | Consume A2 C and exact request/current-origin use through admitted wrapped function. No Profile recapture or arbitrary raw replacement list. Bind actual selected program and supported source/callback semantics before execution |
+| Private preparation / Scenario projection helper and Module func.ss | Normalize request, derive independent demand, encode primitive owned rows and reference/lineage map, verify every controlled source/functional key/coverage join -> complete prepared value. No OS read, method run or issuer callback in pure projection |
+| Pre-execution use/currentness / actual owner | Check C provenance, selected program/source/Scope/clock/use eligibility at the required cut. If conditions changed, record refusal or reprepare only under permitted unchanged captured meaning; never patch C |
+| Native evaluation / program/session.ss | Call gerbil-ascent-session-replace-sources! with complete batch and trusted accept-result. Retain native bounds, stratified-negation semantics, execution-control and incomplete-result refusal |
+| Trusted accept-result / Module-owned pure check | Match all prospective source sets/fields to prepared batch, exact source/output schema, expected C/program/domain joins and complete bounded output extraction; return exactly #t. No external publication, Session reentry, new acquisition/verification or caller-supplied predicate |
+| Native final acceptance | ascent-accept-publication! is after callback and before engine/source adoption. Only a successful actual return can be accepted; callback-observed rows are private prospective data |
+| Freeze / Module value admission | Associate actual returned result with that prospective observation, detach complete rows and immutable lineage, retain expected request/C/program/current-use/source metadata, and admit the returned view. Do not invent public Session commit-ID/snapshot issuer APIs |
+| Report/render consumers | Consume exact bound frozen view and C/candidate/plan, preserving negative alternatives. A4 decides materialization/validation; full Q/Aitia integration additionally requires the complete 10.70/10.77 protocol |
+
+Where required, the actual operation performs its final current-use/source guard
+before exposing a current-use claim, and later consumers check their own effect
+boundary again. A native successful return cannot make that external condition
+permanent. Public view metadata or Type conformance alone is not producer recognition:
+consumers need the actual operation's retained accepted association, never a forged
+rows-of object or a digest presented as issuance. Missing qualified recognition blocks
+the trusted handoff rather than adding a project-local result issuer.
+
+Existing native result methods detach row spines; mutable payloads still require the
+selected primitive codec's ownership rules. Public relation metadata and rules/rows
+recorded explanation are useful diagnostics, not per-row proof or execution authority.
+The explanation function itself says recorded-only. Required trace links must connect
+actual projected origins and limitations; do not label a dependency list a causal proof.
+
+If callback, bounds, predicate, evaluation or final native checkpoint fails, publish
+no new application view. A retained Session keeps its prior accepted sources/result
+under the native contract; preserve failure diagnostics separately. If final view
+freezing/admission fails after Session adoption, do not claim native rollback: expose
+no half-view and retain the actual accepted native result with the application failure.
+No shadow fact database or generic two-phase commit engine is needed.
+
+The supported route is synchronous and explicitly bounded. Actor/async/parallel
+Session surfaces are not substitutes without their own negation/callback/serialization
+qualification. Program source predicates/providers/codec must have the recorded
+supported stable meaning; finished=true cannot excuse unobserved host IO or mutable
+callback state. Do not increase heap/time/fact limits or truncate rows to obtain pass.
+
+* Invalidation, refresh and retained history
+:PROPERTIES:
+:CUSTOM_ID: a3-invalidation
+:END:
+
+| Change / boundary | Required response |
+|-------------------+-------------------|
+| Current confirmed intent differs from candidate's original basis | Keep candidate/proposal lineage, derive invalidated and its reason; no materialization from invalidated alternative. A newly captured confirmed intent keeps old proposal basis rather than rewriting it |
+| Role/product/input/plan demand is missing or incompatible | Preserve independently required units plus exact gaps/conflicts. A deletion of catalog definition that makes the projection malformed refuses instead of making demand disappear |
+| C's captured selection, source meaning, policy/model/method revision or candidate/plan meaning changes | New actual selection/acquisition/C and program binding as required. Old result remains a conditional historical consequence, never relabelled current |
+| Origin lease/revocation, live source/status or qualified-use check changes with unchanged C | Block affected current reliance immediately at real owner; preserve C and old evidence history. Re-project complete fresh use/status/findings cuts only where actually recognized; do not union old eligible rows into current sources |
+| Premise/causal applicability is refuted, changed or unknown | Carry exact premise/check/impact and affected unit/use lineage from qualified owners; retain support and contrary findings and block invalid uses. No global assumption truth or minimal unaffected cone inferred without supported dependency coverage |
+| Refresh transaction fails after external invalidation | Native prior view may remain available historically, but its current use stays blocked by the live owner guard. Session rollback cannot roll back revocation or restore truth/authority |
+| Program/rule/schema/predicate/provider/codec/load source changes | Refuse stale binding, qualify new semantics and Session; bind an appropriate new C if captured method meaning changes. Same textual program ID/digest alone is not reuse proof |
+
+If impact/dependency coverage is incomplete, report uncertainty and conservatively
+revalidate/block the affected supported scope. Do not invent precise minimal ripple
+results or causal efficacy. Current-use freshness is separate from deterministic
+logical consequences of a fixed admitted batch. Old snapshots and negative findings
+remain at their original cuts even after successful repair/replacement.
+
+* Proposed implementation order and matched acceptance controls
+:PROPERTIES:
+:CUSTOM_ID: a3-controls
+:END:
+
+| Step / existing owner | Positive acceptance design | Matched negative control |
+|-----------------------+----------------------------+--------------------------|
+| A3.1 actual program/Types binding / Library, Module types/objects/interface | Expected method selects actual native Program/source-handles/rows/limits/metadata; normalized functions retained; no candidate-name branches | Foreign program, edited LR/output metadata, unsupported schema/predicate/source, caller Session/validator or mixed API cohort refuses |
+| A3.2 complete C projection / Scenario helper and Module func | Same C/basis/occurrence; every controlled source included, empty explicit; independent required units survive missing offers; owned primitive/reference lineage | Omit a source, duty and offered row together, foreign encoded ref, shallow mutable cell, hidden ambient acquisition or coverage declared only by count fails |
+| A3.3 candidate-specific plans / Profile, projection and rules | Shared-plan baseline and two legitimate distinct plans join only their own nodes/edges/context; renaming candidate preserves eligibility | Cross-plan edge/catalog/root context, duplicate functional key, default first-candidate selection or silent old-basis relabel refuses or retains exact semantic conflict |
+| A3.4 assertion/evidence separation / actual issuer/use owner and application rules | Synthetic established assertions affect only declared_ready; genuine compatible U/check supports exact unit; all counters/unknown uses remain | forged trusted flag/receipt, raw witness as current U, old check joined to new use, historical source or model-only readiness cannot yield qualified support/authority |
+| A3.5 complete outcomes / LR program and owned view | All candidates/required units/conflicts/gaps/invalidations/limits and trace links returned; two valid structural alternatives remain visible | Missing negative row, unexplained unit, last-state-wins collapse, positive-majority override, incomplete extraction or silent row truncation fails |
+| A3.6 native transaction / Module and ASCENT owners | Accepted full batch yields frozen bound returned view; qualified same-C refresh clears withdrawn eligibility with explicit empty sources | Malformed batch, bounds/timeout, callback non-#t/error, reentry, final-checkpoint failure or application freeze failure publishes no half-view; compare native rollback versus post-adoption failure correctly |
+| A3.7 invalidation/current-use / real source/premise/status owner | Origin/source/policy/use/causal applicability changes block exact affected uses; old C/results/negatives retained and genuine new cut associated | Old eligible row left by omitted replacement, stale view after failed refresh, source drift hidden by ID equality, recapture as currentness or Session rollback restoring external authority fails |
+| A3.8 independent semantics and declared entry / existing t files and runner | Independent finite reference cases corroborate consequences; real Scope entry consumes recognized C and exact returned view; preserve source/compiled/load route labels | Shared adapter/probe parity alone, historical exact-count receipt, logged pass generalized to unobserved route, incomplete process exit or A0/A1/A2 gaps cannot close runtime qualification |
+
+Allocate these future controls to t/project-formation-test.ss, its entry test,
+t/library-selection-test.ss and t/native-context-test.ss as appropriate; native
+batch/rollback tests remain at ASCENT and nonidentity Scope tests at Core. Tests
+must use independent expected domain cases, not a copy of production rule evaluation.
+Existing rename/missing-role/ambiguity/extra-duty/contradictory-capability controls
+remain useful but do not cover source coverage, trusted use or transaction closure.
+No tests or inference are run here.
+
+Implementation depends on A0 qualified sources/Scope/build/load, A1 full expected
+Contracts and real method/program metadata, and A2 genuine C/acquisition/current use.
+Source design can proceed before those runtime exits, but no synthetic fallback
+closes them. Keep existing 2 GiB / 120-second focused and 180-second build gates,
+and preserve old failures/partial receipts. Qualify actual finite fact budgets for
+the expanded program rather than assuming 4096 is sufficient or raising it to hide
+nontermination/coverage defects.
+
+* Open inputs and downstream handoff
+:PROPERTIES:
+:CUSTOM_ID: a3-open
+:END:
+
+Still required: actual A1 LR/catalog/method revisions and bindings, complete A2
+acquisition/recognized origin, exact supported source/row/output Contracts, evidence
+issuer/use/premise-check operations where selected, and qualified serialization/
+execution-control/load/current-use routes. No native public application commit-ID,
+cryptographic proof, universal provenance or arbitrary-repo absence API is assumed.
+
+A4 receives one bound immutable consequence view, same C, actual plan/candidate and
+explicit materialization policy; model generation cannot pick a different Library,
+read new unrecorded project inputs or treat qualified support as review approval.
+Later ResourceEvidence/Aitia consumes complete 10.70 Q, not an unbound subset of
+formation rows renamed Q. Whether these explicit consequences improve LLM architecture,
+causal decisions or review cost remains research, separate from sound projection,
+input closure, negative retention and correct current-use blocking.
+
+* A4 consumption of the accepted consequence view
+:PROPERTIES:
+:CUSTOM_ID: a3-a4-consumption
+:END:
+
+[[file:10.86-a4-sysml-selection-and-materialization.org][10.86]] specifies how materialization consumes the exact accepted view and C,
+selects a candidate under the captured policy, resolves plan/catalog/mapping and
+names, validates exact artifact/reference closure and requests explicit publication.
+No raw result or declared_ready row grants model validity or publication authority.
+This remains design-only; the accepted-view protocol here is not executed or changed.
+
+* Accepted-view producer consistency
+:PROPERTIES:
+:CUSTOM_ID: a3-coherence-followup
+:END:
+
+A4 consumes the actual successful Engine-produced frozen view bound to C, actual Program and complete source/result association. A copied accepted flag, typed record or row hash cannot establish this producer relationship. Unsupported recognition is an explicit blocker. Session prepare rollback, freeze failure after adoption and external status changes require separate state oracles; none authenticates or reverses the others.
+
+See [[file:10.88-declarative-slice-consistency-and-order.org::#coherence-findings][10.88 consistency findings]], [[file:10.88-declarative-slice-consistency-and-order.org::#coherence-controls][joint controls]] and
+[[file:10.88-declarative-slice-consistency-and-order.org::#coherence-order][implementation prerequisites and ownership]]. These are target commitments, not executed acceptance.
+
+* I4 complete projection and accepted-view follow-up
+:PROPERTIES:
+:CUSTOM_ID: a3-i4-followup
+:END:
+
+[[file:10.93-i4-application-projection-and-accepted-inference-view.org::#i4-inputs][10.93]] unifies same-C/actual-Program coverage and [[file:10.93-i4-application-projection-and-accepted-inference-view.org::#i4-sources][internal source fields]],
+adding explicit expected-use-check association and plan/edge provenance refinements.
+[[file:10.93-i4-application-projection-and-accepted-inference-view.org::#i4-consequences][Derived consequences]] preserve declaration/evidence separation and all negatives;
+[[file:10.93-i4-application-projection-and-accepted-inference-view.org::#i4-calls][actual native acceptance and frozen-view handoff]] retain the successful producer
+association. [[file:10.93-i4-application-projection-and-accepted-inference-view.org::#i4-controls][Controls]] are planned only; no execution, model promotion or new authority exists.

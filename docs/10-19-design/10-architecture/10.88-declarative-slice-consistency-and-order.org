@@ -1,0 +1,386 @@
+#+TITLE: 10.88 Declarative Slice Consistency Audit and Implementation Order
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.88
+#+OPTIONS: toc:3 num:t
+#+STARTUP: overview
+#+FILETAGS: :design:audit:contracts:scope:capture:ascent:sysml:
+#+PROPERTY: header-args :eval never :tangle no :exports code
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.82-a0-dependencies-and-normalized-handoff.org][A0]] | [[file:10.83-a1-effective-declarations-and-contracts.org][A1]] | [[file:10.84-a2-project-selection-and-capture.org][A2]] | [[file:10.85-a3-application-projection-and-ascent.org][A3]] | [[file:10.86-a4-sysml-selection-and-materialization.org][A4]] | [[file:10.87-a5-declarative-slice-joint-acceptance.org][A5]] | [[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][D2]]
+
+* Verdict and audit boundary
+:PROPERTIES:
+:CUSTOM_ID: coherence-verdict
+:END:
+
+10.82--10.87 describe a coherent target direction, but neither current code nor the
+joint acceptance is closed. The audit finds missing cross-boundary commitments:
+Scope must precede capture; declaration-to-implementation binding must not introduce
+a dependency cycle; the accepted inference view needs an actual producer association;
+and publication needs an expected state transition rather than an unchanged-input
+check on its own output. These commitments below qualify the earlier target plans.
+They do not rewrite historical receipts or imply implemented mechanisms.
+
+This is a read-only source audit and documentation update. No implementation/model
+change, package operation, build, inference, validator, acceptance run, review,
+publication, delivery or orchestration expansion is performed. Org/D2 syntax, links,
+exports and diagram rendering are document checks only. Correctness criteria and
+research hypotheses remain separate. None of the proposed control IDs is a receipt.
+
+The intended chain is:
+
+#+begin_example
+Project declared providers -> Core K1 / dependency SD / final S1
+ -> checked Library + Engine Scopes -> checked Profile + consumed Scenario Config
+ -> genuine project-input acquisition -> one immutable original capture C
+ -> complete C-bound projection + actual Program -> accepted frozen inference view
+ -> selected candidate / plan / catalog / mapping -> exact validated model bundle
+ -> separately requested, guarded Project publication -> observed publication outcome
+#+end_example
+
+C links to the already admitted Scopes. It is not an argument to their prior
+admission and cannot repair a raw Scope or unqualified loaded implementation.
+Likewise, an inference view or published root is a result associated with C, never
+an input inserted into the original C after the fact.
+
+* Current upstream cut and responsibility changes
+:PROPERTIES:
+:CUSTOM_ID: coherence-upstream
+:END:
+
+Read-only observation on 2026-10-21. These HEADs identify repositories, not a jointly
+qualified build/load cohort. Dirty source and actual selected dependencies matter.
+
+| Source | Observed HEAD / state | Consequence |
+|--------+-----------------------+-------------|
+| This Project | 8044732d505f84e373119a70f947df00e1767300; existing staged/working-tree formation work | Audit actual files, preserve unrelated work; do not equate HEAD with current formation source |
+| Adjacent Core | 1107677e53b0c3096958edc83429ddf9f1e1257e; 156 dirty/deleted paths at this observation | Changed since A0's clean observation although HEAD is unchanged; provider/test migration is still a working-tree cut |
+| Adjacent Flow | e20e93236ca7a04275d1293cdc9ce770401efd7f; 623 changed/untracked paths | Product provider and qualification ownership now observed here; no migration completion inferred |
+| ASCENT | 18751d5c513fd7ae6e768f580866b9e1fb34d2d3; modified migration audit and untracked Apalache output | No observed runtime-source change in this cut; generated output is not new qualification |
+| Shared POO | fdeadfa40ca5cee5fe20308985aef1577f2eb49b; ten changed/untracked paths including read-route.ss and manifest.ss | Read-route/observation work must be checked as actual source, not treated as an available qualified acquisition API |
+| Isolated formation Core / POO | Clean 44a99d45396d1a23e850105ffe8af442a61b2780 / 0df023fd9e15192156935c971f0f1940028c5277 | Still a separate :core cohort; source/compiled/load parity with adjacent :yuanxu is unestablished |
+| Local OpenSysML | Clean 188f222055755fa9deca1c1095e0727ed46f0628 | Checkout identity does not authenticate installed sysml executable or its loaded resources |
+
+These counts are observations, not a persistent freshness test. Freeze the selected
+source closure at implementation/qualification time; concurrent upstream work requires
+a new labelled cut. Do not replace old source hashes or dossier evidence.
+
+The Project's [[file:../../../gerbil.pkg][gerbil.pkg]] remains unpinned for poo-flow-core, gerbil-ascent and gerbil-poo.
+Adjacent Core declares package yuanxu, its yuanxu prelude and POO
+f956f4c68d7d996ef860a2633f4fb9b4e745bd0b. ASCENT declares yuanxu
+44a99d45396d1a23e850105ffe8af442a61b2780 while inspected Program/operators still
+import :core. The isolated Core declares package core and POO 0df023fd9e15192156935c971f0f1940028c5277,
+with the prelude discrepancy recorded in A0. Flow separately pins POO 0df023f and
+ASCENT 0f99da9e3a3baf1a272ba58fe0769ed8278ae746. Those declarations are not proof
+that the package links or compiled files use them. Choose and migrate one supported
+cohort directly; do not bridge this mismatch with namespace aliases or fallback loads.
+
+| Observed change / inspected path | Framework or product owner | Required adjustment to A0/A5 plan |
+|----------------------------------+----------------------------+------------------------------------|
+| Adjacent core/init.ss no longer selects nix, opentofu or null/aws-validation/aws Scenarios; Core provider/Scenario files removed and Flow modules/nix, modules/opentofu and Scenarios now present | Flow owns product policy, selections and providers; Core retains reusable selection/admission/build mechanisms | Resolve actual declared provider identity and dependency at its new owner. A formation-only route does not acquire a Flow dependency unless it actually selects a Flow product |
+| Flow modules/nix/build-publication.ss exports poo-flow-nix-restore-build-publication! and uses :yuanxu source/admission and building/artifacts | Flow owns Nix store verification/approved-source restore; Core owns build-artifact handoff/admission/invalidation | Keep provider-specific recovery tests at Flow, generic issuance tests at Core. Neither restores Scenario C provenance nor publishes SysML |
+| approved-build-recovery-test.ss and build-store-recovery-test.ss now found in Flow t/; AWS Context tests likewise | Flow product qualification, with Core generic fixtures still imported | Re-resolve imports, fixtures, selected module IDs and recipe ownership before scheduling acceptance; existence at the new path is not a passing migration |
+| Core module-system/building/test-observation.ss renames nix-process-start/end, nix-microseconds, nix-cpu-microseconds, nix-store-validity and nix-process-observation to package forms; Flow Nix func.ss emits package forms | Core generic observation vocabulary; Flow producer and relevant consumers | Coordinate producers, parsers and event expectations; keep scalar-only/trace/effect semantics. This does not establish a change to the Project link-stage-start/end observer |
+| Core types.ss, source/link.ss, source/admission.ss, building/artifacts.ss and contribution/verification.ss retain the inspected A0/A5 bytes | Core generic Contracts, K1/SD/S1, publication admission and verification adapter | Three discarded normalized-return paths remain open. Publication admission already retains its candidate; preserve that path. Unchanged files do not qualify the rest of the changed closure |
+
+Paths in this table are adjacent working-tree observations, not imports to add to
+this repo. Historical references to Core-owned product tests remain historical.
+Future executable entries must resolve at their actual current owner, including
+transitive fixtures and source/compiled paths, rather than retargeting old receipts.
+
+A final read-only comparison found Flow modules/nix/func.ss changed again during
+this audit. Reinspection still shows package-process-start/end,
+package-process-observation and package-store-validity emission. The other fourteen
+tracked upstream inspection files retained their initial bytes, including the three
+hashes below. This is a changing working-tree observation, not an atomic frozen
+cohort or proof of producer/consumer compatibility. I0 must obtain a fresh stable
+selected cut before build/load qualification.
+
+| Newly observed source cut | SHA-256 |
+|---------------------------+---------|
+| Adjacent Core init.ss | e8453a3d32df8e7f0c3af1224036d2964874056f1ac497bd5ee4a0bdfe7ba57b |
+| Adjacent Core building/test-observation.ss | da5acdd494b3f5388a13be4352efee44d638cb3f87c095400f21e679c02c24cf |
+| Flow modules/nix/build-publication.ss | 615337de360ba0bbc7a525363444e94130474295293372240aa2357491dea99d |
+
+* Contract and responsibility audit
+:PROPERTIES:
+:CUSTOM_ID: coherence-findings
+:END:
+
+"Specified" below means design coverage only. "Open" means required implementation,
+producer association or executable acceptance is absent/unqualified, not waived.
+
+| ID / documents | Retain | Cross-boundary correction / owner | Status |
+|----------------+--------+----------------------------------+--------|
+| CA01 / A0--A2 | K1=Context evidence.candidate, SD=consumer requirement evidence.candidate, S1=final Scope evidence.candidate | Core must return/use these exact normalized candidates; provider Scope is not mutated by consumer-specific SD. C retains source-qualified selection lineage only after admission | Open source gaps; target ordering clarified |
+| CA02 / A1--A2 | Sole V1 in LibraryDeclarationContract in library/project-organization/types.ss; family Contracts inherit; model value parents Generic -> Rust -> Integration | Sibling family/model shape Contracts must not inherit incompatible fixed IDs or parent=false. Identity, semantic revision, checkout hash and protocol wire tags remain distinct; Org/D2 only display the descriptor | Specified, unimplemented |
+| CA03 / A1--A4 | Library publishes model/policy/catalog/mapping definitions and method expectations; Module publishes actual implementations | Library references are inert expected identities/Contracts, not imports of Engine objects. Module consumes declared semantics; Scenario joins returned Library/Engine Scopes and checks exact binding. No Library -> Module -> Library cycle or second Config catalog | Binding split clarified; actual join open |
+| CA04 / A1--A3 | Actual Program, source handles, rules, codec, predicates, limits and method source bound to capture | Engine can construct its Program and declaration metadata before C without running it; C captures that actual binding. Only then project C into Session sources. Program construction cannot depend on a C that itself requires that Program | Bootstrap boundary clarified; implementation open |
+| CA05 / A2--A4 | One immutable original C with expected acquisition owner/operation, actual source cut and independent required-input demand | Public inputs/report/run/render project the same C; no independent recapture. Same string/hash/serialized receipt cannot authenticate a producer. Genuine expected origin operation is required; unsupported issuer recovery stays open | Acquisition/private association open |
+| CA06 / A3--A5 | Complete controlled source inventory, explicit empty relations, independently required units and plan-scoped rows | Library assertion or LLM capability label is not qualified_use. Preserve unfulfilled obligations even when a candidate omits them. Missing trustworthy origin refuses; permitted typed missing content can yield a gap-bearing C/view | Complete schema and independent coverage open |
+| CA07 / A3--A4 | Native Session result adopted only after pure acceptance and final currentness check; freeze the successful actual result | A checked record flag or copied rows cannot authenticate an accepted view. Expected Module operation must retain actual C/program/source-batch/result association; unavailable producer recognition is a blocker, not a new generic credential registry | Actual owned-view boundary open |
+| CA08 / A2--A5 | Original C does not change as evidence/status checks arrive | Later A/E/W/use and assumption checks bind C plus exact current check and input footprint. Preserve historical conclusions; block only unsupported current use, retaining counterevidence/conflict. New acquisition or changed captured method/policy/source requires a new appropriate capture | Invalidation/refresh controls open |
+| CA09 / A3--A5 | Native transaction rollback, frozen view failure and external publication have different state domains | Failed native prepare restores native sources/result only; freeze failure after adoption is not native rollback. Revocation/status changes outside Session are never undone. A partially effected filesystem write requires actual-state inspection | Failure boundaries specified; controls open |
+| CA10 / A4--A5 | Bind C/view/candidate/plan/catalog/mapping, validated exact bytes and expected prior target; explicit publication request | Separate immutable input provenance, live eligibility guards and permitted output transition. Do not make own root replacement fail an unchanged-root postcheck or suppress unrelated staleness under a blanket exemption | Transition contract clarified below; effect owner open |
+| CA11 / A4--A5 | Root-only publication with stable companion/reference closure; declared bounded design activity | A published root does not prove updated Org/decision products or a multi-file transaction. Mandatory document/decision obligations stay in view/dossier and gate the selected activity. No Aitia grant, Library release or receiver permission inferred | Root primitive and complete activity still open |
+| CA12 / A0--A5 | Distinct source/compiled/cold/build-recovery/origin-recovery/publication-recovery gates | New process may acquire a new C and compare semantic expectations; it cannot claim continuation of the lost original C. Flow restore is build-artifact recovery only; no serialized private issuer reconstruction | Same-C recovery capability unresolved |
+| CA13 / A0/A5 | Existing build/load evidence and historical failures retained | Rebind migrated product tests/event consumers to current Core/Flow ownership and exact bytes; no HEAD-only freshness or wrapper-only artifact equivalence | New upstream integration blocker |
+
+No extra universal Project manager, version service, issuer registry, schema engine,
+ASCENT wrapper runtime or model publisher is justified by these gaps. Use expected
+POO Object/Function Contracts, Core selection/admission/source mechanisms and the
+actual ASCENT Session. Add application semantics at their owners. If a required
+upstream association is unavailable, report that specific missing capability.
+
+** Existing application implementation versus target closure
+
+| Actual inspected file | Present behavior | Missing target boundary |
+|-----------------------+------------------+-------------------------|
+| [[file:../../../profiles/library-formation.ss][profiles/library-formation.ss]] | Three authored proposals, shared layout/dependency strings, candidate project/basis copies and string catalog | Checked selection from returned Scopes, distinct actual project-input acquisition, candidate/plan applicability and actual catalog references |
+| [[file:../../../scenarios/project-formation/func.ss][Scenario func.ss]] | formation-inputs builds 17 string-row sources; public inputs and run each call it; render accepts a result | One genuine original C, private deterministic projection, bound actual result/plan, consumed Scenario Config and checked normalized call results |
+| [[file:../../../modules/project-formation/types.ss][Module Types]] and [[file:../../../modules/project-formation/interface.ss][interface]] | Scope checks procedure presence plus semantics; Module requires is empty | Effective Function/Program/input/view/model Contracts and exact expectation-to-implementation join; no inference from mere procedure presence |
+| [[file:../../../examples/library-formation.ss][Runner]] and [[file:../../../examples/library-formation-output.ss][output helper]] | Runner separately obtains inputs and run result; helper writes an investigation output through supplied render callback | Report and execution share C; candidate output is separate from qualified explicit root promotion; no implicit accepted-view or origin authority |
+
+These are current source observations, not newly run failures. The existing Core
+selection and actual native ASCENT Program/Session are retained; their application
+projection, acquisition and consumer trust boundaries need completion. Public Type
+expectations belong in existing owner files, including the Profile expectations in
+organization Types. Integration is a model/object role in existing owners, not a
+new invented directory or parallel implementation family.
+
+* Same-C handoffs and observable state
+:PROPERTIES:
+:CUSTOM_ID: coherence-handoffs
+:END:
+
+The following are semantic inputs/outputs and ownership boundaries, not a new
+positional wire protocol or new public API names. Every boundary retains its returned
+normalized value; validation as a discarded side effect is insufficient.
+
+| Boundary / existing repair site | Required input | Retained output / consumer responsibility |
+|---------------------------------+----------------+-------------------------------------------|
+| Core source/link.ss and admission.ss; types.ss | Raw Context, actual dependency providers and final linked exports with expected Contracts | K1 used for Context closure; consumer SD used for requires binding; S1 stored in final record. Preserve admission evidence and actual source/build/load association |
+| library/project-organization and library/concurrency/resource-control/backpressure-memory/{abstract,rust} types/objects/interface; modules/project-formation types/objects/interface | Admitted Config and definitions; inert method expectations versus actual Engine implementation | Checked Library and Engine Scopes; no direct Config reconstruction by Profile/Scenario, no execution during declaration validation |
+| profiles/library-formation.ss (Profile expectations in library/project-organization/types.ss); scenarios/project-formation/interface.ss and func.ss | Checked Scopes, checked Profile selection/parameters, consumed Scenario Config, explicit project request | One normalized selection, then actual acquisition with independent expected roles; original C/basis/origin. No ambient Profile read creates evidence |
+| scenarios/project-formation/func.ss -> modules/project-formation/func.ss | Exact C, actual bound Program and complete source/required-unit coverage | Native successful accepted result and frozen view bound to C/program/source cut; all candidates/conflicts/gaps/status retained |
+| Scenario -> checked model projection operation in Module | Exact C plus recognized view, candidate/plan, actual catalog/mapping and selected method/validator | Exact candidate bundle/closure and independent conformance/language/property results; pure rendering does not reacquire or publish |
+| examples/library-formation.ss and library-formation-output.ss -> explicit Project output effect | Exact validated bundle, current eligibility, permitted target/write set, expected root baseline and exclusion | Actual publication outcome and observed resulting bytes, tied to original C/view/validation and transition; unknown partial effect remains unknown |
+| reports / Org / decision products | Associated C/view, source sections/selectors and actual evidence classifications | Traceable dossier with current/historical/missing/conflicting items; presentation cannot manufacture a Scope, origin, accepted view or grant |
+
+The full ResourceEvidence Q and Aitia R are later, separate contracts. The formation
+view is deterministic under its bound inputs, not automatically the full 10.70 Q.
+Passing design-reasoning does not enter a new Aitia purpose/action or authorize use.
+
+** Publication as an expected transition
+:PROPERTIES:
+:CUSTOM_ID: coherence-transition
+:END:
+
+1. Capture retains the prior root B as actual observed input, with companion/catalog,
+   program/method, policies and selected source basis. Stage candidate bytes O outside
+   the input/write set; validate those exact owned bytes and complete closure.
+2. A separate request binds C, the actual accepted view, candidate/plan, O, validation
+   and exact target. Before replacement, recheck genuine origin/current eligibility,
+   live causal assumptions as required, expected root B and all supporting inputs.
+3. The Project effect owner must establish actual exclusion/check-and-replace for
+   the target and required stable support. A check followed by an unguarded write
+   is not atomic; a hash alone is not exclusion. Unsupported cross-process or
+   cross-file exclusion is an explicit blocker for the corresponding activity.
+4. The allowed observed transition is exactly B -> O at the permitted root. Postchecks
+   verify O and unchanged required support plus current eligibility over the defined
+   effect interval. The old root's changed bytes are recorded as the intended effect,
+   not reclassified as a fresh input or exempted along with unrelated changes.
+5. C remains historical with B. The publication outcome references C and B -> O;
+   any subsequent analysis of O acquires a new C. If a live premise/policy/support
+   changes during the effect, record invalid/unknown completion and actual state;
+   never infer rollback or valid current use from successful file replacement alone.
+
+This refines A4/A5's freshness wording without introducing a publisher framework.
+The exact supported filesystem/exclusion primitive and its crash/interval semantics
+must be selected and qualified before this gate can close. A root-only gate cannot
+advertise an atomic root/Org/D2/catalog update.
+
+* Acceptance closure and negative controls
+:PROPERTIES:
+:CUSTOM_ID: coherence-controls
+:END:
+
+These extend the existing A0--A5 acceptance plans. They are not executed here.
+Each positive and negative control needs an independent expected result, actual
+selected source/load identity, nonzero case inventory and completed process outcome.
+
+| Joint control / existing plan | Positive requirement | Negative requirement / retained state |
+|-------------------------------+----------------------+---------------------------------------|
+| JC01 / A0 handoffs + A2.1 | Nonidentity normalized Context, per-consumer Scope and final Scope appear at all downstream reads; providers/consumer edges remain isolated | Raw-value retention, wrong provider or missing required edge refuses; no lazy sibling demand introduced |
+| JC02 / A1.1--A1.8 + A2 selection | Single inherited V1, actual Generic/Rust/Integration values, both applicable policies and exact expectation/implementation join; finite purposes/actions | Copied version, fixed-ID inheritance error, foreign family/Contract, unsupported method, unknown enum or Library/Module cycle fails before effect |
+| JC03 / A2.2--A2.8 | Independent required-role closure and genuine expected acquisition produce one C shared by all methods and outputs | Hash-only origin, registered wrong adapter, recapture through inputs/run, foreign Scope/C or expired credential refuses; missing content only follows selected typed gap policy |
+| JC04 / A3 coverage/trust | Complete actual source inventory and required units reach actual Program; independently predicted candidates/plans and all conflicts/gaps survive | Omitted relation/empty source, LLM assertion used as evidence, wrong status check, altered rule/codec or undeclared plan item rejects acceptance or yields the expected explicit gap |
+| JC05 / A3 transaction + A4.1 | Exact successful native result becomes the actual owned frozen view consumed with C | Copied raw result/forged accepted flag/foreign Program refuses; prepare rollback, post-adoption freeze failure and external invalidation have distinct verified states |
+| JC06 / A4 model/validator | Actual selected catalog/mapping produces independently conforming exact bundle with unique intended references and qualified actual validator/tool resources | Name/type collision, missing companion, validator exit-only shortcut, different loaded tool or stale candidate refuses; target architecture is not labelled actual |
+| JC07 / A4.7--A4.8 + A5 publication | Explicit request and actual exclusion admit B -> O; unchanged support and valid live guards; outcome retains original C | Concurrent target/support edit, revoked premise, lost exclusion or partial postwrite failure preserves refusal/unknown actual state; no unrelated stale-input exemption or false rollback |
+| JC08 / A5 recovery lanes | Declared build restoration, new-C restart or supported same-C continuation each pass their own exact gate | Flow product receipt cannot substitute for Core handoff/C origin; stale named section/interface, lost issuer or JSON replay refuses; unsupported same-C recovery remains open |
+| JC09 / A5 current use | Evidence, view, validation and publication use retain exact current checks, assumption scope and counterevidence | Causal assumption change blocks affected current use without rewriting original C/history; unrelated reuse needs complete proven non-impact, never a self-asserted status |
+| JC10 / A0/A5 source migration | Selected current Core/Flow API, source/event vocabulary, build roots, macro/runtime closure and actual load route agree | Old import, removed product test, stale event parser, mixed :core/:yuanxu or source/compiled fallback fails. Existing link-stage receipt alone cannot close this control |
+| JC11 / A5 products/verdicts | All mandatory selected Org/decision/model obligations and references are accounted for; case completion only after all selected gates | Rendered root or correct negative controls cannot hide mandatory missing products, satisfy full review/delivery, or stand in for a research result |
+
+Fixed bounds remain 2 GiB, the existing 120-second focused, 180-second complete
+build and 30-second static-model routes where applicable. Do not widen them to turn
+prior timeouts into passes. Source/compiled/cold claims require actual complete
+selected phases and their loaded units, not matching object wrappers alone. The
+expanded relation set must be measured against its selected finite budget; the
+old 4096 bound is not an untested completeness guarantee.
+
+* Implementation sequence, prerequisites and owners
+:PROPERTIES:
+:CUSTOM_ID: coherence-order
+:END:
+
+This is the next implementation order, not authorization to execute it in this
+update. Schema/oracle design can proceed alongside dependency repair; downstream
+runtime gates require the preceding actual exits. No directory migration is needed
+to state or implement these owner boundaries.
+
+| Step | Existing files / owner | Prerequisite and exit condition |
+|------+------------------------+---------------------------------|
+| I0: freeze supported cohort and ownership | Project gerbil.pkg, manifest.ss, build.ss, Justfile; upstream Core/ASCENT/POO declarations/imports; Flow selected product entries | Record exact selected source/dirty closure, pins, package links, prelude and API phases; migrate one namespace cohort directly, resolve moved providers/tests and observation consumers. Exit: compatible declared/actual source route with no hidden fallback; build/load qualification still separate |
+| I1: normalized Core handoffs and generic qualification | Core types.ss, source/link.ss, source/admission.ss, building/artifacts.ss; Flow only for actually selected provider recovery | After I0, retain K1/SD/S1 and existing correct publication candidate; nonidentity/refusal/edge controls and complete selected compiled/load/cold/build recovery qualify their supported lane. Original-C recovery is not claimed here |
+| I2: effective declarations and returned Scopes | library/project-organization, library/concurrency/resource-control/backpressure-memory/{abstract,rust} (Integration remains an object role, not a new directory), modules/project-formation types/objects/config/interface; Aitia Types only for selected full route | A1 definitions can be developed before I1 exits, but runtime Scope claim waits. Exit: sole generation, sibling shape Contracts, actual parent/policy/catalog/expectation/implementation join, retained normalized Config/exports, no binding cycle |
+| I3: Project composition, selection and actual capture | projects/library-formation/init.ss, profiles/library-formation.ss, scenarios/project-formation; qualified POO/Core acquisition owners | I1/I2 actual checked Scopes and supported source/origin operation. Exit: independently complete input demand, real original C, lifetime/current checks and no alternate authoritative inputs/run path; unsupported source/recovery stays blocked |
+| I4: complete application projection and native reasoning | modules/project-formation types/objects/func/interface; Scenario C projection; actual ASCENT Program/Session | I3 actual C and actual prebound Program. Exit: complete controlled sources/required units, retained negatives, actual result association, independent acceptance and distinct rollback/freeze behavior |
+| I5: selected SysML materialization and validation | Library catalog/mapping declarations, Module projection Types/implementation, Scenario checked request, existing example runner | I4 recognized view and I3 captured catalog/validator/source closure. Exit: exact candidate/plan/bundle, independent projection and actual language/property checks, no implicit write |
+| I6: explicit bounded publication | Existing Project example/output boundary; selected actual filesystem/effect owner | I5 exact validated bytes plus supported exclusion/current-use primitive. Exit: JC07 actual expected transition and failure/crash controls; root-only scope explicit; original-C or multi-file gaps cannot be waived |
+| I7: joint DE-CASE-01 acceptance, then separate study | t/project-formation-test.ss, t/project-formation-entry-runner.ss, Justfile selected source/compiled/cold/recovery entries, Org dossier and paired D2 | All advertised lane prerequisites, actual source/load closure and selected product obligations. Exit: A5/JC01--JC11 evidence, independent mechanism/case verdicts, all failures/open gates retained; research comparison only under its separately fixed protocol |
+
+The source graph determines selected imports and obligations. Candidate additions
+can use new admitted declarations within supported Contracts; they do not authorize
+LLM paths to become imports, arbitrary callbacks to become methods, or unknown schema
+extensions to bypass validation. This audit does not hardcode LIB-C01--C03 into a
+new orchestration engine; they remain the initial case corpus.
+
+* Open items and correctness versus research
+:PROPERTIES:
+:CUSTOM_ID: coherence-open
+:END:
+
+| Open item | Closure evidence needed / effect on claims |
+|-----------+-------------------------------------------|
+| Supported upstream cohort and provider migration | Reconciled declaration/checkout/dirty source/import/build/load route, actual moved test/fixture ownership and matching observation vocabulary; no qualified runtime cohort yet |
+| K1/SD/S1 and complete build/cold/recovery | Actual normalized-return controls and complete selected lane receipts; focused kernel/observed source successes remain bounded historical evidence |
+| Concrete Types, selection and acquisition | Implemented inherited Contracts and real producer/source associations; no genuine target C is established by the current flat helper batch |
+| Required-unit coverage and owned inference view | Complete actual relation schema/program/source inventory, independent oracle and recognized actual successful producer operation; target accepted view remains unqualified |
+| Actual catalog/mapping/validator closure | Selected admitted catalog assets, exact bundle, real executable/loaded-resource binding and independent structural/language/property outcomes |
+| Publication effect and original-C recovery | Chosen supported exclusion/crash primitive and interval semantics; root-only effect controls; producer-supported original provenance recovery if same-C continuation is advertised. Unsupported capability remains a failed/open gate |
+| Full assurance and required document products | Formation view is not full Q/R/authority; obligatory Org/decision artifacts must be independently observed and linked. Full Aitia, delivery and receiver acceptance remain later contracts |
+| Expanded schema/resource budget | Actual bounded acceptance and termination; never extrapolate original fact counts, wrapper hashes or finite-model checks to end-to-end completion |
+
+Correctness requires complete lineage, exact normalized-value retention, independent
+coverage, preserved counterevidence, valid current use, real tool/load associations,
+explicit effect authority and truthful failure/recovery states. It does not require
+the research approach to outperform a baseline.
+
+Research hypotheses include whether LLM proposals with ASCENT feedback improve
+architecture completeness, whether captured applicability improves safe reuse, and
+whether SysML/Org traceability lowers review effort. Use A5's matched exogenous case
+corpus, actual separately acquired inputs/C per variant, independent gold standard,
+equal budgets and retained failures/uncertainty. Causal-assumption invalidation is a
+correctness obligation when a selected policy requires it; better causal explanations
+or reduced rework are empirical hypotheses. No proposed benefit from the research
+paper or this architecture is admitted as established evidence.
+
+The resulting design closure is conditional and reviewable: ownership and handoffs
+are assigned, cross-boundary requirements are explicit, and remaining capabilities
+are named. Implementation, joint acceptance, review and publication remain unexecuted.
+
+* I0 source-cohort follow-up
+:PROPERTIES:
+:CUSTOM_ID: coherence-i0-followup
+:END:
+
+[[file:10.89-i0-source-cohort-dependencies-and-load-boundaries.org::#i0-dependencies][10.89]] re-observes the actual nested package checkouts as well as the Project
+links, records migrated owner APIs and distinguishes the mixed formation load route
+from source-only claims. Its [[file:10.89-i0-source-cohort-dependencies-and-load-boundaries.org::#i0-order][I0 order]] and [[file:10.89-i0-source-cohort-dependencies-and-load-boundaries.org::#i0-controls][controls]] refine the source-selection
+handoff; no compatible production tuple, actual load or normalized-return acceptance
+is established. Earlier source observations and historical receipts remain unchanged.
+
+* I1 normalized-value handoff follow-up
+:PROPERTIES:
+:CUSTOM_ID: coherence-i1-followup
+:END:
+
+[[file:10.90-i1-normalized-context-and-scope-handoffs.org::#i1-values][10.90]] assigns exact K1/SD/S1 retention to existing Core fields and calls.
+Bindings derive SD from existing requirement-evidence; the provider cache stays
+consumer-independent, while final record.scope retains ES.candidate. Its
+[[file:10.90-i1-normalized-context-and-scope-handoffs.org::#i1-context][Context plan]] preserves actual paired-reader/package provenance and explicitly
+leaves the nonidentity Context fixture arrangement open. [[file:10.90-i1-normalized-context-and-scope-handoffs.org::#i1-lanes][Lane qualification]] and
+[[file:10.90-i1-normalized-context-and-scope-handoffs.org::#i1-controls][positive/negative controls]] remain unexecuted; earlier observations are historical.
+
+* I2 declaration and publication follow-up
+:PROPERTIES:
+:CUSTOM_ID: coherence-i2-followup
+:END:
+
+[[file:10.91-i2-library-module-declarations-and-publication.org::#i2-types][10.91]] unifies the effective Library/Module fields and inheritance, retaining
+10.83's neutral sole V1 owner. Its [[file:10.91-i2-library-module-declarations-and-publication.org::#i2-bindings][binding plan]] separates inert Library method expectations
+from actual implementations and explicitly supplies the Formation Module's typed
+Library dependency. [[file:10.91-i2-library-module-declarations-and-publication.org::#i2-publication][Construction and Scope exports]] consume exact normalized parents/functions
+and I1 SD/S1; [[file:10.91-i2-library-module-declarations-and-publication.org::#i2-controls][joint controls]] remain unexecuted. No earlier source or receipt is rewritten.
+
+* I3 Project, selection and capture follow-up
+:PROPERTIES:
+:CUSTOM_ID: coherence-i3-followup
+:END:
+
+[[file:10.92-i3-project-profile-scenario-and-capture.org::#i3-project][10.92]] unifies declared provider/Scope consumption and [[file:10.92-i3-project-profile-scenario-and-capture.org::#i3-selection][effective selection]]
+with I2's separate declaration/model/catalog offerings. Its [[file:10.92-i3-project-profile-scenario-and-capture.org::#i3-acquisition][actual acquisition]] and
+[[file:10.92-i3-project-profile-scenario-and-capture.org::#i3-capture][origin/C lifecycle]] require genuine expected producer, immutable basis and separate
+current use; no generic snapshot or private-issuer recovery is presumed. [[file:10.92-i3-project-profile-scenario-and-capture.org::#i3-calls][Same-C calls]]
+replace independent Profile-to-batch preparation; [[file:10.92-i3-project-profile-scenario-and-capture.org::#i3-controls][controls]] remain unexecuted.
+
+* I4 complete projection and accepted-view follow-up
+:PROPERTIES:
+:CUSTOM_ID: coherence-i4-followup
+:END:
+
+[[file:10.93-i4-application-projection-and-accepted-inference-view.org::#i4-inputs][10.93]] unifies same-C/actual-Program coverage and [[file:10.93-i4-application-projection-and-accepted-inference-view.org::#i4-sources][internal source fields]],
+adding explicit expected-use-check association and plan/edge provenance refinements.
+[[file:10.93-i4-application-projection-and-accepted-inference-view.org::#i4-consequences][Derived consequences]] preserve declaration/evidence separation and all negatives;
+[[file:10.93-i4-application-projection-and-accepted-inference-view.org::#i4-calls][actual native acceptance and frozen-view handoff]] retain the successful producer
+association. [[file:10.93-i4-application-projection-and-accepted-inference-view.org::#i4-controls][Controls]] are planned only; no execution, model promotion or new authority exists.
+
+* I5 SysML candidate and validation follow-up
+:PROPERTIES:
+:CUSTOM_ID: coherence-i5-followup
+:END:
+
+[[file:10.94-i5-sysml-selection-materialization-and-validation.org::#i5-selection][10.94]] unifies same-C/accepted-view/candidate/plan/catalog/mapping fields using
+I4's exact role/edge provenance. [[file:10.94-i5-sysml-selection-materialization-and-validation.org::#i5-names][Names/identity]], [[file:10.94-i5-sysml-selection-materialization-and-validation.org::#i5-closure][reference closure]] and
+[[file:10.94-i5-sysml-selection-materialization-and-validation.org::#i5-validation][actual independent validation]] remain separate from
+[[file:10.94-i5-sysml-selection-materialization-and-validation.org::#i5-invalidation-publication][I6 explicit publication]]. [[file:10.94-i5-sysml-selection-materialization-and-validation.org::#i5-controls][Controls]] are planned only;
+no implementation, validator run, model rewrite or promotion is performed.
+
+* I6 joint acceptance and explicit publication follow-up
+:PROPERTIES:
+:CUSTOM_ID: coherence-i6-followup
+:END:
+
+[[file:10.95-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-handoffs][10.95]] unifies the same-C/accepted-view/candidate-validation joins and
+[[file:10.95-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-publication][explicit guarded publication]]; [[file:10.95-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-recovery][failure/replay/recovery]] separates build issuance,
+original C/view and actual effect provenance. Its [[file:10.95-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-current-entries][existing entry mapping]] corrects the
+historical runner filename to t/project-formation-entry-test.ss without creating an
+entry. [[file:10.95-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-controls][Joint controls]] and [[file:10.95-i6-joint-acceptance-and-explicit-sysml-publication.org::#i6-order-open][ordered exits/open gates]] are planned only;
+I7 acceptance execution remains separate. No implementation, runtime acceptance,
+model promotion, historical receipt rewrite or expanded orchestration is performed.
+
+* Integrated coherence and current-source follow-up
+:PROPERTIES:
+:CUSTOM_ID: coherence-slice-audit-followup
+:END:
+
+[[file:10.96-declarative-slice-coherence-and-current-upstream-audit.org::#slice-audit-findings][10.96]] audits I0--I6 owner/contract/control correspondence and records
+[[file:10.96-declarative-slice-coherence-and-current-upstream-audit.org::#slice-audit-upstream][current upstream changes]], including generic TestingScript refinement and actual
+recipe/product ownership. [[file:10.96-declarative-slice-coherence-and-current-upstream-audit.org::#slice-audit-chronology][Same-C chronology]] captures selectable definitions before
+reasoning and keeps later validation/findings/views distinct. [[file:10.96-declarative-slice-coherence-and-current-upstream-audit.org::#slice-audit-publication][Transition-aware publication]]
+requires exact B -> O with genuine origin and unaffected support checks; no blanket
+freshness bypass. [[file:10.96-declarative-slice-coherence-and-current-upstream-audit.org::#slice-audit-order][Implementation dependencies]] and [[file:10.96-declarative-slice-coherence-and-current-upstream-audit.org::#slice-audit-controls-open][refined controls/open gates]] remain
+planned; original C/view, build and effect recovery are independent. No implementation,
+acceptance, publication or expanded orchestration is performed.

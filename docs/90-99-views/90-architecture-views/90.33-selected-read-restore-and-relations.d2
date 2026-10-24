@@ -1,0 +1,32 @@
+# org-target: docs/20-29-cases/20-gateway/20.12-selected-read-use-race-and-counter-packets.org::#selected-read-full-packet
+# Existing native selected-read behavior and paper gold; no new selector implementation.
+grid-columns: 2
+grid-gap: 32
+classes: {
+  input: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; border-radius: 10; font-size: 17}}
+  state: {style: {fill: "#E6F5F3"; stroke: "#19756C"; border-radius: 10; font-size: 17}}
+  gate: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; border-radius: 10; font-size: 17}}
+}
+restore: "SR: selected request restoration" {
+  direction: down
+  prior: "SR00 actual CPsel and independent Bsel\n{o+, o-, oL}; opposite P0 observations\nSaved Sconj / B1 / expand=[L0]\nOwned 17 items + 3 relation bodies" {class: input}
+  rerun: "SR01 native restores selection\nRe-runs caller declaration with B1\nmatched={positive o+}; question={P0}\nInherited expand adds L0" {class: state}
+  scope: "SR02 scope={P0,L0}; incremental\nRaw read includes o- and conflict(P0)\n17 native items, all 13 factors\nPositive matched never filters claim counter" {class: state}
+  selected: "SR05 explicitly selected questions=[]\nInherited B1 and expand remain\nSelector overwrites questions with [P0]\nStill P0 + L0 scope" {class: gate}
+  direct: "Independent direct questions=[] / expand=[]\nSaved selector bypassed; empty scope\nDifferent entry point, different input gold\nNo cache target inference from empty read" {class: gate}
+  prior -> rerun: "actual absent-field merge"
+  rerun -> scope: "selector question union expand"
+  prior -> selected: "explicit selected entry fork"
+  prior -> direct: "explicit direct entry fork"
+}
+planes: "SR: items, relations and owned delivery" {
+  direction: down
+  items: "SR03 item plane\nRetained 17; added / removed / changed empty\nP0 complete family = 13 items\nL0 family = 4 items" {class: state}
+  relation: "SR03 association plane\n3 units: matched / unknown_binding / gap\nEach binds selector + name + body digest\nEmpty bodies still have distinct named units" {class: state}
+  override: "SR04 explicit B2 cap=2\nNo match; only inherited L0 raw scope\nNew selector identity; 3 new pending units\nOld relation history retained, never relabeled" {class: gate}
+  ack: "SR06 separate owned confirmation\nRelation acknowledgement != P0 family shown\nFull opposing intake / method review required\nKnown false full acknowledgement RJ11\nUnknown provenance pending; no clean A" {class: gate}
+  items -> ack: "exact whole-family membership"
+  relation -> override: "binding change is not body-label reuse"
+  relation -> ack: "independent reference plane"
+  override -> ack: "new unit delivery still needs real evidence"
+}
