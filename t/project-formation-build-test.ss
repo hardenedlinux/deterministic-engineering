@@ -1,26 +1,16 @@
-;;; Actual Project init build projection, with an explicit non-adjacent build owner.
+;;; Build through the package-root init using the inherited Core public API.
 (import :std/test :clan/poo/object
-        (only-in :std/source this-source-file)
-        (only-in "../projects/library-formation/init.ss"
-          deterministic-engineering/projects/library-formation.init.exports))
+        (only-in "../init.ss" deterministic-engineering.init.exports))
 (export project-formation-build-test)
-(def root (path-expand ".." (path-directory (this-source-file))))
 (def selected-roots '("profiles/library-formation"))
 (def project-formation-build-test
-  (test-suite "Declared Project build owner"
-    (test-case "native package root retains a same-package Profile target"
-      (def spec ((.get deterministic-engineering/projects/library-formation.init.exports std-make-spec)
-                  selected-roots build-source: (path-expand "formation-build.ss" root)))
+  (test-suite "Package-root build projection"
+    (test-case "package build retains the declared Profile and specification"
+      (def spec ((.get deterministic-engineering.init.exports std-make-spec) selected-roots))
       (check-equal? (and (member '(gxc: "profiles/library-formation") spec) #t) #t)
       (check-equal? (eq? spec
-        ((.get deterministic-engineering/projects/library-formation.init.exports std-make-spec)
-          selected-roots build-source: (path-expand "formation-build.ss" root))) #t))
-    (test-case "the same init epoch cannot switch its build source"
-      (check-exception
-        ((.get deterministic-engineering/projects/library-formation.init.exports std-make-spec)
-          selected-roots build-source: (path-expand "build.ss" root)) error?))
+        ((.get deterministic-engineering.init.exports std-make-spec) selected-roots)) #t))
     (test-case "the same init epoch cannot switch retained ordinary roots"
       (check-exception
-        ((.get deterministic-engineering/projects/library-formation.init.exports std-make-spec)
-          '("profiles/library-formation" "profiles/gateway")
-          build-source: (path-expand "formation-build.ss" root)) error?))))
+        ((.get deterministic-engineering.init.exports std-make-spec)
+          '("profiles/library-formation" "profiles/gateway")) error?))))

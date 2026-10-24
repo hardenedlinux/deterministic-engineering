@@ -4,15 +4,15 @@
 (def resource-lifecycle-test
   (test-suite "Rust mechanism ownership and actual evidence"
     (test-case "direct migration publishes one Library to independent applications"
-      (check-equal? (.slot? init.Modules 'gateway-domain) #f)
-      (check-equal? (.slot? init.Modules 'gateway-evidence) #f)
-      (check-equal? (.get init.Modules rust-resources scope entry identity) 'rust.resources.backpressure-memory)
-      (check-equal? (.get init.Scenarios resource-lifecycle scope entry identity)
-                    (.get init.Scenarios gateway-review scope entry identity)))
+      (check-equal? (.slot? (.get deterministic-engineering.init.exports Modules) 'gateway-domain) #f)
+      (check-equal? (.slot? (.get deterministic-engineering.init.exports Modules) 'gateway-evidence) #f)
+      (check-equal? (.get (.get deterministic-engineering.init.exports Modules) rust-resources scope entry identity) 'rust.resources.backpressure-memory)
+      (check-equal? (.get (.get deterministic-engineering.init.exports Scenarios) resource-lifecycle scope entry identity)
+                    (.get (.get deterministic-engineering.init.exports Scenarios) gateway-review scope entry identity)))
     (test-case "actual native/QNT/Lean receipts and change queries match independent gold"
       (def path (getenv "RESOURCE_REAL_REPORT" #f))
       (unless path (error "run examples/resource-lifecycle-evidence.ss and set RESOURCE_REAL_REPORT"))
-      (def methods (.get init.Modules rust-resources scope methods))
+      (def methods (.get (.get deterministic-engineering.init.exports Modules) rust-resources scope methods))
       (def digest (.ref methods 'file-digest))
       (def (load p) (call-with-input-file p (cut read-json <> object-as-hash: #t)))
       (def report (load path))

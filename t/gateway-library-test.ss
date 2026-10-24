@@ -4,7 +4,7 @@
         :gerbil-ascent/rules/interface)
 (export gateway-initial-test gateway-method-test gateway-capacity-test gateway-cache-retry-test gateway-source-test gateway-boundaries-test gateway-counter-test)
 
-(def scene (.get init.Scenarios gateway-review scope))
+(def scene (.get (.get deterministic-engineering.init.exports Scenarios) gateway-review scope))
 (def entry (.ref scene 'entry))
 (def expected-obligations
   '((u1 BP-O01 review) (u1 BP-O02 quint) (u1 BP-O03 lean) (u1 BP-O04 review)

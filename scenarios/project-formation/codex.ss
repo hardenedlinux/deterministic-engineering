@@ -10,7 +10,7 @@
 (export formation-acquire-codex formation-codex-current! formation-codex-observation
  formation-verify-codex formation-codex-verification-current! formation-revoke-codex!
  formation-authorize-codex formation-codex-authorized! formation-codex-authority-observation)
-(def transport (path-expand "../../dev/codex-source.py" (path-directory (this-source-file))))
+(def transport (path-expand "codex-source.py" (path-directory (this-source-file))))
 (def consent-source (path-expand "objects.ss" (path-directory (this-source-file))))
 (defstruct codex-inputs (thread turn messages root basis deadline transport-digest) final: #t)
 (def (digest path)

@@ -5,6 +5,34 @@
 #+STARTUP: overview
 #+FILETAGS: :architecture:design:
 
+* Package and development entrypoints
+
+The only direct dependency is =agentic-ai-lab=, declared in [[file:gerbil.pkg][gerbil.pkg]],
+aligned to [[https://github.com/tao3k/agentic-ai-lab/pull/34][upstream PR 34]] at the revision declared in =gerbil.pkg= (qualification status in 10.107).
+Its package metadata owns the POO, ASCENT and transitive Core revisions; this
+Library does not override those revisions or carry upstream patches. Gerbil owns
+dependency installation, package environment and build dispatch.
+
+#+begin_src sh
+just deps
+just build
+just test
+just test-project-formation
+#+end_src
+
+The [[file:Justfile][Justfile]] supplies bounded commands and the upstream Homebrew/Darwin
+compiler invocation policy. The 180-second deadline belongs to each package build;
+ordinary test invocations retain 120 seconds. Native installation spans multiple
+package builds and SDK metadata work. Bounded package entries require the existing
+host tools =env -S= and GNU =timeout=. Native package resolution is unchanged. The sole package build
+entry is [[file:build.ss][build.ss]]. Project test policy lives in
+[[file:projects/library-formation/test.ss][the Library formation Project]], using Core's existing TestingScript/Fixture/Ops.
+The Codex transport belongs to [[file:scenarios/project-formation/codex-source.py][its Scenario]]. There is no development dependency resolver,
+source mount, patch application or alternate load-path configuration. Test evidence
+paths are explicit inputs; historical local results are never default inputs.
+Historical qualification against patched sources does not qualify the inherited
+unpatched package closure. See [[file:docs/10-19-design/10-architecture/10.107-implementation-progress-and-execution-gates.org::#implementation107-package-deadlines][current alignment and qualification limits]].
+
 * Purpose
 :PROPERTIES:
 :CUSTOM_ID: purpose

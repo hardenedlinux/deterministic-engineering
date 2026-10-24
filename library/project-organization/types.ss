@@ -4,7 +4,7 @@
  (only-in :clan/poo/type String Symbol List)
  (only-in :clan/poo/recursive-validation close-validation closed? closed-ref)
  (only-in :clan/poo/object-contract ObjectContract. refine)
- (only-in :yuanxu/types YuanxuContract. yuanxu-predicate-type)
+ (only-in :yuanxu/object-types/contracts YuanxuContract. yuanxu-predicate-type)
  "../../types.ss")
 (export OrganizationDeclarationContract OrganizationModelContract OrganizationConfigContract
  OrganizationScopeContract OrganizationCatalogContract OrganizationMappingContract

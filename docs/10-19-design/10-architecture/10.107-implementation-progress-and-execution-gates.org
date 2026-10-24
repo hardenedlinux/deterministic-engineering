@@ -7,6 +7,874 @@
 
 [[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.104-declarative-slice-coherence-and-implementation-gates.org][Plan and gates]] | [[file:10.105-i0-dependencies-prelude-build-load-and-testing.org][I0]] | [[file:10.106-i1-normalized-context-scope-realization-and-self-binding.org][I1]] | [[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][Current execution map]]
 
+* Current dependency and configuration alignment (2026-10-24)
+:PROPERTIES:
+:CUSTOM_ID: implementation107-alignment
+:END:
+
+This section supersedes the development preparation below. The user requires one
+direct dependency and no repository-owned upstream patches or parallel environment
+manager. The published baseline at commit =7a6c2b3= retains the previous work;
+the following cleanup changes its active configuration without erasing receipts.
+
+| Concern | Current owner and active route | Removed duplication |
+|---------+--------------------------------+---------------------|
+| Dependency revisions | Root =gerbil.pkg= selects Agentic only; the final observed revision is recorded below; formal upstream PR commits carry the transitive closure | Direct Core/ASCENT/POO pins; the old ASCENT override =0b6da04= |
+| Dependency installation / environment | Native =gerbil deps --install= and =gerbil env= | =dev/formation-environment.py=, temporary-index comparison, source mounts, FORMATION_* variables and dependency build recipes |
+| Upstream fixes | Upstream source and package declarations | All three repository-carried =dev/patches=; no local automatic patching |
+| Package build | Root =build.ss=, root init exports and Core =building/script= SDK adapter | =formation-build.ss= and patch-only =build-source:= calls |
+| Project tests | =projects/library-formation/test.ss= consumes the actual Project's Core TestingScript/Fixture/Ops | The =dev/formation-test.ss= location; no copied execution engine |
+| Runtime source transport | =scenarios/project-formation/codex-source.py=, referenced relative to =codex.ss= | The development-directory transport location; account trust and restricted roles are unchanged |
+| Review package | Namespace-only nested metadata inherits the root closure | Retired =poo-flow= dependency and duplicate transitive dependencies |
+| Test inputs / outputs | Explicit acceptance, reassessment and runtime-source artifact arguments; fresh local output directories | Dated historical evidence defaults, manual Flow/Aitia load paths, alternate compiled-library injections |
+
+The entire =dev= directory is removed. Historical local dependency clones, logs and
+failed receipts under ignored =.data= remain documentary evidence, not active build
+inputs. The pre-alignment =.gerbil= environment was preserved intact under
+=.data/alignment-20261024/previous-gerbil= before requesting a fresh native install;
+linked adjacent checkouts were not removed or changed. No =gxpkg uninstall= was run.
+
+Native package inspection confirmed the inherited tuple from the actual committed
+=agentic-ai-lab= and ASCENT declarations, rather than the previously patched clone.
+The old native install encountered EOF in =pkg-tag-incompatible?= in its legacy
+local package state; that failed attempt is retained in =deps-02.log=. A fresh
+native installation is recorded separately in =deps-clean-01.log=. It proceeded
+into upstream POO compilation without the legacy tag/EOF failure, then reached
+the unchanged 180-second limit with exit 124. That attempt did not completely install or qualify the dependency closure; the
+later PR-aligned attempts below supersede its current status. No package-specific target was pruned and
+no older patched binary cohort was copied into the native environment. No older
+patched build or test result is promoted to qualification of this unpatched closure.
+
+The configuration audit confirmed exactly one root dependency and no nested
+=depend:= overrides, no active =FORMATION_*= variables, no manually constructed
+load path, no dated evidence defaults, and no patch-only =build-source:= call.
+All 29 Just recipe shell bodies parsed; modified Scheme sources parsed with the
+native reader; the relocated Python transport compiled and its CLI help ran.
+D2 rendered and was visually inspected. A missing-input control refused review
+before starting its native workload rather than choosing an old acceptance file.
+These are configuration and syntax checks, not a current runtime or build pass.
+The local outcomes are recorded in =.data/alignment-20261024/=.
+
+Build, test, heap and worker limits remain unchanged. Package build uses 180 seconds,
+ordinary tests 120 seconds, 2 GiB per Gerbil process and four build workers. Existing
+specialized experiment/recovery budgets retain their previous limits. Source handles
+issued before transport relocation require fresh acquisition. Same-C reasoning,
+SysML publication, independent review and delivery remain unqualified.
+
+** Latest upstream PR and POO build diagnosis
+:PROPERTIES:
+:CUSTOM_ID: implementation107-upstream-pr
+:END:
+
+The user requests alignment with the latest Agentic AI Lab PR rather than the
+previous =e789578b= snapshot. [[https://github.com/tao3k/agentic-ai-lab/pull/34][PR 34]] was observed at
+=82bd605bf20d18cf09525972814920693baa9076=. At the initial observation, its transitive declarations selected POO
+=80b590b15c6d4bde7717f5fd85d5b98dbf230bd8=, Parser
+=91f0a3c0195b8419e75d50dac60d790b3bc5250a=, Orgize
+=3a61d053baf5412e3bbff311325b58d5ddf5dc97= and ASCENT
+=c5f8e8fc0b4acaa3082e608c823ee38c9fe128d3=. Parser and ASCENT agree on Core
+=a5fe884ca317126a3870de5dcbf2d6a315008b16=; Orgize inherits Parser.
+These are observations of upstream declarations, not additional local pins.
+
+The interrupted original POO build had announced 187 source units and 280 backend
+jobs and left 187 interfaces but only 279 native objects. Its output was incomplete.
+A later Core load fell back to =generalized-closure~1.scm= because the corresponding
+native phase was absent, producing an illegal Scheme declaration error. A package
+manifest written before compilation is not proof that all phases were completed.
+
+The host's default PATH selects Nix's linker although Gerbil is installed by
+Homebrew and uses GCC 16. A matched minimal C link failed with an undefined =_puts=
+under that default and passed with upstream's =COMPILER_PATH=/usr/bin=. The Just
+recipes now use the exact Darwin command-prefix policy from the latest upstream
+PR: remove ambient SDK/header/library overrides, select the system linker and
+restore only the actual Homebrew OpenSSL roots. Nix Gerbil and other platforms
+retain their native environment. This is invocation alignment, not a new package
+environment, source mount, dependency resolver or upstream patch. Scheme children
+also inherit the same 2-GiB heap fence via =GAMBOPT=; workers remain four.
+
+Native package clean followed by the complete unchanged POO build passed in
+62.69 seconds, exit 0, producing 187 interfaces and 436 native objects. It retained
+all examples and test/build-support targets in the upstream specification. A new
+native process imported both =object= and =generalized-closure= and printed
+=POO-COMPLETE-NATIVE-LOAD-OK=. The raw time report's RSS includes VM/native memory;
+2 GiB is the Scheme heap bound, not an assertion that aggregate RSS stays below it.
+One earlier diagnostic build omitted the explicit four-worker export and was
+stopped immediately; it is not a qualification result. All logs remain under
+=.data/alignment-20261024/current-pr/=.
+
+The next native dependency attempt completed Core and reached Parser before the
+aggregate install command reached its unchanged 180-second limit, exit 124.
+Completing a dependency's full native target separately and then resuming native
+installation does not turn that earlier attempt into a cold-install pass. No
+module list is pruned and each command retains its original cap. Final installation,
+Project build and test outcomes are recorded below once established. Parser's
+full native package build completed in 96.88 seconds, exit 0; Orgize's full native
+build completed in 128.36 seconds, exit 0. Both retained their upstream generation
+and publication paths. Later dependency installation can legitimately rebuild
+Parser when its foreign input closure changes; =LIBRARY-PUBLICATION-READY= is
+required rather than skipping that source-owned check.
+
+The package build now follows the same public boundary as the latest upstream:
+=register-module-build-source!=, =package-library-spec= and Core’s
+=building/script= SDK adapter. The adapter retains init-owned =std-make-spec=
+and source/currentness checks across native compiler entry and return. There is still one root =build.ss=;
+the repository owns only its public roots and Project-specific declarations.
+
+** Formal upstream repair and dependency propagation
+:PROPERTIES:
+:CUSTOM_ID: implementation107-upstream-repair
+:END:
+
+The user authorized repairs in the existing upstream PRs and revision propagation.
+The initial ASCENT build completed in 117.77 seconds, exit 0. The subsequent
+Agentic build failed after 33.40 seconds: Core =a5fe884= shipped the source for
+=runtime-command-descriptor= but omitted its installed interface. This is a
+publication defect, not grounds for a local load-path shim or another root pin.
+
+The latest Core PR also changed its SDK dispatch contract and POO revision.
+Its public Funflow facade is now declared in =core-public-roots= and projected
+through =package-library-spec=. Publishing this library import closure neither
+selects a Module Scope nor activates a runtime. A regression checks inclusion of
+the facade and descriptor and exclusion of =init= from that public closure.
+The repair is owned by Core =core-spec.ss= (public roots), =build.ss= (native
+closure combination using =exclude: core-spec=), =gerbil.pkg= (POO dependency)
+and =t/package-library-spec-test.ss= (closure and refusal controls). Parser,
+Orgize and ASCENT change only =gerbil.pkg=. Agentic additionally migrates
+=build.ss= and its build-boundary regression; no semantic runtime behavior is
+replaced. This repository’s metadata test checks both installed interface and
+native object products for the public facade and descriptor.
+
+Agentic and this repository consume Core’s =building/script= adapter instead of
+the removed =std-make-run= export. Native SDK dispatch and Core currentness guards
+retain ownership; no replacement executor is introduced.
+
+| Existing PR | Earlier candidate revision | Responsibility |
+|-------------+--------------------+----------------|
+| POO #13 | =4d63f36f116f9c3d4c78ab29f8731f94bfc4d9ca= | Existing latest PR; no POO source changes here |
+| Core #19 | =e117f15a0dc7b66a69f201d5f47de1a43e4e5de9= | Public facade closure; native Record/Function and package ownership isolation |
+| Parser #13 | =885a5ed8517009a048ea7cf000aacca34d5da27f= | Same Core/POO pins; retained scanner and SDK environment fixes |
+| Orgize #18 | =66ae2c5b38a31a7727b99d31c7c182fa7516d7f7= | Inherit the updated Parser closure |
+| ASCENT #1 | =f9b3f3e911f57dc23f3f5bfdf8f6d08e1224901c= | Same Core pin |
+| Agentic #34 | =6734376256cabfc87bb7dcfb3169e89c030ba0aa= | Fixed tuple; owned Core gitlink; direct Record/Function consumer migration |
+
+Latest POO =4d63f36= completed a full native clean/build in 150.87 seconds, exit 0,
+with all 187 source announcements and 436 backend jobs. This qualifies that
+build under the existing cap; it is not a performance comparison with the earlier
+revision or a pass of the full dependency installation.
+
+The first Core candidate refused a duplicate retained compiler target after
+55.76 seconds, exit 70. The facade closure now uses the existing =exclude:=
+parameter for ordinary =core-spec= targets; duplicate rejection remains intact.
+The corrected Core build passed in 91.59 seconds, exit 0. Both =api= and
+=runtime-command-descriptor= have installed =.ssi= and =.o1= products. The native
+public-closure regression passed both cases, including actual import closure,
+unused-source laziness and a refusing admission callback. This does not yet
+qualify the dependent Agentic build. Parser =c3ca54c= subsequently completed
+its full native build in 142.45 seconds, exit 0, and emitted
+=LIBRARY-PUBLICATION-READY=. Native registration is checked against actual Git
+HEADs; an update command’s exit 70 after checkout is retained as an SDK failure,
+not reported as installation success.
+
+Orgize =f291b8b= reached its unchanged 180-second watchdog, exit 124, after
+=GENERATION-OK native-org-document-and-inline= and during runtime compilation.
+This is a failed complete attempt. Native incremental continuation may consume
+its completed products under the same limits; such continuation is qualified
+separately and cannot retroactively establish a cold-build pass. The native
+continuation completed in 18.67 seconds, exit 0. The generator rechecked its
+runtime products and emitted its completion marker again. Every installed Orgize
+Scheme unit had a corresponding native object; no generated Scheme fallback was
+accepted as a completed native phase.
+
+ASCENT =2191838= completed its full native build in 155.48 seconds, exit 0,
+including 647 backend tasks and 189 executable-object tasks. Static, dynamic and
+executable targets remained selected; no source list was pruned.
+
+The first Agentic build against the new tuple refused the removed
+=yuanxu-native-contract->alist= name. Core’s slot-schema and facts changes were
+checked against =a5fe884=: they are exact owner/name migrations; Contracts differ
+only by relocation and one private classifier rename. Agentic migrates 56 reviewed
+consumer/test files to =:yuanxu/object-types/contracts= and
+=yuanxu-object-contract*=; this repository migrates its eight Type imports.
+No compatibility facade or semantic predicate rewrite is added. The existing
+Type/Contract foundation regression passed all 11 positive/negative cases.
+
+A second Agentic attempt found three leftover imports in the two temporal evidence
+owners. These now resolve to the actual =:agentic-ai-lab/= package instead of
+=:poo-flow/=. Semantic function names and evidence wire shapes remain unchanged.
+A concurrent Cedar binding revision =300cfdd= was retained before the normal
+non-force push; source integration never overwrote the remote contributor.
+These are additional formal Agentic PR fixes, not local patched providers.
+
+The current Core PR advanced to =e117f15= while this work ran. Its own
+package-isolation mechanism retains all dependency input guards, compiles only
+outputs owned by the current package, and refuses whole-Graph issuance when
+foreign owners are present. That framework mechanism is used directly. The
+unpublished nested-Make candidate =6a81e6a= is preserved on a local archive ref
+and is not selected or published. A rejected native update left =bf9e6d1= active;
+=core-native-build-05.log= is consequently an old-revision warm build, not a
+qualification of that candidate. Subsequent build commands refuse a mismatch
+between expected and actual Git HEAD before compiling.
+
+Core =e117f15= built in 98.33 seconds, exit 0; its 15 native Function boundary
+cases passed. Agentic follows the six-argument Record constructor and removes
+custom slot readers. Profile contextual evidence uses the existing
+=YuanxuContract.= / =value-contract= composition and returns its actual normalized
+candidate. Existing serialized grant rows remain a wire boundary: native Record
+membership checks their reified fields, and duplicate/malformed/missing keys
+refuse. Four task extensions construct native =Function= signatures from actual
+input/output Type values; focused cases cover executor input/result refusals and
+inert external requests. These consumer gates still require execution below.
+
+The declared Core submodule is initialized by the upstream package’s standard
+Git build step; no environment generator or source overlay is involved. Its
+fixed gitlink must equal the inherited native Core package HEAD and the actual
+submodule HEAD. The consumer metadata gate checks all three. Parser’s concurrent
+scanner / SDK environment updates and the ASCENT Core update are retained.
+
+The fixed current tuple additionally qualified Parser =885a5ed= in 150.45
+seconds, exit 0, with =LIBRARY-PUBLICATION-READY=. Orgize =66ae2c5= timed out
+at 180 seconds before its final fold completion marker; its native continuation
+completed in 29.45 seconds, exit 0, with the marker and all native products.
+ASCENT =f9b3f3e= completed in 111.66 seconds, exit 0. These are current-cohort
+results, distinct from the earlier tuple’s receipts.
+
+These are committed PR candidates pending complete native qualification, not
+claims that upstream CI or the final consumer build has passed. The root keeps
+exactly one direct Agentic dependency. Isolated PR checkouts under ignored
+=.data= are editing workspaces only; native installation consumes committed
+upstream revisions into the ordinary =.gerbil/pkg= registry. No patched source
+mount participates in compilation.
+
+** Earlier recovery qualification (superseded by the package baseline below)
+
+The selected source chain is POO =40c61fe= -> Core =0abf245= ->
+Parser =f59dfbc= / ASCENT =ca1c1eb= -> Orgize =a9a0538= ->
+Agentic =3fb218d=. The root declares only Agentic; its Core gitlink and
+inherited Core package must agree. Concurrent upstream changes were fast-forwarded
+before each non-force dependency update.
+
+POO's complete native cold build passed in 117.86 seconds. Core's complete
+native build passed in 151.44 seconds. Both use four workers, a 2-GiB Scheme
+heap and the unchanged 180-second watchdog. Core's two product-recovery controls
+passed with exact case, module and harness completion markers.
+
+An interrupted SDK build can leave a static freshness marker while dynamic
+macro/runtime native objects are absent. A later exit 0 alone therefore does
+not establish native loading. Core now enumerates products from its retained
+selected identities, invalidates only incomplete units' own static markers
+before ordinary SDK dispatch, and requires complete regular dynamic products
+on return. It does not copy artifacts, replace the compiler, issue approval or
+use file modification times as semantic evidence. Negative controls reject
+non-regular products without deleting unrelated markers.
+
+Parser =f59dfbc= passed in 139.26 seconds with
+=LIBRARY-PUBLICATION-READY=. Orgize =a9a0538= reached the unchanged
+180-second watchdog (exit 124); its native continuation passed in 41.44 seconds
+with =GENERATION-OK native-org-document-and-inline=. The continuation is not a
+complete cold-build pass. Both failed and passing logs remain under =current-pr=.
+
+ASCENT =ca1c1eb= also reached the 180-second watchdog while retaining its
+complete executable/static/dynamic target set. Its ordinary native continuation
+passed in 128.79 seconds. This is completion after recovery, not a cold pass.
+The installed SDK documents =update package@revision= but its =update-pkgs=
+passes that tagged string unstripped into =pkg-install-deps=; the observed exit
+70 therefore remains a failure even after a successful checkout. Actual Git HEAD
+is checked before each separate native build. No SDK patch was introduced.
+
+Agentic also publishes its existing custom-task, Docker, text and agent-sandbox
+public facade import closures. Its task, workflow and Search builders bind real
+native Function Types; symbolic labels cannot stand in for Types. Final consumer
+installation, build and tests remain pending until separately recorded below.
+
+The =48378b2= complete attempt reached the watchdog (exit 124); its
+continuation refused a public-source identity transition for the shared
+=modules/services/types.ss=. Git source status remained clean. That shared
+public Type was missing from Agentic's explicit library roots. =9867e1c= adds
+its ordinary publication root and a native Type import control. The Core
+source/currentness guard remains unchanged. Consumer metadata now requires
+Services' installed interface and object as well. This diagnoses and tests the
+publisher boundary; it does not relabel the failed guard as a pass.
+
+Agentic =9867e1c= completed its full native target set in 69.37 seconds,
+exit 0, with Core's product-completion check. The new installed signature test
+initially exposed an incorrect Integer import in the test itself; =3fb218d=
+imports it from POO's number owner. All five controls then passed against the
+installed runtime: native Services Type, executor input/output refusals, inert
+external tasks, typed workflow composition and Search edge admission.
+
+The first final-root =just deps= reached its unchanged 180-second watchdog.
+Parser's publication inputs include the whole foreign library generation; newly
+built downstream artifacts legitimately invalidated its prior receipt. The
+existing negative controls require retaining these guards. The retry first
+rebuilds Parser under the unchanged cap, then runs native dependency installation;
+no foreign-input filter or native resolver bypass was introduced.
+
+The root Just heap rule also appended the identical GAMBOPT fence on every
+nested Just invocation. Parser intentionally retains compiler runtime options
+in its input identity; the duplicate therefore forced a fresh generation.
+The root rule is now idempotent when the exact final =max-heap=2G,debug=q=
+fence is already present. A different or larger supplied heap setting still
+receives that final fence. Four empty/current/oversized/prefixed configuration
+controls preserve the bound and give identical values on repeated application.
+The native SDK, Parser's foreign-input guards and existing negative controls
+remain unchanged.
+
+Parser completed again in 141.33 seconds after the consumer artifacts existed.
+The second native root install emitted =LIBRARY-PUBLICATION-HIT=, then reached
+180 seconds while rebuilding Orgize against the refreshed Parser products.
+That failure is retained separately. The next retry completes Orgize under its
+ordinary native entry before retrying the unchanged aggregate install budget.
+
+** Earlier package-direction qualification (superseded below)
+
+The revisions below are observations of the declarations in =gerbil.pkg= and
+the native registry, not a second version-selection mechanism. Root selection
+remains the single Agentic dependency. No contract version or namespace changes.
+
+| Owner | Selected revision | Local result at this boundary |
+|-------+-------------------+-------------------------------|
+| POO | =40c61fe6afc8313f297599da0e511f96e3a23dcf= | Complete cold build 117.86s; all upstream targets |
+| Core | =28c992cd5863b69471493969f258c643cc8aa486= | Complete native build 33.85s; preserves product recovery and concurrent canonical-prefix repair |
+| Parser | =084cea8b060ffd1c4255dc59805d996fa6e8d516= | Complete native build 168.63s, publication ready |
+| Orgize | =783abc8ac40df5833f47471fb05cc9ea1eae81a5= | Current tuple qualification pending |
+| ASCENT | =2ffa137ef676491c20571f9276fb0c22ec117550= | Current tuple qualification pending |
+| Agentic | =df4c9b9bf8ef6b922de55558cca10d5047bd83fc= | Same Core gitlink; current tuple qualification pending |
+
+The repeated aggregate installation attempts exposed two distinct causes. The
+nested Just heap fence changed compiler input identity until made idempotent.
+Separately, Parser's whole-foreign-library footprint included Orgize and Agentic
+outputs: consumers invalidated their own producer, forcing another full compile.
+All three failed =root-native-deps-*= attempts remain failures under 180 seconds.
+
+Parser now obtains registered source ownership and reverse consumers through
+SDK =pkg-list= / =pkg-plist= / =pkg-dependents*=. Its base publication excludes
+those consumers' declared namespace outputs, and the actual compiler import hook
+refuses reverse-consumer namespaces and source paths before macro expansion.
+There is no fixed Orgize/Agentic exclusion list or replacement package resolver.
+Dependencies, unclassified namespaces and effective loadable =.oN= generations
+remain inputs. Namespace collisions refuse. Registry metadata is captured and
+checked against the SDK cache; drift requires a fresh process.
+
+The local base request binds =(package-build owner)= to the actual registered
+source directory. Readers recompute that same scope. Extension/development
+writers retain the whole-environment view. Explicit extension from a base
+requires matching compiler options/environment, current sources and products;
+source support is rechecked on return. Source or PATH drift refuses before the
+builder executes, and the resulting extension remains sensitive to consumer
+changes. This local build-publication record is not C, Q, review authority or a
+delivery credential.
+
+Five controls passed through Parser's =just test-package-inputs= entry at its
+existing 1-GiB/120-second fence. They cover SDK transitive classification,
+dependency/unknown input preservation, macro non-execution on refusal with an
+independent allowed control, native metadata-cache drift, namespace collisions,
+base/whole reader behavior and explicit extension handoff. The product fixtures
+exercise the publication protocol; only the separate full native builds qualify
+real compiler outputs. Concurrent Core proof updates were preserved, not rerun or
+reported here as new proof results.
+
+** Earlier alignment candidate and qualification ledger
+:PROPERTIES:
+:CUSTOM_ID: implementation107-final-alignment
+:END:
+
+The following are historical source revisions, read from package declarations and
+actual native checkouts at that stage. The package-level continuation below supersedes
+this tuple; none of these observations replaces Library version declarations.
+
+| Owner | Selected source revision |
+|-------+--------------------------|
+| POO | =40c61fe6afc8313f297599da0e511f96e3a23dcf= |
+| Core | =644b9ea68fab3765b85b82e0ee8a74b32d58606e= |
+| Parser | =6ce63086c1cb43e50edb8b751892b697bfd1d7e2= |
+| Orgize | =ce568f0de12ffcdcb4df06185dfda9ac28c73b1d= |
+| ASCENT | =21eba228ec9e529f2b2527ff21157f9651787990= |
+| Agentic | =cf6d693ce62889521669fb45a2f05f20b75ccd26= |
+
+The single root Agentic dependency carries this tuple. Agentic's declared Core
+gitlink, its initialized Core checkout and the SDK-registered Core agree.
+Concurrent upstream changes were retained through normal rebases, including the
+Core declaration-hygiene fix, canonical product identities, deepest registered
+source ownership, installed namespace ownership and the native test-engine Suite.
+
+Parser also binds the SDK's local Project (=.=) when using its ordinary
+=<project>/.gerbil= environment. Its reverse dependency graph now excludes the
+Project's outputs alongside registered downstream consumers. Nested dependencies
+retain their own source ownership; installed products use namespace ownership.
+The original metadata value is checked again, including fresh local Project
+metadata, before compiler imports. No fixed consumer list or replacement resolver
+is introduced. Unclassified inputs and effective loadable =.oN= generations remain
+in the footprint.
+
+The six package-direction controls passed before the final diagnostic change.
+The local Project control uses a fresh SDK subprocess and checks consumer output
+exclusion, nested dependency ownership, import refusal and metadata drift. The
+public Suite remains owned by the existing Parser test engine. Compiler controls
+also require configured optimization preservation and idempotent host flags.
+
+The current Core build passed (=core-final-build.log=). Parser =a3b21c5= reached
+the unchanged 180-second limit during post-compile input enumeration
+(=parser-final-build.log=); it is a failed, unadmitted generation. A separate
+whole-library ownership walk measured 8,997 files in 1.81 seconds, so that walk
+alone does not explain the build timeout. Parser =cbb08a3= removes GCC's =-Q=
+generated-function/pass diagnostic dumps while retaining =-v=, real compiler/GC
+progress, optimization, all targets and complete input/product checks. This
+attempt also timed out (=parser-diagnostics-build.log=, 181.79 seconds including
+termination); removing =-Q= alone did not close the gate. Parser =e95719c= also
+removes Gambit =-verbose= generated-function enumeration from the unbuffered
+compiler port. SDK module jobs, compiler imports, GC reports and GCC =-v= remain
+real progress; no timer heartbeat is introduced. A separate 4,000-call metadata
+check measured 4.44 seconds; no metadata or invalidation check was weakened.
+No causal performance improvement is claimed without a completed measurement.
+
+SDK =pkg update package@revision= currently checks out the requested source and
+then fails with a tagged-package argument in =pkg-install-deps=. Those exit-70
+operations are recorded as failed updates, with actual HEAD checked separately.
+Only a normal exit-zero =gerbil deps --install= can close installation.
+
+The preceding tuple already passed the Project build, 54 distinct repository
+controls and real missing-macro-phase recovery. A missing selected =~0.o1= first
+refused before cold imports, remained missing after refusal, was regenerated by
+native =just build= and then passed fresh compiled loading. That is recovery
+through the producer, not a copied object or loader fallback. The final tuple
+must be qualified independently below. Historical failures remain failures.
+
+Execution of the preceding =e95719c / 469833e= cohort is retained below;
+it does not qualify the newer Core-based Parser entry:
+
+| Entry / control | Current result | Scope |
+|-----------------+----------------+-------|
+| =gerbil pkg build Core= | Exit 0 | =core-final-build.log=; selected =07a4e91= |
+| Core product recovery controls | Three cases passed | =core-final-controls.log= |
+| =just build= | Exit 0, 35.37s | =root-current-build.log=; native Project compilation |
+| =just test= | 16 cases passed; provenance case refused | ASCENT manifest still identified its previous built revision; checkout alone is insufficient |
+| Project build / Library / Organization / inputs / selection | 20 cases passed | Current =current-test-*= receipts; ordinary Core runner |
+| Project entry, first lane | Exit 124 at the 120s fence | =current-test-project-formation-entry.log=; retained failure |
+| Project entry, foreground lane | Three cases passed; natural exit 0 in 64.94s | =foreground-test-project-formation-entry.log= |
+| Complete Project formation, foreground lane | 14 cases passed; natural exit 0 in 72.64s | =foreground-test-project-formation.log= |
+| Parser source contracts | Load failed on an incomplete generated macro phase | =parser-final-source-controls.log=; interrupted products remain unadmitted |
+| Parser full build, =e95719c= | Exit 124, 180.98s including termination | =parser-progress-build.log=; diagnostic reduction alone did not close the gate |
+| ASCENT native build, current source | Exit 0, 20.48s | =ascent-foreground-build.log=; run before the next Parser capture |
+
+A 12-core host observation recorded load averages 37.67 / 41.75 / 36.44 and
+concurrent builds/tests outside this checkout. No orphaned compiler belonging to
+this checkout was found. The thermal and sleep probes did not identify a warning
+or overlapping sleep event; neither is established as the cause. A follow-up
+lane cancels only its own inherited background task policy and prevents sleep,
+retaining 180s builds, 120s tests, 2-GiB Scheme heaps and four build workers. It
+changes no other task, persistent host configuration or package environment.
+These host observations qualify the measurements; they do not explain away a
+failed watchdog or justify widening it.
+
+*** Package build diagnosis; SDK modification withdrawn
+
+The preceding =e95719c / 469833e= tuple passed 53 distinct repository controls. Its final manifest
+and compiled-source provenance control remains open; this is not an all-green
+package installation. The foreground and sampled Parser attempts also reached
+180 seconds (=parser-foreground-build.log= and =parser-sampled-build.log=), without
+a complete admitted generation. No retry result is promoted over its watchdog.
+
+A one-second sample of the actual build owner showed Scheme compiler/optimizer
+work during planning and =__select= waiting for compiler subprocesses later.
+Separately, an entry-test sample observed =___cleanup_dyn_module -> dlclose ->
+notifyDebuggerUnload= during natural exit. These are separate observations: the
+entry sample does not establish dynamic unload as Parser's bottleneck.
+
+Structural inspection found 265 candidate closed loaders, most of whose dynamic
+objects the existing Parser publication policy subsequently removes. This count
+does not establish that SDK behavior causes the watchdog failure, or that changing
+the SDK is necessary. The previously proposed compiler/loader change is withdrawn
+following the user's scope correction. Five uncommitted source edits in the
+isolated Gerbil research checkout were restored; no SDK commit, PR, release,
+installed file, private prefix or runtime overlay was created.
+
+The installed SDK remains the normal =tao3k/gerbil/gerbil-scheme@0.19= release
+=0.19.20261009110849.1cfb032.patch618d76f9eb72=. Continue diagnosis at the package
+owners: actual Parser build phases and compiler options, native POO/Core package
+entry points, and dependency/product admission. Attribute measured time before
+choosing a change. Preserve the complete catalog, required implementation/macro
+products, initialization and natural cleanup; do not use =-S= or a smaller target
+set as a substitute for complete compilation.
+
+Acceptance remains a complete Parser build within 180 seconds, 2-GiB Scheme heap
+and four workers, then Orgize/Agentic builds, exit-zero native =just deps=, all 54
+repository controls and real missing-phase cold-load recovery. SDK CI observations
+are separate upstream history and do not establish a blocker for this installed
+SDK or authorize further SDK source work.
+
+The original source-associated C, four complete method input footprints, accepted
+Q, protected SysML publication, independent Aitia review and delivery remain open.
+This package qualification issues none of those credentials. Current Codex roles
+remain restricted to this repository's design, implementation and verification.
+
+*** Parser declaration and native product alignment
+:PROPERTIES:
+:CUSTOM_ID: implementation107-parser-core-entry
+:END:
+
+The user's selected entry is =yuanxu! -> init.exports.std-make-spec ->
+Core defbuild-script -> SDK std/make=. Parser now uses that same path as the
+Project and Core packages. The new Module publishes the existing source catalog;
+it does not construct another parser implementation, input resolver or scheduler.
+
+| File / owner | Responsibility |
+|--------------+----------------|
+| Parser =init.ss= | Explicitly select =modules/parser= with =yuanxu!= |
+| =modules/parser/types.ss= | Require a Scope with a nonempty string catalog; reject missing, empty or forged catalog values |
+| =modules/parser/objects.ss= | Reuse =build-modules.ss= as the one catalog declaration |
+| =modules/parser/config.ss= and =interface.ss= | Publish inert defaults and the catalog Scope; acquire no project inputs |
+| Parser =build.ss= | Register its source package with Core, retain the entire prior catalog and three FFI specifications, pass the init-owned normalized result directly to Core's SDK adapter |
+| Core source/build owners | Prepare and admit selected roles and retained library inputs, preserve normalized return values, repair missing native phases and require complete products |
+| SDK =std/make= | Schedule and compile all declared targets with the existing compiler and four workers |
+| Ordinary installation | Use Core / SDK directly; preserve every native loader and recover incomplete units through the producer |
+| Explicit qualification entry | =build-qualified-library.ss= retains the existing publication observer, its lock/input checks and separate receipt |
+
+The initial entry controls passed through the native SDK harness at 1 GiB / 120 seconds
+(=parser-library-init-controls-04.log=). They reject missing/empty/non-string Scope
+catalogs and consume the actual public =build.ss spec= command to check all
+library targets, three FFI targets/options, selected Module roots and uniqueness.
+Upstream subsequently moved the same assertions to its native Parser test engine;
+the frozen cohort must run that maintained Suite again. Earlier harness attempts
+failed to load; their exit-zero process statuses are
+not passes. Admission requires CASE-OK, SUITE-OK, MODULE-OK, HARNESS-OK and final
+OK with no harness/module/check errors.
+
+Parser's earlier success callback deleted most loader =.oN= products immediately
+after the compiler returned. Core requires those native products. The normal
+publication callback now preserves them. The separately callable source-loader
+preparation utility and its historical controls are not the native build path.
+GCC startup/version =-v= output is removed from the package's compiler profile;
+optimization, host mode, real SDK job messages, errors and GC reports remain.
+This is a diagnostic setting change, not evidence of a measured speedup.
+
+Two complete attempts on the initial Core entry =eedea9e= hit the unchanged
+180-second watchdog: =parser-core-native-build.log= (183.89s including termination)
+and =parser-core-foreground-build.log= (182.82s including termination). Neither
+produced an admitted complete generation. The first attempt's request to remove
+its own inherited background policy was denied by the sandbox, and compilation
+continued under its existing policy; the second applied that scheduling change.
+Its early stage overlapped a failed source-control load, so it is not a matched
+performance comparison. A child-process observation showed real Scheme/Gambit/
+GCC/assembler work; it does not establish an SDK defect.
+
+The next historical native run selected Parser =9a6b96a=, Orgize =3f63168= and
+Agentic =2dd0f13=. Concurrent Parser test-owner migration was preserved during a
+normal rebase and non-force push. All registered checkouts match the declarations;
+tagged =pkg update= returned 70 after checkout and is still recorded as failed.
+Native exit-zero dependency installation, complete builds, the root suite and
+cold missing-phase recovery remain required. No source build has modified Gerbil,
+installed an SDK overlay or increased any resource fence.
+
+The ordinary package entry also no longer wraps Core in a whole-library
+pre-clean. The old wrapper erased completed units after every failed admission,
+preventing the SDK from recovering useful compilation work. The separate explicit
+qualification entry retains its stricter receipt protocol and CI owner. This is
+not a waiver of qualification, a fabricated completion record or another cache.
+
+On =07a8a80 / ee45745= the first Core-owned native attempt reached its 180-second
+watchdog (183.97s including termination); a physical census found 193/270 candidate
+units with their required files. Candidates were not called admitted. A second
+full-spec SDK invocation completed in 118.49s and updated the native manifest,
+with no compiler errors. The temporary receipt driver then failed to serialize
+its result, so a fresh exit-status and completeness verification remains required.
+This is incremental completion, not a successful clean cold compilation.
+
+That earlier candidate cohort was frozen at the revisions in the table above. Its Core
+=644b9ea= changes are proof/CLI tooling, not a newly claimed runtime optimization;
+the later upstream comparison checkout =567457c= is not silently substituted for
+the selected dependency. Agentic's Core gitlink and installed submodule must both
+match =644b9ea=. SDK =pkg update= exit-70 results remain failed operations; only
+exit-zero native dependency installation closes that gate. No installed SDK file
+or Gerbil source was changed. The actual VM query reported one processor; no
+processor flag was added. No surviving compiler from the timed-out invocation
+was found.
+
+** Package-level build ownership and final qualification
+:PROPERTIES:
+:CUSTOM_ID: implementation107-package-build-roles
+:END:
+
+This is the active continuation of the earlier ledgers. No Gerbil source, installed
+SDK, compiler prefix, timeout or heap limit is changed. The Parser entry is
+=yuanxu! -> modules/parser -> init.exports.std-make-spec -> Core defbuild-script ->
+SDK std/make=. Core's normalized return is passed directly; its source admission,
+missing-phase repair and complete-product checks remain authoritative. Parser's
+concurrent target-identity and canonical FFI include-path fixes were retained.
+
+| Owner | Declared source revision |
+|-------+--------------------------|
+| POO | =43349640384ba0ea4d70aeb2be5e217ab6b56cbe= |
+| Core | =f1e57b4dcfd2242c3f88b961373dffdb93d91b2e= |
+| Parser | =6db7eea45c3bef5c36a92fae26dc2c0a6f0b73b1= |
+| ASCENT | =b6a8e3490bdef42da91b484326a2613e86465caf= |
+| Orgize | =2c2785f28fb583c2d6d61f27c194f27101c2b96b= |
+| Agentic | =2a9019ac623cf9fa20400a85c400b8fbc7f4a3b4= |
+
+These revisions are observations of declarations, not Library contract versions.
+Root selects Agentic only. Agentic selects Orgize and ASCENT and binds the same
+Core gitlink; Orgize selects Parser; Parser and ASCENT select Core; Core selects
+POO. Native checkout, tag, initialized gitlink, manifests and actual products must
+be verified separately. A manifest is written before compilation by the SDK and
+is not evidence of successful compilation.
+
+POO's ordinary package specification previously included examples, test helpers
+and benchmark modules. The existing =library-modules= classification now selects
+its reusable library without duplicating the inventory. The unchanged complete
+previous specification remains available as =qualification=. The bounded full-test
+driver and CI producer explicitly select that complete inventory; linked benchmark
+and test-program compilation prepares it too. Group/batch builds retain their
+shared test support. Compiler options and extra inputs are preserved. This is
+package responsibility separation, not removal of qualification coverage.
+
+Twelve source build-contract controls passed with exact case/suite/module/harness
+completion and final OK (=poo-build-role-controls-02.log=). They cover complete
+inventory retention, production-root membership, selected groups, native interface
+identity, unchanged facade dependencies, cache identity refusals and test ownership.
+They use the existing native environment and are not full native qualification of
+the newly published POO runtime changes. The first attempt's boolean expectation
+failed; it remains a failed receipt, not an exit-zero pass.
+
+Earlier complete native builds of Core, ASCENT, Parser, Orgize and Agentic passed
+individually on the preceding cohort. Root native dependency installation still
+failed its watchdog: attempt01 exit124, attempt02 exit137 and attempt03 exit124.
+A transient initial-heap control also timed out; it is not retained in configuration.
+A sampled POO run completed in160.16s, but the four sample captures perturbed wall
+time. A direct library request completed in29.92s. Different routes, sampling,
+cache and scheduling prevent a causal speedup claim. The native install and full
+current-cohort build/test results must be recorded below before closure.
+
+The final declared native cohort completed each full package build with exit0.
+These are complete incremental native builds, not six successful clean cold builds.
+Agentic's initialized Core gitlink matches the registered Core revision.
+
+| Native package | Seconds | Result |
+|----------------+---------+--------|
+| =gerbil-poo= | 17.97 | exit 0 |
+| =gebril-yuanxu= | 48.87 | exit 0 |
+| =gerbil-ascent= | 34.76 | exit 0 |
+| =gerbil-parser= | 39.61 | exit 0 |
+| =orgize= | 44.94 | exit 0 |
+| =agentic-ai-lab= | 92.0 | exit 0 |
+
+Receipts: =native-cohort-results-final-role.json= and the six
+=*-core-owned-full-build-final-role.log= files. The first runtime-cohort install
+still reached180s after POO/Core completed and Parser began;
+=root-deps-build-role-runtime-attempt01.log= remains a failure. The final
+cohort's complete =just deps= and repository qualification are still pending.
+
+The final-cohort aggregate install also failed: =root-deps-final-role-attempt01.log=
+records181.37s including termination, exit124, after Orgize's generation marker.
+The native installer traverses dependencies and starts separate package build
+processes; successful single-package builds do not turn this aggregate failure
+into a pass. Own-task foreground scheduling did not close the gate. No package
+was marked built by hand, no resolver was replaced and no failure was hidden.
+
+Core's existing operation measurement ran on its ACTUAL source init, with ordinary
+source registration and the declared =core-spec= / public import closure:
+=core-projection-profile-02.log=, exit0,38.44s,251 targets. Initial source registration
+to imports took about13.41s; nested source accounting reported6,919 reads,1,260
+checks and202,719 metadata-replay visits. Nested stage times overlap and must not
+be summed. Signed VM allocation accounts included invalid samples and are not
+physical allocation or a speedup result. This locates package loading/projection
+work; it does not establish an SDK defect.
+
+The initial diagnostic imported the obsolete installed =:yuanxu/init= and was
+correctly refused by the declaration/source guard. Current Core deliberately
+consumes init as source rather than publishing it as a library root. The corrected
+probe uses the actual registered source entry; no compatibility alias or weakened
+source check was added. Full installation remains a separate unclosed gate.
+
+The final-cohort repository build and all configured verification lanes passed.
+Each ordinary test invocation retained its120-second/2-GiB fence. Multi-suite Just
+recipes execute serially and their aggregate times below are not per-suite limits.
+
+| Repository entry | Seconds | Result |
+|------------------+---------+--------|
+| =build= | 33.89 | exit 0 |
+| =test= | 292.78 | exit 0 |
+| =test-project-formation-build= | 67.24 | exit 0 |
+| =test-library-declarations= | 114.52 | exit 0 |
+| =test-organization-declarations= | 130.95 | exit 0 |
+| =test-project-inputs= | 46.25 | exit 0 |
+| =test-library-selection= | 70.05 | exit 0 |
+| =test-project-formation-entry= | 71.69 | exit 0 |
+| =test-project-formation= | 88.94 | exit 0 |
+
+There were 54 successful case executions (52 distinct module/suite/case identities). The two selection
+controls ran through both the direct SDK and Core TestingScript lanes. Metadata
+qualification includes =COMPILED-PACKAGE-LOAD-OK= and =NATIVE-PACKAGE-METADATA-OK=: declared
+pins, actual Git heads, initialized Core gitlink, native manifests, regular compiled
+interfaces/objects and required phase families agreed before the late Type import.
+These controls do not run unconfigured live Codex intake or independent review.
+Receipts: =frozen-root-checks-build.json= and its corresponding =frozen-root-*.log=.
+
+All receipts are under =.data/alignment-20261024/current-pr/=. Existing limits remain
+180 seconds per package build,120 seconds per ordinary test,2GiB per Scheme VM and
+four workers; Parser's focused native tests retain their existing1GiB bound.
+Same-C reasoning, accepted Q, explicit SysML publication, independent Aitia review
+and delivery remain separate open gates.
+
+** Correct package deadline ownership (active continuation, 2026-10-25)
+:PROPERTIES:
+:CUSTOM_ID: implementation107-package-deadlines
+:END:
+
+The aggregate installation watchdog was a configuration error introduced during
+cleanup. Published =7a6c2b3:Justfile= has180-second fences around individual POO,
+Core and ASCENT compilation recipes, and no =deps= recipe. Applying a new180-second
+closure deadline to native =deps --install= conflated several sequential package
+builds with one build. Its failed calls remain failed receipts; they do not prove
+that an individual package exceeded its original build budget.
+
+Root =deps= now delegates directly to the unchanged native installer. POO, Core
+and Parser retain180 seconds at their EXECUTABLE =build.ss= entry using the host's
+=env -S timeout --signal=TERM --kill-after=5s 180s gxi=. This covers startup, imports
+and compilation when the SDK executes that file. Explicit =gxi build.ss= callers
+retain their existing caller watchdogs; tests retain their1GiB/2GiB limits. Root
+=just build= remains180 seconds, ordinary tests remain120 seconds and all Task
+Scheme processes retain2GiB maximum heap/four workers. No SDK source, alternate
+interpreter, package resolver, source mount or environment manager is introduced.
+The already-used host tools must provide =env -S= and GNU =timeout=.
+
+For installation qualification, an ignored observation script starts ONE native
+=just deps=, observes its actual descendant package processes, and refuses any
+individual build at180 seconds with the existing five-second termination grace.
+It neither resolves dependencies nor starts package builds itself. It requires
+observations for all six registered owners, exit0 and no surviving owned process.
+Its aggregate elapsed time is reported separately from the unchanged unit budget.
+
+| Owner | Active declared revision |
+|-------+--------------------------|
+| POO | =247a7eb8a40dca0843956da2cf93eb5b36dbdd62= |
+| Core | =07ca3d5ee408fa06460d8897a03ac1f7d30d1c39= |
+| Parser | =8312c80d707c111202f1e2de30e1e5e7ead86b4b= |
+| ASCENT | =21aa0f9461c0665a9264455632061d8f9f33a18f= |
+| Orgize | =c5d948380cc7bb0116e224989f8b9ff0b869cb45= |
+| Agentic | =c3f81cf6b58aac987a0ca9b2f9520b73a8f010c1= |
+
+The earlier54 control executions/six builds belong to the preceding runtime-qualified
+cohort. The active cohort still requires native installation, metadata/build/test
+confirmation and actual phase restoration below; no earlier C or receipt is promoted.
+Concurrent Parser CI timeout/setup changes were retained; this Task's unit budgets
+remain180 seconds rather than adopting a larger upstream qualification budget.
+
+The earlier complete POO qualification passed31.07s at1GiB; its prepared collection
+group compiled in92.29s. Twelve table-selection and38 set-algebra controls passed
+through POO's maintained compiled runner. Parser's two declaration/spec-equivalence
+and six package-direction controls passed at1GiB. Nine compiler-process controls
+passed, but its runtime-only CLI control lacked the required qualification helper.
+The helper writer correctly refused an absent current base qualification.
+
+The explicit Parser strict base writer then reached180s (exit124); no base record
+was issued. Normal Core/SDK repair completed Parser in66.89s, but downstream Orgize
+subsequently timed out at its own180-second fence while regenerating native products.
+These are real individual build/qualification failures, distinct from the mistaken
+aggregate install fence. They require native continuation/currentness verification;
+no source-only substitution, copied object or manual publication record is accepted.
+
+*** Native installation: accepted execution and complete unit coverage
+
+Native =just deps= / =gerbil deps --install= exited0 on the active declared cohort.
+The complete observation passed: six native package executions, unchanged 180-second
+unit deadlines,2GiB heap/four workers and no surviving owned process. Aggregate
+elapsed time was279.89s, including SDK fetch/metadata/tagging; it is not one build.
+The observed whole-second process ages below are budget observations, not matched
+performance measurements.
+
+| Native package | Maximum observed process age (s) |
+|----------------+----------------------------------|
+| =gerbil-poo= | 13 |
+| =gebril-yuanxu= | 37 |
+| =gerbil-parser= | 35 |
+| =orgize= | 29 |
+| =gerbil-ascent= | 20 |
+| =agentic-ai-lab= | 51 |
+
+Receipts: =native-install-package-bounded-02.log= / =.json=. The first active native
+installation also exited0 (341.98s), but its observation matcher missed the package
+paths. Its =passed:false= records insufficient observation coverage, not a native
+installer failure; it is not used to certify unit deadlines. The corrected matching
+was checked against executable deadline and child-interpreter command forms before
+the complete repeat. Earlier aggregate exit124 calls and real strict-qualification
+failures remain unchanged historical receipts.
+
+Current root build/test and actual phase recovery are the remaining local gates
+before source commit/push. Source push is separate from SysML publication, independent
+Aitia review, Library release and recipient adoption; those remain open.
+
+*** Active cohort: complete root build and configured verification
+
+The active cohort completed the root's full native build and all54 configured
+control executions (52 module/suite/case identities). Two selection cases run in
+both the direct SDK and Core TestingScript lanes. Each ordinary invocation kept
+120 seconds/2GiB; recipes containing several suites report their aggregate time.
+
+| Existing entry | Seconds | Result |
+|----------------+---------+--------|
+| =build= | 31.73 | exit 0 |
+| =test= | 309.33 | exit 0 |
+| =test-project-formation-build= | 62.45 | exit 0 |
+| =test-library-declarations= | 108.81 | exit 0 |
+| =test-organization-declarations= | 127.28 | exit 0 |
+| =test-project-inputs= | 48.71 | exit 0 |
+| =test-library-selection= | 64.82 | exit 0 |
+| =test-project-formation-entry= | 70.68 | exit 0 |
+| =test-project-formation= | 87.88 | exit 0 |
+
+Receipts: =deadline-root-checks-build.json=, =deadline-root-case-identities.json= and
+=deadline-root-*.log=. Current metadata verifies actual heads, all inherited pins,
+Agentic's initialized Core gitlink, native manifests, regular interfaces/objects
+and required phase families, then performs the real compiled Type/init import.
+Unconfigured live Codex capture, real four-method evidence issuance, independent
+review, recipient use and strict upstream release qualification are not counted
+as these54 executions. Actual required-phase refusal/producer repair/fresh-process
+load is recorded separately below.
+
+*** Actual required-phase refusal, native repair and fresh loading
+
+The required =modules/resource-evidence/interface~0.o1= was moved to an ignored
+retained evidence file while its other numbered generation remained. The metadata
+gate refused =build-required: selected runtime products are incomplete= before
+=COMPILED-PACKAGE-LOAD-OK=. Source fallback or another generation did not conceal
+the missing required phase.
+
+| Existing boundary | Seconds | Observed result |
+|-------------------+---------+-----------------|
+| =root-final-missing-phase-negative= | 11.73 | exit 1 |
+| =root-final-native-phase-repair= | 31.47 | exit 0 |
+| =root-final-restored-compiled-load= | 9.56 | exit 0 |
+| =core-final-product-recovery-controls= | 10.53 | exit 0 |
+
+The ordinary =just build= producer repaired the missing phase. Its SHA256 changed
+from =269f8c1bb2aae5262cbc30399aa58f510a9a9015a9cc6286126a3d8356c57aa5= to
+=86c38e045b7e8a8af1de23592b2b07137b76c80820dbaf098dd612f3ace9923d=. The controller
+did not restore/copy the retained binary. A new metadata/test VM passed both real
+compiled-load and native-package-metadata markers. Three maintained Core controls
+also passed: selected marker repair, non-regular-product refusal, and canonical
+prefix identity/isolation. Receipts: =root-final-phase-recovery.json= and its four
+logs. This is actual partial-product recovery plus fresh loading; it does not
+claim that every package has passed a clean cold source rebuild.
+
+*** Final local status and remaining gates
+
+| Gate | Status / scope |
+|------+----------------|
+| Native installation | Passed, exit0; six observed package executions within180s,2GiB/four workers, no surviving owned process |
+| Full current root build | Passed31.73s; same Core/SDK path and normalized specification handoff |
+| Configured current root verification |54 executions /52 distinct case identities passed through maintained SDK/Core entries |
+| Required native phase and fresh loader recovery | Real refusal -> native producer repair -> new-process load passed; three Core controls passed |
+| Active source baseline | Formal pinned upstream revisions; no tracked native-checkout edits; SDK-generated untracked manifests are package metadata, not patches |
+| Strict upstream cold qualification | Open: Parser base writer reached180s; its dependent qualification-runtime CLI control remains unprepared (nine other compiler-process controls passed). No larger upstream CI budget is imported into this Task |
+| Original C / method A/E/W/use / accepted Q / explicit SysML publication | Open; configured slice controls and package compilation do not issue these credentials |
+| Independent Aitia review / release / recipient use | Open; no review submission, independent-role grant or actual delivery performed |
+| Source synchronization | One qualified source commit targets hardenedlinux main and the tao3k mirror. Post-commit metadata and both remote heads must agree; the final execution receipt records their identity. This is not Library release |
+
+* Historical implementation record (2026-10-23)
+
+The remaining sections describe the earlier development tuple and its bounded
+receipts. Removed patch sources remain available in the published =7a6c2b3= history;
+they are not instructions to reintroduce those dependencies or environments.
+
 * Status and authorized execution boundary
 :PROPERTIES:
 :CUSTOM_ID: implementation107-status
@@ -38,13 +906,13 @@ concurrent edits remain separate. New runtime outputs are under
 | SysML CLI | Installed v0.10.1, commit 1c45b6e1749fc8adc9b82d4af22fbe180b56a0e2, Go go1.25.14 | /opt/homebrew/bin/sysml, actual independent invocation; distinct from the inspected OpenSysML checkout |
 
 The explicit development patches are
-[[file:../../../dev/patches/yuanxu-scope-and-build-roots.patch][Core source and regression fixture]] and
-[[file:../../../dev/patches/ascent-core-dependency.patch][ASCENT dependency and complete-build repair]].
+[[https://github.com/hardenedlinux/deterministic-engineering/blob/7a6c2b3/dev/patches/yuanxu-scope-and-build-roots.patch][Core source and regression fixture]] and
+[[https://github.com/hardenedlinux/deterministic-engineering/blob/7a6c2b3/dev/patches/ascent-core-dependency.patch][ASCENT dependency and complete-build repair]].
 These are reviewable local changes, not upstream releases. Installing just the base
 pins with gxpkg does not apply these repairs. An upstream committed tuple is still
 required before claiming normal package distribution.
 
-[[file:../../../dev/formation-environment.py][Development preparation]] reads pins from gerbil.pkg,
+[[https://github.com/hardenedlinux/deterministic-engineering/blob/7a6c2b3/dev/formation-environment.py][Development preparation]] reads pins from gerbil.pkg,
 checks exact checkout identities and compares each working tree against a temporary
 Git index containing only its reviewed patch. It rejects additional source changes
 and untracked dependency inputs. It never stages the user's repositories, fetches,

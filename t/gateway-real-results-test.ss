@@ -6,7 +6,7 @@
 (def gateway-real-results-test
   (test-suite "Real gateway method evidence, provenance and scoped reuse"
     (test-case "actual method outputs and independent native queries match review gold"
-      (def scope (.get init.Scenarios gateway-review scope))
+      (def scope (.get (.get deterministic-engineering.init.exports Scenarios) gateway-review scope))
       (def digest (.get scope methods file-digest))
       (def report-path (getenv "GATEWAY_REAL_REPORT" #f))
       (unless report-path (error "run examples/gateway-evidence.ss and set GATEWAY_REAL_REPORT"))

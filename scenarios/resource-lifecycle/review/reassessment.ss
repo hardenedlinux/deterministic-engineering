@@ -5,7 +5,7 @@
         (only-in :std/misc/ports read-all-as-u8vector)
         (only-in :std/crypto/digest sha256) (only-in :std/encoding/hex hex-encode)
         :yuanxu/contribution/verification
-        :gerbil-ascent/program/clue-exchange :gerbil-ascent/program/trajectory
+        :agentic-ai-lab/modules/ai-agentic-context/clue-exchange :agentic-ai-lab/modules/temporal-causality/trajectory/ascent-ledger
         :poo-flow/lambda-aitia/modules/sdlc/objects
         :poo-flow/lambda-aitia/modules/sdlc/standards/nasa-review
         :poo-flow/lambda-aitia/modules/sdlc/standards/nasa-lifecycle

@@ -7,6 +7,29 @@
 
 [[file:00.01-index.org][Index]] | [[file:00.02-local-package-links.org][Earlier package-link setup]] | [[file:../../10-19-design/10-architecture/10.06-poo-ascent-integration.org][POO/ASCENT integration design]]
 
+* Current package ownership (2026-10-25)
+:PROPERTIES:
+:CUSTOM_ID: native-package-alignment
+:END:
+
+The root [[file:../../../gerbil.pkg][gerbil.pkg]] declares only =agentic-ai-lab=. POO and ASCENT
+are inherited from it; Core is inherited through Parser and ASCENT. Each upstream package
+owns its own dependency revisions. Nested Library/Module/Scenario metadata selects
+the native module prelude; the review metadata supplies only its namespace and
+inherits the root closure. It must not redeclare retired =poo-flow= dependencies.
+
+=just deps= delegates to =gerbil deps --install=; =just build= delegates to
+=gerbil build= and the sole root [[file:../../../build.ss][build.ss]]. Test and investigation recipes use
+=gerbil env= instead of constructing =GERBIL_LOADPATH=. Project test execution
+retains Core's TestingScript/Fixture/Ops in
+[[file:../../../projects/library-formation/test.ss][projects/library-formation/test.ss]]. The former =dev= environment/patch tree and
+=formation-build.ss= were removed. They are not package prerequisites.
+
+The dated observations below retain their original evidence scope and obsolete
+commands as historical records. Use the current entrypoints above, not those
+historical load paths, checkout pins or build instructions. The current native
+installation outcome is recorded in [[file:../../10-19-design/10-architecture/10.107-implementation-progress-and-execution-gates.org::#implementation107-package-deadlines][10.107]].
+
 * Initial package bootstrap (historical)
 :PROPERTIES:
 :CUSTOM_ID: scheme-package-bootstrap

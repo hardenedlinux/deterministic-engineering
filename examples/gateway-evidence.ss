@@ -5,7 +5,7 @@
         :clan/poo/object :std/encoding/json
         (only-in :std/misc/ports read-all-as-string)
         :gerbil-ascent/program/session
-        (only-in :gerbil-ascent/program/trajectory ascent-trajectory))
+        (only-in :agentic-ai-lab/modules/temporal-causality/trajectory/ascent-ledger ascent-trajectory))
 (export main run-gateway-investigation)
 (def (read-text path) (call-with-input-file path read-all-as-string))
 (def (write-text path value)
@@ -16,9 +16,9 @@
 (def (rejects? thunk) (with-catch (lambda (_) #t) (lambda () (thunk) #f)))
 (def (run-gateway-investigation root output quint lean)
   (create-directory output)
-  (init.build-spec '("init" "examples/gateway-evidence"))
-  (init.build-current!)
-  (def scene (.get init.Scenarios gateway-review scope))
+  ((.get deterministic-engineering.init.exports std-make-spec) '("init" "examples/gateway-evidence"))
+  (.call deterministic-engineering.init.exports admit-current)
+  (def scene (.get (.get deterministic-engineering.init.exports Scenarios) gateway-review scope))
   (def entry (.ref scene 'entry))
   (def methods (.ref scene 'methods))
   ;; Issuer-owned observations must use this SAME Scenario scope's operations.
@@ -188,7 +188,7 @@
   (require 'exact-retained-observations (equal? (hash-ref after-rejection "witness") (hash-ref late "witness")))
   (require 'all-observations-preserved (= (count after-rejection "witness") 7))
   (require 'no-rejection-created-support (= (count after-rejection "support") 1))
-  (init.build-current!)
+  (.call deterministic-engineering.init.exports admit-current)
   (def result
     (hash ("schema" "gateway.real-investigation.v1") ("status" "passed")
           ("actor" "LLM-based AI agent selected this investigation; replay is a host program")

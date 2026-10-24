@@ -1,9 +1,9 @@
 (import :clan/poo/object
  (only-in :clan/poo/mop Any Function) (only-in :clan/poo/type String Symbol List)
  (only-in :clan/poo/object-contract ObjectContract.)
- (only-in :yuanxu/types YuanxuContract. yuanxu-predicate-type)
+ (only-in :yuanxu/object-types/contracts YuanxuContract. yuanxu-predicate-type)
  "../../types.ss"
- (only-in "../../library/concurrency/resource-control/backpressure-memory/rust/types.ss" RustResourcesScopeContract) (only-in :yuanxu/types yuanxu-predicate-contract)
+ (only-in "../../library/concurrency/resource-control/backpressure-memory/rust/types.ss" RustResourcesScopeContract) (only-in :yuanxu/object-types/contracts yuanxu-predicate-contract)
         "../../library/project-organization/types.ss" "../../modules/project-formation/types.ss")
 (export FormationProfileContract FormationCaptureRequestContract RustResourcesScopeContract OrganizationScopeContract FormationScopeContract FormationScenarioContract)
 (def FormationScenarioContract

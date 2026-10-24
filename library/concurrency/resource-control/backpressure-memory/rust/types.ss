@@ -2,7 +2,7 @@
 (import :clan/poo/object
         (only-in :clan/poo/mop Type Type. Any Function define-type element? raise-type-error)
         (only-in :clan/poo/recursive-validation close-validation closed? closed-ref)
-        (only-in :yuanxu/types YuanxuContract. yuanxu-predicate-contract yuanxu-predicate-type)
+        (only-in :yuanxu/object-types/contracts YuanxuContract. yuanxu-predicate-contract yuanxu-predicate-type)
         (only-in :clan/poo/type String Symbol List)
         (only-in :clan/poo/object-contract ObjectContract. refine)
         "../../../../../types.ss"

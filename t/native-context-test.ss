@@ -8,7 +8,7 @@
   (test-suite "One source-bound native capture at Scenario admission"
     (test-case "source/Profile mutation and split scope forgery cannot reuse the captured snapshot"
       (def root (current-directory))
-      (def scene (.get init.Scenarios resource-lifecycle scope))
+      (def scene (.get (.get deterministic-engineering.init.exports Scenarios) resource-lifecycle scope))
       (def methods (.ref scene 'methods))
       (def original (path-expand "library/concurrency/resource-control/backpressure-memory/rust/native" root))
       (call-with-temporary-directory "native-context"

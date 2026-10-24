@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 (import :deterministic-engineering/init :deterministic-engineering/profiles/resource-lifecycle
         :clan/poo/object :std/encoding/json :gerbil-ascent/program/session
-        (only-in :gerbil-ascent/program/trajectory ascent-trajectory)
+        (only-in :agentic-ai-lab/modules/temporal-causality/trajectory/ascent-ledger ascent-trajectory)
         (only-in :std/misc/ports read-all-as-string))
 (export main)
 (def (read-text p) (call-with-input-file p read-all-as-string))
@@ -12,9 +12,9 @@
 (def (main output cargo rustc quint lean)
   (def root (current-directory)) (set! output (path-expand output root))
   (create-directory output)
-  (init.build-spec '("init" "profiles/resource-lifecycle" "examples/resource-lifecycle-evidence"))
-  (init.build-current!)
-  (def scene (.get init.Scenarios resource-lifecycle scope))
+  ((.get deterministic-engineering.init.exports std-make-spec) '("init" "profiles/resource-lifecycle" "examples/resource-lifecycle-evidence"))
+  (.call deterministic-engineering.init.exports admit-current)
+  (def scene (.get (.get deterministic-engineering.init.exports Scenarios) resource-lifecycle scope))
   (def entry (.ref scene 'entry)) (def m (.ref scene 'methods))
   (def digest (.ref m 'file-digest)) (def value-digest (.ref m 'value-digest))
   (def save (.ref m 'write-json)) (def record (.ref m 'record))
@@ -111,7 +111,7 @@
   (add (list ((.ref m 'quint) root LargerPayloadProfile quint
     (path-expand "qnt-early-release" output) 'early-release)))
   (register) (capture "09-early-release-model-counter" 6 2 22)
-  (init.build-current!)
+  (.call deterministic-engineering.init.exports admit-current)
   (def report (hash ("schema" "rust.resource-investigation.v1") ("status" "passed")
     ("queries" queries) ("nativeExchanges" exchanges) ("results" (map record records))
     ("nativeCases" 6) ("nativeRuns" 3) ("nativePerformanceMeasured" #f)

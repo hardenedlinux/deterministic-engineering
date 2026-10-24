@@ -1,6 +1,6 @@
 ;;; -*- Gerbil -*-
 (import :clan/poo/object
-        (only-in :yuanxu/types yuanxu-predicate-contract)
+        (only-in :yuanxu/object-types/contracts yuanxu-predicate-contract)
         (only-in "../../library/concurrency/resource-control/backpressure-memory/rust/types.ss" RustResourcesScopeContract)
         (only-in "../../modules/resource-evidence/types.ss" ResourceEvidenceScopeContract))
 (export RustResourcesScopeContract ResourceEvidenceScopeContract ScenarioScopeContract)

@@ -30,7 +30,7 @@
     "let caller_permit = if name == \"M06\" || name == \"M04\" { permit.take() } else { None };"
     "let caller_permit: Option<OwnedSemaphorePermit> = None;"))
   ;; The old accepted closure supplies dependency/tool inputs; it is not a new issuer.
-  (def accepted (load (path-expand ".data/qualification-20261019/acceptance.json" root)))
+  (def accepted (load (getenv "BACKPRESSURE_ACCEPTANCE")))
   (def report (load (hash-ref accepted "report")))
   (def native (find (lambda (r) (equal? (hash-ref (hash-ref r "observation") "method") "native")) (hash-ref report "results")))
   (def dependencies (hash-ref (hash-ref native "observation") "inputs"))

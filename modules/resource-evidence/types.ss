@@ -1,6 +1,6 @@
 ;;; -*- Gerbil -*-
 (import :clan/poo/object
-        (only-in :yuanxu/types yuanxu-predicate-contract))
+        (only-in :yuanxu/object-types/contracts yuanxu-predicate-contract))
 (export ResourceEvidenceScopeContract)
 (def ResourceEvidenceScopeContract
   (yuanxu-predicate-contract 'resource-evidence/scope
