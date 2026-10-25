@@ -1,19 +1,19 @@
-# org-target: docs/10-19-design/10-architecture/10.107-implementation-progress-and-execution-gates.org::#implementation107-package-deadlines
+# org-target: docs/10-19-design/10-architecture/10.107-implementation-progress-and-execution-gates.org::#implementation107-parser-cold-runtime
 direction: down
 title: "Library package alignment / 2026-10-25\nOne direct dependency; native package environment and owner boundaries" {
   shape: text
   style.font-size: 24
 }
-package: "deterministic-engineering / gerbil.pkg\nOnly direct dependency: agentic-ai-lab PR34 @ c3f81cf\nNo independent POO / ASCENT / Core revision overrides" {
+package: "deterministic-engineering / gerbil.pkg\nOnly direct dependency: agentic-ai-lab PR34 @ bfa9498\nNo independent POO / ASCENT / Core revision overrides" {
   style.fill: "#e5f4e8"
 }
 upstream: "Inherited package declarations" {
   direction: down
-  flow: "Agentic c3f81cf\nSelects Orgize + ASCENT; binds matching Core gitlink"
-  ascent: "ASCENT 21aa0f9\nDeterministic inference library"
-  orgize: "Orgize c5d9483\nGenerated Org parser and document runtime"
-  parser: "Parser 8312c80\nExecutable package entry:180s\nyuanxu! selects catalog Module -> init-owned std-make-spec\nCore defbuild-script -> SDK std/make; all library / FFI targets retained\nKeep native loaders; Core / SDK own incremental repair\nQualification issuance has its own explicit entry\nSDK reverse dependency graph includes local Project .\nDeepest registered source ownership; installed namespace ownership\nReverse-consumer compiler imports refuse before expansion\nExtension view retains whole-environment checks"
-  core: "Core 07ca3d5\nExecutable package entry:180s\nTypes / Contract / Context / normalized Scope\nCompiler projection / TestingScript / Fixture / Ops\nSelected product recovery / canonical test publication prefix"
+  flow: "Agentic bfa9498\nSelects Orgize + ASCENT; binds matching Core gitlink"
+  ascent: "ASCENT 618bf45\nDeterministic inference library"
+  orgize: "Orgize baca9bc\nGenerated Org parser and document runtime"
+  parser: "Parser 4c142e4\nExecutable package entry:180s\nyuanxu! selects catalog Module -> init-owned std-make-spec\nCore defbuild-script -> SDK std/make; all library / FFI targets retained\nKeep native loaders; Core / SDK own incremental repair\nExplicit base / helper writers:180s\nCLI test requires base + formal helper; test120s /1GiB\nSDK reverse dependency graph includes local Project .\nDeepest registered source ownership; installed namespace ownership\nReverse-consumer compiler imports refuse before expansion\nExtension view retains whole-environment checks"
+  core: "Core 0a6bdac\nExecutable package entry:180s\nTypes / Contract / Context / normalized Scope\nCompiler projection / TestingScript / Fixture / Ops\nSelected product recovery / canonical test publication prefix"
   poo: "POO 247a7eb\nExecutable package entry:180s\nObject model and native Type / Function semantics\nPackage library uses existing library-modules inventory\nExplicit qualification retains every former target\nCI / full test driver select complete qualification"
   flow -> ascent -> core -> poo
   flow -> orgize -> parser -> core
@@ -31,7 +31,7 @@ owners: "Repository responsibilities" {
 removed: "Removed repository-owned environment machinery\ndev directory / all3 upstream patches / environment generator\nFORMATION_* source mounts and per-dependency build recipes\nDuplicate formation-build.ss / patch-only build-source API\nRetired review dependency root / dated evidence defaults\nManual Flow / Aitia / compiled-library load-path injection" {
   style.fill: "#e5f4e8"
 }
-qualification: "Current qualification boundary\nNative install PASS /279.89s aggregate\nSix package builds / maximum observed51s / no surviving process\nRoot complete build PASS31.73s\n54 control executions PASS /52 distinct cases\nRequired phase refusal / native repair / fresh load PASS\nThree maintained Core recovery controls PASS\nStrict Parser cold qualification / dependent runtime control OPEN\nPackage180s / ordinary tests120s /2GiB Scheme heap / workers4\nSDK unchanged; native environment and resolver\nOriginal C / accepted Q / explicit SysML publication OPEN\nNo independent review or delivery authority\nHistorical failures and source-scoped receipts retained in Org" {
+qualification: "Current qualification boundary\nNative install PASS /204.94s aggregate; all six units <=35s\nParser native-products cold PASS139.02s +133.17s /270 targets /601 jobs\nParser native controls18 PASS; formal helper entry PASS\nRuntime CLI success / child failure / missing output PASS\nProduct-mode refusal -> exact mode restoration -> fresh reader PASS\nRoot build PASS36.35s /54 executions /52 distinct cases\nRequired phase refusal -> native repair -> fresh load PASS\nCore3 recovery controls PASS; final renewed reader PASS\nAgentic identity refusal retained; native recovery PASS35.14s\nPackage180s / ordinary tests120s /2GiB maximum / workers4\nFocused Parser tests1GiB; SDK unchanged\nOriginal C / accepted Q / explicit SysML publication OPEN\nNo independent review or delivery authority\nHistorical failures and source-scoped receipts retained in Org" {
   style.fill: "#fff2dc"
 }
 

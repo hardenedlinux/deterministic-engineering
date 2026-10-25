@@ -7,6 +7,218 @@
 
 [[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.104-declarative-slice-coherence-and-implementation-gates.org][Plan and gates]] | [[file:10.105-i0-dependencies-prelude-build-load-and-testing.org][I0]] | [[file:10.106-i1-normalized-context-scope-realization-and-self-binding.org][I1]] | [[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][Current execution map]]
 
+* Parser cold qualification and runtime CLI continuation (2026-10-25)
+:PROPERTIES:
+:CUSTOM_ID: implementation107-parser-cold-runtime
+:END:
+
+This continuation supersedes the dependency cohort, build/load verification and Parser qualification status in
+[[#implementation107-package-deadlines][the preceding package-deadline baseline]]. The earlier 180-second exit 124 and
+unprepared runtime CLI remain historical failures. Ordinary incremental package
+compilation is not a strict cold writer receipt.
+
+** Package entry ownership and unchanged limits
+
+The fixes are published in the existing Parser PR, not installed as local patches.
+=build-qualified-library.ss= and =build-qualification.ss= have executable 180-second
+entry fences. Explicit interpreter calls in =qualify-library= and
+=build-qualification= also have the same fence; a shebang alone does not constrain
+=gxi file.ss=. The former 240-second Just writer setting is reduced to180 for this
+route. The upstream CI's separate larger driver budget is not adopted as this
+repository's qualification limit. The SDK/Gerbil implementation and installation
+are unchanged. Compilation retains four workers and2 GiB; qualification helpers and
+focused native tests retain1 GiB, with120 seconds for each ordinary test.
+
+=test-compiler-process= now declares both the strict base writer and the formal
+qualification helper prerequisite. Its native test command checks module/harness
+completion and final =OK=, and refuses error/check/heap/stack markers even when the
+underlying gxtest process returns0. The runtime-only negative control still denies
+the compiler importer; no test is waived or moved into the production catalog.
+The same init-owned specification, all 270 library/Module/FFI targets, native loader
+phases, publication lock, input/product currentness checks and extension refusal
+remain authoritative. No compiler optimization is lowered, build target removed,
+partial output admitted, or separate environment/cache introduced. Cold here means Parser-owned native library products are removed; immutable grammar inputs retain their existing digest validation. It does not mean a new SDK or an empty machine-wide cache.
+
+** Formal dependency baseline
+
+The root still declares only Agentic. This continuation retains the upstream
+Function Type migration, Core proof/cancellation changes, Parser publication drift
+diagnostics/file-mode preservation and CI tool setup changes. The final committed
+declarations select the following cohort; actual checkout, gitlink, compiled phase
+and load provenance require the native metadata gate, rather than this table.
+
+| Owner | Committed revision |
+|-------+--------------------|
+| Agentic | =bfa9498ee7a6640969ffe82f2c58d7be3003707e= |
+| Orgize | =baca9bccc8e15cee2d586ef2ee9ca368d8f8fe27= |
+| Parser | =4c142e4ebc1c0cdd6cde99a5ad84c8ea7a8c37d7= |
+| ASCENT | =618bf45fe5a0161acd41cfc789807242b5a1094d= |
+| Core | =0a6bdaca627f544331dad8c79ec7a4aa3cd67bfd= |
+| POO | =247a7eb8a40dca0843956da2cf93eb5b36dbdd62= |
+
+These are source observations, not a second Library version authority. Library
+contract version remains owned by its declaration. No Namespace gains a version.
+
+** Retained failure and native recovery
+
+The intermediate native installations =native-install-parser-runtime-02= and
+=-03= exited0 (360.81s and168.68s aggregate). They are not the final revision's
+acceptance. Tagged =package update= calls changed the requested checkouts but then
+exited 70 at the SDK's tagged dependency argument handling; those calls remain
+failed operations, and their actual heads were checked separately before install.
+No uninstall, SDK repair or manual tag/product substitution was used.
+
+The final-revision install attempt =native-install-parser-runtime-04= encountered
+=public dependency source or native identity changed= for Agentic's
+=nix-contracts.ss= during AWS Module expansion. The build did not complete and was
+terminated at its unchanged 180-second package fence (installer exit 143; no owned
+process survived). Inspected tracked native sources remained clean. The SDK's
+standard load path is global and its dependency timestamp lookup temporarily
+changes source/library priority; concurrent resolution is a possible explanation,
+not an established unique cause. No guard, dependency check or import was bypassed.
+The ordinary native =gerbil pkg build github.com/tao3k/agentic-ai-lab= recovery
+completed in 35.14s, exit 0. This is recovery from partial products, not a cold-build
+receipt or proof that the identity transition cannot recur. A complete native
+installation is required again before using this cohort.
+
+** Execution record
+
+The final native =just deps= / =gerbil deps --install= completed with exit 0 in
+204.94s aggregate. The observer covered all six package builds, with maximum
+observed ages6/17/15/16/9/35 seconds (POO/Core/Parser/Orgize/ASCENT/Agentic) and no
+surviving owned process. Receipt: =native-install-parser-runtime-05.json= and its
+log. This aggregate includes fetch, metadata and tags; each package retains its
+own 180-second deadline. Strict cold qualification and runtime validation are
+recorded separately below.
+
+The diagnostic run on the prior
+cohort completed270 targets/601 backend jobs and reached the publication marker,
+but its controller failed during process observation and did not retain a waitable
+exit status. It is diagnostic only. Other Core tests were observed in an unrelated
+working directory; they were not stopped. Neither this run nor the earlier timeout
+is a matched performance comparison or proof of a unique wall-time cause.
+
+** Final-cohort Parser acceptance
+
+| Native boundary | Result | Seconds / scope |
+|-----------------+--------+-----------------|
+| Strict base writer =just qualify-library= | exit 0; cold clean,270 targets,601 backend jobs, =LIBRARY-PUBLICATION-READY= |139.02 total invocation;180-second writer fence/2 GiB/four workers |
+| Maintained =just test-compiler-process= | exit 0; current base =HIT=, formal helper =READY=, module/harness/final =OK= |64.81 aggregate;8 helper targets/18 backend jobs; separate180/120-second boundaries |
+| =library-init-test.ss= |2 cases passed; complete normal/qualified spec equality and catalog/FFI retention |39.60;1 GiB/120s |
+| =library-package-policy-test.ss= |6 cases passed; real ownership/reverse-consumer controls |12.33;1 GiB/120s |
+| =compiler-process-test.ss=, detailed native run |10 cases passed, including runtime import denial, pipe pressure, native compiler/link/load and failure propagation |8.45;1 GiB/120s |
+
+Receipts: =parser-strict-runtime-final-01.json= and base/runtime logs;
+=parser-runtime-native-controls-01.json= and detailed module logs. The maintained
+recipe uses verbosity3, which does not emit individual =CASE-OK= lines; the detailed
+verbosity5 run separately records all 10 compiler-process cases. A zero case count
+in the verbosity3 observer is not used as case-level evidence. No changed compiler
+optimization, removed target or waived control explains these passes. The earlier
+180-second timeout remains a failure; these runs establish the bounded current
+qualification, not a universal build-time guarantee or a proven performance cause.
+
+** Actual CLI and reader controls
+
+Three fresh runtime CLI invocations deny the expander importer for the whole CLI
+load and execution, including its publication reader. The real observed child
+returns0 with its required receipt, returns7 with CLI status1, or returns0 with a
+missing required receipt and CLI status1. All three controls passed (10.54/8.76/
+7.18s), under1 GiB and120-second outer fences with the CLI's existing 30-second total
+and 5-second idle settings. The native SDK environment command wraps a nonzero
+program result as its own ProcessError/exit 70. The observer therefore records the
+actual program status separately through the owned shell boundary; it does not
+reinterpret70 as the required CLI result or accept a missing process result.
+
+The native reader passed in a new VM, refused after changing only the owner execute
+bit on =src/runtime/parser.ssi=, and passed in another new VM after restoring the
+exact original mode (10.71/9.44/12.46s). No product bytes or publication record were
+replaced. The negative callback marker must be absent as an exact output line;
+its occurrence inside a printed exception's source expression is not execution.
+The first observer assertions confused SDK/program statuses and exception-source
+text with output lines; their failed observation receipts remain under attempt01,
+not as library failures or admitted positive evidence. Corrected attempt02 receipts
+are =parser-runtime-cli-02.json= and =parser-reader-modes-02.json=, with raw logs.
+
+The whole-environment helper view can become stale when subsequent consumers build
+new library products. It must be rechecked after root verification and refreshed
+only through the actual base/helper producers if required. No receipt is edited to
+make a changed closure current. Root verification and final currentness follow.
+
+** Final-cohort root build and configured verification
+
+The complete root build passed in 36.35s through the unchanged Core/SDK entry.
+All54 configured native control executions passed (52 distinct module/suite/case
+identities; the two selection cases intentionally run in SDK and Core lanes).
+Each ordinary test kept its 120-second/2 GiB fence. Multi-suite entries report their
+aggregate elapsed time, not a larger individual test budget.
+
+| Existing entry | Seconds | Result |
+|----------------+---------+--------|
+| =test= |184.90 | exit 0;17 cases |
+| =test-project-formation-build= |29.48 | exit 0;2 cases |
+| =test-library-declarations= |71.83 | exit 0;8 cases |
+| =test-organization-declarations= |94.60 | exit 0;5 cases |
+| =test-project-inputs= |24.49 | exit 0;3 cases |
+| =test-library-selection= |37.75 | exit 0;2 cases |
+| =test-project-formation-entry= |41.26 | exit 0;3 cases |
+| =test-project-formation= |41.54 | exit 0;14 cases |
+
+The native metadata control checks the sole direct dependency, inherited pins,
+actual checkouts/manifests, matching Core gitlink, required regular phase products
+and fresh compiled Type/init loading. Receipts: =parser-runtime-final-root-checks-build.json=,
+=parser-runtime-final-root-case-identities.json= and the per-entry logs. Recovery,
+final qualification currentness and post-commit source synchronization are recorded
+separately; these 52 identities do not establish original C, full method evidence,
+accepted Q, explicit SysML publication, independent Aitia review or recipient use.
+
+** Required-phase recovery, invalidation and final renewal
+
+The final cohort passed the real required-phase recovery route. Only
+=modules/resource-evidence/interface~0.o1= was moved to retained evidence; the
+controller never restored/copied it back. The native producer issued the replacement.
+
+| Boundary | Result | Seconds |
+|----------+--------+---------|
+| Missing required phase, before late compiled load | exit 1, expected refusal |6.12 |
+| Ordinary native root build repairs the phase | exit 0 |22.70 |
+| Fresh compiled Type/init and native metadata load | exit 0 |8.15 |
+| Maintained Core recovery controls | exit 0,3 cases |7.37 |
+
+The phase digest changed from =86c38e045b7e8a8af1de23592b2b07137b76c80820dbaf098dd612f3ace9923d=
+to =e080b462afebabe16a703c4ec33d3aefab1c3062c40eb3d0dc593b7574eb4d90=.
+=parser-runtime-root-final-phase-recovery.json= records the actual transition and
+=restored_by_controller:false=. After all root verification/recovery, the old
+whole-environment Parser view correctly refused (exit 70,11.75s) before the reader
+callback. This is required input/product invalidation, not a test waiver.
+
+Actual base/helper producers then renewed the final closure: a second complete
+native-products cold writer passed in 133.17s (270 targets/601 jobs,exit 0), and the
+maintained helper/CLI entry passed in 40.56s (8 helper targets/18 jobs,exit 0).
+Both cold writers retained 180 seconds/2 GiB/four workers; helpers and ordinary tests
+kept their own existing VM/deadline limits. Receipt: =parser-strict-runtime-final-02.json=.
+A new reader passed in 14.18s (=parser-reader-final-current-01.json=).
+All three actual CLI controls passed again on this renewed closure: program statuses
+0/1/1 in 17.18/18.80/9.54s, with compiler imports denied. Receipt:
+=parser-runtime-cli-03.json=. The original publication record was never hand-edited.
+
+The two successful cold runs establish current bounded acceptance. They do not
+uniquely explain the earlier timeout, prove a throughput improvement, remove the
+retained Agentic source-identity failure, or qualify arbitrary concurrent workloads.
+Correctness gates, recovery, performance attribution and independent review remain
+separate claims.
+
+** Source synchronization boundary
+
+The four maintained files are the sole direct dependency declaration, this Org
+record, the D2 source and its rendered SVG. Parser fixes are formal upstream PR
+commits consumed through Orgize and Agentic, not repository-carried patches.
+Post-commit native build and metadata/load checks must bind the actual committed
+root HEAD; a final reader must still admit the renewed closure. The source-sync
+receipt records those outcomes, both remote main identities and workspace status.
+Normal push targets are hardenedlinux main and its tao3k mirror. This source
+synchronization grants no independent Aitia review, SysML publication, Library
+release or recipient-use authority. The original C/A/E/W/use/Q chain remains open.
+
 * Current dependency and configuration alignment (2026-10-24)
 :PROPERTIES:
 :CUSTOM_ID: implementation107-alignment
