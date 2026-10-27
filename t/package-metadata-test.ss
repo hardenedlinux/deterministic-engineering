@@ -20,18 +20,18 @@
     (pgetq depend: metadata '())))
 (def (main . _args)
   (def direct (pgetq depend: root-metadata '()))
-  (unless (and (= (length direct) 1)
-               (string-prefix? "github.com/tao3k/agentic-ai-lab@" (car direct)))
-    (error "Agentic AI Lab must own the root dependency closure" direct))
+  (unless (and (= (length direct) 2)
+               (= (length (filter (cut string-prefix? "github.com/tao3k/agentic-ai-lab@" <>) direct)) 1)
+               (= (length (filter (cut string-prefix? "github.com/tao3k/gebril-yuanxu@" <>) direct)) 1))
+    (error "Root must directly pin its product and Yuanxu dependencies" direct))
+  (for-each (lambda (path)
+              (when (file-exists? path)
+                (error "Nested metadata must not override the root package" path)))
+    '("modules/gerbil.pkg" "library/gerbil.pkg" "profiles/gerbil.pkg"
+      "scenarios/gerbil.pkg" "scenarios/resource-lifecycle/review/gerbil.pkg"))
   (check-dependency-pins root-metadata)
-  ;; Agentic's declared Module source must match the same inherited Core build.
-  (def core-head (git-value "github.com/tao3k/gebril-yuanxu" "rev-parse" "HEAD"))
-  (unless (and
-            (equal? core-head
-              (git-value "github.com/tao3k/agentic-ai-lab" "rev-parse" "HEAD:core"))
-            (equal? core-head
-              (git-value "github.com/tao3k/agentic-ai-lab" "-C" "core" "rev-parse" "HEAD")))
-    (error "declared Core gitlink, Module source and inherited package disagree"))
+  ;; The direct Yuanxu pin owns this consumer's Module ABI. Product checkouts
+  ;; no longer own an independent Core gitlink requirement for this package.
   (def versions
     (map (lambda (package)
            (def manifest (call-with-input-file

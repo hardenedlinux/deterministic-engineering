@@ -1,4 +1,5 @@
 ;;; -*- Gerbil -*-
+(import (only-in :yuanxu/module-system/source/declaration .def))
 (.def ResourceEvidence
   identity: 'resource-evidence
   core:

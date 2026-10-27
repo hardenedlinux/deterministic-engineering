@@ -1,4 +1,5 @@
 ;;; -*- Gerbil -*-
+(import (only-in :yuanxu/module-system/source/declaration .def))
 (.def ResourceLifecycle
   identity: 'resource-lifecycle
   core:

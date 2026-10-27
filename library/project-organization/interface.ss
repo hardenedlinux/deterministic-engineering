@@ -1,3 +1,4 @@
+(import (only-in :yuanxu/module-system/source/declaration .def))
 (.def ProjectOrganizationLibrary
  identity: 'project-organization
  admissions: (.o Config: (.o export-path: '(config) contract-path: '(contracts config)))

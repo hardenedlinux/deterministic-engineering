@@ -1,4 +1,5 @@
 ;;; -*- Gerbil -*-
+(import (only-in :yuanxu/module-system/source/declaration .def))
 (.def RustResources
   identity: 'rust-resources
   admissions: (.o Config: (.o export-path: '(config) contract-path: '(contracts config)))

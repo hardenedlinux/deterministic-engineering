@@ -1,3 +1,4 @@
+(import (only-in :yuanxu/module-system/source/declaration .def))
 (.def ProjectFormation
  identity: 'project-formation
  admissions: (.o Config: (.o export-path: '(semantics) contract-path: '(contracts config)))

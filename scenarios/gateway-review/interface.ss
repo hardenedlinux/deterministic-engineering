@@ -1,4 +1,5 @@
 ;;; -*- Gerbil -*-
+(import (only-in :yuanxu/module-system/source/declaration .def))
 (.def GatewayReview
   identity: 'gateway-review
   core:

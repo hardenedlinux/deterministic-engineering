@@ -1,3 +1,4 @@
+(import (only-in :yuanxu/module-system/source/declaration .def))
 (.def BackpressureLibrary
  identity: 'backpressure-memory
  admissions: (.o Config: (.o export-path: '(config) contract-path: '(contracts config)))

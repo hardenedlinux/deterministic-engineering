@@ -1,3 +1,4 @@
+(import (only-in :yuanxu/module-system/source/declaration .def))
 (.def LibraryProjectFormation
  identity: 'library-project-formation
  core: (.o requires: (.o Library: (.o module-id: 'project-organization contract: OrganizationScopeContract)

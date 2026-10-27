@@ -1,17 +1,16 @@
 ;;; Shared Library declaration vocabulary. Types only: no objects, IO or Engine.
 (import :clan/poo/object
-        (only-in :clan/poo/mop Type element?)
-        (only-in :clan/poo/type Symbol String List)
+        (only-in :clan/poo/mop Type Type. define-type element?)
+        (only-in :clan/poo/type Symbol String List Record)
         (only-in :clan/poo/object-contract ObjectContract. refine)
-        (only-in :yuanxu/types YuanxuContract. yuanxu-predicate-type))
+        (only-in :yuanxu/object-types/contracts YuanxuContract. yuanxu-predicate-type))
 (export LibraryDeclarationContract LibraryDeclarationShape LibraryReferenceContract
         LibraryAssetContract LibraryPremiseContract LibraryClaimContract
         LibraryMethodShape LibraryMethodBindingShape LibraryModelShape LibraryMethodKind LibraryDefinitionRole LibraryStrength
         LibraryNonemptyString LibrarySymbolPair LibrarySymbolTriple
         library-definition-contract)
-(def LibraryNonemptyString
- (yuanxu-predicate-type 'library/nonempty-string
-  (lambda (value) (and (string? value) (> (string-length value) 0)))))
+(define-type (LibraryNonemptyString @ Type.)
+ .element?: (lambda (value) (and (string? value) (> (string-length value) 0))))
 (def (symbols-of-length count)
  (yuanxu-predicate-type 'library/symbol-row
   (lambda (value) (and (list? value) (= (length value) count) (andmap symbol? value)))))
@@ -25,21 +24,21 @@
  (finite-type 'library/method-kind '(application-reasoning model-projection content-observation implementation-execution model-verification theorem-check)))
 (def LibraryStrength
  (finite-type 'library/strength '(authored-conditional finite-model arithmetic execution language-validation correspondence research-hypothesis)))
-(def LibraryReferenceContract
- (.cc ObjectContract. 'identity 'library/reference
-  'responsibilities (.o identity: Symbol revision: LibraryNonemptyString owner: Symbol)))
-(def LibraryAssetContract
- (.cc ObjectContract. 'identity 'library/asset
-  'responsibilities (.o identity: Symbol revision: LibraryNonemptyString owner: Symbol
-   kind: (finite-type 'library/asset-kind '(scheme quint lean rust sysml org mapping))
-   relative-path: LibraryNonemptyString)))
-(def LibraryPremiseContract
- (.cc ObjectContract. 'identity 'library/premise
-  'responsibilities (.o identity: Symbol statement: LibraryNonemptyString inputs: (List Symbol))))
-(def LibraryClaimContract
- (.cc ObjectContract. 'identity 'library/claim
-  'responsibilities (.o identity: Symbol meaning: LibraryNonemptyString
-   premises: (List Symbol) duties: (List Symbol) strength: LibraryStrength)))
+(.def (LibraryReferenceContract @
+ (Record identity: [Symbol] revision: [LibraryNonemptyString] owner: [Symbol]))
+ sealed: #t)
+(.def (LibraryAssetContract @
+ (Record [LibraryReferenceContract]
+   kind: [(finite-type 'library/asset-kind '(scheme quint lean rust sysml org mapping))]
+   relative-path: [LibraryNonemptyString]))
+ sealed: #t)
+(.def (LibraryPremiseContract @
+ (Record identity: [Symbol] statement: [LibraryNonemptyString] inputs: [(List Symbol)]))
+ sealed: #t)
+(.def (LibraryClaimContract @
+ (Record identity: [Symbol] meaning: [LibraryNonemptyString]
+   premises: [(List Symbol)] duties: [(List Symbol)] strength: [LibraryStrength]))
+ sealed: #t)
 (def LibraryDeclarationShape
  (.cc ObjectContract. 'identity 'library/declaration
   'responsibilities (.o identity: Symbol family: Symbol source-owner: Symbol
