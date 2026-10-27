@@ -209,7 +209,7 @@ also completed all 3,840 injection checks and emitted =MODULE-OK=,
 =HARNESS-OK= and =OK= inside the unchanged 2 GiB / 180-second envelope.
 
 Neither Aitia nor the selected ASCENT source revision tracks SSI or dynamic
-compiler objects. Aitia's =allocation-stack.scm= and
+compiler objects. ASCENT's =allocation-stack.scm= and
 =sdk-allocation-counter.scm= are authored test fixtures and remain source.
 Ignoring all Scheme =.scm= files would erase that distinction. The ignore
 policy covers compiler interfaces and numbered objects without excluding
@@ -246,6 +246,24 @@ callbacks remain controls, not evidence of native Cedar execution.
 | Source applicability | The source cut additionally includes the native build declaration, package pins and test discovery/runner inputs; changed bytes prevent issuing the final receipt |
 | Oracle integrity | Ten Python fail-closed controls retain missing-field/node/action, reachability, cyclic-graph and exact batch-preservation checks |
 
+The [[https://github.com/tao3k/lambda-aitia/actions/runs/40589089524][c5a0668 run]] again passed the semantic/control gates but exceeded the same
+65-second limit in its first complete batch. Compiling the driver alone left
+the 21-field comparison loops interpreted. The existing test support module
+now also owns =check-lifecycle-traces!=; the =*-test.ss= entry still reads the
+independent Quint packet and publishes the same native TestSuite. The entire
+assertion body is identical after whitespace normalization (nine check forms,
+including the field-wise and forbidden-effect loops). Its normalized audit
+SHA256 is =1af57b90b78f3aeec8cc2ba01c7bd2b251dd4cace64a266b2f2bff8fe3f4fdfe=.
+No authorization check is cached, elided or replaced with model state.
+
+#+NAME: native125-assertion-controls
+| Actual input / control | Local observation | Applicable conclusion |
+|------------------------+-------------------+-----------------------|
+| Four retained real Quint batches, concurrent original four workers | 11.058, 15.474, 21.899 and 22.540 seconds; 15, 12, 8 and 8 complete traces respectively | Same native APIs and full comparisons complete inside each original batch guard on this local SDK |
+| Same heavy batch with interpreted comparisons, isolated worker | 22.185 seconds and eight complete traces | An isolated baseline; not a controlled four-worker speedup ratio or a Linux throughput receipt |
+| First initial deliveryCalls expectation changed from 0 to 1 | Native assertion reports actual 0 / expectation 1 and process exits 70 | Compiled comparisons reject false gold; a printed MODULE-OK alone cannot override the process failure |
+| Latest Aitia revision | e66f1d3cbc284a28eccd2140f6a7789cf54687a7 | Exact-head complete replay and downstream CI remain required |
+
 A compiled support module or a passing prefix cannot stand in for the final
 =LIFECYCLE-SCHEME-OK= receipt. Remote acceptance must belong to the exact
 published Aitia revision; interrupted batches retain their exact inputs and
@@ -272,7 +290,7 @@ the guard or admit incomplete products.
 Remote acceptance is pending the exact-head Linux Scheme job. Local checks
 above establish the negative controls and installed native API behavior;
 they do not establish complete remote Scheme, integration or Python runtime
-acceptance. At Aitia revision =cd9e115=, the native Aitia and consumer package builds
+acceptance. At Aitia revision =e66f1d3=, the native Aitia and consumer package builds
 completed incrementally. Native gxpkg produced their manifests; the consumer
 metadata gate reported eight declared/registered dependencies,
 =COMPILED-PACKAGE-LOAD-OK= and =NATIVE-PACKAGE-METADATA-OK=, followed by the
