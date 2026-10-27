@@ -7,7 +7,7 @@
         (only-in :clan/poo/object-contract ObjectContract. refine)
         "../../../../../types.ss"
         (only-in "../abstract/types.ss" BackpressureScopeContract BackpressureDeclarationContract BackpressureModelContract backpressure-model?))
-(export ResourceMethodDefinitionContract ResourceMethodDefinitionsShape ResourceQuintSignature ResourceLeanSignature ResourceNativeSignature ResourceIntegrationSignature BackpressureTraceMappingContract BackpressureOwnershipCatalogContract RustResourcesConfigContract BackpressureReviewPolicyContract BackpressureDesignReviewPolicyContract RustResourceModelContract BackpressureIntegrationContract RustResourcesScopeContract ResourceProfileContract ResourceNativeProfileContract
+(export ResourceMethodRequirements ResourceMethodDefinitionContract ResourceMethodDefinitionsShape ResourceQuintSignature ResourceLeanSignature ResourceNativeSignature ResourceIntegrationSignature BackpressureTraceMappingContract BackpressureOwnershipCatalogContract RustResourcesConfigContract BackpressureReviewPolicyContract BackpressureDesignReviewPolicyContract RustResourceModelContract BackpressureIntegrationContract RustResourcesScopeContract ResourceProfileContract ResourceNativeProfileContract
         ResourceNativeContextContract resource-model-profile-supported? BackpressureScopeContract)
 (def (unique? xs)
   (or (null? xs) (and (not (member (car xs) (cdr xs))) (unique? (cdr xs)))))
@@ -297,34 +297,37 @@
 (def ResourceIntegrationSignature
  (Function (list (List Any)) (list (.get ResourceNativeContextContract value-contract)
     (List Any) LibraryNonemptyString LibraryNonemptyString LibraryNonemptyString)))
+;; Published expectations are independent of submitted method definitions.
+;; One finite operation axis; these are data requirements, not Provider dispatch.
+(def ResourceMethodRequirements
+ (.o native: (.o signature: ResourceNativeSignature kind: 'implementation-execution strength: 'execution
+       modes: '(normal)
+       inputs: '(source runtime workload inventory profile cargo-lock compiler configuration registry-inputs executable interpretation-source compiled-origins))
+     quint: (.o signature: ResourceQuintSignature kind: 'model-verification strength: 'finite-model
+       modes: '(normal early-release)
+       inputs: '(model profile tool tool-dependencies runtime interpretation-source compiled-origins))
+     lean: (.o signature: ResourceLeanSignature kind: 'theorem-check strength: 'arithmetic
+       modes: '(normal)
+       inputs: '(arithmetic profile tool tool-dependencies runtime interpretation-source compiled-origins))
+     integration: (.o signature: ResourceIntegrationSignature kind: 'model-projection strength: 'correspondence
+       modes: '(normal)
+       inputs: '(source runtime workload inventory model native-results mapping catalog reference-closure tools tool-dependencies interpretation-source compiled-origins))))
 (def ResourceMethodDefinitionContract
  (library-definition-contract 'rust-resources/method 'method
   'concurrency.resource-control.backpressure-memory BackpressureDeclarationContract
   (refine LibraryMethodShape
    (lambda (v location)
-    (def expected
-     (case (.get v operation)
-      ((native) ResourceNativeSignature) ((quint) ResourceQuintSignature)
-      ((lean) ResourceLeanSignature) ((integration) ResourceIntegrationSignature) (else #f)))
-    (def kind-strength
-     (case (.get v operation)
-      ((native) '(implementation-execution execution)) ((quint) '(model-verification finite-model))
-      ((lean) '(theorem-check arithmetic)) ((integration) '(model-projection correspondence)) (else #f)))
-    (def required-inputs
-     (case (.get v operation)
-      ((native) '(source runtime workload inventory profile cargo-lock compiler configuration registry-inputs executable interpretation-source compiled-origins))
-      ((quint) '(model profile tool tool-dependencies runtime interpretation-source compiled-origins))
-      ((lean) '(arithmetic profile tool tool-dependencies runtime interpretation-source compiled-origins))
-      ((integration) '(source runtime workload inventory model native-results mapping catalog reference-closure tools tool-dependencies interpretation-source compiled-origins))
-      (else '())))
-    (if (and expected kind-strength (eq? (.get v signature) expected)
-         (eq? (.get v kind) (car kind-strength)) (eq? (.get v strength) (cadr kind-strength))
-         (equal? (.get v modes) (if (eq? (.get v operation) 'quint) '(normal early-release) '(normal)))
+    (def operation-key (.get v operation))
+    (def expected (and (.slot? ResourceMethodRequirements operation-key)
+                      (.ref ResourceMethodRequirements operation-key)))
+    (if (and expected (eq? (.get v signature) (.get expected signature))
+         (eq? (.get v kind) (.get expected kind)) (eq? (.get v strength) (.get expected strength))
+         (equal? (.get v modes) (.get expected modes))
          (eq? (.get v provider) 'rust-resources) (eq? (.get v result-owner) 'rust-resources)
          (pair? (.get v model-ids)) (pair? (.get v claims)) (pair? (.get v modes))
          (pair? (.get v input-demands)) (unique? (.get v input-demands))
          (unique? (.get v model-ids)) (unique? (.get v policy-ids)) (unique? (.get v claims))
-         (andmap (cut memq <> (.get v input-demands)) required-inputs) (pair? (.get v assets))
+         (andmap (cut memq <> (.get v input-demands)) (.get expected inputs)) (pair? (.get v assets))
          (memq 'interpretation-source (.get v input-demands))
          (memq 'compiled-origins (.get v input-demands)))
      '() (list (.o kind: 'rust-resources/method-binding-demand path: location)))))))

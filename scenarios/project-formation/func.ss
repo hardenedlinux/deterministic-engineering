@@ -62,7 +62,7 @@
         (formation-acquire-inputs root (.ref profile 'project-inputs)
           (.ref profile 'input-byte-limit) (.ref profile 'input-lifetime-seconds)))
       run: (lambda (profile) (reason (formation-inputs declaration profile)))
-      render: (lambda (result) (render-model result))
+      render: render-model
       inputs: (lambda (profile) (formation-inputs declaration profile)))))
 
 (def (select-formation-profile library engine selected-resource-scope profile-input)
