@@ -237,6 +237,8 @@ test-backpressure-durable-intake:
     power_guard=()
     if command -v caffeinate >/dev/null 2>&1; then power_guard=(caffeinate -dimsu); fi
     project_root="$PWD"
+    # Preserve the SDK child's actual signal exit; gerbil env wraps it as 70.
+    export GERBIL_PATH="${GERBIL_PATH:-$project_root/.gerbil}"
     mkdir -p .data/test-logs .data/test-runs
     : "${BACKPRESSURE_ACCEPTANCE:?Provide the actual acceptance artifact}"
     : "${BACKPRESSURE_REASSESSMENT_RUNS:?Provide the actual reassessment runs artifact}"
@@ -251,7 +253,7 @@ test-backpressure-durable-intake:
       fi
       log="$(mktemp .data/test-logs/aitia-durable-intake-XXXXXX)"
       set +e
-      "${power_guard[@]}" timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxtest -:max-heap=2G,debug=q -v 5 "$test_module" 2>&1 | tee "$log"
+      "${power_guard[@]}" timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gxtest -:max-heap=2G,debug=q -v 5 "$test_module" 2>&1 | tee "$log"
       status=${PIPESTATUS[0]}
       set -e
       echo "PROCESS-EXIT $phase $status"
@@ -277,6 +279,8 @@ test-backpressure-prefix-repair:
     power_guard=()
     if command -v caffeinate >/dev/null 2>&1; then power_guard=(caffeinate -dimsu); fi
     project_root="$PWD"
+    # Preserve the SDK child's actual signal exit; gerbil env wraps it as 70.
+    export GERBIL_PATH="${GERBIL_PATH:-$project_root/.gerbil}"
     mkdir -p .data/test-logs .data/test-runs
     : "${BACKPRESSURE_ACCEPTANCE:?Provide the actual acceptance artifact}"
     : "${BACKPRESSURE_REASSESSMENT_RUNS:?Provide the actual reassessment runs artifact}"
@@ -291,7 +295,7 @@ test-backpressure-prefix-repair:
       fi
       log="$(mktemp .data/test-logs/aitia-durable-replay-XXXXXX)"
       set +e
-      "${power_guard[@]}" timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxtest -:max-heap=2G,debug=q -v 5 "$test_module" 2>&1 | tee "$log"
+      "${power_guard[@]}" timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gxtest -:max-heap=2G,debug=q -v 5 "$test_module" 2>&1 | tee "$log"
       status=${PIPESTATUS[0]}
       set -e
       echo "PROCESS-EXIT $phase $status"

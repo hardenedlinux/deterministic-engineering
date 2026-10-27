@@ -34,6 +34,14 @@
           (loop (append (pgetq depend: (pkg-plist package) '()) (cdr todo))
                 (cons package seen)))))))
 (def (check-root-closure closure versions selected)
+  ;; SDK-owned self/runtime version rows are not package dependencies.
+  (def sdk-rows '("" "Gerbil" "Gambit"))
+  (unless (andmap (lambda (entry) (or (member (car entry) selected)
+                                     (member (car entry) sdk-rows))) closure)
+    (error "root manifest includes an unrelated dependency"))
+  (for-each (lambda (name)
+    (unless (= (length (filter (lambda (row) (equal? (car row) name)) closure)) 1)
+      (error "root manifest runtime identity is missing or duplicated" name))) sdk-rows)
   (for-each (lambda (package)
               (unless (assoc package versions)
                 (error "declared dependency has no registered native source" package))) selected)
@@ -42,12 +50,16 @@
                     (expected (if (member (car entry) selected) (list entry) '())))
                 (unless (equal? matches expected)
                   (error "root manifest has missing, duplicate, conflicting or unrelated dependency" entry matches)))) versions))
+(def (check-direct-pins direct)
+  (unless (and (= (length direct) 3)
+    (andmap (lambda (prefix) (= (length (filter (cut string-prefix? prefix <>) direct)) 1))
+      '("github.com/tao3k/agentic-ai-lab@" "github.com/tao3k/gebril-yuanxu@" "github.com/tao3k/lambda-aitia@")))
+    (error "Root must directly pin its product, Yuanxu and Aitia dependencies" direct)))
 (def (main . _args)
   (def direct (pgetq depend: root-metadata '()))
-  (unless (and (= (length direct) 2)
-               (= (length (filter (cut string-prefix? "github.com/tao3k/agentic-ai-lab@" <>) direct)) 1)
-               (= (length (filter (cut string-prefix? "github.com/tao3k/gebril-yuanxu@" <>) direct)) 1))
-    (error "Root must directly pin its product and Yuanxu dependencies" direct))
+  (check-direct-pins direct)
+  (check-exception (check-direct-pins (cdr direct)) (lambda (_) #t))
+  (check-exception (check-direct-pins (cons (car direct) direct)) (lambda (_) #t))
   (for-each (lambda (path)
               (when (file-exists? path)
                 (error "Nested metadata must not override the root package" path)))
@@ -80,6 +92,8 @@
   ;; Negative controls mutate the actual native-generated data; no fixture
   ;; manifest can substitute for the real source/tag/artifact/import gate.
   (def required (assoc (car selected) versions))
+  (check-exception (check-root-closure (cons (cons "qualification.unrelated" (cdr required)) closure)
+                                     versions selected) (lambda (_) #t))
   (check-exception (check-root-closure (filter (lambda (row) (not (equal? (car row) (car required)))) closure)
                                      versions selected) (lambda (_) #t))
   (check-exception (check-root-closure (cons required closure) versions selected) (lambda (_) #t))
@@ -109,6 +123,9 @@
       "agentic-ai-lab/modules/workflow/contracts/runtime-v0-abi-schema"
       "agentic-ai-lab/modules/temporal-causality/trajectory/ascent-ledger"
       "gerbil-ascent/rules/interface"
+      "agentic-ai-lab/lambda-aitia/modules/sdlc/review-authority"
+      "deterministic-engineering/scenarios/resource-lifecycle/review/interface"
+      "deterministic-engineering/scenarios/resource-lifecycle/review/archive"
       "deterministic-engineering/init"
       "deterministic-engineering/library/concurrency/resource-control/backpressure-memory/rust/interface"
       "deterministic-engineering/modules/resource-evidence/interface"
@@ -116,7 +133,9 @@
       "deterministic-engineering/profiles/gateway"))
   ;; Reuse the producer's phase-family check, including generated macro objects.
   (require-build-products!
-    '(deterministic-engineering/modules/resource-evidence/interface)
+    '(deterministic-engineering/modules/resource-evidence/interface
+      deterministic-engineering/scenarios/resource-lifecycle/review/archive
+      agentic-ai-lab/lambda-aitia/modules/sdlc/review-authority)
     (path-expand "lib" (gerbil-path)))
   ;; Check products before importing: a missing object must not be hidden by
   ;; the loader's Scheme fallback. This runs in each fresh bounded test process.
@@ -124,10 +143,12 @@
            (import (only-in :clan/poo/object object?)
                    (only-in :clan/poo/mop Type element?)
                    (only-in :agentic-ai-lab/services Services)
+                   (only-in :agentic-ai-lab/lambda-aitia/modules/sdlc/review-authority
+                            sdlc-review-authority-snapshot)
                    (only-in :deterministic-engineering/init
                             deterministic-engineering.init.exports))
            (unless (and (object? deterministic-engineering.init.exports)
-                        (element? Type Services))
+                        (element? Type Services) (procedure? sdlc-review-authority-snapshot))
              (error "installed package and Type ABI failed to load"))
            (displayln "COMPILED-PACKAGE-LOAD-OK")))
   (displayln "NATIVE-PACKAGE-METADATA-OK"))

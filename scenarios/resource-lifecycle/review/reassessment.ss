@@ -6,9 +6,9 @@
         (only-in :std/crypto/digest sha256) (only-in :std/encoding/hex hex-encode)
         :yuanxu/contribution/verification
         :agentic-ai-lab/modules/ai-agentic-context/clue-exchange :agentic-ai-lab/modules/temporal-causality/trajectory/ascent-ledger
-        :poo-flow/lambda-aitia/modules/sdlc/objects
-        :poo-flow/lambda-aitia/modules/sdlc/standards/nasa-review
-        :poo-flow/lambda-aitia/modules/sdlc/standards/nasa-lifecycle
+        :agentic-ai-lab/lambda-aitia/modules/sdlc/objects
+        :agentic-ai-lab/lambda-aitia/modules/sdlc/standards/nasa-review
+        :agentic-ai-lab/lambda-aitia/modules/sdlc/standards/nasa-lifecycle
         :deterministic-engineering/library/concurrency/resource-control/backpressure-memory/rust/reassessment-oracle
         "./func.ss")
 (export open-backpressure-history open-backpressure-histories make-backpressure-reassessment reassessment-stage
@@ -130,7 +130,7 @@
   (def (check-host!)
     (unless (equal? source-seal (review-file-digest sources)) (error "history source manifest changed"))
     (assert-files (hash-ref selected-sources "files")))
-  (def exchange
+  (def history-exchange
     (open-trajectory-clue-exchange trajectory
       (lambda (id digest source context)
         (def entry (hash-get captured id))
@@ -168,7 +168,7 @@
       (hash ("id" (string-copy id)) ("claim" (string-copy claim)) ("role" "observation")
             ("polarity" (if (equal? (hash-ref entry "outcome") "fail") "counter" "support"))
             ("source" (string-copy (hash-ref entry "recordPath"))) ("factors" '()) ("links" '()))) entries))
-    (exchange 'submit rows (hash-ref (exchange 'snapshot) "generation")))
+    (history-exchange 'submit rows (hash-ref (history-exchange 'snapshot) "generation")))
   (def baseline-checked (dependency-map (.ref baseline 'dependencies)))
   (def baseline-record (baseline-entry-record baseline baseline-checked))
   (def original (vector-ref baseline-record 3))
@@ -194,7 +194,7 @@
             ("sourceSha256" (hash-ref run "sourceSha256")) ("sourceBundle" bundle) ("dependencies" (hash-ref run "dependencies")))) gold))
     (def dependency-key (digest-text (json->string (hash-ref run "dependencies"))))
     (list entries (map (lambda (entry) (cons entry dependency-key)) entries)))
-  (def (add-runs! paths)
+  (def (add-history-runs! paths)
     (unless (and (pair? paths) (every string? paths)
                  (= (length paths) (length (delete-duplicates/hash paths))))
       (error "registration batch requires distinct run paths"))
@@ -211,8 +211,8 @@
     (set! logical-dependency-references (+ logical-dependency-references (length references)))
     (set! checked-dependency-paths (+ checked-dependency-paths (hash-length checked)))
     groups)
-  (def (add-run! path) (car (add-runs! (list path))))
-  (def (registration-stats)
+  (def (add-history-run! path) (car (add-history-runs! (list path))))
+  (def (history-registration-stats)
     (let ((selected-batches registration-batches) (selected-logical logical-dependency-references)
           (selected-checked checked-dependency-paths))
       (.o batches: selected-batches logical-dependency-references: selected-logical
@@ -221,17 +221,17 @@
   ;; cross-intake consumer; every capture obtains an actual native query.
   (def queries 0)
   (def (capture-value)
-    (def snapshot (exchange 'snapshot))
-    (def view (exchange 'query claim))
+    (def snapshot (history-exchange 'snapshot))
+    (def view (history-exchange 'query claim))
     (def failures (filter (lambda (row) (equal? (hash-ref row "polarity") "counter")) (hash-ref snapshot "clues")))
     (unless (and (null? (hash-ref view "unavailable"))
                  (same-set? (map (cut hash-ref <> "id") failures)
                             (map cadr (hash-ref view "counterevidence")))) (error "history unavailable or incomplete attestation"))
     (set! queries (+ queries 1))
     (clone (list snapshot view)))
-  (def (capture) (check-host!) (capture-value))
-  (def (current-capture!) (current-files!) (capture-value))
-  (def (capture-stats)
+  (def (capture-history) (check-host!) (capture-value))
+  (def (capture-current-history!) (current-files!) (capture-value))
+  (def (history-capture-stats)
     (let ((selected-queries queries) (selected-entries (hash-length captured))
           (sets (hash-length dependency-sets))
           (owned-items (apply + (map length (hash-values dependency-sets))))
@@ -261,7 +261,7 @@
     (assert-files (map (lambda (p) (list p (hash-ref paths p))) (hash-keys paths))))
   (def observation-sequence 0)
   (def last-observation #f)
-  (def (observe! digest)
+  (def (observe-history! digest)
     (unless (equal? digest last-observation)
       (set! observation-sequence (+ observation-sequence 1))
       (ascent-trajectory (hash ("action" "append") ("trajectory" trajectory)
@@ -269,11 +269,14 @@
           ("kind" "evidence") ("sourceIdentity" (.ref baseline 'report-digest))
           ("resultReference" (string-append "sha256:" digest)) ("pathIdentity" "cross-intake-discovery")))))
       (set! last-observation (string-copy digest))))
-  (let ((selected-current-capture current-capture!) (selected-reference entry-reference) (selected-stats capture-stats) (selected-observe observe!) (selected-exchange exchange) (selected-capture capture) (selected-add add-run!) (selected-add-batch add-runs!) (selected-registration-stats registration-stats) (selected-find find-entry) (selected-current current-files!)
-        (selected-source check-host!) (selected-sources (string-copy sources)) (selected-seal (string-copy source-seal)))
-    (.o current-capture!: selected-current-capture reference: selected-reference capture-stats: selected-stats observe!: selected-observe exchange: selected-exchange capture: selected-capture add-run!: selected-add add-runs!: selected-add-batch registration-stats: selected-registration-stats
-        entry: selected-find current!: selected-current source-current!: selected-source
-        sources: selected-sources source-seal: selected-seal)))
+  (def source-path (string-copy sources))
+  (def captured-source-seal (string-copy source-seal))
+  (.o current-capture!: capture-current-history! reference: entry-reference capture-stats: history-capture-stats
+      observe!: observe-history! exchange: history-exchange capture: capture-history
+      add-run!: add-history-run! add-runs!: add-history-runs! registration-stats: history-registration-stats
+      entry: find-entry current!: current-files! source-current!: check-host!
+      sources: source-path source-seal: captured-source-seal))
+
 (def (failure-ids history-cut)
   (map (cut hash-ref <> "id")
     (filter (lambda (row) (equal? (hash-ref row "polarity") "counter")) (hash-ref (car history-cut) "clues"))))

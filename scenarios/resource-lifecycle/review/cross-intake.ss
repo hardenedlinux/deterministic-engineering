@@ -3,8 +3,8 @@
 (import :clan/poo/object :std/encoding/json :std/list/list (only-in :std/os/pid getpid)
         (only-in :std/crypto/digest sha256) (only-in :std/encoding/hex hex-encode)
         :yuanxu/contribution/verification
-        :poo-flow/lambda-aitia/modules/sdlc/objects
-        :poo-flow/lambda-aitia/modules/sdlc/review-authority
+        :agentic-ai-lab/lambda-aitia/modules/sdlc/objects
+        :agentic-ai-lab/lambda-aitia/modules/sdlc/review-authority
         "./func.ss" "./reassessment.ss")
 (export cross-intake-history open-cross-intake-group open-cross-intake-approval review-history-wire review-mechanical-basis)
 (def (load path) (call-with-input-file path (cut read-json <> object-as-hash: #t)))
@@ -12,6 +12,20 @@
 (def (digest x) (hex-encode (sha256 (string->utf8 x))))
 (def (same-set? a b) (and (= (length a) (length b)) (= (length a) (length (delete-duplicates/hash a)))
   (every (lambda (x) (and (member x b) #t)) a)))
+(.def ReviewArchiveProjection.
+  schema: "aitia.review-archive/v1" sealed?: #t
+  owner: (error "Archive projection requires an owner")
+  capture: (error "Archive projection requires a frozen capture")
+  technical: (error "Archive projection requires its technical packet")
+  roots: (error "Archive projection requires its root references")
+  producer-pid: (error "Archive projection requires its producer")
+  fields: (list (cons "schema" schema) (cons "sealed" sealed?)
+    (cons "producerPid" producer-pid) (cons "owner" owner)
+    (cons "cut" (.get capture cut)) (cons "native" (.get capture native))
+    (cons "records" (.get capture records)) (cons "submissions" (.get capture submissions))
+    (cons "origins" (.get capture origins)) (cons "technicalPacket" technical)
+    (cons "rootReferences" roots))
+  json: (list->hash-table fields))
 (def (review-history-wire owner technical lineage records)
   (call-with-output-string (lambda (port)
     (write (list 'aitia-review-owner/v1 owner technical lineage
@@ -30,9 +44,10 @@
 (def (review-basis-equivalent? old current)
   (def (data value) (if (string? value)
     (call-with-input-string value (cut read-json <> object-as-hash: #t)) value))
-  (set! old (data old)) (set! current (data current))
-  (and (= (length old) 4) (= (length current) 4) (equal? (car old) (car current))
-    (every (lambda (a b) (same-set? a b)) (cdr old) (cdr current))))
+  (let ((old-data (data old)) (current-data (data current)))
+    (and (= (length old-data) 4) (= (length current-data) 4)
+      (equal? (car old-data) (car current-data))
+      (every same-set? (cdr old-data) (cdr current-data)))))
 (def (cross-intake-history bindings acceptance sources)
   (cross-intake-from bindings (open-backpressure-history acceptance sources)))
 (def (open-cross-intake-group identities acceptance sources)
@@ -52,12 +67,12 @@
 (def (cross-intake-from bindings aggregate)
   (def required (map (lambda (binding) (.ref binding 'identity)) bindings))
   (unless (and (pair? required) (same-set? required required)) (error "duplicate/empty intake mandate"))
-  (def (discover)
+  (def (discover-intakes)
     (map (lambda (binding)
       (list (.ref binding 'identity) ((.ref (.ref binding 'history) 'capture)))) bindings))
   (def synced-cut #f) (def rebuilds 0) (def reuses 0)
   (def (sync!)
-    (def captures (discover))
+    (def captures (discover-intakes))
     (def source-cut (digest (json->string (map (lambda (item)
       (list (car item) (hash-ref (cadr (cadr item)) "viewIdentity"))) captures))))
     (if (equal? source-cut synced-cut)
@@ -86,15 +101,17 @@
         ((.ref aggregate 'observe!) source-cut)
         (set! synced-cut source-cut) (set! rebuilds (+ rebuilds 1))))
     captures)
-  (def (sync-stats) (let ((selected-rebuilds rebuilds) (selected-reuses reuses)) (.o rebuilds: selected-rebuilds reuses: selected-reuses)))
-  (def (capture) (sync!) ((.ref aggregate 'capture)))
-  (def (current!) (sync!) ((.ref aggregate 'current!)))
-  (def (current-capture!) (sync!) ((.ref aggregate 'current-capture!)))
-  (let ((selected-current-capture current-capture!) (selected-sync-stats sync-stats) (selected-capture capture) (selected-current current!) (selected-discover discover)
-        (selected-required (map string-copy required)) (selected-aggregate aggregate))
-    (.o current-capture!: selected-current-capture sync-stats: selected-sync-stats capture: selected-capture current!: selected-current discover: selected-discover required: selected-required
-        registration-stats: (.ref selected-aggregate 'registration-stats) reference: (.ref selected-aggregate 'reference) capture-stats: (.ref selected-aggregate 'capture-stats) entry: (.ref selected-aggregate 'entry) source-current!: (.ref selected-aggregate 'source-current!)
-        sources: (.ref selected-aggregate 'sources) source-seal: (.ref selected-aggregate 'source-seal))))
+  (def (federation-stats) (let ((selected-rebuilds rebuilds) (selected-reuses reuses)) (.o rebuilds: selected-rebuilds reuses: selected-reuses)))
+  (def (capture-federation) (sync!) ((.ref aggregate 'capture)))
+  (def (current-federation!) (sync!) ((.ref aggregate 'current!)))
+  (def (capture-current-federation!) (sync!) ((.ref aggregate 'current-capture!)))
+  (def required-identities (map string-copy required))
+  (.o current-capture!: capture-current-federation! sync-stats: federation-stats
+      capture: capture-federation current!: current-federation! discover: discover-intakes required: required-identities
+      registration-stats: (.get aggregate registration-stats) reference: (.get aggregate reference)
+      capture-stats: (.get aggregate capture-stats) entry: (.get aggregate entry)
+      source-current!: (.get aggregate source-current!) sources: (.get aggregate sources)
+      source-seal: (.get aggregate source-seal)))
 
 (def (open-cross-intake-approval federation mechanical tools directory directory-signature root-public alice-public bob-public
       predecessor: (predecessor #f) incarnation: (incarnation #f) persistence: (persistence #f))
@@ -290,13 +307,12 @@
     (unless (and available? (commit-current?) (root-current?)) (error "persistence custody changed"))
     (def capture (or (handover-capture) (error "cannot persist incomplete history")))
     (def imported-prefix (and predecessor (predecessor-capture)))
-    (def value (hash ("schema" "aitia.review-archive/v2") ("sealed" #f)
-      ("closure" "accepted-prefix") ("producerPid" (getpid)) ("owner" owner-id)
-      ("cut" (.ref capture 'cut)) ("native" (.ref capture 'native))
-      ("records" (.ref capture 'records)) ("submissions" (.ref capture 'submissions))
-      ("origins" (.ref capture 'origins)) ("technicalPacket" technical-packet)
-      ("rootReferences" root-references) ("previousHead" committed-head)
-      ("acceptedCount" (length decisions))))
+    (def prefix-capture capture)
+    (def value (.get (.o (:: @ ReviewArchiveProjection.)
+      schema: "aitia.review-archive/v2" sealed?: #f producer-pid: (getpid)
+      owner: owner-id capture: prefix-capture technical: technical-packet roots: root-references
+      fields: => (cut append <> (list (cons "closure" "accepted-prefix")
+        (cons "previousHead" committed-head) (cons "acceptedCount" (length decisions))))) json))
     (def wire (json->string value))
     ;; The trusted host must serialize intent -> write/close -> signed head ->
     ;; current selection. It receives owned bytes and the expected prior pin.
@@ -339,11 +355,10 @@
     (def path (string-copy path-value))
     (when (or (file-exists? path) (file-exists? (string-append path ".pending"))) (error "archive destination must be fresh"))
     (def capture (or (handover-capture) (error "cannot seal incomplete history")))
-    (def value (hash ("schema" "aitia.review-archive/v1") ("sealed" #t) ("producerPid" (getpid))
-      ("owner" owner-id) ("cut" (.ref capture 'cut)) ("native" (.ref capture 'native))
-      ("records" (.ref capture 'records)) ("submissions" (.ref capture 'submissions))
-      ("origins" (.ref capture 'origins))
-      ("technicalPacket" technical-packet) ("rootReferences" root-references)))
+    (def seal-capture capture)
+    (def value (.get (.o (:: @ ReviewArchiveProjection.)
+      producer-pid: (getpid) owner: owner-id capture: seal-capture
+      technical: technical-packet roots: root-references) json))
     (unless (and available? (equal? (map car decisions) (map car (.ref capture 'records))))
       (error "history advanced while capturing seal"))
     ;; Explicit host custody closes every known live ancestor before archive IO.

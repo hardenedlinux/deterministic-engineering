@@ -4,14 +4,14 @@
         (only-in :std/crypto/digest sha256 Digest::sha256 digest-update! digest-final!)
         (only-in :std/encoding/hex hex-encode)
         :yuanxu/contribution/verification
-        :poo-flow/lambda-aitia/modules/sdlc/objects
-        :poo-flow/lambda-aitia/modules/sdlc/standards/nasa-review
-        :poo-flow/lambda-aitia/modules/sdlc/standards/nasa-lifecycle
+        :agentic-ai-lab/lambda-aitia/modules/sdlc/objects
+        :agentic-ai-lab/lambda-aitia/modules/sdlc/standards/nasa-review
+        :agentic-ai-lab/lambda-aitia/modules/sdlc/standards/nasa-lifecycle
         (only-in :deterministic-engineering/library/concurrency/resource-control/backpressure-memory/rust/oracle
                  resource-native-oracle resource-ownership-oracle resource-counter-oracle resource-budget-oracle))
 (export audit-backpressure-content make-backpressure-review verify-review-context
         verify-review-content backpressure-stage review-file-digest
-        review-reference-path validate-producer-source-custody)
+        review-reference-path validate-producer-source-custody review-json-equal?)
 (def (review-file-digest path buffer: (shared-buffer #f))
   (call-with-input-file path (lambda (port)
     (def context (Digest::sha256))
@@ -97,15 +97,15 @@
   (for-each (lambda (pair)
     (require-equal (review-file-digest (review-reference-path (car pair) (cadr pair)) buffer: buffer) (cadr pair)
       (string-append "review dependency changed: " (car pair)))) pairs))
-(def (json-equal? a b)
+(def (review-json-equal? a b)
   (cond
     ((hash-table? a)
      (and (hash-table? b) (= (hash-length a) (hash-length b))
-          (every (lambda (key) (and (hash-key? b key) (json-equal? (hash-ref a key) (hash-ref b key)))) (hash-keys a))))
-    ((pair? a) (and (pair? b) (json-equal? (car a) (car b)) (json-equal? (cdr a) (cdr b))))
+          (every (lambda (key) (and (hash-key? b key) (review-json-equal? (hash-ref a key) (hash-ref b key)))) (hash-keys a))))
+    ((pair? a) (and (pair? b) (review-json-equal? (car a) (car b)) (review-json-equal? (cdr a) (cdr b))))
     (else (equal? a b))))
 (def (oracle-equal actual expected)
-  (unless (json-equal? actual expected) (error "independent oracle differs")))
+  (unless (review-json-equal? actual expected) (error "independent oracle differs")))
 (def (artifact record suffix)
   (or (find (lambda (pair) (let (path (car pair)) (and (>= (string-length path) (string-length suffix)) (equal? suffix (substring path (- (string-length path) (string-length suffix)) (string-length path)))))) (hash-ref record "artifacts"))
       (error "required raw artifact absent" suffix)))
@@ -145,7 +145,7 @@
   (def native-paths '())
   (for-each (lambda (row)
     (def record (load-json (hash-ref row "recordPath")))
-    (require-equal (json-equal? record (hash-ref row "observation")) #t "record differs from accepted observation")
+    (require-equal (review-json-equal? record (hash-ref row "observation")) #t "record differs from accepted observation")
     (capture-file (hash-ref row "recordPath"))
     (capture-file (hash-ref row "reviewPath"))
     (def review (load-json (hash-ref row "reviewPath")))
@@ -293,14 +293,16 @@
     (require-equal (review-file-digest acceptance-path) acceptance-digest "host-selected acceptance changed")
     (current-files audited-files)
     audit)
+  (def (check-content-current!)
+    (check-current!)
+    (require-equal (.ref audit 'outcome) (.ref evidence 'outcome) "content outcome changed"))
+  ;; Identity-bound native requests select existing checks; equal-looking
+  ;; submitted data is never a request capability.
+  (def request-checks (list (cons context-request check-declaration-current!)
+                            (cons expected-request check-content-current!)))
   (def (verify-operation request now until)
-    ;; Classification depends on declarations; content additionally depends on
-    ;; the accepted run closure. Unknown request identities never gain issuance.
-    (cond ((eq? request context-request) (check-declaration-current!) #t)
-          ((eq? request expected-request)
-           (check-current!)
-           (require-equal (.ref audit 'outcome) (.ref evidence 'outcome) "content outcome changed") #t)
-          (else #f)))
+    (def selected (assq request request-checks))
+    (and selected (begin ((cdr selected)) #t)))
   (def adapter (nasa-verification-adapter "backpressure-content-audit/v1" verify-operation))
   (let ((selected-project project) (selected-context context)
         (selected-adapter adapter) (selected-audit audit) (selected-context-request context-request) (selected-packet-digest packet-digest))

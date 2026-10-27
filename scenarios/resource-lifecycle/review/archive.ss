@@ -66,13 +66,6 @@
   (list (clone value) old-body references
     (json->string (review-mechanical-basis old-packet))))
 
-(def (json-equal? a b)
-  (cond
-    ((hash-table? a)
-     (and (hash-table? b) (= (hash-length a) (hash-length b))
-          (every (lambda (key) (and (hash-key? b key) (json-equal? (hash-ref a key) (hash-ref b key)))) (hash-keys a))))
-    ((pair? a) (and (pair? b) (json-equal? (car a) (car b)) (json-equal? (cdr a) (cdr b))))
-    (else (equal? a b))))
 ;; Explicit storage repair only. Native handover rechecks original decisions;
 ;; neither this function nor its result can issue a review receipt.
 ;; host is a trusted serial publisher with selected and publish-repair! methods.
@@ -135,7 +128,7 @@
       (equal? (map (lambda (key) (hash-ref (cadr complete) key)) '("subject" "revision" "scope"))
               (map (lambda (key) (hash-ref (cadr previous) key)) '("subject" "revision" "scope")))
       (every (lambda (key) (def old (hash-ref older key)) (def new (hash-ref value key))
-        (and (<= (length old) (length new)) (json-equal? old (take new (length old)))))
+        (and (<= (length old) (length new)) (review-json-equal? old (take new (length old)))))
         '("records" "submissions" "origins"))) (refuse!))
     (for-each (lambda (pair) (require-file! (car pair) (cadr pair)))
       (append (caddr complete) (caddr previous) (hash-ref prior "repairReferences" '())))
@@ -151,7 +144,7 @@
     (def (completed-current?)
       (def current (selection))
       (and (equal? (car current) output-head)
-        (json-equal? (signed-head current) head)
+        (review-json-equal? (signed-head current) head)
         (equal? (review-file-digest output) (hash-ref head "archiveSha256"))))
     (closure-current!)
     (if (equal? (selection) writing-ref)
@@ -184,26 +177,26 @@
   (unless (hash-get fresh-readers reader) (error "recovery reader must be freshly issued and unclaimed in this process"))
   (hash-remove! fresh-readers reader)
   (def bound-owner? #f)
-  (def (claim-owner! id)
+  (def (claim-archive-owner! id)
     (unless (and (not bound-owner?) (equal? id reader)) (error "recovery source already bound or wrong owner"))
     (set! bound-owner? #t))
   (def archive-path (string-copy (.ref mandate 'archive)))
   (def root-public (string-copy (.ref mandate 'root-public)))
   (def root-sha (review-file-digest root-public))
   (def read-head (.ref mandate 'head))
-  (def status 'history-discovery-required)
+  (def archive-state 'history-discovery-required)
   ;; Publish the checked key and parsed archive as one private relation. A cold
   ;; read obtains its local result from the verification branch itself, rather
   ;; than observing a separately initialized mutable result later in the thunk.
   (def admitted-state #f)
-  (def (reject!) (set! status 'archive-refused) (error "archive reference or contract mismatch"))
+  (def (reject!) (set! archive-state 'archive-refused) (error "archive reference or contract mismatch"))
   (def (check! path expected)
-    (unless (file-exists? path) (set! status 'history-discovery-required) (error "archive dependency unavailable"))
+    (unless (file-exists? path) (set! archive-state 'history-discovery-required) (error "archive dependency unavailable"))
     (unless (equal? (review-file-digest path) expected) (reject!)))
   (def (read-data path)
     (with-catch (lambda (_) (reject!)) (lambda () (load path))))
-  (def (capture)
-    (set! status 'history-discovery-required)
+  (def (capture-archive)
+    (set! archive-state 'history-discovery-required)
     (with-catch (lambda (_) #f) (lambda ()
       (def head-reference (read-head))
       (def head-path (string-copy (.ref head-reference 'path)))
@@ -237,7 +230,7 @@
       (def value (car admitted))
       (def wire (call-with-output-string (lambda (port)
         (write (list 'aitia-archive-source/v1 owner archived-cut archive-path archive-sha head-path head-sha signature signature-sha reader) port))))
-      (set! status 'archive-available)
+      (set! archive-state 'archive-available)
       (let ((selected-owner (string-copy owner)) (selected-cut (digest wire)) (selected-native wire)
             (selected-records (clone (hash-ref value "records")))
             (selected-submissions (clone (hash-ref value "submissions")))
@@ -248,7 +241,7 @@
               (clone (hash-ref head "repairReferences" '()))
               (list (list head-path head-sha) (list signature signature-sha) (list archive-path archive-sha))))))
         (.o owner: selected-owner cut: selected-cut native: selected-native records: selected-records submissions: selected-submissions origins: selected-origins basis: selected-basis root-references: selected-roots storage-references: selected-storage)))))
-  (let ((selected-owner (string-copy owner)) (selected-reader (string-copy reader)) (selected-capture capture)
-        (selected-status (lambda () status)) (selected-claim claim-owner!))
-    (.o owner: selected-owner reader: selected-reader handover-capture: selected-capture
-        status: selected-status claim-owner!: selected-claim)))
+  (def owner-identity (string-copy owner))
+  (def reader-identity (string-copy reader))
+  (.o owner: owner-identity reader: reader-identity handover-capture: capture-archive
+      status: (lambda () archive-state) claim-owner!: claim-archive-owner!))
