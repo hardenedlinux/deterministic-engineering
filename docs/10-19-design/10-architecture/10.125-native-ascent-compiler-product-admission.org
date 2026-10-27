@@ -215,6 +215,42 @@ Ignoring all Scheme =.scm= files would erase that distinction. The ignore
 policy covers compiler interfaces and numbered objects without excluding
 hand-written Scheme.
 
+* Exhaustive lifecycle replay uses native support
+:PROPERTIES:
+:CUSTOM_ID: native125-lifecycle
+:END:
+
+The [[https://github.com/tao3k/lambda-aitia/actions/runs/40586970065/job/122481246244][cd9e115 Linux run]] passed native dependency/product admission, Scheme semantic
+closure, retirement binding/execution controls and the smaller model replay.
+Complete lifecycle replay then reached its existing 65-second batch deadline
+while still reporting completed traces. It reported no state mismatch before
+that deadline. This is a performance failure, not complete acceptance.
+
+The lifecycle test had imported its real Host driver by a relative source
+path. The ordinary Aitia native build now includes that same
+=t/formal/lifecycle-fixture.ss= as a =gxc:= support target, and the test imports
+its native package identity. The driver still calls the real verification,
+admission, decision, authorization, reservation and delivery APIs; it never
+imports the model's expected states. This changes compilation ownership,
+not the test oracle or the authorization boundary. Local configured Cedar
+callbacks remain controls, not evidence of native Cedar execution.
+
+#+NAME: native125-lifecycle-preserved
+| Obligation | Preserved execution / independent check |
+|------------+----------------------------------------|
+| Complete model graph | Quint 0.33.0 compiles the actual model; TLC must find exactly 19,042 reachable states and all 16 named actions |
+| Complete native replay | All 3,084 generated covering traces execute from init through real API calls; no Host cloning or synthesized intermediate state |
+| State correspondence | The existing test compares all 21 projected state fields after every step |
+| Failure controls | All seven typed negative traces must still be refused with unchanged state and no extra delivery |
+| Batching | Every original trace remains intact; maximum 160 actual steps per batch, four workers, original 65-second watchdog |
+| Source applicability | The source cut additionally includes the native build declaration, package pins and test discovery/runner inputs; changed bytes prevent issuing the final receipt |
+| Oracle integrity | Ten Python fail-closed controls retain missing-field/node/action, reachability, cyclic-graph and exact batch-preservation checks |
+
+A compiled support module or a passing prefix cannot stand in for the final
+=LIFECYCLE-SCHEME-OK= receipt. Remote acceptance must belong to the exact
+published Aitia revision; interrupted batches retain their exact inputs and
+failure output through the existing failure evidence path.
+
 * Resource and acceptance limits
 :PROPERTIES:
 :CUSTOM_ID: native125-acceptance
