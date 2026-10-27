@@ -96,9 +96,10 @@ no package is removed and no manifest is written by CI glue. The local actual
 API invocation reported =AITIA-NATIVE-ASP-BUILD-OK=.
 
 Native ASCENT product checks and the real-product negative controls execute
-before ASP. Their checked build inputs can be saved independently, so a later
-ASP or consumer failure does not require repeating an unrelated ASCENT
-compilation. Other restored products remain unadmitted until their own native
+before the other dependency builds. The legacy v2 input cache captured that
+checked ASCENT stage. The current v3 cache additionally requires the native
+Core/ASP, demanded parent and published testing-support builds to pass before
+publication. Restored products remain unadmitted until their own native
 checks/builds succeed. A cache does not carry a successful test verdict.
 
 The =d233672= run passed ASCENT and the native ASP build, then reached the
@@ -134,6 +135,47 @@ export their existing spec functions. The source-collection test now calls
 interface paths, all module keys and the original owner. The same assertions
 passed under the native API; no basename-only or membership-only substitute
 was introduced.
+
+The next remote failure was an exact NASA source-lock assertion, not another
+compiler failure. Core's current digest domain is =yuanxu.sources-lock.v1=;
+the checked-in lock still contained its predecessor-domain digest. The
+existing =tools/update-sources-lock.ss= regenerated the lock through the
+native Sources Lock Feature. An independent Python byte oracle verified all
+six original HTML SHA256 values and the unchanged total of 197,510 bytes.
+The composite digest changes from =cfb963b8...= to =68113744...=. Old lock
+receipts retain their old domain binding; unchanged payload bytes do not
+turn them into current lock receipts.
+
+A real incremental rebuild exposed another missing dependency: updating
+=source.lock.ss= alone left the previously compiled =sources.ss= value in
+place. Both package specs now share one =build-inputs.ss= declaration using
+ASP's existing verified-generated-module POO constructor. It projects the
+included lock to native std/make =extra-inputs:= without dropping or replacing
+the library target. The actual build then recompiled sources and dependents;
+the unchanged NASA provider suite passed exact regeneration, real payload
+materialization and changed-payload refusal. Compiler SSI/object products
+remain outside Git; the versioned content lock remains a reviewed input.
+
+The native dependency entry builds both manifest-owned Yuanxu and ASP through
+SDK =pkg-update= / =pkg-build=. CI checks the built Yuanxu commit against the
+parent's actual Core gitlink. The full native Core package is still built;
+its existing source checkout can now be reused rather than compiling an
+identical fresh gitlink checkout again. The v3 cache is saved only after
+Core, ASP, demanded parent products and published testing support pass.
+Restoration still runs the native checks/builds and every runtime test.
+
+Binding inputs that claimed success with the predecessor composite digest
+were also stale. The Scheme and Python positive protocol inputs now name
+the actual regenerated lock. The Scheme binding suite passed both current
+acceptance and predecessor refusal; the old digest is retained as an explicit
+negative input in both languages. Refusal still reports the stale standard
+assessment and grants neither release authorization nor runtime execution.
+No runtime acceptance rule was loosened to accommodate the data migration.
+
+The =5218da8= remote run completed the native Core/ASP builds, demanded parent
+Library and published testing support, then saved the completed native-cohort
+cache successfully. Later protocol-input changes reuse those checked build
+inputs but still run all native checks/builds and existing runtime assertions.
 
 The native test tool returns its harness status. The CI invocation explicitly
 exits with that result, so a printed ERROR cannot be lost by a dispatcher
@@ -194,7 +236,7 @@ the guard or admit incomplete products.
 Remote acceptance is pending the exact-head Linux Scheme job. Local checks
 above establish the negative controls and installed native API behavior;
 they do not establish complete remote Scheme, integration or Python runtime
-acceptance. At Aitia revision =7a9b271=, the native Aitia and consumer package builds
+acceptance. At Aitia revision =cd9e115=, the native Aitia and consumer package builds
 completed incrementally. Native gxpkg produced their manifests; the consumer
 metadata gate reported eight declared/registered dependencies,
 =COMPILED-PACKAGE-LOAD-OK= and =NATIVE-PACKAGE-METADATA-OK=, followed by the
