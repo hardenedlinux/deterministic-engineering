@@ -220,62 +220,104 @@ hand-written Scheme.
 :CUSTOM_ID: native125-lifecycle
 :END:
 
-The [[https://github.com/tao3k/lambda-aitia/actions/runs/40586970065/job/122481246244][cd9e115 Linux run]] passed native dependency/product admission, Scheme semantic
-closure, retirement binding/execution controls and the smaller model replay.
-Complete lifecycle replay then reached its existing 65-second batch deadline
-while still reporting completed traces. It reported no state mismatch before
-that deadline. This is a performance failure, not complete acceptance.
+The existing native Aitia build includes =t/formal/lifecycle-fixture.ss= as
+a =gxc:= support target. The =*-test.ss= entry reads the independent Quint
+packet and invokes that support's =check-lifecycle-traces!= through the same
+native TestSuite. The driver calls the real verification, admission, decision,
+authorization, reservation and delivery APIs. It never imports model expected
+states into the Host or clones an issued Host between paths.
 
-The lifecycle test had imported its real Host driver by a relative source
-path. The ordinary Aitia native build now includes that same
-=t/formal/lifecycle-fixture.ss= as a =gxc:= support target, and the test imports
-its native package identity. The driver still calls the real verification,
-admission, decision, authorization, reservation and delivery APIs; it never
-imports the model's expected states. This changes compilation ownership,
-not the test oracle or the authorization boundary. Local configured Cedar
-callbacks remain controls, not evidence of native Cedar execution.
+The entire assertion body is identical after whitespace normalization: nine
+check forms, including the 21-field comparison and forbidden-effect loops.
+Its normalized audit SHA256 is
+=1af57b90b78f3aeec8cc2ba01c7bd2b251dd4cace64a266b2f2bff8fe3f4fdfe=.
+Configured local Cedar callbacks remain controls, not native Cedar proof.
+
+** One current resource contract
+:PROPERTIES:
+:CUSTOM_ID: native125-resource-version
+:END:
+
+Historical commit =402f968= used a 1 GiB / 60-second atomic recipe in its
+lowercase =justfile=. Commit =2f37655b= added a 65-second Python guard around
+that recipe. The current native entry had already moved to the user's
+2 GiB / 180-second contract, while Python retained 65 seconds and lifecycle
+still selected the default 512 MiB native child Profile. Those are different
+resource versions, not evidence that the implementation needs permission to
+exceed the current 180-second ceiling.
+
+The [[https://github.com/tao3k/lambda-aitia/actions/runs/40590733969][e66f1d3 run]] printed =MODULE-OK=, =HARNESS-OK= and =OK= for a heavy batch,
+but its full process exceeded the legacy 65-second guard. That run remains
+failed. Earlier 64/96-step partition experiments did not establish complete
+acceptance and are not the final resource policy. Fresh current-budget
+execution, rather than relabeling the old failure, is required for closure.
+
+The existing POO large-memory Profile now selects lifecycle replay as well as
+the complete catalog/source-graph cases. Its actual native runtime projection
+is =-:max-heap=2048M=. Ordinary retirement checks retain =512M=. Python now
+passes 180 seconds to its existing process runner, matching the atomic native
+entry. The original 160-step batch quantum and four workers remain; no trace
+is split or dropped. The CI job retains its original 90-minute deadline.
+This aligns stale resource versions with the authorized contract; it is not
+a claim of a measured speedup or permission to exceed that contract.
 
 #+NAME: native125-lifecycle-preserved
-| Obligation | Preserved execution / independent check |
-|------------+----------------------------------------|
-| Complete model graph | Quint 0.33.0 compiles the actual model; TLC must find exactly 19,042 reachable states and all 16 named actions |
-| Complete native replay | All 3,084 generated covering traces execute from init through real API calls; no Host cloning or synthesized intermediate state |
-| State correspondence | The existing test compares all 21 projected state fields after every step |
-| Failure controls | All seven typed negative traces must still be refused with unchanged state and no extra delivery |
-| Batching | Every original trace remains intact; maximum 160 actual steps per batch, four workers, original 65-second watchdog |
-| Source applicability | The source cut additionally includes the native build declaration, package pins and test discovery/runner inputs; changed bytes prevent issuing the final receipt |
-| Oracle integrity | Ten Python fail-closed controls retain missing-field/node/action, reachability, cyclic-graph and exact batch-preservation checks |
+| Obligation | Execution / independent control |
+|------------+---------------------------------|
+| Complete model graph | Quint 0.33.0 compiles the actual model; TLC must find 19,042 reachable states and all 16 named actions |
+| Complete native replay | All original covering traces execute from init through real API calls; expected states are compared, never installed |
+| State correspondence | All 21 projected fields are compared after every supplied row |
+| Failure controls | All seven typed negative traces remain refused, with unchanged state and no extra delivery |
+| Atomic packing | Original 160-step assertions remain; the additional 64-step packing/identity/order and oversized-trace assertions also remain |
+| Native resource projection | Real Scheme tests require 2048M for lifecycle and retain 512M for ordinary retirement |
+| Python propagation | The regression checks that replay passes the current 180-second deadline and preserves its exact serialized input |
+| Source applicability | The cut includes build/pins, Justfile, native test Profile, discovery/runner and resource-test inputs; changed bytes refuse the final receipt |
 
-The [[https://github.com/tao3k/lambda-aitia/actions/runs/40589089524][c5a0668 run]] again passed the semantic/control gates but exceeded the same
-65-second limit in its first complete batch. Compiling the driver alone left
-the 21-field comparison loops interpreted. The existing test support module
-now also owns =check-lifecycle-traces!=; the =*-test.ss= entry still reads the
-independent Quint packet and publishes the same native TestSuite. The entire
-assertion body is identical after whitespace normalization (nine check forms,
-including the field-wise and forbidden-effect loops). Its normalized audit
-SHA256 is =1af57b90b78f3aeec8cc2ba01c7bd2b251dd4cace64a266b2f2bff8fe3f4fdfe=.
-No authorization check is cached, elided or replaced with model state.
+The twelve Python unit controls cover oracle/schema/packing/resource contracts;
+they are not substitutes for native execution. Local four-worker real batches
+under the current Profile completed in 12.280, 17.160, 24.381 and 25.249 seconds
+(15, 12, 8 and 8 traces respectively). A poisoned initial =deliveryCalls= gold
+was rejected with actual 0 / expectation 1 and process status 70. A printed
+=MODULE-OK= alone cannot override that failure.
 
-#+NAME: native125-assertion-controls
-| Actual input / control | Local observation | Applicable conclusion |
-|------------------------+-------------------+-----------------------|
-| Four retained real Quint batches, concurrent original four workers | 11.058, 15.474, 21.899 and 22.540 seconds; 15, 12, 8 and 8 complete traces respectively | Same native APIs and full comparisons complete inside each original batch guard on this local SDK |
-| Same heavy batch with interpreted comparisons, isolated worker | 22.185 seconds and eight complete traces | An isolated baseline; not a controlled four-worker speedup ratio or a Linux throughput receipt |
-| First initial deliveryCalls expectation changed from 0 to 1 | Native assertion reports actual 0 / expectation 1 and process exits 70 | Compiled comparisons reject false gold; a printed MODULE-OK alone cannot override the process failure |
-| Latest Aitia revision | e66f1d3cbc284a28eccd2140f6a7789cf54687a7 | Exact-head complete replay and downstream CI remain required |
+The retained real graph inventory contains 3,084 original traces, 64,206 rows
+and a longest trace of 32 rows. These are observations of this model cut,
+not a replacement oracle. The work quantum counts =init= because its full
+field comparison also executes: 3,084 initial rows plus 61,122 subsequent
+action rows. The 16-action coverage excludes =init=.
 
-A compiled support module or a passing prefix cannot stand in for the final
-=LIFECYCLE-SCHEME-OK= receipt. Remote acceptance must belong to the exact
-published Aitia revision; interrupted batches retain their exact inputs and
-failure output through the existing failure evidence path.
+The exact-head [[https://github.com/tao3k/lambda-aitia/actions/runs/40594441600][beb7e62 Linux run]] must produce its own complete
+=LIFECYCLE-SCHEME-OK= result and pass the subsequent integration/native gates.
+A compiled support module or passing prefix cannot issue that receipt.
+Failed inputs remain in the existing failure-evidence path; old failures and
+interrupted local prefixes are not current successful evidence.
+
+** Local native ABI and SDK dependency relocation
+:PROPERTIES:
+:CUSTOM_ID: native125-local-abi
+:END:
+
+The existing =just check-native= entry built and exercised the C header and
+dynamic harnesses, actual Scheme binding suite, 44 Python native cases and
+one installed-wheel qualification. The first local link failed because this
+Homebrew SDK's =libgerbil.ldd= recorded the removed OpenSSL 3.6.4 keg. The
+actual installed release is 3.6.5 with ABI major 3. Using the compiler's normal
+=LIBRARY_PATH=/opt/homebrew/opt/openssl@3/lib= selected those real libraries;
+=otool -L= confirms =libcrypto.3.dylib= and =libssl.3.dylib=. No SDK file,
+manifest, library binary or project binding was fabricated or patched.
+
+This result belongs to the local SDK/source closure and dependency environment.
+It does not establish Linux native acceptance or a cold build speed. Changes
+to Python replay scheduling or its test Profile do not change the native C
+binding closure; native build currentness remains with its existing owner.
 
 * Resource and acceptance limits
 :PROPERTIES:
 :CUSTOM_ID: native125-acceptance
 :END:
 
-All newly introduced Scheme checks and repair invocations use a 2 GiB Gambit
-heap and a 180-second process deadline. Aitia's ordinary and atomic Scheme
+All newly introduced Scheme checks and repair invocations stay within a
+2 GiB Gambit heap ceiling and a 180-second process deadline. Aitia's ordinary and atomic Scheme
 recipes use the same explicit envelope; their Cases and assertions remain.
 Parent Core and library builds have independent 180-second deadlines.
 There is no automatic retry that relabels an interrupted build as complete.
@@ -290,7 +332,7 @@ the guard or admit incomplete products.
 Remote acceptance is pending the exact-head Linux Scheme job. Local checks
 above establish the negative controls and installed native API behavior;
 they do not establish complete remote Scheme, integration or Python runtime
-acceptance. At Aitia revision =e66f1d3=, the native Aitia and consumer package builds
+acceptance. At Aitia revision =beb7e62=, the native Aitia and consumer package builds
 completed incrementally. Native gxpkg produced their manifests; the consumer
 metadata gate reported eight declared/registered dependencies,
 =COMPILED-PACKAGE-LOAD-OK= and =NATIVE-PACKAGE-METADATA-OK=, followed by the
