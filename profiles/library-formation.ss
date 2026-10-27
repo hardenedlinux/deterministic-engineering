@@ -8,10 +8,9 @@
    ("project-entry" "project")))
 (def all-products '("D01" "D02" "D03" "D04" "D05" "D06" "D07" "D08" "D09" "D10"))
 (def all-duties '("DE-O-ARCH" "DE-O-DOC" "DE-O-DEC" "DE-O-TRACE" "DE-O-REVIEW"))
-(def (candidate id owners products duties)
- (let ((selected-owners owners) (selected-products products) (selected-duties duties))
-  (.o identity: id project: "DE-CASE-01" basis: "reusable-library"
-      owners: selected-owners products: selected-products duties: selected-duties capabilities: '())))
+(.def FormationCandidate.
+ project: "DE-CASE-01" basis: "reusable-library"
+ owners: full-owners products: all-products duties: all-duties capabilities: '())
 (def LibraryFormationProfile
  (.o project: "DE-CASE-01" intent: "reusable-library"
      project-inputs: '("gerbil.pkg" "projects/library-formation/init.ss"
@@ -49,10 +48,11 @@
                      ("entry-capture" "project-entry" "capture")
                      ("entry-reasoning" "project-entry" "reasoning"))
      candidates:
-     (list (candidate "LIB-C01" full-owners all-products all-duties)
-           (candidate "LIB-C02"
-             (map (lambda (row) (if (member (car row) '("capture" "reasoning" "review" "receipt-issuance"))
-                                      (list (car row) "library") row)) full-owners)
-             all-products all-duties)
-           (candidate "LIB-C03" '(("documentation" "documents"))
-             '("D01" "D04" "D05" "D09") '("DE-O-DOC")))))
+     (list (.o (:: @ FormationCandidate.) identity: "LIB-C01")
+           (.o (:: @ FormationCandidate.) identity: "LIB-C02"
+             owners: => (cut map (lambda (row)
+               (if (member (car row) '("capture" "reasoning" "review" "receipt-issuance"))
+                 (list (car row) "library") row)) <>))
+           (.o (:: @ FormationCandidate.) identity: "LIB-C03"
+             owners: '(("documentation" "documents"))
+             products: '("D01" "D04" "D05" "D09") duties: '("DE-O-DOC")))))

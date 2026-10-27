@@ -8,17 +8,22 @@
         "../../../../../types.ss"
         (only-in "../abstract/types.ss" BackpressureScopeContract BackpressureDeclarationContract BackpressureModelContract backpressure-model?))
 (export ResourceMethodRequirements ResourceMethodDefinitionContract ResourceMethodDefinitionsShape ResourceQuintSignature ResourceLeanSignature ResourceNativeSignature ResourceIntegrationSignature BackpressureTraceMappingContract BackpressureOwnershipCatalogContract RustResourcesConfigContract BackpressureReviewPolicyContract BackpressureDesignReviewPolicyContract RustResourceModelContract BackpressureIntegrationContract RustResourcesScopeContract ResourceProfileContract ResourceNativeProfileContract
-        ResourceNativeContextContract resource-model-profile-supported? BackpressureScopeContract)
+        ResourceNativeContextContract resource-model-profile-supported? resource-model-initializer BackpressureScopeContract)
 (def (unique? xs)
   (or (null? xs) (and (not (member (car xs) (cdr xs))) (unique? (cdr xs)))))
 (def (slots? value names)
   (and (object? value) (andmap (cut .slot? value <>) names)))
+;; Finite authored model coverage. Admission and execution use this one table;
+;; neither capacity nor a Profile label can select an undeclared initializer.
+(def ResourceModelInitializers
+ (.o normal: '(((1 1) . "initResource") ((2 2) . "init") ((4 2) . "initC2"))
+     early-release: '(((1 1) . "initResourceRunning") ((2 2) . "initRunning"))))
+(def (resource-model-initializer value mode)
+ (and (slots? value '(capacity queue)) (symbol? mode) (.slot? ResourceModelInitializers mode)
+  (let (selected (assoc (list (.get value capacity) (.get value queue)) (.ref ResourceModelInitializers mode)))
+   (and selected (cdr selected)))))
 (def (resource-model-profile-supported? value mode)
-  (and (slots? value '(capacity queue))
-       (case mode
-         ((normal) (member (list (.ref value 'capacity) (.ref value 'queue)) '((1 1) (2 2) (4 2))))
-         ((early-release) (member (list (.ref value 'capacity) (.ref value 'queue)) '((1 1) (2 2))))
-         (else #f)) #t))
+ (and (resource-model-initializer value mode) #t))
 (def (resource-profile? value)
   (and (slots? value '(identity capacity queue item fixed budget cache-bytes factors workload runtime inventory tokio-workers rayon-workers cpu-budget lock))
        (symbol? (.ref value 'identity))

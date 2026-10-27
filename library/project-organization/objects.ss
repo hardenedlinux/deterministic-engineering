@@ -27,13 +27,14 @@
      loss: "Architecture responsibility categories; no implementation or authorization conclusion."))
 (def (method-ref definition-value)
  (.o identity: (.get definition-value identity) revision: (.get definition-value revision) owner: (.get definition-value owner)))
-(def (organization-method operation-value kind-value signature-value)
- (.o identity: (string->symbol (string-append "organization." (symbol->string operation-value)))
+(.def OrganizationMethod.
+ operation: (error "Organization method requires an operation")
+ identity: (string->symbol (string-append "organization." (symbol->string operation)))
      revision: "formation-rules" owner: 'project-organization role: 'method family: organization-family
      declaration-contract: OrganizationDeclarationContract contract: OrganizationMethodContract
-     kind: kind-value model-ids: '(project-organization) policy-ids: '() claims: '(organization.coverage)
-     modes: '(design-only) strength: 'authored-conditional signature: signature-value
-     provider: 'project-formation operation: operation-value result-owner: 'project-formation
+     kind: (.get (.ref OrganizationMethodRequirements operation) kind) model-ids: '(project-organization) policy-ids: '() claims: '(organization.coverage)
+     modes: '(design-only) strength: 'authored-conditional signature: (.get (.ref OrganizationMethodRequirements operation) signature)
+     provider: 'project-formation result-owner: 'project-formation
      result-kinds: '(declaration-findings candidate-notation)
      input-demands: '(organization-demands profile proposals actual-program source-closure)
      assets: (list catalog-asset)
@@ -42,10 +43,10 @@
      limits: (list (.o identity: 'no-runtime-authority inputs: '(actual-program)
        statement: "Design findings and generated notation are not accepted Q, validation, publication or authority."))
      program-ref: (.o identity: 'project-formation.program revision: "formation-rules" owner: 'project-formation)
-     catalog-ref: (method-ref catalog-value) mapping-ref: (method-ref mapping-value)))
+     catalog-ref: (method-ref catalog-value) mapping-ref: (method-ref mapping-value))
 (def OrganizationMethods
- (.o reason: (organization-method 'reason 'application-reasoning OrganizationReasonSignature)
-     render: (organization-method 'render 'model-projection OrganizationRenderSignature)))
+ (.o reason: (.o (:: @ OrganizationMethod.) operation: 'reason)
+     render: (.o (:: @ OrganizationMethod.) operation: 'render)))
 (def ProjectOrganization
   (.o identity: 'project-organization role: 'organization family: organization-family
       declaration-contract: OrganizationDeclarationContract contract: OrganizationModelContract
@@ -59,7 +60,7 @@
       limits: (list (.o identity: 'organization.assertion-limit inputs: '(proposals)
         statement: "Structural declarations do not establish capability, causal truth or authority."))
       qualification: 'authored-conditional assets: (list catalog-asset)
-      capabilities: '(organization-demands) method-refs: (map (lambda (key) (method-ref (.ref OrganizationMethods key))) '(reason render))
+      capabilities: '(organization-demands) method-refs: (map (lambda (key) (method-ref (.ref methods key))) '(reason render))
       methods: OrganizationMethods catalog: catalog-value mapping: mapping-value
       roles: '(("definitions" "library" "definition")
                ("selection" "profile" "selection")

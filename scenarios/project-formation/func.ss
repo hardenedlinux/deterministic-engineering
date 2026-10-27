@@ -49,21 +49,27 @@
   (cons 'required_capability (map list (.ref declaration 'required-capabilities)))
   (cons 'role_layout (.ref profile 'layout))
   (cons 'role_dependency (.ref profile 'dependencies)))))
-(def (project-formation-scope library engine selected-resource-scope)
- (let ((declaration (.ref library 'entry)) (reason (.ref engine 'reason)) (render-model (.ref engine 'render)))
-  (.o acquire-codex: formation-acquire-codex codex-current!: formation-codex-current! observe-codex: formation-codex-observation
-      authorize-codex: formation-authorize-codex codex-authorized!: formation-codex-authorized! codex-authority-observation: formation-codex-authority-observation
-      verify-codex: formation-verify-codex codex-verification-current!: formation-codex-verification-current! revoke-codex!: formation-revoke-codex!
-      select: (lambda (profile) (select-formation-profile library engine selected-resource-scope profile))
-      prepare-capture: (lambda (request (authority #f)) (prepare-formation-capture library engine selected-resource-scope request authority))
-      input-current!: formation-inputs-current!
-      observe-inputs: formation-input-observation
-      acquire: (lambda (root profile)
-        (formation-acquire-inputs root (.ref profile 'project-inputs)
-          (.ref profile 'input-byte-limit) (.ref profile 'input-lifetime-seconds)))
-      run: (lambda (profile) (reason (formation-inputs declaration profile)))
-      render: render-model
-      inputs: (lambda (profile) (formation-inputs declaration profile)))))
+;; Composition keeps dependency owners as values. Derived callables use the
+;; effective Scenario; acquisition and authority checks remain in their owners.
+(.def FormationScenario.
+ library: (error "Formation Scenario requires its Library")
+ engine: (error "Formation Scenario requires its engine")
+ resources: (error "Formation Scenario requires its resource scope")
+ acquire-codex: formation-acquire-codex codex-current!: formation-codex-current! observe-codex: formation-codex-observation
+ authorize-codex: formation-authorize-codex codex-authorized!: formation-codex-authorized! codex-authority-observation: formation-codex-authority-observation
+ verify-codex: formation-verify-codex codex-verification-current!: formation-codex-verification-current! revoke-codex!: formation-revoke-codex!
+ select: (lambda (profile) (select-formation-profile library engine resources profile))
+ prepare-capture: (lambda (request (authority #f)) (prepare-formation-capture library engine resources request authority))
+ input-current!: formation-inputs-current!
+ observe-inputs: formation-input-observation
+ acquire: (lambda (root profile)
+   (formation-acquire-inputs root (.get profile project-inputs)
+     (.get profile input-byte-limit) (.get profile input-lifetime-seconds)))
+ inputs: (lambda (profile) (formation-inputs (.get library entry) profile))
+ run: (lambda (profile) ((.get engine reason) (inputs profile)))
+ render: (.get engine render))
+(def (project-formation-scope selected-library selected-engine selected-resources)
+ (.o (:: @ FormationScenario.) library: selected-library engine: selected-engine resources: selected-resources))
 
 (def (select-formation-profile library engine selected-resource-scope profile-input)
  (def selected-profile (validate (.get FormationProfileContract value-contract) profile-input))

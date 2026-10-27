@@ -62,12 +62,16 @@
      (witness W O M V R) (checked W V A))
   (bounds 4096 4096 4096))
 
+;; Pure projection of selected declarations. Source installation below is the
+;; explicit native Session effect; the projection grants no method attestation.
+(def (resource-review-sources entry profile usage snapshot scopes)
+ (list (cons 'application (list (list usage snapshot (.get entry identity))))
+       (cons 'catalog_rule (map (lambda (row) (cons (.get entry identity) row)) (.get entry rules)))
+       (cons 'catalog_dependency (.get entry dependencies))
+       (cons 'factor (map (cut list usage <>) (.get profile factors)))
+       (cons 'scope scopes)))
 (def (open-resource-review entry profile usage snapshot scopes)
-  (def session (gerbil-ascent-open-session (rule-module-program (make-resource-evidence))))
-  (gerbil-ascent-session-replace-sources! session
-    (list (cons 'application (list (list usage snapshot (.ref entry 'identity))))
-          (cons 'catalog_rule (map (lambda (row) (cons (.ref entry 'identity) row)) (.ref entry 'rules)))
-          (cons 'catalog_dependency (.ref entry 'dependencies))
-          (cons 'factor (map (lambda (f) (list usage f)) (.ref profile 'factors)))
-          (cons 'scope scopes)))
-  session)
+ (def session (gerbil-ascent-open-session (rule-module-program (make-resource-evidence))))
+ (gerbil-ascent-session-replace-sources! session
+   (resource-review-sources entry profile usage snapshot scopes))
+ session)

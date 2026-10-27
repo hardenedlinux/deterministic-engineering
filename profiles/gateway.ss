@@ -13,6 +13,6 @@
 (.def (Cap2Profile @ LocalProfile) identity: 'C2 capacity: 4)
 (.def (CacheProfile @ LocalProfile)
   identity: 'C1-cache cache-bytes: 128
-  factors: '(bounded-retention tokio rayon cache))
+  factors: => (cut append <> '(cache)))
 (.def (RetryProfile @ LocalProfile)
-  identity: 'C1-retry factors: '(bounded-retention tokio rayon retry))
+  identity: 'C1-retry factors: => (cut append <> '(retry)))

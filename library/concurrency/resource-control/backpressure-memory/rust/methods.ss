@@ -8,7 +8,7 @@
         :gerbil-ascent/program/session
         (only-in :agentic-ai-lab/modules/ai-agentic-context/clue-exchange open-trajectory-clue-exchange)
         "./oracle.ss" "./correspondence.ss"
-        (only-in "./types.ss" resource-model-profile-supported? ResourceNativeProfileContract ResourceNativeContextContract)
+        (only-in "./types.ss" resource-model-initializer ResourceNativeProfileContract ResourceNativeContextContract)
         (only-in :clan/poo/mop validate))
 (export resource-digest-file resource-digest-value resource-write-json
         resource-real-scopes resource-run-qnt resource-run-lean
@@ -70,14 +70,8 @@
         ("log" log) ("logSha256" (resource-digest-file log))))
 (def (json-read path) (call-with-input-file path (cut read-json <> object-as-hash: #t)))
 (def (model-initializer profile mode)
-  (unless (resource-model-profile-supported? profile mode)
-    (error "unsupported QNT Profile/mode" (.ref profile 'capacity) (.ref profile 'queue) mode))
-  (case mode
-    ((normal) (case (.ref profile 'capacity) ((1) "initResource") ((2) "init") ((4) "initC2")
-               (else (error "QNT model only covers capacities 2 and 4"))))
-    ((early-release) (case (.ref profile 'capacity) ((1) "initResourceRunning") ((2) "initRunning")
-                       (else (error "counter initial scope differs"))))
-    (else (error "unsupported QNT operation" mode))))
+ (or (resource-model-initializer profile mode)
+     (error "unsupported QNT Profile/mode" (.get profile capacity) (.get profile queue) mode)))
 (def (model-basis/input digest profile mode)
   (resource-digest-value (list "quint-tlc/safe/v1" digest
     (model-initializer profile mode) (if (eq? mode 'normal) "step" "earlyRelease") "five-jobs")))
@@ -234,6 +228,18 @@
       (hash-put! expected (car pair) (cdr pair))) (resource-result-files r))) results)
   (hash-for-each (lambda (path digest)
     (unless (equal? digest (resource-digest-file path)) (error "method inputs or recorded artifacts changed" path))) expected))
+;; Private projection value, never a constructor for an issued method result.
+(def (result-registration-rows result)
+ (def record (resource-result-payload result))
+ (def observation (hash-ref record "observation"))
+ (def id (string->symbol (hash-ref record "id")))
+ (def reference (resource-result-reference result))
+ (def review-digest (resource-digest-file (hash-ref record "reviewPath")))
+ (.o witness: (list id (string->symbol (hash-ref observation "obligation"))
+                    (string->symbol (hash-ref observation "method")) reference
+                    (string->symbol (hash-ref observation "outcome")))
+     inputs: (map (lambda (pair) (list id (car pair) (cdr pair))) (resource-result-footprint result))
+     checked: (list id reference (string-append "sha256:" review-digest))))
 (def (resource-register-results! session results trajectory rules-path)
   (def rule-digest (resource-digest-file rules-path))
   (def by-id (make-hash-table))
@@ -264,17 +270,10 @@
                         (equal? (list-ref row 4) (resource-result-reference r))))
                    (hash-ref view relation)))
       (error "native method attestation unavailable"))) results)
-  (def witnesses '()) (def inputs '()) (def checks '())
-  (for-each (lambda (r)
-    (def record (resource-result-payload r))
-    (def observation (hash-ref record "observation"))
-    (def id (string->symbol (hash-ref record "id")))
-    (set! witnesses (cons (list id (string->symbol (hash-ref observation "obligation"))
-      (string->symbol (hash-ref observation "method")) (resource-result-reference r)
-      (string->symbol (hash-ref observation "outcome"))) witnesses))
-    (set! inputs (append (map (lambda (p) (list id (car p) (cdr p))) (resource-result-footprint r)) inputs))
-    (set! checks (cons (list id (resource-result-reference r)
-      (string-append "sha256:" (resource-digest-file (hash-ref record "reviewPath")))) checks))) results)
+  ;; Digest acquisition remains effectful; only the subsequent field/row
+  ;; projection is declarative. Keep digest reads in result order, then retain
+  ;; the existing reverse-result wire order.
+  (def additions (reverse (map result-registration-rows results)))
   (result-set-current! results)
   (unless (equal? rule-digest (resource-digest-file rules-path)) (error "rule source changed before registration"))
   ;; Historical observations are retained; only freshly attested method checks
@@ -284,8 +283,9 @@
     (foldl (lambda (row out) (if (member row out) out (cons row out)))
       ((.ref old 'rows-of) relation) additions))
   (gerbil-ascent-session-replace-sources! session
-    (list (cons 'witness (union-rows 'witness witnesses))
-          (cons 'witness_input (union-rows 'witness_input inputs)) (cons 'checked checks)))
+    (list (cons 'witness (union-rows 'witness (map (cut .get <> witness) additions)))
+          (cons 'witness_input (union-rows 'witness_input (apply append (map (cut .get <> inputs) additions))))
+          (cons 'checked (map (cut .get <> checked) additions))))
   exchange)
 
 (def (native-context-files root)
@@ -347,7 +347,10 @@
   (unless (and (equal? (.ref expected 'snapshot) (.ref context 'snapshot))
                (equal? (.ref expected 'scopes) (.ref context 'scopes)))
     (error "native context no longer matches selected source/Profile/tools"))
-  context)
+  ;; Structural validation can rebind computed Profile fields. A currentness
+  ;; check must retain the captured context identity after all checks succeed;
+  ;; its normalized checking view is not a newly issued capture.
+  selected-context)
 
 (def (append-map fn xs) (apply append (map fn xs)))
 (def (registry-inputs directory)

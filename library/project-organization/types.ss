@@ -8,7 +8,7 @@
  "../../types.ss")
 (export OrganizationDeclarationContract OrganizationModelContract OrganizationConfigContract
  OrganizationScopeContract OrganizationCatalogContract OrganizationMappingContract
- OrganizationMethodContract OrganizationMethodsShape OrganizationReasonSignature OrganizationRenderSignature)
+ OrganizationMethodRequirements OrganizationMethodContract OrganizationMethodsShape OrganizationReasonSignature OrganizationRenderSignature)
 (def family 'project-organization)
 (def (unique? values)
  (or (null? values) (and (not (member (car values) (cdr values))) (unique? (cdr values)))))
@@ -38,18 +38,22 @@
     (.o catalog-id: Symbol roles: (List (text-row 2)) loss: LibraryNonemptyString)))))
 (def OrganizationReasonSignature (Function (list Any) (list Any)))
 (def OrganizationRenderSignature (Function (list String) (list Any)))
+;; Finite operation requirements belong to the published method Contract.
+(def OrganizationMethodRequirements
+ (.o reason: (.o kind: 'application-reasoning signature: OrganizationReasonSignature)
+     render: (.o kind: 'model-projection signature: OrganizationRenderSignature)))
 (def OrganizationMethodContract
  (library-definition-contract 'project-organization/method 'method family OrganizationDeclarationContract
   (refine LibraryMethodShape
    (lambda (v location)
     (def operation-name (.get v operation))
+    (def expected (and (.slot? OrganizationMethodRequirements operation-name)
+                      (.ref OrganizationMethodRequirements operation-name)))
     (if (and (eq? (.get v provider) 'project-formation) (eq? (.get v result-owner) 'project-formation)
          (equal? (.get v model-ids) '(project-organization))
          (equal? (.get v modes) '(design-only)) (eq? (.get v strength) 'authored-conditional)
-         (case operation-name
-          ((reason) (and (eq? (.get v kind) 'application-reasoning) (eq? (.get v signature) OrganizationReasonSignature)))
-          ((render) (and (eq? (.get v kind) 'model-projection) (eq? (.get v signature) OrganizationRenderSignature)))
-          (else #f)))
+         expected (eq? (.get v kind) (.get expected kind))
+         (eq? (.get v signature) (.get expected signature)))
      '() (list (.o kind: 'organization/method-operation-or-strength path: location)))))))
 (def OrganizationMethodsShape
  (.cc ObjectContract. 'responsibilities
