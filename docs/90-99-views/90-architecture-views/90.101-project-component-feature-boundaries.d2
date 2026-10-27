@@ -1,0 +1,32 @@
+# org-target: docs/10-19-design/10-architecture/10.119-project-component-feature-and-example-boundaries.org::#organization119-scope
+# render-layout: elk; theme: 0; pad: 24
+direction: down
+current: "Current repository" {
+  direction: down
+  project: "Library Project\nCoherent reusable-knowledge goal and delivery scope"
+  companion: "Imported DECaseOrganization\nSource inventory, not one Project per part"
+  example: "DE-E05 actual::gateway\nExisting gateway-review fixture Scenario\nNo production Gateway implementation claim"
+  project -> companion -> example
+}
+knowledge: "Reusable domain Libraries\nResource ownership / notification protocol\nRust/Tokio/Rayon specialization\nModels, rules, obligations, PBT methods and corpus"
+target: "Explanatory service-system target / not instantiated" {
+  direction: down
+  project: "Service-system Project\nGoals, responsible ownership, assurance and delivery"
+  gateway: "Gateway Component\nInterfaces and routing responsibility"
+  worker: "Worker Component\nCPU work and cleanup responsibility"
+  feature: "Bounded-admission Feature\nBehavior allocated across components\nNot automatically a Scheme features slot"
+  project -> gateway: "Contains"
+  project -> worker: "Contains"
+  feature -> gateway: "Allocated to"
+  feature -> worker: "Allocated to"
+}
+use: "Existing Module / Profile / Scenario\nApply checked Library contracts to actual subjects\nComponent/feature obligations; no new framework"
+evidence: "Component-scoped PBT / QNT / Lean evidence\nExplicit mappings and fresh target use\nWhole-system claim needs composition evidence"
+current.example -> use: "Fixture application only"
+knowledge -> use: "Reusable knowledge"
+target.gateway -> use
+target.worker -> use
+use -> evidence
+rule: "Project formation requires a justified delivery boundary\nA gateway can be a standalone product when warranted\nComponent, Feature and test names alone are insufficient" {style.fill: "#fff2dc"}
+current.project -> rule
+target.project -> rule
