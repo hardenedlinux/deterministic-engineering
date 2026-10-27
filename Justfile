@@ -1,7 +1,8 @@
 # Native package operations; every Scheme process is fenced before importing.
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 
-export GERBIL_BUILD_CORES := "4"
+# Match the fixed CI/native qualification budget at the actual recipe boundary.
+export GERBIL_BUILD_CORES := "2"
 # Native package scripts spawn Scheme children: carry the same heap fence to them.
 # Nested Just/SDK calls must retain the same compiler input identity.
 export GAMBOPT := if env_var_or_default("GAMBOPT", "") == "" { "max-heap=2G,debug=q" } else if env_var("GAMBOPT") =~ "(^|,)max-heap=2G,debug=q$" { env_var("GAMBOPT") } else { env_var("GAMBOPT") + ",max-heap=2G,debug=q" }
@@ -16,7 +17,17 @@ gerbil_darwin_env := if os() == "macos" { if gerbil_homebrew_runtime == "true" {
 # Native installation spans several package builds. Keep the original deadline
 # at each package entry; a serial dependency closure is not one package build.
 deps:
-    {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q deps --install
+    timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q deps --install
+
+
+# The product owns the v0.19 tagged-update adapter over public gxpkg APIs.
+# Run after initial installation; no local updater or manifest writer.
+deps-update:
+    timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi .gerbil/pkg/github.com/tao3k/agentic-ai-lab/packages/automation/native-dependencies.ss
+
+# Use the ordinary untagged native build with the same host/compiler envelope.
+build-dependency package:
+    timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxpkg build "{{ package }}"
 
 build:
     timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q build

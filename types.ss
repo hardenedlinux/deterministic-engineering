@@ -1,14 +1,15 @@
 ;;; Shared Library declaration vocabulary. Types only: no objects, IO or Engine.
 (import :clan/poo/object
-        (only-in :clan/poo/mop Type Type. define-type element?)
+        (only-in :clan/poo/mop Type Type. define-type element? raise-type-error)
         (only-in :clan/poo/type Symbol String List Record)
+        (only-in :clan/poo/recursive-validation close-validation closed? closed-ref)
         (only-in :clan/poo/object-contract ObjectContract. refine)
         (only-in :yuanxu/object-types/contracts YuanxuContract. yuanxu-predicate-type))
 (export LibraryDeclarationContract LibraryDeclarationShape LibraryReferenceContract
         LibraryAssetContract LibraryPremiseContract LibraryClaimContract
         LibraryMethodShape LibraryMethodBindingShape LibraryModelShape LibraryMethodKind LibraryDefinitionRole LibraryStrength
         LibraryNonemptyString LibrarySymbolPair LibrarySymbolTriple
-        library-definition-contract)
+        library-definition-contract LibraryScopeType.)
 (define-type (LibraryNonemptyString @ Type.)
  .element?: (lambda (value) (and (string? value) (> (string-length value) 0))))
 (def (symbols-of-length count)
@@ -96,3 +97,35 @@
   'responsibilities (.o definition: LibraryMethodShape provider: Symbol operation-name: Symbol
    operation: (yuanxu-predicate-type 'library/deferred-operation procedure?)
    current!: (yuanxu-predicate-type 'library/deferred-currentness procedure?))))
+
+;; One native Type prototype owns normalization of the shared three-node Scope.
+;; Families supply their shapes and semantic contracts; no registry or issuer.
+(def (library-closed-scope? shape value)
+ (and (element? shape value)
+      (let (graph (.get value validation))
+       (and (eq? (.get value entry) (closed-ref graph 'entry))
+            (eq? (.get value declaration) (closed-ref graph 'declaration))
+            (eq? (.get value config) (closed-ref graph 'config))))))
+(define-type (LibraryScopeType. @ Type. scope-shape closed-shape entry-type declaration-type)
+ .element?: (lambda (value)
+   (if (and (object? value) (.slot? value 'validation))
+     (library-closed-scope? closed-shape value) (element? scope-shape value)))
+ .validate: (lambda (value)
+  (if (and (object? value) (.slot? value 'validation))
+   (begin (unless (library-closed-scope? closed-shape value) (raise-type-error @ value)) value)
+   (let ()
+    (unless (element? scope-shape value) (raise-type-error @ value))
+    (unless (and (eq? (.get value entry) (.get value config entry))
+                 (eq? (.get value declaration) (.get value config declaration)))
+      (error "Library Config associations diverged before Scope normalization"))
+    (def graph
+     (close-validation
+      (lambda (reference)
+       (def config-shape (.cc ObjectContract. 'responsibilities
+           (.o entry: (reference 'entry) declaration: (reference 'declaration))))
+       (list (list 'entry entry-type (.get value entry))
+             (list 'declaration declaration-type (.get value declaration))
+             (list 'config config-shape (.get value config)))) 3))
+    (.cc value 'entry (closed-ref graph 'entry)
+         'declaration (closed-ref graph 'declaration)
+         'config (closed-ref graph 'config) 'validation graph)))))

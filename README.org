@@ -7,11 +7,11 @@
 
 * Package and development entrypoints
 
-The only direct dependency is =agentic-ai-lab=, declared in [[file:gerbil.pkg][gerbil.pkg]],
-aligned to [[https://github.com/tao3k/agentic-ai-lab/pull/34][upstream PR 34]] at the revision declared in =gerbil.pkg= (qualification status in 10.107).
-Its package metadata owns the POO, ASCENT and transitive Core revisions; this
-Library does not override those revisions or carry upstream patches. Gerbil owns
-dependency installation, package environment and build dispatch.
+The root [[file:gerbil.pkg][gerbil.pkg]] directly selects Agentic AI Lab and Yuanxu. The product
+owns its Parser, Orgize and ASCENT pins; their declared closure selects the same
+Yuanxu revision, which owns its POO dependency. Gerbil owns checkout/tag updates,
+installation, manifest generation, package environments and build dispatch.
+[[file:docs/10-19-design/10-architecture/10.121-native-dependency-cohort-and-expression-alignment.org][10.121]] records the current cohort, native entrypoints and qualification limits.
 
 #+begin_src sh
 just deps
@@ -20,8 +20,12 @@ just test
 just test-project-formation
 #+end_src
 
+For an installed checkout, =just deps-update= invokes the product's existing
+native package update entry. =just build-dependency PACKAGE= rebuilds one native
+package with the same compiler environment and budget.
+
 The [[file:Justfile][Justfile]] supplies bounded commands and the upstream Homebrew/Darwin
-compiler invocation policy. The 180-second deadline belongs to each package build;
+compiler invocation policy. Build/update calls retain the 180-second deadline;
 ordinary test invocations retain 120 seconds. Native installation spans multiple
 package builds and SDK metadata work. Bounded package entries require the existing
 host tools =env -S= and GNU =timeout=. Native package resolution is unchanged. The sole package build
@@ -31,7 +35,7 @@ The Codex transport belongs to [[file:scenarios/project-formation/codex-source.p
 source mount, patch application or alternate load-path configuration. Test evidence
 paths are explicit inputs; historical local results are never default inputs.
 Historical qualification against patched sources does not qualify the inherited
-unpatched package closure. See [[file:docs/10-19-design/10-architecture/10.107-implementation-progress-and-execution-gates.org::#implementation107-package-deadlines][current alignment and qualification limits]].
+unpatched package closure. See [[file:docs/10-19-design/10-architecture/10.107-implementation-progress-and-execution-gates.org::#implementation107-package-deadlines][the historical execution plan]] and [[file:docs/10-19-design/10-architecture/10.121-native-dependency-cohort-and-expression-alignment.org][current native cohort admission]].
 
 * Purpose
 :PROPERTIES:

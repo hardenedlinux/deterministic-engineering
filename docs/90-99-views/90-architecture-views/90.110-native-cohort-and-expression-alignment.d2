@@ -1,0 +1,42 @@
+# org-target: docs/10-19-design/10-architecture/10.121-native-dependency-cohort-and-expression-alignment.org::#alignment121-scope
+# render-layout: elk; theme: 0; pad: 24
+direction: down
+title: "Native dependency cohort and expression alignment" {shape: text}
+cohort: {
+  label: "Published source ownership / exact root and transitive pins"
+  direction: down
+  root: "Consumer gerbil.pkg"
+  product: "Agentic AI Lab maintenance branch"
+  orgize: "Orgize"
+  parser: "Parser"
+  ascent: "ASCENT"
+  yuanxu: "One declared Yuanxu revision"
+  poo: "Native POO"
+  root -> product
+  root -> yuanxu
+  product -> orgize
+  product -> parser
+  product -> ascent
+  orgize -> parser
+  parser -> yuanxu
+  ascent -> yuanxu
+  yuanxu -> poo
+}
+native: "Existing product native-dependencies.ss\nSDK pkg-update + pkg-install / ordinary gxpkg build\nSDK owns tags, checkout, dependency traversal and manifests\nExisting Darwin compiler / OpenSSL environment"
+expressions: {
+  direction: right
+  scopes: "Shared LibraryScopeType. native prototype\nDomain Types retain their own identity and shapes\nThree-node closure / Config associations / normalized identity"
+  operations: "Checked method definitions and bindings\nNative map-object-values -> public operations\nNo duplicate unchecked execution mapping"
+  boundaries: "Existing Module / Profile / Scenario owners\nRetain selected bounds, capture and current-use checks\nASCENT inference does not grant authority"
+}
+checks: "Real native builds / Scope and method regressions\nSource HEAD + native tag + manifest + regular compiled artifacts\nFresh process imports and independent finite ASCENT oracle"
+limits: "2 GiB heap / 180-second build invocation\nCold timeout remains failed; native incremental completion is separate\nNo uninstall, fabricated manifest, weakened obligation or new framework"
+title -> cohort.root: {style.opacity: 0}
+cohort.poo -> native
+native -> expressions.scopes
+native -> expressions.operations
+native -> expressions.boundaries
+expressions.scopes -> checks
+expressions.operations -> checks
+expressions.boundaries -> checks
+checks -> limits

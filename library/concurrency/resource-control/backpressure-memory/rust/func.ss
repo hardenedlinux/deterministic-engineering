@@ -1,12 +1,11 @@
 ;;; -*- Gerbil -*-
-(import :clan/poo/object (only-in :clan/poo/mop validate) "./types.ss" "./objects.ss" "./methods.ss" "./oracle.ss")
+(import :clan/poo/object (only-in :clan/poo/mop validate map-object-values) "./types.ss" "./objects.ss" "./methods.ss" "./oracle.ss")
 (export ResourceMethods bind-resource-methods)
 (def ResourceUtilities
   (.o native-context: resource-native-context context-current!: resource-context-current!
       integration-scopes: resource-integration-scopes
-      integration: resource-run-integration
-      native-oracle: resource-native-oracle native: resource-run-native native-scopes: resource-native-scopes
-      scopes: resource-real-scopes quint: resource-run-qnt lean: resource-run-lean
+      native-oracle: resource-native-oracle native-scopes: resource-native-scopes
+      scopes: resource-real-scopes
       register: resource-register-results! record: resource-result-record
       id: resource-result-id reference: resource-result-reference claim: resource-result-claim
       current!: resource-result-current! file-digest: resource-digest-file
@@ -27,9 +26,8 @@
   (.o native: (binding 'native resource-run-native) quint: (binding 'quint resource-run-qnt)
       lean: (binding 'lean resource-run-lean) integration: (binding 'integration resource-run-integration)))
  (def selected-operations
-  (.cc ResourceUtilities 'native (.get selected-bindings native operation)
-      'quint (.get selected-bindings quint operation) 'lean (.get selected-bindings lean operation)
-      'integration (.get selected-bindings integration operation)))
+  (.+ ResourceUtilities
+      (map-object-values (lambda (binding) (.get binding operation)) selected-bindings)))
  (.o definitions: selected-definitions bindings: selected-bindings operations: selected-operations))
 (def DefaultMethods (bind-resource-methods RustMethodDefinitions))
 (def ResourceMethods (.get DefaultMethods operations))
