@@ -1,0 +1,23 @@
+# org-target: docs/10-19-design/10-architecture/10.125-native-ascent-compiler-product-admission.org::#native125-scope
+# render-layout: elk; theme: 0; pad: 24
+direction: down
+title: "Native ASCENT compiler product admission" {shape: text}
+inputs: "Native package pins + immutable SDK + runner platform\nAitia gerbil.pkg owns ASP and Yuanxu requirements"
+cache: "Restored cache is unadmitted input\nDirectory / SSI presence is insufficient"
+spec: "ASCENT build.ss spec\nSelect actual gxc library units\nKeep executable-only targets distinct"
+core: "Existing Yuanxu Core\nrequire-build-products!\nRuntime and macro-phase product family"
+repair: "Core invalidates affected native markers\nSDK std/make consumes original gxc declarations and options\nAll 134 libraries; no executable delivery receipt\n2 GiB heap / 180 seconds; failure stays failure"
+negative: "Real eqrel family -> accept\nRemove eqrel~1.o1 -> reject\nInvalidate without compile -> still reject"
+source: "Git source custody\nNo tracked SSI / ssxi / dynamic objects\nPreserve authored SCM fixtures"
+admit: "Complete native products + independent controls\nSave reusable artifacts; never cache a verdict"
+consumer: "Aitia semantic / integration / native runtime CI\nExact-head remote acceptance required\nCold-install budget remains a separate obligation"
+inputs -> cache
+inputs -> spec
+cache -> core
+spec -> core
+core -> repair: "incomplete"
+repair -> core: "recheck"
+core -> admit: "complete"
+negative -> admit
+source -> admit
+admit -> consumer
