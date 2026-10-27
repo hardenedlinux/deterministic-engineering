@@ -68,7 +68,7 @@ revisions continue to be managed by their native owners.
 | ASCENT source package | Request build.ss spec under the selected SDK | The actual gxc declarations define library identities | Empty or malformed spec fails |
 | Incomplete selected module family | Core invalidates only that unit's owned static marker | Native std/make consumes every original gxc declaration and its options | Missing source, failed compilation or timeout remains failure |
 | Completed repair | Core require-build-products! over every declared library unit | All 134 selected library units complete locally | Reappearance of SSI without its phase object still fails |
-| Aitia build dependency | Read ASP's pin from Aitia gerbil.pkg and use gxpkg install | Native build/testing API at the declared source revision | Parent-only installation is insufficient |
+| Aitia build dependency | Read ASP's pin from Aitia gerbil.pkg; use SDK pkg-update and pkg-build | Original native build entry and real generated manifest | Parent-only installation is insufficient; editor indexing is a separate demand |
 | Cache publication | Save after completion checks and real negative controls | Package artifacts may be reused with the same pinned SDK inputs | A cache hit is never release permission or a test result |
 
 Executable-only declarations are excluded from the library-object contract.
@@ -85,6 +85,55 @@ It preserves all 134 library declarations and their compiler options.
 It issues no complete ASCENT package or publication receipt. Ordinary ASCENT
 source-change invalidation and tool delivery retain their upstream build
 owner; this operation repairs interrupted products of the pinned library.
+
+At =7a9b271=, the remote ASCENT library completion stage passed. The next
+failure occurred after ASP compilation: =gxpkg install= invoked the global
+editor =gxtags= index over all acquired repositories, and that index exhausted
+the 2 GiB heap. Aitia CI does not consume editor TAGS. The revised entry uses
+the SDK's already public =pkg-update= and =pkg-build= operations with the same
+manifest-owned ASP pin. Native package build/metadata generation remains;
+no package is removed and no manifest is written by CI glue. The local actual
+API invocation reported =AITIA-NATIVE-ASP-BUILD-OK=.
+
+Native ASCENT product checks and the real-product negative controls execute
+before ASP. Their checked build inputs can be saved independently, so a later
+ASP or consumer failure does not require repeating an unrelated ASCENT
+compilation. Other restored products remain unadmitted until their own native
+checks/builds succeed. A cache does not carry a successful test verdict.
+
+The =d233672= run passed ASCENT and the native ASP build, then reached the
+180-second parent library deadline. Its full product build was still compiling
+sandbox and durable-memory libraries. The consumer entry now derives demand
+from the existing Aitia production/integration spec functions and
+=lambda-aitia-selected-test-files=, the execution discovery owner. Core's
+=for-each-build-module= walks those actual imports. The parent's own
+=agentic-ai-lab-build-spec= retains its original native/FFI options. All
+existing Aitia CI test commands and assertions remain. Full parent product
+qualification remains owned by the parent repository.
+
+Local discovery yielded 116 entries, including all 33 selected test files,
+and 109 parent library units; native compilation and Core product admission
+passed. These counts are observations, not a fixed allowlist. New Aitia
+imports and tests produce a fresh demand on the next invocation. Explicit
+native testing support remains a separate existing CI step.
+
+The SDK must still generate the parent's real version/dependency manifests.
+The pinned v0.19 =:gerbil/tools/gxpkg= implementation has =pkg-manifest!= but
+does not export a metadata-only public operation. The consumer entry binds
+that actual SDK SPI through its native namespace; it does not implement the
+manifest schema, copy an SSI or mark the parent package fully built. The
+local capability probe found the real procedure, and its metadata plus the
+109-unit build passed. This is an explicit pinned-SDK assumption: removal or
+an incompatible change fails admission, with no fabricated fallback. A
+stable public metadata-only SDK API remains an upstream interface improvement,
+not a claimed capability of this installed SDK.
+
+Importable build declarations now explicitly bind =this-source-file= and
+export their existing spec functions. The source-collection test now calls
+=make-yuanxu-contribution-module-source= and compares the exact five absolute
+interface paths, all module keys and the original owner. The same assertions
+passed under the native API; no basename-only or membership-only substitute
+was introduced.
 
 The native test tool returns its harness status. The CI invocation explicitly
 exits with that result, so a printed ERROR cannot be lost by a dispatcher
