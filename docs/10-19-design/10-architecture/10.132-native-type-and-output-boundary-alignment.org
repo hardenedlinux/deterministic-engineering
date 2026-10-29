@@ -136,9 +136,16 @@ machine-derived.
    treatment; it is not a cosmetic rename.
 3. Finish ASCENT domain migration through the existing Core source owner.
    Native role admission passed after fixing role direction and declaration
-   diagnostics, but the build still reports a shared-source-to-Module dependency
-   at =program/execution-control.ss=. Do not bypass that boundary with global
-   imports or a compatibility loader.
+   diagnostics. The first shared-source failure exposed the misplaced
+   =program/execution-control.ss= owner: foundational rule bindings depended
+   upward on Program. Moving that actual owner to Core and migrating callers
+   reveals another shared/private dependency at =rules/declaration.ss=.
+   Domain directory grouping is therefore not yet an admitted Module dependency
+   decomposition. Recheck semantic and source-context ownership; do not keep
+   moving files merely to silence admission errors, weaken the Core guard,
+   inject global imports or introduce a compatibility loader. The eight proposed
+   Scope declarations now use native named Types and Records in the unpublished
+   migration, but role admission is not native publication or query acceptance.
 4. Complete native package, Linux cold-build and Aitia CI acceptance independently.
    The focused Type and projection checks do not close those gates.
 
