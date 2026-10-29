@@ -6,7 +6,7 @@
 * Admission scope
 :PROPERTIES:
 :CUSTOM_ID: native128-scope
-:STATUS: native-qualified-complete-ci-pending
+:STATUS: native-qualified-full-ci-running
 :END:
 
 Upgrade the native dependency closure as one compatible group. Package metadata
@@ -34,15 +34,15 @@ Core gitlink remain dependency authority.
 
 | Owner | Selected revision | Native responsibility |
 |-------+-------------------+-----------------------|
-| POO | dbbc436 | Core-owned persistent declarations and public contract interfaces |
-| Yuanxu/Core | 0f19da5 | Native catalog reads, role phases and guarded Module builds |
-| Parser | 203d136d | Same Core; public compiler, Fold, runtime and syntax capabilities |
-| ASCENT | 910a15b | Same Core; native Library selection, inference and evidence products |
+| POO | 56b474b | Core-owned persistent declarations and public contract interfaces |
+| Yuanxu/Core | 1934955 | Native catalog reads, role phases and guarded Module builds |
+| Parser | 831ded4d | Same Core; public compiler, Fold, runtime and syntax capabilities |
+| ASCENT | 4715fa0 | Same Core; native Library selection, inference and evidence products |
 | Scheme/Rust | cfbc10c | Actual Orgize native/Cargo dependency; native build is a separate boundary from Rust runtime admission |
-| Orgize | aee83c7 | Same Parser in native metadata and Cargo.lock; complete generated Fold package |
+| Orgize | 829982f | Same Parser in native metadata and Cargo.lock; complete generated Fold package |
 | ASP | 9ae9bc3 | Existing Aitia testing owner and original native build |
-| Agentic AI Lab | edfedec | Core gitlink plus matching Parser/ASCENT/Orgize archive projections |
-| Aitia | f1bc9fd | Same Parent/Core/ASP; review, history, recovery and complete CI |
+| Agentic AI Lab | ba6d5e1 | Core gitlink plus matching Parser/ASCENT/Orgize archive projections |
+| Aitia | 9d87ac9 | Same Parent/Core/ASP; review, history, recovery and complete CI |
 
 Parent's existing pin tool obtains checksums from actual published archives.
 Bazel regenerates the native lock; the existing synchronization operation
@@ -92,14 +92,14 @@ the genuine manifest. After publication those native builds run again in
 dependency order so manifests identify the published versions, including the
 actual transitive Core version rather than a pre-commit validation version.
 
-* Qualified local evidence
+* Earlier local qualification
 :PROPERTIES:
 :CUSTOM_ID: native128-evidence
 :END:
 
 | Gate | Actual result | Applicability |
 |------+---------------+---------------|
-| POO complete default build after native clean | 126.149 s; 12 resource-derived workers | Selected POO package, not aggregate cold closure |
+| Earlier POO dbbc436 complete default build after native clean | 126.149 s; 12 resource-derived workers | Earlier package cohort, not aggregate cold closure |
 | Core original contract/slot-origin/read-ownership/semantic tests | MODULE-OK, HARNESS-OK, OK | Published persistent-catalog protocol |
 | Native role-prelude SSI regression | MODULE-OK, HARNESS-OK, OK | Real compilation and fresh-expander SSI import |
 | Parser native package and public interface tests | completed; MODULE-OK, HARNESS-OK, OK | Actual installed compiler/Fold capabilities |
@@ -134,10 +134,95 @@ and all 16 existing script tests also pass. These are actual consumer/package
 checks; complete integration, process recovery and independent lifecycle replay
 remain remote CI obligations.
 
-[[https://github.com/tao3k/lambda-aitia/actions/runs/40836453176][Aitia exact-head CI for f1bc9fd]] has been dispatched on the existing PR #2.
+[[https://github.com/tao3k/lambda-aitia/actions/runs/40836453176][Aitia exact-head CI for f1bc9fd]] ran on the existing PR #2. Lean, Quint and license passed. The Scheme job
+failed at the initial isolated POO cold-build gate: the 180-second deadline
+expired during the representation executable's static closure, before Aitia
+semantics or process recovery ran. This is a failed cold-build gate, not an
+Aitia semantic counterexample.
+
+The native POO source currently issues separate Make calls for libraries and
+its representation executable. A source repair under qualification puts that
+executable declaration in the same native Make specification, preserving its
+original flags, complete library targets and independent entry. Its real native
+plan regression passes. Cold execution and final revision propagation remain
+required before this candidate can replace the selected cohort.
 The engineering package keeps its previously admitted dependency baseline until
 that complete upgraded cohort is accepted. Published source qualification and
 current project dependency admission remain distinct.
+
+* Published native Make-plan repair
+:PROPERTIES:
+:CUSTOM_ID: native128-single-plan
+:END:
+
+POO PR #13 now publishes =56b474b= on its existing branch. The existing
+representation entry supplies its native executable declaration to the root's
+one Make specification. Its standalone entry still consumes the same declaration.
+All library and property-testing targets remain; no compiler host limit,
+optimization, timeout or assertion is removed. Core =1934955= declares this
+revision after its original contract, slot-origin, evidence-read-ownership,
+semantic Module and SSI phase regressions pass.
+
+| Observation | Actual result | Boundary |
+|-------------+---------------+----------|
+| Native plan regression | MODULE-OK, HARNESS-OK, OK | One native spec contains both libraries and executable |
+| Empty-prefix complete POO build | 126.433 s, 12 resource-derived workers | No existing package binary products; native source link registration only |
+| Actual symbolic executable workflow | SERVICE-WORKFLOW-OK, result #(6240 8256 10272 192) | Qualified native binding, 64-wide service workflow |
+| Actual indexed executable workflow | Same completion marker and result | Same compiled executable and business module |
+| Core complete native build against new POO | 161.574 s, 12 workers | Fresh Core products in the new qualification prefix |
+| Original Core behavioral and SSI phase checks | MODULE-OK, HARNESS-OK, OK | Existing assertions and actual compiled products |
+
+These package/source cohorts differ from earlier timings, so their elapsed times
+are not a controlled speedup comparison. Linux cold CI remains required.
+
+A direct Parser invocation incorrectly cleared =GERBIL_BUILD_CORES= without
+using native capacity admission. SDK =std/make= intentionally defaults its
+frontend parallelism to zero when that declaration is absent, although the
+compiler backend can still discover CPUs. That invocation exceeded 180 seconds
+and is not admitted. Its 65.422-second interrupted recovery is not cold evidence.
+The native SDK clean owner removed Parser products; a new cold run uses the
+existing resource admission, rather than a package-local worker constant.
+
+* Fresh-prefix downstream qualification and current CI
+:PROPERTIES:
+:CUSTOM_ID: native128-fresh-cohort
+:END:
+
+A fresh native prefix registered the real source owners with =gxpkg link=;
+no compiled products were copied into it. Each package's original build ran
+through native resource admission with the same 2 GiB process heaps and
+independent 180-second watchdogs.
+
+| Owner / operation | Result | Applicability |
+|-------------------+--------+---------------|
+| POO complete cold build | 126.433 s | New single native Make plan and all original targets |
+| Core complete native build | 161.574 s | New POO storage and build ownership |
+| Parser after native clean | 93.564 s | Correct native frontend/backend capacity declaration |
+| Parser Fold public-root completion | 28.533 s | Incremental ownership repair, not a cold timing claim |
+| ASCENT complete native build | 145.603 s | All libraries and both executables |
+| Scheme/Rust native owner | 10.776 s | Existing native package; not whole Rust runtime qualification |
+| ASP native owner | 37.566 s | Existing declared testing owner |
+| Orgize complete native build | 159.892 s | All generated Fold variants and successful C ABI staging |
+| Actual Aitia Parent demand | 62.946 s; 109 units | Existing consumer closure and product admission |
+| Aitia complete native package | 19.176 s; 64 library products checked | Fresh-prefix consumer products |
+
+The new prefix exposed a missing package projection: Orgize consumes the
+existing =event-fold-program-support= entry, but Parser's Compiler Module did
+not declare it as a public build root. An older installation could hide the
+omission. The direct fix adds that existing entry to the Module's Build value.
+No implementation or facade is copied.
+
+The public-interface regression imports the actual installed SSI explicitly,
+checks shared DAG ownership and mutable-input isolation, and rejects executable
+data. All prior Cases remain. Orgize's native source-package/Module boundary
+Suites pass. ASCENT's real Library, finite oracle and eqrel Suites pass again
+in nine, eight and seven seconds on this rebuilt cohort.
+
+[[https://github.com/tao3k/lambda-aitia/actions/runs/40844595779][Aitia exact-head CI for 9d87ac9]] retries the unchanged cold and complete
+runtime gates with the published ownership repairs. License and Lean have
+passed; complete Scheme/integration/Python and replay admission remain pending.
+The engineering package's admitted dependency baseline stays unchanged until
+complete CI accepts this cohort.
 
 * Rejected observations and remaining gates
 :PROPERTIES:
