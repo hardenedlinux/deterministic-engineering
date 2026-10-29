@@ -1,0 +1,160 @@
+#+TITLE: 10.131 ASCENT Domain-Owned Module Topology
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Correction to the previous migration
+:PROPERTIES:
+:CUSTOM_ID: ascent131-correction
+:STATUS: migration-design
+:END:
+
+The three publications under =modules/= in [[file:10.129-ascent-native-library-modules.org][10.129]] provide native selection
+and a working query/evidence lifecycle, but do not modularize ASCENT's domain
+implementation. They introduce another organization over =table/=, =program/=
+and =candidate/=. That transitional layout must not be called complete modularity.
+
+The target is domain-owned publication, rather than an aggregate directory of
+forwarders. Each domain owns its contracts, actual implementation, public
+capabilities, build projection and tests. Existing algorithms move only when
+responsibility changes; their implementation is never copied into a facade.
+
+* Native directory windows are not a mandatory modules directory
+:PROPERTIES:
+:CUSTOM_ID: ascent131-selection
+:END:
+
+The existing Core intent and directory owners already support a root directory
+window and explicit per-row =@= source directories. =rename:= mounts a native
+namespace; it does not change publication identity or recursively modularize
+an arbitrary directory. =explicit= selects declarations; it is not proof of
+runtime initialization isolation or a minimal compiler closure.
+
+#+NAME: ascent-root-selection-target
+#+BEGIN_SRC scheme :eval never
+(yuanxu!
+  :load-modules "./" mode: explicit rename: Ascent
+  (core)
+  (table)
+  (program)
+  (candidate)
+  (rules)
+  (temporal)
+  (applications)
+  (engine @ "./interface"))
+#+END_SRC
+
+This is the proposed migrated declaration, not executable current acceptance.
+The existing =table/interface.ss= and =program/interface.ss= are ordinary
+functional export entries. Core's Module interface requires a native publication
+and role contract. Changing only the directory string would not satisfy it.
+
+A row identifier cannot contain a slash in the current intent grammar. A deeper
+unit can have a stable atomic identifier and an explicit owned path, or a
+separate directory window. For example, a later =sessions= Module can be mapped
+to a real =program/sessions/= owner. It must not be simulated by importing the
+entire parent program and selecting a field afterwards.
+
+* Domain ownership and genuine specialization
+:PROPERTIES:
+:CUSTOM_ID: ascent131-owners
+:END:
+
+| Domain owner | Native responsibility | Public obligations |
+|--------------+-----------------------+--------------------|
+| core | Finite relation values, source/dependency primitives | Immutable result ownership, bounded closure and independent references |
+| table | Index and storage providers, eqrel/trrel representations | Provider contracts, storage equivalence and memory ownership |
+| program | Typed relational declarations, evaluation, sessions and operators | Scheduling, cancellation, source revision and result lifetime |
+| candidate | Proposals, finite proof/replay, provenance, support cuts and withdrawal | Source applicability, opposing evidence and independent verification |
+| rules | Rule declarations, evidence bindings and module composition | Label/handle binding, declaration semantics and no implied authority |
+| temporal | Time/cut projection and lens composition | Closed/open cut distinction, causal order and finite evidence applicability |
+| applications | Maintained domain analyses | Input schemas, algorithm-specific oracle and inherited engine obligations |
+| engine at interface/ | Request transport, engine calls and ABI delivery | Boundary validation, owner identity, native products and effect ownership |
+
+Directories for Rust crates, Python packages, C bindings, proofs and test support
+retain their actual package/tool owners. Complete organization does not mean
+forcing every directory through Scheme Module semantics. The domain-to-owner
+map must explain those foreign boundaries and evidence dependencies explicitly.
+
+* Direct migration, not another compatibility layer
+:PROPERTIES:
+:CUSTOM_ID: ascent131-migration
+:END:
+
+1. Identify actual source, import and effect owners for each domain. Preserve
+   independent entrypoints not reachable from the central engine interface.
+2. Separate existing public functional exports from native Module publication
+   where both currently require the same filename. Migrate all consumers to
+   their precise existing owner; do not leave forwarding compatibility files.
+3. Place the native publication and Build contribution in the domain itself.
+   Avoid duplicated constructors, configuration defaults and hand-maintained
+   source inventories. A role must have an engineering purpose, not boilerplate
+   to satisfy directory discovery.
+4. Delete the transitional =modules/relations=, =modules/inference= and
+   =modules/evidence= publications after all consumers and verification migrate.
+5. Retain native compiler/ABI/output ownership. A production build can select
+   every shipped capability; a narrow developer selection must not load that
+   aggregate merely to obtain one domain operation.
+
+A static Scheme import and a Module scope requirement are different edges.
+A =requires= declaration is meaningful when composition consumes the required
+scope and validates its Contract. Inventing unused requirements merely to draw
+a dependency graph does not make the implementation modular.
+
+* Atomic loading, source epochs and evidence
+:PROPERTIES:
+:CUSTOM_ID: ascent131-atomic
+:END:
+
+An atomic unit must have a stable identity and one source/contract owner.
+Selecting it loads its actual transitive dependencies. It must not enumerate
+or initialize unrelated applications, transport registries or proof producers.
+Fine-grained selection is justified by an independently reusable lifecycle or
+verification boundary, rather than one Module per source file.
+
+Structural type/role admission, source registration, expansion, runtime
+initialization, evidence verification and effect authorization are separate
+operations. Evidence remains bound to its original source cut. Neither a
+renamed namespace nor a new selection can revive an obsolete authorization.
+
+Source-context nominal values must use coherent factories/accessors from their
+native scope cohort. A new layout cannot bypass the existing snapshot/query/
+certificate lifecycle or equate privately interpreted values with unrelated
+globally compiled record identities.
+
+* Finite acceptance rules
+:PROPERTIES:
+:CUSTOM_ID: ascent131-acceptance
+:END:
+
+| Rule | Real check | Rejection / open result |
+|------+------------+-------------------------|
+| MT01 | Narrow table selection executes provider-backed operations | Reject unrelated engine/application initialization |
+| MT02 | Program selection runs native queries and session revision controls | Reject undeclared dependency use or lost result lifetime |
+| MT03 | Candidate selection produces and independently verifies a certificate | Changed source rejects reuse; original source retains history |
+| MT04 | Temporal selection exercises both open and closed cuts | Open cut cannot imply definitive absence |
+| MT05 | Applications execute their independent references | No passing engine-only test substitutes for an application oracle |
+| MT06 | Compare old complete production inputs with new native closure | Any omitted shipped entry blocks package admission |
+| MT07 | Change a dependency used by one selection | Recheck affected closure without invalidating unrelated evidence |
+| MT08 | Import/initialize the actual installed consumer in a fresh process | A source-only import or fixture is insufficient |
+| MT09 | Root selection and explicit per-row paths publish equal intended identities | Namespace aliases cannot silently change source ownership |
+| MT10 | Native Make and backend honor the machine-derived declaration | No fixed worker count or unbounded heap change |
+
+All Scheme regressions belong under =t/*-test.ss=. A successful root-window
+parser test is only syntax/selection evidence. Completion requires the actual
+migrated native build, live ASCENT queries, unchanged independent oracles and
+exact-head downstream CI. Until then the current implementation remains partial.
+
+* Core evolution boundary
+:PROPERTIES:
+:CUSTOM_ID: ascent131-core
+:END:
+
+Root windows and explicit paths already exist, so they do not justify a new
+loader. Change Core only when a concrete isolation/lifecycle test shows that
+its existing selection, role or dependency model forces unrelated work. Any
+extension belongs in the native intent/source/admission owners, with invalid
+paths, identity collisions, stale source and ownership controls retained.
+There must be no ASCENT-specific resolver or parallel discovery protocol.
+
+[[file:../../90-99-views/90-architecture-views/90.120-ascent-domain-owned-module-topology.d2][Paired domain and admission view]]
