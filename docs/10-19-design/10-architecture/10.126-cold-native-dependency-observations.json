@@ -1,0 +1,579 @@
+{
+  "schema": "cold-native-dependency-observations.v1",
+  "date": "2026-10-29",
+  "status": "not-admitted",
+  "source": {
+    "aitia": "2c418d5e6377077dded87d1c347f5ace53f712e8",
+    "poo": "c0d47633c2aad7591944f874eaf730ee9c0e451e",
+    "gerbil": "1cfb032",
+    "guardOwner": "gerbil-bazel@0378dd75dd49e8a87f2249553e844b0b8ce8b66b"
+  },
+  "probes": [
+    {
+      "probe": "baseline",
+      "scope": "Aitia declared dependency install",
+      "guard": {
+        "admissionAdvisories": [
+          "runnable-saturation"
+        ],
+        "admissionOutcome": "ready",
+        "admissionReasons": [],
+        "availableMemoryBytes": 23708219473,
+        "cgroupMemoryAvailableBytes": 0,
+        "cgroupMemoryCurrentBytes": 0,
+        "cgroupMemoryLimitBytes": 0,
+        "childExitCode": 9,
+        "effectiveBuildCoreCount": 2,
+        "elapsedMs": 67408,
+        "exitCode": 70,
+        "kind": "gerbil-bazel.resource-guard-receipt.v1",
+        "label": "cold-native-deps",
+        "logicalCpuCount": 12,
+        "maxRssBytes": 2147483648,
+        "memoryCoreLimit": 2,
+        "memoryPerCoreBytes": 805306368,
+        "outcome": "rss-limit-exceeded",
+        "peakRssBytes": 2256656744,
+        "processTreeMemoryMetric": "darwin-phys-footprint",
+        "processTreeRssAvailable": true,
+        "requestedBuildCoreCount": 12,
+        "rssHeadroomBytes": 2147483648,
+        "runnableCoreLimit": 5,
+        "runnableCoreLimitApplied": false,
+        "runnableProcessCount": 27,
+        "runnableProcessCountAvailable": true,
+        "schema": "gerbil-bazel.resource-guard-receipt.v1",
+        "systemMemoryBytes": 34359738368,
+        "timeoutMs": 180000,
+        "version": 1
+      },
+      "samplerStatus": 70,
+      "samplerElapsedSeconds": 74.082,
+      "compileAnnouncementCount": 92,
+      "duplicateAnnouncements": {},
+      "largestRssHolders": [
+        {
+          "rssBytes": 1427963904,
+          "cpuTime": "0:15.34",
+          "observedAtSeconds": 66.906,
+          "command": "$SDK/bin/gxi -:max-heap=2G,debug=q $WORKSPACE/.data/cold-dependencies-20261029/baseline/gerbil/pkg/github.com/tao3k/gerbil-poo/build.ss compile"
+        },
+        {
+          "rssBytes": 436355072,
+          "cpuTime": "0:02.11",
+          "observedAtSeconds": 73.034,
+          "command": "(cc1)"
+        },
+        {
+          "rssBytes": 306741248,
+          "cpuTime": "0:01.88",
+          "observedAtSeconds": 14.91,
+          "command": "$SDK/bin/gxi -:max-heap=2G $WORKSPACE/.data/cold-dependencies-20261029/resource-guard.ss $WORKSPACE/.data/cold-dependencies-20261029/baseline-guard.json cold-native-deps 180 gxpkg deps --install"
+        },
+        {
+          "rssBytes": 250970112,
+          "cpuTime": "0:01.52",
+          "observedAtSeconds": 65.22,
+          "command": "(cc1)"
+        },
+        {
+          "rssBytes": 242024448,
+          "cpuTime": "0:01.22",
+          "observedAtSeconds": 66.346,
+          "command": "/opt/homebrew/Cellar/gcc/16.2.0/bin/../libexec/gcc/aarch64-apple-darwin25/16/cc1 -quiet -I $SDK/include -iprefix /opt/homebrew/Cellar/gcc/16.2.0/bin/../lib/gcc/current/gcc/aarch64-apple-darwin25/16/ -D__DYNAMIC__ -D ___SINGLE_HOST -D ___INLINE_JUMPS -D ___TRUST_C_TCO -D ___CAN_IMPORT_CLIB_DYNAMICALLY -D ___CAN_IMPORT_SETJMP_DYNAMICALLY -D ___DYNAMIC closure~1.c -fPIC -quiet -dumpdir closure~1.o1- -dumpbase closure~1.c -dumpbase-ext .c -mmacosx-version-min=26.0.0 -mcpu=apple-m1 -mlittle-endian -mabi=lp64 -O1 -Wno-unused -Wno-write-strings -Wdisabled-optimization -ftrack-macro-expansion=0 -fwrapv -fno-strict-aliasing -fno-trapping-math -fno-math-errno -fschedule-insns2 -fmodulo-sched -freschedule-modulo-scheduled-loops -foptimize-sibling-calls -fomit-frame-pointer -fipa-ra -fmove-loop-invariants -fPIC -fno-common -o -"
+        },
+        {
+          "rssBytes": 151289856,
+          "cpuTime": "0:00.78",
+          "observedAtSeconds": 71.934,
+          "command": "$SDK/bin/gsc -target C $WORKSPACE/.data/cold-dependencies-20261029/baseline/gerbil/lib/clan/poo/object~1.scm"
+        }
+      ],
+      "rawLogSha256": "8babec1bc6855b92f41fbf25ce7b3f03db8337ee6fcbc945f5240292bf32face"
+    },
+    {
+      "probe": "live80",
+      "scope": "Aitia declared dependency install",
+      "guard": {
+        "admissionAdvisories": [],
+        "admissionOutcome": "ready",
+        "admissionReasons": [],
+        "availableMemoryBytes": 24739011624,
+        "cgroupMemoryAvailableBytes": 0,
+        "cgroupMemoryCurrentBytes": 0,
+        "cgroupMemoryLimitBytes": 0,
+        "childExitCode": 9,
+        "effectiveBuildCoreCount": 2,
+        "elapsedMs": 97223,
+        "exitCode": 70,
+        "kind": "gerbil-bazel.resource-guard-receipt.v1",
+        "label": "cold-native-deps-live80",
+        "logicalCpuCount": 12,
+        "maxRssBytes": 2147483648,
+        "memoryCoreLimit": 2,
+        "memoryPerCoreBytes": 805306368,
+        "outcome": "rss-limit-exceeded",
+        "peakRssBytes": 2196609288,
+        "processTreeMemoryMetric": "darwin-phys-footprint",
+        "processTreeRssAvailable": true,
+        "requestedBuildCoreCount": 12,
+        "rssHeadroomBytes": 2147483648,
+        "runnableCoreLimit": 7,
+        "runnableCoreLimitApplied": false,
+        "runnableProcessCount": 6,
+        "runnableProcessCountAvailable": true,
+        "schema": "gerbil-bazel.resource-guard-receipt.v1",
+        "systemMemoryBytes": 34359738368,
+        "timeoutMs": 180000,
+        "version": 1
+      },
+      "samplerStatus": 70,
+      "samplerElapsedSeconds": 99.908,
+      "compileAnnouncementCount": 92,
+      "duplicateAnnouncements": {},
+      "largestRssHolders": [
+        {
+          "rssBytes": 980238336,
+          "cpuTime": "0:18.13",
+          "observedAtSeconds": 95.607,
+          "command": "$SDK/bin/gxi -:max-heap=2G,debug=q $WORKSPACE/.data/cold-dependencies-20261029/live80/gerbil/pkg/github.com/tao3k/gerbil-poo/build.ss compile"
+        },
+        {
+          "rssBytes": 676610048,
+          "cpuTime": "0:02.58",
+          "observedAtSeconds": 54.027,
+          "command": "/opt/homebrew/Cellar/gcc/16.2.0/bin/../libexec/gcc/aarch64-apple-darwin25/16/cc1 -quiet -I $SDK/include -iprefix /opt/homebrew/Cellar/gcc/16.2.0/bin/../lib/gcc/current/gcc/aarch64-apple-darwin25/16/ -D__DYNAMIC__ -D ___SINGLE_HOST -D ___INLINE_JUMPS -D ___TRUST_C_TCO -D ___CAN_IMPORT_CLIB_DYNAMICALLY -D ___CAN_IMPORT_SETJMP_DYNAMICALLY -D ___DYNAMIC object~1.c -fPIC -quiet -dumpdir object~1.o1- -dumpbase object~1.c -dumpbase-ext .c -mmacosx-version-min=26.0.0 -mcpu=apple-m1 -mlittle-endian -mabi=lp64 -O1 -Wno-unused -Wno-write-strings -Wdisabled-optimization -ftrack-macro-expansion=0 -fwrapv -fno-strict-aliasing -fno-trapping-math -fno-math-errno -fschedule-insns2 -fmodulo-sched -freschedule-modulo-scheduled-loops -foptimize-sibling-calls -fomit-frame-pointer -fipa-ra -fmove-loop-invariants -fPIC -fno-common -o -"
+        },
+        {
+          "rssBytes": 632815616,
+          "cpuTime": "0:11.55",
+          "observedAtSeconds": 97.233,
+          "command": "$SDK/bin/gsc -cc-options -D___SINGLE_HOST_LIMIT=10000 -target C $WORKSPACE/.data/cold-dependencies-20261029/live80/gerbil/lib/clan/poo/table~0.scm"
+        },
+        {
+          "rssBytes": 576978944,
+          "cpuTime": "0:01.03",
+          "observedAtSeconds": 64.742,
+          "command": "$SDK/bin/gsc -target C -e (define-cond-expand-feature|enable-smp|) -e (include \"$SDK/lib/_gambit#.scm\") $WORKSPACE/.data/cold-dependencies-20261029/live80/gerbil/lib/clan/poo/io~0.scm"
+        },
+        {
+          "rssBytes": 484835328,
+          "cpuTime": "0:02.07",
+          "observedAtSeconds": 77.731,
+          "command": "/opt/homebrew/Cellar/gcc/16.2.0/bin/../libexec/gcc/aarch64-apple-darwin25/16/cc1 -quiet -I $SDK/include -iprefix /opt/homebrew/Cellar/gcc/16.2.0/bin/../lib/gcc/current/gcc/aarch64-apple-darwin25/16/ -D__DYNAMIC__ -D ___SINGLE_HOST -D ___INLINE_JUMPS -D ___TRUST_C_TCO -D ___CAN_IMPORT_CLIB_DYNAMICALLY -D ___CAN_IMPORT_SETJMP_DYNAMICALLY -D ___DYNAMIC type~0.c -fPIC -quiet -dumpdir type~0.o1- -dumpbase type~0.c -dumpbase-ext .c -mmacosx-version-min=26.0.0 -mcpu=apple-m1 -mlittle-endian -mabi=lp64 -O1 -Wno-unused -Wno-write-strings -Wdisabled-optimization -ftrack-macro-expansion=0 -fwrapv -fno-strict-aliasing -fno-trapping-math -fno-math-errno -fschedule-insns2 -fmodulo-sched -freschedule-modulo-scheduled-loops -foptimize-sibling-calls -fomit-frame-pointer -fipa-ra -fmove-loop-invariants -fPIC -fno-common -o -"
+        },
+        {
+          "rssBytes": 459980800,
+          "cpuTime": "0:02.12",
+          "observedAtSeconds": 52.323,
+          "command": "/opt/homebrew/Cellar/gcc/16.2.0/bin/../libexec/gcc/aarch64-apple-darwin25/16/cc1 -quiet -I $SDK/include -iprefix /opt/homebrew/Cellar/gcc/16.2.0/bin/../lib/gcc/current/gcc/aarch64-apple-darwin25/16/ -D__DYNAMIC__ -D ___SINGLE_HOST -D ___INLINE_JUMPS -D ___TRUST_C_TCO -D ___CAN_IMPORT_CLIB_DYNAMICALLY -D ___CAN_IMPORT_SETJMP_DYNAMICALLY -D ___DYNAMIC object~0.c -fPIC -quiet -dumpdir object~0.o1- -dumpbase object~0.c -dumpbase-ext .c -mmacosx-version-min=26.0.0 -mcpu=apple-m1 -mlittle-endian -mabi=lp64 -O1 -Wno-unused -Wno-write-strings -Wdisabled-optimization -ftrack-macro-expansion=0 -fwrapv -fno-strict-aliasing -fno-trapping-math -fno-math-errno -fschedule-insns2 -fmodulo-sched -freschedule-modulo-scheduled-loops -foptimize-sibling-calls -fomit-frame-pointer -fipa-ra -fmove-loop-invariants -fPIC -fno-common -o -"
+        }
+      ],
+      "rawLogSha256": "216cc3497341479648e1ab3638bc388c4d312d2d797b935fbdbeb073a40eff0d"
+    },
+    {
+      "probe": "serial80",
+      "scope": "Aitia declared dependency install",
+      "guard": {
+        "admissionAdvisories": [
+          "runnable-saturation"
+        ],
+        "admissionOutcome": "ready",
+        "admissionReasons": [],
+        "availableMemoryBytes": 22677427322,
+        "cgroupMemoryAvailableBytes": 0,
+        "cgroupMemoryCurrentBytes": 0,
+        "cgroupMemoryLimitBytes": 0,
+        "childExitCode": 9,
+        "effectiveBuildCoreCount": 1,
+        "elapsedMs": 180290,
+        "exitCode": 71,
+        "kind": "gerbil-bazel.resource-guard-receipt.v1",
+        "label": "cold-native-deps-serial80",
+        "logicalCpuCount": 12,
+        "maxRssBytes": 2147483648,
+        "memoryCoreLimit": 1,
+        "memoryPerCoreBytes": 2147483648,
+        "outcome": "timeout",
+        "peakRssBytes": 2122399744,
+        "processTreeMemoryMetric": "darwin-phys-footprint",
+        "processTreeRssAvailable": true,
+        "requestedBuildCoreCount": 12,
+        "rssHeadroomBytes": 2147483648,
+        "runnableCoreLimit": 4,
+        "runnableCoreLimitApplied": false,
+        "runnableProcessCount": 30,
+        "runnableProcessCountAvailable": true,
+        "schema": "gerbil-bazel.resource-guard-receipt.v1",
+        "systemMemoryBytes": 34359738368,
+        "timeoutMs": 180000,
+        "version": 1
+      },
+      "samplerStatus": 71,
+      "samplerElapsedSeconds": 188.973,
+      "compileAnnouncementCount": 61,
+      "duplicateAnnouncements": {},
+      "largestRssHolders": [
+        {
+          "rssBytes": 1225539584,
+          "cpuTime": "0:24.03",
+          "observedAtSeconds": 187.892,
+          "command": "/opt/homebrew/Cellar/gcc/16.2.0/bin/../libexec/gcc/aarch64-apple-darwin25/16/cc1 -quiet -I $SDK/include -iprefix /opt/homebrew/Cellar/gcc/16.2.0/bin/../lib/gcc/current/gcc/aarch64-apple-darwin25/16/ -D__DYNAMIC__ -D ___SINGLE_HOST -D ___INLINE_JUMPS -D ___TRUST_C_TCO -D ___CAN_IMPORT_CLIB_DYNAMICALLY -D ___CAN_IMPORT_SETJMP_DYNAMICALLY -D ___DYNAMIC -D ___SINGLE_HOST_LIMIT=10000 table~0.c -fPIC -quiet -dumpdir table~0.o1- -dumpbase table~0.c -dumpbase-ext .c -mmacosx-version-min=26.0.0 -mcpu=apple-m1 -mlittle-endian -mabi=lp64 -O1 -Wno-unused -Wno-write-strings -Wdisabled-optimization -ftrack-macro-expansion=0 -fwrapv -fno-strict-aliasing -fno-trapping-math -fno-math-errno -fschedule-insns2 -fmodulo-sched -freschedule-modulo-scheduled-loops -foptimize-sibling-calls -fomit-frame-pointer -fipa-ra -fmove-loop-invariants -fPIC -fno-common -o -"
+        },
+        {
+          "rssBytes": 975912960,
+          "cpuTime": "0:17.83",
+          "observedAtSeconds": 149.032,
+          "command": "$SDK/bin/gxi -:max-heap=2G,debug=q $WORKSPACE/.data/cold-dependencies-20261029/serial80/gerbil/pkg/github.com/tao3k/gerbil-poo/build.ss compile"
+        },
+        {
+          "rssBytes": 644055040,
+          "cpuTime": "0:03.00",
+          "observedAtSeconds": 86.143,
+          "command": "/opt/homebrew/Cellar/gcc/16.2.0/bin/../libexec/gcc/aarch64-apple-darwin25/16/cc1 -quiet -I $SDK/include -iprefix /opt/homebrew/Cellar/gcc/16.2.0/bin/../lib/gcc/current/gcc/aarch64-apple-darwin25/16/ -D__DYNAMIC__ -D ___SINGLE_HOST -D ___INLINE_JUMPS -D ___TRUST_C_TCO -D ___CAN_IMPORT_CLIB_DYNAMICALLY -D ___CAN_IMPORT_SETJMP_DYNAMICALLY -D ___DYNAMIC object~1.c -fPIC -quiet -dumpdir object~1.o1- -dumpbase object~1.c -dumpbase-ext .c -mmacosx-version-min=26.0.0 -mcpu=apple-m1 -mlittle-endian -mabi=lp64 -O1 -Wno-unused -Wno-write-strings -Wdisabled-optimization -ftrack-macro-expansion=0 -fwrapv -fno-strict-aliasing -fno-trapping-math -fno-math-errno -fschedule-insns2 -fmodulo-sched -freschedule-modulo-scheduled-loops -foptimize-sibling-calls -fomit-frame-pointer -fipa-ra -fmove-loop-invariants -fPIC -fno-common -o -"
+        },
+        {
+          "rssBytes": 632717312,
+          "cpuTime": "0:12.19",
+          "observedAtSeconds": 162.14,
+          "command": "$SDK/bin/gsc -cc-options -D___SINGLE_HOST_LIMIT=10000 -target C $WORKSPACE/.data/cold-dependencies-20261029/serial80/gerbil/lib/clan/poo/table~0.scm"
+        },
+        {
+          "rssBytes": 576929792,
+          "cpuTime": "0:01.02",
+          "observedAtSeconds": 97.505,
+          "command": "$SDK/bin/gsc -target C -e (define-cond-expand-feature|enable-smp|) -e (include \"$SDK/lib/_gambit#.scm\") $WORKSPACE/.data/cold-dependencies-20261029/serial80/gerbil/lib/clan/poo/io~0.scm"
+        },
+        {
+          "rssBytes": 485965824,
+          "cpuTime": "0:02.27",
+          "observedAtSeconds": 126.684,
+          "command": "/opt/homebrew/Cellar/gcc/16.2.0/bin/../libexec/gcc/aarch64-apple-darwin25/16/cc1 -quiet -I $SDK/include -iprefix /opt/homebrew/Cellar/gcc/16.2.0/bin/../lib/gcc/current/gcc/aarch64-apple-darwin25/16/ -D__DYNAMIC__ -D ___SINGLE_HOST -D ___INLINE_JUMPS -D ___TRUST_C_TCO -D ___CAN_IMPORT_CLIB_DYNAMICALLY -D ___CAN_IMPORT_SETJMP_DYNAMICALLY -D ___DYNAMIC type~0.c -fPIC -quiet -dumpdir type~0.o1- -dumpbase type~0.c -dumpbase-ext .c -mmacosx-version-min=26.0.0 -mcpu=apple-m1 -mlittle-endian -mabi=lp64 -O1 -Wno-unused -Wno-write-strings -Wdisabled-optimization -ftrack-macro-expansion=0 -fwrapv -fno-strict-aliasing -fno-trapping-math -fno-math-errno -fschedule-insns2 -fmodulo-sched -freschedule-modulo-scheduled-loops -foptimize-sibling-calls -fomit-frame-pointer -fipa-ra -fmove-loop-invariants -fPIC -fno-common -o -"
+        }
+      ],
+      "rawLogSha256": "2638431974ea5de9d5f375f377c7b382489e3ebb4a634b9714fb4c744b3a800d"
+    },
+    {
+      "probe": "poo-multihost",
+      "scope": "POO default native library",
+      "guard": {
+        "admissionAdvisories": [],
+        "admissionOutcome": "ready",
+        "admissionReasons": [],
+        "availableMemoryBytes": 23021024706,
+        "cgroupMemoryAvailableBytes": 0,
+        "cgroupMemoryCurrentBytes": 0,
+        "cgroupMemoryLimitBytes": 0,
+        "childExitCode": 9,
+        "effectiveBuildCoreCount": 2,
+        "elapsedMs": 36552,
+        "exitCode": 70,
+        "kind": "gerbil-bazel.resource-guard-receipt.v1",
+        "label": "cold-poo-multihost",
+        "logicalCpuCount": 12,
+        "maxRssBytes": 2147483648,
+        "memoryCoreLimit": 2,
+        "memoryPerCoreBytes": 805306368,
+        "outcome": "rss-limit-exceeded",
+        "peakRssBytes": 2223659320,
+        "processTreeMemoryMetric": "darwin-phys-footprint",
+        "processTreeRssAvailable": true,
+        "requestedBuildCoreCount": 12,
+        "rssHeadroomBytes": 2147483648,
+        "runnableCoreLimit": 8,
+        "runnableCoreLimitApplied": false,
+        "runnableProcessCount": 5,
+        "runnableProcessCountAvailable": true,
+        "schema": "gerbil-bazel.resource-guard-receipt.v1",
+        "systemMemoryBytes": 34359738368,
+        "timeoutMs": 180000,
+        "version": 1
+      },
+      "samplerStatus": 70,
+      "samplerElapsedSeconds": 38.905,
+      "compileAnnouncementCount": 92,
+      "duplicateAnnouncements": {},
+      "largestRssHolders": [
+        {
+          "rssBytes": 982466560,
+          "cpuTime": "0:17.38",
+          "observedAtSeconds": 36.127,
+          "command": "$SDK/bin/gxi -:max-heap=2G,debug=q $WORKSPACE/.data/cold-dependencies-20261029/staged/gerbil/pkg/github.com/tao3k/gerbil-poo/build.ss compile"
+        },
+        {
+          "rssBytes": 577028096,
+          "cpuTime": "0:01.23",
+          "observedAtSeconds": 37.298,
+          "command": "$SDK/bin/gsc -target C -e (define-cond-expand-feature|enable-smp|) -e (include \"$SDK/lib/_gambit#.scm\") $WORKSPACE/.data/cold-dependencies-20261029/staged/gerbil/lib/clan/poo/io~0.scm"
+        },
+        {
+          "rssBytes": 432242688,
+          "cpuTime": "0:00.62",
+          "observedAtSeconds": 37.298,
+          "command": "$SDK/bin/gsc -target C -e (define-cond-expand-feature|enable-smp|) -e (include \"$SDK/lib/_gambit#.scm\") $WORKSPACE/.data/cold-dependencies-20261029/staged/gerbil/lib/clan/poo/io~1.scm"
+        },
+        {
+          "rssBytes": 279805952,
+          "cpuTime": "0:02.39",
+          "observedAtSeconds": 29.348,
+          "command": "/opt/homebrew/Cellar/gcc/16.2.0/bin/../libexec/gcc/aarch64-apple-darwin25/16/cc1 -quiet -I $SDK/include -iprefix /opt/homebrew/Cellar/gcc/16.2.0/bin/../lib/gcc/current/gcc/aarch64-apple-darwin25/16/ -D__DYNAMIC__ -D ___SINGLE_HOST -D ___INLINE_JUMPS -D ___TRUST_C_TCO -D ___CAN_IMPORT_CLIB_DYNAMICALLY -D ___CAN_IMPORT_SETJMP_DYNAMICALLY -D ___DYNAMIC -U___SINGLE_HOST -D___MULTIPLE_HOSTS object~1.c -fPIC -quiet -dumpdir object~1.o1- -dumpbase object~1.c -dumpbase-ext .c -mmacosx-version-min=26.0.0 -mcpu=apple-m1 -mlittle-endian -mabi=lp64 -O1 -Wno-unused -Wno-write-strings -Wdisabled-optimization -ftrack-macro-expansion=0 -fwrapv -fno-strict-aliasing -fno-trapping-math -fno-math-errno -fschedule-insns2 -fmodulo-sched -freschedule-modulo-scheduled-loops -foptimize-sibling-calls -fomit-frame-pointer -fipa-ra -fmove-loop-invariants -fPIC -fno-common -o -"
+        },
+        {
+          "rssBytes": 252182528,
+          "cpuTime": "0:02.00",
+          "observedAtSeconds": 34.991,
+          "command": "$SDK/bin/gxi -:max-heap=2G .data/cold-dependencies-20261029/resource-guard.ss .data/cold-dependencies-20261029/poo-multihost-guard.json cold-poo-multihost 180 gxi -:max-heap=2G -e (import (only-in :gerbil/tools/gxpkg with-pkg-build-env pkg-build)) (with-pkg-build-env (pkg-build \"github.com/tao3k/gerbil-poo\"))"
+        },
+        {
+          "rssBytes": 241254400,
+          "cpuTime": "0:01.41",
+          "observedAtSeconds": 3.375,
+          "command": "$SDK/bin/gxi -:max-heap=2G -e (import (only-in :gerbil/tools/gxpkg with-pkg-build-env pkg-build)) (with-pkg-build-env (pkg-build \"github.com/tao3k/gerbil-poo\"))"
+        }
+      ],
+      "rawLogSha256": "5c624ecdcfac535315b2bd4e87d69bfcc78a561806510c46d0be8fce2d0e05a6"
+    },
+    {
+      "probe": "poo-serial-multi",
+      "scope": "POO default native library",
+      "guard": {
+        "admissionAdvisories": [],
+        "admissionOutcome": "ready",
+        "admissionReasons": [],
+        "availableMemoryBytes": 22677427322,
+        "cgroupMemoryAvailableBytes": 0,
+        "cgroupMemoryCurrentBytes": 0,
+        "cgroupMemoryLimitBytes": 0,
+        "childExitCode": 9,
+        "effectiveBuildCoreCount": 1,
+        "elapsedMs": 168127,
+        "exitCode": 70,
+        "kind": "gerbil-bazel.resource-guard-receipt.v1",
+        "label": "cold-poo-serial-multihost",
+        "logicalCpuCount": 12,
+        "maxRssBytes": 2147483648,
+        "memoryCoreLimit": 1,
+        "memoryPerCoreBytes": 2147483648,
+        "outcome": "rss-limit-exceeded",
+        "peakRssBytes": 2319340152,
+        "processTreeMemoryMetric": "darwin-phys-footprint",
+        "processTreeRssAvailable": true,
+        "requestedBuildCoreCount": 12,
+        "rssHeadroomBytes": 2147483648,
+        "runnableCoreLimit": 9,
+        "runnableCoreLimitApplied": false,
+        "runnableProcessCount": 17,
+        "runnableProcessCountAvailable": true,
+        "schema": "gerbil-bazel.resource-guard-receipt.v1",
+        "systemMemoryBytes": 34359738368,
+        "timeoutMs": 180000,
+        "version": 1
+      },
+      "samplerStatus": 70,
+      "samplerElapsedSeconds": 170.516,
+      "compileAnnouncementCount": 61,
+      "duplicateAnnouncements": {},
+      "largestRssHolders": [
+        {
+          "rssBytes": 923418624,
+          "cpuTime": "0:18.91",
+          "observedAtSeconds": 151.802,
+          "command": "$SDK/bin/gxi -:max-heap=2G,debug=q $WORKSPACE/.data/cold-dependencies-20261029/poo-serial-multi/gerbil/pkg/github.com/tao3k/gerbil-poo/build.ss compile"
+        },
+        {
+          "rssBytes": 633339904,
+          "cpuTime": "0:11.81",
+          "observedAtSeconds": 165.653,
+          "command": "$SDK/bin/gsc -cc-options -D___SINGLE_HOST_LIMIT=10000 -target C $WORKSPACE/.data/cold-dependencies-20261029/poo-serial-multi/gerbil/lib/clan/poo/table~0.scm"
+        },
+        {
+          "rssBytes": 577159168,
+          "cpuTime": "0:01.12",
+          "observedAtSeconds": 102.428,
+          "command": "$SDK/bin/gsc -target C -e (define-cond-expand-feature|enable-smp|) -e (include \"$SDK/lib/_gambit#.scm\") $WORKSPACE/.data/cold-dependencies-20261029/poo-serial-multi/gerbil/lib/clan/poo/io~0.scm"
+        },
+        {
+          "rssBytes": 453509120,
+          "cpuTime": "0:03.69",
+          "observedAtSeconds": 169.471,
+          "command": "/opt/homebrew/Cellar/gcc/16.2.0/bin/../libexec/gcc/aarch64-apple-darwin25/16/cc1 -quiet -I $SDK/include -iprefix /opt/homebrew/Cellar/gcc/16.2.0/bin/../lib/gcc/current/gcc/aarch64-apple-darwin25/16/ -D__DYNAMIC__ -D ___SINGLE_HOST -D ___INLINE_JUMPS -D ___TRUST_C_TCO -D ___CAN_IMPORT_CLIB_DYNAMICALLY -D ___CAN_IMPORT_SETJMP_DYNAMICALLY -D ___DYNAMIC -D ___SINGLE_HOST_LIMIT=10000 -U___SINGLE_HOST -D___MULTIPLE_HOSTS table~0.c -fPIC -quiet -dumpdir table~0.o1- -dumpbase table~0.c -dumpbase-ext .c -mmacosx-version-min=26.0.0 -mcpu=apple-m1 -mlittle-endian -mabi=lp64 -O1 -Wno-unused -Wno-write-strings -Wdisabled-optimization -ftrack-macro-expansion=0 -fwrapv -fno-strict-aliasing -fno-trapping-math -fno-math-errno -fschedule-insns2 -fmodulo-sched -freschedule-modulo-scheduled-loops -foptimize-sibling-calls -fomit-frame-pointer -fipa-ra -fmove-loop-invariants -fPIC -fno-common -o -"
+        },
+        {
+          "rssBytes": 432275456,
+          "cpuTime": "0:00.56",
+          "observedAtSeconds": 104.604,
+          "command": "$SDK/bin/gsc -target C -e (define-cond-expand-feature|enable-smp|) -e (include \"$SDK/lib/_gambit#.scm\") $WORKSPACE/.data/cold-dependencies-20261029/poo-serial-multi/gerbil/lib/clan/poo/io~1.scm"
+        },
+        {
+          "rssBytes": 426852352,
+          "cpuTime": "0:02.28",
+          "observedAtSeconds": 129.042,
+          "command": "/opt/homebrew/Cellar/gcc/16.2.0/bin/../libexec/gcc/aarch64-apple-darwin25/16/cc1 -quiet -I $SDK/include -iprefix /opt/homebrew/Cellar/gcc/16.2.0/bin/../lib/gcc/current/gcc/aarch64-apple-darwin25/16/ -D__DYNAMIC__ -D ___SINGLE_HOST -D ___INLINE_JUMPS -D ___TRUST_C_TCO -D ___CAN_IMPORT_CLIB_DYNAMICALLY -D ___CAN_IMPORT_SETJMP_DYNAMICALLY -D ___DYNAMIC -U___SINGLE_HOST -D___MULTIPLE_HOSTS type~0.c -fPIC -quiet -dumpdir type~0.o1- -dumpbase type~0.c -dumpbase-ext .c -mmacosx-version-min=26.0.0 -mcpu=apple-m1 -mlittle-endian -mabi=lp64 -O1 -Wno-unused -Wno-write-strings -Wdisabled-optimization -ftrack-macro-expansion=0 -fwrapv -fno-strict-aliasing -fno-trapping-math -fno-math-errno -fschedule-insns2 -fmodulo-sched -freschedule-modulo-scheduled-loops -foptimize-sibling-calls -fomit-frame-pointer -fipa-ra -fmove-loop-invariants -fPIC -fno-common -o -"
+        }
+      ],
+      "rawLogSha256": "c3b4469e5ccb6ec7f9a77c2090319a39c250edcd463143eacb23b36b241565a3"
+    },
+    {
+      "probe": "poo-serial-multi95",
+      "scope": "POO default native library",
+      "guard": {
+        "admissionAdvisories": [
+          "runnable-saturation"
+        ],
+        "admissionOutcome": "ready",
+        "admissionReasons": [],
+        "availableMemoryBytes": 12025908428,
+        "cgroupMemoryAvailableBytes": 0,
+        "cgroupMemoryCurrentBytes": 0,
+        "cgroupMemoryLimitBytes": 0,
+        "childExitCode": 9,
+        "effectiveBuildCoreCount": 1,
+        "elapsedMs": 180212,
+        "exitCode": 71,
+        "kind": "gerbil-bazel.resource-guard-receipt.v1",
+        "label": "cold-poo-serial-multihost95",
+        "logicalCpuCount": 12,
+        "maxRssBytes": 2147483648,
+        "memoryCoreLimit": 1,
+        "memoryPerCoreBytes": 2147483648,
+        "outcome": "timeout",
+        "peakRssBytes": 1460895744,
+        "processTreeMemoryMetric": "darwin-phys-footprint",
+        "processTreeRssAvailable": true,
+        "requestedBuildCoreCount": 12,
+        "rssHeadroomBytes": 2147483648,
+        "runnableCoreLimit": 6,
+        "runnableCoreLimitApplied": false,
+        "runnableProcessCount": 25,
+        "runnableProcessCountAvailable": true,
+        "schema": "gerbil-bazel.resource-guard-receipt.v1",
+        "systemMemoryBytes": 34359738368,
+        "timeoutMs": 180000,
+        "version": 1
+      },
+      "samplerStatus": 71,
+      "samplerElapsedSeconds": 189.407,
+      "compileAnnouncementCount": 57,
+      "duplicateAnnouncements": {},
+      "largestRssHolders": [
+        {
+          "rssBytes": 787349504,
+          "cpuTime": "0:29.15",
+          "observedAtSeconds": 186.17,
+          "command": "$SDK/bin/gxi -:max-heap=2G,debug=q $WORKSPACE/.data/cold-dependencies-20261029/poo-serial-multi95/gerbil/pkg/github.com/tao3k/gerbil-poo/build.ss compile"
+        },
+        {
+          "rssBytes": 536363008,
+          "cpuTime": "0:01.42",
+          "observedAtSeconds": 135.089,
+          "command": "$SDK/bin/gsc -target C -e (define-cond-expand-feature|enable-smp|) -e (include \"$SDK/lib/_gambit#.scm\") $WORKSPACE/.data/cold-dependencies-20261029/poo-serial-multi95/gerbil/lib/clan/poo/io~0.scm"
+        },
+        {
+          "rssBytes": 460079104,
+          "cpuTime": "0:01.08",
+          "observedAtSeconds": 140.928,
+          "command": "$SDK/bin/gsc -target C -e (define-cond-expand-feature|enable-smp|) -e (include \"$SDK/lib/_gambit#.scm\") $WORKSPACE/.data/cold-dependencies-20261029/poo-serial-multi95/gerbil/lib/clan/poo/io~1.scm"
+        },
+        {
+          "rssBytes": 359448576,
+          "cpuTime": "0:02.15",
+          "observedAtSeconds": 172.372,
+          "command": "/opt/homebrew/Cellar/gcc/16.2.0/bin/../libexec/gcc/aarch64-apple-darwin25/16/cc1 -quiet -I $SDK/include -iprefix /opt/homebrew/Cellar/gcc/16.2.0/bin/../lib/gcc/current/gcc/aarch64-apple-darwin25/16/ -D__DYNAMIC__ -D ___SINGLE_HOST -D ___INLINE_JUMPS -D ___TRUST_C_TCO -D ___CAN_IMPORT_CLIB_DYNAMICALLY -D ___CAN_IMPORT_SETJMP_DYNAMICALLY -D ___DYNAMIC -U___SINGLE_HOST -D___MULTIPLE_HOSTS type~0.c -fPIC -quiet -dumpdir type~0.o1- -dumpbase type~0.c -dumpbase-ext .c -mmacosx-version-min=26.0.0 -mcpu=apple-m1 -mlittle-endian -mabi=lp64 -O1 -Wno-unused -Wno-write-strings -Wdisabled-optimization -ftrack-macro-expansion=0 -fwrapv -fno-strict-aliasing -fno-trapping-math -fno-math-errno -fschedule-insns2 -fmodulo-sched -freschedule-modulo-scheduled-loops -foptimize-sibling-calls -fomit-frame-pointer -fipa-ra -fmove-loop-invariants -fPIC -fno-common -o -"
+        },
+        {
+          "rssBytes": 261111808,
+          "cpuTime": "0:01.46",
+          "observedAtSeconds": 130.689,
+          "command": "/opt/homebrew/Cellar/gcc/16.2.0/bin/../libexec/gcc/aarch64-apple-darwin25/16/cc1 -quiet -I $SDK/include -iprefix /opt/homebrew/Cellar/gcc/16.2.0/bin/../lib/gcc/current/gcc/aarch64-apple-darwin25/16/ -D__DYNAMIC__ -D ___SINGLE_HOST -D ___INLINE_JUMPS -D ___TRUST_C_TCO -D ___CAN_IMPORT_CLIB_DYNAMICALLY -D ___CAN_IMPORT_SETJMP_DYNAMICALLY -D ___DYNAMIC -U___SINGLE_HOST -D___MULTIPLE_HOSTS mop~0.c -fPIC -quiet -dumpdir mop~0.o1- -dumpbase mop~0.c -dumpbase-ext .c -mmacosx-version-min=26.0.0 -mcpu=apple-m1 -mlittle-endian -mabi=lp64 -O1 -Wno-unused -Wno-write-strings -Wdisabled-optimization -ftrack-macro-expansion=0 -fwrapv -fno-strict-aliasing -fno-trapping-math -fno-math-errno -fschedule-insns2 -fmodulo-sched -freschedule-modulo-scheduled-loops -foptimize-sibling-calls -fomit-frame-pointer -fipa-ra -fmove-loop-invariants -fPIC -fno-common -o -"
+        },
+        {
+          "rssBytes": 244236288,
+          "cpuTime": "0:02.59",
+          "observedAtSeconds": 120.836,
+          "command": "/opt/homebrew/Cellar/gcc/16.2.0/bin/../libexec/gcc/aarch64-apple-darwin25/16/cc1 -quiet -I $SDK/include -iprefix /opt/homebrew/Cellar/gcc/16.2.0/bin/../lib/gcc/current/gcc/aarch64-apple-darwin25/16/ -D__DYNAMIC__ -D ___SINGLE_HOST -D ___INLINE_JUMPS -D ___TRUST_C_TCO -D ___CAN_IMPORT_CLIB_DYNAMICALLY -D ___CAN_IMPORT_SETJMP_DYNAMICALLY -D ___DYNAMIC -U___SINGLE_HOST -D___MULTIPLE_HOSTS object~1.c -fPIC -quiet -dumpdir object~1.o1- -dumpbase object~1.c -dumpbase-ext .c -mmacosx-version-min=26.0.0 -mcpu=apple-m1 -mlittle-endian -mabi=lp64 -O1 -Wno-unused -Wno-write-strings -Wdisabled-optimization -ftrack-macro-expansion=0 -fwrapv -fno-strict-aliasing -fno-trapping-math -fno-math-errno -fschedule-insns2 -fmodulo-sched -freschedule-modulo-scheduled-loops -foptimize-sibling-calls -fomit-frame-pointer -fipa-ra -fmove-loop-invariants -fPIC -fno-common -o -"
+        }
+      ],
+      "rawLogSha256": "ffe98317f9c90148676f6baca23e2b8020366f17b4e883e2135b038c56cc903c"
+    },
+    {
+      "probe": "poo-parallel-multi95",
+      "scope": "POO default native library",
+      "guard": {
+        "admissionAdvisories": [],
+        "admissionOutcome": "ready",
+        "admissionReasons": [],
+        "availableMemoryBytes": 18554258718,
+        "cgroupMemoryAvailableBytes": 0,
+        "cgroupMemoryCurrentBytes": 0,
+        "cgroupMemoryLimitBytes": 0,
+        "childExitCode": 9,
+        "effectiveBuildCoreCount": 2,
+        "elapsedMs": 93753,
+        "exitCode": 70,
+        "kind": "gerbil-bazel.resource-guard-receipt.v1",
+        "label": "cold-poo-parallel-multihost95",
+        "logicalCpuCount": 12,
+        "maxRssBytes": 2147483648,
+        "memoryCoreLimit": 2,
+        "memoryPerCoreBytes": 805306368,
+        "outcome": "rss-limit-exceeded",
+        "peakRssBytes": 2293274936,
+        "processTreeMemoryMetric": "darwin-phys-footprint",
+        "processTreeRssAvailable": true,
+        "requestedBuildCoreCount": 12,
+        "rssHeadroomBytes": 2147483648,
+        "runnableCoreLimit": 7,
+        "runnableCoreLimitApplied": false,
+        "runnableProcessCount": 6,
+        "runnableProcessCountAvailable": true,
+        "schema": "gerbil-bazel.resource-guard-receipt.v1",
+        "systemMemoryBytes": 34359738368,
+        "timeoutMs": 180000,
+        "version": 1
+      },
+      "samplerStatus": 70,
+      "samplerElapsedSeconds": 96.359,
+      "compileAnnouncementCount": 92,
+      "duplicateAnnouncements": {},
+      "largestRssHolders": [
+        {
+          "rssBytes": 820920320,
+          "cpuTime": "0:25.86",
+          "observedAtSeconds": 92.096,
+          "command": "$SDK/bin/gxi -:max-heap=2G,debug=q $WORKSPACE/.data/cold-dependencies-20261029/poo-parallel-multi95/gerbil/pkg/github.com/tao3k/gerbil-poo/build.ss compile"
+        },
+        {
+          "rssBytes": 543801344,
+          "cpuTime": "0:18.92",
+          "observedAtSeconds": 92.096,
+          "command": "$SDK/bin/gsc -cc-options -D___SINGLE_HOST_LIMIT=10000 -target C $WORKSPACE/.data/cold-dependencies-20261029/poo-parallel-multi95/gerbil/lib/clan/poo/table~0.scm"
+        },
+        {
+          "rssBytes": 535691264,
+          "cpuTime": "0:01.33",
+          "observedAtSeconds": 47.176,
+          "command": "$SDK/bin/gsc -target C -e (define-cond-expand-feature|enable-smp|) -e (include \"$SDK/lib/_gambit#.scm\") $WORKSPACE/.data/cold-dependencies-20261029/poo-parallel-multi95/gerbil/lib/clan/poo/io~0.scm"
+        },
+        {
+          "rssBytes": 467959808,
+          "cpuTime": "0:02.54",
+          "observedAtSeconds": 76.973,
+          "command": "/opt/homebrew/Cellar/gcc/16.2.0/bin/../libexec/gcc/aarch64-apple-darwin25/16/cc1 -quiet -I $SDK/include -iprefix /opt/homebrew/Cellar/gcc/16.2.0/bin/../lib/gcc/current/gcc/aarch64-apple-darwin25/16/ -D__DYNAMIC__ -D ___SINGLE_HOST -D ___INLINE_JUMPS -D ___TRUST_C_TCO -D ___CAN_IMPORT_CLIB_DYNAMICALLY -D ___CAN_IMPORT_SETJMP_DYNAMICALLY -D ___DYNAMIC -U___SINGLE_HOST -D___MULTIPLE_HOSTS table~1.c -fPIC -quiet -dumpdir table~1.o1- -dumpbase table~1.c -dumpbase-ext .c -mmacosx-version-min=26.0.0 -mcpu=apple-m1 -mlittle-endian -mabi=lp64 -O1 -Wno-unused -Wno-write-strings -Wdisabled-optimization -ftrack-macro-expansion=0 -fwrapv -fno-strict-aliasing -fno-trapping-math -fno-math-errno -fschedule-insns2 -fmodulo-sched -freschedule-modulo-scheduled-loops -foptimize-sibling-calls -fomit-frame-pointer -fipa-ra -fmove-loop-invariants -fPIC -fno-common -o -"
+        },
+        {
+          "rssBytes": 460079104,
+          "cpuTime": "0:00.92",
+          "observedAtSeconds": 47.176,
+          "command": "$SDK/bin/gsc -target C -e (define-cond-expand-feature|enable-smp|) -e (include \"$SDK/lib/_gambit#.scm\") $WORKSPACE/.data/cold-dependencies-20261029/poo-parallel-multi95/gerbil/lib/clan/poo/io~1.scm"
+        },
+        {
+          "rssBytes": 404455424,
+          "cpuTime": "0:02.05",
+          "observedAtSeconds": 62.926,
+          "command": "/opt/homebrew/Cellar/gcc/16.2.0/bin/../libexec/gcc/aarch64-apple-darwin25/16/cc1 -quiet -I $SDK/include -iprefix /opt/homebrew/Cellar/gcc/16.2.0/bin/../lib/gcc/current/gcc/aarch64-apple-darwin25/16/ -D__DYNAMIC__ -D ___SINGLE_HOST -D ___INLINE_JUMPS -D ___TRUST_C_TCO -D ___CAN_IMPORT_CLIB_DYNAMICALLY -D ___CAN_IMPORT_SETJMP_DYNAMICALLY -D ___DYNAMIC -U___SINGLE_HOST -D___MULTIPLE_HOSTS type~0.c -fPIC -quiet -dumpdir type~0.o1- -dumpbase type~0.c -dumpbase-ext .c -mmacosx-version-min=26.0.0 -mcpu=apple-m1 -mlittle-endian -mabi=lp64 -O1 -Wno-unused -Wno-write-strings -Wdisabled-optimization -ftrack-macro-expansion=0 -fwrapv -fno-strict-aliasing -fno-trapping-math -fno-math-errno -fschedule-insns2 -fmodulo-sched -freschedule-modulo-scheduled-loops -foptimize-sibling-calls -fomit-frame-pointer -fipa-ra -fmove-loop-invariants -fPIC -fno-common -o -"
+        }
+      ],
+      "rawLogSha256": "737b142efcf8bf29ca0567d6d05fbcfc38b8a55e268e922e737b7ab4e0e93cd1"
+    }
+  ]
+}
