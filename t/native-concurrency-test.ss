@@ -11,7 +11,7 @@
       (list "just" "--justfile"
             (path-expand "../Justfile" (path-directory (this-source-file)))
             "--command" "gxi" "-:max-heap=2G" "-e"
-            "(import :gerbil/compiler/base) (write (list (getenv \"GERBIL_BUILD_CORES\" #f) (available-build-cores)))"))
+            "(import :gerbil/compiler/base) (write (list (getenv \"GERBIL_BUILD_CORES\" #f) __available-cores))"))
     coprocess: read))
 
 (def native-concurrency-test

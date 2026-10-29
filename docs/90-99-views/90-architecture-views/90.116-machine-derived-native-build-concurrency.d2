@@ -2,16 +2,22 @@
 # render-layout: elk; theme: 0; pad: 24
 direction: down
 contract: "2 GiB heap per Scheme process / 180s invocation\nMachine-derived concurrency; caller limits preserved"
-query: "Existing SDK available-build-cores\nJust exports native result to frontend and backend\nCI uses native provider host/resource admission"
+query: "Native Gambit ##core-count + caller environment\nJust exports native result to frontend and backend\nCI uses native provider host/resource admission"
 inputs: "Distinct empty GERBIL_PATH / no project LOADPATH\nNative fetch, exact source, native tags and manifests"
 make: "Original std/make + expander module registry\nSource contexts retain code and delayed evaluator\nPreparation -> dependency completions -> native compile"
 queue: "Original backend executor\nPath/settings jobs; diagnostic context is not a full AST\nDrain, join and reset; retain default link target"
 build: "Pinned POO: 67.847s, 92 frontend / 238 jobs\nCurrent POO: 105.772s, 213 frontend / 521 jobs\nBoth completed / 0; 12 observed machine-derived workers"
 consumer: "Independent native object + iterator consumer\nActual missing macro phase -> refuse; restore object\nSix Scheme cases + sixteen Python controls pass"
-cohort: "Core native pin -> POO c0d4763\nParser/ASCENT -> Core e77698c\nEngineering consumes repaired Aitia be98efb / native metadata 8 of 8\nCoherent Core/POO migration has separate admission"
-receipt: "Local POO cold native builds qualified\nComplete Aitia cold closure / new Linux CI remain separate"
+cohort: "Core native pin -> POO c0d4763\nParser/ASCENT -> Core e77698c\nEngineering consumes repaired Aitia df2d1d9 / native metadata 8 of 8\nCoherent Core/POO migration has separate admission"
+receipt: "Two local POO cold native builds qualified\nFull Aitia cold closure / complete Linux CI remain separate"
+contention: "Additional final-entry probe: timeout / 71\n133 runnable on 12 cores; SDK 7517 entries unchanged\nNo unconditional 180s SLO or successful cache receipt"
 contract -> query
 query -> make
 inputs -> make
 make -> queue -> build -> consumer -> receipt
 cohort -> receipt: "source applicability"
+
+contention -> receipt: "applicability boundary"
+
+remote: "CI before package cache restore\nCore-owned POO pin -> native deps --install\nFresh package root / 2 GiB per process / 180s\nLinux df2d1d9 cold gate: success in 152s (whole step)"
+inputs -> remote -> receipt: "independent remote gate"

@@ -3,7 +3,7 @@ set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 
 # The native SDK derives concurrency from this machine; preserve caller limits.
 # max-heap is per Scheme process, not a whole-build memory/worker cap.
-export GERBIL_BUILD_CORES := `gxi -:max-heap=2G -e '(import :gerbil/compiler/base) (display (available-build-cores))'`
+export GERBIL_BUILD_CORES := env_var_or_default("GERBIL_BUILD_CORES", `gxi -:max-heap=2G -e '(display (##core-count))'`)
 # Native package scripts spawn Scheme children: carry the same heap fence to them.
 # Nested Just/SDK calls must retain the same compiler input identity.
 export GAMBOPT := if env_var_or_default("GAMBOPT", "") == "" { "max-heap=2G,debug=q" } else if env_var("GAMBOPT") =~ "(^|,)max-heap=2G,debug=q$" { env_var("GAMBOPT") } else { env_var("GAMBOPT") + ",max-heap=2G,debug=q" }
