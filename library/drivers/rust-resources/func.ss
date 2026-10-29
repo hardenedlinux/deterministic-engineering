@@ -2,12 +2,10 @@
 (import
   :clan/poo/object
   (only-in :clan/poo/mop validate map-object-values)
-  "./types.ss"
-  "./objects.ss"
-  "./methods.ss"
-  "./oracle.ss")
+  "types.ss"
+  "methods.ss"
+  "oracle.ss")
 (export
-  ResourceMethods
   bind-resource-methods)
 (def ResourceUtilities
   (.o
@@ -56,5 +54,3 @@
     definitions: selected-definitions
     bindings: selected-bindings
     operations: selected-operations))
-(def DefaultMethods (bind-resource-methods RustMethodDefinitions))
-(def ResourceMethods (.get DefaultMethods operations))

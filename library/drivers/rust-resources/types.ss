@@ -10,9 +10,9 @@
    yuanxu-predicate-type)
   (only-in :clan/poo/type String Symbol List)
   (only-in :clan/poo/object-contract ObjectContract. refine)
-  "../../../../../types.ss"
+  "../../../types.ss"
   (only-in
-   "../../../../../library/concurrency/resource-control/backpressure-memory/abstract/types.ss"
+   "../../concurrency/resource-control/backpressure-memory/abstract/types.ss"
    BackpressureScopeContract
    BackpressureDeclarationContract
    BackpressureModelContract

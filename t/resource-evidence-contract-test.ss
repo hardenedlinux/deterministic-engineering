@@ -29,7 +29,7 @@
   (test-suite "Native Evidence Module method boundaries"
     (test-case "actual publication constructs a checked Program and runs native inference"
       (def scope (.get deterministic-engineering.init.exports Library evidence scope))
-      (def entry (.get deterministic-engineering.init.exports Languages rust-resources scope entry))
+      (def entry (.get deterministic-engineering.init.exports Library rust-resources scope entry))
       ;; Exercise the published boundary too, rather than only a test-local wrapper.
       (check-exception
        ((.get scope open-review) entry LocalProfile "invalid-usage" "source/A" '())
@@ -52,7 +52,7 @@
 
     (test-case "invalid arguments and arity are rejected before the real operation runs"
       (def scope (.get deterministic-engineering.init.exports Library evidence scope))
-      (def entry (.get deterministic-engineering.init.exports Languages rust-resources scope entry))
+      (def entry (.get deterministic-engineering.init.exports Library rust-resources scope entry))
       (def calls 0)
       (def operation
         (validate ResourceOpenReviewSignature
@@ -83,7 +83,7 @@
       (def make-invalid (validate ResourceMakeEvidenceSignature (lambda () (ascent-rule-module (.o)))))
       (check-exception (make-invalid) TypeError?)
       (def scope (.get deterministic-engineering.init.exports Library evidence scope))
-      (def entry (.get deterministic-engineering.init.exports Languages rust-resources scope entry))
+      (def entry (.get deterministic-engineering.init.exports Library rust-resources scope entry))
       (def open-invalid (validate ResourceOpenReviewSignature (lambda args 'not-a-session)))
       (check-exception (open-invalid entry LocalProfile 'u "source/A" '()) TypeError?))
 
@@ -103,7 +103,7 @@
 
     (test-case "typed normalization preserves immutable old results across a real source update"
       (def scope (.get deterministic-engineering.init.exports Library evidence scope))
-      (def entry (.get deterministic-engineering.init.exports Languages rust-resources scope entry))
+      (def entry (.get deterministic-engineering.init.exports Library rust-resources scope entry))
       (def session ((.get scope open-review) entry LocalProfile 'typed-before "source/A" '()))
       (def before (gerbil-ascent-session-run session))
       (gerbil-ascent-session-replace-sources!

@@ -14,7 +14,7 @@
   :agentic-ai-lab/lambda-aitia/modules/sdlc/objects
   :agentic-ai-lab/lambda-aitia/modules/sdlc/standards/nasa-review
   :agentic-ai-lab/lambda-aitia/modules/sdlc/standards/nasa-lifecycle
-  :deterministic-engineering/languages-engineering/rust/concurrency/resource-control/backpressure-memory/reassessment-oracle
+  :deterministic-engineering/library/drivers/rust-resources/reassessment-oracle
   "./func.ss")
 (export
   open-backpressure-history

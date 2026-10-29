@@ -3,8 +3,8 @@
  (only-in :clan/poo/mop validate)
  "../library/project-organization/objects.ss" "../library/project-organization/types.ss"
  "../library/concurrency/resource-control/backpressure-memory/abstract/objects.ss"
- "../languages-engineering/rust/concurrency/resource-control/backpressure-memory/objects.ss"
- "../languages-engineering/rust/concurrency/resource-control/backpressure-memory/types.ss"
+ "../library/drivers/rust-resources/objects.ss"
+ "../library/drivers/rust-resources/types.ss"
  "../profiles/resource-lifecycle.ss" "../profiles/gateway.ss" "../profiles/library-formation.ss"
  "../scenarios/project-formation/func.ss" "../scenarios/gateway-review/func.ss"
  "../library/drivers/project-formation/func.ss" "../library/drivers/evidence/func.ss")

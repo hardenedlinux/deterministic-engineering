@@ -17,7 +17,7 @@
   (only-in :gerbil-ascent/program/types GerbilAscentSessionContract)
   (only-in "../../types.ss" LibraryNonemptyString)
   (only-in
-   "../../languages-engineering/rust/concurrency/resource-control/backpressure-memory/types.ss"
+   "../../library/drivers/rust-resources/types.ss"
    RustResourcesScopeContract)
   (only-in "../../library/drivers/evidence/types.ss" ResourceEvidenceScopeContract))
 

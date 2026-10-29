@@ -21,9 +21,11 @@ library/
   drivers/
     evidence/                   Scheme driver over native ASCENT evidence
     project-formation/          Scheme organization/acquisition driver and schemas
+    rust-resources/             Scheme POO bindings, verification and evidence driver
 languages-engineering/
   rust/concurrency/resource-control/backpressure-memory/
-                                Rust-specific bindings, models, native code and lockfile
+    Cargo.toml / Cargo.lock     Rust crate metadata and dependency lock
+    src/                        Rust source only
   go/                           Go engineering scope; implementation not yet admitted
 profiles/                       Independent workload and design selections
 scenarios/                      Application composition, including the gateway example
@@ -31,12 +33,14 @@ projects/                       Actual SDLC consumers
 #+END_EXAMPLE
 
 Library Scheme code maintains framework/design drivers and reusable engineering
-knowledge. Language-specific bindings and implementations live together under
-=languages-engineering/<language>/=. The implementation language of a tool does
-not by itself determine the engineering domain it models.
+knowledge, including POO specialization for language-specific engineering.
+=languages-engineering/<language>/= contains the target-language engineering
+project. Rust source and Cargo inputs do not become Scheme Modules.
+The implementation language of a tool does not determine the language it models.
 
-=init.ss= exposes =Library=, =Languages= and =Scenarios= through explicit native
-paths. The former local =modules/= directory and =Modules= namespace are removed;
+=init.ss= exposes Scheme-owned =Library= and =Scenarios= through explicit native
+paths. The Rust driver is selected from Library; the Rust crate is an input asset.
+The former local =modules/= directory and =Modules= namespace are removed;
 there are no forwarding files or compatibility aliases.
 
 Structured wire/data contracts use Yuanxu's existing JSON Schema compiler and
@@ -54,7 +58,7 @@ The current SDK study is not an executed SDK integration result.
 Historical documents preserve their original source/evidence paths. The new
 ownership map supersedes those paths for current development; moving source
 files requires fresh capture, never relabeling old evidence.
-See [[file:docs/10-19-design/10-architecture/10.135-engineering-ownership-and-native-drivers.org][10.135]] and its paired D2 view for the migration and capability boundaries.
+See [[file:docs/10-19-design/10-architecture/10.136-scheme-drivers-and-rust-only-projects.org][10.136]] and its paired D2 view for the corrected ownership boundary.
 
 * Package and development entrypoints
 
@@ -354,12 +358,13 @@ derivation, actual QNT/TLC and Lean execution, native ASCENT exchange registrati
 and scoped reuse across capacity, cache and source changes.
 [[file:docs/10-19-design/10-architecture/10.12-gateway-library-registration-and-runtime-dependencies.org][10.12]] retains the finite rule and runtime-dependency design.
 
-- ~languages-engineering/rust/concurrency/resource-control/backpressure-memory/~ publishes resource knowledge, Contracts, shared method observation and the independent oracle.
+- ~library/drivers/rust-resources/~ owns Scheme specialization, Contracts, method observation and the independent oracle.
+- ~languages-engineering/rust/concurrency/resource-control/backpressure-memory/~ contains the Rust crate and its Cargo.lock.
 - ~library/drivers/evidence/~ runs that entry's finite obligation/applicability rules through ASCENT.
 - ~profiles/gateway.ss~ defines independent POO C1/C2/cache/retry application values.
 - ~scenarios/resource-lifecycle/~ binds the minimal native mechanism; ~scenarios/gateway-review/~ independently binds the gateway application.
 - ~t/*-test.ss~ checks real registration/query and native package compatibility.
-- ~models/~ and ~proofs/~ currently contain the bounded ownership model and conditional arithmetic lemma; these are legacy tool directories with the domain-owned migration specified in 10.17.
+- ~library/concurrency/resource-control/backpressure-memory/~ owns the bounded Quint model and conditional Lean arithmetic lemma.
 
 The real local replay uses Core Ops and a trusted in-process observer; its
 content hashes do not provide remote producer authentication.

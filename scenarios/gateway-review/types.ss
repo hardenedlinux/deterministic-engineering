@@ -3,7 +3,7 @@
   :clan/poo/object
   (only-in :yuanxu/object-types/contracts yuanxu-predicate-contract)
   (only-in
-   "../../languages-engineering/rust/concurrency/resource-control/backpressure-memory/types.ss"
+   "../../library/drivers/rust-resources/types.ss"
    RustResourcesScopeContract)
   (only-in "../../library/drivers/evidence/types.ss" ResourceEvidenceScopeContract))
 (export

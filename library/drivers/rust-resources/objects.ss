@@ -1,8 +1,8 @@
 ;;; -*- Gerbil -*-
 (import
   :clan/poo/object
-  "./types.ss"
-  (only-in "../../../../../library/concurrency/resource-control/backpressure-memory/abstract/types.ss" BackpressureDeclarationContract))
+  "types.ss"
+  (only-in "../../concurrency/resource-control/backpressure-memory/abstract/types.ss" BackpressureDeclarationContract))
 (export
   RustMethodDefinitions
   specialize-backpressure
@@ -360,7 +360,7 @@
                          (.o (:: @ ResourceMethodAsset.)
                              identity: 'native-subject
                              kind: 'rust
-                             relative-path: "native/src/main.rs")
+                             relative-path: "../../../languages-engineering/rust/concurrency/resource-control/backpressure-memory/src/main.rs")
                          MethodObserverAsset
                          (.o (:: @ ResourceMethodAsset.)
                              identity: 'oracle
@@ -374,7 +374,7 @@
                         (.o (:: @ ResourceMethodAsset.)
                             identity: 'ownership-model
                             kind: 'quint
-                            relative-path: "../../../../../library/concurrency/resource-control/backpressure-memory/model.qnt")
+                            relative-path: "../../concurrency/resource-control/backpressure-memory/model.qnt")
                         MethodObserverAsset))
     lean: (.o (:: @ ResourceMethod.)
               operation: 'lean
@@ -384,7 +384,7 @@
                        (.o (:: @ ResourceMethodAsset.)
                            identity: 'budget-proof
                            kind: 'lean
-                           relative-path: "../../../../../library/concurrency/resource-control/backpressure-memory/budget.lean")
+                           relative-path: "../../concurrency/resource-control/backpressure-memory/budget.lean")
                        MethodObserverAsset))
     integration: (.o (:: @ ResourceMethod.)
                      operation: 'integration

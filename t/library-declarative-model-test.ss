@@ -1,8 +1,8 @@
 ;;; -*- Gerbil -*-
 (import :std/test :clan/poo/object :gerbil-ascent/rules/interface
         (only-in :clan/poo/mop validate)
-        "../languages-engineering/rust/concurrency/resource-control/backpressure-memory/objects.ss"
-        "../languages-engineering/rust/concurrency/resource-control/backpressure-memory/types.ss"
+        "../library/drivers/rust-resources/objects.ss"
+        "../library/drivers/rust-resources/types.ss"
         (only-in "../library/concurrency/resource-control/backpressure-memory/abstract/objects.ss" BackpressureModel)
         (only-in "../library/drivers/evidence/func.ss" open-resource-review)
         "../profiles/resource-lifecycle.ss")

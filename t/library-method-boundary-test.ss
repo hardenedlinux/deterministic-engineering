@@ -4,7 +4,9 @@
         (only-in :gerbil/runtime/loader __find-library-module)
         (only-in :std/misc/ports read-all-as-string)
         "../profiles/resource-lifecycle.ss"
-        "../languages-engineering/rust/concurrency/resource-control/backpressure-memory/func.ss")
+        :deterministic-engineering/init)
+(def ResourceMethods
+  (.get deterministic-engineering.init.exports Library rust-resources scope methods))
 (export library-method-boundary-test)
 (def library-method-boundary-test
  (test-suite "Selected method Function and interpretation footprint boundaries"
@@ -36,7 +38,7 @@
    (def out (path-expand "observation" root))
    (def result ((.get ResourceMethods quint) root LifecycleProfile tool out))
    ((.get ResourceMethods current!) result)
-   (def path (path-expand "languages-engineering/rust/concurrency/resource-control/backpressure-memory/objects.ss" root))
+   (def path (path-expand "library/drivers/rust-resources/objects.ss" root))
    (def before (call-with-input-file path read-all-as-string))
    (try
     (call-with-output-file (list path: path truncate: #t)

@@ -5,8 +5,8 @@
  (only-in :agentic-ai-lab/modules/temporal-causality/trajectory/ascent-ledger ascent-trajectory)
  "../profiles/resource-lifecycle.ss" "../profiles/gateway.ss"
  "../library/concurrency/resource-control/backpressure-memory/abstract/objects.ss"
- "../languages-engineering/rust/concurrency/resource-control/backpressure-memory/objects.ss"
- "../languages-engineering/rust/concurrency/resource-control/backpressure-memory/methods.ss"
+ "../library/drivers/rust-resources/objects.ss"
+ "../library/drivers/rust-resources/methods.ss"
  "../library/drivers/evidence/func.ss")
 (export evidence-declarative-live-test)
 (def (rows result relation) ((.get result rows-of) relation))
@@ -83,7 +83,7 @@
    ;; Repeated registration retains history without duplicate rows.
    (resource-register-results! session (list pass counter) trajectory rule-source)
    (check-equal? (length (rows (gerbil-ascent-session-run session) 'witness)) 2)
-   (def declaration (path-expand "languages-engineering/rust/concurrency/resource-control/backpressure-memory/objects.ss" root))
+   (def declaration (path-expand "library/drivers/rust-resources/objects.ss" root))
    (def before (call-with-input-file declaration read-all-as-string))
    (try
     (write-text declaration (string-append before "\n;; changed declaration bytes\n"))

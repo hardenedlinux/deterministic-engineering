@@ -5,7 +5,7 @@
         (only-in :yuanxu/module-system/interface yuanxu-load-modules))
 (export library-selection-test)
 (import (only-in :clan/poo/mop validate)
-        (only-in "../languages-engineering/rust/concurrency/resource-control/backpressure-memory/types.ss" RustResourcesScopeContract RustResourceModelContract))
+        (only-in "../library/drivers/rust-resources/types.ss" RustResourcesScopeContract RustResourceModelContract))
 (def repo-root (path-expand ".." (path-directory (this-source-file))))
 (def (write-source path text)
   (call-with-output-file (list path: path truncate: #t) (cut display text <>)))
@@ -44,7 +44,7 @@
        (def path (path-expand "init.ss" root))
        (write-source path (string-append "(yuanxu! source: " (object->string (path-expand "library" repo-root)) " mode: explicit (backpressure-memory @ "
          (object->string (path-expand "abstract" base)) ") (rust-resources @ "
-         (object->string (path-expand "languages-engineering/rust/concurrency/resource-control/backpressure-memory" repo-root)) "))"))
+         (object->string (path-expand "library/drivers/rust-resources" repo-root)) "))"))
        (def view (yuanxu-load-modules path))
        (def parent (.get view modules backpressure-memory))
        (def scope (.get view modules rust-resources))

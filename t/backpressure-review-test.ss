@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 (import (only-in :std/os/pid getpid) (only-in :gerbil/runtime/loader list-modules) :std/test :std/encoding/json
         (only-in :std/misc/ports read-all-as-u8vector) :clan/poo/object
-        (only-in :deterministic-engineering/languages-engineering/rust/concurrency/resource-control/backpressure-memory/oracle resource-native-oracle)
+        (only-in :deterministic-engineering/library/drivers/rust-resources/oracle resource-native-oracle)
         :yuanxu/contribution/verification
         :agentic-ai-lab/lambda-aitia/modules/sdlc/standards/nasa-review
         :agentic-ai-lab/lambda-aitia/modules/sdlc/standards/nasa-lifecycle

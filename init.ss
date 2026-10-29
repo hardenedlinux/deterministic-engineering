@@ -6,8 +6,7 @@
   :load-modules "./library" mode: explicit rename: Library
   (backpressure-memory @ "./library/concurrency/resource-control/backpressure-memory/abstract")
   (evidence @ "./library/drivers/evidence")
-  :load-modules "./languages-engineering" mode: explicit rename: Languages
-  (rust-resources @ "./languages-engineering/rust/concurrency/resource-control/backpressure-memory")
+  (rust-resources @ "./library/drivers/rust-resources")
   :load-modules "./scenarios" mode: explicit rename: Scenarios
   (gateway-review)
   (resource-lifecycle))

@@ -201,15 +201,15 @@
         "library/concurrency/resource-control/backpressure-memory/abstract/types.ss"
         "library/concurrency/resource-control/backpressure-memory/abstract/interface.ss"
         "library/concurrency/resource-control/backpressure-memory/abstract/config.ss"
-              "profiles/gateway.ss" "languages-engineering/rust/concurrency/resource-control/backpressure-memory/objects.ss"
-              "languages-engineering/rust/concurrency/resource-control/backpressure-memory/types.ss" "languages-engineering/rust/concurrency/resource-control/backpressure-memory/interface.ss"
-              "languages-engineering/rust/concurrency/resource-control/backpressure-memory/config.ss" "library/drivers/evidence/func.ss"
+              "profiles/gateway.ss" "library/drivers/rust-resources/objects.ss"
+              "library/drivers/rust-resources/types.ss" "library/drivers/rust-resources/interface.ss"
+              "library/drivers/rust-resources/config.ss" "library/drivers/evidence/func.ss"
               "library/drivers/evidence/types.ss" "library/drivers/evidence/interface.ss"
               "library/drivers/evidence/objects.ss" "library/drivers/evidence/config.ss"
               "scenarios/gateway-review/interface.ss" "scenarios/gateway-review/types.ss"
               "scenarios/gateway-review/objects.ss" "scenarios/gateway-review/config.ss"
-              "scenarios/gateway-review/func.ss" "languages-engineering/rust/concurrency/resource-control/backpressure-memory/methods.ss"
-              "languages-engineering/rust/concurrency/resource-control/backpressure-memory/oracle.ss" "library/concurrency/resource-control/backpressure-memory/model.qnt"
+              "scenarios/gateway-review/func.ss" "library/drivers/rust-resources/methods.ss"
+              "library/drivers/rust-resources/oracle.ss" "library/concurrency/resource-control/backpressure-memory/model.qnt"
               "library/concurrency/resource-control/backpressure-memory/budget.lean")))
           ("rejections" '("changed-artifact" "plain-JSON-is-not-an-issuer"))
           ("methodEvidence" "real-Core-Ops-QNT-TLC-Lean-native-ASCENT")

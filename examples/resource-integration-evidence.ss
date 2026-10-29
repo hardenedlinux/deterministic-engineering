@@ -14,7 +14,7 @@
   (def scene (.get (.get deterministic-engineering.init.exports Scenarios) resource-lifecycle scope))
   (def methods (.ref scene 'methods))
   (def entry (.ref scene 'integration-entry))
-  (def crate (path-expand "languages-engineering/rust/concurrency/resource-control/backpressure-memory/native" root))
+  (def crate (path-expand "languages-engineering/rust/concurrency/resource-control/backpressure-memory" root))
   (def context ((.ref methods 'native-context) root entry LifecycleProfile crate cargo rustc 'integration))
   (def extra ((.ref methods 'integration-scopes) context sysml quint))
   (def scopes (append (.ref context 'scopes) extra))

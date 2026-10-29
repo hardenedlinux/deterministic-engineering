@@ -3,7 +3,7 @@
 (import
   :clan/poo/object
   :std/encoding/json
-  "./oracle.ss")
+  "oracle.ss")
 (export
   resource-trace-projections
   resource-trace-qnt

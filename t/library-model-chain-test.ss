@@ -1,8 +1,8 @@
 (import :std/test :clan/poo/object
         (only-in :clan/poo/mop validate)
         "../library/concurrency/resource-control/backpressure-memory/abstract/objects.ss"
-        "../languages-engineering/rust/concurrency/resource-control/backpressure-memory/objects.ss"
-        "../languages-engineering/rust/concurrency/resource-control/backpressure-memory/types.ss"
+        "../library/drivers/rust-resources/objects.ss"
+        "../library/drivers/rust-resources/types.ss"
         "../profiles/resource-lifecycle.ss")
 (export library-model-chain-test)
 (def (checked-rust)

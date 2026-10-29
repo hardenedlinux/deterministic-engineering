@@ -6,7 +6,7 @@
   (only-in :yuanxu/object-types/contracts YuanxuContract. yuanxu-predicate-type)
   "../../types.ss"
   (only-in
-   "../../languages-engineering/rust/concurrency/resource-control/backpressure-memory/types.ss"
+   "../../library/drivers/rust-resources/types.ss"
    RustResourcesScopeContract)
   (only-in :yuanxu/object-types/contracts yuanxu-predicate-contract)
   "../../library/project-organization/types.ss"

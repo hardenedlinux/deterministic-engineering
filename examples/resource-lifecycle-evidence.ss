@@ -19,7 +19,7 @@
   (def digest (.ref m 'file-digest)) (def value-digest (.ref m 'value-digest))
   (def save (.ref m 'write-json)) (def record (.ref m 'record))
   (def rules (path-expand "library/drivers/evidence/func.ss" root))
-  (def crate (path-expand "languages-engineering/rust/concurrency/resource-control/backpressure-memory/native" root))
+  (def crate (path-expand "languages-engineering/rust/concurrency/resource-control/backpressure-memory" root))
   (def records '()) (def queries '()) (def exchanges '())
   (def session #f) (def trajectory #f) (def usage #f) (def scopes #f)
   (def (add xs) (set! records (append records xs)))
@@ -122,9 +122,9 @@
         "library/concurrency/resource-control/backpressure-memory/abstract/types.ss"
         "library/concurrency/resource-control/backpressure-memory/abstract/interface.ss"
         "library/concurrency/resource-control/backpressure-memory/abstract/config.ss"
-        "languages-engineering/rust/concurrency/resource-control/backpressure-memory/interface.ss" "languages-engineering/rust/concurrency/resource-control/backpressure-memory/types.ss" "languages-engineering/rust/concurrency/resource-control/backpressure-memory/config.ss"
-        "languages-engineering/rust/concurrency/resource-control/backpressure-memory/objects.ss" "languages-engineering/rust/concurrency/resource-control/backpressure-memory/func.ss"
-        "languages-engineering/rust/concurrency/resource-control/backpressure-memory/methods.ss" "languages-engineering/rust/concurrency/resource-control/backpressure-memory/oracle.ss"
+        "library/drivers/rust-resources/interface.ss" "library/drivers/rust-resources/types.ss" "library/drivers/rust-resources/config.ss"
+        "library/drivers/rust-resources/objects.ss" "library/drivers/rust-resources/func.ss"
+        "library/drivers/rust-resources/methods.ss" "library/drivers/rust-resources/oracle.ss"
         "library/drivers/evidence/func.ss" "library/drivers/evidence/interface.ss"
         "library/drivers/evidence/types.ss" "library/drivers/evidence/config.ss" "library/drivers/evidence/objects.ss"
         "scenarios/resource-lifecycle/func.ss" "scenarios/resource-lifecycle/interface.ss"

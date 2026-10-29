@@ -127,7 +127,7 @@
       "deterministic-engineering/scenarios/resource-lifecycle/review/interface"
       "deterministic-engineering/scenarios/resource-lifecycle/review/archive"
       "deterministic-engineering/init"
-      "deterministic-engineering/languages-engineering/rust/concurrency/resource-control/backpressure-memory/interface"
+      "deterministic-engineering/library/drivers/rust-resources/interface"
       "deterministic-engineering/library/drivers/evidence/interface"
       "deterministic-engineering/scenarios/gateway-review/interface"
       "deterministic-engineering/profiles/gateway"))
