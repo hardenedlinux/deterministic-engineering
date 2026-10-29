@@ -5,11 +5,13 @@
 * Admission boundary
 :PROPERTIES:
 :CUSTOM_ID: cold126-scope
-:STATUS: open
+:STATUS: superseded-resource-policy
 :END:
 
 This continues [[file:10.125-native-ascent-compiler-product-admission.org][10.125]] on the existing [[https://github.com/hardenedlinux/deterministic-engineering/pull/1][engineering PR #1]] and
-[[https://github.com/tao3k/lambda-aitia/pull/2][Aitia PR #2]]. Cold dependency acceptance remains *open*.
+[[https://github.com/tao3k/lambda-aitia/pull/2][Aitia PR #2]]. The historical probes below did not admit cold POO builds.
+[[file:10.127-machine-derived-native-build-concurrency.org][10.127]] now records successful cold POO builds under the confirmed
+per-process heap policy. The complete Aitia cold dependency closure remains open.
 The successful restored-input Linux run is not a cold throughput receipt.
 No production compiler policy is changed by the diagnostic experiments below.
 
@@ -17,7 +19,9 @@ No production compiler policy is changed by the diagnostic experiments below.
 [[file:../../90-99-views/90-architecture-views/90.115-cold-native-dependency-budget.svg]]
 [[file:../../90-99-views/90-architecture-views/90.115-cold-native-dependency-budget.d2][Editable D2 source]].
 
-The hard limit is 2,147,483,648 bytes and 180 seconds per guarded invocation.
+These historical experiments incorrectly imposed 2,147,483,648 bytes on the
+entire process tree, with 180 seconds per guarded invocation. The confirmed
+limit is 2 GiB heap per Gerbil/Gambit process; see 10.127.
 A complete workflow must also report end-to-end elapsed time. Splitting work
 into invocations does not demonstrate an end-to-end 180-second result.
 No dependency, assertion, optimization level or native manifest contract was
