@@ -2,7 +2,7 @@
 (import
   :clan/poo/object
   (only-in :clan/poo/mop Type Type. define-type element? raise-type-error)
-  (only-in :clan/poo/type Symbol String List Record)
+  (only-in :clan/poo/type Symbol String List Record Pair Exactly)
   (only-in :clan/poo/recursive-validation close-validation closed? closed-ref)
   (only-in :clan/poo/object-contract ObjectContract. refine)
   (only-in :yuanxu/object-types/contracts YuanxuContract. yuanxu-predicate-type))
@@ -22,18 +22,24 @@
   LibraryNonemptyString
   LibrarySymbolPair
   LibrarySymbolTriple
+  LibraryScopeBinding
   library-definition-contract
   LibraryScopeType.)
 (define-type
   (LibraryNonemptyString @ Type.)
   .element?:
   (lambda (value) (and (string? value) (> (string-length value) 0))))
-(def (symbols-of-length count)
-  (yuanxu-predicate-type
-   'library/symbol-row
-   (lambda (value) (and (list? value) (= (length value) count) (andmap symbol? value)))))
-(def LibrarySymbolPair (symbols-of-length 2))
-(def LibrarySymbolTriple (symbols-of-length 3))
+(define-type LibrarySymbolPair
+  (Pair Symbol (Pair Symbol (Exactly '()))))
+
+(define-type LibrarySymbolTriple
+  (Pair Symbol LibrarySymbolPair))
+
+;; Shared wire binding: selected usage, scope kind and nonempty basis reference.
+;; This shape does not establish digest validity, currentness or authority.
+(define-type LibraryScopeBinding
+  (Pair Symbol (Pair Symbol (Pair LibraryNonemptyString (Exactly '())))))
+
 (def (finite-type identity-values choices)
   (yuanxu-predicate-type identity-values (lambda (value) (and (memq value choices) #t))))
 (def LibraryDefinitionRole
@@ -151,7 +157,9 @@
               (eq? (.ref value 'contract) expected)
               (eq? (.ref value 'declaration-contract) declaration-value))
              '()
-             (list (.o kind: 'library/association-mismatch path: location)))))))
+             (list (.o
+                     kind: 'library/association-mismatch
+                     path: location)))))))
 
 ;; Inert expectations are definitions, not execution receipts or issuer callbacks.
 (def LibraryOptionalReference

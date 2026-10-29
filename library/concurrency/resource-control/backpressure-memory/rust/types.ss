@@ -405,17 +405,6 @@
 (def ResourceNativeProfileContract
   (.cc YuanxuContract. 'identity 'rust-resources/native-profile
        'value-contract (bounded-profile-shape native-profile?)))
-(def ContextScopeRow
-  (yuanxu-predicate-type
-   'rust-resources/context-scope-row
-   (lambda (row)
-     (and
-      (list? row)
-      (= (length row) 3)
-      (symbol? (car row))
-      (symbol? (cadr row))
-      (string? (caddr row))
-      (> (string-length (caddr row)) 0)))))
 (def ResourceNativeContextContract
   (.cc YuanxuContract. 'identity 'rust-resources/native-context
        'value-contract
@@ -433,7 +422,7 @@
                       (lambda (value) (and (memq value '(normal early-release)) #t)))
                usage: Symbol
                snapshot: LibraryNonemptyString
-               scopes: (List ContextScopeRow)))
+               scopes: (List LibraryScopeBinding)))
         (lambda (value location)
           (if (native-context? value)
               '()
