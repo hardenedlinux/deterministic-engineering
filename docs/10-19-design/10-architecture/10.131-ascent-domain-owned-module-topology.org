@@ -122,6 +122,40 @@ native scope cohort. A new layout cannot bypass the existing snapshot/query/
 certificate lifecycle or equate privately interpreted values with unrelated
 globally compiled record identities.
 
+* Human-readable source is part of reviewability
+:PROPERTIES:
+:CUSTOM_ID: ascent131-readable-source
+:END:
+
+Module boundaries must remain visible in the source itself. A reviewer must be
+able to distinguish inherited fields, published operations, state changes and
+authorization checks without mentally expanding a compressed declaration.
+
+| Surface | Layout rule | Preserved boundary |
+|---------+-------------+--------------------|
+| =import= and =export= | One imported owner or exported name per line | Public dependency and capability ownership |
+| =.def=, =.cc= and =.o= | One named field per line; nested objects retain their indentation | Parent specialization and delayed field expressions |
+| Review and recovery functions | Separate compound branches and operation arguments when the expression is long | Effect order, pending results and refusal paths |
+| Tests | Keep the case title and an indented body together | Every original assertion remains individually reviewable |
+| Long literal values | Preserve their bytes; wrap the surrounding expression | Source references, messages and evidence identity |
+
+Formatting acceptance compares the complete forms read by the Gerbil reader
+before and after the edit, per file. This checks syntax and expression equality;
+it does not substitute for native compilation, actual ASCENT queries, process
+recovery or remote CI. Comments remain in place and formatting changes must be
+reviewable separately from semantic migration.
+
+Reader equality is not source identity. Formatting changes source bytes and
+therefore changes a digest that covers those bytes. Historical evidence retains
+its original cut; current-use receipts require the existing applicability and
+revalidation rules. Semantic evidence can be reused only through its declared
+dependency boundary, never merely because the reader forms compare equal.
+
+The engineering Library, Module, Profile and Scenario formatting batch contains
+55 files. All 55 original contents matched the existing PR baseline before the
+format-only changes were transferred. No dependency revision, authorization
+condition or assertion was changed in that batch.
+
 * Finite acceptance rules
 :PROPERTIES:
 :CUSTOM_ID: ascent131-acceptance

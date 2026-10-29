@@ -1,10 +1,20 @@
 ;;; -*- Gerbil -*-
 ;;; Root-selected closed history is data. Existing Aitia/Core issue new authority.
-(import :clan/poo/object :std/encoding/json :std/list/list
-        (only-in :std/hash/misc hash-remove!)
-        (only-in :std/crypto/digest sha256) (only-in :std/crypto/random random-bytes) (only-in :std/encoding/hex hex-encode)
-        "./func.ss" "./cross-intake.ss")
-(export open-archived-review-source review-recovery-activation? recovery-reader-identity review-repair-prefix!)
+(import
+  :clan/poo/object
+  :std/encoding/json
+  :std/list/list
+  (only-in :std/hash/misc hash-remove!)
+  (only-in :std/crypto/digest sha256)
+  (only-in :std/crypto/random random-bytes)
+  (only-in :std/encoding/hex hex-encode)
+  "./func.ss"
+  "./cross-intake.ss")
+(export
+  open-archived-review-source
+  review-recovery-activation?
+  recovery-reader-identity
+  review-repair-prefix!)
 ;; Freshness bookkeeping only; never history, approval or persisted authority.
 (def fresh-readers (make-hash-table))
 (def (recovery-reader-identity)
@@ -12,19 +22,28 @@
   (hash-put! fresh-readers (string-copy reader) #t)
   (string-copy reader))
 (def (load path) (call-with-input-file path (cut read-json <> object-as-hash: #t)))
-(def (clone value) (call-with-input-string (json->string value) (cut read-json <> object-as-hash: #t)))
+(def (clone value)
+  (call-with-input-string (json->string value) (cut read-json <> object-as-hash: #t)))
 (def (digest value) (hex-encode (sha256 (string->utf8 value))))
 (def (review-recovery-activation? selected root-public tools checkpoint)
-  (with-catch (lambda (_) #f) (lambda ()
-    (def path (.ref selected 'path)) (def expected (.ref selected 'digest))
-    (and (equal? (review-file-digest path) expected)
+  (with-catch
+   (lambda (_) #f)
+   (lambda ()
+     (def path (.ref selected 'path))
+     (def expected (.ref selected 'digest))
+     (and
+      (equal? (review-file-digest path) expected)
       ((.ref tools 'verify) root-public path (.ref selected 'signature))
       (let (head (load path))
-        (and (equal? (hash-ref head "schema") "aitia.recovery-head/v1")
-          (member (hash-ref head "state") '("sealed" "checkpoint")) (eq? (hash-ref head "reader") #f)
-          (equal? (map (lambda (key) (hash-ref head key)) '("archive" "archiveSha256" "owner" "cut")) checkpoint)
-          (equal? (review-file-digest (car checkpoint)) (cadr checkpoint))
-          (equal? (review-file-digest path) expected)))))))
+        (and
+         (equal? (hash-ref head "schema") "aitia.recovery-head/v1")
+         (member (hash-ref head "state") '("sealed" "checkpoint"))
+         (eq? (hash-ref head "reader") #f)
+         (equal?
+          (map (lambda (key) (hash-ref head key)) '("archive" "archiveSha256" "owner" "cut"))
+          checkpoint)
+         (equal? (review-file-digest (car checkpoint)) (cadr checkpoint))
+         (equal? (review-file-digest path) expected)))))))
 ;; Shared archive contract for activated recovery and explicit repair.
 (def (read-review-archive archive-path owner archived-cut reject!)
   (def value (with-catch (lambda (_) (reject!)) (lambda () (load archive-path))))
@@ -35,138 +54,214 @@
   (def old-packet (hash-ref value "technicalPacket"))
   (def old-body (call-with-input-string old-packet (cut read-json <> object-as-hash: #t)))
   (def native-data (call-with-input-string native read))
-  (unless (and (or (and (equal? (hash-ref value "schema") "aitia.review-archive/v1")
-                          (eq? (hash-ref value "sealed") #t))
-                   (and (equal? (hash-ref value "schema") "aitia.review-archive/v2")
-                        (eq? (hash-ref value "sealed") #f)
-                        (equal? (hash-ref value "closure") "accepted-prefix")
-                        (string? (hash-ref value "previousHead"))
-                        (= (hash-ref value "acceptedCount") (length records))))
-        (equal? (hash-ref value "owner") owner) (equal? (hash-ref value "cut") archived-cut)
-        (list? records) (list? submissions) (list? origins)
-        (= (length records) (length submissions) (length origins))
-        (equal? (map car records) (map car origins))
-        (= (length records) (length (delete-duplicates/hash (map car records))))
-        (list? native-data) (= (length native-data) 5)
-        (equal? native (review-history-wire owner (digest old-packet) (list-ref native-data 3) records))
-        (equal? archived-cut (digest native))) (reject!))
-  (for-each (lambda (record submission origin-row)
-    (def origin (cadr origin-row))
-    (def signed (cadr record))
-    (unless (and (list? origin) (= (length origin) 5) (every string? origin)
-      (equal? (car origin) (cadar (hash-ref value "rootReferences")))
-      (equal? (cddr origin) (map (lambda (key) (hash-ref old-body key)) '("subject" "revision" "scope")))) (reject!))
-    (unless (equal? (hash-ref signed "target")
-      (digest (json->string (append (list "review-family/v1" (car origin) (cadr origin) (hash-ref signed "policy")) (cddr origin))))) (reject!))
-    (unless (and (list? submission) (= (length submission) 4)
-                 (equal? (map car (caddr record)) (filter identity submission))
-                 (equal? (car record) (cadar (caddr record)))) (reject!))) records submissions origins)
-  (def references (append (hash-ref value "rootReferences")
-    (append-map caddr records) (cadr (list-ref native-data 3))))
-  (list (clone value) old-body references
-    (json->string (review-mechanical-basis old-packet))))
+  (unless (and
+           (or
+            (and
+             (equal? (hash-ref value "schema") "aitia.review-archive/v1")
+             (eq? (hash-ref value "sealed") #t))
+            (and
+             (equal? (hash-ref value "schema") "aitia.review-archive/v2")
+             (eq? (hash-ref value "sealed") #f)
+             (equal? (hash-ref value "closure") "accepted-prefix")
+             (string? (hash-ref value "previousHead"))
+             (= (hash-ref value "acceptedCount") (length records))))
+           (equal? (hash-ref value "owner") owner)
+           (equal? (hash-ref value "cut") archived-cut)
+           (list? records)
+           (list? submissions)
+           (list? origins)
+           (= (length records) (length submissions) (length origins))
+           (equal? (map car records) (map car origins))
+           (= (length records) (length (delete-duplicates/hash (map car records))))
+           (list? native-data)
+           (= (length native-data) 5)
+           (equal? native (review-history-wire owner (digest old-packet) (list-ref native-data 3) records))
+           (equal? archived-cut (digest native)))
+    (reject!))
+  (for-each
+   (lambda (record submission origin-row)
+     (def origin (cadr origin-row))
+     (def signed (cadr record))
+     (unless (and
+              (list? origin)
+              (= (length origin) 5)
+              (every string? origin)
+              (equal? (car origin) (cadar (hash-ref value "rootReferences")))
+              (equal? (cddr origin) (map (lambda (key) (hash-ref old-body key)) '("subject" "revision" "scope"))))
+       (reject!))
+     (unless (equal?
+              (hash-ref signed "target")
+              (digest
+               (json->string
+                (append
+                 (list "review-family/v1" (car origin) (cadr origin) (hash-ref signed "policy"))
+                 (cddr origin)))))
+       (reject!))
+     (unless (and
+              (list? submission)
+              (= (length submission) 4)
+              (equal? (map car (caddr record)) (filter identity submission))
+              (equal? (car record) (cadar (caddr record))))
+       (reject!)))
+   records
+   submissions
+   origins)
+  (def references
+    (append
+     (hash-ref value "rootReferences")
+     (append-map caddr records)
+     (cadr (list-ref native-data 3))))
+  (list
+   (clone value)
+   old-body
+   references
+   (json->string (review-mechanical-basis old-packet))))
 
 ;; Explicit storage repair only. Native handover rechecks original decisions;
 ;; neither this function nor its result can issue a review receipt.
 ;; host is a trusted serial publisher with selected and publish-repair! methods.
 (def (review-repair-prefix! host tools root-public authorization signature)
   (def status 'repair-refused)
-  (with-catch (lambda (_) status) (lambda ()
-    (def (refuse!) (set! status 'repair-refused) (error "repair binding refused"))
-    (def references '())
-    (def (require-file! path expected)
-      (unless (file-exists? path) (set! status 'repair-pending) (error "repair input unavailable"))
-      (unless (equal? (review-file-digest path) expected) (refuse!))
-      (set! references (cons (list path expected) references)))
-    (def (signed-head reference)
-      (unless (and (list? reference) (= (length reference) 3) (every string? reference)) (refuse!))
-      (require-file! (car reference) (cadr reference))
-      (unless (file-exists? (caddr reference)) (set! status 'repair-pending) (error "signature unavailable"))
-      (require-file! (caddr reference) (review-file-digest (caddr reference)))
-      (unless ((.ref tools 'verify) root-public (car reference) (caddr reference)) (refuse!))
-      (def head (load (car reference)))
-      (unless (equal? (hash-ref head "schema") "aitia.recovery-head/v1") (refuse!))
-      head)
-    (def (selection) (def ref ((.ref host 'selected)))
-      (list (.ref ref 'path) (.ref ref 'digest) (.ref ref 'signature)))
-    (unless (and (file-exists? authorization) (file-exists? signature))
-      (set! status 'repair-pending) (error "repair authorization unavailable"))
-    (require-file! root-public (review-file-digest root-public))
-    (require-file! authorization (review-file-digest authorization))
-    (require-file! signature (review-file-digest signature))
-    ((.ref tools 'current!))
-    (unless ((.ref tools 'verify) root-public authorization signature) (refuse!))
-    (def grant (load authorization))
-    (unless (and (= (hash-length grant) 7) (equal? (hash-ref grant "schema") "aitia.prefix-repair/v1")
-                 (equal? (hash-ref grant "action") "complete-exact-prefix")) (refuse!))
-    (def writing-ref (hash-ref grant "writing"))
-    (def prior-ref (hash-ref grant "prior"))
-    (def writing (signed-head writing-ref))
-    (def prior (signed-head prior-ref))
-    (def candidate (hash-ref grant "candidate"))
-    (def output (hash-ref grant "outputArchive"))
-    (def output-head (hash-ref grant "outputHead"))
-    (unless (and (every string? (list candidate output output-head))
-      (not (member output (list candidate (hash-ref writing "archive"))))
-      (not (member output-head (map car references)))
-      (not (equal? output output-head))
-      (equal? (hash-ref writing "state") "writing")
-      (equal? (hash-ref prior "state") "active")
-      (equal? (hash-ref prior "reader") (hash-ref writing "owner"))) (refuse!))
-    ;; A known later selection refuses replay even if candidate bytes are gone.
-    (unless (or (equal? (selection) writing-ref) (equal? (car (selection)) output-head)) (refuse!))
-    (require-file! candidate (hash-ref writing "archiveSha256"))
-    (require-file! (hash-ref prior "archive") (hash-ref prior "archiveSha256"))
-    (def complete (read-review-archive candidate (hash-ref writing "owner") (hash-ref writing "cut") refuse!))
-    (def previous (read-review-archive (hash-ref prior "archive") (hash-ref prior "owner") (hash-ref prior "cut") refuse!))
-    (def value (car complete)) (def older (car previous))
-    (unless (and (equal? (hash-ref value "schema") "aitia.review-archive/v2")
-      (equal? (hash-ref value "previousHead") (cadr prior-ref))
-      (equal? (hash-ref value "rootReferences") (hash-ref older "rootReferences"))
-      ;; Different reader trajectories may have different native packet bytes.
-      ;; Original record origins remain exact; this repair changes no project.
-      (equal? (map (lambda (key) (hash-ref (cadr complete) key)) '("subject" "revision" "scope"))
-              (map (lambda (key) (hash-ref (cadr previous) key)) '("subject" "revision" "scope")))
-      (every (lambda (key) (def old (hash-ref older key)) (def new (hash-ref value key))
-        (and (<= (length old) (length new)) (review-json-equal? old (take new (length old)))))
-        '("records" "submissions" "origins"))) (refuse!))
-    (for-each (lambda (pair) (require-file! (car pair) (cadr pair)))
+  (with-catch
+   (lambda (_) status)
+   (lambda ()
+     (def (refuse!) (set! status 'repair-refused) (error "repair binding refused"))
+     (def references '())
+     (def (require-file! path expected)
+       (unless (file-exists? path) (set! status 'repair-pending) (error "repair input unavailable"))
+       (unless (equal? (review-file-digest path) expected) (refuse!))
+       (set! references (cons (list path expected) references)))
+     (def (signed-head reference)
+       (unless (and (list? reference) (= (length reference) 3) (every string? reference)) (refuse!))
+       (require-file! (car reference) (cadr reference))
+       (unless (file-exists? (caddr reference))
+         (set! status 'repair-pending)
+         (error "signature unavailable"))
+       (require-file! (caddr reference) (review-file-digest (caddr reference)))
+       (unless ((.ref tools 'verify) root-public (car reference) (caddr reference)) (refuse!))
+       (def head (load (car reference)))
+       (unless (equal? (hash-ref head "schema") "aitia.recovery-head/v1") (refuse!))
+       head)
+     (def (selection)
+       (def ref ((.ref host 'selected)))
+       (list (.ref ref 'path) (.ref ref 'digest) (.ref ref 'signature)))
+     (unless (and (file-exists? authorization) (file-exists? signature))
+       (set! status 'repair-pending)
+       (error "repair authorization unavailable"))
+     (require-file! root-public (review-file-digest root-public))
+     (require-file! authorization (review-file-digest authorization))
+     (require-file! signature (review-file-digest signature))
+     ((.ref tools 'current!))
+     (unless ((.ref tools 'verify) root-public authorization signature) (refuse!))
+     (def grant (load authorization))
+     (unless (and
+              (= (hash-length grant) 7)
+              (equal? (hash-ref grant "schema") "aitia.prefix-repair/v1")
+              (equal? (hash-ref grant "action") "complete-exact-prefix"))
+       (refuse!))
+     (def writing-ref (hash-ref grant "writing"))
+     (def prior-ref (hash-ref grant "prior"))
+     (def writing (signed-head writing-ref))
+     (def prior (signed-head prior-ref))
+     (def candidate (hash-ref grant "candidate"))
+     (def output (hash-ref grant "outputArchive"))
+     (def output-head (hash-ref grant "outputHead"))
+     (unless (and
+              (every string? (list candidate output output-head))
+              (not (member output (list candidate (hash-ref writing "archive"))))
+              (not (member output-head (map car references)))
+              (not (equal? output output-head))
+              (equal? (hash-ref writing "state") "writing")
+              (equal? (hash-ref prior "state") "active")
+              (equal? (hash-ref prior "reader") (hash-ref writing "owner")))
+       (refuse!))
+     ;; A known later selection refuses replay even if candidate bytes are gone.
+     (unless (or (equal? (selection) writing-ref) (equal? (car (selection)) output-head)) (refuse!))
+     (require-file! candidate (hash-ref writing "archiveSha256"))
+     (require-file! (hash-ref prior "archive") (hash-ref prior "archiveSha256"))
+     (def complete
+       (read-review-archive candidate (hash-ref writing "owner") (hash-ref writing "cut") refuse!))
+     (def previous
+       (read-review-archive
+        (hash-ref prior "archive")
+        (hash-ref prior "owner")
+        (hash-ref prior "cut")
+        refuse!))
+     (def value (car complete))
+     (def older (car previous))
+     (unless (and
+              (equal? (hash-ref value "schema") "aitia.review-archive/v2")
+              (equal? (hash-ref value "previousHead") (cadr prior-ref))
+              (equal? (hash-ref value "rootReferences") (hash-ref older "rootReferences"))
+              ;; Different reader trajectories may have different native packet bytes.
+              ;; Original record origins remain exact; this repair changes no project.
+              (equal?
+               (map (lambda (key) (hash-ref (cadr complete) key)) '("subject" "revision" "scope"))
+               (map (lambda (key) (hash-ref (cadr previous) key)) '("subject" "revision" "scope")))
+              (every
+               (lambda (key)
+                 (def old (hash-ref older key))
+                 (def new (hash-ref value key))
+                 (and (<= (length old) (length new)) (review-json-equal? old (take new (length old)))))
+               '("records" "submissions" "origins")))
+       (refuse!))
+     (for-each
+      (lambda (pair) (require-file! (car pair) (cadr pair)))
       (append (caddr complete) (caddr previous) (hash-ref prior "repairReferences" '())))
-    (def closure (delete-duplicates/hash (reverse references)))
-    (def head (hash ("schema" "aitia.recovery-head/v1") ("state" "checkpoint") ("reader" #f)
-      ("owner" (hash-ref writing "owner")) ("cut" (hash-ref writing "cut"))
-      ("archive" output) ("archiveSha256" (hash-ref writing "archiveSha256"))
-      ("previousHead" (cadr prior-ref)) ("acceptedCount" (length (hash-ref value "records")))
-      ("repairAuthorization" (review-file-digest authorization)) ("repairReferences" closure)))
-    (def (closure-current!)
-      ((.ref tools 'current!))
-      (for-each (lambda (pair) (require-file! (car pair) (cadr pair))) closure))
-    (def (completed-current?)
-      (def current (selection))
-      (and (equal? (car current) output-head)
+     (def closure (delete-duplicates/hash (reverse references)))
+     (def head
+       (hash
+        ("schema" "aitia.recovery-head/v1")
+        ("state" "checkpoint")
+        ("reader" #f)
+        ("owner" (hash-ref writing "owner"))
+        ("cut" (hash-ref writing "cut"))
+        ("archive" output)
+        ("archiveSha256" (hash-ref writing "archiveSha256"))
+        ("previousHead" (cadr prior-ref))
+        ("acceptedCount" (length (hash-ref value "records")))
+        ("repairAuthorization" (review-file-digest authorization))
+        ("repairReferences" closure)))
+     (def (closure-current!)
+       ((.ref tools 'current!))
+       (for-each (lambda (pair) (require-file! (car pair) (cadr pair))) closure))
+     (def (completed-current?)
+       (def current (selection))
+       (and
+        (equal? (car current) output-head)
         (review-json-equal? (signed-head current) head)
         (equal? (review-file-digest output) (hash-ref head "archiveSha256"))))
-    (closure-current!)
-    (if (equal? (selection) writing-ref)
-      (let ()
-        ;; Never overwrite the interrupted bytes or any existing output.
-        (when (or (file-exists? output) (file-exists? (string-append output ".pending"))
-                  (file-exists? output-head) (file-exists? (string-append output-head ".sig"))) (refuse!))
-        (call-with-output-file (string-append output ".pending") (lambda (port)
-          (call-with-input-file candidate (lambda (input) (let loop () (def c (read-char input)) (unless (eof-object? c) (write-char c port) (loop)))))))
-        (unless (equal? (review-file-digest (string-append output ".pending")) (hash-ref head "archiveSha256")) (refuse!))
-        (rename-file (string-append output ".pending") output)
-        (closure-current!)
-        (unless (equal? (selection) writing-ref) (refuse!))
-        ((.ref host 'publish-repair!) (json->string head) output-head (cadr writing-ref))
-        (unless (completed-current?) (refuse!))
-        (closure-current!)
-        'repair-completed)
-      (begin
-        ;; An activated reader or later prefix can never be replaced by retry.
-        (unless (completed-current?) (refuse!))
-        (closure-current!)
-        'repair-reused)))))
+     (closure-current!)
+     (if (equal? (selection) writing-ref)
+         (let ()
+           ;; Never overwrite the interrupted bytes or any existing output.
+           (when (or
+                  (file-exists? output)
+                  (file-exists? (string-append output ".pending"))
+                  (file-exists? output-head)
+                  (file-exists? (string-append output-head ".sig")))
+             (refuse!))
+           (call-with-output-file
+               (string-append output ".pending")
+             (lambda (port)
+               (call-with-input-file
+                   candidate
+                 (lambda (input)
+                   (let loop () (def c (read-char input)) (unless (eof-object? c) (write-char c port) (loop)))))))
+           (unless (equal? (review-file-digest (string-append output ".pending")) (hash-ref head "archiveSha256"))
+             (refuse!))
+           (rename-file (string-append output ".pending") output)
+           (closure-current!)
+           (unless (equal? (selection) writing-ref) (refuse!))
+           ((.ref host 'publish-repair!) (json->string head) output-head (cadr writing-ref))
+           (unless (completed-current?) (refuse!))
+           (closure-current!)
+           'repair-completed)
+         (begin
+           ;; An activated reader or later prefix can never be replaced by retry.
+           (unless (completed-current?) (refuse!))
+           (closure-current!)
+           'repair-reused)))))
 
 ;; mandate is a trusted host capability, not a deserialized archive declaration.
 ;; head returns a host-selected immutable path/digest/signature reference.
@@ -174,11 +269,13 @@
   (def owner (string-copy (.ref mandate 'owner)))
   (def archived-cut (string-copy (.ref mandate 'cut)))
   (def reader (string-copy (.ref mandate 'reader)))
-  (unless (hash-get fresh-readers reader) (error "recovery reader must be freshly issued and unclaimed in this process"))
+  (unless (hash-get fresh-readers reader)
+    (error "recovery reader must be freshly issued and unclaimed in this process"))
   (hash-remove! fresh-readers reader)
   (def bound-owner? #f)
   (def (claim-archive-owner! id)
-    (unless (and (not bound-owner?) (equal? id reader)) (error "recovery source already bound or wrong owner"))
+    (unless (and (not bound-owner?) (equal? id reader))
+      (error "recovery source already bound or wrong owner"))
     (set! bound-owner? #t))
   (def archive-path (string-copy (.ref mandate 'archive)))
   (def root-public (string-copy (.ref mandate 'root-public)))
@@ -189,59 +286,107 @@
   ;; read obtains its local result from the verification branch itself, rather
   ;; than observing a separately initialized mutable result later in the thunk.
   (def admitted-state #f)
-  (def (reject!) (set! archive-state 'archive-refused) (error "archive reference or contract mismatch"))
+  (def (reject!)
+    (set! archive-state 'archive-refused)
+    (error "archive reference or contract mismatch"))
   (def (check! path expected)
-    (unless (file-exists? path) (set! archive-state 'history-discovery-required) (error "archive dependency unavailable"))
+    (unless (file-exists? path)
+      (set! archive-state 'history-discovery-required)
+      (error "archive dependency unavailable"))
     (unless (equal? (review-file-digest path) expected) (reject!)))
   (def (read-data path)
     (with-catch (lambda (_) (reject!)) (lambda () (load path))))
   (def (capture-archive)
     (set! archive-state 'history-discovery-required)
-    (with-catch (lambda (_) #f) (lambda ()
-      (def head-reference (read-head))
-      (def head-path (string-copy (.ref head-reference 'path)))
-      (def head-sha (string-copy (.ref head-reference 'digest)))
-      (def signature (string-copy (.ref head-reference 'signature)))
-      (check! head-path head-sha) (check! root-public root-sha)
-      ((.ref tools 'current!))
-      (def head (read-data head-path))
-      (unless (and (equal? (hash-ref head "schema") "aitia.recovery-head/v1")
-                   (equal? (hash-ref head "owner") owner) (equal? (hash-ref head "cut") archived-cut)
-                   (equal? (hash-ref head "archive") archive-path)) (reject!))
-      ;; A sealed checkpoint may be selected, but only current activation can import it.
-      (unless (and (equal? (hash-ref head "state") "active")
-                   (equal? (hash-ref head "reader") reader)) (error "history has no current reader activation"))
-      (def archive-sha (hash-ref head "archiveSha256"))
-      (check! archive-path archive-sha)
-      (def signature-sha (review-file-digest signature))
-      (def key (list head-path head-sha signature signature-sha archive-path archive-sha root-sha))
-      (def cached admitted-state)
-      (def admitted
-        (if (and cached (equal? key (car cached)))
-          (cdr cached)
-          (begin
-            (unless ((.ref tools 'verify) root-public head-path signature) (reject!))
-            (let (parsed (read-review-archive archive-path owner archived-cut reject!))
-              (set! admitted-state (cons key parsed))
-              parsed))))
-      ;; Reuse the verified signature relation only while its entire byte closure is current.
-      (for-each (lambda (pair) (check! (car pair) (cadr pair))) (append (caddr admitted) (hash-ref head "repairReferences" '())))
-      (check! head-path head-sha) (check! signature signature-sha) (check! archive-path archive-sha)
-      (def value (car admitted))
-      (def wire (call-with-output-string (lambda (port)
-        (write (list 'aitia-archive-source/v1 owner archived-cut archive-path archive-sha head-path head-sha signature signature-sha reader) port))))
-      (set! archive-state 'archive-available)
-      (let ((selected-owner (string-copy owner)) (selected-cut (digest wire)) (selected-native wire)
-            (selected-records (clone (hash-ref value "records")))
-            (selected-submissions (clone (hash-ref value "submissions")))
-            (selected-origins (clone (hash-ref value "origins")))
-            (selected-basis (string-copy (list-ref admitted 3)))
-            (selected-roots (clone (hash-ref value "rootReferences")))
-            (selected-storage (delete-duplicates/hash (append (clone (caddr admitted))
-              (clone (hash-ref head "repairReferences" '()))
-              (list (list head-path head-sha) (list signature signature-sha) (list archive-path archive-sha))))))
-        (.o owner: selected-owner cut: selected-cut native: selected-native records: selected-records submissions: selected-submissions origins: selected-origins basis: selected-basis root-references: selected-roots storage-references: selected-storage)))))
+    (with-catch
+     (lambda (_) #f)
+     (lambda ()
+       (def head-reference (read-head))
+       (def head-path (string-copy (.ref head-reference 'path)))
+       (def head-sha (string-copy (.ref head-reference 'digest)))
+       (def signature (string-copy (.ref head-reference 'signature)))
+       (check! head-path head-sha)
+       (check! root-public root-sha)
+       ((.ref tools 'current!))
+       (def head (read-data head-path))
+       (unless (and
+                (equal? (hash-ref head "schema") "aitia.recovery-head/v1")
+                (equal? (hash-ref head "owner") owner)
+                (equal? (hash-ref head "cut") archived-cut)
+                (equal? (hash-ref head "archive") archive-path))
+         (reject!))
+       ;; A sealed checkpoint may be selected, but only current activation can import it.
+       (unless (and
+                (equal? (hash-ref head "state") "active")
+                (equal? (hash-ref head "reader") reader))
+         (error "history has no current reader activation"))
+       (def archive-sha (hash-ref head "archiveSha256"))
+       (check! archive-path archive-sha)
+       (def signature-sha (review-file-digest signature))
+       (def key (list head-path head-sha signature signature-sha archive-path archive-sha root-sha))
+       (def cached admitted-state)
+       (def admitted
+         (if (and cached (equal? key (car cached)))
+             (cdr cached)
+             (begin
+               (unless ((.ref tools 'verify) root-public head-path signature) (reject!))
+               (let (parsed (read-review-archive archive-path owner archived-cut reject!))
+                 (set! admitted-state (cons key parsed))
+                 parsed))))
+       ;; Reuse the verified signature relation only while its entire byte closure is current.
+       (for-each
+        (lambda (pair) (check! (car pair) (cadr pair)))
+        (append (caddr admitted) (hash-ref head "repairReferences" '())))
+       (check! head-path head-sha)
+       (check! signature signature-sha)
+       (check! archive-path archive-sha)
+       (def value (car admitted))
+       (def wire
+         (call-with-output-string
+          (lambda (port)
+            (write
+             (list
+              'aitia-archive-source/v1
+              owner
+              archived-cut
+              archive-path
+              archive-sha
+              head-path
+              head-sha
+              signature
+              signature-sha
+              reader)
+             port))))
+       (set! archive-state 'archive-available)
+       (let ((selected-owner (string-copy owner))
+             (selected-cut (digest wire))
+             (selected-native wire)
+             (selected-records (clone (hash-ref value "records")))
+             (selected-submissions (clone (hash-ref value "submissions")))
+             (selected-origins (clone (hash-ref value "origins")))
+             (selected-basis (string-copy (list-ref admitted 3)))
+             (selected-roots (clone (hash-ref value "rootReferences")))
+             (selected-storage
+              (delete-duplicates/hash
+               (append
+                (clone (caddr admitted))
+                (clone (hash-ref head "repairReferences" '()))
+                (list (list head-path head-sha) (list signature signature-sha) (list archive-path archive-sha))))))
+         (.o
+           owner: selected-owner
+           cut: selected-cut
+           native: selected-native
+           records: selected-records
+           submissions: selected-submissions
+           origins: selected-origins
+           basis: selected-basis
+           root-references: selected-roots
+           storage-references: selected-storage)))))
   (def owner-identity (string-copy owner))
   (def reader-identity (string-copy reader))
-  (.o owner: owner-identity reader: reader-identity handover-capture: capture-archive
-      status: (lambda () archive-state) claim-owner!: claim-archive-owner!))
+  (.o
+    owner: owner-identity
+    reader: reader-identity
+    handover-capture: capture-archive
+    status: (lambda () archive-state)
+    claim-owner!: claim-archive-owner!))

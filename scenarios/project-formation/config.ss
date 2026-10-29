@@ -1,3 +1,5 @@
-(import "objects.ss")
-(export Config)
+(import
+  "objects.ss")
+(export
+  Config)
 (def Config FormationCase)

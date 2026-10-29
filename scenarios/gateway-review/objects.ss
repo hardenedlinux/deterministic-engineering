@@ -1,6 +1,8 @@
 ;;; -*- Gerbil -*-
-(import :clan/poo/object)
-(export GatewayCase)
+(import
+  :clan/poo/object)
+(export
+  GatewayCase)
 (.def GatewayCase
   identity: 'gateway-review
   library-key: 'rust.resources.backpressure-memory
