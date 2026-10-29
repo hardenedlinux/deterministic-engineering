@@ -15,7 +15,7 @@ no replacement branch, package identity or compatibility implementation is added
 | Owner | Declaration or projection | Required relationship |
 |-------+---------------------------+-----------------------|
 | POO | Complete native package build | Selected source must satisfy the consumer cold deadline |
-| Core PR #19 | gerbil.pkg POO pin | Select POO 60faf7d; preserve complete package targets |
+| Core PR #19 | gerbil.pkg POO pin | Select POO 6500bce; preserve complete package targets |
 | Parser PR #13 and ASCENT PR #1 | gerbil.pkg Core pins | Select the same Core as the consuming product |
 | Orgize PR #18 | gerbil.pkg Parser pin | Preserve Parser-to-Core closure |
 | Parent PR #34 | Core gitlink and gerbil.pkg | Select that Core and matching Parser, Orgize and ASCENT |
@@ -363,9 +363,12 @@ invalid-format refusal without truncation, and preservation of caller-owned
 context identity. The unchanged old native module fails the source-retention
 assertion. The candidate passes all these assertions.
 
-One local compiled candidate invocation indexed all 460 POO source files under
+One local compiled candidate invocation at POO 60faf7d indexed all 460 source files under
 2 GiB in 48.82 seconds, ending naturally with WHOLE-POO-TAGS-OK. Its inventory
-contains 421 tagged sources and 39 skipped inputs. An independent comparison
+contains 421 tagged sources and 39 skipped inputs. The skips comprise 38 build
+entry scripts and the SCC test whose imported test module is not published by
+the native package build. This is not qualification of those skipped sources.
+An independent comparison
 uses the unmodified selected tagger source, whose bytes are identical at the
 selected Linux and local Darwin source revisions. It compiles that original
 module separately and generates the same ordered inputs in eight bounded
@@ -391,3 +394,66 @@ contracts before publication and after relocation. Only successful publication
 can supply the immutable archive and digest for Parent's native declaration.
 Then Aitia must rerun the unchanged cold package gate and complete CI. Root's
 accepted dependency cohort remains unchanged while these receipts are absent.
+
+
+* Separate upstream scale and contract gates
+:PROPERTIES:
+:CUSTOM_ID: cohort139-upstream-gates
+:STATUS: open
+:END:
+
+The observed 6f9587f Core PR #19 check set passes native build/bootstrap, modules,
+objects, scenarios, runtime, Linux contracts and the formal model groups.
+[[https://github.com/tao3k/gebril-yuanxu/actions/runs/40938132944][Its native run 40938132944]] still fails the Linux and Darwin scale groups
+at module-declaration-1000-test.ss and module-declaration-10000-test.ss, and
+Darwin contracts at source-admission-gateway-test.ss. These are separate
+180-second failures, not the later SDK tagging failure in the Aitia consumer.
+Build success does not qualify these uncompleted runtime assertions.
+
+The already published Linux scale artifacts locate progress inside the real
+worker's native graph demand. The 1,000-module worker reports live bytes rising
+from 152,948,352 at entry to 600,753,256 at 700 completed declarations. The
+10,000-module worker reports 271,938,496 at entry and 663,360,520 at 600 completed
+declarations before termination. These are observed prefixes, not a measured
+10,000-module completion or a proof of a particular retention root. Existing
+fixtures, graph/currentness assertions, role-effect refusals and module counts
+remain unchanged. The tagger correction cannot be cited as their repair.
+
+Parent PR #34 advanced concurrently with diagnostic artifact retention in
+0ce51b0d. That change was fast-forwarded intact before subsequent dependency
+work. Aitia's next SDK update must select the actual resulting Parent revision;
+it must not overwrite that concurrent owner change or infer native acceptance
+from Parent's passing formal groups.
+
+
+* Refreshed qualified POO source and native producer binding
+:PROPERTIES:
+:CUSTOM_ID: cohort139-poo-refresh
+:STATUS: consumer-admission-pending
+:END:
+
+A fresh upstream check found POO PR #13 at 6500bce with its own complete checks
+passing. Its added finite shrink protocol, generated-trace target and check
+observations are genuine package changes. Rejected compilation experiments were
+withdrawn upstream. Producer success still does not establish the consumer's
+180-second cold limit.
+
+The selected object.ss SHA-256 remains 9726f238a3c432c0f26e7a6fe85aa9455afee88ace130af2962610f9d14b868c.
+Core PR #19 now selects 6500bce and its Lean producer identity matches that pin.
+The actual selected source passed all-source Quint typechecking and all 11
+SelectionReplay/Topology positive and matched-fault cases. The corresponding
+Lean target built successfully through its 105-job dependency closure. The
+initial local sandbox refused the backend's loopback socket; that attempt did
+not qualify the model checks and the authorized native retry completed them.
+
+Parser and ASCENT select that same Core revision; Orgize selects that Parser.
+Parent's prepared private Core submodule and native source projections follow
+the same graph; committing its complete group awaits native SDK lock generation. Its Lean declaration also selects the same Core gitlink. A real
+lake update YuanxuProof generated the lock and the published dependency's
+SelectionReplay target compiled successfully in Parent's own proof project.
+These are source/model/interface receipts, not completed Scheme consumer CI.
+
+The earlier 460-input tag oracle remains bound to POO 60faf7d. It is not renamed
+as evidence for the later package inventory. The new SDK and complete consumer
+cold build must use the updated package, including its added target; no target
+or assertion is removed to preserve the earlier timing.
