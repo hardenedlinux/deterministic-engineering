@@ -263,20 +263,31 @@
 ;; performs capture, validation/admission or publication.
 (def (selected-model-rows result relation candidate)
   (filter (lambda (row) (equal? (car row) candidate)) ((.ref result 'rows-of) relation)))
-(def (render-model-part catalog row)
-  (format "        part %a : %a;\n" (model-name (cadr row)) (qualified-reference catalog (caddr row))))
-(def (render-model-edge instance edge-name from to)
-  (format
+;; Rendering owns a private output port. It cannot admit evidence or authorize use.
+(def (write-model-part output catalog row)
+  (fprintf
+   output
+   "        part %a : %a;\n"
+   (model-name (cadr row))
+   (qualified-reference catalog (caddr row))))
+
+(def (write-model-edge output instance edge-name from to)
+  (fprintf
+   output
    "    dependency %a from %a::%a to %a;\n"
    (model-name edge-name)
    instance
    (model-name from)
    to))
-(def (render-model-section section-name names)
-  (string-append
-   (format "    part %a {\n" section-name)
-   (apply string-append (map (lambda (name) (format "        part %a;\n" (model-name name))) names))
-   "    }\n"))
+
+(def (write-model-section output section-name names)
+  (fprintf output "    part %a {\n" section-name)
+  (for-each
+   (lambda (name)
+     (fprintf output "        part %a;\n" (model-name name)))
+   names)
+  (display "    }\n" output))
+
 (def (render-formation-model result)
   (def selected ((.ref result 'rows-of) 'structurally_covered))
   (unless (= (length selected) 1)
@@ -286,49 +297,68 @@
   (def nodes (ordered (rows 'layout_node)))
   (unless (pair? nodes) (error "no declared layout nodes"))
   (def contexts (rows 'model_context))
-  (unless (= (length contexts) 1) (error "one selected model context required" contexts))
+  (unless (= (length contexts) 1)
+    (error "one selected model context required" contexts))
   (match
       (car contexts)
     ([_ package-name instance-name catalog project-name intent-name root-name]
      (def instance (model-name instance-name))
-     (string-append
-      "// Generated from the ProjectFormation ASCENT result; design-only module projection.\n"
-      "// Model context and companion catalog are selected in project_layout.\n"
-      (format "package %a {\n    private import %a::*;\n" (model-name package-name) (model-name catalog))
-      (format
-       "    doc /* Project %a; declared intent %a; structural candidate %a. Design assertions only; runtime capability gates remain separate. */\n"
-       (model-name project-name)
-       (model-name intent-name)
-       (model-name chosen))
-      (format "    part <%a> %a {\n" (model-name root-name) instance)
-      (apply string-append (map (cut render-model-part catalog <>) nodes))
-      "    }\n"
-      (apply
-       string-append
-       (map
-        (lambda (row)
-          (render-model-edge
-           instance
-           (cadr row)
-           (caddr row)
-           (string-append instance "::" (model-name (cadddr row)))))
-        (ordered (rows 'layout_edge))))
-      (apply
-       string-append
-       (map
-        (lambda (row)
-          (render-model-edge
-           instance
-           (string-append "source-" (cadr row))
-           (cadr row)
-           (qualified-reference catalog (list-ref row 4))))
-        nodes))
-      (render-model-section (model-name "requiredProducts") (map cadr (ordered (rows 'product_node))))
-      (render-model-section (model-name "requiredDuties") (map cadr (ordered (rows 'duty_node))))
-      (render-model-section
-       "openCapabilities"
-       (map caddr (ordered (filter (lambda (row) (equal? (cadr row) "capability")) (rows 'gap)))))
-      "}\n"))))
+     (call-with-output-string
+      (lambda (output)
+        (display
+         "// Generated from the ProjectFormation ASCENT result; design-only module projection.\n"
+         output)
+        (display "// Model context and companion catalog are selected in project_layout.\n" output)
+        (fprintf
+         output
+         "package %a {\n    private import %a::*;\n"
+         (model-name package-name)
+         (model-name catalog))
+        (fprintf
+         output
+         "    doc /* Project %a; declared intent %a; structural candidate %a. Design assertions only; runtime capability gates remain separate. */\n"
+         (model-name project-name)
+         (model-name intent-name)
+         (model-name chosen))
+        (fprintf output "    part <%a> %a {\n" (model-name root-name) instance)
+        (for-each (cut write-model-part output catalog <>) nodes)
+        (display "    }\n" output)
+        (for-each
+         (lambda (row)
+           (write-model-edge
+            output
+            instance
+            (cadr row)
+            (caddr row)
+            (format "%a::%a" instance (model-name (cadddr row)))))
+         (ordered (rows 'layout_edge)))
+        (for-each
+         (lambda (row)
+           (write-model-edge
+            output
+            instance
+            (string-append "source-" (cadr row))
+            (cadr row)
+            (qualified-reference catalog (list-ref row 4))))
+         nodes)
+        (write-model-section
+         output
+         (model-name "requiredProducts")
+         (map cadr (ordered (rows 'product_node))))
+        (write-model-section
+         output
+         (model-name "requiredDuties")
+         (map cadr (ordered (rows 'duty_node))))
+        (write-model-section
+         output
+         "openCapabilities"
+         (map
+          caddr
+          (ordered
+           (filter
+            (lambda (row) (equal? (cadr row) "capability"))
+            (rows 'gap)))))
+        (display "}\n" output))))))
 
 (def (bind-formation-methods library-scope)
   (def expected-definitions (.get library-scope entry methods))
