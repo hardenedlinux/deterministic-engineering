@@ -53,6 +53,8 @@ test-file path pattern=".*":
 
 # Serial execution preserves bounded native test ownership.
 test:
+    just test-file t/engineering-ownership-test.ss
+    just test-file t/repository-input-schema-test.ss
     just test-file t/library-relation-types-test.ss
     just test-file t/resource-evidence-contract-test.ss
     just test-file t/resource-scenario-contract-test.ss

@@ -3,8 +3,8 @@
  "../types.ss"
  "../library/project-organization/types.ss"
  "../library/project-organization/objects.ss"
- "../modules/project-formation/types.ss"
- "../modules/project-formation/objects.ss")
+ "../library/drivers/project-formation/types.ss"
+ "../library/drivers/project-formation/objects.ss")
 (export organization-library-test)
 (def organization-library-test
  (test-suite "Organization declarations, independent demand and Module policy"

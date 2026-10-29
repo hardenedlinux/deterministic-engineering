@@ -9,7 +9,7 @@
   (only-in :gerbil-ascent/program/types
            GerbilAscentProgramContract GerbilAscentSessionContract)
   (only-in :gerbil-ascent/rules/declaration rule-module? rule-module-program)
-  (only-in "../../types.ss"
+  (only-in "../../../types.ss"
            LibraryNonemptyString LibrarySymbolPair LibrarySymbolTriple LibraryScopeBinding))
 
 (export

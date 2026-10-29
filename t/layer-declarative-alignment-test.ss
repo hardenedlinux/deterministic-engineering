@@ -3,11 +3,11 @@
  (only-in :clan/poo/mop validate)
  "../library/project-organization/objects.ss" "../library/project-organization/types.ss"
  "../library/concurrency/resource-control/backpressure-memory/abstract/objects.ss"
- "../library/concurrency/resource-control/backpressure-memory/rust/objects.ss"
- "../library/concurrency/resource-control/backpressure-memory/rust/types.ss"
+ "../languages-engineering/rust/concurrency/resource-control/backpressure-memory/objects.ss"
+ "../languages-engineering/rust/concurrency/resource-control/backpressure-memory/types.ss"
  "../profiles/resource-lifecycle.ss" "../profiles/gateway.ss" "../profiles/library-formation.ss"
  "../scenarios/project-formation/func.ss" "../scenarios/gateway-review/func.ss"
- "../modules/project-formation/func.ss" "../modules/resource-evidence/func.ss")
+ "../library/drivers/project-formation/func.ss" "../library/drivers/evidence/func.ss")
 (export layer-declarative-alignment-test)
 (def (rows result name) ((.get result rows-of) name))
 (def layer-declarative-alignment-test

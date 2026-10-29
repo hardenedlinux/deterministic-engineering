@@ -2,7 +2,7 @@
 (import
   :clan/poo/object
   :std/encoding/json
-  "./objects.ss"
+  "objects.ss"
   (only-in :std/source this-source-file)
   (only-in :std/io/tempfile call-with-temporary-directory)
   (only-in :std/misc/ports read-all-as-u8vector)

@@ -127,13 +127,13 @@
       "deterministic-engineering/scenarios/resource-lifecycle/review/interface"
       "deterministic-engineering/scenarios/resource-lifecycle/review/archive"
       "deterministic-engineering/init"
-      "deterministic-engineering/library/concurrency/resource-control/backpressure-memory/rust/interface"
-      "deterministic-engineering/modules/resource-evidence/interface"
+      "deterministic-engineering/languages-engineering/rust/concurrency/resource-control/backpressure-memory/interface"
+      "deterministic-engineering/library/drivers/evidence/interface"
       "deterministic-engineering/scenarios/gateway-review/interface"
       "deterministic-engineering/profiles/gateway"))
   ;; Reuse the producer's phase-family check, including generated macro objects.
   (require-build-products!
-    '(deterministic-engineering/modules/resource-evidence/interface
+    '(deterministic-engineering/library/drivers/evidence/interface
       deterministic-engineering/scenarios/resource-lifecycle/review/archive
       agentic-ai-lab/lambda-aitia/modules/sdlc/review-authority)
     (path-expand "lib" (gerbil-path)))

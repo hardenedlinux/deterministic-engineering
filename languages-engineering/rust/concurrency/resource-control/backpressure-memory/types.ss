@@ -12,7 +12,7 @@
   (only-in :clan/poo/object-contract ObjectContract. refine)
   "../../../../../types.ss"
   (only-in
-   "../abstract/types.ss"
+   "../../../../../library/concurrency/resource-control/backpressure-memory/abstract/types.ss"
    BackpressureScopeContract
    BackpressureDeclarationContract
    BackpressureModelContract

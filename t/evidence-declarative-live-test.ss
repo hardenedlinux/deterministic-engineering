@@ -5,9 +5,9 @@
  (only-in :agentic-ai-lab/modules/temporal-causality/trajectory/ascent-ledger ascent-trajectory)
  "../profiles/resource-lifecycle.ss" "../profiles/gateway.ss"
  "../library/concurrency/resource-control/backpressure-memory/abstract/objects.ss"
- "../library/concurrency/resource-control/backpressure-memory/rust/objects.ss"
- "../library/concurrency/resource-control/backpressure-memory/rust/methods.ss"
- "../modules/resource-evidence/func.ss")
+ "../languages-engineering/rust/concurrency/resource-control/backpressure-memory/objects.ss"
+ "../languages-engineering/rust/concurrency/resource-control/backpressure-memory/methods.ss"
+ "../library/drivers/evidence/func.ss")
 (export evidence-declarative-live-test)
 (def (rows result relation) ((.get result rows-of) relation))
 (def (load-json path) (call-with-input-file path (cut read-json <> object-as-hash: #t)))
@@ -23,7 +23,7 @@
    (def root (getenv "LIBRARY_METHOD_ROOT"))
    (def tool (getenv "LIBRARY_QUINT"))
    (def source (path-expand "library/concurrency/resource-control/backpressure-memory/model.qnt" root))
-   (def rule-source (path-expand "modules/resource-evidence/func.ss" root))
+   (def rule-source (path-expand "library/drivers/evidence/func.ss" root))
    (def model (specialize-backpressure BackpressureModel))
    (def pass (resource-run-qnt root LifecycleProfile tool (path-expand "pass" root)))
    (def counter (resource-run-qnt root LifecycleProfile tool (path-expand "counter" root) 'early-release))
@@ -83,7 +83,7 @@
    ;; Repeated registration retains history without duplicate rows.
    (resource-register-results! session (list pass counter) trajectory rule-source)
    (check-equal? (length (rows (gerbil-ascent-session-run session) 'witness)) 2)
-   (def declaration (path-expand "library/concurrency/resource-control/backpressure-memory/rust/objects.ss" root))
+   (def declaration (path-expand "languages-engineering/rust/concurrency/resource-control/backpressure-memory/objects.ss" root))
    (def before (call-with-input-file declaration read-all-as-string))
    (try
     (write-text declaration (string-append before "\n;; changed declaration bytes\n"))

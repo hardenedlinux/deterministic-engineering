@@ -1,8 +1,8 @@
 ;;; -*- Gerbil -*-
 (import
   :clan/poo/object
-  "types.ss"
-  (only-in "../abstract/types.ss" BackpressureDeclarationContract))
+  "./types.ss"
+  (only-in "../../../../../library/concurrency/resource-control/backpressure-memory/abstract/types.ss" BackpressureDeclarationContract))
 (export
   RustMethodDefinitions
   specialize-backpressure
@@ -374,7 +374,7 @@
                         (.o (:: @ ResourceMethodAsset.)
                             identity: 'ownership-model
                             kind: 'quint
-                            relative-path: "../model.qnt")
+                            relative-path: "../../../../../library/concurrency/resource-control/backpressure-memory/model.qnt")
                         MethodObserverAsset))
     lean: (.o (:: @ ResourceMethod.)
               operation: 'lean
@@ -384,7 +384,7 @@
                        (.o (:: @ ResourceMethodAsset.)
                            identity: 'budget-proof
                            kind: 'lean
-                           relative-path: "../budget.lean")
+                           relative-path: "../../../../../library/concurrency/resource-control/backpressure-memory/budget.lean")
                        MethodObserverAsset))
     integration: (.o (:: @ ResourceMethod.)
                      operation: 'integration

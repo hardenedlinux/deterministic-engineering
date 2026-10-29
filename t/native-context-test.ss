@@ -27,7 +27,7 @@
       (def scene (.get (.get deterministic-engineering.init.exports Scenarios) resource-lifecycle scope))
       (def methods (.ref scene 'methods))
       (def original
-        (path-expand "library/concurrency/resource-control/backpressure-memory/rust/native" root))
+        (path-expand "languages-engineering/rust/concurrency/resource-control/backpressure-memory/native" root))
       (call-with-temporary-directory
        "native-context"
        (lambda (crate)

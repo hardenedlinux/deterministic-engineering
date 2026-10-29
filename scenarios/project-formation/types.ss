@@ -6,11 +6,11 @@
   (only-in :yuanxu/object-types/contracts YuanxuContract. yuanxu-predicate-type)
   "../../types.ss"
   (only-in
-   "../../library/concurrency/resource-control/backpressure-memory/rust/types.ss"
+   "../../languages-engineering/rust/concurrency/resource-control/backpressure-memory/types.ss"
    RustResourcesScopeContract)
   (only-in :yuanxu/object-types/contracts yuanxu-predicate-contract)
   "../../library/project-organization/types.ss"
-  "../../modules/project-formation/types.ss")
+  "../../library/drivers/project-formation/types.ss")
 (export
   FormationProfileContract
   FormationCaptureRequestContract

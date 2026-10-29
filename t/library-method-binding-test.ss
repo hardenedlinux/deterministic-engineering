@@ -1,8 +1,8 @@
 (import :std/test :clan/poo/object
  (only-in :clan/poo/mop validate)
- "../library/concurrency/resource-control/backpressure-memory/rust/types.ss"
- "../library/concurrency/resource-control/backpressure-memory/rust/objects.ss"
- "../library/concurrency/resource-control/backpressure-memory/rust/func.ss")
+ "../languages-engineering/rust/concurrency/resource-control/backpressure-memory/types.ss"
+ "../languages-engineering/rust/concurrency/resource-control/backpressure-memory/objects.ss"
+ "../languages-engineering/rust/concurrency/resource-control/backpressure-memory/func.ss")
 (export library-method-binding-test)
 (def library-method-binding-test
  (test-suite "Actual method definition to Function/provider binding"

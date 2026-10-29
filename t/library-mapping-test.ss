@@ -2,9 +2,9 @@
 (import :std/test :std/encoding/json :clan/poo/object
         (only-in :clan/poo/mop validate)
         "../library/concurrency/resource-control/backpressure-memory/abstract/objects.ss"
-        "../library/concurrency/resource-control/backpressure-memory/rust/objects.ss"
-        "../library/concurrency/resource-control/backpressure-memory/rust/types.ss"
-        "../library/concurrency/resource-control/backpressure-memory/rust/correspondence.ss")
+        "../languages-engineering/rust/concurrency/resource-control/backpressure-memory/objects.ss"
+        "../languages-engineering/rust/concurrency/resource-control/backpressure-memory/types.ss"
+        "../languages-engineering/rust/concurrency/resource-control/backpressure-memory/correspondence.ss")
 (export library-mapping-test)
 (def (integration)
  (validate (.get BackpressureIntegrationContract value-contract)

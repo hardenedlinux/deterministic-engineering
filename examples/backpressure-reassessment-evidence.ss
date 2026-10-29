@@ -5,7 +5,7 @@
         (only-in :yuanxu/ops/process-script ProcessScript.)
         (only-in :std/string/misc string-subst)
         :deterministic-engineering/scenarios/resource-lifecycle/review/func
-        :deterministic-engineering/library/concurrency/resource-control/backpressure-memory/rust/reassessment-oracle)
+        :deterministic-engineering/languages-engineering/rust/concurrency/resource-control/backpressure-memory/reassessment-oracle)
 (export main)
 (def (read-text p) (call-with-input-file p read-all-as-string))
 (def (write-text p s) (call-with-output-file (list path: p truncate: #t) (cut display s <>)))
@@ -17,7 +17,7 @@
   (when (file-exists? output) (error "fresh reassessment output required"))
   (create-directory output)
   (def root (current-directory))
-  (def original (path-expand "library/concurrency/resource-control/backpressure-memory/rust/native" root))
+  (def original (path-expand "languages-engineering/rust/concurrency/resource-control/backpressure-memory/native" root))
   (def text (read-text (path-expand "src/main.rs" original)))
   (def regression (replace-once (replace-once text
     "_permit: if name == \"M06\" { None } else { permit.take() }"
@@ -49,7 +49,7 @@
     (def log (path-expand "cargo-run.log" out))
     (def before (append dependencies (pairs (list source (path-expand "Cargo.toml" crate) (path-expand "Cargo.lock" crate) cargo rustc
       (path-expand "examples/backpressure-reassessment-evidence.ss" root)
-      (path-expand "library/concurrency/resource-control/backpressure-memory/rust/reassessment-oracle.ss" root)))))
+      (path-expand "languages-engineering/rust/concurrency/resource-control/backpressure-memory/reassessment-oracle.ss" root)))))
     (current! before)
     (def argv (list cargo "--config" (string-append "build.rustc=\"" rustc "\"") "run" "--offline" "--locked"
       "--manifest-path" (path-expand "Cargo.toml" crate) "--target-dir" (path-expand "target" out) "--" raw (number->string size)))

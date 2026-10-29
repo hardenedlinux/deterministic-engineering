@@ -1,6 +1,6 @@
 (import :std/test :clan/poo/object
  (only-in :std/io/tempfile call-with-temporary-directory)
- "../scenarios/project-formation/inputs.ss")
+ "../library/drivers/project-formation/inputs.ss")
 (export project-inputs-test)
 (def (put path text)
  (call-with-output-file (list path: path truncate: #t) (cut display text <>)))

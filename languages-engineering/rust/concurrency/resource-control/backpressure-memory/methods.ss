@@ -66,19 +66,19 @@
 (def (resource-interpretation-files root)
   (map
    (cut path-expand <> root)
-   '("types.ss"
+   '("./types.ss"
      "library/concurrency/resource-control/backpressure-memory/abstract/types.ss"
      "library/concurrency/resource-control/backpressure-memory/abstract/objects.ss"
      "library/concurrency/resource-control/backpressure-memory/abstract/config.ss"
      "library/concurrency/resource-control/backpressure-memory/abstract/interface.ss"
-     "library/concurrency/resource-control/backpressure-memory/rust/types.ss"
-     "library/concurrency/resource-control/backpressure-memory/rust/objects.ss"
-     "library/concurrency/resource-control/backpressure-memory/rust/config.ss"
-     "library/concurrency/resource-control/backpressure-memory/rust/interface.ss"
-     "library/concurrency/resource-control/backpressure-memory/rust/func.ss"
-     "library/concurrency/resource-control/backpressure-memory/rust/methods.ss"
-     "library/concurrency/resource-control/backpressure-memory/rust/oracle.ss"
-     "library/concurrency/resource-control/backpressure-memory/rust/correspondence.ss")))
+     "languages-engineering/rust/concurrency/resource-control/backpressure-memory/types.ss"
+     "languages-engineering/rust/concurrency/resource-control/backpressure-memory/objects.ss"
+     "languages-engineering/rust/concurrency/resource-control/backpressure-memory/config.ss"
+     "languages-engineering/rust/concurrency/resource-control/backpressure-memory/interface.ss"
+     "languages-engineering/rust/concurrency/resource-control/backpressure-memory/func.ss"
+     "languages-engineering/rust/concurrency/resource-control/backpressure-memory/methods.ss"
+     "languages-engineering/rust/concurrency/resource-control/backpressure-memory/oracle.ss"
+     "languages-engineering/rust/concurrency/resource-control/backpressure-memory/correspondence.ss")))
 (def (file-pairs paths) (map (lambda (path) (cons path (resource-digest-file path))) paths))
 (def (assert-files! pairs)
   (for-each
@@ -547,7 +547,7 @@
     usage
     'inventory
     (resource-digest-file
-     (path-expand "library/concurrency/resource-control/backpressure-memory/rust/oracle.ss" root)))))
+     (path-expand "languages-engineering/rust/concurrency/resource-control/backpressure-memory/oracle.ss" root)))))
 (def (resource-native-context
       selected-root
       selected-entry
@@ -780,13 +780,13 @@
      (resource-digest-file
       (path-expand
        (.get context entry catalog asset relative-path)
-       (path-expand "library/concurrency/resource-control/backpressure-memory/rust" root)))
+       (path-expand "languages-engineering/rust/concurrency/resource-control/backpressure-memory" root)))
      (resource-digest-file
-      (path-expand "library/concurrency/resource-control/backpressure-memory/rust/objects.ss" root))
+      (path-expand "languages-engineering/rust/concurrency/resource-control/backpressure-memory/objects.ss" root))
      (resource-digest-file
-      (path-expand "library/concurrency/resource-control/backpressure-memory/rust/types.ss" root))
+      (path-expand "languages-engineering/rust/concurrency/resource-control/backpressure-memory/types.ss" root))
      (resource-digest-file
-      (path-expand "library/concurrency/resource-control/backpressure-memory/rust/correspondence.ss" root))
+      (path-expand "languages-engineering/rust/concurrency/resource-control/backpressure-memory/correspondence.ss" root))
      (resource-digest-file
       (path-expand "library/concurrency/resource-control/backpressure-memory/model.qnt" root))))
    (resource-digest-file sysml)
@@ -829,11 +829,11 @@
     (error "native cases did not observe one captured run"))
   (def model (path-expand "library/concurrency/resource-control/backpressure-memory/model.qnt" root))
   (def mapper
-    (path-expand "library/concurrency/resource-control/backpressure-memory/rust/correspondence.ss" root))
+    (path-expand "languages-engineering/rust/concurrency/resource-control/backpressure-memory/correspondence.ss" root))
   (def catalog-path
     (path-expand
      (.get context entry catalog asset relative-path)
-     (path-expand "library/concurrency/resource-control/backpressure-memory/rust" root)))
+     (path-expand "languages-engineering/rust/concurrency/resource-control/backpressure-memory" root)))
   (def scopes (resource-integration-scopes context sysml quint))
   (def (scope key) (cons key (caddr (find (lambda (r) (eq? (cadr r) key)) scopes))))
   (def before
@@ -872,7 +872,7 @@
         (create-directory dir)
         (def projection (path-expand "projection.json" dir))
         (resource-write-json projection p)
-        (def notation (path-expand "ownership.sysml" dir))
+        (def notation (path-expand "./ownership.sysml" dir))
         (write-text notation (resource-trace-sysml (.get context entry) p))
         (def runs
           (map

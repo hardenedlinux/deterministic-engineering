@@ -1,7 +1,7 @@
 (import
   :std/test
   :clan/poo/object
-  "../modules/project-formation/func.ss"
+  "../library/drivers/project-formation/func.ss"
   "../scenarios/project-formation/func.ss"
   "../library/project-organization/objects.ss"
   "../profiles/library-formation.ss")

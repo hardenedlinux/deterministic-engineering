@@ -5,6 +5,57 @@
 #+STARTUP: overview
 #+FILETAGS: :architecture:design:
 
+* Engineering ownership and native drivers
+:PROPERTIES:
+:CUSTOM_ID: engineering-ownership
+:END:
+
+The repository is organized by engineering responsibility. Modules are the
+native loading/composition mechanism, not a top-level category or directory.
+The authoritative layout is:
+
+#+BEGIN_EXAMPLE
+library/
+  concurrency/                  Shared design declarations and generic obligations
+  project-organization/         Engineering organization models
+  drivers/
+    evidence/                   Scheme driver over native ASCENT evidence
+    project-formation/          Scheme organization/acquisition driver and schemas
+languages-engineering/
+  rust/concurrency/resource-control/backpressure-memory/
+                                Rust-specific bindings, models, native code and lockfile
+  go/                           Go engineering scope; implementation not yet admitted
+profiles/                       Independent workload and design selections
+scenarios/                      Application composition, including the gateway example
+projects/                       Actual SDLC consumers
+#+END_EXAMPLE
+
+Library Scheme code maintains framework/design drivers and reusable engineering
+knowledge. Language-specific bindings and implementations live together under
+=languages-engineering/<language>/=. The implementation language of a tool does
+not by itself determine the engineering domain it models.
+
+=init.ss= exposes =Library=, =Languages= and =Scenarios= through explicit native
+paths. The former local =modules/= directory and =Modules= namespace are removed;
+there are no forwarding files or compatibility aliases.
+
+Structured wire/data contracts use Yuanxu's existing JSON Schema compiler and
+its native Type/Contract diagnostics. POO still owns inheritance, callable
+signatures and nominal owner handles; JSON Schema does not encode those handles.
+The repository-input Schema now drives acquisition shape and bound checks.
+Filesystem custody, traversal and currentness remain with the native source owner.
+
+OpenSysML is a modeling driver reached through its public SDK/API capabilities.
+Its Go API supports in-process parsing/diagnostics/symbols/evaluation/instantiation;
+verification, edits and Query require a surface that actually advertises them.
+No local SysML parser, text-verdict decoder or replacement model runtime is added.
+The current SDK study is not an executed SDK integration result.
+
+Historical documents preserve their original source/evidence paths. The new
+ownership map supersedes those paths for current development; moving source
+files requires fresh capture, never relabeling old evidence.
+See [[file:docs/10-19-design/10-architecture/10.135-engineering-ownership-and-native-drivers.org][10.135]] and its paired D2 view for the migration and capability boundaries.
+
 * Package and development entrypoints
 
 The root [[file:gerbil.pkg][gerbil.pkg]] directly selects Agentic AI Lab and Yuanxu. The product
@@ -303,8 +354,8 @@ derivation, actual QNT/TLC and Lean execution, native ASCENT exchange registrati
 and scoped reuse across capacity, cache and source changes.
 [[file:docs/10-19-design/10-architecture/10.12-gateway-library-registration-and-runtime-dependencies.org][10.12]] retains the finite rule and runtime-dependency design.
 
-- ~library/concurrency/resource-control/backpressure-memory/rust/~ publishes resource knowledge, Contracts, shared method observation and the independent oracle.
-- ~modules/resource-evidence/~ runs that entry's finite obligation/applicability rules through ASCENT.
+- ~languages-engineering/rust/concurrency/resource-control/backpressure-memory/~ publishes resource knowledge, Contracts, shared method observation and the independent oracle.
+- ~library/drivers/evidence/~ runs that entry's finite obligation/applicability rules through ASCENT.
 - ~profiles/gateway.ss~ defines independent POO C1/C2/cache/retry application values.
 - ~scenarios/resource-lifecycle/~ binds the minimal native mechanism; ~scenarios/gateway-review/~ independently binds the gateway application.
 - ~t/*-test.ss~ checks real registration/query and native package compatibility.

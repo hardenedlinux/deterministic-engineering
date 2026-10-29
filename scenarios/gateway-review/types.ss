@@ -3,9 +3,9 @@
   :clan/poo/object
   (only-in :yuanxu/object-types/contracts yuanxu-predicate-contract)
   (only-in
-   "../../library/concurrency/resource-control/backpressure-memory/rust/types.ss"
+   "../../languages-engineering/rust/concurrency/resource-control/backpressure-memory/types.ss"
    RustResourcesScopeContract)
-  (only-in "../../modules/resource-evidence/types.ss" ResourceEvidenceScopeContract))
+  (only-in "../../library/drivers/evidence/types.ss" ResourceEvidenceScopeContract))
 (export
   RustResourcesScopeContract
   ResourceEvidenceScopeContract

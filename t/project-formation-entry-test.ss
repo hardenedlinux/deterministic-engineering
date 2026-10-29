@@ -1,6 +1,6 @@
 (import :std/test :clan/poo/object (only-in :clan/poo/mop validate)
         (only-in :std/source this-source-file)
-        (only-in "../scenarios/project-formation/inputs.ss" formation-input-observation)
+        (only-in "../library/drivers/project-formation/inputs.ss" formation-input-observation)
         (only-in :yuanxu/module-system/source/admission current-module-source-observer)
         "../projects/library-formation/init.ss"
         "../profiles/library-formation.ss")

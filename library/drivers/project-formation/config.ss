@@ -1,5 +1,5 @@
 (import
-  "objects.ss")
+  "./objects.ss")
 (export
   Config)
 (def Config FormationSemantics)

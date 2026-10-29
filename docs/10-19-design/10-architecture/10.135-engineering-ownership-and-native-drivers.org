@@ -1,0 +1,165 @@
+#+TITLE: 10.135 Engineering Ownership and Native Drivers
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Architectural correction
+:PROPERTIES:
+:CUSTOM_ID: ownership135-decision
+:STATUS: source-migration
+:END:
+
+The previous structure mixed framework drivers, language-specific engineering
+and implementation cases below Library and a top-level modules directory.
+Native Module mechanics do not define the engineering taxonomy.
+This correction supersedes that organization for current development.
+
+| Owner | Responsibility | Actual migration |
+|-------+----------------+------------------|
+| =library/= | Shared framework/design declarations and Scheme drivers | Generic concurrency and project-organization models remain here |
+| =library/drivers/evidence/= | Scheme driver over existing ASCENT rules and evidence | Former =modules/resource-evidence/= |
+| =library/drivers/project-formation/= | Design organization, repository acquisition and its data schema | Former project driver and Scenario acquisition utility |
+| =languages-engineering/rust/= | Rust-specific design bindings, correspondence, implementation and tool inputs | Complete backpressure specialization, native crate and Cargo.lock |
+| =languages-engineering/go/= | Go-specific engineering scope | Declared ownership only; no implementation admission claim |
+| =profiles/= | Independently authored workload/design selections | No language implementations hidden here |
+| =scenarios/= | Application composition | Gateway remains one application example |
+| =projects/= | Actual SDLC consumers | Select native Library and language engineering owners |
+
+Language-specific Scheme bindings belong with their language engineering
+assets. Shared Scheme drivers remain in Library. A tool's implementation
+language does not automatically determine the engineering language it models.
+Generic Quint/Lean assets remain owned by their language-independent design
+declaration; they are not copied into each specialization.
+
+* Native selection follows responsibility
+:PROPERTIES:
+:CUSTOM_ID: ownership135-selection
+:END:
+
+#+NAME: ownership135-root-selection
+#+BEGIN_SRC scheme :eval never
+(yuanxu!
+  :load-modules "./library" mode: explicit rename: Library
+  (backpressure-memory @ "./library/concurrency/resource-control/backpressure-memory/abstract")
+  (evidence @ "./library/drivers/evidence")
+  :load-modules "./languages-engineering" mode: explicit rename: Languages
+  (rust-resources @ "./languages-engineering/rust/concurrency/resource-control/backpressure-memory")
+  :load-modules "./scenarios" mode: explicit rename: Scenarios
+  (gateway-review)
+  (resource-lifecycle))
+#+END_SRC
+
+The old local modules directory and Modules namespace are removed. Callers,
+requires bindings and Project source roots migrate directly. No forwarding
+module, directory symlink or compatibility namespace is introduced.
+
+This is an ownership migration, not a new Module implementation. POO inheritance
+still links the actual Rust entry to the same admitted generic parent object.
+Tests check this identity rather than accepting a copied equivalent model.
+
+* Use Yuanxu JSON Schema at data boundaries
+:PROPERTIES:
+:CUSTOM_ID: ownership135-schema
+:END:
+
+The existing Yuanxu Schema Reader owns SDK JSON representation conversion.
+Its schema-value-contract owns normalization, supported constraints, native
+Type validation and field-path diagnostics. This repository adds no schema
+interpreter, generic conversion loop or replacement validator.
+
+The repository acquisition request now consumes the owned JSON Schema for:
+
+| Data | Declared constraint |
+|------+---------------------|
+| root | Nonempty string |
+| paths | 1--64 nonempty strings, unique items |
+| maxBytes | Integer, 1--16,777,216 |
+| lifetimeSeconds | Number greater than zero and at most 120 |
+| extra properties | Rejected |
+
+Schema source is read through the native source owner at the request boundary.
+Unsupported constraints remain explicit refusal; they cannot silently weaken
+the resulting contract.
+
+Filesystem semantics remain outside JSON Schema: relative traversal rules,
+ordinary-file and ancestor checks, exact native integer byte accounting,
+growth detection, source currentness and acquisition lifetime. Shape validation
+does not manufacture a repository acquisition or execution permission.
+
+Callable signatures, POO inheritance and SourceReader-owned nominal handles
+also remain native Scheme responsibilities. JSON Schema is used for structured
+data, not as a replacement for those runtime identities.
+
+* OpenSysML through public capabilities
+:PROPERTIES:
+:CUSTOM_ID: ownership135-opensysml
+:END:
+
+The driver must use public SDK/API operations rather than a local SysML parser,
+model executor or text-based verdict decoder.
+
+| Surface | Confirmed public scope | Driver consequence |
+|---------+------------------------+--------------------|
+| Go API | In-process or Connect parsing, diagnostics, symbols, evaluation, instantiation and capability negotiation | Suitable for those operations without requiring a child service in embedded mode |
+| Service SDK, including Python | Published RPCs cover verification, editing, execution, conversion and Query | Select actual advertised capabilities; do not assume Go v1 exposes all RPCs |
+| Existing CLI experiments | Historical executable observations | Do not count them as SDK integration acceptance |
+
+See the official [[https://github.com/Open-MBEE/OpenSysML#clients][client surface map]]
+and [[https://github.com/Open-MBEE/OpenSysML/tree/develop/client/python][Python SDK ownership and capabilities]].
+The host inspected here has a sysml CLI but no Go executable, sysml-grpc service
+binary or installed Python SDK. No SDK execution is claimed. Missing capability
+or tool support must stay visible rather than being replaced by a fake adapter.
+
+The Scheme driver selects the model operation and its declared input/result
+schema, then invokes a backend that actually covers it. SDK parsing, model
+verification, Quint exploration, Lean proof checking and native implementation
+testing retain distinct evidence strengths and source cuts.
+
+* Migration and evidence discipline
+:PROPERTIES:
+:CUSTOM_ID: ownership135-migration
+:END:
+
+Moving source changes paths and therefore input identity. Historical Org
+documents retain their original source/evidence references; current README,
+native source, tests and build declarations use the new owners. Old receipts
+are not renamed into current evidence.
+
+An installed old init initially exposed the removed namespace. Native
+recompilation also revealed old numbered Gambit runtime variants beside the new
+interface. Only that root module's generated variants were archived, and the
+SDK rebuilt its interface and implementation together. No source dependency,
+manifest or assertion was removed to hide the mismatch.
+
+Acceptance requires real publication, parent identity, Schema rejection,
+ASCENT queries and source-change checks, followed by package product checks.
+Directory existence and a successful import alone are insufficient.
+
+[[file:../../../README.org::#engineering-ownership][Authoritative current entrypoint]]
+and [[file:../../90-99-views/90-architecture-views/90.124-engineering-ownership-and-native-drivers.d2][paired ownership view]].
+
+* Focused migration acceptance
+:PROPERTIES:
+:CUSTOM_ID: ownership135-acceptance
+:STATUS: focused-runtime-accepted
+:END:
+
+| Check | Observed result | Limit |
+|-------+-----------------+-------|
+| Native root package build | Completed through the existing =just build= entrypoint | Per-process 2 GiB heap, 180-second invocation deadline; existing concurrency policy |
+| Shared native declarations and Types | 6 test modules, 18 passing cases | Focused foundation regression |
+| Library, drivers and application composition | 10 test modules, 53 passing cases after the stale selection-test path was corrected | Includes real ASCENT relations, Schema rejection and actual parent identity |
+| Native Context capture | 1 passing case with actual Rust source and Cargo.lock | Source mutation, currentness refusal and frozen-result boundaries retained |
+| Repository acquisition | Existing independent source/currentness tests pass | No fixture acquisition or relaxed filesystem admission |
+| Publication after package build | Responsibility namespace and original parent identity rechecked in a fresh process | An import alone is not the acceptance criterion |
+| Documentation | Org lint returns no findings; paired D2 renders to SVG | English sources and Johnny.Decimal identities preserved |
+
+The initial grouped run reported the old Rust selection path as an error even
+though its harness process returned zero. That case was corrected and rerun
+through the existing strict test entrypoint. The failed transcript is not
+counted as an accepted group run. The table aggregates the passing case results
+and distinguishes them from the later focused rerun.
+
+This is a warm root-package migration acceptance. It does not close the Linux
+cold dependency-build budget, Aitia's full CI, ASCENT's separate domain migration
+or OpenSysML SDK execution. Those require their own current evidence.

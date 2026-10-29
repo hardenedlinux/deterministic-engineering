@@ -6,7 +6,7 @@
   (only-in :clan/poo/object-contract ObjectContract.)
   (only-in :yuanxu/object-types/contracts YuanxuContract. yuanxu-predicate-type)
   (only-in :gerbil-ascent/program/types GerbilAscentProgramContract)
-  "../../library/project-organization/types.ss")
+  "../../project-organization/types.ss")
 (export
   OrganizationScopeContract
   FormationConfigContract

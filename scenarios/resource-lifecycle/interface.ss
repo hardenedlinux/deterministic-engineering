@@ -10,7 +10,7 @@
                           module-id: 'rust-resources
                           contract: RustResourcesScopeContract)
                 Evidence: (.o
-                            module-id: 'resource-evidence
+                            module-id: 'evidence
                             contract: ResourceEvidenceScopeContract))
     scope-contract: ResourceLifecycleScopeContract
     exports: (resource-lifecycle-scope Domain Evidence ResourceLifecycleScopeContract))

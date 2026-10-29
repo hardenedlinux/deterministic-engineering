@@ -2,7 +2,10 @@
 ;;; This observation does not attest user confirmation, role mandate or final C.
 (import
   :clan/poo/object
-  :std/list/list
+  (only-in :clan/poo/mop validate)
+  (only-in :yuanxu/modules/json-schema/json-schema-source yuanxu-json-schema-read-port)
+  (only-in :std/source this-source-file)
+  (only-in :yuanxu/modules/json-schema/contracts schema-value-contract)
   (only-in :std/string/path path-absolute?)
   (only-in
    :yuanxu/module-system/source/admission
@@ -29,22 +32,23 @@
    (andmap
     (lambda (part) (and (not (string-empty? part)) (not (member part '("." "..")))))
     (string-split value #\/))))
-(def (formation-acquire-inputs root paths max-bytes lifetime-seconds)
-  (unless (and
-           (string? root)
-           (list? paths)
-           (pair? paths)
-           (<= (length paths) 64)
-           (andmap relative-name? paths)
-           (= (length paths) (length (delete-duplicates/hash paths)))
-           (exact-integer? max-bytes)
-           (> max-bytes 0)
-           (<= max-bytes 16777216)
-           (real? lifetime-seconds)
-           (> lifetime-seconds 0)
-           (<= lifetime-seconds 120))
-    (error "invalid bounded repository input request"))
-  (def selected-root (path-expand root))
+(def (formation-acquire-inputs root-input relative-paths max-bytes lifetime-seconds)
+  ;; Yuanxu owns structural constraints and their precise Schema diagnostics.
+  ;; Resolve the actual schema source at the request boundary, not a stale cache.
+  (def request-contract
+    (call-with-module-source-fresh-reads
+      (lambda ()
+        (schema-value-contract 'engineering/repository-input-request
+          (call-with-input-string
+            (module-source-read
+              (path-expand "repository-input.schema.json" (path-directory (this-source-file))))
+            yuanxu-json-schema-read-port)))))
+  (validate request-contract
+    (.o root: root-input paths: relative-paths maxBytes: max-bytes lifetimeSeconds: lifetime-seconds))
+  ;; Path traversal and native byte accounting remain filesystem semantics.
+  (unless (and (andmap relative-name? relative-paths) (exact-integer? max-bytes))
+    (error "invalid repository path or exact native byte bound"))
+  (def selected-root (path-expand root-input))
   (def deadline (+ (now) lifetime-seconds))
   (def total 0)
   (def observations
@@ -62,7 +66,7 @@
        (when (not (= (u8vector-length (string->utf8 content)) expected-size))
          (error "project input changed while acquiring" relative))
        (cons path content))
-     paths))
+     relative-paths))
   (def acquired (make-repository-inputs selected-root observations deadline))
   (formation-inputs-current! acquired)
   acquired)

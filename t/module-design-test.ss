@@ -7,8 +7,8 @@
 (def module-design-test
   (test-suite "Gateway publications have distinct engineering responsibilities"
     (test-case "independent Profiles bind the Library and one Scenario"
-      (def domain (.get (.get deterministic-engineering.init.exports Modules) rust-resources scope))
-      (def evidence (.get (.get deterministic-engineering.init.exports Modules) resource-evidence scope))
+      (def domain (.get (.get deterministic-engineering.init.exports Languages) rust-resources scope))
+      (def evidence (.get (.get deterministic-engineering.init.exports Library) evidence scope))
       (def scene (.get (.get deterministic-engineering.init.exports Scenarios) gateway-review scope))
       (for-each (lambda (p) (validate (.ref domain 'profile-contract) p))
                 (list LocalProfile Cap2Profile CacheProfile RetryProfile))

@@ -1,7 +1,7 @@
 (import
   :clan/poo/object
   :std/list/list
-  "./inputs.ss"
+  "../../library/drivers/project-formation/inputs.ss"
   "./codex.ss"
   "./types.ss"
   (only-in :clan/poo/mop validate))

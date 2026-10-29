@@ -11,7 +11,7 @@
   :agentic-ai-lab/lambda-aitia/modules/sdlc/standards/nasa-review
   :agentic-ai-lab/lambda-aitia/modules/sdlc/standards/nasa-lifecycle
   (only-in
-   :deterministic-engineering/library/concurrency/resource-control/backpressure-memory/rust/oracle
+   :deterministic-engineering/languages-engineering/rust/concurrency/resource-control/backpressure-memory/oracle
    resource-native-oracle
    resource-ownership-oracle
    resource-counter-oracle

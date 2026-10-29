@@ -2,7 +2,7 @@
 (import
   (only-in :yuanxu/module-system/source/declaration .def))
 (.def ResourceEvidence
-  identity: 'resource-evidence
+  identity: 'evidence
   core:
   (.o
     requires: (.o)

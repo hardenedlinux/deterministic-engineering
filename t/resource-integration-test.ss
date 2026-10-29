@@ -2,8 +2,8 @@
 (import :clan/poo/object :std/test :std/encoding/json
         (only-in :std/crypto/digest sha256) (only-in :std/encoding/hex hex-encode)
         (only-in :std/misc/ports read-all-as-u8vector)
-        "../library/concurrency/resource-control/backpressure-memory/rust/correspondence.ss"
-        "../library/concurrency/resource-control/backpressure-memory/rust/objects.ss"
+        "../languages-engineering/rust/concurrency/resource-control/backpressure-memory/correspondence.ss"
+        "../languages-engineering/rust/concurrency/resource-control/backpressure-memory/objects.ss"
         "../library/concurrency/resource-control/backpressure-memory/abstract/objects.ss")
 (def selected-integration (make-backpressure-integration (specialize-backpressure BackpressureModel)))
 (export resource-integration-test)

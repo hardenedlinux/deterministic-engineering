@@ -8,7 +8,7 @@
   (only-in :gerbil-ascent/program/session
            gerbil-ascent-session-run gerbil-ascent-session-replace-sources!)
   (only-in :gerbil-ascent/rules/declaration ascent-rule-module rule-module?)
-  (only-in "../modules/resource-evidence/types.ss"
+  (only-in "../library/drivers/evidence/types.ss"
            ResourceEvidenceScopeContract ResourceOpenReviewSignature ResourceMakeEvidenceSignature))
 
 (export
@@ -28,8 +28,8 @@
 (def resource-evidence-contract-test
   (test-suite "Native Evidence Module method boundaries"
     (test-case "actual publication constructs a checked Program and runs native inference"
-      (def scope (.get deterministic-engineering.init.exports Modules resource-evidence scope))
-      (def entry (.get deterministic-engineering.init.exports Modules rust-resources scope entry))
+      (def scope (.get deterministic-engineering.init.exports Library evidence scope))
+      (def entry (.get deterministic-engineering.init.exports Languages rust-resources scope entry))
       ;; Exercise the published boundary too, rather than only a test-local wrapper.
       (check-exception
        ((.get scope open-review) entry LocalProfile "invalid-usage" "source/A" '())
@@ -47,12 +47,12 @@
       (check-equal? ((.get result rows-of) 'support) '())
       (check-equal? (.get checked policy result-kind) 'recorded-only)
       (check-equal?
-       (eq? scope (.get deterministic-engineering.init.exports Modules resource-evidence scope))
+       (eq? scope (.get deterministic-engineering.init.exports Library evidence scope))
        #t))
 
     (test-case "invalid arguments and arity are rejected before the real operation runs"
-      (def scope (.get deterministic-engineering.init.exports Modules resource-evidence scope))
-      (def entry (.get deterministic-engineering.init.exports Modules rust-resources scope entry))
+      (def scope (.get deterministic-engineering.init.exports Library evidence scope))
+      (def entry (.get deterministic-engineering.init.exports Languages rust-resources scope entry))
       (def calls 0)
       (def operation
         (validate ResourceOpenReviewSignature
@@ -82,13 +82,13 @@
     (test-case "a callable with the wrong result cannot satisfy a method signature"
       (def make-invalid (validate ResourceMakeEvidenceSignature (lambda () (ascent-rule-module (.o)))))
       (check-exception (make-invalid) TypeError?)
-      (def scope (.get deterministic-engineering.init.exports Modules resource-evidence scope))
-      (def entry (.get deterministic-engineering.init.exports Modules rust-resources scope entry))
+      (def scope (.get deterministic-engineering.init.exports Library evidence scope))
+      (def entry (.get deterministic-engineering.init.exports Languages rust-resources scope entry))
       (def open-invalid (validate ResourceOpenReviewSignature (lambda args 'not-a-session)))
       (check-exception (open-invalid entry LocalProfile 'u "source/A" '()) TypeError?))
 
     (test-case "policy changes and undeclared permission fields cannot grant authority"
-      (def scope (.get deterministic-engineering.init.exports Modules resource-evidence scope))
+      (def scope (.get deterministic-engineering.init.exports Library evidence scope))
       (check-exception
        (validate ResourceEvidenceScopeContract
                  (.cc scope 'policy (.cc (.get scope policy) 'result-kind 'authorized)))
@@ -102,8 +102,8 @@
        TypeError?))
 
     (test-case "typed normalization preserves immutable old results across a real source update"
-      (def scope (.get deterministic-engineering.init.exports Modules resource-evidence scope))
-      (def entry (.get deterministic-engineering.init.exports Modules rust-resources scope entry))
+      (def scope (.get deterministic-engineering.init.exports Library evidence scope))
+      (def entry (.get deterministic-engineering.init.exports Languages rust-resources scope entry))
       (def session ((.get scope open-review) entry LocalProfile 'typed-before "source/A" '()))
       (def before (gerbil-ascent-session-run session))
       (gerbil-ascent-session-replace-sources!
