@@ -1,0 +1,207 @@
+#+TITLE: 10.139 Native Cohort and Source Acquisition
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* One dependency graph, distinct admission receipts
+:PROPERTIES:
+:CUSTOM_ID: cohort139-ownership
+:STATUS: sdk-producer-fix-in-progress
+:END:
+
+The owner repair follows [[file:10.138-native-package-cohort-and-ci-provenance.org][10.138]]. Existing review branches retain their ownership;
+no replacement branch, package identity or compatibility implementation is added.
+
+| Owner | Declaration or projection | Required relationship |
+|-------+---------------------------+-----------------------|
+| POO | Complete native package build | Selected source must satisfy the consumer cold deadline |
+| Core PR #19 | gerbil.pkg POO pin | Select POO 60faf7d; preserve complete package targets |
+| Parser PR #13 and ASCENT PR #1 | gerbil.pkg Core pins | Select the same Core as the consuming product |
+| Orgize PR #18 | gerbil.pkg Parser pin | Preserve Parser-to-Core closure |
+| Parent PR #34 | Core gitlink and gerbil.pkg | Select that Core and matching Parser, Orgize and ASCENT |
+| Parent Bazel source projection | Native pin tool and module evaluation | Derive archive digests and lock projections from real selected sources |
+| Aitia PR #2 | gerbil.pkg and workflow Parent checkout | Select the same Parent/Core pair in package and CI execution |
+| This project PR #1 | Root gerbil.pkg | Admit the selected consumer cohort only with its actual receipts |
+
+Full identities belong to gerbil.pkg and the native Git/package owners. Short
+identities here describe observations; this document is not a second resolver.
+A successful upstream build cannot replace Aitia's cold or complete CI receipts.
+
+* Retired acquisition interface discovered by the consumer
+:PROPERTIES:
+:CUSTOM_ID: cohort139-acquisition
+:END:
+
+Parent retired the Python prepare-native command when native acquisition returned
+to Gerbil. Aitia still called that removed command. Changing only dependency
+revisions would therefore leave a real API incompatibility before compilation.
+
+Aitia's existing native dependency entry now delegates source-only acquisition
+to the SDK's actual pkg-fetch procedure. The pinned v0.19 SDK does not export
+that procedure as a public script API; an explicit native SPI binding names the
+real SDK owner. It does not reproduce clone, checkout or tag-file implementation.
+A missing SDK procedure remains an error, not a fallback implementation.
+
+The same entry accepts a declared repository and exactly one pin from its owning
+gerbil.pkg. Source registration may create SDK prefix directories and native tag
+metadata. It must not create a package manifest or compiled package products.
+Native pkg-build remains the owner of real manifest generation and complete
+package compilation. Parent demand compilation remains a separate existing entry.
+
+#+NAME: cohort139-cold-sequence
+#+BEGIN_SRC text
+absent package products and manifest
+  -> SDK source acquisition and tag registration (bounded independently)
+  -> assert package products and manifest still absent
+  -> native deps --install (180 seconds)
+  -> require natural success and cold-build marker
+  -> subsequent consumer builds and tests
+#+END_SRC
+
+This sequence preserves coldness without confusing SDK-created empty lib/bin
+directories with compiled package output. The source phase never counts as a
+successful compile. No uninstall, fabricated manifest or assertion removal is used.
+
+* Resource and verification boundaries
+:PROPERTIES:
+:CUSTOM_ID: cohort139-gates
+:END:
+
+- Heap allowance is 2 GiB per Gerbil/Gambit process, not an aggregate process-tree cap.
+- Native build invocations retain 180 seconds. Worker capacity follows machine
+  resources and preserves explicit caller limits; no fixed one/two-worker cap is added.
+- The previous Linux run confirmed declared, make and compiler capacities all equal
+  four. Its failure cannot be attributed to an absent concurrency environment variable.
+- Local cold admission and Linux cold admission are distinct platform observations.
+- License, Lean and Quint outcomes do not authorize unexecuted Scheme consumers.
+- Full Aitia admission requires semantic tests, formal replay, integration, native
+  ABI/Python delivery and lifecycle/fault tests at the same consumer revision.
+- Cached and uncached outcomes remain separately identified. A failed or incomplete
+  stage stays open even when an unrelated upstream PR is green.
+
+* Review surface
+:PROPERTIES:
+:CUSTOM_ID: cohort139-review
+:END:
+
+Review the native package declarations, Parent's Core gitlink, native pin tool
+output, Bazel-generated source projection, and Aitia workflow together. Generated
+compiler products, manifests and raw logs are not source changes. The paired
+[[file:../../90-99-views/90-architecture-views/90.128-native-cohort-source-acquisition.d2][90.128 view]] distinguishes source registration from build and consumer admission.
+
+* Observed receipts for the selected cohort
+:PROPERTIES:
+:CUSTOM_ID: cohort139-observed
+:END:
+
+| Gate | Observation | Boundary |
+|------+-------------+----------|
+| Local POO cold native build | 154.71 seconds; natural exit 0; complete native spec and cold marker | Darwin SDK, 12 machine-derived workers; independent from Linux |
+| Parent declaration/projection check | gerbil-dependency-contract: ok after native Bazel evaluation and cross-platform projection sync | Actual archive SHA-256 values; no fabricated package manifest |
+| Aitia license checker | Passed, including all 18 checker tests | Does not qualify native consumers |
+| Aitia consumer CI | [[https://github.com/tao3k/lambda-aitia/actions/runs/40937627805][40937627805]] for f92ee8f | Linux POO cold gate failed at 180 seconds; later native consumers did not run |
+
+The earlier consumer run at 4c04525 failed because it called Parent's retired
+prepare-native command. That failed attempt remains recorded as an interface
+mismatch; it is not a POO compile-time measurement and is not counted as passed.
+
+* Replay binding and an unaccepted local Core attempt
+:PROPERTIES:
+:CUSTOM_ID: cohort139-replay-and-core
+:END:
+
+Core's unchanged formal correspondence assertion refused the first upgrade:
+SelectionReplay.lean still declared the previous POO revision. The selected POO
+object.ss has the same SHA-256, 9726f238a3c432c0f26e7a6fe85aa9455afee88ace130af2962610f9d14b868c.
+Only the declared producer revision changes; the source digest and semantic laws
+remain intact. This permits source-binding reuse, not a claim of native replay
+qualification. The actual selected producer is also supplied to the correspondence
+checker, including its matched fault controls.
+
+The first local Core owner build hit its 180-second deadline (exit 124). It is
+not accepted. Subsequent completion from partial native outputs is diagnostic
+incremental work, not another cold receipt. No consumer admission may cite it as
+proof that a clean Core package meets the deadline. The Linux consumer run must
+supply its own result, and any budget failure remains a live engineering issue.
+
+* Source-grounded Linux executor correction
+:PROPERTIES:
+:CUSTOM_ID: cohort139-native-executor
+:END:
+
+The selected Linux SDK archive contains the deferred compiler implementation:
+add-compile-job! constructs a thread for each job and stores it; only
+execute-pending-compile-jobs! starts the accumulated threads. The configured
+capacity limits running backend work, but it does not overlap that work with
+front-end generation. Source inspection confirms that a correct capacity handoff
+alone cannot change this scheduling boundary.
+
+POO's own successful build at the same source selected an uncached package and
+completed in 247.81 seconds under its 300-second producer limit. Its log contains
+503 backend job events including the later benchmark entry. Thus its green
+producer run never established the consumer's 180-second limit. The failed Aitia
+run used the same Linux release and retained capacity four; the deadline remains
+unchanged.
+
+The SDK repository already owns a platform-independent streaming executor patch.
+Its release workflow applied it only on Darwin. Existing SDK PR #58 now applies
+that same native patch to Linux too, with no consumer scheduler or compatibility
+copy. The hunk applies to the real selected 2591dcd release source. This is a
+candidate SDK cohort change, not permission to claim compatibility with Aitia.
+The new SDK must pass its installed tool-entry and executor checks before any
+consumer selects its immutable archive and real SHA-256.
+
+The strengthened executor oracle requires an actual worker message before drain
+is requested. Prior capture/drain/error/reopen checks alone could pass under the
+old deferred implementation. Existing assertions remain, including raised #f,
+nested work, restored submission parameterization and reopening after failure.
+Explicit capacities one and three are bounded contract probes; production
+capacity remains machine-derived. Local native contract invocations passed for
+one, three and default machine capacity. This is a behavioral receipt for the
+available Darwin executor, not executed Linux SDK qualification.
+
+The release correction is tracked by
+[[https://github.com/tao3k/gerbil-bazel/actions/runs/40940039859][SDK producer run 40940039859]]. It retains a distinct trust boundary: SDK
+publication, package cold build, complete Aitia CI and root admission must each
+finish successfully. A later or differently configured SDK is never selected
+solely because its release date is newer.
+
+Core's source-bound replay check also completed: all-source typechecking and all
+11 selected replay/topology cases, including matched faults, passed with the
+actual POO source owners. Incremental Core completion took 56.65 seconds after
+the failed cold attempt. The subsequent initial Parser build also reached its
+180-second limit. Neither incremental Core completion nor partial Parser output
+is cold admission or full consumer acceptance.
+
+* Root baseline custody while the producer remains open
+:PROPERTIES:
+:CUSTOM_ID: cohort139-baseline-custody
+:END:
+
+PR #1 still carried the stale df2d1d9 Aitia declaration although the accepted
+workspace had already restored 2c418d5 with Parent 177ac1c and Core e77698c.
+The review branch now declares that coherent accepted baseline too. It does not
+select the unqualified candidate cohort or count old receipts as its admission.
+
+The default Just test entry also omitted the existing native-concurrency test.
+It now includes its host-derived capacity and explicit caller-limit assertions.
+The root build completed through the real SDK with unchanged 2 GiB/180-second
+limits. Complete root test execution finished naturally: 44 cases across 21 bounded
+invocations, all module/harness markers present and no error markers. This
+repetition was required by the real entrypoint/declaration changes. It qualifies
+the accepted baseline only, not the candidate SDK or dependency cohort.
+
+A source-owner negative control also exercised the actual old Linux base.ss
+executor implementation through equivalent public imports in an isolated
+Darwin interpreter. It rejected the before-drain requirement, while the installed
+streaming implementation passed. The earlier attempt to import a complete raw
+bootstrap tree failed at the compilation-target boundary and is not accepted as
+behavioral evidence. Neither source-only control is a Linux archive execution
+or a substitute for the new release/consumer gates.
+
+Parent's native Just defaults and CI contained an independent fixed-capacity
+mismatch: two workers, and a 3 GiB CI test override. The existing PR now derives
+capacity from its host, preserves explicit caller limits and uses the agreed
+2 GiB test heap. Real Just command invocations confirmed host capacity 12 and
+explicit capacity three both reach the native compiler. No native test assertion
+or unrelated benchmark timeout was removed or enlarged.

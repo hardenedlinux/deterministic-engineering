@@ -62,6 +62,7 @@ test:
     just test-file t/library-owner-test.ss
     just test-file t/library-selection-test.ss
     just test-file t/native-context-test.ss
+    just test-file t/native-concurrency-test.ss
     just test-file t/rust-project-native-test.ss
     just test-file t/module-design-test.ss
     just test-gateway
