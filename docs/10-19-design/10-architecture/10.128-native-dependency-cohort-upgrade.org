@@ -1,122 +1,144 @@
 #+TITLE: 10.128 Native Dependency Cohort Upgrade
+#+LANGUAGE: en
 #+STARTUP: overview
 #+OPTIONS: toc:2 num:nil
 
 * Admission scope
 :PROPERTIES:
 :CUSTOM_ID: native128-scope
-:STATUS: in-progress
+:STATUS: native-qualified-complete-ci-pending
 :END:
 
-The unit of upgrade is the native dependency closure, rather than one successful
-POO build. Package metadata owns revisions; native package APIs own tags and
-manifests; Yuanxu owns Module/Profile/Scenario source projection; each package
-retains its original build specification. No parallel dependency resolver,
-compatibility module or replacement evidence framework is introduced.
+Upgrade the native dependency closure as one compatible group. Package metadata
+owns revisions; native SDK APIs own tags and manifests; Yuanxu owns selected
+Module source projection. Each package retains its original build entry and
+verification obligations. No replacement resolver, scheduler or compatibility
+module is introduced.
 
-The resource contract from [[file:10.127-machine-derived-native-build-concurrency.org][10.127]] remains 2 GiB heap per Gerbil/Gambit process,
-a 180-second deadline per bounded invocation and machine-derived concurrency.
-Sequential, independently bounded invocations do not share a 180-second aggregate
-deadline. Tree RSS and native allocations are distinct from Scheme heap size.
+The resource contract from [[file:10.127-machine-derived-native-build-concurrency.org][10.127]] is 2 GiB heap per Gerbil/Gambit process,
+180 seconds per bounded invocation, and concurrency derived from machine
+resources. A process-tree physical footprint is not an individual Scheme heap.
+Independent native package owners have independent deadlines.
 
-#+CAPTION: Native dependency ownership and the admission boundary.
+#+CAPTION: Native ownership and independent admission boundaries
 [[file:../../90-99-views/90-architecture-views/90.117-native-dependency-cohort-upgrade.svg]]
-[[file:../../90-99-views/90-architecture-views/90.117-native-dependency-cohort-upgrade.d2][Editable D2 source]].
+[[file:../../90-99-views/90-architecture-views/90.117-native-dependency-cohort-upgrade.d2][Editable D2 source]]
 
-* One native ownership graph
+* Selected group
 :PROPERTIES:
-:CUSTOM_ID: native128-graph
+:CUSTOM_ID: native128-selected
 :END:
 
-| Owner | Declared dependency | Admission responsibility |
-|-------+---------------------+--------------------------|
-| Yuanxu/Core | POO | Effective contracts, read ownership, native source and build projection |
-| Parser | Same Yuanxu/Core | Native language entry, compiler artifacts and public support interfaces |
-| ASCENT | Same Yuanxu/Core | Native inference/compiler products, including macro-phase objects |
-| Orgize | Same Parser | Native language consumer and generated grammar products |
-| Agentic AI Lab | Parser, ASCENT, Orgize; Core gitlink | Library demand and equivalent Bazel source projections |
-| Aitia | Parent Library, same Core, ASP | Review/history/recovery and complete CI |
-| Deterministic Engineering | Aitia, same Parent, same Core | Exact consumable closure and documented evidence applicability |
+These revisions identify this validation cohort; =gerbil.pkg= and the native
+Core gitlink remain dependency authority.
 
-A Core gitlink change requires its POO source projection to change as well. A
-Parser change requires the Orgize dependency to agree. Parent, Aitia and the
-engineering package must agree on Core; independently green upstream branches
-do not establish that agreement. The existing projection tool calculates archive
-checksums from actual published source archives and updates the Bazel projection.
+| Owner | Selected revision | Native responsibility |
+|-------+-------------------+-----------------------|
+| POO | dbbc436 | Core-owned persistent declarations and public contract interfaces |
+| Yuanxu/Core | 0f19da5 | Native catalog reads, role phases and guarded Module builds |
+| Parser | 203d136d | Same Core; public compiler, Fold, runtime and syntax capabilities |
+| ASCENT | 910a15b | Same Core; native Library selection, inference and evidence products |
+| Scheme/Rust | cfbc10c | Actual Orgize native/Cargo dependency; native build is a separate boundary from Rust runtime admission |
+| Orgize | aee83c7 | Same Parser in native metadata and Cargo.lock; complete generated Fold package |
+| ASP | 9ae9bc3 | Existing Aitia testing owner and original native build |
+| Agentic AI Lab | 8894172 | Core gitlink plus matching Parser/ASCENT/Orgize archive projections |
+| Aitia | publication pending | Same Parent/Core/ASP; review, history, recovery and complete CI |
 
-* Native interface migration
+Parent's existing pin tool obtains checksums from actual published archives.
+Bazel regenerates the native lock; the existing synchronization operation
+projects that result across platforms. All 12 pin/source-preparation tests pass.
+
+* Native expression and capability alignment
 :PROPERTIES:
 :CUSTOM_ID: native128-interfaces
 :END:
 
-| Retired or internal owner | Existing native owner | Preserved boundary |
-|---------------------------+-----------------------+--------------------|
-| POO object-contract-flow and object-diagnostics | object-contract | checked-action, checked-issues and diagnostic composition |
-| POO object-contract-validation helper | ObjectContract .validation-fields | Effective receiver-local responsibilities and checked receiver enrollment |
-| POO inheritance-hooks | mop | Original inheritance protocol and tests |
-| Observation in generalized-prototype | fun | Original observation object |
-| Parser src/runtime/artifact import | artifact-support | Public native artifact facade |
-| Parser src/compiler/rust-syntax import | rust-syntax-support | Public native Rust syntax facade |
+| Previous dependency | Native owner | Preserved obligation |
+|---------------------+--------------+----------------------|
+| Retired POO contract-flow/diagnostics modules | object-contract | Checked actions, issues and diagnostics |
+| Private validation helper | ObjectContract .validation-fields | Effective responsibilities and receiver enrollment |
+| Inheritance hooks | mop | Original inheritance semantics |
+| Generalized-prototype Observation import | fun | Existing observation object |
+| Parser internal artifact path | artifact-support | Runtime inspection and grammar identity |
+| Mixed language-strategy/compiler facade | compiler-build-support and event-fold-build-support | Existing compiler execution and Fold emission owners |
+| Parser internal Rust syntax path | rust-syntax-support | Existing native syntax surface |
+| ASCENT quoted build inventory | init-owned Module projection | Complete original production closure |
 
-The Rust pure-AOT macro remains imported from its existing precise owner where
-no public facade exports that capability. A guessed facade or copied macro would
-change ownership rather than align it. Role validation still enrolls the checked
-receiver before running each original validator; normalizers, obligations and
-rejection semantics remain intact.
+The precise pure-AOT macro import remains with its implementation owner where
+no public capability exports it. No guessed facade or forwarding adapter is
+added. Scope validation checks the effective receiver before the original
+validators run.
 
-* Source prefetch is not installation
+ASCENT's new Library entry and the source-context boundary are detailed in
+[[file:10.129-ascent-native-library-modules.org][10.129]]. All original 136 production inputs remain; native selection adds the
+root init and the three Module role sets. Existing compiler-output, C ABI and
+executable admission responsibilities remain intact.
+
+* Generated source and package metadata ownership
 :PROPERTIES:
 :CUSTOM_ID: native128-metadata
 :END:
 
-Source prefetch may acquire immutable Git objects and complete a new checkout.
-It must preserve an existing checkout, local edits and SDK metadata. It must not
-write a tag, manifest or compiled product. The subsequent native SDK update owns
-the real tag transition and the native build owns its actual manifest.
+Orgize's generated Fold source belongs in =src/orgize-fold= beneath the native
+prefix, with its own real native package entry. Installed products remain under
+=lib/orgize-fold=. Generation must not overwrite the installation prefix's root
+=gerbil.pkg=, =init.ss= or =build.ss=. Core's explicit foreign-package boundary
+requires the generated package to compile through its own owner.
 
-The additional local Git regression checks a new source checkout and the absence
-of invented tag/manifest/library products. The existing preservation regression
-continues to check an installed checkout with local edits. These Python checks
-qualify source preparation only; native package acceptance requires actual SDK
-registration, complete products and independent consumers.
+Source prefetch acquires immutable Git objects only. It preserves local edits
+and existing SDK metadata and creates no tag, manifest or compiled product.
+The SDK's actual update registers a selected revision; its actual build writes
+the genuine manifest. After publication those native builds run again in
+dependency order so manifests identify the published versions, including the
+actual transitive Core version rather than a pre-commit validation version.
 
-* Bounded execution and current evidence
+* Qualified local evidence
 :PROPERTIES:
 :CUSTOM_ID: native128-evidence
 :END:
 
-| Observation | Result | Applicability |
-|-------------+--------+---------------|
-| POO ec54d51 complete default native build | completed, 178.286 s, 12 workers | Fresh candidate package root; original property libraries and executable retained |
-| Core compatibility migration build | completed, 162.371 s | Candidate source before upstream merge |
-| Core merged with upstream 7c38aaa | completed, 35.808 s | Incremental native build; not a cold-build timing claim |
-| Contract composition, semantic Module, evidence read ownership, MOP thunk construction | MODULE-OK, HARNESS-OK, OK | Original assertions; contract and semantic suites repeated after upstream merge |
-| First Parser attempt | not admitted | Build-entry edit during execution invalidated source observations; guard also reached its deadline |
-| Frozen Parser, ASCENT and downstream closure | pending | Require separate bounded native receipts and current source identity |
-| Complete Aitia CI on upgraded closure | pending | Local tests and previous-cohort jobs cannot substitute for this gate |
+| Gate | Actual result | Applicability |
+|------+---------------+---------------|
+| POO complete default build after native clean | 126.149 s; 12 resource-derived workers | Selected POO package, not aggregate cold closure |
+| Core original contract/slot-origin/read-ownership/semantic tests | MODULE-OK, HARNESS-OK, OK | Published persistent-catalog protocol |
+| Native role-prelude SSI regression | MODULE-OK, HARNESS-OK, OK | Real compilation and fresh-expander SSI import |
+| Parser native package and public interface tests | completed; MODULE-OK, HARNESS-OK, OK | Actual installed compiler/Fold capabilities |
+| ASCENT complete Module build | completed, 106.974 s | Original libraries, ABI and both executable outputs |
+| ASCENT final source/API incremental build | completed, 25.864 s | Scope lifecycle completion; not a cold timing claim |
+| Native Library Just entry | passed in 10 s | Real providers, query, independent finite replay and source-bound reuse |
+| Original eqrel / finite evidence / artifact tests | passed in 6 / 7 / 15 s | All original assertions; 64 three-node graphs use a separate reachability oracle |
+| Build-only producer comparison controls | 3 tests passed | Genuine native projection, no production Rust producer in the VM inventory |
+| Compiler-profile control | passed | Real C compilation; isolated probe keeps its own package identity |
+| Orgize original complete default and C ABI staging | completed; ORG-PARSER-STAGE OK | All document, inline and tape variants; native metadata preserved |
+| Source preparation and replay resource selection | 12 and 16 tests passed | Resource selection/source ownership, not complete runtime replay |
 
-Parser and Orgize no longer impose a package-local two-worker ceiling. Core's
-Just entry no longer limits its machine-derived default to four. Explicit caller
-limits remain supported by the existing native framework. Each test invocation
-keeps 2 GiB and 180 seconds; native fixture preparation is separately bounded.
-An aggregate shell timeout must not terminate unrelated later phases simply
-because earlier, independently bounded preparations consumed time.
+These observations identify different operations and cache states. They do not
+constitute a speedup claim. Published-version metadata builds are additional
+native owner invocations, not substitutes for behavioral tests.
 
-The first Core publication was rejected because its existing upstream branch had
-advanced. The repair merged that upstream commit, retained its assertions and
-revalidated the affected native source. A non-fast-forward rejection never
-justifies overwriting the existing PR branch.
-
-* Completion gate
+* Rejected observations and remaining gates
 :PROPERTIES:
-:CUSTOM_ID: native128-completion
+:CUSTOM_ID: native128-ci
 :END:
 
-- Register and check the published coherent native revisions through the SDK.
-- Check native products and independent Parser/ASCENT consumers, not imports alone.
-- Preserve the cold POO gate and the resource-receipt assertions in Aitia CI.
-- Run the complete Scheme, lifecycle, SDLC/GitOps, native ABI and Python jobs,
-  together with the existing Quint, Lean and license jobs.
-- Bind each remote result to its actual head and dependency metadata. A queued,
-  running, failed or previous-cohort result leaves the complete gate open.
-- Publish through the existing engineering PR #1 and Aitia PR #2 only.
+An early Parser run changed its own build entry while executing; it is rejected.
+An earlier Orgize experiment incorrectly expected a parent package to compile
+foreign generated sources; the original independent owner was restored. The
+first ASCENT Module build exposed missing syntax-phase Core bindings in the
+role prelude; the direct native fix and compiler-product regression supersede
+that failed build. None of these failed attempts qualifies as acceptance.
+
+Prior Aitia CI reached 19,042 states but completed only 2,085 of 3,084 covering
+traces before the unchanged 90-minute job deadline. Later independent gates were
+skipped. That run is incomplete, not a semantic counterexample or full success.
+
+The existing replay driver now consumes native declared CPU/memory capacity
+instead of a fixed four-worker ceiling. All 19,042 states, 3,084 traces, 16
+actions, seven faults, assertions, 160-step batch bound and 180-second process
+timeout remain. Exhaustive replay runs after the independent SDLC/GitOps and
+ABI/Python gates, so a slow replay does not prevent their execution.
+
+Current upstream Core CI passes Linux build and Module tests, but macOS
+bootstrap and Linux scale have deadline failures. ASCENT's final-head CI and
+Aitia's complete upgraded CI remain independent gates. Local native builds or
+focused tests cannot close those gates or establish a fully green toolchain.
