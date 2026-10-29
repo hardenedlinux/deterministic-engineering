@@ -6,7 +6,7 @@
 * One dependency graph, distinct admission receipts
 :PROPERTIES:
 :CUSTOM_ID: cohort139-ownership
-:STATUS: sdk-producer-fix-in-progress
+:STATUS: native-executable-dag-producer-in-progress
 :END:
 
 The owner repair follows [[file:10.138-native-package-cohort-and-ci-provenance.org][10.138]]. Existing review branches retain their ownership;
@@ -205,3 +205,86 @@ capacity from its host, preserves explicit caller limits and uses the agreed
 2 GiB test heap. Real Just command invocations confirmed host capacity 12 and
 explicit capacity three both reach the native compiler. No native test assertion
 or unrelated benchmark timeout was removed or enlarged.
+
+* Published SDK and a single consumer selection owner
+:PROPERTIES:
+:CUSTOM_ID: cohort139-published-sdk
+:END:
+
+[[https://github.com/tao3k/gerbil-bazel/actions/runs/40940039859][SDK producer run 40940039859]] completed successfully. The actual Linux archive
+is [[https://github.com/tao3k/gerbil-bazel/releases/tag/gerbil-v0.19-2591dcd9b7c6d2c4e9dd8611a17c5b1a5d82bbdb-linux-x86_64-portable-full-single-host-unlimited-patch2ab86460b480][the 2591dcd streaming-executor release]], with SHA-256
+=ec3c5f865f58bf529de34b6c0114fdb4d71328f9dacfe053f4cc5f2604233128=.
+All three executor contract invocations passed on the real Linux SDK. Installed
+tool-entry controls and relocated-archive verification passed too. Expected
+negative tool tests remain negative; their diagnostics are not successful tests.
+
+The producer used four runner-derived cores. Its recorded stages include Gambit
+313 seconds, stage0 134, stage1 222, stdlib 625 and libgerbil 261. These are SDK
+bootstrap timings, not accepted consumer build timings; the Aitia cold package
+gate retains 180 seconds.
+
+Parent's installer previously carried a second Linux SDK selection independent
+of MODULE.bazel. It now consumes the same existing declaration reader as the
+Bazel lock validator. Revision, exact URL and SHA-256 have one Linux owner; the
+existing separately pinned Darwin capability remains explicit. Unsupported hosts
+retain CLI refusal. A real declaration contract checks both consumer surfaces.
+
+Native package cache identities now include MODULE.bazel and MODULE.bazel.lock,
+in addition to package declarations and installer code. The Linux runtime label
+also identifies the selected SDK family. A prior compiler's generated interfaces
+cannot be treated as current merely because Scheme dependency pins stayed equal.
+
+The existing [[https://github.com/tao3k/agentic-ai-lab/actions/runs/40945934315][Parent native lock-refresh run 40945934315]] owns Linux seed, Darwin merge and
+Linux verification. The first full local metadata-tool test attempt refused the
+still-old SDK lock, as intended. The installer/declaration tests pass; complete
+metadata acceptance awaits the real generated cross-platform lock. No lock
+repository specification or package manifest is filled in by hand.
+
+* Native merged lock and the next consumer run
+:PROPERTIES:
+:CUSTOM_ID: cohort139-merged-lock
+:END:
+
+Parent advanced concurrently with a native adapter-demand correction. The new
+840b9952 source was fast-forwarded without reverting that work. Its existing
+lock-refresh run 40946779760 produced a successful Linux seed. While its Darwin
+runner remained queued, the available local Darwin host ran the same native
+refresh-native-lock and Bazel mod deps update/error entries against that actual
+seed. This generated the merged lock; no repository attributes were edited.
+
+Parent's full declaration/lock validator and all 36 automation tests then passed.
+The lock was committed through existing PR #34. Consumer PR #2 now selects that
+complete Parent/Core cohort in both gerbil.pkg and its checkout instruction.
+[[https://github.com/tao3k/lambda-aitia/actions/runs/40947415483][Aitia run 40947415483]] at ad56856 must verify the merged lock on Linux before
+its unchanged cold POO gate and complete native consumer checks. This is the
+remaining Linux merge verification owner, not a claim that the queued Darwin
+GitHub job completed.
+
+* Second native tail: executable objects
+:PROPERTIES:
+:CUSTOM_ID: cohort139-executable-tail
+:END:
+
+Aitia run 40947415483 completed with successful license, Lean and all 25 Quint
+checks. Its Linux merged-lock resolution passed. The cold POO compile still
+reached the unchanged deadline: 180.03 seconds, exit 124. No later native consumer
+stage is accepted. The log contains 499 backend job events versus 298 in the old
+SDK attempt; an event is not a completed job and is not package admission.
+
+The actual Linux executable driver still performed its static object closure
+serially inside one worker. Existing SDK PR #58 now extends the native executable
+object DAG to Linux as well as Darwin. Independent objects use the same bounded
+executor; original object locks, inputs and the successful-object barrier remain.
+No compiler optimization flag, POO target or timeout was relaxed. Darwin's
+separate runtime-C reuse candidate is not selected for this Linux producer.
+
+The added actual standard-Make consumer compiles and runs a native executable
+whose independent result is 42. An invalid object compiler request must fail
+without creating the executable. Both branches passed on the local installed
+Darwin SDK, within individually bounded 2 GiB/180-second processes. This local
+control does not qualify the new Linux implementation.
+
+The next actual SDK producer is
+[[https://github.com/tao3k/gerbil-bazel/actions/runs/40949350906][40949350906]]. Its archive identity and digest must come from successful native
+publication. Parent, Aitia and this project's admission remain open until the
+new producer and the unchanged full consumer gates complete.
