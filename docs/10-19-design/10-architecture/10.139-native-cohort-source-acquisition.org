@@ -336,3 +336,58 @@ an accepted remedy.
 Complete Aitia Scheme, runtime, lifecycle and delivery stages remain unexecuted
 on this candidate. PR #1 retains the independently qualified baseline; it must
 not advance its dependency pins using producer controls or formal-only receipts.
+
+
+* Native tagger candidate and an independent all-source oracle
+:PROPERTIES:
+:CUSTOM_ID: cohort139-tagging-candidate
+:STATUS: linux-sdk-producer-in-progress
+:END:
+
+Existing SDK PR #58 now contains candidate 66388ae. The native tagger gives each
+indexed source expansion a bounded lifetime. It preserves contexts present on
+entry, reuses compiled interface contexts within the scan, and restores the
+caller's original registry on return or exception. The correction belongs to
+the SDK tool; consumers do not add a tag implementation or suppress tagging.
+
+The first diagnostic that discarded every newly loaded context also repeatedly
+loaded shared interfaces. Its full source probe reached 180 seconds and was
+rejected. The selected candidate retains compiled interface reuse within the
+operation while releasing new source contexts after their tags are written.
+This distinction is part of the ownership correction, not a raised budget.
+
+The added native contract lives in t/tags-context-test.ss. It checks macro imports,
+re-exports, a manually specified UTF-8 byte offset, identical Emacs output under
+input grouping, sorted Vim output under traversal changes, malformed source,
+invalid-format refusal without truncation, and preservation of caller-owned
+context identity. The unchanged old native module fails the source-retention
+assertion. The candidate passes all these assertions.
+
+One local compiled candidate invocation indexed all 460 POO source files under
+2 GiB in 48.82 seconds, ending naturally with WHOLE-POO-TAGS-OK. Its inventory
+contains 421 tagged sources and 39 skipped inputs. An independent comparison
+uses the unmodified selected tagger source, whose bytes are identical at the
+selected Linux and local Darwin source revisions. It compiles that original
+module separately and generates the same ordered inputs in eight bounded
+processes, keeping the old implementation below its accumulation failure.
+Production tagging remains one complete invocation; the oracle partition is
+not a production target reduction or a cold-package receipt.
+
+The complete concatenated original output equals the candidate output byte for
+byte, including the same 39 skips. The path-bound local artifact SHA-256 is
+=d24991c01b15e9802413eea86bfeb00936320c5e09349ebfd64fbf5949140f47=.
+The independent oracle took 72.11 seconds across its separate processes. These
+numbers do not qualify a Linux package build or an arbitrary future macro library.
+
+An initial comparison through the installed Darwin standalone tag executable
+returned success while skipping every input and producing an empty index. That
+attempt was rejected as an oracle. It is not content-validation evidence; the
+subsequent original-source comparison and explicit exported-content assertions
+are required. The SDK producer also retains its existing real CLI checks that
+require a nonempty index containing the expected exported symbol.
+
+[[https://github.com/tao3k/gerbil-bazel/actions/runs/40958291643][Linux SDK producer 40958291643]] now builds the actual candidate and runs native
+contracts before publication and after relocation. Only successful publication
+can supply the immutable archive and digest for Parent's native declaration.
+Then Aitia must rerun the unchanged cold package gate and complete CI. Root's
+accepted dependency cohort remains unchanged while these receipts are absent.
