@@ -7,6 +7,7 @@
 (.def ResourceLifecycleScenario.
   domain: (error "Resource Scenario requires its domain")
   evidence: (error "Resource Scenario requires its evidence Module")
+  contracts: (error "Resource Scenario requires its owner Contract")
   entry: (.get domain entry)
   integration-entry: (.get domain integration-entry)
   methods: (.get domain methods)
@@ -26,7 +27,9 @@
                   (.get context usage)
                   (.get context snapshot)
                   (.get context scopes))))
-(def (resource-lifecycle-scope selected-domain selected-evidence)
+(def (resource-lifecycle-scope selected-domain selected-evidence selected-contract)
   (.o (:: @ ResourceLifecycleScenario.)
       domain: selected-domain
-      evidence: selected-evidence))
+      evidence: selected-evidence
+      contracts: (.o
+                   scope: selected-contract)))

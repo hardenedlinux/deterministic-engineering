@@ -1,0 +1,154 @@
+#+TITLE: 10.134 Owner-Bound Scenario Admission
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Adapt the existing Scenario, not a second runtime
+:PROPERTIES:
+:CUSTOM_ID: scenario134-owner
+:STATUS: focused-runtime-accepted
+:END:
+
+This extends [[file:10.133-native-evidence-method-contracts.org][10.133]] to the existing ResourceLifecycle Scenario. Native POO
+still provides the producer, inheritance, getters, Types and Function wrappers;
+=close-validation= still owns finite normalization. The existing Domain owns
+Context/Profile membership and currentness. ASCENT remains the evidence engine.
+
+The previous Scenario predicate checked only object/slot presence and two
+procedures. The new owner-bound Record covers Domain, Evidence, contracts,
+entry, integration entry, methods, capture and review. It binds associations
+by identity, rather than treating equal field contents as owner equivalence.
+
+The Scenario now publishes =contracts.scope=, following the existing Domain
+convention. Its declaration passes the actual SourceReader-owned contract to
+the existing factory. The sole internal caller is migrated directly; there is
+no old-arity adapter or default contract imported from another cohort.
+
+* Dependent signatures follow the selected owner
+:PROPERTIES:
+:CUSTOM_ID: scenario134-signatures
+:END:
+
+| Operation | Inputs | Result |
+|-----------+--------+--------|
+| =capture= | Nonempty root, selected native Profile, nonempty crate/Cargo/rustc paths, Symbol usage; optional declared mode | Context belonging to the selected Domain contract |
+| =open-review= | Context belonging to that same selected Domain contract | Native ASCENT Session |
+
+The Context and Profile recognition Types delegate membership to contracts
+obtained from the selected Domain. They retain the caller's captured handle.
+This avoids mixing same-named contracts from a different SourceReader and
+avoids replacing a capture merely because structural normalization can rebind
+computed Profile fields.
+
+Recognition does not establish external-file currentness. The method body keeps
+its existing association checks and =context-current!= call immediately before
+opening the evidence review. An input Type check does not replace that use
+boundary or authorize an implementation action.
+
+The exported factory is an assembly function. The native Module supplies its
+owner contract and admits the result. A direct caller must explicitly validate
+the assembled value with that actual contract before treating its methods as
+the admitted API.
+
+* Normalize once and retain actual function identities
+:PROPERTIES:
+:CUSTOM_ID: scenario134-normalization
+:END:
+
+The owner-dependent Record is derived at admission from the effective Domain.
+The native one-node validation graph normalizes its Function fields. Repeated
+admission of the committed Scope returns the same Scope and functions.
+
+An initial implementation copied the normalized Record with =.cc= to attach
+metadata. This was incorrect: inherited getter recipes run for the new
+receiver and can wrap the functions again. The canonical graph then contains
+different functions from the exported receiver.
+
+The final implementation uses the existing =map-object-values= to materialize
+the admitted values before attaching metadata. This fixes values at the
+normalization boundary, after inheritance and effective-owner selection.
+It does not read and freeze parent fields while defining a child.
+
+The POO regression reads the parent's entry and capture fields before deriving
+a child with another admitted owner receiver. The child reads the effective
+owner; the parent's cached fields remain unchanged. That cloned owner retains
+the same semantics: this checks receiver binding, not a new Rust algorithm.
+
+* Bind the native graph to its issuing contract
+:PROPERTIES:
+:CUSTOM_ID: scenario134-provenance
+:END:
+
+A genuine native graph named =scope= can have checked a different descriptor,
+including an open Record without method signatures. Its existence and node
+label therefore cannot authenticate Scenario normalization.
+
+The Scenario contract privately issues one opaque normalization holder around
+the native graph. The holder is a runtime ownership handle, not another
+validation algorithm, evidence registry, theorem or execution permission.
+Its constructor is private to the issuing SourceReader. A same-named global
+Type, an unrelated graph or a changed dictionary label cannot issue it.
+
+Revalidation checks the holder, native graph freshness, the actual owner-bound
+shape and exact equality with all canonical field identities. Reusing a valid
+holder while replacing an entry, methods or capture function is refused.
+Declared extra fields also require a new schema rather than a forged permission.
+
+Public data shapes remain native Records. The small opaque runtime holder
+uses a private nominal struct because a publicly constructible Record would
+not establish who performed the normalization.
+
+* Finite gold cases
+:PROPERTIES:
+:CUSTOM_ID: scenario134-gold
+:END:
+
+| Case | Input/transition | Expected relation or refusal |
+|------+------------------+------------------------------|
+| LC01 | Actual published Scenario; repeat validation | Same Scope, capture/review functions, owner handles and holder |
+| LC02 | Fresh assembly with actual Domain/Evidence/contract; then wrong contract | First normalizes idempotently; wrong contract refuses |
+| LC03 | Cache parent fields; derive a child using another admitted owner receiver | Effective child owner is retained; parent fields remain unchanged |
+| LC04 | Substitute equal-content entry, different methods/capture, permission field or foreign graph | Refusal despite retained old metadata |
+| LC05 | Genuine native graph over a permissive Record with the same node label | Refusal: it was not issued for these Scenario signatures |
+| LC06 | Invalid capture arguments; then valid arguments with invalid Context result | Zero designated body calls for invalid input; one call before output refusal |
+| LC07 | Invalid review Context; real captured Context with invalid Session result | Invalid input refuses before body; the real input reaches one body invocation before result refusal |
+
+These cases use the selected native owner. The positive source test copies
+real Rust source and Cargo.lock, binds real tool binaries and runs actual
+Session inference. Profile substitution, split scopes, comment-byte mutation,
+six unchanged bases and immutable old query results remain checked.
+
+Function result admission occurs after the method body; it provides no rollback.
+The zero-call counters refer to the designated method body and are not proofs
+that arbitrary POO getter code is pure.
+
+* Acceptance and limits
+:PROPERTIES:
+:CUSTOM_ID: scenario134-acceptance
+:END:
+
+The focused acceptance covers six foundation modules, eight live-query modules
+and the existing real native Context module: 15 modules and 67 cases. All old
+controls remain, and the new Scenario suite is part of =just test=.
+
+Each invocation keeps a 2 GiB heap and at most 180 seconds. The existing Just
+native capacity declaration remains unchanged. Error markers and every module
+and case result are checked in addition to natural process exit.
+
+This does not qualify the unpublished ASCENT domain migration, Linux cold
+dependency construction or Aitia's full CI. It does not rerun Quint/Lean or
+measure Rust throughput. Those obligations remain separate.
+
+An LLM-based AI agent can select native owners, inspect =contracts.scope= and
+repair typed invocation errors. A retained normalization handle never permits
+it to rename a stale source or bypass opposing evidence. Discovery and design
+choices remain open within the existing Library and evidence constraints.
+
+Sources:
+[[file:../../../scenarios/resource-lifecycle/types.ss][owner-dependent native Types]],
+[[file:../../../scenarios/resource-lifecycle/func.ss][existing Scenario producer and use checks]],
+[[file:../../../scenarios/resource-lifecycle/interface.ss][native Module wiring]],
+[[file:../../../t/resource-scenario-contract-test.ss][finite Scenario cases]],
+[[file:../../../t/native-context-test.ss][real capture and change checks]].
+
+[[file:../../90-99-views/90-architecture-views/90.123-owner-bound-scenario-admission.d2][Paired owner, normalization and use view]]

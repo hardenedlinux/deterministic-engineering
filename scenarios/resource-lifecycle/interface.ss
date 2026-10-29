@@ -13,5 +13,5 @@
                             module-id: 'resource-evidence
                             contract: ResourceEvidenceScopeContract))
     scope-contract: ResourceLifecycleScopeContract
-    exports: (resource-lifecycle-scope Domain Evidence))
+    exports: (resource-lifecycle-scope Domain Evidence ResourceLifecycleScopeContract))
   features: (.o))

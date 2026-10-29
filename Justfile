@@ -55,6 +55,7 @@ test-file path pattern=".*":
 test:
     just test-file t/library-relation-types-test.ss
     just test-file t/resource-evidence-contract-test.ss
+    just test-file t/resource-scenario-contract-test.ss
     just test-file t/library-owner-test.ss
     just test-file t/library-selection-test.ss
     just test-file t/native-context-test.ss
