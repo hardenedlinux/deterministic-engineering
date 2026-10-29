@@ -78,7 +78,11 @@
      "library/drivers/rust-resources/func.ss"
      "library/drivers/rust-resources/methods.ss"
      "library/drivers/rust-resources/oracle.ss"
-     "library/drivers/rust-resources/correspondence.ss")))
+     "library/drivers/rust-resources/correspondence.ss"
+     "library/concurrency/resource-control/backpressure-memory/tokio-rayon/objects.ss"
+     "library/concurrency/resource-control/backpressure-memory/tokio-rayon/types.ss"
+     "library/concurrency/resource-control/backpressure-memory/tokio-rayon/config.ss"
+     "library/concurrency/resource-control/backpressure-memory/tokio-rayon/interface.ss")))
 (def (file-pairs paths) (map (lambda (path) (cons path (resource-digest-file path))) paths))
 (def (assert-files! pairs)
   (for-each
@@ -780,7 +784,7 @@
      (resource-digest-file
       (path-expand
        (.get context entry catalog asset relative-path)
-       (path-expand "library/drivers/rust-resources" root)))
+       root))
      (resource-digest-file
       (path-expand "library/drivers/rust-resources/objects.ss" root))
      (resource-digest-file
@@ -833,7 +837,7 @@
   (def catalog-path
     (path-expand
      (.get context entry catalog asset relative-path)
-     (path-expand "library/drivers/rust-resources" root)))
+     root))
   (def scopes (resource-integration-scopes context sysml quint))
   (def (scope key) (cons key (caddr (find (lambda (r) (eq? (cadr r) key)) scopes))))
   (def before

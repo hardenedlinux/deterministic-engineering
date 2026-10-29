@@ -3,6 +3,7 @@
         (only-in :gerbil/expander core-resolve-library-module-path datum->syntax)
         (only-in :gerbil/runtime/loader __find-library-module)
         (only-in :std/misc/ports read-all-as-string)
+        (only-in :std/io/tempfile call-with-temporary-directory)
         "../profiles/resource-lifecycle.ss"
         :deterministic-engineering/init)
 (def ResourceMethods
@@ -35,15 +36,21 @@
   (test-case "actual QNT result rejects altered declaration bytes and supports original-byte repair"
    (def root (getenv "LIBRARY_METHOD_ROOT"))
    (def tool (getenv "LIBRARY_QUINT"))
-   (def out (path-expand "observation" root))
-   (def result ((.get ResourceMethods quint) root LifecycleProfile tool out))
-   ((.get ResourceMethods current!) result)
-   (def path (path-expand "library/drivers/rust-resources/objects.ss" root))
-   (def before (call-with-input-file path read-all-as-string))
-   (try
-    (call-with-output-file (list path: path truncate: #t)
-     (lambda (port) (display before port) (display "\n;; changed declaration\n" port)))
-    (check-exception ((.get ResourceMethods current!) result) error?)
-    (finally (call-with-output-file (list path: path truncate: #t) (cut display before <>))))
-   ((.get ResourceMethods current!) result)
-   (check-equal? (hash-ref (hash-ref ((.get ResourceMethods record) result) "observation") "outcome") "pass"))))
+   (call-with-temporary-directory
+    "native-method-boundary"
+    (lambda (directory)
+     (def out (path-expand "observation" directory))
+     (def result ((.get ResourceMethods quint) root LifecycleProfile tool out))
+     ((.get ResourceMethods current!) result)
+     (def path (path-expand "library/drivers/rust-resources/objects.ss" root))
+     (def before (call-with-input-file path read-all-as-string))
+     (try
+      (call-with-output-file (list path: path truncate: #t)
+       (lambda (port) (display before port) (display "\n;; changed declaration\n" port)))
+      (check-exception ((.get ResourceMethods current!) result) error?)
+      (finally
+       (call-with-output-file (list path: path truncate: #t) (cut display before <>))))
+     ((.get ResourceMethods current!) result)
+     (check-equal?
+      (hash-ref (hash-ref ((.get ResourceMethods record) result) "observation") "outcome")
+      "pass"))))))

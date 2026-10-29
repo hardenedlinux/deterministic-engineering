@@ -2,6 +2,7 @@
 (import :yuanxu/module-system/selection/init-syntax)
 (yuanxu! source: "../../library" mode: explicit
  (backpressure-memory @ "../../library/concurrency/resource-control/backpressure-memory/abstract")
+ (backpressure-tokio-rayon @ "../../library/concurrency/resource-control/backpressure-memory/tokio-rayon")
  (rust-resources @ "../../library/drivers/rust-resources")
  (project-organization @ "../../library/project-organization")
  (project-formation @ "../../library/drivers/project-formation")

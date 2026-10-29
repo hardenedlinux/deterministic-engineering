@@ -21,6 +21,7 @@
   parent: #f
   revision: "ownership-budget/v1"
   lifecycle: '(waiting queued active returned cleanup released)
+  factor-implications: '()
   rules: '((bounded-retention BP-O01 review)
            (bounded-retention BP-O02 quint)
            (bounded-retention BP-O03 lean))

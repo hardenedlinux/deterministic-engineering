@@ -43,7 +43,8 @@
        (create-directory (path-expand "library" root))
        (def path (path-expand "init.ss" root))
        (write-source path (string-append "(yuanxu! source: " (object->string (path-expand "library" repo-root)) " mode: explicit (backpressure-memory @ "
-         (object->string (path-expand "abstract" base)) ") (rust-resources @ "
+         (object->string (path-expand "abstract" base)) ") (backpressure-tokio-rayon @ "
+         (object->string (path-expand "tokio-rayon" base)) ") (rust-resources @ "
          (object->string (path-expand "library/drivers/rust-resources" repo-root)) "))"))
        (def view (yuanxu-load-modules path))
        (def parent (.get view modules backpressure-memory))

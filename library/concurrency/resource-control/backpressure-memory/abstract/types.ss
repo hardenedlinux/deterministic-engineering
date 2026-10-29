@@ -2,6 +2,7 @@
 (import
   :clan/poo/object
   (only-in :clan/poo/mop Type define-type element?)
+  (only-in :clan/poo/type List)
   (only-in :clan/poo/recursive-validation closed?)
   (only-in :clan/poo/object-contract ObjectContract. refine)
   (only-in :yuanxu/object-types/contracts YuanxuContract. yuanxu-predicate-type)
@@ -9,6 +10,7 @@
 (export
   BackpressureDeclarationContract
   BackpressureModelContract
+  BackpressureModelShape
   BackpressureConfigContract
   BackpressureScopeContract
   backpressure-model?)
@@ -24,6 +26,10 @@
                                (.o
                                  kind: 'backpressure/family-mismatch
                                  path: location)))))))
+(def BackpressureModelShape
+  (.cc LibraryModelShape 'responsibilities
+    (.+ (.get LibraryModelShape responsibilities)
+        (.o factor-implications: (List LibrarySymbolTriple)))))
 (def BackpressureModelContract
   (library-definition-contract
    'backpressure-memory/model
@@ -31,7 +37,7 @@
    family
    BackpressureDeclarationContract
    (refine
-    LibraryModelShape
+    BackpressureModelShape
     (lambda (value location)
       (if (and (not (.get value parent)) (eq? (.get value identity) family))
           '()

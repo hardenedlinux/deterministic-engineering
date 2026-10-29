@@ -31,6 +31,7 @@
   (.o
     identity: Symbol
     rules: (List LibrarySymbolTriple)
+    factor-implications: (List LibrarySymbolTriple)
     dependencies: (List LibrarySymbolPair)))
 
 (define-type (ResourceEvidenceProfileProjection @ ObjectContract.)

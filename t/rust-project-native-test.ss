@@ -6,7 +6,8 @@
   :deterministic-engineering/profiles/resource-lifecycle
   :gerbil-ascent/program/session
   (only-in :agentic-ai-lab/modules/temporal-causality/trajectory/ascent-ledger ascent-trajectory)
-  (only-in :std/io/tempfile call-with-temporary-directory))
+  (only-in :std/io/tempfile call-with-temporary-directory)
+  (only-in :std/misc/ports read-all-as-string))
 (export rust-project-native-test)
 
 (def rust-project-native-test
@@ -82,5 +83,26 @@
           (check-equal? (length (rows reused 'support)) 5)
           (check-equal? (map cadr (rows reused 'counter)) '(RL-M06))
           (check-equal? (length (rows reused 'witness)) 6)
+          ;; Authored meaning belongs to the actual result interpretation closure.
+          (def model-source
+            (path-expand
+              "library/concurrency/resource-control/backpressure-memory/tokio-rayon/objects.ss"
+              root))
+          (def model-before (call-with-input-file model-source read-all-as-string))
+          (try
+            (call-with-output-file (list path: model-source truncate: #t)
+              (lambda (port)
+                (display model-before port)
+                (display "\n;; changed authored-model source bytes\n" port)))
+            (check-exception ((.get methods current!) (car results)) error?)
+            (check-exception
+              ((.get methods register) session results trajectory
+                (path-expand "library/drivers/evidence/func.ss" root)) error?)
+            (check-equal? (length (rows (gerbil-ascent-session-run session) 'witness)) 6)
+            (finally
+              (call-with-output-file (list path: model-source truncate: #t)
+                (cut display model-before <>))))
+          (for-each (.get methods current!) results)
+
           (check-equal? (rows frozen 'application)
             (list (list usage snapshot (.get entry identity)))))))))

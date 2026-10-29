@@ -11,7 +11,7 @@
 ;; record method validation; inferred support never authorizes execution.
 (define-program
   (make-resource-evidence)
-  (sources application catalog_rule catalog_dependency factor scope witness witness_input checked)
+  (sources application catalog_rule catalog_dependency catalog_factor_rule factor scope witness witness_input checked)
   (outputs
    obligation
    requires
@@ -26,7 +26,8 @@
    uncovered_factor)
   (relation application ((usage symbol?) (snapshot string?) (entry symbol?)))
   (relation catalog_rule ((entry symbol?) (factor symbol?) (obligation symbol?) (method symbol?)))
-  (relation catalog_dependency ((obligation symbol?) (key symbol?)))
+  (relation catalog_dependency ((entry symbol?) (obligation symbol?) (key symbol?)))
+  (relation catalog_factor_rule ((entry symbol?) (left symbol?) (right symbol?) (derived symbol?)))
   (relation factor ((usage symbol?) (factor symbol?)))
   (relation scope ((usage symbol?) (key symbol?) (digest string?)))
   (relation
@@ -72,9 +73,14 @@
   (relation supported ((usage symbol?) (obligation symbol?)))
   (relation pending ((usage symbol?) (obligation symbol?) (method symbol?)))
   (relation t_use ((usage symbol?) (snapshot string?) (obligation symbol?) (witness symbol?)))
-  ((factor U (lit 'async-cpu-handoff)) <-- (factor U (lit 'tokio)) (factor U (lit 'rayon)))
+  ((factor U D)
+   <--
+   (application U S E)
+   (catalog_factor_rule E L R D)
+   (factor U L)
+   (factor U R))
   ((obligation U O M) <-- (application U S E) (factor U F) (catalog_rule E F O M))
-  ((requires U O K) <-- (obligation U O M) (catalog_dependency O K))
+  ((requires U O K) <-- (application U S E) (obligation U O M) (catalog_dependency E O K))
   ((covered_factor E F) <-- (catalog_rule E F O M))
   ((uncovered_factor U F) <-- (application U S E) (factor U F) (not (covered_factor E F)))
   ((candidate U O M W) <-- (obligation U O M) (witness W O M V R))
@@ -122,7 +128,10 @@
   (list
    (cons 'application (list (list usage snapshot (.get entry identity))))
    (cons 'catalog_rule (map (lambda (row) (cons (.get entry identity) row)) (.get entry rules)))
-   (cons 'catalog_dependency (.get entry dependencies))
+   (cons 'catalog_dependency
+     (map (lambda (row) (cons (.get entry identity) row)) (.get entry dependencies)))
+   (cons 'catalog_factor_rule
+     (map (lambda (row) (cons (.get entry identity) row)) (.get entry factor-implications)))
    (cons 'factor (map (cut list usage <>) (.get profile factors)))
    (cons 'scope scopes)))
 (def (open-resource-review entry profile usage snapshot scopes)

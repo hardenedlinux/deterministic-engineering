@@ -1,6 +1,7 @@
 ;;; -*- Gerbil -*-
 (import :std/test
-  (only-in :clan/poo/object .get .slot?)
+  (only-in :clan/poo/object .get .slot? .cc)
+  (only-in :clan/poo/mop validate)
   :deterministic-engineering/init)
 (export engineering-ownership-test)
 (def engineering-ownership-test
@@ -15,6 +16,22 @@
       (def parent (.get deterministic-engineering.init.exports Library backpressure-memory scope entry))
       (def rust (.get deterministic-engineering.init.exports Library rust-resources scope))
       (check-equal? (eq? (.get rust entry parent) parent) #t)
+      (check-equal?
+        (eq? (.get rust model-library)
+             (.get deterministic-engineering.init.exports Library backpressure-tokio-rayon scope)) #t)
+      (check-equal? (eq? (.get rust model-library parent entry) parent) #t)
+      (def model-library (.get rust model-library))
+      (check-equal? (eq? (.get rust config coding-policy)
+                        (.get model-library config coding-policy)) #t)
+      (check-equal? (eq? (.get rust policies design)
+                        (.get model-library config design-policy)) #t)
+      (check-equal?
+        (eq? (validate (.get model-library contracts scope value-contract) model-library) model-library) #t)
+      (check-equal?
+        (eq? (validate (.get model-library contracts scope value-contract) model-library) model-library) #t)
+      (check-exception
+        (validate (.get model-library contracts scope value-contract)
+          (.cc model-library 'config (.cc (.get model-library config) 'purpose 'wrong))) error?)
       (check-equal? (.get rust entry identity) 'rust.resources.backpressure-memory)
       (check-equal? (file-exists?
         "languages-engineering/rust/concurrency/resource-control/backpressure-memory/Cargo.lock") #t))
@@ -32,4 +49,4 @@
       (check-equal? (file-exists? (path-expand "src/main.rs" crate)) #t)
       (check-equal? (file-exists? (path-expand "Cargo.toml" crate)) #t)
       (check-equal? (file-exists? "library/drivers/rust-resources/interface.ss") #t)
-      (check-equal? (file-exists? "library/drivers/rust-resources/ownership.sysml") #t))))
+      (check-equal? (file-exists? "library/concurrency/resource-control/backpressure-memory/tokio-rayon/ownership.sysml") #t))))

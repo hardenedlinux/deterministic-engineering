@@ -1,6 +1,5 @@
 ;;; -*- Gerbil -*-
-(import
-  (only-in :yuanxu/module-system/source/declaration .def))
+(import (only-in :yuanxu/module-system/source/declaration .def))
 (.def RustResources
   identity: 'rust-resources
   admissions: (.o
@@ -12,12 +11,18 @@
     requires: (.o
                 Parent: (.o
                           module-id: 'backpressure-memory
-                          contract: BackpressureScopeContract))
+                          contract: BackpressureScopeContract)
+                ModelLibrary: (.o
+                  module-id: 'backpressure-tokio-rayon
+                  contract: TokioRayonScopeContract))
     scope-contract: RustResourcesScopeContract
     exports: (.o
                self: scope
                parent: Parent
-               config: Config
+               config: (.o (:: @ Config)
+                         coding-policy: (.get ModelLibrary config coding-policy)
+                         design-policy: (.get ModelLibrary config design-policy))
+               model-library: ModelLibrary
                contracts: (.o
                             scope: RustResourcesScopeContract
                             config: RustResourcesConfigContract
@@ -28,8 +33,11 @@
                policies: (.o
                            coding: (.get scope config coding-policy)
                            design: (.get scope config design-policy))
-               entry: (specialize-backpressure (.ref Parent 'entry))
-               integration-entry: (make-backpressure-integration (.ref scope 'entry))
+               entry: ((.get ModelLibrary specialize)
+                        (map (lambda (key) (method-ref (.ref RustMethodDefinitions key)))
+                             '(native quint lean)))
+               integration-entry: ((.get ModelLibrary integrate) (.ref scope 'entry)
+                                    (method-ref (.get RustMethodDefinitions integration)))
                profile-contract: ResourceProfileContract
                native-profile-contract: ResourceNativeProfileContract
                context-contract: ResourceNativeContextContract

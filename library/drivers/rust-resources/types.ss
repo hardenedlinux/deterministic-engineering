@@ -9,8 +9,10 @@
    yuanxu-predicate-contract
    yuanxu-predicate-type)
   (only-in :clan/poo/type String Symbol List)
+  (only-in :std/list/list duplicates)
   (only-in :clan/poo/object-contract ObjectContract. refine)
   "../../../types.ss"
+  "../../concurrency/resource-control/backpressure-memory/tokio-rayon/types.ss"
   (only-in
    "../../concurrency/resource-control/backpressure-memory/abstract/types.ss"
    BackpressureScopeContract
@@ -19,6 +21,7 @@
    backpressure-model?))
 (export
   ResourceMethodRequirements
+  TokioRayonScopeContract
   ResourceMethodDefinitionContract
   ResourceMethodDefinitionsShape
   ResourceQuintSignature
@@ -39,26 +42,9 @@
   resource-model-profile-supported?
   resource-model-initializer
   BackpressureScopeContract)
-(def (unique? xs)
-  (or (null? xs) (and (not (member (car xs) (cdr xs))) (unique? (cdr xs)))))
+(def (unique? values) (null? (duplicates values)))
 (def (slots? value names)
   (and (object? value) (andmap (cut .slot? value <>) names)))
-;; Finite authored model coverage. Admission and execution use this one table;
-;; neither capacity nor a Profile label can select an undeclared initializer.
-(def ResourceModelInitializers
-  (.o
-    normal: '(((1 1) . "initResource") ((2 2) . "init") ((4 2) . "initC2"))
-    early-release: '(((1 1) . "initResourceRunning") ((2 2) . "initRunning"))))
-(def (resource-model-initializer value mode)
-  (and
-   (slots? value '(capacity queue))
-   (symbol? mode)
-   (.slot? ResourceModelInitializers mode)
-   (let (selected
-         (assoc (list (.get value capacity) (.get value queue)) (.ref ResourceModelInitializers mode)))
-     (and selected (cdr selected)))))
-(def (resource-model-profile-supported? value mode)
-  (and (resource-model-initializer value mode) #t))
 (def (resource-profile? value)
   (and
    (slots?
@@ -120,216 +106,6 @@
     '(capacity queue tokio-workers rayon-workers cpu-budget))
    (= (.ref value 'cache-bytes) 0)
    (<= (.ref value 'item) 4096)))
-(def RustModelShape
-  (.cc LibraryModelShape 'responsibilities
-       (.+
-        (.get LibraryModelShape responsibilities)
-        (.o
-          design: String
-          trajectories: (List String)
-          state-map: (List LibrarySymbolPair)))))
-(def (complete-state-map? value inherited-model)
-  (def mapping (.get value state-map))
-  (def states (.get value lifecycle))
-  (and
-   (unique? states)
-   (= (length mapping) (length states))
-   (unique? (map car mapping))
-   (andmap
-    (lambda (row)
-      (and (memq (car row) states) (memq (cadr row) (.get inherited-model lifecycle))))
-    mapping)))
-(def RustResourceModelContract
-  (library-definition-contract
-   'rust-resources/model
-   'specialization
-   'concurrency.resource-control.backpressure-memory
-   BackpressureDeclarationContract
-   (refine
-    RustModelShape
-    (lambda (value location)
-      (def parent (.get value parent))
-      (if (and
-           (eq? (.get value identity) 'rust.resources.backpressure-memory)
-           (backpressure-model? parent)
-           (complete-state-map? value parent)
-           (andmap (cut member <> (.get value rules)) (.get parent rules))
-           (andmap (cut member <> (.get value dependencies)) (.get parent dependencies)))
-          '()
-          (list (.o kind: 'rust-resources/parent-or-obligation-loss path: location)))))))
-;; Finite domain data. Execution/rendering interprets these definitions; it does
-;; not own another case inventory, transition meaning or model extension.
-(def TraceStage
-  (yuanxu-predicate-type
-   'backpressure/trace-stage
-   (lambda (value) (and (memq value '(waiting queued running returned cleanup done)) #t))))
-(def TraceEffectStage
-  (yuanxu-predicate-type
-   'backpressure/trace-effect-stage
-   (lambda (value) (and (memq value '(unchanged waiting queued running returned cleanup done)) #t))))
-(def ReservationEffect
-  (yuanxu-predicate-type
-   'backpressure/reservation-effect
-   (lambda (value) (and (memq value '(keep reserve release)) #t))))
-(def TraceCase
-  (.cc ObjectContract. 'responsibilities
-       (.o
-         name: LibraryNonemptyString
-         factor: Symbol
-         obligations: LibrarySymbolTriple
-         labels: (List String))))
-(def TraceTransition
-  (.cc ObjectContract. 'responsibilities
-       (.o
-         event: LibraryNonemptyString
-         cases: (List String)
-         from: (List TraceStage)
-         to: TraceEffectStage
-         reservation: ReservationEffect)))
-(def QueuedDisposalDelta
-  (refine
-   (.cc ObjectContract. 'responsibilities
-        (.o
-          identity: Symbol
-          from: Symbol
-          to: Symbol
-          subject: (yuanxu-predicate-type
-                    'backpressure/job-zero
-                    (lambda (value) (and (exact-integer? value) (= value 0))))
-          frame: (List Symbol)))
-   (lambda (value location)
-     (if (and
-          (not (eq? (.get value from) (.get value to)))
-          (unique? (cons (.get value from) (cons (.get value to) (.get value frame)))))
-         '()
-         (list (.o kind: 'backpressure/delta-frame path: location))))))
-(def DefinitionShape
-  (.cc ObjectContract. 'responsibilities
-       (.o
-         identity: Symbol
-         revision: LibraryNonemptyString
-         owner: Symbol
-         role: LibraryDefinitionRole
-         family: Symbol
-         declaration-contract: Type
-         contract: Type
-         parent: (yuanxu-predicate-type 'backpressure/definition-root not))))
-(def OwnershipCatalogShape
-  (.cc DefinitionShape 'responsibilities
-       (.+
-        (.get DefinitionShape responsibilities)
-        (.o
-          asset: LibraryAssetContract
-          package: Symbol
-          definition: Symbol
-          attributes: (List Symbol)
-          live-attribute: Symbol
-          reservation-attribute: Symbol
-          constraint: Symbol
-          references: (List Symbol)))))
-(def BackpressureOwnershipCatalogContract
-  (library-definition-contract
-   'backpressure/ownership-catalog
-   'catalog
-   'concurrency.resource-control.backpressure-memory
-   BackpressureDeclarationContract
-   (refine
-    OwnershipCatalogShape
-    (lambda (value location)
-      (def asset-value (.get value asset))
-      (def path (.get asset-value relative-path))
-      (if (and
-           (unique? (.get value attributes))
-           (not (eq? (.get value live-attribute) (.get value reservation-attribute)))
-           (memq (.get value live-attribute) (.get value attributes))
-           (memq (.get value reservation-attribute) (.get value attributes))
-           (eq? (.get asset-value kind) 'sysml)
-           (eq? (.get asset-value owner) (.get value owner))
-           (not (string-prefix? "/" path))
-           (andmap
-            (lambda (part) (and (not (string-empty? part)) (not (member part '("." "..")))))
-            (string-split path #\/)))
-          '()
-          (list (.o kind: 'backpressure/catalog-binding path: location)))))))
-(def TraceMappingShape
-  (.cc DefinitionShape 'responsibilities
-       (.+
-        (.get DefinitionShape responsibilities)
-        (.o
-          catalog-id: Symbol
-          cases: (List TraceCase)
-          transitions: (List TraceTransition)
-          initial: TraceStage
-          final: TraceStage
-          cut-labels: (List String)
-          qnt-stages: (List Symbol)
-          qnt-fields: (List Symbol)
-          qnt-initializer: Symbol
-          qnt-step: Symbol
-          delta: QueuedDisposalDelta
-          loss: LibraryNonemptyString))))
-(def BackpressureTraceMappingContract
-  (library-definition-contract
-   'backpressure/trace-mapping
-   'mapping
-   'concurrency.resource-control.backpressure-memory
-   BackpressureDeclarationContract
-   (refine
-    TraceMappingShape
-    (lambda (value location)
-      (def case-values (.get value cases))
-      (def delta-value (.get value delta))
-      (def fields (.get value qnt-fields))
-      (if (and
-           (pair? case-values)
-           (unique? (map (cut .get <> name) case-values))
-           (unique? (map (cut .get <> obligations) case-values))
-           (unique? fields)
-           (unique? (.get value qnt-stages))
-           (equal?
-            (list-sort (lambda (left right) (string<? (symbol->string left) (symbol->string right))) fields)
-            (list-sort
-             (lambda (left right) (string<? (symbol->string left) (symbol->string right)))
-             (cons (.get delta-value from) (cons (.get delta-value to) (.get delta-value frame)))))
-           (andmap (cut memq <> (.get value qnt-stages)) (list (.get delta-value from) (.get delta-value to)))
-           (andmap
-            (lambda (transition)
-              (andmap
-               (lambda (name) (member name (map (cut .get <> name) case-values)))
-               (.get transition cases)))
-            (.get value transitions)))
-          '()
-          (list (.o kind: 'backpressure/mapping-closure path: location)))))))
-(def BackpressureIntegrationContract
-  (library-definition-contract
-   'rust-resources/integration
-   'integration
-   'concurrency.resource-control.backpressure-memory
-   BackpressureDeclarationContract
-   (refine
-    (.cc RustModelShape 'responsibilities
-         (.+
-          (.get RustModelShape responsibilities)
-          (.o
-            case-links: (List LibrarySymbolTriple)
-            mapping: (.get BackpressureTraceMappingContract value-contract)
-            catalog: (.get BackpressureOwnershipCatalogContract value-contract))))
-    (lambda (value location)
-      (def parent (.get value parent))
-      (if (and
-           (eq? (.get value identity) 'rust.resources.backpressure-memory.integration)
-           (element? (.get RustResourceModelContract value-contract) parent)
-           (equal? (.get value lifecycle) (.get parent lifecycle))
-           (equal? (.get value state-map) (.get parent state-map))
-           (eq? (.get value mapping catalog-id) (.get value catalog identity))
-           (equal? (.get value case-links) (map (cut .get <> obligations) (.get value mapping cases)))
-           (andmap (cut member <> (.get value rules)) (.get parent rules))
-           (andmap (cut member <> (.get value dependencies)) (.get parent dependencies)))
-          '()
-          (list
-           (.o
-             kind: 'rust-resources/integration-parent-or-obligation-loss
-             path: location)))))))
 (def (entry? value)
   (and
    (object? value)
@@ -447,79 +223,12 @@
     file-digest
     value-digest
     write-json))
-;; Policy applicability is declaration data, separate from Aitia request domains.
-(def PolicyCriterion
-  (.cc ObjectContract. 'responsibilities
-       (.o
-         identity: Symbol
-         meaning: LibraryNonemptyString
-         duties: (List Symbol)
-         inputs: (List Symbol)
-         negative-controls: (List Symbol)
-         strength: LibraryStrength)))
-(def PolicyShape
-  (.cc ObjectContract. 'responsibilities
-       (.o
-         identity: Symbol
-         role: LibraryDefinitionRole
-         family: Symbol
-         declaration-contract: Type
-         contract: Type
-         parent: (yuanxu-predicate-type 'policy/root not)
-         revision: LibraryNonemptyString
-         model-ids: (List Symbol)
-         slice-ids: (List Symbol)
-         criteria: (List PolicyCriterion)
-         required-products: (List Symbol)
-         required-roles: (List Symbol)
-         conditions: (List LibraryPremiseContract)
-         limitations: (List String))))
-(def (policy-shape identity-value products duties)
-  (refine
-   PolicyShape
-   (lambda (value location)
-     (def criteria (.get value criteria))
-     (def actual-duties (apply append (map (cut .get <> duties) criteria)))
-     (if (and
-          (eq? (.get value identity) identity-value)
-          (equal? (.get value model-ids) '(rust.resources.backpressure-memory))
-          (equal? (.get value slice-ids) '(rust.resources.backpressure-memory.integration))
-          (andmap (cut memq <> (.get value required-products)) products)
-          (andmap (cut memq <> actual-duties) duties)
-          (unique? (map (cut .get <> identity) criteria))
-          (memq 'independent-reviewer (.get value required-roles)))
-         '()
-         (list
-          (.o
-            kind: 'rust-resources/policy-applicability-or-duty-loss
-            path: location))))))
-(def BackpressureReviewPolicyContract
-  (library-definition-contract
-   'rust-resources/coding-policy
-   'policy
-   'concurrency.resource-control.backpressure-memory
-   BackpressureDeclarationContract
-   (policy-shape
-    'rust.resources.backpressure-memory.review-policy
-    '(source-inventory method-results counterevidence)
-    '(RL-M01 RL-M02 RL-M03 RL-M04 RL-M05 BP-O02 BP-O03))))
-(def BackpressureDesignReviewPolicyContract
-  (library-definition-contract
-   'rust-resources/design-policy
-   'policy
-   'concurrency.resource-control.backpressure-memory
-   BackpressureDeclarationContract
-   (policy-shape
-    'rust.resources.backpressure-memory.design-review-policy
-    '(D01 D02 D03 D04 D05 D06 D07 D08 D09 D10)
-    '(DE-O-ARCH DE-O-DOC DE-O-DEC DE-O-TRACE DE-O-REVIEW))))
-
 (def (same-type identity-value expected)
   (yuanxu-predicate-type identity-value (lambda (value) (eq? value expected))))
 (def RustResourcesConfigShape
   (.cc ObjectContract. 'responsibilities
        (.o
-         purpose: (same-type 'rust-resources/config-purpose 'rust-resource-specialization)
+         purpose: (same-type 'rust-resources/config-purpose 'rust-resource-method-driver)
          coding-policy: (.get BackpressureReviewPolicyContract value-contract)
          design-policy: (.get BackpressureDesignReviewPolicyContract value-contract))))
 (def RustResourcesConfigContract
@@ -718,6 +427,7 @@
                            coding-policy: (same-type 'rust-resources/coding-policy-contract BackpressureReviewPolicyContract)
                            design-policy: (same-type 'rust-resources/design-policy-contract BackpressureDesignReviewPolicyContract)))
          parent: (.get BackpressureScopeContract value-contract)
+         model-library: (.get TokioRayonScopeContract value-contract)
          config: RustResourcesConfigShape
          entry: (.get RustResourceModelContract value-contract)
          integration-entry: (.get BackpressureIntegrationContract value-contract)
@@ -778,6 +488,9 @@
 (def (associated-rust-scope? value)
   (and
    (method-model-links? value)
+   (eq? (.get value parent) (.get value model-library parent))
+   (eq? (.get value config coding-policy) (.get value model-library config coding-policy))
+   (eq? (.get value config design-policy) (.get value model-library config design-policy))
    (eq? (.get value methods) (.get value bound-methods operations))
    (eq? (.get value entry parent) (.get value parent entry))
    (eq? (.get value integration-entry parent) (.get value entry))
@@ -841,19 +554,18 @@
                        (.o
                          parent: (reference 'entry))))
                  (.get value integration-entry))
-                (list 'coding (.get BackpressureReviewPolicyContract value-contract) (.get value policies coding))
-                (list
-                 'design
-                 (.get BackpressureDesignReviewPolicyContract value-contract)
-                 (.get value policies design))
+                ;; Model-owned policies are external anchors, like the Parent Scope.
+                ;; Only driver-owned Config/selection nodes join this finite graph.
                 (list
                  'config
                  (.cc RustResourcesConfigShape 'responsibilities
                       (.+
                        (.get RustResourcesConfigShape responsibilities)
                        (.o
-                         coding-policy: (reference 'coding)
-                         design-policy: (reference 'design))))
+                         coding-policy: (same-type 'rust-resources/model-coding-policy
+                           (.get value model-library config coding-policy))
+                         design-policy: (same-type 'rust-resources/model-design-policy
+                           (.get value model-library config design-policy)))))
                  (.o
                    purpose: (.get value config purpose)
                    coding-policy: (.get value policies coding)
@@ -862,12 +574,14 @@
                  'policies
                  (.cc ObjectContract. 'responsibilities
                       (.o
-                        coding: (reference 'coding)
-                        design: (reference 'design)))
+                        coding: (same-type 'rust-resources/model-coding-policy
+                           (.get value model-library config coding-policy))
+                        design: (same-type 'rust-resources/model-design-policy
+                           (.get value model-library config design-policy))))
                  (.o
                    coding: (.get value policies coding)
                    design: (.get value policies design)))))
-             7))
+             5))
           (.cc value 'entry (closed-ref graph 'entry) 'integration-entry (closed-ref graph 'integration)
                'config (closed-ref graph 'config) 'policies (closed-ref graph 'policies)
                'bound-methods (closed-ref graph 'bound-methods) 'validation graph)))))

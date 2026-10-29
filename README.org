@@ -17,11 +17,13 @@ The authoritative layout is:
 #+BEGIN_EXAMPLE
 library/
   concurrency/                  Shared design declarations and generic obligations
+    resource-control/backpressure-memory/tokio-rayon/
+                                Native specialization Module, model contracts and SysML
   project-organization/         Engineering organization models
   drivers/
     evidence/                   Scheme driver over native ASCENT evidence
     project-formation/          Scheme organization/acquisition driver and schemas
-    rust-resources/             Scheme POO bindings, verification and evidence driver
+    rust-resources/             Scheme method bindings, execution and evidence driver
 languages-engineering/
   rust/concurrency/resource-control/backpressure-memory/
     Cargo.toml / Cargo.lock     Rust crate metadata and dependency lock
@@ -33,7 +35,8 @@ projects/                       Actual SDLC consumers
 #+END_EXAMPLE
 
 Library Scheme code maintains framework/design drivers and reusable engineering
-knowledge, including POO specialization for language-specific engineering.
+knowledge. Authored Rust specialization belongs to the concurrency Library;
+its method driver selects that admitted Module and invokes the actual tools.
 =languages-engineering/<language>/= contains the target-language engineering
 project. Rust source and Cargo inputs do not become Scheme Modules.
 The implementation language of a tool does not determine the language it models.
@@ -58,7 +61,7 @@ The current SDK study is not an executed SDK integration result.
 Historical documents preserve their original source/evidence paths. The new
 ownership map supersedes those paths for current development; moving source
 files requires fresh capture, never relabeling old evidence.
-See [[file:docs/10-19-design/10-architecture/10.136-scheme-drivers-and-rust-only-projects.org][10.136]] and its paired D2 view for the corrected ownership boundary.
+See [[file:docs/10-19-design/10-architecture/10.137-domain-owned-catalogs-and-native-drivers.org][10.137]] and its paired D2 view for the audited model/driver boundary.
 
 * Package and development entrypoints
 
@@ -358,7 +361,8 @@ derivation, actual QNT/TLC and Lean execution, native ASCENT exchange registrati
 and scoped reuse across capacity, cache and source changes.
 [[file:docs/10-19-design/10-architecture/10.12-gateway-library-registration-and-runtime-dependencies.org][10.12]] retains the finite rule and runtime-dependency design.
 
-- ~library/drivers/rust-resources/~ owns Scheme specialization, Contracts, method observation and the independent oracle.
+- ~library/concurrency/resource-control/backpressure-memory/tokio-rayon/~ owns specialization, model Contracts, correspondence and review policies.
+- ~library/drivers/rust-resources/~ owns method binding, execution, observation and the independent oracle.
 - ~languages-engineering/rust/concurrency/resource-control/backpressure-memory/~ contains the Rust crate and its Cargo.lock.
 - ~library/drivers/evidence/~ runs that entry's finite obligation/applicability rules through ASCENT.
 - ~profiles/gateway.ss~ defines independent POO C1/C2/cache/retry application values.

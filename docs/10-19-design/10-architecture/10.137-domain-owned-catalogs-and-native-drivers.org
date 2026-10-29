@@ -1,0 +1,231 @@
+#+TITLE: 10.137 Domain-Owned Catalogs and Native Drivers
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Audit decisions
+:PROPERTIES:
+:CUSTOM_ID: audit137-decisions
+:STATUS: focused-native-accepted-package-drift-open
+:END:
+
+This continues [[file:10.136-scheme-drivers-and-rust-only-projects.org][10.136]]. Removing Scheme from the Rust project was necessary,
+but the driver still owned authored domain meaning. This change separates that
+meaning from execution through the existing native Module and POO mechanisms.
+
+| Finding | Correction | Independent acceptance |
+|---------+------------+------------------------|
+| The shared Evidence engine encoded Tokio plus Rayon directly | Binary factor implications are typed Catalog data; the engine contains only a generic finite rule | The same factors produce no handoff obligation under the generic parent |
+| Dependencies were indexed only by obligation name | Catalog identity participates in dependency facts and joins | Two Catalogs with obligation SAME retain different dependency sets |
+| The Rust driver owned state maps, cases, policies and model contracts | These move to the domain's Tokio/Rayon native Library Module | The driver requires that admitted Module and the original generic parent |
+| Method bindings were constructed separately for four operations | One native POO binding prototype consumes a finite implementation table | Definition refinement changes the derived binding after the original operation was read |
+| Config selected raw policy declarations independently | The driver selects the model Module's admitted policies | Revalidation preserves the original policy and parent identities |
+| Repeated Record normalization could wrap functions again | One native close-validation node seals admitted getters before proof metadata is attached | Repeated admission preserves Scope identity; changed fields cannot reuse its proof |
+| Source movement could omit new interpretation inputs | Domain declarations, contracts, config and Interface join the existing observation closure | Real result currentness and registration refuse changed domain source |
+| Asset owner labels described the former location | Generic QNT/Lean assets, the domain Catalog and the Rust subject identify their actual owners | Published model references and issued method results remain separate |
+
+* Ownership and loading
+:PROPERTIES:
+:CUSTOM_ID: audit137-owners
+:END:
+
+| Owner | Authored responsibility | Native execution responsibility |
+|-------+------------------------+---------------------------------|
+| =library/concurrency/resource-control/backpressure-memory/abstract/= | Generic ownership model, inheritance expectations and finite rule shape | None |
+| =library/concurrency/resource-control/backpressure-memory/tokio-rayon/= | Rust specialization, lifecycle/state map, six case declarations, correspondence delta, SysML Catalog, review policies and their contracts | Pure specialization/integration constructors only |
+| =library/drivers/rust-resources/= | Method metadata and the finite implementation association | Capture, tool invocation, independent oracle interpretation, issued results and registration/currentness effects |
+| =library/drivers/evidence/= | Generic relational applicability and evidence policy | Native ASCENT Sessions; no Rust-specific knowledge or action permission |
+| =languages-engineering/rust/.../backpressure-memory/= | Rust implementation and Cargo inputs | The actual Tokio/Rayon validation subject |
+
+The new domain owner is an atomic native Module named
+=backpressure-tokio-rayon=. It requires =backpressure-memory=. The driver
+requires both, preserving their actual admitted identities. No sibling-directory
+read exception or alternate loader is introduced to bypass SourceReader.
+The generic-only selection continues to leave the driver and specialization cold.
+
+#+NAME: audit137-selected-owners
+#+BEGIN_SRC scheme :eval never
+(yuanxu!
+  :load-modules "./library" mode: explicit rename: Library
+  (backpressure-memory @ "./library/concurrency/resource-control/backpressure-memory/abstract")
+  (backpressure-tokio-rayon @ "./library/concurrency/resource-control/backpressure-memory/tokio-rayon")
+  (evidence @ "./library/drivers/evidence")
+  (rust-resources @ "./library/drivers/rust-resources"))
+#+END_SRC
+
+The domain Module accepts the method references selected by its caller. It does
+not import the driver to obtain method definitions. Its integration constructor
+receives the parent model and integration-method reference explicitly. The driver
+Interface composes those capabilities with its checked method bundle.
+
+Domain contracts are the original domain-owned values. The driver publishes
+references needed by its existing Scope admission; it does not copy their schemas
+or retain old-arity constructor adapters. Direct design callers use the new owner.
+
+* Finite Catalog rule contract
+:PROPERTIES:
+:CUSTOM_ID: audit137-rules
+:END:
+
+=factor-implications= is a proper list of proper three-Symbol rows:
+=(left right derived)=. The generic family defaults to the empty list. The
+Tokio/Rayon specialization extends the inherited list with
+=(tokio rayon async-cpu-handoff)=. Child admission preserves inherited rules.
+
+| Relation | Row | Meaning |
+|----------+-----+---------|
+| application | usage, snapshot, entry | Selected use and authored Catalog identity |
+| catalog_factor_rule | entry, left, right, derived | A Catalog-owned binary implication |
+| catalog_rule | entry, factor, obligation, method | An obligation template under that Catalog |
+| catalog_dependency | entry, obligation, key | That Catalog's required witness-input key |
+| factor | usage, factor | Initial or derived factors for one use |
+| requires | usage, obligation, key | Obligations joined only to the selected Catalog |
+
+The generic implication joins application and Catalog identity before combining
+two factors from the same usage. Recursion is monotone over supplied Symbols;
+a cycle can revisit a fact but cannot manufacture new terms. Existing ASCENT
+bounds still apply. This is a finite binary template, not a second rule DSL.
+
+The Catalog control tests use independent literal gold:
+
+| Control | Expected result |
+|---------+-----------------|
+| Generic parent with Tokio and Rayon | No implicit Rust handoff obligation |
+| Rust specialization with Tokio and Rayon | TR-O03 is derived |
+| Withdraw the selected implication | The current derived factor and TR-O03 disappear; the old frozen result retains them |
+| left/right to middle, middle/right to result, cyclic result/right to middle | Exactly the supplied factors plus the two reachable facts for u1 |
+| Another Catalog or a usage missing right | No cross-Catalog or cross-usage derivation |
+| SAME under two Catalogs | u1 requires source; u2 requires runtime |
+| Missing, extra, improper or non-Symbol rule cells | Native Type refusal before opening the operation |
+
+The adapter opens one authored Catalog per Session. Within that Session an entry
+identity denotes one declaration generation. It is not a multi-version Catalog
+registry: coexisting declarations with the same identity are not supported by
+this relation contract. A new authored generation requires a fresh Session and
+current source admission; old facts or a revision label cannot establish it.
+The direct Session control operations in tests exercise engine semantics and do
+not manufacture an admitted Library declaration or method receipt.
+
+* Canonical native Scope and bindings
+:PROPERTIES:
+:CUSTOM_ID: audit137-identity
+:END:
+
+The domain's public shape uses native Record and Function contracts. Its private
+normalization proof follows the existing Scenario pattern: one native
+close-validation graph holds the canonical Scope; admitted getters are materialized
+before proof metadata is attached. Later admission checks the original graph and
+field identities and returns the same Scope. A final private Scheme record carries
+the graph handle; a copied label or an unrelated closed graph cannot replace it.
+
+Recognition of the integration input verifies the selected model Type while
+retaining the supplied parent object. It does not normalize that parent into a
+new object. Parent association, policy identity and the complete typed shape
+remain checked; this distinction does not weaken method currentness or authority.
+
+The driver originally placed coding/design policies inside its own seven-node
+normalization graph. That produced copies after the model Module had already
+admitted them, so a second Scope validation lost the cross-owner identity.
+The corrected graph has five driver-owned nodes: entry, integration, bound-methods,
+config and policy selection. Its config/selection fields recognize the original
+model-owned policies by identity. The generic parent and the model Module are
+external admitted anchors. Their full contracts and associations remain checked;
+no assertion is removed and no equality-by-label replaces owner identity.
+
+
+The driver has one =ResourceMethodBinding.= prototype. Definition, operation name,
+checked implementation and currentness operation remain related through POO
+getters. =bind-resource-methods= verifies that each field key matches the declared
+operation, then projects bindings and operations with native object operations.
+The implementation table is deliberately explicit: four executable capabilities
+remain an auditable boundary. A model label cannot select arbitrary code.
+
+The shared engine's program factory remains fresh per review. It is not replaced
+with a global Session or mutable singleton to save construction. The Session owns
+facts; issued result handles remain with their original method owner.
+
+* Independent execution and reuse
+:PROPERTIES:
+:CUSTOM_ID: audit137-native
+:END:
+
+The existing Rust-only crate executes the six controlled Tokio/Rayon cases.
+The independent native oracle reads observed events, not the domain's transition
+table or ASCENT rules. Its M06 expected failure is a necessary negative control;
+sharing that verdict implementation with the authored mapping would destroy
+its independence. These literal workload expectations are not accidental engine
+hardcoding and are intentionally retained.
+
+Real issued results must register through the same Module that issued them.
+The actual exchange and ASCENT query must retain five supports, the M06 counter,
+its pending obligation, all six witnesses and the original frozen application.
+A second usage can reuse the exact same captured bases without turning M06 into
+support. A domain-source change must refuse both result currentness and attempted
+registration before any history is replaced. Exact-byte restoration must retain
+the existing checks rather than create a new receipt by relabeling it.
+
+The SysML Catalog path is now repository-relative and its owner is the authored
+model Module. The driver resolves it under the captured repository root. Generic
+QNT/Lean assets identify the generic Library owner; the native Rust subject
+identifies its Cargo project. Tool-provider and result-issuer identity remain
+the driver. File ownership and evidence authority are different relationships.
+
+* Remaining limits and review cost
+:PROPERTIES:
+:CUSTOM_ID: audit137-limits
+:END:
+
+- Independent oracle judgments, finite supported model initializers, resource
+  bounds and the executable implementation association remain explicit data.
+  Removing those declarations would remove reviewable assumptions.
+- Profile and Context guards still include semantic checks for supported capacity,
+  exact byte accounting, factor coverage, tool/source currentness and nominal
+  result recognition. This audit does not replace them with generic wire-schema
+  acceptance or claim every predicate can safely disappear.
+- The explicit interpretation-input list remains maintained alongside Core's
+  native import/build closure. New domain files are included and a real source
+  mutation checks that boundary; arbitrary plugin discovery is not claimed.
+- Checked support and counter facts are evidence, not runtime permission. This
+  change does not add Aitia approval, distributed recovery or a new authorization
+  mechanism.
+- Source-mutation tests must execute sequentially against the shared checkout.
+  Running them concurrently with another admission can create a harness-induced
+  source race; increasing a timeout would not correct that test interference.
+- Full remote CI, cold dependency building, performance qualification, full Rust
+  refinement and public OpenSysML SDK execution remain separate gates.
+
+The paired architecture view is [[file:../../90-99-views/90-architecture-views/90.126-domain-owned-catalogs-and-native-drivers.d2][90.126]].
+
+* Observed acceptance and package refusal
+:PROPERTIES:
+:CUSTOM_ID: audit137-acceptance
+:END:
+
+| Gate | Observed result | Boundary |
+|------+-----------------+----------|
+| Native root build | Completed with unchanged native entrypoint | Per-process 2 GiB heap, 180-second deadline, existing machine-derived parallelism |
+| Related regression | 11 modules, 61 passing cases | Includes repeated owner admission, original policy identity, Catalog isolation, POO binding refinement, inherited rules and frozen-query retraction |
+| Actual Quint method | Three passing cases | Installed native provider, checked invocation, real finite model result and source-byte invalidation/restoration |
+| Actual Rust method and ASCENT chain | One passing test executes six cases | M01--M05 support; M06 counter and pending retained; new usage reuses six witnesses; old snapshot unchanged |
+| Domain-source mutation | Currentness and registration refuse altered authored source | Existing witnesses remain; exact-byte restoration reuses the original issued results |
+| Native capture | One passing case | Source/Profile mutation and forged split-scope refusals preserved |
+| Org and D2 | Lint and rendering pass | English documentation, paired architecture view |
+| Package metadata | Refused before package qualification | Aitia checkout/tag/declared-pin drift; not included among passing gates |
+
+The passing checks total 66 cases across 14 modules. Source-mutation checks ran
+sequentially after the read-only regression. All active Scheme source files in
+the review checkout match the primary workspace bytes used for these checks;
+local source cuts and installed package state remain explicit.
+
+The independent package gate found these three different Aitia identities:
+
+| Identity surface | Observed value |
+|------------------+----------------|
+| Root declared dependency | 2c418d5e6377077dded87d1c347f5ace53f712e8 |
+| Native package tag file | df2d1d98a6ee37685d20de5543aeabd3e4f9f4b8 |
+| Registered checkout HEAD | 954e0c4c3bf5f1f1516252c6a7940e806338e671 |
+
+No package checkout, tag, dependency declaration, manifest or assertion was
+changed to hide that mismatch. The local method/engine observations do not
+establish reproducible full-package admission or exact-head remote CI. Resolving
+that dependency cohort is a separate required gate before claiming those results.
