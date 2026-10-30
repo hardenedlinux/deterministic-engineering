@@ -10,18 +10,20 @@
 
 | Boundary | Current result |
 |----------+----------------|
-| Source graph | POO 6500bce, Core 7b798b4, Parent 761cdfdd; native projections and Lake lock aligned |
+| Source graph | POO 6500bce and Core 7b798b4 retained; Parent 19e79c9e adds qualified SDK and aligned Orgize consumer |
 | Cross-platform metadata | Real Linux seed, Darwin merge and Linux verification passed; all 36 automation tests passed |
 | SDK patchb37b43e7ba53 | Published and qualified, including tagger context ownership |
 | Aitia 36cef93 cold build | Failed at 180.02 seconds; build ended near 152 seconds and serial tagging remained active |
-| Native parallel tagger 998bbfd | Local complete POO oracle passed; actual Linux SDK producer pending |
+| Native parallel tagger 998bbfd | Linux producer 40967002006 passed, including native and relocated controls |
+| Aitia 54db6e0 cold build | PR run 40984189259 passed the unchanged cold step and TAGS content assertions |
+| Parent 19c914d7 SDK metadata | Linux seed, Darwin merge and Linux verification passed; all 36 automation tests passed |
 | Aitia 60d6277 | Collects independent runtime results; final admission still requires the original cold outcome |
 | Root dependency admission | Accepted baseline retained; candidate runtime and root checks remain open |
 
 * One dependency graph, distinct admission receipts
 :PROPERTIES:
 :CUSTOM_ID: cohort139-ownership
-:STATUS: parallel-tagger-producer-pending
+:STATUS: cold-passed-runtime-pending
 :END:
 
 The owner repair follows [[file:10.138-native-package-cohort-and-ci-provenance.org][10.138]]. Existing review branches retain their ownership;
@@ -572,3 +574,61 @@ requires native-cold.outcome to equal success; it deliberately checks outcome,
 not the normalized conclusion of a continued step. Any other failed runtime
 step also keeps the job failed. This gathers evidence without qualifying a
 failed cold gate or authorizing release.
+
+* Qualified parallel SDK and remaining consumer boundary
+:PROPERTIES:
+:CUSTOM_ID: cohort139-parallel-admitted
+:STATUS: runtime-pending
+:END:
+
+[[https://github.com/tao3k/gerbil-bazel/actions/runs/40967002006][SDK producer 40967002006]] succeeded. Its published Linux capability includes the
+parallel tagger, complete native controls and relocated-byte verification. Parent
+PR #34 selects the real release archive and published checksum through its
+canonical SDK declaration. [[https://github.com/tao3k/agentic-ai-lab/actions/runs/40983904694][Native lock run 40983904694]] passed Linux evaluation,
+Darwin merge and final Linux verification. All 36 automation tests passed after
+installing the generated lock; no generated repository specification was invented.
+
+[[https://github.com/tao3k/lambda-aitia/actions/runs/40984189259][Aitia PR run 40984189259]] at 54db6e0 passed the unchanged isolated POO cold step.
+The empty-product and absent-manifest preconditions, native installation, nonempty
+TAGS, actual object.ss source path and :clan/poo/object identity checks remain.
+Each process retains a 2 GiB heap and the compile invocation retains 180 seconds.
+Capacity remains machine/caller derived. This closes this run's cold gate only;
+complete consumer CI and Root dependency admission still require their own results.
+
+#+NAME: cohort139-owner-build-observations
+| Owner at Aitia 60d6277 | Observed result | Approximate owner duration |
+|-----------------------+-----------------+----------------------------|
+| POO 6500bce | Native owner build passed | 149 seconds |
+| Core 7b798b4 | Native owner build passed | 101 seconds |
+| Parser e1da8af | Native owner build passed | 173 seconds |
+| ASCENT 64f62ce | Native owner build passed | 121 seconds |
+| Scheme/Rust cfbc10c | Native owner build passed | 9 seconds |
+| Orgize 7e2f669 | Native owner build timed out | 180 seconds |
+
+These are individual real owner builds in [[https://github.com/tao3k/lambda-aitia/actions/runs/40967327810][run 40967327810]], not a complete
+consumer qualification. Org fold generation finished at 22:52:42 UTC; main Org
+module compilation was still progressing when the deadline fired at 22:53:51.
+The later C bridge staging had not begun. This locates a remaining critical path;
+it does not justify dropping bridge products or restarting the budget per phase.
+Parser's initialize-compiler-build! already initializes the native compiler host
+policy. Reapplying another C option layer is not an evidenced repair.
+
+** One Parser identity across Scheme and Rust consumers
+:PROPERTIES:
+:CUSTOM_ID: cohort139-orgize-parser-identity
+:END:
+
+Orgize's own [[https://github.com/tao3k/orgize/actions/runs/40961233456][run 40961233456]] independently exposed a genuine mismatch: Cargo
+selected Parser 831ded4 while gerbil.pkg selected e1da8af; the existing
+parser-revision-check rejected it. Orgize 0fcea25 aligns its two direct Cargo
+Parser declarations and both native Cargo lock files. Cargo's real resolver and
+locked metadata identify both Parser crates at the declared e1da8af source.
+No revision assertion was removed. Parent's native pin tool projects the actual
+Orgize archive; [[https://github.com/tao3k/agentic-ai-lab/actions/runs/40984699997][lock run 40984699997]] passed all three native platform stages and the resulting
+Parent 19e79c9e passed all 36 automation tests. Consumer admission remains separate.
+
+#+BEGIN_QUOTE
+A successful cold package receipt does not certify Core scale admission, the
+complete Aitia runtime, or Root's current dependency graph. Preserve the accepted
+Root baseline until every applicable candidate consumer gate has succeeded.
+#+END_QUOTE
