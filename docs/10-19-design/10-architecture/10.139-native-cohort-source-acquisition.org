@@ -10,13 +10,15 @@
 
 | Boundary | Current result |
 |----------+----------------|
-| Selected source graph | POO 6500bce, Core 7b798b4, Parser e1da8af, ASCENT 64f62ce, Orgize 0fcea25, Parent b58787d4 |
-| Native metadata | Linux seed, Darwin merge and Linux verification passed; all 36 automation tests passed |
+| Current Aitia source graph | POO 98fcce3, Core 79a5526, Parser e2ef6a33, ASCENT 32af80e9, Orgize 772a4f5, Parent 921e75f8 |
+| Native metadata | Run 41001516764 passed Linux seed, Darwin merge and Linux verification; all 36 automation tests passed |
 | SDK 2dde985 / patcha379bb244bfa | Published; original native, identity and relocated-byte controls passed |
 | Aitia 54db6e0 cold outcome | Failed at 180.06 seconds; continued-step conclusion is not admission |
 | Aitia 74ae9af | CI 40991127714 failed: original cold status 124 at 180.03 seconds; independent POO owner also timed out |
 | Latest grouped source | Parent 921e75f8 / Core 79a5526 / POO 98fcce3; native lock run 41001516764 passed |
 | Aitia e350820 | CI 41004279512 failed: original cold status 124 at 180.04 seconds; independent POO owner also timed out |
+| SDK 871b178 | Producer 41002263488 refused the actual uncached POO client at 180 seconds; publication was blocked |
+| SDK 4ee723d | Declaration-guided native candidate; producer 41011025512 is pending real Linux qualification |
 | Root dependency admission | Accepted baseline retained; candidate cold and complete runtime remain open |
 
 * One dependency graph, distinct admission receipts
@@ -798,9 +800,9 @@ published. A local dependency-order candidate completed in 133.61 seconds and
 also supplies no measured local improvement claim. Local timing, functional
 correctness and Linux package admission remain distinct observations.
 
-** Native order projection and the mandatory real client
+** Refused full-context ordering attempt and the real client gate
 
-The next existing SDK PR #58 candidate moves default-package identity discovery
+The refused SDK PR #58 candidate moves default-package identity discovery
 to the expander's native reader boundary. Explicit headers and opaque readers keep
 their original cached import behavior. The Make coordinator rechecks the actual
 expanded identity only for source-module targets; non-module file identities do
@@ -834,6 +836,75 @@ the native shell removes the load-path override before the Scheme test starts,
 and the test asserts its absence. The corrected script was actually compiled;
 the independent consumer expression was executed. This does not constitute a
 successful Linux cold client, and no archive from the failed run is selected.
+
+** Declaration-guided native candidate
+:PROPERTIES:
+:CUSTOM_ID: cohort139-declaration-frontier
+:END:
+
+Producer [[https://github.com/tao3k/gerbil-bazel/actions/runs/41002263488][41002263488]] passed the native controls but refused its actual uncached
+POO client at 180 seconds. It published no admitted archive. Source inspection
+identified an unnecessary phase: the priority projection itself imported every
+module before worker startup, reinstating the eager expansion that lightweight
+identity discovery was intended to avoid. This establishes a source-level
+unnecessary dependency, not a live-heap retention proof.
+
+Existing SDK PR #58 commit =4ee723d= changes that projection inside the native
+owners. The expander reads explicit native headers through its canonical
+unexpanded reader; opaque readers still use the original cached importer. Make
+reads declaration heads for ordering hints without copying unrelated function
+bodies or importing every expanded context. Relative paths are normalized through
+the native resolver. Duplicate consumer hints count once and declaration position
+breaks ties. Non-module targets are excluded from source declaration inspection.
+
+#+BEGIN_IMPORTANT
+Declaration hints are advisory. Conditional declarations can overapproximate
+active imports; macro-generated imports and opaque readers can be absent from
+these hints. The actual expanded imports, existing completion waits, worker
+capacity, queued compiler jobs, complete target inventory and executable link
+barrier retain authority. Hints cannot certify dependency closure or authorize a
+missing prerequisite. The actual expanded identity is still checked against the
+invocation-local source identity before source work is admitted.
+#+END_IMPORTANT
+
+All existing native assertions remain. Additional controls require ordinary
+and explicit-header identity/declaration reads to leave failing macros inert,
+then require independent native expansion to execute those failures. Opaque
+reader discovery must decline without another reader invocation. The original
+real compiler trace still places a shared dependency ahead of an independent
+leaf, and the independent compiled consumer still returns =42=.
+
+| Actual local observation | Result | Admission boundary |
+|--------------------------+--------+--------------------|
+| Complete POO 98fcce3 source build, first declaration candidate | Natural exit 0 in 131.12 s | New project-product prefix; installed Darwin SDK |
+| Complete POO 98fcce3 source build, final header candidate | Natural exit 0 in 134.86 s | All targets retained; 12 machine-derived workers |
+| Independent real POO compiled consumer | Actual object field equals 42 | Uses the newly built products |
+| Complete Core 79a5526 native script build | Natural exit 0 in 116.85 s | Real Module/self-bootstrap entry; POO 98fcce3 prerequisite |
+| Independent Core public prelude import | Natural exit 0 | Newly compiled public product; no package-install claim |
+| Final native source/reader/order assertions | Natural exit 0 | Every previous assertion plus new header/declaration controls |
+| Native patch application | Exact resulting source bytes match | Actual pinned upstream base; no replacement manifest |
+
+Every bounded invocation retained 180 seconds and each Scheme process retained
+2 GiB. These are source-build and compiled-consumer observations, not Linux
+package admission or a controlled cross-SDK speed comparison. An independent
+local C program exposed a separate linker selection failure: PATH selected a Nix
+linker that could not resolve =puts=. The unchanged actual package linker command
+passed after selecting the real Apple linker through the process-local native
+toolchain PATH. A fresh full cold build followed; the incremental linker retry
+was never counted as a cold pass.
+
+Core's =build.ss= is a self-bootstrap script, not an ordinary library import. The
+actual native GXi script entry owns that build. No Core dispatcher, package
+manifest or compatibility layer was added to accommodate the experiment.
+
+The real SDK client now uses native =run-process/batch=, retaining status checks
+while closing unused stdin and streaming compiler output. The original 180-second
+whole-client guard, complete package executable, manifest, real source index and
+compiled-consumer assertions remain unchanged. [[https://github.com/tao3k/gerbil-bazel/actions/runs/41011025512][Producer 41011025512]] must pass
+this exact Linux client and relocated-byte checks before publication. Parent must
+then select the actual published archive/checksum and regenerate native locks;
+Aitia must run the exact resulting pair. Root's accepted baseline remains selected
+until the complete consumer receipts exist.
 
 ** Runtime capability assumptions remain explicit
 
