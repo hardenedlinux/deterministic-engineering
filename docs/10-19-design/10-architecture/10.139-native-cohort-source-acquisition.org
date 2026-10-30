@@ -15,7 +15,7 @@
 | SDK patchb37b43e7ba53 | Published and qualified, including tagger context ownership |
 | Aitia 36cef93 cold build | Failed at 180.02 seconds; build ended near 152 seconds and serial tagging remained active |
 | Native parallel tagger 998bbfd | Linux producer 40967002006 passed, including native and relocated controls |
-| Aitia 54db6e0 cold build | PR run 40984189259 passed the unchanged cold step and TAGS content assertions |
+| Aitia 54db6e0 cold build | Raw outcome failed at 180.06 seconds; normalized continued-step success is not admission |
 | Parent 19c914d7 SDK metadata | Linux seed, Darwin merge and Linux verification passed; all 36 automation tests passed |
 | Aitia 60d6277 | Collects independent runtime results; final admission still requires the original cold outcome |
 | Root dependency admission | Accepted baseline retained; candidate runtime and root checks remain open |
@@ -23,7 +23,7 @@
 * One dependency graph, distinct admission receipts
 :PROPERTIES:
 :CUSTOM_ID: cohort139-ownership
-:STATUS: cold-passed-runtime-pending
+:STATUS: cold-and-runtime-refused
 :END:
 
 The owner repair follows [[file:10.138-native-package-cohort-and-ci-provenance.org][10.138]]. Existing review branches retain their ownership;
@@ -588,12 +588,16 @@ canonical SDK declaration. [[https://github.com/tao3k/agentic-ai-lab/actions/run
 Darwin merge and final Linux verification. All 36 automation tests passed after
 installing the generated lock; no generated repository specification was invented.
 
-[[https://github.com/tao3k/lambda-aitia/actions/runs/40984189259][Aitia PR run 40984189259]] at 54db6e0 passed the unchanged isolated POO cold step.
+[[https://github.com/tao3k/lambda-aitia/actions/runs/40984189259][Aitia PR run 40984189259]] at 54db6e0 failed the isolated POO cold step at
+180.06 seconds, status 124. The GitHub step conclusion is normalized to success
+by continue-on-error; the final always-run gate correctly reads the original
+failure outcome. Step conclusion alone must never serve as an admission receipt.
 The empty-product and absent-manifest preconditions, native installation, nonempty
 TAGS, actual object.ss source path and :clan/poo/object identity checks remain.
 Each process retains a 2 GiB heap and the compile invocation retains 180 seconds.
-Capacity remains machine/caller derived. This closes this run's cold gate only;
-complete consumer CI and Root dependency admission still require their own results.
+Capacity remains machine/caller derived. This run closes neither the cold gate nor complete consumer CI. The subsequent
+independent POO owner build also exceeded 180 seconds before Core could begin.
+Lean, Quint and license jobs passed independently. Root retains its baseline.
 
 #+NAME: cohort139-owner-build-observations
 | Owner at Aitia 60d6277 | Observed result | Approximate owner duration |

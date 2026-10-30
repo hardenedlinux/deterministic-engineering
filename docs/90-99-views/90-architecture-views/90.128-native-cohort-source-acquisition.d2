@@ -82,11 +82,11 @@ serial_metadata -> collect_runtime
 parallel_release -> aligned_lock: "published archive selected through native locks"
 
 qualified_sdk_lock: "Parent 19c914d7\nLinux seed / Darwin merge / Linux verify passed\n36 automation tests passed"
-cold_pass: "Aitia 54db6e0 / PR run 40984189259\nIsolated native POO cold step passed\n180s / 2 GiB per process / TAGS assertions retained"
+cold_refusal: "Aitia 54db6e0 / PR run 40984189259\nRaw cold outcome failed at 180.06s / status 124\n180s / 2 GiB per process / TAGS assertions retained"
 owner_gap: "Independent native owner receipts\nPOO / Core / Parser / ASCENT / Scheme-Rust passed\nOrgize 7e2f669 owner timed out at 180s"
 orgize_identity: "Orgize 0fcea25\nCargo Parser aligned with Scheme e1da8af\nReal resolver and both Cargo locks updated"
-parallel_release -> qualified_sdk_lock -> cold_pass
-cold_pass -> consumer: "full current runtime still required"
+parallel_release -> qualified_sdk_lock -> cold_refusal
+cold_refusal -> blocked: "normalized step success does not admit original failure"
 collect_runtime -> owner_gap
 orgize_identity -> parent: "native archive projection and lock refresh required"
 owner_gap -> blocked: "keep Root baseline until complete admission"
