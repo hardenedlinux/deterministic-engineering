@@ -10,20 +10,17 @@
 
 | Boundary | Current result |
 |----------+----------------|
-| Source graph | POO 6500bce and Core 7b798b4 retained; Parent 19e79c9e adds qualified SDK and aligned Orgize consumer |
-| Cross-platform metadata | Real Linux seed, Darwin merge and Linux verification passed; all 36 automation tests passed |
-| SDK patchb37b43e7ba53 | Published and qualified, including tagger context ownership |
-| Aitia 36cef93 cold build | Failed at 180.02 seconds; build ended near 152 seconds and serial tagging remained active |
-| Native parallel tagger 998bbfd | Linux producer 40967002006 passed, including native and relocated controls |
-| Aitia 54db6e0 cold build | Raw outcome failed at 180.06 seconds; normalized continued-step success is not admission |
-| Parent 19c914d7 SDK metadata | Linux seed, Darwin merge and Linux verification passed; all 36 automation tests passed |
-| Aitia 60d6277 | Collects independent runtime results; final admission still requires the original cold outcome |
-| Root dependency admission | Accepted baseline retained; candidate runtime and root checks remain open |
+| Selected source graph | POO 6500bce, Core 7b798b4, Parser e1da8af, ASCENT 64f62ce, Orgize 0fcea25, Parent b58787d4 |
+| Native metadata | Linux seed, Darwin merge and Linux verification passed; all 36 automation tests passed |
+| SDK 2dde985 / patcha379bb244bfa | Published; original native, identity and relocated-byte controls passed |
+| Aitia 54db6e0 cold outcome | Failed at 180.06 seconds; continued-step conclusion is not admission |
+| Aitia 74ae9af | Full PR CI 40991127714 running; original cold and runtime gates remain mandatory |
+| Root dependency admission | Accepted baseline retained; candidate cold and complete runtime remain open |
 
 * One dependency graph, distinct admission receipts
 :PROPERTIES:
 :CUSTOM_ID: cohort139-ownership
-:STATUS: cold-and-runtime-refused
+:STATUS: aligned-cohort-ci-running
 :END:
 
 The owner repair follows [[file:10.138-native-package-cohort-and-ci-provenance.org][10.138]]. Existing review branches retain their ownership;
@@ -636,3 +633,97 @@ A successful cold package receipt does not certify Core scale admission, the
 complete Aitia runtime, or Root's current dependency graph. Preserve the accepted
 Root baseline until every applicable candidate consumer gate has succeeded.
 #+END_QUOTE
+
+* Native completion identities and the new compilation boundary
+:PROPERTIES:
+:CUSTOM_ID: cohort139-native-make-identity
+:STATUS: linux-producer-pending
+:END:
+
+The raw Aitia 54db6e0 cold failure occurred before tagging. Its census observed
+up to four C compiler processes, a build GXi RSS peak of 2,122,748 KiB and
+105 accumulated CPU seconds in that GXi. The table~0.scm backend remained active
+at the deadline. RSS is process residency, not a measured live Scheme heap.
+The configured, online and affinity capacities were all four. This evidence
+excludes an absent concurrency declaration; it does not prove that queue entries
+alone retain the heap. Native compile-context values are operation names rather
+than expanded module ASTs, so a speculative queue-only ownership repair is not
+justified by that parameter.
+
+The actual native std/make completion-table pass calls module-id for every
+selected target before starting workers. That procedure originally imports and
+expands each source to obtain its identity, retaining source contexts in the
+expander registry and delaying the first compilation. The source repair in the
+existing SDK PR #58 uses the native reader to discover ordinary source identities,
+with an invocation-local identity map. Paths still resolve through the native
+module owner. The coordinator subsequently imports every real module and rejects
+any difference between the reader identity and its expanded identity before
+submitting work. Target inventory, freshness, dependency waits, errors and worker
+capacity are preserved. No file-name-to-identity heuristic or alternate build
+scheduler is introduced.
+
+Opaque/custom readers may have effects. Sources beginning with a reader dispatch
+retain their original cached native import, so #lang readers are not executed
+once for metadata and again for expansion. The focused native contract checks
+an inert ordinary body against an expansion-error negative control, explicit
+package and namespace identities, linked source paths and a custom reader whose
+independent event log must contain exactly one read. An actual two-module native
+build must also produce result 42 in a fresh compiled consumer process.
+
+The actual complete POO 6500bce build with the native Make candidate completed
+locally in 141.22 seconds with natural status 0, a fresh output prefix, the full
+authoritative build declaration and machine-derived capacity 12. Each Scheme
+process retained 2 GiB and the invocation retained 180 seconds. This is a local
+Darwin compiler observation, not a Linux package-install or manifest receipt.
+An earlier verbose time wrapper failed reading a sandboxed system statistic;
+that wrapper result was rejected, and the bounded run with a plain timing tool
+supplies the natural-exit observation above.
+
+[[https://github.com/tao3k/gerbil-bazel/actions/runs/40987588954][SDK producer 40987588954]] at 2dde985 passed the actual Linux capability build,
+all original native controls, the identity contract and relocated bytes. Its real
+release is selected by Parent b58787d4 after [[https://github.com/tao3k/agentic-ai-lab/actions/runs/40990382600][lock run 40990382600]] passed Linux
+seed, Darwin merge and Linux verification. All 36 automation tests passed. No
+unpublished optimization experiment is included in that SDK.
+
+The local native baseline subsequently completed in 110.96 seconds; the ordinary
+reader candidate compiled with optimization completed in 133.31 seconds. These
+observations do not establish a speed improvement. A more aggressive experimental
+native identity reader and worker handoff reached status 124 at 180.03 seconds,
+even though a late build marker appeared. That experiment is rejected and was
+not pushed. A marker without natural status 0 does not close a build gate.
+
+[[https://github.com/tao3k/lambda-aitia/actions/runs/40991127714][Aitia PR CI 40991127714]] at 74ae9af selects the same Parent/Core declarations
+and Parent checkout. The native cold step prints its original status before
+propagating failure; the existing final outcome gate remains authoritative.
+The owner step retains real generated Org fold sources as CI artifacts for
+critical-path inspection, without retrying the owner or modifying acceptance.
+Complete cold installation, runtime and Root admission remain open.
+
+
+** Actual local source cohort and Org fold observation
+:PROPERTIES:
+:CUSTOM_ID: cohort139-local-source-cohort
+:END:
+
+The isolated local native prefix contains actual POO 6500bce products. Core
+7b798b4 built through its official source entry in 94.27 seconds, and Parser
+e1da8af built in 153.35 seconds, both with natural status 0 and the unchanged
+180-second invocation / 2 GiB process envelope. The native SDK link operation
+registers the real POO source; no package manifest was fabricated. These are
+Darwin source builds with the installed SDK, not Linux cold installation or
+Core's separate 1,000/10,000-module admission.
+
+The real Org grammar, strategies and helper descriptors were then passed to the
+actual Parser emitter. A structural reachability diagnostic observed:
+
+| Product | Emitted private procedures | Syntactically reachable procedures |
+|---------+----------------------------+------------------------------------|
+| Document events | 3455 | 3455 |
+| Event tape | 1309 | 1309 |
+| Inline events | 2604 | 2374 |
+
+Only 230 inline procedures are outside that syntactic reference closure. This
+is an optimization hypothesis, not a semantic oracle or a measured build repair.
+The dominant document and tape products are fully reachable. Do not remove
+helper validation, change fold semantics or claim that dead-code removal alone
+closes the complete Orgize owner deadline. No emitter implementation was changed.
