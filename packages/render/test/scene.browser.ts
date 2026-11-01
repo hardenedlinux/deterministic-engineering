@@ -12,7 +12,8 @@ test('measured native ELK scene exports offline vector SVG and PNG with bounded 
  const a=await exportFigure(figure,browser),b=await exportFigure(figure,browser);
  expect(a.receipt.scenes[0]!.nodes).toBe(2);expect(a.receipt.scenes[0]!.edges).toBe(1);
  expect(a.receipt.routing).toBe('elkjs@0.12.1');expect(a.receipt.scenes[0]!.layoutSHA256).toBe(b.receipt.scenes[0]!.layoutSHA256);
- expect(a.receipt.pngSHA256).toBe(b.receipt.pngSHA256);expect(a.receipt.svgSHA256).toEqual(b.receipt.svgSHA256);
+ expect(a.receipt.pngSHA256).toBe(b.receipt.pngSHA256);const difference=a.svg.map((svg,index)=>{const other=b.svg[index]!;let offset=0;while(offset<svg.length&&svg[offset]===other[offset])offset++;return offset<svg.length?{index,offset,a:svg.slice(Math.max(0,offset-50),offset+180),b:other.slice(Math.max(0,offset-50),offset+180)}:null;}).filter(Boolean);
+ expect(a.receipt.svgSHA256,JSON.stringify(difference)).toEqual(b.receipt.svgSHA256);
  expect(a.svg).toHaveLength(2);expect(a.svg[0]).toContain('data:font/woff2;base64,');
  expect(a.svg[0]).not.toMatch(/foreignObject|data:image\/png|data-d2-version/);
  expect(a.html).toContain('width="32" height="32"');
@@ -60,4 +61,23 @@ test('native theme layout preferences reach ELK and explicit view options take p
  await expect(exportFigure(composeFigure({...input,theme},composer()),browser)).rejects.toThrow();
  const selected={...spec,graph:{...spec.graph,layoutOptions:{...spec.graph.layoutOptions,'elk.algorithm':'layered'}}};
  expect((await exportFigure(composeFigure({...input,theme},composer(selected)),browser)).receipt.scenes).toHaveLength(1);
+});
+
+test('computed CSS property enumeration order does not change vector bytes',async({browser})=>{
+ // Negative environment control: CSSOM enumeration is not a serialization order.
+ const reversed=new Proxy(browser,{get(target,key){
+  if(key==='newContext')return async(...args:Parameters<typeof browser.newContext>)=>{
+   const context=await target.newContext(...args);
+   await context.addInitScript(()=>{
+    const original=CSSStyleDeclaration.prototype[Symbol.iterator];
+    CSSStyleDeclaration.prototype[Symbol.iterator]=function(){return Array.from(original.call(this)).reverse()[Symbol.iterator]();};
+   });return context;
+  };
+  const value=Reflect.get(target,key);return typeof value==='function'?value.bind(target):value;
+ }});
+ const figure=composeFigure(input,composer());
+ const a=await exportFigure(figure,browser),b=await exportFigure(figure,reversed);
+ expect(a.receipt.pngSHA256).toBe(b.receipt.pngSHA256);
+ expect(a.receipt.scenes[0]!.layoutSHA256).toBe(b.receipt.scenes[0]!.layoutSHA256);
+ expect(a.receipt.svgSHA256).toEqual(b.receipt.svgSHA256);
 });

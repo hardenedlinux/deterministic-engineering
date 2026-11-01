@@ -89,7 +89,7 @@ export async function extractSceneSVGs(page:Page):Promise<readonly string[]> {
     if(!elements.length)return [];
     const sheetText=Array.from(document.querySelectorAll('style'),style=>style.textContent).join('\n');
     const serializer=new XMLSerializer();
-    const prepared=(element:SVGSVGElement)=>{const svg=element.cloneNode(true)as SVGSVGElement,style=getComputedStyle(element);const variables=Array.from(style).filter(name=>name.startsWith('--')).map(name=>`${name}:${style.getPropertyValue(name)}`).join(';');svg.setAttribute('style',`${variables};font-family:${style.fontFamily};color:${style.color}`);return svg;};
+    const prepared=(element:SVGSVGElement)=>{const svg=element.cloneNode(true)as SVGSVGElement,style=getComputedStyle(element);const variables=Array.from(style).filter(name=>name.startsWith('--')).sort().map(name=>`${name}:${style.getPropertyValue(name)}`).join(';');svg.setAttribute('style',`${variables};font-family:${style.fontFamily};color:${style.color}`);return svg;};
     const combined=document.createElementNS(ns,'svg');combined.setAttribute('viewBox',`0 0 ${root.width} ${root.height}`);combined.setAttribute('width',String(root.width));combined.setAttribute('height',String(root.height));combined.setAttribute('data-renderer','@deterministic-engineering/render');
     const sheet=document.createElementNS(ns,'style');sheet.textContent=sheetText;combined.append(sheet);
     const bg=document.createElementNS(ns,'rect');bg.setAttribute('width','100%');bg.setAttribute('height','100%');bg.setAttribute('fill',getComputedStyle(figure).backgroundColor);combined.append(bg);

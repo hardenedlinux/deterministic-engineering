@@ -135,7 +135,7 @@ Primary references: [[https://github.com/kieler/elkjs][ELK.js]] and
 another layout engine or editing/interaction runtime.
 
 * Qualification and review handoff
-Local package typecheck, 25 unit/model/SDK tests and 18 native Playwright browser
+Local package typecheck, 25 unit/model/SDK tests and 19 native Playwright browser
 controls passed. Consumer typecheck and two domain tests passed, ten full Case
 figures and two comparison sheets regenerated, and five current overview scenes
 exported and exited naturally. These controls include unknown resources/relations,
@@ -183,3 +183,15 @@ The subsequent sections describe Library/Profile/Scenario, repository dependenci
 and the static renderer as components. Workflow stays separate. Source facts and
 the capture-blocked state remain visible in the full overview; style-comparison
 sheets are supplementary rather than the README's primary illustration.
+
+* SVG serialization order control
+Linux run 41284866523 failed the repeated SVG byte check while the PNG and ELK
+layout hashes matched. Preserve that failure separately from earlier green runs.
+A controlled native-browser CSSOM enumeration reversal reproduces the same class
+of failure: identical pixels/layout but different SVG bytes. Computed custom CSS
+properties were emitted in the browser's enumeration order. Sort those unique
+property names before standard XMLSerializer output; keep the original strict
+repeatability assertions and the new environment control. This fixes an observed
+serialization defect without replacing the serializer, relaxing checks or changing
+layout. The original failed CI did not retain SVG payloads, so its precise byte
+difference cannot be claimed as recovered; the controlled witness is explicit.
