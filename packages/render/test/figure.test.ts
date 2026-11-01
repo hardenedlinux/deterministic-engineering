@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+//
+// SPDX-License-Identifier: LGPL-2.1-only
+
 import { test, expect } from 'bun:test';
 import { composeFigure, type FigureInput, type FigureComposer } from '../src/figure';
 import { defaultPresentationTheme, extendPresentationTheme } from '../src/presentation-theme';

@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-only
+
 ;;; Generic family Types consume neutral Library Types, never child objects.
 (import
   :clan/poo/object

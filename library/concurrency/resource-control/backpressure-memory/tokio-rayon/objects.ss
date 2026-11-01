@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-only
+
 ;;; Pure Rust/Tokio/Rayon specialization of the selected generic model.
 (import :clan/poo/object "types.ss" "../abstract/types.ss")
 (export specialize-backpressure make-backpressure-integration

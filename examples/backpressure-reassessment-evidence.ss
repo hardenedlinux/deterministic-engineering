@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-only
+
 #!/usr/bin/env gxi
 ;;; -*- Gerbil -*-
 ;;; Actual source-changing native experiment, handed off through Core Ops.

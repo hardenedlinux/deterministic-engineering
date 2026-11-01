@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-only
+
 ;;; Real repository file acquisition, using Core's source/currentness authority.
 ;;; This observation does not attest user confirmation, role mandate or final C.
 (import

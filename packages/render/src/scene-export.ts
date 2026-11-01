@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+//
+// SPDX-License-Identifier: LGPL-2.1-only
+
 import ELK, {type ElkNode} from 'elkjs';
 import {fileURLToPath} from 'node:url';
 import type {Page} from 'playwright';
@@ -86,13 +90,14 @@ export async function layoutScenes(page: Page): Promise<readonly SceneLayoutRece
   return receipts;
 }
 /** Serialize the explicit SVG scene and annotations; no bitmap wrapper or foreignObject. */
-export async function extractSceneSVGs(page:Page,transparent=false):Promise<readonly string[]> {
-  return page.evaluate(transparent=>{
+export async function extractSceneSVGs(page:Page,transparent=false,annotation?:string):Promise<readonly string[]> {
+  return page.evaluate(({transparent,annotation})=>{
     const ns='http://www.w3.org/2000/svg',figure=document.querySelector<HTMLElement>('[data-figure]')!,root=figure.getBoundingClientRect();
     const elements=Array.from(figure.querySelectorAll<SVGSVGElement>('svg[data-scene],svg[data-vector-annotation],svg[data-vector-surface]' ));
     if(!elements.length)return [];
     const sheetText=Array.from(document.querySelectorAll('style'),style=>style.textContent).join('\n');
     const serializer=new XMLSerializer();
+    const serialize=(svg:SVGSVGElement)=>(annotation?'<!--\n'+annotation+'\n-->\n':'')+serializer.serializeToString(svg);
     const prepared=(element:SVGSVGElement)=>{const svg=element.cloneNode(true)as SVGSVGElement,style=getComputedStyle(element);const variables=Array.from(style).filter(name=>name.startsWith('--')).sort().map(name=>`${name}:${style.getPropertyValue(name)}`).join(';');svg.setAttribute('style',`${variables};font-family:${style.fontFamily};color:${style.color}`);return svg;};
     const combined=document.createElementNS(ns,'svg');combined.setAttribute('viewBox',`0 0 ${root.width} ${root.height}`);combined.setAttribute('width',String(root.width));combined.setAttribute('height',String(root.height));combined.setAttribute('data-renderer','@deterministic-engineering/render');
     const sheet=document.createElementNS(ns,'style');sheet.textContent=sheetText;combined.append(sheet);
@@ -101,6 +106,6 @@ export async function extractSceneSVGs(page:Page,transparent=false):Promise<read
     backdrop(combined);
     const meta=document.createElementNS(ns,'metadata');meta.textContent=document.getElementById('figure-provenance')!.textContent;combined.append(meta);
     for(const element of elements){const clone=prepared(element),rect=element.getBoundingClientRect();clone.setAttribute('x',String(rect.x-root.x));clone.setAttribute('y',String(rect.y-root.y));clone.setAttribute('width',String(rect.width));clone.setAttribute('height',String(rect.height));combined.append(clone);}
-    return [serializer.serializeToString(combined),...Array.from(figure.querySelectorAll<SVGSVGElement>('svg[data-scene]'),element=>{const clone=prepared(element),sheet=document.createElementNS(ns,'style');sheet.textContent=sheetText;clone.prepend(sheet);backdrop(clone);return serializer.serializeToString(clone);})];
-  },transparent);
+    return [serialize(combined),...Array.from(figure.querySelectorAll<SVGSVGElement>('svg[data-scene]'),element=>{const clone=prepared(element),sheet=document.createElementNS(ns,'style');sheet.textContent=sheetText;clone.prepend(sheet);backdrop(clone);return serialize(clone);})];
+  },{transparent,annotation});
 }

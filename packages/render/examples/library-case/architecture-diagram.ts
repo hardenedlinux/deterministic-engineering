@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+//
+// SPDX-License-Identifier: LGPL-2.1-only
+
 import type {FigureContext} from '@deterministic-engineering/render';
 import {dependencyMatrix} from './dependency-matrix';
 const ownership = ({reference: ref, icon, text, copy, relation}: FigureContext) => `<div class="architecture" data-canvas>

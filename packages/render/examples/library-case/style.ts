@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+//
+// SPDX-License-Identifier: LGPL-2.1-only
+
 /** Case-specific editorial composition; the Library does not prescribe these sections. */
 export const caseStyle = `
 .dependency-matrix{width:100%;table-layout:fixed;margin:12px 0 18px;font-size:16px}.dependency-matrix th,.dependency-matrix td{padding:15px;border:1px solid var(--border);text-align:center}.dependency-matrix th{background:var(--tint);font-weight:700}.dependency-matrix td{color:var(--accent)}

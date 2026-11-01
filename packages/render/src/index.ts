@@ -1,7 +1,13 @@
+// SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+//
+// SPDX-License-Identifier: LGPL-2.1-only
+
+export {selectTaste,type TasteSelection,type TasteSelectionContext,type TasteProposal,type EvidenceProjection,EvidenceProjectionSchema} from './taste-selection';
+export {questionFocus,evidenceFocus,dependencyLayout,questionScope,visualHierarchy} from './taste-policies';
 export {DesignSchema,defineDesign,type Design} from './design';
 export {composeTaste,reviewTaste,minimumTextSize,focalBudget,type Taste,type TasteRule,type TasteNote,type TasteContext,type TasteReport,type RenderObservation,type MeasuredBox} from './taste';
 export {composeHeading,type HeadingSpec} from './heading';
-export {composeModelView,graphFromModel} from './model-view';
+export {composeModelView,graphFromModel,modelDiagram} from './model-view';
 import {isDeepStrictEqual} from 'node:util';
 import {Worker} from 'node:worker_threads';
 import type {CompileOptions} from '@terrastruct/d2';

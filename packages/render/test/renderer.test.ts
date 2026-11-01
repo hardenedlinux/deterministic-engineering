@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+//
+// SPDX-License-Identifier: LGPL-2.1-only
+
 import {test,expect} from 'bun:test';
 import {compileModel} from '../src';
 test('D2 contributes labels and relationships without legacy geometry or SVG',async()=>{

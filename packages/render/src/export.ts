@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+//
+// SPDX-License-Identifier: LGPL-2.1-only
+
 import {layoutScenes, extractSceneSVGs, type SceneLayoutReceipt} from './scene-export';
 import {getSmoothStepPath, Position} from '@xyflow/system';
 import rough from 'roughjs';
@@ -8,7 +12,16 @@ import type {RenderObservation} from './taste';
 import type {Design} from './design';
 import type { ComposedFigure } from './figure';
 import { digest } from './source/catalog';
-export interface FigureExportOptions { readonly scale?: number; readonly regions?: readonly string[]; readonly minimumTextSize?:number; readonly transparent?:boolean; }
+export interface ArtifactAttribution {readonly copyright:readonly string[];readonly license:string;}
+// REUSE-IgnoreStart
+/** Host-supplied rights information; the renderer does not assign ownership to downstream work. */
+export function attributionComment(attribution:ArtifactAttribution):string {
+ const values=[...attribution.copyright,attribution.license];
+ if(!attribution.copyright.length||values.some(value=>!value.trim()||/[\r\n]/.test(value)||value.includes('--')))throw new Error('Invalid artifact attribution comment');
+ return attribution.copyright.map(value=>'SPDX-FileCopyrightText: '+value).join('\n')+'\nSPDX-License-Identifier: '+attribution.license;
+}
+// REUSE-IgnoreEnd
+export interface FigureExportOptions { readonly attribution?:ArtifactAttribution; readonly scale?: number; readonly regions?: readonly string[]; readonly minimumTextSize?:number; readonly transparent?:boolean; }
 export interface FigureImage {
   readonly png: Uint8Array;
   readonly svg: readonly string[];
@@ -20,6 +33,7 @@ export interface FigureImage {
     /** Effective SVG text size in logical CSS pixels, after scene scaling. */
     readonly canvas:{readonly background:string;readonly transparent:boolean};
     readonly readability: {readonly minimumTextSize:number|null;readonly samples:number;readonly requiredMinimum?:number};
+    readonly attribution?:ArtifactAttribution;
     readonly observation:RenderObservation;
     readonly scenes: readonly SceneLayoutReceipt[]; readonly svgSHA256: readonly string[];
     readonly drawing: string; readonly routing: string; readonly dependencies: Readonly<Record<string, string>>; readonly assetSHA256: Readonly<Record<string, string>>;
@@ -31,6 +45,7 @@ export interface FigureImage {
 /** Host owns the official browser; this effect owns and closes just its context. */
 export async function exportFigure(figure: ComposedFigure, browser: Browser, options: FigureExportOptions = {}): Promise<FigureImage> {
   if (digest(figure.html) !== figure.htmlSHA256) throw new Error('Figure HTML differs from its captured fingerprint');
+  const annotation=options.attribution?attributionComment(options.attribution):undefined;
   const scale = options.scale ?? 1;
   if (!Number.isFinite(scale) || scale < 0.5 || scale > 4) throw new Error('Invalid export scale');
   if(options.minimumTextSize!==undefined&&(!Number.isFinite(options.minimumTextSize)||options.minimumTextSize<=0))throw new Error('Invalid minimum text size');
@@ -264,8 +279,9 @@ export async function exportFigure(figure: ComposedFigure, browser: Browser, opt
     if (report.issues.length) throw new Error(report.issues.join('; '));
     if(options.transparent)await page.locator('[data-figure]').evaluate(element=>{(element as HTMLElement).style.setProperty('background','transparent','important');document.body.style.background='transparent';});
     await page.evaluate(rendered=>{const element=document.getElementById('figure-provenance')!,capture=JSON.parse(element.textContent!);capture.rendered=rendered;element.textContent=JSON.stringify(capture).replaceAll('<','\\u003c');},{observation:report.observation,readability:{...report.readability,requiredMinimum:options.minimumTextSize},bounds:report.bounds});
-    const svg = await extractSceneSVGs(page,options.transparent??false);
-    const html = await page.content();
+    const svg = await extractSceneSVGs(page,options.transparent??false,annotation);
+    const renderedHTML = await page.content();
+    const html = annotation ? renderedHTML.replace(/^(<!doctype[^>]*>)/i,'$1\n<!--\n'+annotation+'\n-->\n') : renderedHTML;
     const png = await page.locator('[data-figure]').screenshot({type: 'png', animations: 'disabled',omitBackground:options.transparent??false});
     const regionImages: Record<string, Uint8Array> = {};
     for (const name of options.regions ?? []) {
@@ -273,7 +289,7 @@ export async function exportFigure(figure: ComposedFigure, browser: Browser, opt
       regionImages[name] = await page.locator(`[data-region="${name}"]`).screenshot({type: 'png', animations: 'disabled',omitBackground:options.transparent??false});
     }
     const buffer = Buffer.from(png);
-    return {png, html, svg, regionImages, receipt: {observation:report.observation,canvas:{background:options.transparent?'transparent':report.canvasBackground,transparent:options.transparent??false},readability:{...report.readability,requiredMinimum:options.minimumTextSize},inputSHA256: figure.inputSHA256, scenes, svgSHA256:svg.map(svg=>digest(svg)), composedHTMLSHA256: figure.htmlSHA256, dependencies: packageInfo.dependencies, regionSHA256: Object.fromEntries(Object.entries(regionImages).map(([name, bytes]) => [name, digest(bytes)])), htmlSHA256: digest(html), drawing: figure.drawing.mode === "sketch" ? `roughjs@${packageInfo.dependencies.roughjs}` : "precise", routing: scenes.length ? `elkjs@${packageInfo.dependencies.elkjs}` : connectors.length ? `xyflow@${packageInfo.dependencies["@xyflow/system"]}` : "none", assetSHA256, pngSHA256: digest(png), browser: browser.version(),
+    return {png, html, svg, regionImages, receipt: {attribution:options.attribution,observation:report.observation,canvas:{background:options.transparent?'transparent':report.canvasBackground,transparent:options.transparent??false},readability:{...report.readability,requiredMinimum:options.minimumTextSize},inputSHA256: figure.inputSHA256, scenes, svgSHA256:svg.map(svg=>digest(svg)), composedHTMLSHA256: figure.htmlSHA256, dependencies: packageInfo.dependencies, regionSHA256: Object.fromEntries(Object.entries(regionImages).map(([name, bytes]) => [name, digest(bytes)])), htmlSHA256: digest(html), drawing: figure.drawing.mode === "sketch" ? `roughjs@${packageInfo.dependencies.roughjs}` : "precise", routing: scenes.length ? `elkjs@${packageInfo.dependencies.elkjs}` : connectors.length ? `xyflow@${packageInfo.dependencies["@xyflow/system"]}` : "none", assetSHA256, pngSHA256: digest(png), browser: browser.version(),
       width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20), scale, bounds: report.bounds}};
   } finally { await context.close(); }
 }

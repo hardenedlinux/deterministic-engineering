@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-only
+
 ;;; Actual Codex read transport. This is an observation, not a historical-actor attester.
 (import
   :clan/poo/object

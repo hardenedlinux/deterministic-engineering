@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-only
+
 # Native package operations; every Scheme process is fenced before importing.
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 

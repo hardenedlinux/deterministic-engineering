@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-only
+
 ;;; -*- Gerbil -*-
 ;;; Existing ASCENT intake -> native Aitia content and disposition requests.
 ;;; Completeness is bounded to the host-selected exchange, never global discovery.

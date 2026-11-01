@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-only
+
 (import "../projects/library-formation/init.ss" "../profiles/library-formation.ss"
         "library-formation-output.ss" :clan/poo/object
         (only-in :yuanxu/module-system/source/admission current-module-source-observer))

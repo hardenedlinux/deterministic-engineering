@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+//
+// SPDX-License-Identifier: LGPL-2.1-only
+
 import type {FigureContext} from '@deterministic-engineering/render';
 interface Workflow {
   readonly lanes: readonly {id: string; label: string}[];

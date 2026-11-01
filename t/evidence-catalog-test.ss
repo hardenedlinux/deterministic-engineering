@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-only
+
 ;;; Catalog control inputs exercise the real native engine; no method receipt is fabricated.
 (import
   :std/test

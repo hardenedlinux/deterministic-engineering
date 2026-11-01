@@ -1,3 +1,8 @@
+// SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+//
+// SPDX-License-Identifier: LGPL-2.1-only
+
+import {assertTasteSelection,bindEvidence,bindQuestionTargets,type EvidenceProjection,type TasteSelection} from './taste-selection';
 import {bindDesign,type Design} from './design';
 import {deepFreeze} from './immutable';
 import {parseFragment, type DefaultTreeAdapterTypes} from 'parse5';
@@ -8,7 +13,7 @@ import { validatePurposeKind, type QuestionRef, type ViewSelection } from './sou
 import { defaultIcons, type IconAsset } from './icons';
 import { defaultPresentationTheme, type PresentationTheme } from './presentation-theme';
 
-export interface FigureQuestion extends QuestionRef { readonly focusRefs: readonly string[]; }
+export interface FigureQuestion extends QuestionRef { readonly focusRefs: readonly string[];readonly subjectRefs?:readonly string[];readonly relationRefs?:readonly string[]; }
 export interface FigureModel {
   readonly subjects: readonly Readonly<Pick<Shape, 'id' | 'type'> & {
     label?: string; parent?: string; level?: Shape['level']; classes?: Shape['classes']; sourceName?: string;
@@ -28,6 +33,8 @@ export interface ModelSource {
   readonly labels?: Readonly<Record<string,string>>;
 }
 export interface FigureInput {
+  readonly evidence?:readonly EvidenceProjection[];
+  readonly taste?:TasteSelection;
   readonly design?:Design;
   readonly modelSource?: ModelSource;
   readonly modelTrace?: import('./opensysml').SysMLProjectionResult['trace'];
@@ -41,13 +48,15 @@ export interface FigureInput {
   /** Captured project/model/composition sources; no new model or evidence ledger. */
   readonly sources: Readonly<Record<string, string>>;
   readonly references: Readonly<Record<string, string>>;
-  readonly variants?: readonly {readonly name: string; readonly theme: PresentationTheme; readonly kind?: string; readonly layout?: string; readonly presentation?:unknown; readonly design?:Design; readonly icons?: Readonly<Record<string, IconAsset>>}[];
+  readonly variants?: readonly {readonly name: string; readonly theme: PresentationTheme; readonly kind?: string; readonly layout?: string; readonly presentation?:unknown; readonly design?:Design; readonly questionRefs?:readonly string[];readonly evidenceRefs?:readonly string[]; readonly icons?: Readonly<Record<string, IconAsset>>}[];
   readonly model?: FigureModel;
   readonly copy?: Readonly<Record<string, string>>;
   readonly theme?: PresentationTheme;
   readonly icons?: Readonly<Record<string, IconAsset>>;
 }
 export interface FigureContext {
+  readonly evidence:readonly EvidenceProjection[];
+  readonly taste?:TasteSelection;
   readonly design?:Design;
   readonly theme: PresentationTheme;
   readonly questions: readonly FigureQuestion[];
@@ -78,7 +87,10 @@ export interface ComposedFigure {
 export const escapeHTML = (value: string): string => value.replace(/[&<>"']/g, character => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[character]!));
 /** Capture first, then compose. No fixed page structure or automatic graph enlargement. */
 export function composeFigure(input: FigureInput, compose: FigureComposer): ComposedFigure {
+  assertTasteSelection(input);
   const snapshot = structuredClone(input);
+  bindQuestionTargets(snapshot.questions,snapshot.model);
+  const evidence=bindEvidence(snapshot);
   if(snapshot.modelSource && (!snapshot.modelTrace || snapshot.modelSource.modelHash!==snapshot.modelTrace.modelHash || snapshot.modelSource.view!==snapshot.modelTrace.requestedView || snapshot.modelSource.portProjection!==snapshot.modelTrace.portProjection))
     throw new Error('Model selection differs from captured SDK trace');
   if (!Number.isInteger(snapshot.width) || snapshot.width < 320 || snapshot.width > 4096) throw new Error('Invalid figure width');
@@ -128,7 +140,7 @@ export function composeFigure(input: FigureInput, compose: FigureComposer): Comp
   if (theme.drawing.mode === 'sketch' && (!Number.isInteger(seed) || seed <= 0 || (roughness !== undefined && (!Number.isFinite(roughness) || roughness < 0)))) throw new Error('Invalid sketch drawing parameters');
   // Freeze captured model and project declarations before calling a domain compositor.
   deepFreeze(snapshot.model);deepFreeze(snapshot.modelSource);deepFreeze(snapshot.modelTrace);deepFreeze(snapshot.presentation);deepFreeze(theme);
-  const composition = compose(Object.freeze({design,theme, questions:Object.freeze([...questions.values()]), view, model: snapshot.model, presentation: snapshot.presentation, layout: snapshot.layout ?? "default", question, reference, icon, glyph: name => {icon(name); return icons[name]!.svg;}, copy, relation, text: escapeHTML}));
+  const composition = compose(Object.freeze({design,evidence,taste:snapshot.taste,theme, questions:Object.freeze([...questions.values()]), view, model: snapshot.model, presentation: snapshot.presentation, layout: snapshot.layout ?? "default", question, reference, icon, glyph: name => {icon(name); return icons[name]!.svg;}, copy, relation, text: escapeHTML}));
   const usedQuestions = new Set<string>();
   const shownSubjects=new Set<string>(),shownRelations=new Set<string>();
   const nodes: DefaultTreeAdapterTypes.Node[] = [...parseFragment(composition.markup).childNodes];
@@ -155,10 +167,10 @@ export function composeFigure(input: FigureInput, compose: FigureComposer): Comp
   }
   const sourceSHA256 = Object.fromEntries(Object.entries(sources).map(([name, source]) => [name, digest(source)]));
   const renderer = {package: packageInfo.name, version: packageInfo.version, icons: Object.fromEntries(Object.entries(icons).map(([name, asset]) => [name, digest(asset.svg)]))};
-  const footprint = {renderer, design, presentation: snapshot.presentation, layout: snapshot.layout, copy: snapshot.copy, model: snapshot.model, modelSource: snapshot.modelSource, modelTrace: snapshot.modelTrace, view, questions: snapshot.questions, references, sourceSHA256, theme, icons, width: snapshot.width, language: snapshot.language, composition};
+  const footprint = {renderer, design,evidence,taste:snapshot.taste, presentation: snapshot.presentation, layout: snapshot.layout, copy: snapshot.copy, model: snapshot.model, modelSource: snapshot.modelSource, modelTrace: snapshot.modelTrace, view, questions: snapshot.questions, references, sourceSHA256, theme, icons, width: snapshot.width, language: snapshot.language, composition};
   const inputSHA256 = digest(JSON.stringify(footprint));
   const variables = Object.entries(theme.colors).map(([key, value]) => `--${key}:${value}`).join(';') + ';' + Object.entries(theme.spacing).map(([key, value]) => `--${key}:${value}px`).join(';')+';'+Object.entries(theme.typography).map(([key,value])=>`--type-${key}:${value}`).join(';');
-  const metadata = JSON.stringify({renderer, design, layout: snapshot.layout, presentation: snapshot.presentation, drawing: theme.drawing, fonts: theme.fonts, palette:theme.colors, inputSHA256, model: snapshot.model, modelSource: snapshot.modelSource, modelTrace: snapshot.modelTrace, view, questions: snapshot.questions, references, sourceSHA256}).replaceAll('<', '\\u003c');
+  const metadata = JSON.stringify({renderer, design,evidence,taste:snapshot.taste, layout: snapshot.layout, presentation: snapshot.presentation, drawing: theme.drawing, fonts: theme.fonts, palette:theme.colors, inputSHA256, model: snapshot.model, modelSource: snapshot.modelSource, modelTrace: snapshot.modelTrace, view, questions: snapshot.questions, references, sourceSHA256}).replaceAll('<', '\\u003c');
   const html = `<!doctype html><html lang="${escapeHTML(snapshot.language)}"><head><meta charset="utf-8"><meta name="viewport" content="width=${snapshot.width}"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:"><title>${escapeHTML(view.title)}</title><style>
 *{box-sizing:border-box}html,body{margin:0;padding:0}body{background:${theme.colors.background};font-family:${theme.fontFamily};color:${theme.colors.ink}}[data-figure]{${variables};width:${snapshot.width}px;margin:0;position:relative;overflow:hidden;background:var(--background);font-size:var(--type-bodySize)}.icon{display:inline-flex;flex:none;width:var(--iconSize);height:var(--iconSize)}.icon svg{width:100%;height:100%}svg{display:block}h1,h2,h3,p{margin:0}table{border-collapse:collapse}a{color:inherit}*{animation:none!important;transition:none!important}${composition.css}\n${theme.stylesheet}
 </style></head><body><figure data-figure data-purpose="${view.purpose}" aria-label="${escapeHTML(view.question.text)}">${composition.markup}</figure><script type="application/json" id="figure-provenance">${metadata}</script></body></html>`;
@@ -169,6 +181,10 @@ export function composeFigure(input: FigureInput, compose: FigureComposer): Comp
 export function selectFigureVariant(input: FigureInput, name: string): FigureInput {
   const variant = input.variants?.find(variant => variant.name === name);
   if (!variant) throw new Error(`Undeclared figure variant: ${name}`);
-  return {...input, view: {...input.view, kind: variant.kind ?? input.view.kind}, layout: variant.layout ?? input.layout,
+  const questions=variant.questionRefs===undefined?input.questions:variant.questionRefs.map(ref=>{const found=input.questions.find(question=>question.ref===ref);if(!found)throw new Error('Unknown variant Question: '+ref);return found;});
+  if(!questions.length||new Set(questions.map(question=>question.ref)).size!==questions.length)throw new Error('Invalid variant Question selection');
+  if(variant.evidenceRefs?.some(ref=>!input.view.basis.evidenceRefs.includes(ref)))throw new Error('Unknown variant evidence selection');
+  const primary=questions.find(question=>question.ref===input.view.question.ref)??questions[0]!;
+  return {...input,taste:undefined,questions, view: {...input.view,question:primary,basis:{...input.view.basis,evidenceRefs:variant.evidenceRefs??input.view.basis.evidenceRefs},kind: variant.kind ?? input.view.kind}, layout: variant.layout ?? input.layout,
     design:variant.design??input.design,presentation:variant.presentation===undefined?input.presentation:variant.presentation,theme: variant.theme, icons: variant.icons ?? input.icons};
 }

@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-only
+
 ;;; Real Ops and QNT; altered interpretation bytes invalidate an issued result.
 (import :std/test :clan/poo/object
         (only-in :gerbil/expander core-resolve-library-module-path datum->syntax)

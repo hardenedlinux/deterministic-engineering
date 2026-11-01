@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+//
+// SPDX-License-Identifier: LGPL-2.1-only
+
 import {renderedViewFromJson} from '@openmbee/opensysml';
 import type {OpenSysMLCapture} from '../../src/opensysml';
 import type {ModelSource} from '../../src/figure';

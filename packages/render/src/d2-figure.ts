@@ -1,3 +1,8 @@
+// SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+//
+// SPDX-License-Identifier: LGPL-2.1-only
+
+import {readEvidenceProjections} from './taste-selection';
 import {defineDesign} from './design';
 import {relativeSource} from './source/catalog';
 import {composeIconPacks, type IconPacks} from './icons';
@@ -29,7 +34,7 @@ export function readD2Figure(compiled: D2FigureData, captured: Readonly<Record<s
   if (!Array.isArray(declaration.questions)) throw new Error('Expected declared questions');
   const questions: FigureQuestion[] = declaration.questions.map(value => {
     const question = object(value, 'question');
-    return {ref: text(question.ref, 'question ref'), text: text(question.text, 'question'), focusRefs: texts(question.focusRefs, 'focus refs')};
+    return {subjectRefs:question.subjectRefs===undefined?undefined:texts(question.subjectRefs,'Question subjects'),relationRefs:question.relationRefs===undefined?undefined:texts(question.relationRefs,'Question relations'),ref: text(question.ref, 'question ref'), text: text(question.text, 'question'), focusRefs: texts(question.focusRefs, 'focus refs')};
   });
   const question = questions.find(item => item.ref === primary);
   if (!question) throw new Error('Declared primary question is missing');
@@ -54,7 +59,7 @@ export function readD2Figure(compiled: D2FigureData, captured: Readonly<Record<s
       const variant = object(value, 'variant');
       const variantKind = variant.kind === undefined ? undefined : text(variant.kind, 'variant kind');
       if (variantKind !== undefined) validatePurposeKind(purpose, variantKind);
-      return {design:variant.design===undefined?undefined:defineDesign(variant.design),presentation:variant.presentation,name: text(variant.name, 'variant name'), kind: variantKind, layout: variant.layout === undefined ? undefined : text(variant.layout, 'layout'),
+      return {questionRefs:variant.questionRefs===undefined?undefined:texts(variant.questionRefs,'variant Questions'),evidenceRefs:variant.evidenceRefs===undefined?undefined:texts(variant.evidenceRefs,'variant evidence'),design:variant.design===undefined?undefined:defineDesign(variant.design),presentation:variant.presentation,name: text(variant.name, 'variant name'), kind: variantKind, layout: variant.layout === undefined ? undefined : text(variant.layout, 'layout'),
         theme: variant.themes === undefined ? theme : composePresentationTheme(texts(variant.themes, 'variant themes'), resources.themeLayers),
         icons: variant.icons === undefined ? icons : composeIconPacks(texts(variant.icons, 'variant icon packs'), resources.iconPacks)};
     });
@@ -64,7 +69,7 @@ export function readD2Figure(compiled: D2FigureData, captured: Readonly<Record<s
   const origin=declaration.modelSource===undefined?undefined:object(declaration.modelSource,'model source');
   const captions=origin?.labels===undefined?undefined:object(origin.labels,'model captions');
   const modelSource=origin?{ref:text(origin.ref,'model source reference'),modelHash:text(origin.modelHash,'model hash'),view:text(origin.view,'SysML view'),portProjection:origin.portProjection===undefined?undefined:(origin.portProjection==='owner'?'owner' as const:(()=>{throw new Error('Unsupported port projection');})()),labels:captions?Object.fromEntries(Object.entries(captions).map(([key,value])=>[key,text(value,'model caption')])):undefined}:undefined;
-  return {design:declaration.design===undefined?undefined:defineDesign(declaration.design),modelSource,view, model, theme, variants, icons, presentation: declaration.presentation, layout: declaration.layout === undefined ? undefined : text(declaration.layout, 'layout'), language: text(declaration.language, 'language'), width, questions, references, copy,
+  return {evidence:declaration.evidence===undefined?undefined:readEvidenceProjections(declaration.evidence),design:declaration.design===undefined?undefined:defineDesign(declaration.design),modelSource,view, model, theme, variants, icons, presentation: declaration.presentation, layout: declaration.layout === undefined ? undefined : text(declaration.layout, 'layout'), language: text(declaration.language, 'language'), width, questions, references, copy,
     sources: {...compiled.fs, ...captured}};
 }
 

@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-only
+
 ;;; One declared Project source root, using existing per-owner source annotations.
 (import :yuanxu/module-system/selection/init-syntax)
 (yuanxu! source: "../../library" mode: explicit

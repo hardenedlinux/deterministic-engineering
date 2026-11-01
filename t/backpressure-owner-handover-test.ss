@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-only
+
 ;;; -*- Gerbil -*-
 (import (only-in :gerbil/runtime/loader list-modules) :std/test :std/encoding/json :std/list/list :clan/poo/object (only-in :std/os/pid getpid)
         :yuanxu/contribution/verification

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+//
+// SPDX-License-Identifier: LGPL-2.1-only
+
 import {parentPort,workerData} from 'node:worker_threads';
 import {D2,type CompileOptions} from '@terrastruct/d2';
 import {modelFromDiagram} from './d2-figure';

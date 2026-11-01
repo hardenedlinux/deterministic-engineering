@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-only
+
 ;;; -*- Gerbil -*-
 ;;; Independent ownership-cut oracle for source-changing mechanism experiments.
 ;;; The Rust producer reports events; neither case labels nor producer verdicts decide safety.

@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-only
+
 ;;; -*- Gerbil -*-
 ;;; Finite authoritative discovery and signed decisions consume existing native owners.
 (import

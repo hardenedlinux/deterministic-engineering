@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+//
+// SPDX-License-Identifier: LGPL-2.1-only
+
 // Project-owned bounded abstraction; no Rust scheduler or allocation claim.
 module BackpressureOwners {
   type State = {

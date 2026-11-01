@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-only
+
 ;;; -*- Gerbil -*-
 (import :deterministic-engineering/init :deterministic-engineering/profiles/resource-lifecycle
         :clan/poo/object :std/encoding/json :gerbil-ascent/program/session

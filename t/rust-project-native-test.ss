@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-only
+
 ;;; Rust inputs are executed by the admitted Scheme driver, not loaded as Modules.
 (import
   :std/test

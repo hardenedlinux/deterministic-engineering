@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+//
+// SPDX-License-Identifier: LGPL-2.1-only
+
 import type {ElkNode} from 'elkjs/lib/elk-api';
 import {composeHeading} from './heading';
 import {composeDiagram} from './diagram';
@@ -25,9 +29,8 @@ export function graphFromModel(model:FigureModel,options:ElkNode['layoutOptions'
 
 /** Optional reusable functional compositor; projects supply data and resources,
  * or replace this function. It has no README/page identity or kind registry. */
-export const composeModelView:FigureComposer=context=>{
- if(!context.model)throw new Error('Model view requires captured model semantics');
- const value=context.presentation;
+export function modelDiagram(model:FigureModel,valueInput:unknown):import('./diagram').DiagramSpec {
+ const value=valueInput;
  if(value!==undefined&&(!value||typeof value!=='object'||Array.isArray(value)))throw new Error('Invalid model presentation');
  const data=(value??{})as Record<string,unknown>;
  const options:Record<string,string>={};
@@ -36,16 +39,21 @@ export const composeModelView:FigureComposer=context=>{
   if(value===undefined)return {};
   if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('Invalid presentation mapping');
   return Object.fromEntries(Object.entries(value).map(([name,item])=>{
-   const selected=context.model!.subjects.filter(node=>node.id===name);
+   const selected=model.subjects.filter(node=>node.id===name);
    if(selected.length!==1||typeof item!=='string')throw new Error('Unresolved presentation subject: '+name);
    return [selected[0]!.id,item];
   }));
  };
  const roles=select(data.roles);
- const graph=data.graph===undefined?graphFromModel(context.model,options):structuredClone(data.graph) as ElkNode;
+ const graph=data.graph===undefined?graphFromModel(model,options):structuredClone(data.graph) as ElkNode;
  if(!graph||typeof graph!=='object'||Array.isArray(graph))throw new Error('Invalid declared ELK graph');
  graph.layoutOptions={...options,...graph.layoutOptions};
- const scene=composeDiagram(context,{graph,roles,icons:select(data.icons),edgeLabels:data.edgeLabels!==false});
+ return {graph,roles,icons:select(data.icons),edgeLabels:data.edgeLabels!==false};
+}
+export const composeModelView:FigureComposer=context=>{
+ if(!context.model)throw new Error('Model view requires captured model semantics');
+ const specification=modelDiagram(context.model,context.presentation);
+ const scene=composeDiagram(context,specification);
  const headings=[composeHeading(context,{role:'title',text:context.view.title}),...context.questions.map(question=>composeHeading(context,{role:'question',text:question.text,questionRef:question.ref}))];
  return {markup:`<main><header>${headings.map(item=>item.markup).join('')}</header><section data-region="model">${scene.markup}</section></main>`,css:scene.css+headings.map(item=>item.css).join('\n')+`[data-figure]{padding:var(--gutter)}header{margin-bottom:var(--gap)}`};
 };

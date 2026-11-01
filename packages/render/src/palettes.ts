@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+//
+// SPDX-License-Identifier: LGPL-2.1-only
+
 /** Open semantic color slots. CSS owns the color syntax. */
 export interface Palette {
   readonly background:string;readonly surface:string;readonly ink:string;readonly muted:string;readonly border:string;

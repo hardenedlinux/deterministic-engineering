@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+//
+// SPDX-License-Identifier: LGPL-2.1-only
+
 import * as v from 'valibot';
 import {isDeepStrictEqual} from 'node:util';
 import {parseFragment,type DefaultTreeAdapterTypes} from 'parse5';
@@ -6,6 +10,7 @@ import {DesignSchema,type Design} from './design';
 import {digest} from './source/catalog';
 import type {ComposedFigure,FigureModel,FigureQuestion} from './figure';
 import type {ViewSelection} from './source/types';
+import type {TasteSelectionContext,TasteProposal,TasteSelection} from './taste-selection';
 import type {FigureImage} from './export';
 export interface MeasuredBox {readonly x:number;readonly y:number;readonly width:number;readonly height:number;}
 /** Browser observations use existing model IDs. They do not replace the model. */
@@ -33,13 +38,15 @@ export interface TasteRule {
  readonly rationale:string;
  readonly parameters?:Readonly<Record<string,string|number|boolean>>;
  /** Pure inspection. Acquisition, rendering and model edits belong to their current owners. */
- readonly inspect:(context:TasteContext)=>readonly TasteNote[];
+ readonly inspect?:(context:TasteContext)=>readonly TasteNote[];
+ readonly select?:(context:TasteSelectionContext)=>TasteProposal|undefined;
 }
 export type Taste=readonly TasteRule[];
 export interface TasteReport {
  readonly inputSHA256:string;readonly htmlSHA256:string;readonly pngSHA256:string;
  readonly design:Design;
  readonly sourceSHA256:Readonly<Record<string,string>>;
+ readonly selection?:TasteSelection;
  readonly judgments:readonly {readonly rule:string;readonly rationale:string;readonly parameters?:Readonly<Record<string,string|number|boolean>>;readonly notes:readonly TasteNote[]}[];
 }
 /** Ordinary function/data composition, with no process, global registry or scoring runtime. */
@@ -48,7 +55,8 @@ export function composeTaste(...rules:readonly TasteRule[]):Taste {
  return Object.freeze(rules.map(rule=>{
   v.parse(text,rule.id);v.parse(text,rule.rationale);
   if(ids.has(rule.id))throw new Error('Duplicate taste rule: '+rule.id);ids.add(rule.id);
-  if(typeof rule.inspect!=='function')throw new Error('Taste rule needs a pure inspector');
+  if(rule.inspect!==undefined&&typeof rule.inspect!=='function'||rule.select!==undefined&&typeof rule.select!=='function')throw new Error('Invalid Taste callback');
+  if(typeof rule.inspect!=='function'&&typeof rule.select!=='function')throw new Error('Taste rule needs a pure selector or inspector');
   const parameters=rule.parameters===undefined?undefined:v.parse(v.record(v.string(),v.union([v.string(),v.pipe(v.number(),v.finite()),v.boolean()])),rule.parameters);
   return Object.freeze({...rule,parameters:parameters===undefined?undefined:deepFreeze(structuredClone(parameters))});
  }));
@@ -69,13 +77,13 @@ export function reviewTaste(figure:ComposedFigure,image:FigureImage,taste:Taste)
  const capture=v.parse(v.object({design:DesignSchema,questions:v.array(v.object({ref:text,text,focusRefs:v.array(text)})),model:v.optional(v.object({subjects:v.array(v.object({id:text}))})),sourceSHA256:v.record(text,text)}),original);
  const context:TasteContext=deepFreeze(structuredClone({design:capture.design,model:original.model as FigureModel|undefined,questions:capture.questions,view:original.view as ViewSelection,observation:receipt.observation,readability:receipt.readability,bounds:receipt.bounds,width:receipt.observation.canvas.width,height:receipt.observation.canvas.height}));
  const subjects=new Set(capture.model?.subjects.map(subject=>subject.id)),questions=new Set(capture.questions.map(question=>question.ref));
- const judgments=composeTaste(...taste).map(rule=>({rule:rule.id,rationale:rule.rationale,parameters:rule.parameters,notes:rule.inspect(context).map(note=>{
+ const judgments=composeTaste(...taste).map(rule=>({rule:rule.id,rationale:rule.rationale,parameters:rule.parameters,notes:(rule.inspect?.(context)??[]).map(note=>{
   const result=v.parse(NoteSchema,note);
   for(const id of result.questionRefs)if(!questions.has(id))throw new Error('Unknown taste Question: '+id);
   for(const id of result.subjectRefs)if(!subjects.has(id))throw new Error('Unknown taste subject: '+id);
   return result;
  })}));
- return deepFreeze(structuredClone({inputSHA256:figure.inputSHA256,htmlSHA256:receipt.htmlSHA256,pngSHA256:receipt.pngSHA256,design:capture.design,sourceSHA256:capture.sourceSHA256,judgments}));
+ return deepFreeze(structuredClone({inputSHA256:figure.inputSHA256,htmlSHA256:receipt.htmlSHA256,pngSHA256:receipt.pngSHA256,design:capture.design,sourceSHA256:capture.sourceSHA256,selection:original.taste as TasteSelection|undefined,judgments}));
 }
 /** A selected numeric preference, evaluated against existing measured text-size observations. */
 export function minimumTextSize(minimum:number):TasteRule {

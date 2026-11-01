@@ -1,21 +1,38 @@
+# SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-only
+
 # Design choices over the current Library Case. Arrows point to dependencies, not execution order.
 vars: {d2-config: {data: {figure: |json
 {
-  "title": "Library / Profile / Scenario: design choices",
+  "title": "Library / Profile / Scenario: Question-driven design",
   "purpose": "architecture",
   "kind": "design-comparison",
   "language": "en",
   "width": 1200,
-  "primary": "ownership",
+  "primary": "publication",
   "questions": [
     {
-      "ref": "ownership",
-      "text": "Who publishes, selects and binds?",
+      "ref": "publication",
+      "text": "Who owns the reusable definitions?",
       "focusRefs": [
         "library",
         "profile",
+        "model"
+      ],
+      "subjectRefs": [
+        "library"
+      ]
+    },
+    {
+      "ref": "binding",
+      "text": "Who binds the actual project inputs?",
+      "focusRefs": [
         "scenario",
         "model"
+      ],
+      "subjectRefs": [
+        "project.scenario"
       ]
     }
   ],
@@ -25,7 +42,8 @@ vars: {d2-config: {data: {figure: |json
     "case": "docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture.d2",
     "library": "library/project-organization/objects.ss",
     "profile": "profiles/library-formation.ss",
-    "scenario": "scenarios/project-formation/func.ss"
+    "scenario": "scenarios/project-formation/func.ss",
+    "capture-gap": "scenarios/project-formation/func.ss"
   },
   "basis": {
     "captureRef": "design-candidate:library-design-taste",
@@ -35,20 +53,22 @@ vars: {d2-config: {data: {figure: |json
     "obligationRefs": [
       "docs/10-19-design/10-architecture/10.145-design-taste-public-contracts.org"
     ],
-    "evidenceRefs": []
+    "evidenceRefs": [
+      "capture-gap"
+    ]
   },
   "copy": {
-    "status": "Current repository Case \u00b7 source observations only \u00b7 no C/Q/R issued",
-    "project-note": "Project contains Profile, Scenario and repository inputs.",
-    "preferences": "Keep the answer readable while retaining intent and explanation.",
-    "scope-legend": "Solid lines stay within Project. Dashed lines cross the Project boundary."
+    "status": "Current repository source observations only \u00b7 no C/Q/R issued",
+    "comparison-title": "One Taste pipeline. Different Questions and source observations.",
+    "comparison-note": "Model facts and required references stay fixed; Taste selects scope, hierarchy and ELK preferences.",
+    "sources-label": "Selected source observations"
   },
   "design": {
     "audience": "Library adopter",
     "medium": "README component view",
     "message": "Library publishes; Profile selects; Scenario binds actual inputs.",
     "questionRefs": [
-      "ownership"
+      "publication"
     ],
     "requiredSubjects": [
       "library",
@@ -63,178 +83,58 @@ vars: {d2-config: {data: {figure: |json
       "(project.scenario -> library)[0]",
       "project.(scenario -> inputs)[0]"
     ],
-    "focalSubjects": [
-      "library"
-    ]
+    "focalSubjects": []
   },
   "themes": [
     "sketchbook",
-    "ocean",
-    "compact",
-    "case-emphasis"
+    "compact"
   ],
   "icons": [
     "engineering"
   ],
-  "layout": "publication",
   "presentation": {
-    "preferences": {
-      "minimumTextSize": 12,
-      "maximumFocals": 1,
-      "maximumAnswerShare": 0.75
+    "graph": {
+      "id": "ownership",
+      "children": [
+        {
+          "id": "library"
+        },
+        {
+          "id": "project",
+          "children": [
+            {
+              "id": "project.profile"
+            },
+            {
+              "id": "project.scenario"
+            },
+            {
+              "id": "project.inputs"
+            }
+          ]
+        }
+      ]
     },
-    "choices": {
-      "publication": {
-        "title": "Publication first",
-        "ordinal": 1,
-        "format": "graph",
-        "reason": "A reusable Library is the entry point; project choices stay inside their boundary.",
-        "tradeoff": "Best for adopters. Cross-boundary references take more space than a relation table.",
-        "diagram": {
-          "graph": {
-            "id": "ownership",
-            "children": [
-              {
-                "id": "library"
-              },
-              {
-                "id": "project",
-                "children": [
-                  {
-                    "id": "project.profile"
-                  },
-                  {
-                    "id": "project.scenario"
-                  },
-                  {
-                    "id": "project.inputs"
-                  }
-                ]
-              }
-            ],
-            "layoutOptions": {
-              "elk.direction": "UP",
-              "elk.layered.spacing.nodeNodeBetweenLayers": "44",
-              "elk.spacing.nodeNode": "28",
-              "elk.hierarchyHandling": "INCLUDE_CHILDREN"
-            }
-          },
-          "icons": {
-            "library": "library",
-            "project.profile": "selection",
-            "project.scenario": "capture",
-            "project.inputs": "document"
-          },
-          "roles": {
-            "project": "project-boundary"
-          }
-        }
-      },
-      "project": {
-        "title": "Project boundary first",
-        "ordinal": 2,
-        "format": "graph",
-        "reason": "Scenario and actual inputs lead the reading; Profile and Library dependencies remain explicit.",
-        "tradeoff": "Best for maintainers. A taller view exposes ownership but takes more README height.",
-        "diagram": {
-          "graph": {
-            "id": "ownership",
-            "children": [
-              {
-                "id": "library"
-              },
-              {
-                "id": "project",
-                "children": [
-                  {
-                    "id": "project.profile"
-                  },
-                  {
-                    "id": "project.scenario"
-                  },
-                  {
-                    "id": "project.inputs"
-                  }
-                ]
-              }
-            ],
-            "layoutOptions": {
-              "elk.direction": "DOWN",
-              "elk.layered.spacing.nodeNodeBetweenLayers": "44",
-              "elk.spacing.nodeNode": "28",
-              "elk.hierarchyHandling": "INCLUDE_CHILDREN"
-            }
-          },
-          "icons": {
-            "library": "library",
-            "project.profile": "selection",
-            "project.scenario": "capture",
-            "project.inputs": "document"
-          },
-          "roles": {
-            "project": "project-boundary"
-          }
-        }
-      },
-      "matrix": {
-        "title": "Relationships first",
-        "ordinal": 3,
-        "format": "matrix",
-        "reason": "Rows depend on columns. Every selected relationship is inspectable in one stable grid.",
-        "tradeoff": "Best for review. Containment is stated as text; use the boundary view for spatial ownership.",
-        "axes": [
-          "library",
-          "project.profile",
-          "project.scenario",
-          "project.inputs"
-        ],
-        "icons": {
-          "library": "library",
-          "project.profile": "selection",
-          "project.scenario": "capture",
-          "project.inputs": "document"
-        }
-      }
+    "icons": {
+      "library": "library",
+      "project.profile": "selection",
+      "project.scenario": "capture",
+      "project.inputs": "document"
     }
   },
   "variants": [
     {
-      "name": "project",
-      "layout": "project",
+      "name": "adopter",
+      "questionRefs": [
+        "publication"
+      ],
+      "evidenceRefs": [],
       "design": {
-        "audience": "Project maintainer",
+        "audience": "Library adopter",
         "medium": "README component view",
-        "message": "Scenario binds real inputs while preserving the selected Library contract.",
+        "message": "Library publishes; Profile selects; Scenario binds actual inputs.",
         "questionRefs": [
-          "ownership"
-        ],
-        "requiredSubjects": [
-          "library",
-          "project",
-          "project.profile",
-          "project.scenario",
-          "project.inputs"
-        ],
-        "requiredRelations": [
-          "(project.profile -> library)[0]",
-          "project.(scenario -> profile)[0]",
-          "(project.scenario -> library)[0]",
-          "project.(scenario -> inputs)[0]"
-        ],
-        "focalSubjects": [
-          "project.scenario"
-        ]
-      }
-    },
-    {
-      "name": "matrix",
-      "layout": "matrix",
-      "design": {
-        "audience": "Design reviewer",
-        "medium": "README component view",
-        "message": "Read every dependency without changing the underlying model.",
-        "questionRefs": [
-          "ownership"
+          "publication"
         ],
         "requiredSubjects": [
           "library",
@@ -251,6 +151,77 @@ vars: {d2-config: {data: {figure: |json
         ],
         "focalSubjects": []
       }
+    },
+    {
+      "name": "maintainer",
+      "questionRefs": [
+        "binding"
+      ],
+      "evidenceRefs": [],
+      "design": {
+        "audience": "Project maintainer",
+        "medium": "README component view",
+        "message": "Library publishes; Profile selects; Scenario binds actual inputs.",
+        "questionRefs": [
+          "binding"
+        ],
+        "requiredSubjects": [
+          "library",
+          "project",
+          "project.profile",
+          "project.scenario",
+          "project.inputs"
+        ],
+        "requiredRelations": [
+          "(project.profile -> library)[0]",
+          "project.(scenario -> profile)[0]",
+          "(project.scenario -> library)[0]",
+          "project.(scenario -> inputs)[0]"
+        ],
+        "focalSubjects": []
+      }
+    },
+    {
+      "name": "source-gap",
+      "questionRefs": [
+        "publication"
+      ],
+      "evidenceRefs": [
+        "capture-gap"
+      ],
+      "design": {
+        "audience": "Source review",
+        "medium": "README component view",
+        "message": "Library publishes; Profile selects; Scenario binds actual inputs.",
+        "questionRefs": [
+          "publication"
+        ],
+        "requiredSubjects": [
+          "library",
+          "project",
+          "project.profile",
+          "project.scenario",
+          "project.inputs"
+        ],
+        "requiredRelations": [
+          "(project.profile -> library)[0]",
+          "project.(scenario -> profile)[0]",
+          "(project.scenario -> library)[0]",
+          "project.(scenario -> inputs)[0]"
+        ],
+        "focalSubjects": []
+      }
+    }
+  ],
+  "evidence": [
+    {
+      "sourceRef": "capture-gap",
+      "excerpt": "status: 'capture-blocked",
+      "state": "missing",
+      "subjectRefs": [
+        "project.scenario"
+      ],
+      "relationRefs": []
     }
   ]
 }

@@ -1,8 +1,13 @@
+// SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+//
+// SPDX-License-Identifier: LGPL-2.1-only
+
 import {readFile, writeFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {chromium} from 'playwright';
+import {attributionComment} from '@deterministic-engineering/render/export';
 import {resources} from './library-case/resources';
 import {compileFigureSource} from '@deterministic-engineering/render';
 const root = fileURLToPath(new URL('../../../', import.meta.url));
@@ -23,7 +28,7 @@ try {
       for (const [source, fingerprint] of Object.entries(receipt.sources)) if (hash(await readFile(path.join(root, source))) !== fingerprint) throw new Error(`Stale comparison source: ${source}`);
       return `<section><h2>${esc(variant.name)}</h2><img src="data:image/png;base64,${png.toString('base64')}" alt="${esc(name)}"></section>`;
     }));
-    const html = `<!doctype html><html lang="${esc(declaration.language)}"><head><meta charset="utf-8"><style>*{box-sizing:border-box}body{margin:0;background:#edf2f4;color:#193348;font-family:Arial,sans-serif}main{width:1600px;padding:28px}h1{font-size:28px;margin:0 0 20px}section{background:white;border:1px solid #d5e1e7;border-radius:8px;margin:0 0 16px;padding:16px}h2{font-size:15px;margin:0 0 12px;color:#246e86}img{display:block;width:100%;height:auto}</style></head><body><main><h1>${esc(declaration.view.title)}</h1>${previews.join('')}</main></body></html>`;
+    const html = `<!doctype html>\n<!--\n${attributionComment({copyright:['2026 tao3k team and Contributors'],license:'LGPL-2.1-only'})}\n-->\n<html lang="${esc(declaration.language)}"><head><meta charset="utf-8"><style>*{box-sizing:border-box}body{margin:0;background:#edf2f4;color:#193348;font-family:Arial,sans-serif}main{width:1600px;padding:28px}h1{font-size:28px;margin:0 0 20px}section{background:white;border:1px solid #d5e1e7;border-radius:8px;margin:0 0 16px;padding:16px}h2{font-size:15px;margin:0 0 12px;color:#246e86}img{display:block;width:100%;height:auto}</style></head><body><main><h1>${esc(declaration.view.title)}</h1>${previews.join('')}</main></body></html>`;
     const page = await browser.newPage({viewport:{width:1600,height:1000},deviceScaleFactor:1});
     try {
       await page.setContent(html); await page.evaluate(async () => { await document.fonts.ready; await Promise.all(Array.from(document.images, image => image.decode())); });

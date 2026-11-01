@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+//
+// SPDX-License-Identifier: LGPL-2.1-only
+
 import {test,expect} from 'bun:test';
 import fc from 'fast-check';
 import {defineDesign,DesignSchema,composeFigure,readD2Figure,composeModelView,composeTaste,focalBudget,minimumTextSize,type FigureInput} from '../src';

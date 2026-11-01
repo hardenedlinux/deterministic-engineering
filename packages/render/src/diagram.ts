@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+//
+// SPDX-License-Identifier: LGPL-2.1-only
+
 import type {ElkNode} from 'elkjs/lib/elk-api';
 import type {FigureContext, FigureComposition, FigureModel} from './figure';
 import {digest} from './source/catalog';
@@ -8,7 +12,11 @@ export interface DiagramSpec {
   readonly roles?: Readonly<Record<string,string>>;
 }
 export type DiagramNodeComposer = (node: FigureModel['subjects'][number], context: FigureContext) => string;
-const defaultNode: DiagramNodeComposer = (node, {text,theme}) => `<text class="scene-node-text">${[node.label ?? node.id,...(node.columns??[]).map(column=>[column.name.label,column.type.label,...(column.constraint??[])].filter(Boolean).join(' · ')),...(node.fields??[]).map(field=>`${field.visibility} ${field.name}: ${field.type}`),...(node.methods??[]).map(method=>`${method.visibility} ${method.name}: ${method.return}`)].join('\n').split('\n').map((line,index) => `<tspan data-text-line class="${index ? 'scene-detail' : 'scene-title'}" x="0" dy="${index ? theme.typography.lineHeight : '0'}">${text(line)}</tspan>`).join('')}</text>`;
+const defaultNode: DiagramNodeComposer = (node, {text,theme,evidence,model}) => {
+  const lines=[node.label ?? node.id,...(node.columns??[]).map(column=>[column.name.label,column.type.label,...(column.constraint??[])].filter(Boolean).join(' · ')),...(node.fields??[]).map(field=>`${field.visibility} ${field.name}: ${field.type}`),...(node.methods??[]).map(method=>`${method.visibility} ${method.name}: ${method.return}`)].join('\n').split('\n');
+  const observations=evidence.filter(item=>item.state!=='supported' && (item.subjectRefs.includes(node.id)||item.relationRefs.some(id=>model?.relations.some(relation=>relation.id===id&&(relation.src===node.id||relation.dst===node.id)))));
+  return `<text class="scene-node-text">${lines.map((line,index)=>`<tspan data-text-line class="${index?'scene-detail':'scene-title'}" x="0" dy="${index?theme.typography.lineHeight:'0'}">${text(line)}</tspan>`).join('')}${observations.map(item=>`<tspan data-text-line data-evidence-ref="${text(item.sourceRef)}" class="scene-detail" x="0" dy="${theme.typography.lineHeight}">${text(item.state+' · '+item.sourceRef)}</tspan>`).join('')}</text>`;
+};
 /** Project declares the ELK graph projection; labels/relations stay in the captured model. */
 export function composeDiagram(context: FigureContext, specification: DiagramSpec, nodeComposer: DiagramNodeComposer = defaultNode): FigureComposition {
   const graph = structuredClone(specification.graph), model = context.model;
@@ -32,7 +40,7 @@ export function composeDiagram(context: FigureContext, specification: DiagramSpe
     const surface = context.theme.surfaces?.[role] ?? context.theme.surfaces?.['default'];
     if (surface && (!surface.svg.trim().startsWith('<svg') || !surface.label.trim())) throw new Error('Invalid declared scene surface');
     const content = group ? `<text class="scene-group-title">${context.text(subject.label ?? subject.id)}</text>` : nodeComposer(subject, context);
-    bodies.push(`<g data-scene-node="${context.text(node.id)}" data-scene-group="${group}"${owner?` data-scene-owner="${context.text(owner)}"`:""} data-role="${context.text(role)}"><rect class="scene-frame"${surface ? ' opacity="0" data-custom-surface' : ''}/>${surface ? `<g class="scene-surface">${surface.svg}</g>` : ''}<g class="scene-content">${icon ? `<g class="scene-glyph">${context.glyph(icon)}</g>` : ''}<g class="scene-copy" transform="translate(${icon ? 44 : 0} 18)">${content}</g></g></g>`);
+    bodies.push(`<g data-scene-node="${context.text(node.id)}" data-scene-group="${group}"${owner?` data-scene-owner="${context.text(owner)}"`:""} data-focal="${context.design?.focalSubjects.includes(node.id)??false}" data-role="${context.text(role)}"><rect class="scene-frame"${surface ? ' opacity="0" data-custom-surface' : ''}/>${surface ? `<g class="scene-surface">${surface.svg}</g>` : ''}<g class="scene-content">${icon ? `<g class="scene-glyph">${context.glyph(icon)}</g>` : ''}<g class="scene-copy" transform="translate(${icon ? 44 : 0} 18)">${content}</g></g></g>`);
     if (group) node.children!.forEach(child=>walk(child,node.id));
   };
   graph.children.forEach(node=>walk(node));
@@ -55,5 +63,5 @@ export function composeDiagram(context: FigureContext, specification: DiagramSpe
 }
 export const diagramStyle = `
 .scene-surface>svg{overflow:visible}.scene-svg{display:block;max-width:100%;overflow:visible;font-family:inherit;color:var(--ink);--scene-padding:var(--scenePadding);--scene-label-padding:var(--labelPadding)}
-[data-role="pending"]>.scene-frame{fill:var(--secondaryTint);stroke:var(--pending);stroke-dasharray:5 4}.scene-frame{fill:var(--surface);stroke:var(--border);stroke-width:1.4;rx:8}.scene-title{font-size:var(--type-titleSize);font-weight:var(--type-titleWeight);fill:var(--ink)}.scene-detail{font-size:var(--type-detailSize);font-weight:400;fill:var(--muted)}.scene-glyph{color:var(--accent)}.scene-glyph>svg{width:var(--iconSize);height:var(--iconSize)}.scene-group-title{font-size:var(--type-headingSize);fill:var(--muted);font-weight:600}[data-scene-group="true"]>.scene-frame{fill:var(--tint);stroke:var(--border);rx:10}.scene-edge,.scene-arrow{fill:none;stroke:var(--accent);stroke-width:1.5;stroke-linejoin:round}.scene-arrow-filled{fill:var(--accent)}.scene-arrow-open{fill:var(--surface)}.scene-label text{fill:var(--muted);font-size:var(--type-labelSize)}.scene-label rect{fill:var(--surface);stroke:none;rx:4}
+[data-role="pending"]>.scene-frame{fill:var(--secondaryTint);stroke:var(--pending);stroke-dasharray:5 4}.scene-frame{fill:var(--surface);stroke:var(--border);stroke-width:1.4;rx:8}.scene-title{font-size:var(--type-titleSize);font-weight:var(--type-titleWeight);fill:var(--ink)}.scene-detail{font-size:var(--type-detailSize);font-weight:400;fill:var(--muted)}.scene-glyph{color:var(--accent)}.scene-glyph>svg{width:var(--iconSize);height:var(--iconSize)}.scene-group-title{font-size:var(--type-headingSize);fill:var(--muted);font-weight:600}[data-scene-group="true"]>.scene-frame{fill:none;stroke:var(--muted);stroke-width:1.5;rx:10}[data-focal="true"] .scene-title{font-size:calc(var(--type-titleSize) * 1.12)}[data-focal="true"]>.scene-frame{stroke-width:2}[data-role="focal"]>.scene-frame{stroke:var(--secondary);fill:var(--secondaryTint)}[data-role="counter"]>.scene-frame{stroke:var(--conflict);fill:var(--secondaryTint)}[data-crosses-boundary="true"]>.scene-edge{stroke-dasharray:6 5}.scene-edge,.scene-arrow{fill:none;stroke:var(--accent);stroke-width:1.5;stroke-linejoin:round}.scene-arrow-filled{fill:var(--accent)}.scene-arrow-open{fill:var(--surface)}.scene-label text{fill:var(--muted);font-size:var(--type-labelSize)}.scene-label rect{fill:var(--surface);stroke:none;rx:4}
 `;

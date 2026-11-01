@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+
+# SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-only
+
 """Bounded read-only Codex app-server transport. No inference or authority issuance."""
 import argparse
 import hashlib

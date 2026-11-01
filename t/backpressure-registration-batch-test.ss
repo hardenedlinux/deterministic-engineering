@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-only
+
 ;;; -*- Gerbil -*-
 ;;; Actual Rust runs, full byte checks, and independent native ASCENT snapshots.
 (import :std/test :std/encoding/json :std/list/list :clan/poo/object

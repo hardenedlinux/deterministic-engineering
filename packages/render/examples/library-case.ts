@@ -1,3 +1,8 @@
+// SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+//
+// SPDX-License-Identifier: LGPL-2.1-only
+
+import {attributionFor} from './attribution';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -15,7 +20,7 @@ const [architectureDeclaration, workflowDeclaration] = await Promise.all(declara
 if (!architectureDeclaration || !workflowDeclaration) throw new Error('Missing D2 declarations');
 const references = architectureDeclaration.references;
 const sourceFor = (ref: string): string => { const value = references[ref]; if (!value) throw new Error(`Undeclared source: ${ref}`); return value; };
-const compositionFiles = ['packages/render/examples/library-case.ts', 'packages/render/examples/library-case/architecture.ts', 'packages/render/examples/library-case/architecture-diagram.ts', 'packages/render/examples/library-case/dependency-matrix.ts', 'packages/render/examples/library-case/workflow.ts', 'packages/render/examples/library-case/workflow-diagram.ts', 'packages/render/examples/library-case/workflow-declaration.ts', 'packages/render/examples/library-case/resources.ts', 'packages/render/examples/library-case/style.ts', 'packages/render/examples/comparison.ts'];
+const compositionFiles = ['packages/render/examples/attribution.ts','packages/render/examples/library-case.ts', 'packages/render/examples/library-case/architecture.ts', 'packages/render/examples/library-case/architecture-diagram.ts', 'packages/render/examples/library-case/dependency-matrix.ts', 'packages/render/examples/library-case/workflow.ts', 'packages/render/examples/library-case/workflow-diagram.ts', 'packages/render/examples/library-case/workflow-declaration.ts', 'packages/render/examples/library-case/resources.ts', 'packages/render/examples/library-case/style.ts', 'packages/render/examples/comparison.ts'];
 const sourcePaths = [...new Set([...Object.values(references), ...Object.values(workflowDeclaration.references), ...compositionFiles, ...declarationFiles])];
 const sources = Object.fromEntries(await Promise.all(sourcePaths.map(async file => [file, await readFile(path.join(root, file), 'utf8')])));
 // Explicit source-excerpt observations, not a Scheme/SysML parser, execution or C issuance.
@@ -47,7 +52,7 @@ const browser = await chromium.launch();
 try {
   for (const {name, figure} of candidates) {
     const region = figure.purpose === 'architecture' ? 'architecture' : 'workflow';
-    const image = await exportFigure(figure, browser, {scale: 2, regions: [region]});
+    const image = await exportFigure(figure, browser, {scale: 2, regions: [region],attribution:attributionFor(figure)});
     for (const file of sourcePaths) if (await readFile(path.join(root, file), 'utf8') !== sources[file]) throw new Error(`Source changed during export: ${file}`);
     await writeFile(path.join(output, `${name}.html`), image.html);
     await writeFile(path.join(output, `${name}.png`), image.png);

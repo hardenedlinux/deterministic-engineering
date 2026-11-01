@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-only
+
 #!/usr/bin/env gxi
 ;;; Native package build: use the same Core/SDK boundary as agentic-ai-lab.
 (import (for-syntax

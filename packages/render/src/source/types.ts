@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+//
+// SPDX-License-Identifier: LGPL-2.1-only
+
 export const viewKinds = ['system', 'routing', 'flow', 'sequence', 'state', 'data', 'assurance'] as const;
 /** Standard profiles are suggestions; project diagram kinds are open identifiers. */
 export type ViewKind = string;

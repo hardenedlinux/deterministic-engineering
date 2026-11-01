@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+//
+// SPDX-License-Identifier: LGPL-2.1-only
+
 import {presentationThemeLayers} from '@deterministic-engineering/render/presentation-theme';
 import {iconPacks} from '@deterministic-engineering/render/icons';
 import type {FigureResources} from '@deterministic-engineering/render';

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-only
+
 #+TITLE: Deterministic Engineering
 #+SUBTITLE: Reusable engineering knowledge, checked project choices, traceable views
 #+LANGUAGE: en
@@ -28,7 +32,7 @@ current source observations and open gaps. Arrows point to dependencies.
 
 [[file:docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture-sketchbook.png]]
 
-[[file:docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture-sketchbook-detail.png][Ownership component detail]] · [[file:docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture.d2][Questions and editable D2]] · [[file:project.sysml][Project SysML]] · [[file:docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture-node-editor.png][Complete technical-node variant]]
+[[file:docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture-sketchbook-detail.png][Ownership component detail]] · [[file:docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture.d2][Questions and editable D2]] · [[file:project.sysml][Project SysML]]
 
 Selected Rust, QNT, Lean and SysML methods consume the project's bound inputs
 and retain their result semantics and source associations. ASCENT derives answers
@@ -55,8 +59,8 @@ diagram or duplicated version table.
 
 <<architecture>>
 The arrows below describe responsibilities and dependencies, not execution order.
-The same captured model also has [[file:docs/90-99-views/90-architecture-views/90.135-library-project-architecture-sketchbook.svg][hand-drawn]]
-and [[file:docs/90-99-views/90-architecture-views/90.135-library-project-architecture-node-editor.svg][technical-node]] visual variants selected in D2.
+The README uses one sketchbook visual language. Other styles remain available through
+the [[file:packages/render/README.org][render package]] and its declared D2 variants.
 Aitia's end-to-end review integration remains a target boundary for this Case.
 
 [[file:docs/90-99-views/90-architecture-views/90.135-library-project-architecture.svg][Detailed repository dependency diagram]]
@@ -125,9 +129,9 @@ not the framework's entire diagram vocabulary.
 The =project-owned= variants select kinds, a theme and a glyph pack defined only
 in the consumer. Their source associations and current blocked state stay intact.
 
-Architecture: [[file:docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture.d2][D2]] · [[file:docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture-comparison.png][Hand-drawn, node, matrix and project-owned comparisons]]
+Architecture: [[file:docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture.d2][D2]] · [[file:docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture-sketchbook.png][Complete hand-drawn architecture]]
 
-Workflow: [[file:docs/90-99-views/90-architecture-views/90.133-capture-preparation-workflow.d2][D2]] · [[file:docs/90-99-views/90-architecture-views/90.133-capture-preparation-workflow-comparison.png][Hand-drawn, node, swimlane and project-owned comparisons]]
+Workflow: [[file:docs/90-99-views/90-architecture-views/90.133-capture-preparation-workflow.d2][D2]] · [[file:docs/90-99-views/90-architecture-views/90.133-capture-preparation-workflow-sketchbook.png][Separate hand-drawn Workflow]]
 
 ** Development and verification
 Use the declared Bun version from [[file:.github/workflows/render.yml][render CI]] and its pinned
@@ -199,21 +203,31 @@ heading parts distinguish Question role markers from domain Answer glyphs and
 measure the complete group. The default exported canvas is explicit, with an
 optional transparent mode. See [[file:docs/10-19-design/10-architecture/10.144-functional-themes-layouts-and-package-examples.org][10.144 contracts and acceptance]].
 
-Detailed architecture: [[file:docs/90-99-views/90-architecture-views/90.135-library-project-architecture.png][editorial / ocean / compact]] · [[file:docs/90-99-views/90-architecture-views/90.135-library-project-architecture-sketchbook.png][sketchbook / ember]] · [[file:docs/90-99-views/90-architecture-views/90.135-library-project-architecture-comfortable.png][comfortable density]].
-Workflow: [[file:docs/90-99-views/90-architecture-views/90.130-llm-assisted-model-view-workflow.png][node-editor / ocean]] · [[file:docs/90-99-views/90-architecture-views/90.130-llm-assisted-model-view-workflow-sketchbook.png][sketchbook / ember]].
+Detailed architecture: [[file:docs/90-99-views/90-architecture-views/90.135-library-project-architecture.png][Sketchbook dependency view]].
+Workflow: [[file:docs/90-99-views/90-architecture-views/90.130-llm-assisted-model-view-workflow.png][Sketchbook authoring Workflow]].
 
 * Component: Design and Taste
-[[file:packages/render/src/design.ts][Design]] captures audience, medium, message, Questions and required model references.
-[[file:packages/render/src/taste.ts][Taste]] composes pure inspection rules over actual bound render observations.
-Themes define visual resources; ELK owns layout. Taste retains observations,
-advice and missing measurements without producing an automatic beauty score.
 
-The same Library / Profile / Scenario model has three source-declared choices:
-[[file:docs/90-99-views/90-architecture-views/90.138-library-design-taste-choices-publication.png][Publication first]],
-[[file:docs/90-99-views/90-architecture-views/90.138-library-design-taste-choices-project.png][Project boundary first]], and
-[[file:docs/90-99-views/90-architecture-views/90.138-library-design-taste-choices-matrix.png][Relationships first]].
-Each retains five subjects and four relationships. Solid/internal and dashed /
-cross-boundary lines distinguish Project ownership; the matrix states containment
-textually. [[file:docs/90-99-views/90-architecture-views/90.138-library-design-taste-choices-comparison.png][Comparison with reasons and measured notes]] · [[file:docs/90-99-views/90-architecture-views/90.138-library-design-taste-choices.d2][Editable D2]] · [[file:docs/10-19-design/10-architecture/10.145-design-taste-public-contracts.org][Public contracts and acceptance]].
+[[file:packages/render/src/design.ts][Design]] declares the reader, message and model fidelity.
+[[file:packages/render/src/taste.ts][Taste]] composes pure choices before rendering and
+inspection after export. Questions select subjects, source observations select gaps,
+and the existing ELK layout measures and routes the resulting view. Themes remain
+replaceable resources. No Case-specific drawing recipe is selected in TypeScript.
 
-Run =bun run example:design= in =packages/render= to regenerate these candidates.
+The same Library / Profile / Scenario model is shown with changed input Questions
+and selected evidence, using one program and one hand-drawn style:
+
+[[file:docs/90-99-views/90-architecture-views/90.138-library-design-taste-choices-comparison.png]]
+
+[[file:docs/90-99-views/90-architecture-views/90.138-library-design-taste-choices-adopter.png][Adopter Question]] · [[file:docs/90-99-views/90-architecture-views/90.138-library-design-taste-choices-maintainer.png][Maintainer Question]] · [[file:docs/90-99-views/90-architecture-views/90.138-library-design-taste-choices-source-gap.png][Selected source gap]].
+The source gap is an observed declaration, not issued evidence or an accepted capture.
+Selection reasons and input fingerprints remain attached to the exported receipt;
+changed inputs require selection and rendering again.
+
+[[file:docs/90-99-views/90-architecture-views/90.138-library-design-taste-choices.d2][Editable D2]] · [[file:docs/10-19-design/10-architecture/10.146-taste-selection-and-reuse.org][Selection, licensing and acceptance]].
+
+* Licensing
+
+This repository follows REUSE with SPDX comment headers, file-specific notices,
+and standard sidecars for binary and strict JSON files. See [[file:LICENSING.org][licensing]]
+and [[file:packages/render/THIRD-PARTY.org][rendering asset attribution]].

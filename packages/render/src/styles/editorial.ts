@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+//
+// SPDX-License-Identifier: LGPL-2.1-only
+
 import type {PresentationThemeOverrides} from '../presentation-theme';
 /** Quiet supporting marks, explicit publication emphasis, no universal node card. */
 export const editorial:PresentationThemeOverrides=Object.freeze({
