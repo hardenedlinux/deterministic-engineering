@@ -1,7 +1,7 @@
 import {test, expect} from 'bun:test';
 import {composeFigure, type FigureComposer} from '@deterministic-engineering/render';
 import {readWorkflow} from '../library-case/workflow-declaration';
-test('flow layout validates responsibility membership and the native model path', async () => {
+test('flow layout validates responsibility membership and the model path', async () => {
 
   const input = {
     view: {source: 'flow.d2', title: 'Flow', purpose: 'workflow' as const, kind: 'flow' as const, question: {ref: 'q', text: 'Who?'}, basis: {captureRef: 'candidate', modelRefs: [], obligationRefs: [], evidenceRefs: []}},

@@ -1,3 +1,4 @@
+export {composeHeading,type HeadingSpec} from './heading';
 export {composeModelView,graphFromModel} from './model-view';
 import {isDeepStrictEqual} from 'node:util';
 import {Worker} from 'node:worker_threads';

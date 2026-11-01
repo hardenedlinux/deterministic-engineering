@@ -45,7 +45,7 @@ owns review. The renderer cannot issue evidence or authorize publication.
 These TS reference fields project existing contracts. FormationProfile/Scenario
 in scenarios/project-formation already own intent, model root, catalog/mapping,
 policy and repository capture. Their capture may be blocked. This package does
-not invent a native Question Contract or pretend that a rendering snapshot issues
+not invent a Question Contract or pretend that a rendering snapshot issues
 C. Reference resolution, accepted Q, source trust and freshness remain caller
 responsibilities. Missing obligations, conflicts and counterevidence must survive
 selection; selecting a flattering image cannot discharge an obligation.
@@ -54,9 +54,9 @@ Architecture answers ownership, components, interfaces, dependencies or deployme
 Workflow answers ordering, branches, events and recovery. Explanatory overviews
 can refer to both as distinct titled sections. Dependency edges must not silently
 become execution order. Architecture kinds are system/data/assurance; workflow
-kinds are routing/flow/sequence/state. Kinds classify intended views; native D2
+kinds are routing/flow/sequence/state. Kinds classify intended views; D2
 notation supplies their actual semantics. Sequence diagrams use sequence_diagram,
-including its native actor lifelines. No TypeScript card layout replaces it.
+including its actor lifelines. No TypeScript card layout replaces it.
 
 * Functional files and call boundaries
 :PROPERTIES:
@@ -66,12 +66,12 @@ including its native actor lifelines. No TypeScript card layout replaces it.
 |-------------------------------------------+----------------|
 | src/source/types.ts | Readonly QuestionRef, ViewBasis and distinct purpose variants |
 | src/source/catalog.ts | Validate paths/selection and freeze supplied snapshot |
-| src/pipeline.ts | renderView composes explicit compile/SVG effects; retains native IDs |
+| src/pipeline.ts | renderView composes explicit compile/SVG effects; retains IDs |
 | src/worker.ts | Official D2 compile/render effects |
 | src/index.ts | Public API; at most two workers, always terminated; failure rejects result |
-| src/theme.ts and themes/ | Independent native options and optional D2 profiles |
+| src/theme.ts and themes/ | Independent options and optional D2 profiles |
 | src/opensysml.ts | Real SDK call and pure explicit reflow projection |
-| examples/render | Actual file-package consumer; project reads and candidate writes |
+| packages/render/examples | Actual file-package consumer; project reads and candidate writes |
 
 The Library has no directory walker, global scene engine, semantic label guessing,
 custom compiler, FP runtime, evidence registry or publication database. Snapshots
@@ -114,9 +114,9 @@ only a reference until existing project source checks authenticate its origin.
 :PROPERTIES:
 :CUSTOM_ID: architecture-rendering-cases
 :END:
-The cases command renders three original D2 files unchanged, with native ELK,
+The cases command renders three original D2 files unchanged, with ELK,
 theme0 and pad24 matching their documented convention. Receipts retain original
-source hashes, native element IDs and question/model/obligation links.
+source hashes, element IDs and question/model/obligation links.
 
 | Original view | Review question | Content status |
 |---------------+-----------------+----------------|
@@ -141,7 +141,7 @@ projection/refusal and worker completion. A real installed file dependency and
 an independent packed consumer exercise package boundaries. CI runs package tests
 and examples on Linux and macOS. Local and remote receipts must remain distinct.
 
-Correctness means native D2 semantics, preserved references and refusal of lossy
+Correctness means D2 semantics, preserved references and refusal of lossy
 SDK projection. Whether question-led LLM selection improves explanatory quality
 is a research hypothesis requiring human comparison, not a rendering pass claim.
 Open gates include live model validation; trusted C/accepted Q integration;
@@ -150,19 +150,19 @@ closure; downstream Gateway migration; and CI acceptance for this revision.
 No full automatic LLM orchestration, independent review or delivery is implemented.
 
 * References
-- [[https://d2lang.com/tour/themes][Native D2 themes]] and [[https://d2lang.com/tour/sequence-diagrams][sequence diagrams]].
+- [[https://d2lang.com/tour/themes][D2 themes]] and [[https://d2lang.com/tour/sequence-diagrams][sequence diagrams]].
 - [[https://c4model.com/diagrams][C4 scopes]] and [[https://c4model.com/diagrams/notation][notation guidance]], as references only.
 - [[https://docs.structurizr.com/dsl][Structurizr model/view/style separation]], as a reference only.
 
 * TS visual composition is a first-class responsibility
 The generic D2 adapter alone does not satisfy the visual framework requirement.
 src/presentation.ts implements composePresentation: pure SVG composition of the
-question, answer, native diagram, explanations, evidence context and limits.
+question, answer, diagram, explanations, evidence context and limits.
 The separate presentation-theme export owns typography, surfaces, status colors
-and spacing. This is independent of themes/ and native D2 compile/render options.
+and spacing. This is independent of themes/ and D2 compile/render options.
 
 Three real cases produce two themes each: upstream blue/purple and downstream
-green/warm. Native D2 source and diagram bytes remain identical. These demonstrate
+green/warm. D2 source and diagram bytes remain identical. These demonstrate
 TS-owned visual hierarchy rather than only returning engine SVG. Architecture
 and workflow remain separate page purposes. Explanation status is project-authored;
 a referenced supported label is not independently authenticated assurance. Current
@@ -171,7 +171,7 @@ compositions, multilingual shaping and verified evidence decoration remain open.
 The first compositor is a concrete contract, not every possible explanatory genre.
 
 * Local qualification receipt
-The final native D2 and TS composition suite passes19 cases, with strict typecheck
+The final D2 and TS composition suite passes19 cases, with strict typecheck
 and actionlint clean. A packed independent consumer passes using only the public
 package and presentation-theme exports. Three unchanged historical repository
 sources render successfully; three two-theme explanatory pages and one focused
@@ -198,7 +198,7 @@ D2 still owns node geometry and connectors; TS owns the surrounding visual
 explanation, typography, icon selection and independent presentation theme.
 This compact composition replaces the initial prose-heavy report arrangement.
 
-The icon implementation uses [[https://github.com/lucide-icons/lucide/blob/main/docs/guide/installation.md][official Lucide static SVG exports]] and D2’s [[https://d2lang.com/tour/icons/][native icon support]]. SVG defaults are embedded with explicit bindings; no remote icon fetch is needed.
+The icon implementation uses [[https://github.com/lucide-icons/lucide/blob/main/docs/guide/installation.md][official Lucide static SVG exports]] and D2’s [[https://d2lang.com/tour/icons/][icon support]]. SVG defaults are embedded with explicit bindings; no remote icon fetch is needed.
 
 * Layout research supersedes prototype acceptance
 [[file:10.141-cross-language-diagram-renderer-research.org][10.141]] records the cross-language architecture/renderer survey. The current

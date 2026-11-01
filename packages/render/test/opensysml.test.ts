@@ -4,7 +4,7 @@ import {captureOpenSysMLView,projectOpenSysMLView} from '../src/opensysml';
 import {compileFigureSource,composeFigure,composeModelView} from '../src';
 import {captureFixture,declarationFixture,selection} from './fixtures/model-view';
 
-test('official decoded SDK result projects directly with native identities, parents and origins',()=>{
+test('official decoded SDK result projects directly with identities, parents and origins',()=>{
  const capture=captureFixture(),before=JSON.stringify(capture);
  const projected=projectOpenSysMLView(capture,{selection,layout:'reflow',labels:{n1:'Selected worker'}});
  expect(JSON.stringify(capture)).toBe(before);expect(projected.model.subjects.map(n=>n.id)).toEqual(['root','n1','n2']);
@@ -37,9 +37,9 @@ test('dangling endpoints, duplicate nodes, cycles, unsupported notation and name
 test('transport decoding belongs to the SDK and effect failures propagate',async()=>{
  expect(()=>renderedViewFromJson({View:'Demo::Context',Nodes:[]})).toThrow();
  const refusal=new Error('render_view capability missing');await expect(captureOpenSysMLView({renderView:async()=>{throw refusal;}},'m','v')).rejects.toBe(refusal);
- const native=captureFixture();let calls=0;
- const captured=await captureOpenSysMLView({renderView:async(hash,view)=>{calls++;expect(hash).toBe('model-hash');expect(view).toBe('Demo::Context');return native.rendering;}},native.modelHash,native.requestedView);
- native.rendering.nodes[0]!.name='mutated';expect(captured.rendering.nodes[0]!.name).toBe('Demo::System');expect(calls).toBe(1);
+ const fixture=captureFixture();let calls=0;
+ const captured=await captureOpenSysMLView({renderView:async(hash,view)=>{calls++;expect(hash).toBe('model-hash');expect(view).toBe('Demo::Context');return fixture.rendering;}},fixture.modelHash,fixture.requestedView);
+ fixture.rendering.nodes[0]!.name='mutated';expect(captured.rendering.nodes[0]!.name).toBe('Demo::System');expect(calls).toBe(1);
 });
 test('declared model hash/view/source bind one direct SDK projection and rendering footprint',async()=>{
  const capture=captureFixture(true),fixture=declarationFixture(capture,{portProjection:'owner'});

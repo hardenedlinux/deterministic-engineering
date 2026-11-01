@@ -1,5 +1,5 @@
 import type {FigureContext} from '@deterministic-engineering/render';
-/** A second architecture organization: exact native dependency directions, not workflow order. */
+/** A second architecture organization: exact dependency directions, not workflow order. */
 export function dependencyMatrix({presentation, model, relation, text}: FigureContext): string {
   if (!presentation || typeof presentation !== 'object' || !('matrix' in presentation) || !Array.isArray(presentation.matrix)) throw new Error('Declared matrix axes are missing');
   const axes = presentation.matrix.map((value: unknown) => {

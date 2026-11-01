@@ -44,7 +44,7 @@ evidence or review authority. This Case currently remains =capture-blocked=.
 | Scenario | Repository inputs, origins, associations and capture preparation | Binds the selected definitions to one project use |
 | Project | Confirmed intent, responsibility and use scope | Composes the selected Profile and Scenario |
 
-The source contracts and native declarations are authoritative. Version identity
+The source contracts and declarations are authoritative. Version identity
 is read from its owning declaration or package metadata, not from a namespace,
 diagram or duplicated version table.
 
@@ -71,10 +71,10 @@ Aitia's end-to-end review integration remains a target boundary for this Case.
 | [[file:projects/][projects/]] | Actual project entrypoints and project test policy |
 | [[file:languages-engineering/][languages-engineering/]] | Target-language projects and source, including Rust/Cargo inputs |
 | [[file:packages/render/][packages/render/]] | Functional static-rendering package and optional OpenSysML SDK projection |
-| [[file:examples/render/][examples/render/]] | Real downstream render consumer and domain-specific compositions |
+| [[file:packages/render/examples/][packages/render/examples/]] | Package-owned render cases and domain-specific compositions |
 | [[file:docs/][docs/]] | Org design arguments, D2 projections, decisions and candidate image snapshots |
 
-The root [[file:init.ss][init.ss]] uses Yuanxu's declared module loading. The native
+The root [[file:init.ss][init.ss]] uses Yuanxu's declared module loading. The
 [[file:build.ss][build.ss]] consumes declared public roots. This repository reuses
 POO/Core/Flow/module and contract mechanisms; it does not define another package
 loader or model runtime.
@@ -137,25 +137,23 @@ package/browser dependencies. Run in =packages/render=:
 bun install --frozen-lockfile
 bunx playwright install chromium
 bun run typecheck
-bun test
+bun test ./test
 bun run test:export
 #+end_src
 
-Run the actual consumer in =examples/render=:
+Run the package-owned cases from =packages/render=:
 
 #+begin_src sh
-bun install --frozen-lockfile
-bun run typecheck
-bun test
-bun run case
-bun run compare
-bun run overviews
+bun run test:examples
+bun run example:case
+bun run example:compare
+bun run example:overviews
 #+end_src
 
 Candidate outputs and source/browser receipts are written to =.cache/render/=.
 Tests include unknown declarations, model/source mutation, invalid relations and
 ports, hidden Questions, unsupported primitives and failed image loading.
-The Linux/macOS workflow runs the same native entries with the existing resource
+The Linux/macOS workflow runs the same entries with the existing resource
 bounds. [[https://github.com/hardenedlinux/deterministic-engineering/pull/2/checks][PR checks]]
 are authoritative for the actual tested commit.
 
@@ -167,7 +165,7 @@ the same font-settled scene; the old raw-D2 rendering path has been removed.
 
 * Scheme package entrypoints
 The canonical dependency/prelude declaration is [[file:gerbil.pkg][gerbil.pkg]]. The compiler is
-Gerbil; native package commands own dependency resolution, checkout, manifests,
+Gerbil; package commands own dependency resolution, checkout, manifests,
 compilation and loading. Current commands and existing budgets live in [[file:Justfile][Justfile]]:
 
 #+begin_src sh
@@ -192,3 +190,14 @@ does not establish a fresh full Scheme cold-build or runtime admission result.
 The repository is under active design and refactoring. Candidate models, source
 observations, rendered explanations, method evidence and independent review results
 remain distinct. Open findings and counterevidence stay visible for audit.
+
+* Functional rendering resources
+Render-owned examples live under [[file:packages/render/examples/][packages/render/examples/]].
+Visual styles, palettes, typography, density, ELK preferences and icon packs
+compose independently. Model Questions/content remain in D2/SysML; optional pure
+heading parts distinguish Question role markers from domain Answer glyphs and
+measure the complete group. The default exported canvas is explicit, with an
+optional transparent mode. See [[file:docs/10-19-design/10-architecture/10.144-functional-themes-layouts-and-package-examples.org][10.144 contracts and acceptance]].
+
+Detailed architecture: [[file:docs/90-99-views/90-architecture-views/90.135-library-project-architecture.png][editorial / ocean / compact]] · [[file:docs/90-99-views/90-architecture-views/90.135-library-project-architecture-sketchbook.png][sketchbook / ember]] · [[file:docs/90-99-views/90-architecture-views/90.135-library-project-architecture-comfortable.png][comfortable density]].
+Workflow: [[file:docs/90-99-views/90-architecture-views/90.130-llm-assisted-model-view-workflow.png][node-editor / ocean]] · [[file:docs/90-99-views/90-architecture-views/90.130-llm-assisted-model-view-workflow-sketchbook.png][sketchbook / ember]].

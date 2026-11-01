@@ -4,7 +4,7 @@ import {compileFigureSource, selectFigureVariant, composeFigure} from '@determin
 import {resources} from '../library-case/resources';
 import {architecture} from '../library-case/architecture';
 import {workflow} from '../library-case/workflow';
-const root = new URL('../../../', import.meta.url);
+const root = new URL('../../../../', import.meta.url);
 const declarations = ['docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture.d2','docs/90-99-views/90-architecture-views/90.133-capture-preparation-workflow.d2'];
 test('real Library/Profile/Scenario D2 selects downstream kinds, themes and icons without framework edits', async () => {
   for (const file of declarations) {

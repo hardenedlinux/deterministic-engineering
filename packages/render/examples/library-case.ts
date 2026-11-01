@@ -8,14 +8,14 @@ import {resources} from './library-case/resources';
 import { architecture } from './library-case/architecture';
 import { workflow } from './library-case/workflow';
 
-const root = fileURLToPath(new URL('../../', import.meta.url));
+const root = fileURLToPath(new URL('../../../', import.meta.url));
 const declarationFiles = ['docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture.d2', 'docs/90-99-views/90-architecture-views/90.133-capture-preparation-workflow.d2'];
 const d2Sources = Object.fromEntries(await Promise.all(declarationFiles.map(async file => [file, await readFile(path.join(root, file), 'utf8')])));
 const [architectureDeclaration, workflowDeclaration] = await Promise.all(declarationFiles.map(file => compileFigureSource(d2Sources, file, resources)));
 if (!architectureDeclaration || !workflowDeclaration) throw new Error('Missing D2 declarations');
 const references = architectureDeclaration.references;
 const sourceFor = (ref: string): string => { const value = references[ref]; if (!value) throw new Error(`Undeclared source: ${ref}`); return value; };
-const compositionFiles = ['examples/render/library-case.ts', 'examples/render/library-case/architecture.ts', 'examples/render/library-case/architecture-diagram.ts', 'examples/render/library-case/dependency-matrix.ts', 'examples/render/library-case/workflow.ts', 'examples/render/library-case/workflow-diagram.ts', 'examples/render/library-case/workflow-declaration.ts', 'examples/render/library-case/resources.ts', 'examples/render/library-case/style.ts', 'examples/render/comparison.ts'];
+const compositionFiles = ['packages/render/examples/library-case.ts', 'packages/render/examples/library-case/architecture.ts', 'packages/render/examples/library-case/architecture-diagram.ts', 'packages/render/examples/library-case/dependency-matrix.ts', 'packages/render/examples/library-case/workflow.ts', 'packages/render/examples/library-case/workflow-diagram.ts', 'packages/render/examples/library-case/workflow-declaration.ts', 'packages/render/examples/library-case/resources.ts', 'packages/render/examples/library-case/style.ts', 'packages/render/examples/comparison.ts'];
 const sourcePaths = [...new Set([...Object.values(references), ...Object.values(workflowDeclaration.references), ...compositionFiles, ...declarationFiles])];
 const sources = Object.fromEntries(await Promise.all(sourcePaths.map(async file => [file, await readFile(path.join(root, file), 'utf8')])));
 // Explicit source-excerpt observations, not a Scheme/SysML parser, execution or C issuance.

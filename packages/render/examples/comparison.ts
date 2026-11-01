@@ -5,7 +5,7 @@ import {createHash} from 'node:crypto';
 import {chromium} from 'playwright';
 import {resources} from './library-case/resources';
 import {compileFigureSource} from '@deterministic-engineering/render';
-const root = fileURLToPath(new URL('../../', import.meta.url));
+const root = fileURLToPath(new URL('../../../', import.meta.url));
 const directory = path.join(root, '.cache/render/library-case');
 const files = ['docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture.d2', 'docs/90-99-views/90-architecture-views/90.133-capture-preparation-workflow.d2'];
 const sources = Object.fromEntries(await Promise.all(files.map(async file => [file, await readFile(path.join(root, file), 'utf8')])));

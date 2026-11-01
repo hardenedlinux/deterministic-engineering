@@ -15,7 +15,7 @@ test('official D2 data owns Questions; changing D2 changes HTML without editing 
   expect(composeFigure(b, compose).html).toContain('Who publishes this?');
   expect(composeFigure(a, compose).inputSHA256).not.toBe(composeFigure(b, compose).inputSHA256);
 }, 30000);
-test('native syntax errors refuse through the owned worker', async () => {
+test('syntax errors refuse through the owned worker', async () => {
   await expect(compileFigureSource({'view.d2': 'node: {'}, 'view.d2')).rejects.toThrow();
 }, 30000);
 test('missing metadata, malformed JSON and purpose mismatch are refused', () => {

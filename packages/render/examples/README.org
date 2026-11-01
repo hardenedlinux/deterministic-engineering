@@ -1,0 +1,47 @@
+#+TITLE: Render Library examples
+#+LANGUAGE: en
+
+These maintained cases belong to =packages/render=. They use its public exports,
+dependencies, typecheck and Bun commands. There is no nested package or
+self-dependency. From =packages/render= run:
+
+#+begin_src sh
+bun install --frozen-lockfile
+bun run typecheck
+bun run test:examples
+bun run example:case
+bun run example:compare
+bun run example:overviews
+#+end_src
+
+* Source and responsibility map
+| Entry | Maintained content | Output |
+|-------+--------------------+--------|
+| =library-case.ts= and =library-case/= | Full numbered Library/Profile/Scenario architecture and separate capture Workflow; source observations and project-defined styles/icons | HTML, PNG, region images and source receipts |
+| =overview-composition.ts= | Pure optional SVG headings and model-scene composition | Consumes selected source content and resources; no image writes |
+| =overviews.ts= | D2 source selection, captured reference bytes and explicit export | Vector SVG, PNG, materialized HTML and source/layout receipts |
+| =comparison.ts= | Current source-declared variants and verified region images | Architecture and Workflow comparison sheets |
+| =test/= | Case-specific semantics and declaration controls | Bun test results |
+
+The canonical inputs are under =docs/90-99-views/90-architecture-views/=.
+90.132 is the full architecture overview; 90.133 is its separate Workflow.
+90.135 details repository responsibilities, 90.130 view-authoring Workflow,
+and 90.137 render component dependencies. Text and Questions follow the English
+source models. =.cache/render/= holds generated candidates; checked-in images
+remain associated with their D2 and receipt, without implying C/Q/R issuance.
+
+* Add a composition without a framework registry
+Declare Questions, references, graph options and resource layers in the
+source view. Supply an ordinary pure composer when a new visual organization is
+needed. Theme layers select visual language, semantic palette, type metrics,
+spacing/density, role markers, surfaces and ELK preferences; icon packs
+remain separate. There is no mandatory node/lane/card/page template.
+
+Use =composeHeading= for a source-bound Question or independently typed Answer /
+heading part. Its role marker and domain glyph are separate; the browser measures
+the complete group. Use =composeDiagram= for declared ELK scenes, or an
+explicit HTML composition where appropriate. Neither option authorizes effects.
+The host loads sources and calls =exportFigure=, then explicitly writes outputs.
+
+Standalone tarball installation is tested outside this package, rather than
+through an example self-dependency. See [[../../../docs/10-19-design/10-architecture/10.144-functional-themes-layouts-and-package-examples.org][10.144 contracts]].

@@ -19,8 +19,8 @@ It is a static rendering library. No whiteboard/editor or React runtime is added
 | Finding in previous implementation | Change / exact owner | Verification |
 |------------------------------------+----------------------+--------------|
 | Seven names acted as the whole diagram taxonomy; purpose checks were repeated | =source/types.ts= has open kind identifiers and one =validatePurposeKind=; reserved standard kinds retain their purpose | Custom kind through actual D2 worker and TS SVG scene export; blank kind/reserved mismatch refuse |
-| Framework parsed/validated every workflow as one ordered preparation path with lanes | Moved schema and checks to =examples/render/library-case/workflow-declaration.ts=; D2 places it in project-owned =presentation.flow= | Case lane/node/edge negatives, actual source declarations |
-| Compiler forced ELK regardless of project selection | The model worker leaves compile options empty and accepts the official CompileOptions; no raw-SVG theme path remains | Actual native D2 DAGRE declaration compiles |
+| Framework parsed/validated every workflow as one ordered preparation path with lanes | Moved schema and checks to =packages/render/examples/library-case/workflow-declaration.ts=; D2 places it in project-owned =presentation.flow= | Case lane/node/edge negatives, actual source declarations |
+| Compiler forced ELK regardless of project selection | The model worker leaves compile options empty and accepts the official CompileOptions; no raw-SVG theme path remains | Actual D2 DAGRE declaration compiles |
 | Variant consumer re-resolved themes through upstream defaults and lost downstream resources | =readD2Figure= resolves each variant once against supplied =FigureResources=; =selectFigureVariant= retains it | Downstream theme remains in variant and HTML; missing/duplicate variants refuse |
 | Icons were programmatic overrides; D2 could not select packs, metadata always said engineering | Ordered immutable =composeIconPacks=, D2 =icons= and variant overrides; actual SVG hashes in metadata | Custom real Case glyphs; unknown/prototype-name pack and invalid asset refuse |
 | Question markers used a double-quote regex | parse5 parses real HTML; browser independently checks actual visibility | Single/unquoted attributes pass; comments/template/hidden/CSS invisibility refuse |
@@ -63,7 +63,7 @@ organization belong to that Case, not to =composeFigure=.
 
 D2 supplies labels, relationships and metadata. Its geometry/SVG is discarded.
 Actual browser font and glyph measurements feed the existing ELK.js layout engine;
-its native graph/options control placement and routing. Explicit authored HTML
+its graph/options control placement and routing. Explicit authored HTML
 connectors may use XYFlow, separately from scene layout. No local solver is added. Rough.js adapters expose the selected
 primitives; other explicit SVG markup can be supplied by a compositor. Unknown
 primitives do not silently render as rectangles.
@@ -81,7 +81,7 @@ install, typecheck, tests, Case export, comparisons and measured TS overview vie
 Playwright owns browser fixtures; tests do not start another test runner. Worker
 limits remain two and existing job/resource bounds are unchanged.
 
-Required positives include native D2 notation, project-only kinds/themes/icons,
+Required positives include D2 notation, project-only kinds/themes/icons,
 variant retention, real Library/Profile/Scenario sources, source fingerprints,
 independent architecture/Workflow artifacts and actual font/image export.
 Negatives retain unknown resources, hidden Questions, source/model mutation,
@@ -96,9 +96,9 @@ requested documentation. No model publication, review or delivery is performed.
 * Measured scenes and removal of Legacy
 The previous raw-D2 fallback was a design error: it bypassed the new visual
 Library while retaining old geometry. Removed =renderCatalog=, =renderView=,
-=pipeline.ts=, duplicate D2 themes/theme registry and =examples/render/native.ts=.
+=pipeline.ts=, duplicate D2 themes/theme registry and the former example renderer.
 Current README views are emitted by =overviews.ts= through =composeDiagram= and
-=exportFigure=. Their Questions, labels and native ELK graph projections stay in
+=exportFigure=. Their Questions, labels and ELK graph projections stay in
 D2. Historical diagrams remain historical, not current renderer acceptance.
 
 | Boundary | Owner / implementation | Control |
@@ -106,7 +106,7 @@ D2. Historical diagrams remain historical, not current renderer acceptance.
 | Syntax / model | Official D2 SDK; supported OpenSysML projection | No old positions or SVG in compiled model |
 | Figure organization | Downstream pure composer | No mandatory card/page layout |
 | Font / glyph dimensions | Actual browser with embedded Inter or Kalam | SVG glyph viewport explicitly set before measurement |
-| Spatial layout / routing | ELK.js native graph/options | Measured node/edge-label sizes; no second constraint DSL or solver |
+| Spatial layout / routing | ELK.js graph/options | Measured node/edge-label sizes; no second constraint DSL or solver |
 | Hand-drawn geometry | Rough.js primitives/options | Actual measured scene frames; different font metrics enter layout |
 | Output checking | Browser-observed containment and pairwise overlap checks | Nodes/content/edge labels; invalid post-layout CSS refuses |
 | Export | Explicit SVG scene/annotations and browser PNG | No raster wrapper, foreignObject or raw-D2 fallback |
@@ -135,7 +135,7 @@ Primary references: [[https://github.com/kieler/elkjs][ELK.js]] and
 another layout engine or editing/interaction runtime.
 
 * Qualification and review handoff
-Local package typecheck, 25 unit/model/SDK tests and 19 native Playwright browser
+Local package typecheck, 25 unit/model/SDK tests and 19 Playwright browser
 controls passed. Consumer typecheck and two domain tests passed, ten full Case
 figures and two comparison sheets regenerated, and five current overview scenes
 exported and exited naturally. These controls include unknown resources/relations,
@@ -151,8 +151,8 @@ independent review, merge or delivery authority is implied.
 * Visual language is a declarative extension boundary
 The first measured scenes still repeated identical rectangular nodes and nearly
 identical glyphs. That met geometry checks but failed visual communication.
-Themes now compose native SVG surface assets, typography, semantic CSS, connector
-marks and spacing, alongside palette and font resources. Native ELK layout preferences
+Themes now compose SVG surface assets, typography, semantic CSS, connector
+marks and spacing, alongside palette and font resources. ELK layout preferences
 compose in the theme too; explicit view options take precedence. No parallel
 constraint schema or solver is introduced. Project role names are
 open; surfaces use the existing SVG asset contract, not a new shape language.
@@ -187,7 +187,7 @@ sheets are supplementary rather than the README's primary illustration.
 * SVG serialization order control
 Linux run 41284866523 failed the repeated SVG byte check while the PNG and ELK
 layout hashes matched. Preserve that failure separately from earlier green runs.
-A controlled native-browser CSSOM enumeration reversal reproduces the same class
+A controlled browser CSSOM enumeration reversal reproduces the same class
 of failure: identical pixels/layout but different SVG bytes. Computed custom CSS
 properties were emitted in the browser's enumeration order. Sort those unique
 property names before standard XMLSerializer output; keep the original strict

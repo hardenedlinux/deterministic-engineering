@@ -1,4 +1,5 @@
 import type {ElkNode} from 'elkjs/lib/elk-api';
+import {composeHeading} from './heading';
 import {composeDiagram} from './diagram';
 import type {FigureComposer,FigureModel} from './figure';
 
@@ -19,7 +20,7 @@ export function graphFromModel(model:FigureModel,options:ElkNode['layoutOptions'
  const visited=(nodes:ElkNode[]):number=>nodes.reduce((n,node)=>n+1+visited(node.children??[]),0);
  if(visited(children)!==ids.size)throw new Error('Unreachable model ownership');
  let id='model-root';while(ids.has(id))id+='-root';
- return {id,children,layoutOptions:{'elk.direction':'DOWN','elk.hierarchyHandling':'INCLUDE_CHILDREN',...options}};
+ return {id,children,layoutOptions:{...options}};
 }
 
 /** Optional reusable functional compositor; projects supply data and resources,
@@ -45,6 +46,6 @@ export const composeModelView:FigureComposer=context=>{
  if(!graph||typeof graph!=='object'||Array.isArray(graph))throw new Error('Invalid declared ELK graph');
  graph.layoutOptions={...options,...graph.layoutOptions};
  const scene=composeDiagram(context,{graph,roles,icons:select(data.icons),edgeLabels:data.edgeLabels!==false});
- const heading=(text:string,kind:string,height:number)=>`<svg data-vector-annotation class="model-${kind}" width="100%" height="${height}"><text x="0" y="${height-10}">${context.text(text)}</text></svg>`;
- return {markup:`<main data-question="${context.text(context.view.question.ref)}"><header>${heading(context.view.title,'title',48)}${heading(context.view.question.text,'question',36)}</header><section data-region="model">${scene.markup}</section></main>`,css:scene.css+`[data-figure]{padding:24px;background:var(--background)}header{margin-bottom:20px}.model-title text{font-size:30px;font-weight:700;fill:var(--ink)}.model-question text{font-size:20px;fill:var(--muted)}`};
+ const headings=[composeHeading(context,{role:'title',text:context.view.title}),...context.questions.map(question=>composeHeading(context,{role:'question',text:question.text,questionRef:question.ref}))];
+ return {markup:`<main><header>${headings.map(item=>item.markup).join('')}</header><section data-region="model">${scene.markup}</section></main>`,css:scene.css+headings.map(item=>item.css).join('\n')+`[data-figure]{padding:var(--gutter)}header{margin-bottom:var(--gap)}`};
 };

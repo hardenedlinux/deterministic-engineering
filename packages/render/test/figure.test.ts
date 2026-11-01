@@ -63,7 +63,7 @@ test('custom diagrams cannot mutate captured model or project presentation', () 
   expect(original.model.subjects[0]!.id).toBe('a');
 });
 
-test('standard HTML parsing accepts native quoting and rejects inert question lookalikes', () => {
+test('standard HTML parsing accepts quoting and rejects inert question lookalikes', () => {
   const original = input();
   expect(composeFigure(original, () => ({markup:"<section data-question='ownership'>Answer</section>",css:''})).html).toContain("data-question='ownership'");
   expect(composeFigure(original, () => ({markup:'<section data-question=ownership>Answer</section>',css:''})).html).toContain('data-question=ownership');

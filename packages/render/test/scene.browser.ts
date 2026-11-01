@@ -6,7 +6,7 @@ import {exportFigure} from '../src/export';
 const input:FigureInput={view:{source:'model.d2',title:'Measured architecture',purpose:'architecture',kind:'dependency-map',question:{ref:'q',text:'Who owns the declarations?'},basis:{captureRef:'candidate',modelRefs:[],obligationRefs:[],evidenceRefs:[]}},width:1000,language:'en',sources:{'model.d2':'captured model'},references:{source:'model.d2'},questions:[{ref:'q',text:'Who owns the declarations?',focusRefs:['source']}],model:{subjects:[{id:'a',type:'rectangle',label:'Library publisher\nModels, methods and obligations'},{id:'b',type:'rectangle',label:'Project selection\nProfile and Scenario'}],relations:[{id:'ab',src:'a',dst:'b',label:'publishes definitions'}]}};
 const spec:DiagramSpec={graph:{id:'scene',children:[{id:'a'},{id:'b'}],layoutOptions:{'elk.direction':'RIGHT'}},icons:{a:'library',b:'capture'}};
 const composer=(specification=spec,css=''):FigureComposer=>context=>{const scene=composeDiagram(context,specification);return{markup:`<section data-question="q">${scene.markup}</section>`,css:scene.css+css};};
-test('measured native ELK scene exports offline vector SVG and PNG with bounded glyphs',async({browser})=>{
+test('measured ELK scene exports offline vector SVG and PNG with bounded glyphs',async({browser})=>{
  const before=browser.contexts().length;
  const figure=composeFigure(input,composer());
  const a=await exportFigure(figure,browser),b=await exportFigure(figure,browser);
@@ -46,7 +46,7 @@ test('scene hand drawing delegates actual measured frames to Rough.js',async({br
  expect(sketch.receipt.pngSHA256).not.toBe(precise.receipt.pngSHA256);
 });
 
-test('theme surfaces compose as native SVG assets and cannot mutate captured theme',async({browser})=>{
+test('theme surfaces compose as SVG assets and cannot mutate captured theme',async({browser})=>{
  const theme=composePresentationTheme(['editorial']);const graph={...spec,roles:{a:'publication'}};
  const output=await exportFigure(composeFigure({...input,theme},composer(graph)),browser);
  expect(output.svg[0]).toContain('preserveAspectRatio="none"');expect(output.svg[0]).toContain('class="scene-surface"');
@@ -56,7 +56,7 @@ test('theme surfaces compose as native SVG assets and cannot mutate captured the
  expect(()=>composeFigure({...input,theme:invalid},composer(graph))).toThrow('Invalid declared scene surface');
 });
 
-test('native theme layout preferences reach ELK and explicit view options take precedence',async({browser})=>{
+test('theme layout preferences reach ELK and explicit view options take precedence',async({browser})=>{
  const theme={...composePresentationTheme(['editorial']),layoutOptions:{'elk.algorithm':'does-not-exist'}};
  await expect(exportFigure(composeFigure({...input,theme},composer()),browser)).rejects.toThrow();
  const selected={...spec,graph:{...spec.graph,layoutOptions:{...spec.graph.layoutOptions,'elk.algorithm':'layered'}}};

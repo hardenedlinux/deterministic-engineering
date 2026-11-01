@@ -1,6 +1,6 @@
 import {readWorkflow} from './workflow-declaration';
 import type { FigureContext } from '@deterministic-engineering/render';
-/** Layouts consume the same declared steps and native model edges. No invented owners. */
+/** Layouts consume the same declared steps and model edges. No invented owners. */
 export function workflowDiagram(context: FigureContext): string {
   const {layout, text, copy, icon} = context;
   const flow = readWorkflow(context);

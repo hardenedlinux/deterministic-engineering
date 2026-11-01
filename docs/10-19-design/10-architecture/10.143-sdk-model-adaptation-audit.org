@@ -22,12 +22,12 @@ for model syntax/semantics remains the pinned SDKs declared in package.json.
 | =d2-figure.ts=: longest dotted prefix as parent/endpoint owner | Remove | D2 supplies exact IDs/endpoints. Generic automatic hierarchy needs explicit parent data; nested D2 views declare their ELK grouping |
 | Generated lifeline name, ID suffix and stroke pattern filter | Remove | Preserve SDK observations. A complete automatic projection refuses missing exported endpoints; dedicated sequence notation is not reimplemented |
 | Class/SQL members flattened into invented strings | Retain typed SDK member data instead | Render text uses the SDK's method name, visibility, constraints and references. Null member arrays are handled; D2 text geometry is discarded |
-| =figure.ts=: boolean arrow flags / reconstructed source names | Replace with native Arrowhead values and raw SDK names | Names are captions, not identities. Core model carries typed observations only |
+| =figure.ts=: boolean arrow flags / reconstructed source names | Replace with Arrowhead values and raw SDK names | Names are captions, not identities. Core model carries typed observations only |
 | =diagram.ts= / =scene-export.ts=: arrows / compound endpoints | Retain with explicit capability boundary | Preserve none, arrow, triangle and unfilled-triangle at both ends; unsupported markers refuse instead of becoming generic arrows |
 | =opensysml.ts=: recursive PascalCase JSON renaming | Remove | The official SDK decodes its own protojson. Go transport must export its actual protojson contract |
 | SysML-to-D2 emission followed by another D2 compilation | Remove | Direct SDK RenderedView-to-FigureModel display projection; no second SysML parser, name resolver or model compiler |
 | =index.ts=: view-name-only selection and fabricated capture paths | Replace | Bind declared model hash + requested view + an existing source reference and matching captured JSON; retain actual input sources |
-| =model-view.ts=: reusable hierarchy/composer helper | Retain as optional pure functions | Use explicit parent IDs, exact node-ID presentation mappings and native ELK options. Do not reinterpret D2 classes as semantic roles |
+| =model-view.ts=: reusable hierarchy/composer helper | Retain as optional pure functions | Use explicit parent IDs, exact node-ID presentation mappings and ELK options. Do not reinterpret D2 classes as semantic roles |
 
 * Public declaration and source closure
 =FigureResources.sysmlViews= supplies host-captured SDK results. D2's existing
@@ -84,10 +84,10 @@ D2 classes remain ordered source annotations, not implicit framework role choice
 =graphFromModel= builds an ELK graph from explicit parent IDs. Nested D2 observations
 without explicit parents require the project's declared graph; automatic grouping
 will not guess from dots in IDs. Missing endpoints and unreachable ownership refuse.
-=composeModelView= is optional and replaceable. Native ELK still owns spatial layout;
+=composeModelView= is optional and replaceable. ELK still owns spatial layout;
 SVG primitives only materialize its result. This does not reproduce full SQL row
 ports, UML or sequence notation. The supported generic node/member display is
-explicitly distinct from those native notations.
+explicitly distinct from those notations.
 
 * Positive and negative acceptance
 | Boundary | Positive control | Negative control |
@@ -96,10 +96,10 @@ explicitly distinct from those native notations.
 | Direct SysML projection | SDK-decoded IDs/parents/origins; unchanged source object | Duplicate nodes, cycles, missing owners/endpoints, ambiguous name captions |
 | Port projection | Explicit owner mode preserves real port references | Implicit collapse, wrong endpoint ownership, duplicate ports |
 | Source binding | One model hash/view and actual captured JSON; no generated source files | Wrong revision/view, absent resource/reference, changed JSON |
-| Display fidelity | None/triangle/bidirectional SVG marks, compound node endpoints, native members | Unsupported diamond marker refuses; root identity collision, invented mapping or non-text ELK option refuses |
+| Display fidelity | None/triangle/bidirectional SVG marks, compound node endpoints, members | Unsupported diamond marker refuses; root identity collision, invented mapping or non-text ELK option refuses |
 | Trust / lifecycle | SDK errors propagate; capture snapshot survives caller mutation | Decoder rejects invalid transport fields; no parser or review-authority fallback |
 
-Local validation uses the package's native typecheck, Bun tests and Playwright
+Local validation uses the package's typecheck, Bun tests and Playwright
 entry (two workers). Downstream typecheck/domain tests, ten full explanatory Case
 exports, comparisons and current view exports remain required. Linux/macOS CI
 must pass on the resulting PR commit; previous green commits do not qualify it.

@@ -5,15 +5,15 @@ import {chromium} from 'playwright';
 import {compileFigureSource,composeFigure,selectFigureVariant} from '@deterministic-engineering/render';
 import {exportFigure} from '@deterministic-engineering/render/export';
 import {overview} from './overview-composition';
-const root=fileURLToPath(new URL('../../',import.meta.url));
-const names=['90.02-agent-evidence-loop','90.129-functional-architecture-rendering','90.130-llm-assisted-model-view-workflow','90.134-render-responsibility-boundaries','90.135-library-project-architecture','90.136-model-adaptation-boundaries'];
+const root=fileURLToPath(new URL('../../../',import.meta.url));
+const names=['90.02-agent-evidence-loop','90.129-functional-architecture-rendering','90.130-llm-assisted-model-view-workflow','90.134-render-responsibility-boundaries','90.135-library-project-architecture','90.136-model-adaptation-boundaries','90.137-functional-render-composition'];
 const directory='docs/90-99-views/90-architecture-views/';
 const output=path.join(root,'.cache/render/overviews');await mkdir(output,{recursive:true});
 const browser=await chromium.launch();
 try{for(const name of names){
  const file=directory+name+'.d2',source=await readFile(path.join(root,file),'utf8');
  const input=await compileFigureSource({[file]:source},file);
- const extra=Object.fromEntries(await Promise.all([...new Set(['examples/render/overviews.ts','examples/render/overview-composition.ts',...Object.values(input.references)])].map(async file=>[file,await readFile(path.join(root,file),'utf8')])));
+ const extra=Object.fromEntries(await Promise.all([...new Set(['packages/render/examples/overviews.ts','packages/render/examples/overview-composition.ts',...Object.values(input.references)])].map(async file=>[file,await readFile(path.join(root,file),'utf8')])));
  const candidates=[{name,input},...(input.variants??[]).map(variant=>({name:name+'-'+variant.name,input:selectFigureVariant(input,variant.name)}))];
  for(const candidate of candidates){
  const figure=composeFigure({...candidate.input,sources:{...candidate.input.sources,...extra}},overview);

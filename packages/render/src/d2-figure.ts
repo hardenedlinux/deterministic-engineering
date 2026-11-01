@@ -21,7 +21,7 @@ export interface FigureResources { readonly themeLayers?: ThemeLayers; readonly 
 export function readD2Figure(compiled: D2FigureData, captured: Readonly<Record<string, string>>, resources: FigureResources = {}): FigureInput {
   const data = compiled.data;
   const encoded = object(data, 'D2 graph.data').figure;
-  // A native JSON block scalar preserves nested data in the installed D2 SDK.
+  // A JSON block scalar preserves nested data in the installed D2 SDK.
   if (typeof encoded !== 'string') throw new Error('D2 vars.d2-config.data.figure must be a JSON block scalar');
   const declaration = object(JSON.parse(encoded) as unknown, 'figure declaration');
   const primary = text(declaration.primary, 'primary question');

@@ -3,7 +3,7 @@ import {composeFigure,type FigureInput,type FigureModel,composeModelView,compose
 import {exportFigure} from '../src/export';
 import {projectOpenSysMLView} from '../src/opensysml';
 import {captureFixture,selection} from './fixtures/model-view';
-const base:FigureInput={view:selection,width:1000,language:'en',questions:[{ref:'q',text:selection.question.text,focusRefs:['sdk']}],references:{sdk:'model.json'},sources:{'view.d2':'test declaration','model.json':'native fixture'}};
+const base:FigureInput={view:selection,width:1000,language:'en',questions:[{ref:'q',text:selection.question.text,focusRefs:['sdk']}],references:{sdk:'model.json'},sources:{'view.d2':'test declaration','model.json':'fixture'}};
 test('direct SDK parents and owner-projected ports reach a vector model view',async({browser})=>{
  const capture=captureFixture(true),projection=projectOpenSysMLView(capture,{selection,layout:'reflow',portProjection:'owner'});
  const figure=composeFigure({...base,model:projection.model,modelTrace:projection.trace,sources:{...base.sources,'model.json':JSON.stringify(capture)},presentation:{icons:{root:'model',n1:'capture',n2:'selection'}}},composeModelView);
@@ -21,7 +21,7 @@ test('SVG arrows retain none/triangle and both endpoints rather than boolean coe
  const bad={...model,relations:[{id:'ab',src:'a',dst:'b',label:'',dstArrow:'diamond' as const}]};
  expect(()=>composeFigure({...base,model:bad},composeModelView)).toThrow('Unsupported SVG arrowhead');
 });
-test('native class method names and nullable SQL constraints render without a second member parser',async({browser})=>{
+test('class method names and nullable SQL constraints render without a second member parser',async({browser})=>{
  const model:FigureModel={subjects:[{id:'Class',type:'class',label:'Worker',fields:[{name:'id',type:'int',visibility:'public'}],methods:[{name:'run()',return:'bool',visibility:'public'}]},{id:'Table',type:'sql_table',label:'Events',columns:[{name:{label:'id'},type:{label:'int'},constraint:[],reference:''}]}],relations:[]};
  const result=await exportFigure(composeFigure({...base,model},composeModelView),browser);
  expect(result.html).toContain('public run(): bool');expect(result.html).not.toContain('run()()');expect(result.html).toContain('id · int');

@@ -3,14 +3,12 @@ on:
   pull_request:
     paths:
       - 'packages/render/**'
-      - 'examples/render/**'
       - 'docs/90-99-views/90-architecture-views/**'
       - '.github/workflows/render.yml'
   push:
     branches: [main]
     paths:
       - 'packages/render/**'
-      - 'examples/render/**'
       - 'docs/90-99-views/90-architecture-views/**'
       - '.github/workflows/render.yml'
 permissions:
@@ -34,19 +32,15 @@ jobs:
         working-directory: packages/render
       - run: bun run typecheck
         working-directory: packages/render
-      - run: bun test
+      - run: bun test ./test
         working-directory: packages/render
       - run: bun run test:export
         working-directory: packages/render
-      - run: bun install --frozen-lockfile
-        working-directory: examples/render
-      - run: bun run typecheck
-        working-directory: examples/render
-      - run: bun test
-        working-directory: examples/render
-      - run: bun run case
-        working-directory: examples/render
-      - run: bun run compare
-        working-directory: examples/render
-      - run: bun run overviews
-        working-directory: examples/render
+      - run: bun test ./examples/test
+        working-directory: packages/render
+      - run: bun run example:case
+        working-directory: packages/render
+      - run: bun run example:compare
+        working-directory: packages/render
+      - run: bun run example:overviews
+        working-directory: packages/render
