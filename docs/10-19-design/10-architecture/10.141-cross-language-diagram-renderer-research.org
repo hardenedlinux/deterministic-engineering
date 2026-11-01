@@ -1,0 +1,132 @@
+#+TITLE: 10.141 Cross-language Diagram Rendering Research and Layout Correction
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.141
+#+OPTIONS: toc:2 num:nil
+
+* Scope correction
+D2 is an authoring language and a primary project input. It does not delimit the
+research ecosystem or prescribe every downstream visual rendering decision.
+Architecture diagramming, graph visualization, constraint-based drawing, routing,
+icon systems and AI-assisted diagram design must be studied across languages.
+C4/Structurizr remain viewpoint references. No additional modeling DSL or proof
+ledger is selected by this research.
+
+The c8b95c0 implementation in10.140 is a functional prototype, not an accepted
+visual baseline. Its19 tests establish API/input properties, not layout quality.
+Its TS compositor primarily surrounds finished D2 geometry. Adding icons or
+shrinking margins cannot give that compositor control of graph-internal layout.
+The current samples expose poor spatial balance, small labels after fitting,
+overlarge fixed panels and repeated responsibility explanations.
+
+* Sources inspected through GitHub
+The inspection used general architecture-diagram and diagram-renderer/layout
+queries, not a D2-only query. Stars aided discovery only; they are not selection
+criteria. Third-party skill text was read as source material, not installed or
+executed as agent instructions. Project claims are not treated as local receipts.
+
+| Project | Actual inspected surface | Capability to learn | Selection status |
+|---------+--------------------------+--------------------+------------------|
+| [[https://github.com/antvis/G6][AntV G6]] | README; packages/g6/src/runtime/layout.ts | Separate graph data, layout stages, nodes/edges/combos, rendering and interactions | Candidate; no local runtime qualification |
+| [[https://github.com/penrose/penrose][Penrose]] | README Domain/Substance/Style example; official constraint documentation | Separate domain meaning, instance and visual constraints; express containment/overlap/objectives | Research reference; no solver dependency selected |
+| [[https://github.com/mingrammer/diagrams][Diagrams]] | README examples and provider structure | Icon-first node vocabulary, clusters and concise architectural labels | Visual reference; Python/Graphviz not automatically introduced |
+| [[https://github.com/awslabs/diagram-as-code/tree/4ec965cf8bdb309d714bc6202e7954fc43338bbe][AWS Diagram-as-code]] | doc/best-practices.md; introduction image | Orientations by diagram purpose, nested resource boundaries and grouped redundancy | Visual/layout reference |
+| [[https://github.com/likec4/likec4/tree/d1d61155215ceebd909cf217eab32ebeb6a35f1e][LikeC4]] | examples/cloud-system/views.c4; demo-rank-for-better-layout.c4 | Explicit include/exclude, scoped views and rank hints | Projection reference; its DSL is not a new dependency |
+| [[https://github.com/lukilabs/beautiful-mermaid/tree/2ac8bbbb060ca0a65a6a21f3200bd99b1587b488][Beautiful Mermaid]] | README; src/theme.ts | Small composable color contract; theme independently applied to SVG primitives | TS theme reference; Mermaid is not a replacement input requirement |
+| [[https://github.com/xyflow/xyflow][XYFlow]] | README package boundaries and usage | Custom nodes/edges and interactive inspection | Interactive candidate; editor does not alone solve offline layout |
+| [[https://github.com/Agents365-ai/drawio-skill/tree/57270820d3cd71cbdf4fb6b2f7091d4fb37bb019][drawio-skill]] | README; scripts/diagram_ir.py; architecture-studio example inventory | Separate meaning/provenance/geometry, multiple projections and visual self-check | Research reference; no copied source/evidence system |
+| [[https://github.com/Cocoon-AI/architecture-diagram-generator/tree/4b9087d55268c79a935105439dbcd37b630fc3f3][Architecture Diagram Generator]] | examples/web-app.html and web-app.png; template inventory | Study actual visual hierarchy and compact layer composition beyond one DSL ecosystem | Visual reference; fixed HTML template is not itself a reusable renderer |
+
+Penrose's [[https://penrose.ink/docs/tutorial/constraints/][constraint documentation]] describes optimization objectives; that is not a
+proof that its solver suits architecture edge routing. G6's documented render
+backends do not establish font, export or cold-start acceptance in our runtime.
+XYFlow's UI extensibility must be evaluated independently of automatic placement.
+
+* Correct responsibility split
+The intended Library has three independently testable concerns:
+1. Question/model projection: use actual OpenSysML and D2 structures plus existing
+   project query/evidence associations to select what the reader needs to see.
+2. Layout and visual grammar: group boundaries, choose topology, size nodes from
+   icons/labels, route edges, place callouts and keep useful whitespace.
+3. Rendering/presentation: draw the placed view through reusable SVG/Canvas
+   capabilities with downstream themes, icon assets and output profiles.
+
+The existing D2 compiler remains a real source adapter and a native comparison
+baseline. OpenSysML retains model semantics. ASCENT retains deterministic facts
+and inference; Aitia retains review. A view projection can carry their original
+IDs and references without creating a new modeling language, evidence database
+or self-appointed authority. A private renderer may use a mature engine object;
+public Library composition can remain functional and immutable.
+
+No engine is selected by README popularity. G6, existing layout engines and
+constraint-oriented alternatives must be compared on actual repository content
+and export/runtime constraints before adding a dependency. Pure static output
+and interactive inspection are separate requirements and may need distinct
+adapters rather than one mandatory browser application.
+
+* Same-case comparison protocol
+Use repository90.91,90.120 and90.84 as frozen semantic baselines. Preserve their
+original views for regression. Derive question-scoped architecture, workflow and
+explanation candidates explicitly; record any omitted/aggregated element and
+keep required obligations reachable. Do not improve density by deleting meaning.
+
+For each scope, compare:
+- The existing native rendering baseline.
+- The current TS compositor baseline, retaining its visible shortcomings.
+- Candidate visual grammars backed by mature layout/render capabilities.
+
+Keep the same question, model references, required nodes/relations and evidence
+status across a comparison. Theme and engine identity are independent recorded
+inputs. A compact static figure, an explanatory infographic and an interactive
+inspection view must not all be forced into the same tall report frame.
+
+* Acceptance and research questions
+| Category | Acceptance / observation |
+|----------+--------------------------|
+| Semantic correctness | Preserve identity, containment, relation direction and required obligations; disclose aggregation and unsupported notation |
+| Mechanical drawing checks | Detect clipped text, unintended overlaps, invalid geometry, invisible required content and routes through unrelated nodes |
+| Typography | Compare actual output at its intended viewing size; enlarging the canvas cannot compensate for unreadably small labels |
+| Routing | Compare crossings, shared paths, label collisions and unnecessarily long connectors; port semantics must survive |
+| Space | Compare occupied bounds, group padding and aspect ratio; use these as diagnostics, not a universal maximum-density rule |
+| Visual vocabulary | Icons encode actual kinds; shape, grouping, color and short labels have consistent meaning and an explicit legend where needed |
+| Evidence | Missing, conflict and pending remain distinct; visual status cannot establish an accepted Q or review R |
+| Reproduction | Record actual engine, theme/assets, source closure and layout options/seed; distinguish reproducibility from aesthetic preference |
+| Human comparison | Ask whether each view answers its question faster and more accurately; do not label subjective quality as a formal proof |
+
+LLMs may propose view scope, constraints and alternative candidates, then inspect
+rendered results for visual defects. Deterministic validation protects semantics
+and mechanical requirements. Human comparison establishes whether an explanation
+actually reduces reading burden. ASCENT is not an aesthetic oracle.
+
+* Implementation order
+1. Preserve the current prototype, original sources and screenshots as baselines;
+   stop treating the fixed report layout as the target framework.
+2. Write question/view fixtures with required identities and expected distinctions,
+   independent of the source language and the chosen renderer.
+3. Qualify focused layout/render candidates for nested groups, icon-rich nodes,
+   edge routing, text metrics and static export. Compare complete figures.
+4. Select the smallest reusable capabilities that pass those cases; replace the
+   prototype composition rather than stacking another wrapper over it.
+5. Apply independent themes/icons and connect actual model/evidence references;
+   qualify downstream use and publish only reviewed outputs.
+
+Open decisions: renderer/backend selection, exact layout constraint surface,
+static versus interactive adapters, reliable font measurement, multilingual text,
+asset closure and visual regression policy. No new engine has been installed by
+this research and no automatic orchestrator or visual-acceptance claim is issued.
+
+* D2 source identity observation
+The inspected official D2 checkout6a7b4837838a3907604a1d9eec57ee98b6f3cd01
+now declares @d2lang/d2 in d2js/js/package.json. The prototype uses the older
+@terrastruct/d2 published package. This is a dependency/API comparison obligation,
+not authorization to mix an unqualified version upgrade into visual experiments.
+Source-language and rendering-backend choices remain independently reviewable.
+
+* Visual inspection notes
+The actual Cocoon web-app image and HTML use a large fixed SVG canvas with a
+horizontal chain and a separate card row. Its color discipline is useful, but
+its large unused area and fixed placement are not a solution to our current
+layout complaint. It is not selected as the target template.
+The AWS example demonstrates icon-based resource identity and nested boundaries.
+The Diagrams advanced web-service example illustrates icon-rich clusters and
+relationships as the main figure rather than a document shell. These are visual
+references, not evidence that their default layout handles our Library models.
