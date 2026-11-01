@@ -273,3 +273,11 @@ bun add @deterministic-engineering/render@git+https://github.com/hardenedlinux/d
 #+end_src
 Bun owns Git fetching and the lockfile. A Git install needs no committed package
 archive. Release tags are created only after the package/consumer checks pass.
+* Compiler allocation lifetime
+=compileModel= owns one ephemeral compiler process and its internal SDK worker.
+The result is accepted only after the process closes its worker, disconnects
+IPC and exits naturally. No process exit call, signal kill, fallback renderer
+or consumer-maintained pool is used. This process boundary releases terminated
+Bun worker allocation domains that otherwise remain in the long-lived host.
+Concurrent callers remain independent; the Library imposes no CPU-count clamp.
+The host still owns cancellation, batch scheduling and browser lifetime.

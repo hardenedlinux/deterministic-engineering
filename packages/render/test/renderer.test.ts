@@ -17,3 +17,13 @@ test('failed syntax/import and absent/outside source refuse; independent compila
  await expect(compileModel({'../outside.d2':'a'},'../outside.d2')).rejects.toThrow('repository-relative');
  expect((await compileModel({'model.d2':'a -> b'},'model.d2')).model.relations).toHaveLength(1);
 },30000);
+
+// Each call resolves only after its isolated allocation domain exits naturally.
+// Keeping each call a separate case preserves the existing test watchdog.
+const compilerParentRSS=process.memoryUsage().rss;
+test.each(Array.from({length:24},(_,index)=>index))('compiler allocation ownership is reclaimed after call %i',async()=>{
+ const capture=await compileModel({'repeat.d2':'a: Producer\nb: Consumer\na -> b: binds'},'repeat.d2',{layout:'elk'});
+ expect(capture.model.subjects).toHaveLength(2);
+ expect(capture.model.relations).toHaveLength(1);
+ expect(process.memoryUsage().rss-compilerParentRSS).toBeLessThan(256*1024*1024);
+});
