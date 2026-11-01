@@ -131,3 +131,9 @@ The independently packed consumer passed a core-only D2 export without the optio
 SDK installed. With the declared SDK peer installed, the same archive passed direct
 source-bound SDK projection/export and rejected a stale model hash. These are
 local package-consumption checks, separate from remote Linux/macOS CI.
+
+Re-entry through =composeFigure= rejects a model hash, view or port-projection
+selection that differs from its captured SDK trace. A new selection requires a
+fresh source-bound projection; changing its fingerprint alone cannot admit a
+contradictory selection. This is a rendering-context consistency check, not SDK
+semantic validation or an independent provenance credential.

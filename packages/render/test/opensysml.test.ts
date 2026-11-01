@@ -47,7 +47,9 @@ test('declared model hash/view/source bind one direct SDK projection and renderi
  expect(input.model!.subjects.map(n=>n.id)).toEqual(['root','n1','n2']);expect(input.modelTrace!.modelHash).toBe(capture.modelHash);
  expect(Object.keys(input.sources).sort()).toEqual(['models/view.json','view.d2']);
  const figure=composeFigure(input,composeModelView);expect(figure.html).toContain('"portProjection":"owner"');expect(figure.html).toContain('"fromPort":"p1"');
- expect(composeFigure({...input,modelSource:{...input.modelSource!,modelHash:'different declaration'}},composeModelView).inputSHA256).not.toBe(figure.inputSHA256);
+ expect(()=>composeFigure({...input,modelSource:{...input.modelSource!,modelHash:'different declaration'}},composeModelView)).toThrow('captured SDK trace');
+ expect(()=>composeFigure({...input,modelSource:{...input.modelSource!,portProjection:undefined}},composeModelView)).toThrow('captured SDK trace');
+ const changed=declarationFixture({...capture,modelHash:'new hash'},{portProjection:'owner'});const fresh=await compileFigureSource(changed.sources,'view.d2',changed.resources);expect(composeFigure(fresh,composeModelView).inputSHA256).not.toBe(figure.inputSHA256);
 },30000);
 test('wrong revisions, source bytes and uncaptured references cannot select a SDK view',async()=>{
  const fixture=declarationFixture();

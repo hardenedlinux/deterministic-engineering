@@ -74,6 +74,8 @@ export const escapeHTML = (value: string): string => value.replace(/[&<>"']/g, c
 /** Capture first, then compose. No fixed page structure or automatic graph enlargement. */
 export function composeFigure(input: FigureInput, compose: FigureComposer): ComposedFigure {
   const snapshot = structuredClone(input);
+  if(snapshot.modelSource && (!snapshot.modelTrace || snapshot.modelSource.modelHash!==snapshot.modelTrace.modelHash || snapshot.modelSource.view!==snapshot.modelTrace.requestedView || snapshot.modelSource.portProjection!==snapshot.modelTrace.portProjection))
+    throw new Error('Model selection differs from captured SDK trace');
   if (!Number.isInteger(snapshot.width) || snapshot.width < 320 || snapshot.width > 4096) throw new Error('Invalid figure width');
   if (!snapshot.questions.length || !snapshot.questions.some(question => question.ref === snapshot.view.question.ref)) throw new Error('Primary question is missing');
   validatePurposeKind(snapshot.view.purpose, snapshot.view.kind);
