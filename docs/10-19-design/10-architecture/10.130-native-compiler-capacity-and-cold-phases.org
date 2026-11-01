@@ -1,0 +1,78 @@
+#+TITLE: 10.130 Native Compiler Capacity and Cold Phase Boundaries
+#+LANGUAGE: en
+#+OPTIONS: toc:2 num:nil
+#+STARTUP: overview
+
+* Observed failure, not an assumed missing variable
+:PROPERTIES:
+:CUSTOM_ID: native130-observation
+:END:
+
+Aitia CI for =9d87ac9= printed =BUILD-CONCURRENCY root-configured-cores=4=.
+POO therefore received an explicit worker declaration through the Bazel native
+environment. That line alone does not prove the standard Make frontend and
+the compiler backend both adopted it. The workflow did not previously publish
+an explicit runner declaration before Bazel repository configuration.
+
+The failure log first enters the native environment at 08:47:19 UTC, starts
+POO compilation at 08:47:46 UTC, and reaches the deadline at 08:50:20 UTC.
+Approximately 27 seconds precede compilation. At the deadline actual dynamic
+module compilation remains active. These observations do not prove the build
+will finish within 180 seconds after separating source acquisition.
+
+* Explicit native capacity handoff
+:PROPERTIES:
+:CUSTOM_ID: native130-handoff
+:END:
+
+The existing Aitia workflow declares =GERBIL_BUILD_CORES= before resolving
+Bazel's native provider. It preserves an explicit caller value or uses the
+runner's online CPU count. It records online and affinity counts separately.
+There is no fixed one-, two- or four-worker limit.
+
+Inside the actual native environment, =check-native-build-capacity.ss= verifies
+the selected value against both native SDK owners: the standard Make settings
+reader and the compiler's initialized backend capacity. A missing declaration
+or mismatch refuses before cold compilation. The settings reader is an exact
+SPI in the pinned SDK, observed through its native namespace; no implementation
+of its scheduling algorithm is copied. Per-process heap options stay unchanged.
+
+Independent real SDK processes verify explicit values one and three, and the
+negative case of an absent declaration. These are controls for handoff, not
+performance tests or proof that every queued worker is continuously runnable.
+
+* Source acquisition and native compilation are distinct bounded operations
+:PROPERTIES:
+:CUSTOM_ID: native130-cold
+:END:
+
+The cold gate creates a new prefix without project package binaries. The
+existing Parent source-preparation owner fetches the Core-declared immutable
+POO source under its own 180-second watchdog. It creates no native tag,
+manifest, library or executable. Explicit absence checks precede the native
+SDK install. The SDK retains responsibility for registration, manifest creation
+and the complete original build, under its own 180-second watchdog.
+
+Both operations are timed. Their sum must remain visible; a package compilation
+result cannot be presented as end-to-end installation latency. No compiler
+products are restored or copied. No dependency, target or assertion is removed.
+Each Gerbil/Gambit process retains a 2 GiB heap. Native worker policy follows
+the runner rather than a package-local ceiling.
+
+The previously published POO single-Make source repair remains a separate
+change. Local empty-prefix qualification does not close Linux CI. ASCENT's
+native Module selection, source applicability and independent evidence tests
+continue to use the existing framework described in [[file:10.129-ascent-native-library-modules.org][10.129]].
+
+* Acceptance
+:PROPERTIES:
+:CUSTOM_ID: native130-acceptance
+:STATUS: remote-validation-pending
+:END:
+
+The real local SDK handoff controls pass. The updated existing Aitia PR must
+independently pass cold compilation and its complete semantic, integration,
+process-recovery, native ABI, Python and lifecycle replay gates. Passing this
+capacity diagnostic alone is not whole-runtime admission.
+
+[[file:../../90-99-views/90-architecture-views/90.119-native-compiler-capacity-and-cold-phases.d2][Paired D2 ownership view]]

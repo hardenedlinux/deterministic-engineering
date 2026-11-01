@@ -39,7 +39,7 @@
   (def cap2 (.cc baseline 'identity 'C2 'capacity 4))
   (def cache (.cc cap2 'identity 'C2-cache 'cache-bytes 128
     'factors '(bounded-retention tokio rayon cache)))
-  (def rules (path-expand "modules/resource-evidence/func.ss" root))
+  (def rules (path-expand "library/drivers/evidence/func.ss" root))
   (def queries '()) (def exchanges '()) (def records '()) (def events '())
   (def session #f) (def trajectory #f) (def scopes #f) (def current-profile #f)
   (def current-usage #f) (def frozen #f) (def late-proof #f)
@@ -201,15 +201,15 @@
         "library/concurrency/resource-control/backpressure-memory/abstract/types.ss"
         "library/concurrency/resource-control/backpressure-memory/abstract/interface.ss"
         "library/concurrency/resource-control/backpressure-memory/abstract/config.ss"
-              "profiles/gateway.ss" "library/concurrency/resource-control/backpressure-memory/rust/objects.ss"
-              "library/concurrency/resource-control/backpressure-memory/rust/types.ss" "library/concurrency/resource-control/backpressure-memory/rust/interface.ss"
-              "library/concurrency/resource-control/backpressure-memory/rust/config.ss" "modules/resource-evidence/func.ss"
-              "modules/resource-evidence/types.ss" "modules/resource-evidence/interface.ss"
-              "modules/resource-evidence/objects.ss" "modules/resource-evidence/config.ss"
+              "profiles/gateway.ss" "library/drivers/rust-resources/objects.ss"
+              "library/drivers/rust-resources/types.ss" "library/drivers/rust-resources/interface.ss"
+              "library/drivers/rust-resources/config.ss" "library/drivers/evidence/func.ss"
+              "library/drivers/evidence/types.ss" "library/drivers/evidence/interface.ss"
+              "library/drivers/evidence/objects.ss" "library/drivers/evidence/config.ss"
               "scenarios/gateway-review/interface.ss" "scenarios/gateway-review/types.ss"
               "scenarios/gateway-review/objects.ss" "scenarios/gateway-review/config.ss"
-              "scenarios/gateway-review/func.ss" "library/concurrency/resource-control/backpressure-memory/rust/methods.ss"
-              "library/concurrency/resource-control/backpressure-memory/rust/oracle.ss" "library/concurrency/resource-control/backpressure-memory/model.qnt"
+              "scenarios/gateway-review/func.ss" "library/drivers/rust-resources/methods.ss"
+              "library/drivers/rust-resources/oracle.ss" "library/concurrency/resource-control/backpressure-memory/model.qnt"
               "library/concurrency/resource-control/backpressure-memory/budget.lean")))
           ("rejections" '("changed-artifact" "plain-JSON-is-not-an-issuer"))
           ("methodEvidence" "real-Core-Ops-QNT-TLC-Lean-native-ASCENT")

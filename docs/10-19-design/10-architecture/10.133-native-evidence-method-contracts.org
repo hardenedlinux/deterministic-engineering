@@ -1,0 +1,169 @@
+#+TITLE: 10.133 Native Evidence Method Contracts
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* One existing owner, stronger publication
+:PROPERTIES:
+:CUSTOM_ID: evidence133-owner
+:STATUS: focused-runtime-accepted
+:END:
+
+This extends [[file:10.132-native-type-and-output-boundary-alignment.org][10.132]] within the existing Library vocabulary and
+ResourceEvidence Module. There is no new schema interpreter, dispatcher,
+evidence store or authorization mechanism. The Scenario remains a consumer of
+its selected Domain and Evidence Modules.
+
+The former Scope predicate checked only two procedure fields. It admitted no
+argument/result protocol and did not check policy. The Scope is now a named
+Yuanxu Contract over a sealed Record with three declared fields:
+=make-evidence=, =open-review= and =policy=. Extensions require an explicitly
+declared native schema; arbitrary extra fields are not new capabilities.
+
+* Shared Library rows descend into both consumers
+:PROPERTIES:
+:CUSTOM_ID: evidence133-rows
+:END:
+
+| Named Type | Proper list grammar | Consumers |
+|------------+---------------------+-----------|
+| =LibrarySymbolPair= | =(Symbol Symbol)= | Dependency edges and related mappings |
+| =LibrarySymbolTriple= | =(Symbol Symbol Symbol)= | Rule rows and related links |
+| =LibraryScopeBinding= | =(Symbol Symbol NonemptyString)= | Rust Context scopes and Evidence method inputs |
+
+#+NAME: evidence133-binding-type
+#+BEGIN_SRC scheme :eval never
+(define-type LibraryScopeBinding
+  (Pair Symbol
+    (Pair Symbol
+      (Pair LibraryNonemptyString (Exactly '())))))
+#+END_SRC
+
+Native Pair composition retains the existing wire representation and rejects
+missing, extra, improper or mistyped cells. The parameterized symbol-row
+predicate and the Rust-local scope-row predicate are removed. Tests check that
+valid rows retain their identity during normalization.
+
+A scope string remains only a basis reference here. Shape admission does not
+prove a hash algorithm, custody, currentness or permission. Existing capture
+and currentness owners retain those duties.
+
+* Native method and projection contracts
+:PROPERTIES:
+:CUSTOM_ID: evidence133-signatures
+:END:
+
+| Field | Native contract | Boundary |
+|-------+-----------------+----------|
+| =make-evidence= | Zero inputs; result satisfies =ResourceEvidenceModuleType= | Both the rule-module tag and native Program contract membership are required |
+| =open-review= | Entry projection, Profile projection, Symbol usage, nonempty snapshot, List of scope bindings; native Session result | Inputs are checked before the designated method body; results after the body returns |
+| =policy= | Sealed Record of exact values | =recorded-only=, =exact-required-inputs= and =(pass fail)= remain fixed |
+
+The Entry projection checks identity, rule rows and dependency rows. The
+Profile projection checks factors. Both use the existing ObjectContract with
+an explicit Object envelope for delegated fields. Other fields remain
+Library-owned: this is not full family/Profile admission.
+
+An output check cannot undo an effect already performed. The before-body
+counter test does not prove that arbitrary lazy POO getters are pure. Source
+admission, effect ordering and authorization owners remain in place.
+
+The shape contract does not add an independent policy for unknown factors,
+scope kinds or cross-usage rows. Existing ASCENT rules decide applicability,
+pending duties and opposing evidence. Open discovery is not replaced by a
+second procedural rule engine.
+
+* Concrete independent checks
+:PROPERTIES:
+:CUSTOM_ID: evidence133-gold
+:END:
+
+| Case | Input or transition | Gold and independent check |
+|------+---------------------+----------------------------|
+| EC01 | Actual selected Module; real Program construction; LocalProfile | Eight literal obligation/pending rows; no support; recorded-only policy |
+| EC02 | Malformed rule, non-Symbol factor/usage, empty snapshot, invalid scope rows, extra argument | Type refusal; zero designated method calls; one subsequent valid call performs native inference |
+| EC03 | Callable returns an invalid Program inside a rule-module or a non-Session | Invocation refuses the result; no pre-body or rollback claim |
+| EC04 | Changed result kind, removed failure outcome, undeclared permission field | Contract refusal; no fabricated authority |
+| EC05 | Real Session changes from =typed-before/source-A= to =typed-after/source-B= | New obligations bind the new usage; old result retains its rows; neither acquires support |
+| EC06 | Proper rows followed by missing, extra, improper and mistyped variants | Native Type checks; unchanged row identity survives; invalid rows refuse |
+| EC07 | Real Rust source and Cargo.lock copied to a temporary directory; actual tool binaries; source comment changes | Source basis/snapshot change; stale Context refuses; six other bases remain equal; old query stays frozen; refreshed capture adds no support/T-use |
+
+EC01's literal method/obligation pairs are not read back from the result or
+generated from the rule declaration. EC07 uses a controlled causal change and
+compares separately named bases. Basis equality is only a reuse candidate:
+an existing proof/measurement still needs its declared premise closure and
+current method attestation.
+
+* Native owner identity is part of the contract
+:PROPERTIES:
+:CUSTOM_ID: evidence133-cohort
+:END:
+
+The real capture check exposed an invalid assumption: a directly imported
+same-named Context Contract need not be the nominal contract selected inside a
+Module's SourceReader. Obtain =context-contract= from the Scenario's actual
+Domain and =current!= from that same selected method set. Do not repair a
+cohort mismatch with a global import or compatibility cast.
+
+Structural validation can normalize computed Profile fields. The owner-provided
+=current!= operation preserves the captured handle after checking its complete
+current basis. The test checks that identity separately from shape admission.
+
+The added source assertions extend the existing native Context test. Profile
+substitution and split-scope refusal controls remain. A second copy of the
+capture/mutation workflow is not retained.
+
+* Verification and developer use
+:PROPERTIES:
+:CUSTOM_ID: evidence133-verification
+:END:
+
+| Invocation | Result | Elapsed |
+|------------+--------+---------|
+| Foundation group | Six explicit modules, 18 cases, natural exit 0, no error markers | 5.256 s |
+| Live-query group | Seven explicit modules, 41 cases, natural exit 0, no error markers | 19.941 s |
+| Extended existing native Context case | Real files/tools, one case, natural exit 0, no error markers | 16.101 s |
+
+Groups load only their specified files, rather than executing everything and
+filtering output. Each process retains the 2 GiB heap / 180 second upper bound.
+Native build concurrency remains machine-derived.
+
+The local working tree still contained a fixed value of two; the existing PR
+already had a native SMP-derived declaration. The local entrypoint is reconciled
+with that existing =##core-count= implementation rather than adding a second
+capacity detector. Simply deleting the declaration is insufficient: the
+inspected SDK defaults Make to zero while its compiler defaults to CPU count.
+An outer guard/CI declaration is preserved. Through Just, the existing Aitia
+native diagnostic observes matching declaration/Make/compiler values, both at
+host capacity and with an explicit caller override. This adds no scheduler and
+does not override a guard's memory-aware capacity decision.
+
+The two new contract modules are wired into =just test=. The existing Context
+entrypoint uses actual tool paths supplied by the existing =test-file= recipe.
+
+#+BEGIN_SRC sh :eval never
+just test-file t/library-relation-types-test.ss
+just test-file t/resource-evidence-contract-test.ss
+just test-file t/native-context-test.ss
+#+END_SRC
+
+An LLM-based AI agent discovers Library rule/method requirements, selects native
+Modules and Profile, and calls the typed boundary. Type errors identify an
+input/result repair; pending/counter relations identify verification duties;
+stale Context errors identify a source cut to recapture. These are reasoning
+inputs, not a fixed implementation sequence.
+
+Quint and Lean obligations still descend from the existing Library. This slice
+does not rerun their proofs, compile the Rust crate, measure throughput, or
+qualify Linux cold builds, the unpublished ASCENT migration or Aitia CI.
+
+Sources:
+[[file:../../../types.ss][shared native vocabulary]],
+[[file:../../../modules/resource-evidence/types.ss][Evidence contracts]],
+[[file:../../../t/resource-evidence-contract-test.ss][actual Module and Session checks]],
+[[file:../../../t/library-relation-types-test.ss][native relation checks]],
+[[file:../../../t/native-context-test.ss][real source-cut checks]].
+
+[[file:../../90-99-views/90-architecture-views/90.122-native-evidence-method-contracts.d2][Paired method, owner and reuse view]]
+
+[[file:10.134-owner-bound-scenario-admission.org][Owner-bound Scenario admission, stable functions and effective child receivers]]

@@ -1,0 +1,16 @@
+# org-target: docs/10-19-design/10-architecture/10.126-cold-native-dependency-budget.org::#cold126-scope
+# render-layout: elk; theme: 0; pad: 24
+direction: down
+inputs: "Fresh GERBIL_PATH / no project load path\nPinned source + installed SDK standard library"
+native: "Native gxpkg -> original POO build.ss -> SDK std/make\nAll default libraries / original assertions and options"
+measure: "Historical probe: incorrectly capped total tree at 2 GiB / 180 seconds\nTree physical footprint + separate per-PID RSS attribution"
+memory: "Observed pressure: retained build context + GSC + C compiler\nMultiple-host experiment reduces C holder\nLive ratio 95 reduces serial aggregate peak"
+time: "Serial live95 still times out\nNo duplicate module announcements in observed prefixes\nNo completed full dependency graph"
+reject: "Historical probes refused under mis-scoped budget\nSee 90.116 for qualified per-process-heap cold builds"
+next: "Complete first dependency, then full native closure\nIndependent consumer + original real-process/oracle assertions\nReport total elapsed and exact-head remote outcome"
+inputs -> native -> measure
+measure -> memory
+measure -> time
+memory -> reject
+time -> reject
+reject -> next: "required closure"

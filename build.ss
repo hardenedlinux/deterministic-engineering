@@ -16,7 +16,10 @@
 (def public-roots '("init.ss" "examples/gateway-evidence.ss" "profiles/resource-lifecycle.ss"
                     "examples/resource-lifecycle-evidence.ss" "projects/library-formation/init.ss"
                     "profiles/library-formation.ss" "examples/library-formation.ss"
-                    "projects/library-formation/test.ss"))
+                    "projects/library-formation/test.ss"
+                    "scenarios/resource-lifecycle/review/interface.ss"
+                    "scenarios/resource-lifecycle/review/archive.ss"
+                    "examples/backpressure-reassessment-evidence.ss"))
 (def retained-spec
   (package-library-spec (path-directory (this-source-file)) 'deterministic-engineering public-roots))
 (def modules-spec (.get deterministic-engineering.init.exports std-make-spec))

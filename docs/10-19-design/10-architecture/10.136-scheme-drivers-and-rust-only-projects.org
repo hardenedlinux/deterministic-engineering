@@ -1,0 +1,154 @@
+#+TITLE: 10.136 Scheme Drivers and Rust-Only Engineering Projects
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+#+BEGIN_QUOTE
+[[file:10.137-domain-owned-catalogs-and-native-drivers.org][10.137]] further separates authored model contracts, policies and SysML from
+the method driver. This document retains the earlier Rust-only migration record.
+#+END_QUOTE
+
+* Correct the ownership boundary
+:PROPERTIES:
+:CUSTOM_ID: rust136-decision
+:STATUS: focused-native-accepted
+:END:
+
+The language directory names the implementation being engineered. It does not
+name the language of every tool capable of describing that implementation.
+The placement of Scheme below Rust in 10.135 confused these responsibilities.
+This decision supersedes that placement without introducing another framework.
+
+| Owner | Contains | Does not own |
+|-------+----------+--------------|
+| =library/concurrency/resource-control/backpressure-memory/= | Generic design, Quint model and Lean arithmetic proof | A Rust implementation or runtime authorization |
+| =library/drivers/rust-resources/= | Scheme POO specialization, method bindings, independent semantic oracle, source capture and evidence registration; owned SysML interpretation | Rust runtime code or a copied generic parent |
+| =languages-engineering/rust/concurrency/resource-control/backpressure-memory/= | Cargo.toml, Cargo.lock and src/main.rs | Scheme Modules, POO declaration files or a second evidence runtime |
+| =profiles/= | Workload and verification selection | Executable ownership |
+| =scenarios/= | Composition of selected Library capabilities and input assets | A duplicate driver implementation |
+
+The Rust crate is now rooted directly at its mechanism directory. The redundant
+native subdirectory is removed. Scheme and SysML sources move out of the Rust
+project, while the generic QNT and Lean assets remain in their existing Library.
+There is no forwarding namespace or import compatibility layer.
+
+* Scheme selects the driver; the driver captures Rust
+:PROPERTIES:
+:CUSTOM_ID: rust136-selection
+:END:
+
+#+NAME: rust136-root-selection
+#+BEGIN_SRC scheme :eval never
+(yuanxu!
+  :load-modules "./library" mode: explicit rename: Library
+  (backpressure-memory @ "./library/concurrency/resource-control/backpressure-memory/abstract")
+  (evidence @ "./library/drivers/evidence")
+  (rust-resources @ "./library/drivers/rust-resources")
+  :load-modules "./scenarios" mode: explicit rename: Scenarios
+  (gateway-review)
+  (resource-lifecycle))
+#+END_SRC
+
+There is no Languages Scheme namespace. The language project is not a native
+Module source root. A caller selects Library.rust-resources and supplies the
+actual Rust crate location to its existing capture/method interface. The native
+Module still requires the admitted generic backpressure owner and retains that
+original parent object through specialization.
+
+A concrete usage follows this direction:
+
+1. Select the generic Library model and the Scheme Rust driver through Yuanxu.
+2. Select the independent Profile and application Scenario.
+3. Capture Rust source, Cargo.toml, Cargo.lock, toolchain and workload inputs.
+4. Execute the selected native, Quint or Lean method through its existing owner.
+5. Compare observations with the independent oracle and declared correspondence.
+6. Register issued results through ASCENT; query applicability for the exact use.
+
+Selecting a driver does not execute Rust, establish its safety, validate an SDK
+operation or authorize implementation effects. Scheme source identity and Rust
+input identity remain separate members of the method's actual dependency closure.
+
+* Remove duplicate assembly and the reversed role dependency
+:PROPERTIES:
+:CUSTOM_ID: rust136-single-assembly
+:END:
+
+The audit exposed two eager assemblies of the same method definitions: a
+DefaultMethods value in func.ss and bound-methods in interface.ss. The former
+also imported objects.ss from func.ss, reversing the native role direction.
+Its former relative import spelling had not triggered the installed role check.
+
+The default assembly and its unused public ResourceMethods export are removed.
+The existing interface owns the selected method bundle. func.ss exports the
+binding function and consumes the definitions supplied by its caller. Tests
+that formerly imported the duplicate bundle now use the admitted Module methods.
+No role check is disabled, and changing an import spelling is not used to evade it.
+
+Types and method implementations remain reusable inputs to binding. The native
+Module interface owns composition, while method invocation retains source
+currentness checks, process effects and result issuance.
+
+* Evidence and reuse boundaries
+:PROPERTIES:
+:CUSTOM_ID: rust136-evidence
+:END:
+
+| Change | Required treatment |
+|--------+--------------------|
+| Scheme driver relocation | Recapture interpretation source and native import/build closure; historical method receipts keep their original references |
+| Rust crate relocation | Capture the new source and Cargo inputs; identical Rust bytes alone do not relabel an old use |
+| Generic model unchanged | Its conditional mathematics may remain reusable under the same premises; current method admission still checks the actual selected closure |
+| Driver method bundle selected differently | Bind and validate the supplied definitions at the existing Module owner |
+| New counter or source mutation | Preserve historical results and frozen snapshots; query the current usage against its own inputs |
+
+An asset path crosses from the Scheme driver to the Rust project explicitly.
+That reference describes an input; it does not transfer ownership of the Rust
+files into the Scheme Module. The SysML asset remains with the driver that
+interprets it. Public OpenSysML SDK integration remains a separate pending gate;
+this layout change does not convert earlier CLI observations into SDK evidence.
+
+* Acceptance scope
+:PROPERTIES:
+:CUSTOM_ID: rust136-acceptance
+:END:
+
+Acceptance checks require native Module publication, original parent identity,
+no Scheme sources in the Rust project, actual source and Cargo input capture,
+checked method binding, real ASCENT obligation queries and frozen-result reuse
+boundaries. Package building and current native execution remain distinct checks.
+The independent Rust oracle must retain the M06 negative control.
+
+The paired view is [[file:../../90-99-views/90-architecture-views/90.125-scheme-drivers-and-rust-only-projects.d2][90.125]].
+The current layout is also summarized in [[file:../../../README.org::#engineering-ownership][README]].
+
+** Observed acceptance
+:PROPERTIES:
+:CUSTOM_ID: rust136-observed
+:END:
+
+| Gate | Observed result |
+|------+-----------------|
+| Rust ownership | Exactly Cargo.toml, Cargo.lock and src/main.rs; no Scheme source in the target project |
+| Native package | Existing just build completes after refreshing the migrated root closure; per-process 2 GiB heap and 180-second deadline unchanged |
+| Module and query regression | 10 modules, 55 passing cases covering original parent identity, method binding, selection, ASCENT queries and reuse boundaries |
+| Real Rust execution and registration | Six issued native results: M01--M05 support and M06 counter; actual exchange registration produces five support rows and one counter |
+| New usage reuse | Same captured bases retain five supports and the M06 counter; six witnesses remain; the original frozen application remains unchanged |
+| Real source capture | Existing native Context test passes with source mutation and forged-scope refusals |
+| Real Quint execution | Three method-boundary cases pass through the published Module, including invalidation on changed driver bytes and reuse after exact-byte restoration |
+| Documentation | Org lint reports no findings and D2 renders to SVG |
+
+The result-reference and claim operations come from the same published Module
+that issued the private native results. A separate direct import of the
+implementation creates another nominal owner and cannot consume those results.
+The test uses the original public capability rather than weakening result
+recognition or converting the issued result into an untrusted record.
+
+The first build exposed stale generated imports of moved files. The root
+package's generated namespace was archived and rebuilt; dependency artifacts,
+source, manifests and assertions were preserved. The role-order failure was
+resolved by removing duplicate assembly, not by hiding the dependency.
+
+These checks total 60 passing cases across 13 modules. They establish the
+focused local migration and native evidence chain. They do not establish a cold
+full-dependency build, full remote CI, a Lean proof rerun, OpenSysML SDK execution
+or performance qualification of the Rust implementation.

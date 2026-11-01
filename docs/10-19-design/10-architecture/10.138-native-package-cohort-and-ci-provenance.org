@@ -1,0 +1,133 @@
+#+TITLE: 10.138 Native Package Cohort and CI Provenance
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Three identities have different owners
+:PROPERTIES:
+:CUSTOM_ID: cohort138-origins
+:STATUS: root-metadata-accepted-aitia-ci-open
+:END:
+
+This follows the package refusal in [[file:10.137-domain-owned-catalogs-and-native-drivers.org::#audit137-acceptance][10.137]]. A dependency declaration, native
+registration and checkout are independent observations; none may stand in for
+the others or for a successful build.
+
+| Surface | Original value | Actual source |
+|---------+----------------+---------------|
+| Root gerbil.pkg | 2c418d5e6377077dded87d1c347f5ace53f712e8 | Previously accepted Aitia revision retained by the root declaration |
+| Native Aitia tag file | df2d1d98a6ee37685d20de5543aeabd3e4f9f4b8 | Previous SDK registration; the commit introduces Core-owned POO cold qualification |
+| Managed Aitia checkout | 954e0c4c3bf5f1f1516252c6a7940e806338e671 | Current PR #2 head; subsequent commits were made in the managed checkout without updating the root declaration/SDK registration |
+
+The current PR #2 head declares Parent ba6d5e151a12a96d9db931f70661d1c66e0bda9e
+and Core 1934955d2b1714581d0d0a83bad025dcd240765d. The root's accepted Aitia
+revision instead declares Parent 177ac1c448aa846345cde7a1538ab6f788548692 and
+Core e77698c35bc0e9a0a01458447fa61c720ee59290. Picking the newest checkout alone
+would therefore produce an inconsistent dependency cohort.
+
+* Native restoration and generated metadata
+:PROPERTIES:
+:CUSTOM_ID: cohort138-restoration
+:END:
+
+The PR #2 source was preserved in a separate review checkout before restoring
+the managed root dependency. The existing Aitia native dependency helper reads
+the root gerbil.pkg, invokes SDK pkg-update for that exact pin and calls SDK
+pkg-build for the untagged package identity. The SDK owns checkout/tag transitions,
+build dispatch and real manifest generation. No uninstall, tag-file edit,
+manifest rewrite or assertion removal was used.
+
+All three root Aitia surfaces now identify
+2c418d5e6377077dded87d1c347f5ace53f712e8. This restores the declared accepted
+baseline; it does not qualify the newer PR #2 head.
+
+A second independent failure appeared after that repair. Parser's full commit
+remained d981befb0c0bd6a84bc71366c77fddf26c29acdd, but Git's unambiguous display
+abbreviation changed from d981bef to d981befb. A prior manifest still contained
+the shorter spelling. The unchanged exact metadata assertion correctly refused it.
+
+The SDK reverse-dependency API identified Orgize, Parent and Aitia as dependents.
+Native package builds ran in dependency order: Parser, Orgize, Parent, Aitia,
+then the root. Each invocation retained its own 180-second deadline and per-process
+2 GiB heap. This regenerated transitive version rows through their real owners.
+Regenerating only the leaf manifest would have left stale rows in its consumers.
+
+The unchanged root metadata gate then reported:
+
+#+BEGIN_EXAMPLE
+NATIVE-COHORT-CLOSURE-OK registered=8 declared=8
+COMPILED-PACKAGE-LOAD-OK
+NATIVE-PACKAGE-METADATA-OK
+#+END_EXAMPLE
+
+These markers were accompanied by successful assertions, MODULE-OK, HARNESS-OK,
+OK and natural process completion. Generated manifests and native compiler
+products remain excluded from source publication.
+
+* Aitia PR #2 CI has a separate blocker
+:PROPERTIES:
+:CUSTOM_ID: cohort138-ci
+:END:
+
+The current exact-head run is [[https://github.com/tao3k/lambda-aitia/actions/runs/40882740628][40882740628]]. License, Lean and Quint jobs
+passed; the Scheme/integration/Python job stopped before those consumers ran.
+It timed out during an uncached native POO package install:
+
+| Observation | Value |
+|-------------+-------|
+| Core-declared POO | 56b474bbdc8e2a9a8c9975ef4178ba83d91a6226 |
+| Runner declared capacity | 4 |
+| SDK make and compiler capacity | Both 4, confirmed by the handoff assertion |
+| Package compile deadline | 180 seconds |
+| Process outcome | Exit 124 after 3:00.06 |
+| Last visible work | Generated-C compilation of contract, prototype, example and benchmark targets |
+
+This failure is not missing concurrency propagation. The environment and both
+native compiler owners agree. It is also not evidence that the later Scheme,
+integration or Python consumers passed.
+
+The newer POO PR has successful native CI, but it cannot be substituted by
+editing Aitia's cache or prefetched source: Core owns the POO dependency declaration
+and Parent owns its Core gitlink. A coherent upgrade must preserve those
+committed ownership relationships. Updating the existing Core and Parent review
+branches is a separate publication boundary; no new branch or PR is required.
+Until that owner chain is selected and validated, the root keeps its accepted
+cohort and the newer Aitia CI remains open.
+
+* Admission boundaries and remaining work
+:PROPERTIES:
+:CUSTOM_ID: cohort138-boundaries
+:END:
+
+- SDK-generated metadata consistency is now accepted for the restored root cohort.
+- Root complete-test execution is a separate observation from metadata consistency.
+- PR #2 formal checks are independent of native package cold admission.
+- An upstream POO green run does not establish its consumer's 180-second cold gate.
+- Full Aitia CI requires the unchanged Scheme, formal replay, integration, native
+  ABI, installed Python and complete lifecycle/fault checks to finish at one head.
+- Per-process heap remains 2 GiB; each native build invocation retains 180 seconds.
+  Worker capacity derives from the machine and preserves declared caller limits.
+- No failed stage may be relabeled as a cache hit or replaced by a fabricated
+  manifest. Old accepted receipts remain historical evidence, not current permission.
+
+See the paired [[file:../../90-99-views/90-architecture-views/90.127-native-package-cohort-and-ci-provenance.d2][90.127 provenance view]].
+
+* Completed local gates
+:PROPERTIES:
+:CUSTOM_ID: cohort138-local-gates
+:END:
+
+| Gate | Observed outcome |
+|------+------------------|
+| Root native package build | Completed through the existing SDK entrypoint |
+| Root complete existing test entrypoint | just test completed; 42 cases across 20 bounded test invocations; no error markers |
+| Root metadata and consumer products | All eight registered/declared packages agree; native compiled consumer imports pass |
+| Aitia PR #2 license checker | Passed, including 18 Python checker tests |
+| Aitia PR #2 Lean libraries | Both libraries build, 10 Lake jobs; axiom audit contains no sorryAx |
+| Aitia PR #2 Quint contracts | Four lanes completed, including 23 state-model checks and two fairness controls |
+| Remote PR #2 native/integration/Python CI | Still refused by the old Core-owned POO cold gate; not counted as passed |
+
+The first local attempt ran Quint lanes concurrently and collided on their
+shared Apalache endpoint. The affected lanes were rerun sequentially; the failed
+attempt is not counted as accepted evidence. No model, oracle or negative control
+was changed. Formal-job success does not replace the remaining native gate.

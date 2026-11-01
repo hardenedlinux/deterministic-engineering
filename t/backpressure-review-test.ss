@@ -1,10 +1,10 @@
 ;;; -*- Gerbil -*-
 (import (only-in :std/os/pid getpid) (only-in :gerbil/runtime/loader list-modules) :std/test :std/encoding/json
         (only-in :std/misc/ports read-all-as-u8vector) :clan/poo/object
-        (only-in :deterministic-engineering/library/concurrency/resource-control/backpressure-memory/rust/oracle resource-native-oracle)
+        (only-in :deterministic-engineering/library/drivers/rust-resources/oracle resource-native-oracle)
         :yuanxu/contribution/verification
-        :poo-flow/lambda-aitia/modules/sdlc/standards/nasa-review
-        :poo-flow/lambda-aitia/modules/sdlc/standards/nasa-lifecycle
+        :agentic-ai-lab/lambda-aitia/modules/sdlc/standards/nasa-review
+        :agentic-ai-lab/lambda-aitia/modules/sdlc/standards/nasa-lifecycle
         :deterministic-engineering/scenarios/resource-lifecycle/review/profile
         :deterministic-engineering/scenarios/resource-lifecycle/review/func)
 (export backpressure-review-applicability-test backpressure-review-reuse-test backpressure-review-counter-test backpressure-review-corruption-test)

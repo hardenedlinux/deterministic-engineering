@@ -5,13 +5,76 @@
 #+STARTUP: overview
 #+FILETAGS: :architecture:design:
 
+* Engineering ownership and native drivers
+:PROPERTIES:
+:CUSTOM_ID: engineering-ownership
+:END:
+
+The repository is organized by engineering responsibility. Modules are the
+native loading/composition mechanism, not a top-level category or directory.
+The authoritative layout is:
+
+#+BEGIN_EXAMPLE
+library/
+  concurrency/                  Shared design declarations and generic obligations
+    resource-control/backpressure-memory/tokio-rayon/
+                                Native specialization Module, model contracts and SysML
+  project-organization/         Engineering organization models
+  drivers/
+    evidence/                   Scheme driver over native ASCENT evidence
+    project-formation/          Scheme organization/acquisition driver and schemas
+    rust-resources/             Scheme method bindings, execution and evidence driver
+languages-engineering/
+  rust/concurrency/resource-control/backpressure-memory/
+    Cargo.toml / Cargo.lock     Rust crate metadata and dependency lock
+    src/                        Rust source only
+  go/                           Go engineering scope; implementation not yet admitted
+profiles/                       Independent workload and design selections
+scenarios/                      Application composition, including the gateway example
+projects/                       Actual SDLC consumers
+#+END_EXAMPLE
+
+Library Scheme code maintains framework/design drivers and reusable engineering
+knowledge. Authored Rust specialization belongs to the concurrency Library;
+its method driver selects that admitted Module and invokes the actual tools.
+=languages-engineering/<language>/= contains the target-language engineering
+project. Rust source and Cargo inputs do not become Scheme Modules.
+The implementation language of a tool does not determine the language it models.
+
+=init.ss= exposes Scheme-owned =Library= and =Scenarios= through explicit native
+paths. The Rust driver is selected from Library; the Rust crate is an input asset.
+The former local =modules/= directory and =Modules= namespace are removed;
+there are no forwarding files or compatibility aliases.
+
+Structured wire/data contracts use Yuanxu's existing JSON Schema compiler and
+its native Type/Contract diagnostics. POO still owns inheritance, callable
+signatures and nominal owner handles; JSON Schema does not encode those handles.
+The repository-input Schema now drives acquisition shape and bound checks.
+Filesystem custody, traversal and currentness remain with the native source owner.
+
+OpenSysML is a modeling driver reached through its public SDK/API capabilities.
+Its Go API supports in-process parsing/diagnostics/symbols/evaluation/instantiation;
+verification, edits and Query require a surface that actually advertises them.
+No local SysML parser, text-verdict decoder or replacement model runtime is added.
+The current SDK study is not an executed SDK integration result.
+
+Historical documents preserve their original source/evidence paths. The new
+ownership map supersedes those paths for current development; moving source
+files requires fresh capture, never relabeling old evidence.
+See [[file:docs/10-19-design/10-architecture/10.137-domain-owned-catalogs-and-native-drivers.org][10.137]] and its paired D2 view for the audited model/driver boundary.
+
 * Package and development entrypoints
 
-The only direct dependency is =agentic-ai-lab=, declared in [[file:gerbil.pkg][gerbil.pkg]],
-aligned to [[https://github.com/tao3k/agentic-ai-lab/pull/34][upstream PR 34]] at the revision declared in =gerbil.pkg= (qualification status in 10.107).
-Its package metadata owns the POO, ASCENT and transitive Core revisions; this
-Library does not override those revisions or carry upstream patches. Gerbil owns
-dependency installation, package environment and build dispatch.
+[[file:docs/10-19-design/10-architecture/10.138-native-package-cohort-and-ci-provenance.org][10.138]] records SDK-owned dependency restoration, transitive manifest refresh,
+accepted root metadata/tests and the separate open Aitia cold-build CI gate.
+[[file:docs/10-19-design/10-architecture/10.139-native-cohort-source-acquisition.org][10.139]] follows the grouped owner upgrade and native source-acquisition boundary.
+
+
+The root [[file:gerbil.pkg][gerbil.pkg]] directly selects Agentic AI Lab and Yuanxu. The product
+owns its Parser, Orgize and ASCENT pins; their declared closure selects the same
+Yuanxu revision, which owns its POO dependency. Gerbil owns checkout/tag updates,
+installation, manifest generation, package environments and build dispatch.
+[[file:docs/10-19-design/10-architecture/10.121-native-dependency-cohort-and-expression-alignment.org][10.121]] records the current cohort, native entrypoints and qualification limits.
 
 #+begin_src sh
 just deps
@@ -20,8 +83,12 @@ just test
 just test-project-formation
 #+end_src
 
+For an installed checkout, =just deps-update= invokes the product's existing
+native package update entry. =just build-dependency PACKAGE= rebuilds one native
+package with the same compiler environment and budget.
+
 The [[file:Justfile][Justfile]] supplies bounded commands and the upstream Homebrew/Darwin
-compiler invocation policy. The 180-second deadline belongs to each package build;
+compiler invocation policy. Build/update calls retain the 180-second deadline;
 ordinary test invocations retain 120 seconds. Native installation spans multiple
 package builds and SDK metadata work. Bounded package entries require the existing
 host tools =env -S= and GNU =timeout=. Native package resolution is unchanged. The sole package build
@@ -31,7 +98,7 @@ The Codex transport belongs to [[file:scenarios/project-formation/codex-source.p
 source mount, patch application or alternate load-path configuration. Test evidence
 paths are explicit inputs; historical local results are never default inputs.
 Historical qualification against patched sources does not qualify the inherited
-unpatched package closure. See [[file:docs/10-19-design/10-architecture/10.107-implementation-progress-and-execution-gates.org::#implementation107-package-deadlines][current alignment and qualification limits]].
+unpatched package closure. See [[file:docs/10-19-design/10-architecture/10.107-implementation-progress-and-execution-gates.org::#implementation107-package-deadlines][the historical execution plan]] and [[file:docs/10-19-design/10-architecture/10.121-native-dependency-cohort-and-expression-alignment.org][current native cohort admission]].
 
 * Purpose
 :PROPERTIES:
@@ -51,6 +118,13 @@ for design revision. This Library supplies domain designs and evaluation contrac
 
 The repository architecture starts at [[file:project.sysml][project.sysml]], with the explicit
 [[file:docs/10-19-design/10-architecture/10.78-case-organization.sysml][DE-CASE-01 companion model]].
+The companion model's =actual::gateway= is an application-example fixture Scenario,
+not another Project or a production gateway. A gateway normally belongs to a
+consuming system as a Component; Features can cross component boundaries.
+[[file:docs/10-19-design/10-architecture/10.119-project-component-feature-and-example-boundaries.org][10.119]] makes those scope and classification rules explicit.
+[[file:docs/10-19-design/10-architecture/10.118-domain-property-testing-and-evidence-trajectories.org][10.118]] proposes domain PBT methods for backpressure and broadcast through the
+existing Library/POO/ASCENT owners, with no implementation claim.
+
 [[file:docs/10-19-design/10-architecture/10.79-current-library-project-formation.org][10.79]] walks this repository
 from confirmed Library intent through LLM candidates to the SysML/Org layout.
 [[file:docs/10-19-design/10-architecture/10.80-declarative-project-formation.org][10.80]] places the first reasoning slice in declared Library / Profile / Module /
@@ -292,12 +366,14 @@ derivation, actual QNT/TLC and Lean execution, native ASCENT exchange registrati
 and scoped reuse across capacity, cache and source changes.
 [[file:docs/10-19-design/10-architecture/10.12-gateway-library-registration-and-runtime-dependencies.org][10.12]] retains the finite rule and runtime-dependency design.
 
-- ~library/concurrency/resource-control/backpressure-memory/rust/~ publishes resource knowledge, Contracts, shared method observation and the independent oracle.
-- ~modules/resource-evidence/~ runs that entry's finite obligation/applicability rules through ASCENT.
+- ~library/concurrency/resource-control/backpressure-memory/tokio-rayon/~ owns specialization, model Contracts, correspondence and review policies.
+- ~library/drivers/rust-resources/~ owns method binding, execution, observation and the independent oracle.
+- ~languages-engineering/rust/concurrency/resource-control/backpressure-memory/~ contains the Rust crate and its Cargo.lock.
+- ~library/drivers/evidence/~ runs that entry's finite obligation/applicability rules through ASCENT.
 - ~profiles/gateway.ss~ defines independent POO C1/C2/cache/retry application values.
 - ~scenarios/resource-lifecycle/~ binds the minimal native mechanism; ~scenarios/gateway-review/~ independently binds the gateway application.
 - ~t/*-test.ss~ checks real registration/query and native package compatibility.
-- ~models/~ and ~proofs/~ currently contain the bounded ownership model and conditional arithmetic lemma; these are legacy tool directories with the domain-owned migration specified in 10.17.
+- ~library/concurrency/resource-control/backpressure-memory/~ owns the bounded Quint model and conditional Lean arithmetic lemma.
 
 The real local replay uses Core Ops and a trusted in-process observer; its
 content hashes do not provide remote producer authentication.

@@ -1,5 +1,5 @@
 ;; Algorithm probe: does not acquire or qualify the declared Project Scope.
-(import "../modules/project-formation/func.ss"
+(import "../library/drivers/project-formation/func.ss"
         "../scenarios/project-formation/func.ss"
         "../library/project-organization/config.ss"
         "../profiles/library-formation.ss"

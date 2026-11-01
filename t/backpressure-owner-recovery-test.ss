@@ -2,7 +2,7 @@
 (import (only-in :gerbil/runtime/loader list-modules) :std/test :std/encoding/json :std/list/list :clan/poo/object (only-in :std/os/pid getpid) (only-in :std/os/signal kill SIGKILL)
         (only-in :std/crypto/digest sha256) (only-in :std/encoding/hex hex-encode)
         :yuanxu/contribution/verification
-        :poo-flow/lambda-aitia/modules/sdlc/review-authority
+        :agentic-ai-lab/lambda-aitia/modules/sdlc/review-authority
         :deterministic-engineering/scenarios/resource-lifecycle/review/interface
         :deterministic-engineering/scenarios/resource-lifecycle/review/archive)
 (export backpressure-owner-recovery-test)

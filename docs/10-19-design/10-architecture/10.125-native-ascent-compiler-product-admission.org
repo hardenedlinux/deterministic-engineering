@@ -1,0 +1,374 @@
+#+TITLE: 10.125 Native ASCENT Compiler Product Admission
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Source, compiler and admission ownership
+:PROPERTIES:
+:CUSTOM_ID: native125-scope
+:END:
+
+This extends [[file:10.124-aitia-review-history-and-recovery-projections.org][10.124]] through the existing
+[[https://github.com/tao3k/lambda-aitia/pull/2][Aitia PR #2]] and [[https://github.com/hardenedlinux/deterministic-engineering/pull/1][engineering PR #1]].
+Aitia remains a native Scheme package. Its =gerbil.pkg= owns its direct
+requirements; native gxpkg owns source acquisition, tags and manifests.
+ASCENT owns its build declaration and compiler options; Yuanxu Core owns
+product completeness; the installed SDK owns compilation and loading.
+No interface adapter, hand-written manifest or replacement rule engine is added.
+
+#+CAPTION: A native build declaration, rather than directory existence, determines the evidence to admit.
+[[file:../../90-99-views/90-architecture-views/90.114-native-ascent-compiler-product-admission.svg]]
+[[file:../../90-99-views/90-architecture-views/90.114-native-ascent-compiler-product-admission.d2][Editable D2 source]].
+
+* Observed failure and causal chain
+:PROPERTIES:
+:CUSTOM_ID: native125-failure
+:END:
+
+The failed [[https://github.com/tao3k/lambda-aitia/actions/runs/40569947850/job/122421179584][Linux Scheme job]] used Aitia revision =402f968=.
+Its package cache was a miss. The native dependency installer reached its
+600-second guard at 602.044 seconds, with a timeout receipt and exit code 71.
+Its directory-existence fallback nevertheless returned success, and the
+workflow saved the incomplete installation. The recorded peak process-tree
+PSS was 5,066,422,272 bytes; that historical run is not evidence of the
+requested 2 GiB / 180-second admission.
+
+ASCENT compilation began close to that deadline. The consumer subsequently
+loaded =gerbil-ascent/table/eqrel.ssi=, whose macro phase requested
+=gerbil-ascent/table/eqrel~1=. The loader selected generated Gambit Scheme
+instead of a compiled macro-phase object. Gerbil then rejected its
+=(declare ...)= form. An SSI file or a package directory alone does not
+establish a loadable module family. This observation does not establish an
+incompatible authored ASCENT relation or require changing its semantics.
+
+#+NAME: native125-toolchain-cohort
+| Owner | Selected input | Admission consequence |
+|-------+----------------+-----------------------|
+| Agentic AI Lab | Native pin 177ac1c448aa846345cde7a1538ab6f788548692 | Parent source and Bazel module graph remain explicit |
+| Gerbil source | 1cfb032c7a1612637da6205f5f8a15683eba3ba0 | A matching language revision does not make different compiler products interchangeable |
+| Linux SDK | Portable release patch9599b09b82f8, archive SHA256 143c691fee5af4f9f631fd339f69a66f562e42e0bfc1d4ee2cda5fa8d35c35ee | Linux outputs stay with that pinned release and runner platform |
+| Local SDK | Homebrew release patch618d76f9eb72 | Local product checks are separate from remote Linux admission |
+| gerbil-bazel provider | 0378dd75dd49e8a87f2249553e844b0b8ce8b66b | Its directory-only timeout fallback cannot issue successful dependency completion |
+| Yuanxu | e77698c35bc0e9a0a01458447fa61c720ee59290 | Use existing require-build-products! and repair-build-products! |
+| ASCENT | 0d1f89ec991f90b265bb48c66875019844684fbc | Read its actual native build spec, including compiler options |
+| Aitia ASP requirement | 9ae9bc377cbab4b84de52b512a2c03375a36d6c9 | Resolve from Aitia gerbil.pkg, independently of the parent's old development-only Bazel projection |
+
+These are audit observations, not a second dependency manifest. Package
+revisions continue to be managed by their native owners.
+
+* Completion, repair and cache reuse
+:PROPERTIES:
+:CUSTOM_ID: native125-admission
+:END:
+
+#+NAME: native125-state-transitions
+| Input | Native action | Required result | Refusal or pending condition |
+|-------+---------------+-----------------+------------------------------|
+| No matching cache | Native install with 180-second guard; read its actual resource receipt | completed with exitCode 0 | Timeout or missing receipt fails; directory existence cannot override it |
+| Matching legacy cache | Treat it as unadmitted build input | Continue only after native completion checks | Restored files carry no successful test verdict |
+| ASCENT source package | Request build.ss spec under the selected SDK | The actual gxc declarations define library identities | Empty or malformed spec fails |
+| Incomplete selected module family | Core invalidates only that unit's owned static marker | Native std/make consumes every original gxc declaration and its options | Missing source, failed compilation or timeout remains failure |
+| Completed repair | Core require-build-products! over every declared library unit | All 134 selected library units complete locally | Reappearance of SSI without its phase object still fails |
+| Aitia build dependency | Read ASP's pin from Aitia gerbil.pkg; use SDK pkg-update and pkg-build | Original native build entry and real generated manifest | Parent-only installation is insufficient; editor indexing is a separate demand |
+| Cache publication | Save after completion checks and real negative controls | Package artifacts may be reused with the same pinned SDK inputs | A cache hit is never release permission or a test result |
+
+Executable-only declarations are excluded from the library-object contract.
+Requiring =interface/entry.o1= for a static executable would be a false
+rejection. The native declaration supplies that distinction; filesystem
+inference and parsing generated SSI are unnecessary.
+
+The first repair run at =567bb2f= correctly refused to proceed after its
+180-second deadline. Its full native package invocation had advanced to
+=libascent= static executable compilation/linking. The revised library repair
+uses the same native spec's complete gxc subset through SDK std/make, rather
+than constructing an executable that is outside Aitia's library demand.
+It preserves all 134 library declarations and their compiler options.
+It issues no complete ASCENT package or publication receipt. Ordinary ASCENT
+source-change invalidation and tool delivery retain their upstream build
+owner; this operation repairs interrupted products of the pinned library.
+
+At =7a9b271=, the remote ASCENT library completion stage passed. The next
+failure occurred after ASP compilation: =gxpkg install= invoked the global
+editor =gxtags= index over all acquired repositories, and that index exhausted
+the 2 GiB heap. Aitia CI does not consume editor TAGS. The revised entry uses
+the SDK's already public =pkg-update= and =pkg-build= operations with the same
+manifest-owned ASP pin. Native package build/metadata generation remains;
+no package is removed and no manifest is written by CI glue. The local actual
+API invocation reported =AITIA-NATIVE-ASP-BUILD-OK=.
+
+Native ASCENT product checks and the real-product negative controls execute
+before the other dependency builds. The legacy v2 input cache captured that
+checked ASCENT stage. The current v3 cache additionally requires the native
+Core/ASP, demanded parent and published testing-support builds to pass before
+publication. Restored products remain unadmitted until their own native
+checks/builds succeed. A cache does not carry a successful test verdict.
+
+The =d233672= run passed ASCENT and the native ASP build, then reached the
+180-second parent library deadline. Its full product build was still compiling
+sandbox and durable-memory libraries. The consumer entry now derives demand
+from the existing Aitia production/integration spec functions and
+=lambda-aitia-selected-test-files=, the execution discovery owner. Core's
+=for-each-build-module= walks those actual imports. The parent's own
+=agentic-ai-lab-build-spec= retains its original native/FFI options. All
+existing Aitia CI test commands and assertions remain. Full parent product
+qualification remains owned by the parent repository.
+
+Local discovery yielded 116 entries, including all 33 selected test files,
+and 109 parent library units; native compilation and Core product admission
+passed. These counts are observations, not a fixed allowlist. New Aitia
+imports and tests produce a fresh demand on the next invocation. Explicit
+native testing support remains a separate existing CI step.
+
+The SDK must still generate the parent's real version/dependency manifests.
+The pinned v0.19 =:gerbil/tools/gxpkg= implementation has =pkg-manifest!= but
+does not export a metadata-only public operation. The consumer entry binds
+that actual SDK SPI through its native namespace; it does not implement the
+manifest schema, copy an SSI or mark the parent package fully built. The
+local capability probe found the real procedure, and its metadata plus the
+109-unit build passed. This is an explicit pinned-SDK assumption: removal or
+an incompatible change fails admission, with no fabricated fallback. A
+stable public metadata-only SDK API remains an upstream interface improvement,
+not a claimed capability of this installed SDK.
+
+Importable build declarations now explicitly bind =this-source-file= and
+export their existing spec functions. The source-collection test now calls
+=make-yuanxu-contribution-module-source= and compares the exact five absolute
+interface paths, all module keys and the original owner. The same assertions
+passed under the native API; no basename-only or membership-only substitute
+was introduced.
+
+The next remote failure was an exact NASA source-lock assertion, not another
+compiler failure. Core's current digest domain is =yuanxu.sources-lock.v1=;
+the checked-in lock still contained its predecessor-domain digest. The
+existing =tools/update-sources-lock.ss= regenerated the lock through the
+native Sources Lock Feature. An independent Python byte oracle verified all
+six original HTML SHA256 values and the unchanged total of 197,510 bytes.
+The composite digest changes from =cfb963b8...= to =68113744...=. Old lock
+receipts retain their old domain binding; unchanged payload bytes do not
+turn them into current lock receipts.
+
+A real incremental rebuild exposed another missing dependency: updating
+=source.lock.ss= alone left the previously compiled =sources.ss= value in
+place. Both package specs now share one =build-inputs.ss= declaration using
+ASP's existing verified-generated-module POO constructor. It projects the
+included lock to native std/make =extra-inputs:= without dropping or replacing
+the library target. The actual build then recompiled sources and dependents;
+the unchanged NASA provider suite passed exact regeneration, real payload
+materialization and changed-payload refusal. Compiler SSI/object products
+remain outside Git; the versioned content lock remains a reviewed input.
+
+The native dependency entry builds both manifest-owned Yuanxu and ASP through
+SDK =pkg-update= / =pkg-build=. CI checks the built Yuanxu commit against the
+parent's actual Core gitlink. The full native Core package is still built;
+its existing source checkout can now be reused rather than compiling an
+identical fresh gitlink checkout again. The v3 cache is saved only after
+Core, ASP, demanded parent products and published testing support pass.
+Restoration still runs the native checks/builds and every runtime test.
+
+Binding inputs that claimed success with the predecessor composite digest
+were also stale. The Scheme and Python positive protocol inputs now name
+the actual regenerated lock. The Scheme binding suite passed both current
+acceptance and predecessor refusal; the old digest is retained as an explicit
+negative input in both languages. Refusal still reports the stale standard
+assessment and grants neither release authorization nor runtime execution.
+No runtime acceptance rule was loosened to accommodate the data migration.
+
+The =5218da8= remote run completed the native Core/ASP builds, demanded parent
+Library and published testing support, then saved the completed native-cohort
+cache successfully. Later protocol-input changes reuse those checked build
+inputs but still run all native checks/builds and existing runtime assertions.
+
+The native test tool returns its harness status. The CI invocation explicitly
+exits with that result, so a printed ERROR cannot be lost by a dispatcher
+that ignores the tool's returned integer. All assertions still execute.
+
+The cache key binds the parent manifest, Bazel graph and immutable SDK
+selection, platform, and Aitia's own manifest. Legacy restoration uses the
+same parent/toolchain input digest. This is a migration input, not an
+unconditional trust decision. Native package build receipts remain distinct
+from the semantic evidence registered in ASCENT.
+
+* Independent negative controls and generated source custody
+:PROPERTIES:
+:CUSTOM_ID: native125-controls
+:END:
+
+#+NAME: native125-controls
+| Case | Concrete input | Gold | Evidence boundary |
+|------+----------------+------+-------------------|
+| NP01 | Real local eqrel compiler family copied into a temporary library | Native Core accepts | Copies retain actual compiler bytes; no synthetic interface or object |
+| NP02 | Same family with only eqrel~1.o1 removed | Native Core rejects | SSI and generated Gambit source are insufficient |
+| NP03 | Core repair invalidation after NP02, before recompilation | Still rejects; source and SSI remain | Invalidation does not fabricate completion |
+| NP04 | Git's actual tracked source set | No SSI, ssxi.ss, numbered dynamic object or gxc-complete product | File presence in .gerbil/lib is separate from Git tracking |
+
+The tests live in Aitia's =t/native-products-test.ss= and run through the
+native Gerbil TestSuite runner. The local run emitted =MODULE-OK=,
+=HARNESS-OK= and =OK=. The separate declaration-based check admitted 134
+ASCENT library units. License checking and all 16 existing Python script
+regressions also passed locally. ASCENT's existing native eqrel view suite
+also completed all 3,840 injection checks and emitted =MODULE-OK=,
+=HARNESS-OK= and =OK= inside the unchanged 2 GiB / 180-second envelope.
+
+Neither Aitia nor the selected ASCENT source revision tracks SSI or dynamic
+compiler objects. ASCENT's =allocation-stack.scm= and
+=sdk-allocation-counter.scm= are authored test fixtures and remain source.
+Ignoring all Scheme =.scm= files would erase that distinction. The ignore
+policy covers compiler interfaces and numbered objects without excluding
+hand-written Scheme.
+
+* Exhaustive lifecycle replay uses native support
+:PROPERTIES:
+:CUSTOM_ID: native125-lifecycle
+:END:
+
+The existing native Aitia build includes =t/formal/lifecycle-fixture.ss= as
+a =gxc:= support target. The =*-test.ss= entry reads the independent Quint
+packet and invokes that support's =check-lifecycle-traces!= through the same
+native TestSuite. The driver calls the real verification, admission, decision,
+authorization, reservation and delivery APIs. It never imports model expected
+states into the Host or clones an issued Host between paths.
+
+The entire assertion body is identical after whitespace normalization: nine
+check forms, including the 21-field comparison and forbidden-effect loops.
+Its normalized audit SHA256 is
+=1af57b90b78f3aeec8cc2ba01c7bd2b251dd4cace64a266b2f2bff8fe3f4fdfe=.
+Configured local Cedar callbacks remain controls, not native Cedar proof.
+
+** One current resource contract
+:PROPERTIES:
+:CUSTOM_ID: native125-resource-version
+:END:
+
+Historical commit =402f968= used a 1 GiB / 60-second atomic recipe in its
+lowercase =justfile=. Commit =2f37655b= added a 65-second Python guard around
+that recipe. The current native entry had already moved to the user's
+2 GiB / 180-second contract, while Python retained 65 seconds and lifecycle
+still selected the default 512 MiB native child Profile. Those are different
+resource versions, not evidence that the implementation needs permission to
+exceed the current 180-second ceiling.
+
+The [[https://github.com/tao3k/lambda-aitia/actions/runs/40590733969][e66f1d3 run]] printed =MODULE-OK=, =HARNESS-OK= and =OK= for a heavy batch,
+but its full process exceeded the legacy 65-second guard. That run remains
+failed. Earlier 64/96-step partition experiments did not establish complete
+acceptance and are not the final resource policy. Fresh current-budget
+execution, rather than relabeling the old failure, is required for closure.
+
+The existing POO large-memory Profile now selects lifecycle replay as well as
+the complete catalog/source-graph cases. Its actual native runtime projection
+is =-:max-heap=2048M=. Ordinary retirement checks retain =512M=. Python now
+passes 180 seconds to its existing process runner, matching the atomic native
+entry. The original 160-step batch quantum and four workers remain; no trace
+is split or dropped. The CI job retains its original 90-minute deadline.
+This aligns stale resource versions with the authorized contract; it is not
+a claim of a measured speedup or permission to exceed that contract.
+
+#+NAME: native125-lifecycle-preserved
+| Obligation | Execution / independent control |
+|------------+---------------------------------|
+| Complete model graph | Quint 0.33.0 compiles the actual model; TLC must find 19,042 reachable states and all 16 named actions |
+| Complete native replay | All original covering traces execute from init through real API calls; expected states are compared, never installed |
+| State correspondence | All 21 projected fields are compared after every supplied row |
+| Failure controls | All seven typed negative traces remain refused, with unchanged state and no extra delivery |
+| Atomic packing | Original 160-step assertions remain; the additional 64-step packing/identity/order and oversized-trace assertions also remain |
+| Native resource projection | Real Scheme tests require 2048M for lifecycle and retain 512M for ordinary retirement |
+| Python propagation | The regression checks that replay passes the current 180-second deadline and preserves its exact serialized input |
+| Source applicability | The cut includes build/pins, Justfile, native test Profile, discovery/runner and resource-test inputs; changed bytes refuse the final receipt |
+
+The thirteen Python unit controls cover oracle/schema/packing/resource contracts;
+they are not substitutes for native execution. Local four-worker real batches
+under the current Profile completed in 12.280, 17.160, 24.381 and 25.249 seconds
+(15, 12, 8 and 8 traces respectively). A poisoned initial =deliveryCalls= gold
+was rejected with actual 0 / expectation 1 and process status 70. A printed
+=MODULE-OK= alone cannot override that failure.
+
+The retained real graph inventory contains 3,084 original traces, 64,206 rows
+and a longest trace of 32 rows. These are observations of this model cut,
+not a replacement oracle. The work quantum counts =init= because its full
+field comparison also executes: 3,084 initial rows plus 61,122 subsequent
+action rows. The 16-action coverage excludes =init=.
+
+The exact-head [[https://github.com/tao3k/lambda-aitia/actions/runs/40596204518][2c418d5 Linux run]] produced the complete
+=LIFECYCLE-SCHEME-OK= result and passed its subsequent integration/native gates.
+A compiled support module or passing prefix cannot issue that receipt.
+Failed inputs remain in the existing failure-evidence path; old failures and
+interrupted local prefixes are not current successful evidence.
+
+The =beb7e62= Linux run refused the new source cut before model execution:
+its entry used =Justfile= while Git records =justfile=. The local filesystem's
+case-insensitive lookup had masked the wrong spelling. The source cut now
+uses the canonical name directly, with no fallback path. A regression walks
+actual directory entries to require exact component spelling on every platform.
+Thirteen controls pass over the canonical authored source corpus. The local
+=beb7e62= replay was kept frozen while the two-file correction was published to
+the same PR; its completed result stays attributed to that snapshot.
+The current Linux snapshot has now completed its own independent execution.
+
+#+NAME: native125-local-complete-and-current-use
+| Snapshot / boundary | Recorded result | Reuse / authority boundary |
+|---------------------+-----------------+----------------------------|
+| Frozen local beb7e62 | states=19042/19042; actions=16/16; traces=3084/3084; faults=7/7; process status 0 | All 19 captured input hashes remained unchanged during execution; this receipt remains attached to beb7e62 |
+| Current 2c418d5 source comparison | Seventeen input contents unchanged; only controller and Python test contents differ; recipe reference corrected to justfile | Identical Scheme inputs support native product reuse, not relabeling the old complete result as a current Linux verdict |
+| Current installed 2c418d5 | Thirteen Python controls; genuine SDK package/consumer builds; registered=8/declared=8; compiled import and native metadata gates pass | Actual SDK update/build generated the current tags/manifests; no package uninstall or hand-written manifest |
+| Current Linux 2c418d5 | All four jobs successful; complete lifecycle, integration, 44 Python native cases and one installed-wheel qualification | All 19 reported Linux source hashes independently match current source; no old local verdict is substituted |
+
+** Local native ABI and SDK dependency relocation
+:PROPERTIES:
+:CUSTOM_ID: native125-local-abi
+:END:
+
+The existing =just check-native= entry built and exercised the C header and
+dynamic harnesses, actual Scheme binding suite, 44 Python native cases and
+one installed-wheel qualification. The first local link failed because this
+Homebrew SDK's =libgerbil.ldd= recorded the removed OpenSSL 3.6.4 keg. The
+actual installed release is 3.6.5 with ABI major 3. Using the compiler's normal
+=LIBRARY_PATH=/opt/homebrew/opt/openssl@3/lib= selected those real libraries;
+=otool -L= confirms =libcrypto.3.dylib= and =libssl.3.dylib=. No SDK file,
+manifest, library binary or project binding was fabricated or patched.
+
+This result belongs to the local SDK/source closure and dependency environment.
+It does not establish Linux native acceptance or a cold build speed. Changes
+to Python replay scheduling or its test Profile do not change the native C
+binding closure; native build currentness remains with its existing owner.
+
+* Resource and acceptance limits
+:PROPERTIES:
+:CUSTOM_ID: native125-acceptance
+:END:
+
+All newly introduced Scheme checks and repair invocations stay within a
+2 GiB Gambit heap ceiling and a 180-second process deadline. Aitia's ordinary and atomic Scheme
+recipes use the same explicit envelope; their Cases and assertions remain.
+Parent Core and library builds have independent 180-second deadlines.
+There is no automatic retry that relabels an interrupted build as complete.
+
+A Gambit heap ceiling is not an aggregate operating-system RSS measurement;
+compiler children and process-tree memory require separate recorded
+observations. A legacy cached partial build is not a cold-install result.
+If a cold source closure cannot complete inside its guard, it remains an
+open performance/build-partitioning obligation rather than a reason to raise
+the guard or admit incomplete products.
+
+The exact-head Linux run at =2c418d5e6377077dded87d1c347f5ace53f712e8=
+completed successfully: Scheme/integration/Python, Lean, Quint and license
+jobs all passed. The Scheme job ran from 22:37:17 to 23:45:56 UTC on
+2026-10-27: 68 minutes 39 seconds, below its unchanged 90-minute limit.
+Individual Scheme processes retain the current 2 GiB / 180-second envelope.
+This aggregate exhaustive run is not a 180-second whole-matrix claim or a
+throughput/performance acceptance result.
+
+#+NAME: native125-current-linux-acceptance
+| Evidence boundary | Exact-head result |
+|-------------------+-------------------|
+| Native compiler families | Original 134 ASCENT libraries admitted; missing macro-family and generated-product negative controls pass |
+| Actual parent demand | 118 entries, including 34 test files, and 109 parent library units; original parent compiler/FFI declarations retained |
+| Semantic and model mapping | Scheme semantic closure, retirement binding/execution and the smaller correspondence replay pass |
+| Exhaustive lifecycle | states=19042/19042; actions=16/16; traces=3084/3084; faults=7/7 |
+| Source applicability | Nineteen reported Linux source-input hashes independently match the current installed 2c418d5 source bytes |
+| Integration and native delivery | SDLC/GitOps integration, real C/dynamic harnesses and Scheme binding checks pass; 44 Python cases and one installed-wheel qualification pass |
+| Current local package metadata | Genuine SDK Aitia/consumer builds; registered=8/declared=8; COMPILED-PACKAGE-LOAD-OK, NATIVE-PACKAGE-METADATA-OK and native TestSuite success markers |
+
+Current source/pin/SDK evidence does not establish a complete cold dependency
+closure within its guard, all parent product qualification or native Cedar
+execution. Those remain separate owner obligations. The completed frozen
+local replay and current Linux replay retain distinct snapshot identities.
+
+No release authorization is created by repairing compiler output.

@@ -5,7 +5,7 @@
         (only-in :yuanxu/module-system/interface yuanxu-load-modules))
 (export library-selection-test)
 (import (only-in :clan/poo/mop validate)
-        (only-in "../library/concurrency/resource-control/backpressure-memory/rust/types.ss" RustResourcesScopeContract RustResourceModelContract))
+        (only-in "../library/drivers/rust-resources/types.ss" RustResourcesScopeContract RustResourceModelContract))
 (def repo-root (path-expand ".." (path-directory (this-source-file))))
 (def (write-source path text)
   (call-with-output-file (list path: path truncate: #t) (cut display text <>)))
@@ -16,11 +16,11 @@
       (call-with-temporary-directory "library-selection"
         (lambda (root)
           (write-source (path-expand "gerbil.pkg" root) "(package: library-selection-canary)")
-          (create-directory (path-expand "modules" root))
+          (create-directory (path-expand "library" root))
           (create-directory (path-expand "poison" root))
           (write-source (path-expand "poison/interface.ss" root) "(((invalid-canary")
           (def path (path-expand "init.ss" root))
-          (write-source path (string-append "(yuanxu! source: " (object->string (path-expand "modules" repo-root)) " mode: explicit (backpressure-memory @ "
+          (write-source path (string-append "(yuanxu! source: " (object->string (path-expand "library" repo-root)) " mode: explicit (backpressure-memory @ "
             (object->string parent) ") (poison @ \"./poison\" disable: #t))"))
           (def view (yuanxu-load-modules path))
           (check-equal? (.get view dependency-order) '(backpressure-memory))
@@ -40,11 +40,12 @@
      (call-with-temporary-directory "rust-library-selection"
       (lambda (root)
        (write-source (path-expand "gerbil.pkg" root) "(package: rust-library-selection-canary)")
-       (create-directory (path-expand "modules" root))
+       (create-directory (path-expand "library" root))
        (def path (path-expand "init.ss" root))
-       (write-source path (string-append "(yuanxu! source: " (object->string (path-expand "modules" repo-root)) " mode: explicit (backpressure-memory @ "
-         (object->string (path-expand "abstract" base)) ") (rust-resources @ "
-         (object->string (path-expand "rust" base)) "))"))
+       (write-source path (string-append "(yuanxu! source: " (object->string (path-expand "library" repo-root)) " mode: explicit (backpressure-memory @ "
+         (object->string (path-expand "abstract" base)) ") (backpressure-tokio-rayon @ "
+         (object->string (path-expand "tokio-rayon" base)) ") (rust-resources @ "
+         (object->string (path-expand "library/drivers/rust-resources" repo-root)) "))"))
        (def view (yuanxu-load-modules path))
        (def parent (.get view modules backpressure-memory))
        (def scope (.get view modules rust-resources))

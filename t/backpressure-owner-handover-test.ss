@@ -1,7 +1,7 @@
 ;;; -*- Gerbil -*-
 (import (only-in :gerbil/runtime/loader list-modules) :std/test :std/encoding/json :std/list/list :clan/poo/object (only-in :std/os/pid getpid)
         :yuanxu/contribution/verification
-        :poo-flow/lambda-aitia/modules/sdlc/review-authority
+        :agentic-ai-lab/lambda-aitia/modules/sdlc/review-authority
         :deterministic-engineering/scenarios/resource-lifecycle/review/interface)
 (export backpressure-owner-handover-test)
 (def (load path) (call-with-input-file path (cut read-json <> object-as-hash: #t)))

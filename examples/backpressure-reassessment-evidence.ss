@@ -3,21 +3,21 @@
 ;;; Actual source-changing native experiment, handed off through Core Ops.
 (import :clan/poo/object :std/encoding/json :std/misc/ports :std/list/list
         (only-in :yuanxu/ops/process-script ProcessScript.)
+        (only-in :std/string/misc string-subst)
         :deterministic-engineering/scenarios/resource-lifecycle/review/func
-        :deterministic-engineering/library/concurrency/resource-control/backpressure-memory/rust/reassessment-oracle)
+        :deterministic-engineering/library/drivers/rust-resources/reassessment-oracle)
 (export main)
 (def (read-text p) (call-with-input-file p read-all-as-string))
 (def (write-text p s) (call-with-output-file (list path: p truncate: #t) (cut display s <>)))
 (def (replace-once source from to)
-  (def index (string-contains source from))
-  (unless index (error "source mutation anchor absent" from))
-  (string-append (substring source 0 index) to (substring source (+ index (string-length from)) (string-length source))))
+  (unless (string-contains source from) (error "source mutation anchor absent" from))
+  (string-subst source from to count: 1))
 (def (load p) (call-with-input-file p (cut read-json <> object-as-hash: #t)))
 (def (main output cargo rustc)
   (when (file-exists? output) (error "fresh reassessment output required"))
   (create-directory output)
   (def root (current-directory))
-  (def original (path-expand "library/concurrency/resource-control/backpressure-memory/rust/native" root))
+  (def original (path-expand "languages-engineering/rust/concurrency/resource-control/backpressure-memory" root))
   (def text (read-text (path-expand "src/main.rs" original)))
   (def regression (replace-once (replace-once text
     "_permit: if name == \"M06\" { None } else { permit.take() }"
@@ -30,12 +30,15 @@
     "let caller_permit = if name == \"M06\" || name == \"M04\" { permit.take() } else { None };"
     "let caller_permit: Option<OwnedSemaphorePermit> = None;"))
   ;; The old accepted closure supplies dependency/tool inputs; it is not a new issuer.
+  ;; Establish the existing host-selected custody mapping before checking the
+  ;; historical producer closure; it never reissues the old review authority.
+  (audit-backpressure-content (getenv "BACKPRESSURE_ACCEPTANCE") 'worker-owned)
   (def accepted (load (getenv "BACKPRESSURE_ACCEPTANCE")))
   (def report (load (hash-ref accepted "report")))
   (def native (find (lambda (r) (equal? (hash-ref (hash-ref r "observation") "method") "native")) (hash-ref report "results")))
   (def dependencies (hash-ref (hash-ref native "observation") "inputs"))
   (def (pairs files) (map (lambda (p) (list p (review-file-digest p))) files))
-  (def (current! pairs) (for-each (lambda (p) (unless (equal? (review-file-digest (car p)) (cadr p)) (error "experiment source changed" (car p)))) pairs))
+  (def (current! pairs) (for-each (lambda (p) (unless (equal? (review-file-digest (review-reference-path (car p) (cadr p))) (cadr p)) (error "experiment source changed" (car p)))) pairs))
   (def runs '())
   (def (run label source-text size expected)
     (def out (path-expand label output)) (create-directory out)
@@ -46,7 +49,7 @@
     (def log (path-expand "cargo-run.log" out))
     (def before (append dependencies (pairs (list source (path-expand "Cargo.toml" crate) (path-expand "Cargo.lock" crate) cargo rustc
       (path-expand "examples/backpressure-reassessment-evidence.ss" root)
-      (path-expand "library/concurrency/resource-control/backpressure-memory/rust/reassessment-oracle.ss" root)))))
+      (path-expand "library/drivers/rust-resources/reassessment-oracle.ss" root)))))
     (current! before)
     (def argv (list cargo "--config" (string-append "build.rustc=\"" rustc "\"") "run" "--offline" "--locked"
       "--manifest-path" (path-expand "Cargo.toml" crate) "--target-dir" (path-expand "target" out) "--" raw (number->string size)))

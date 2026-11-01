@@ -1,7 +1,9 @@
 # Native package operations; every Scheme process is fenced before importing.
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 
-export GERBIL_BUILD_CORES := "4"
+# The native SDK derives concurrency from this machine; preserve caller limits.
+# max-heap is per Scheme process, not a whole-build memory/worker cap.
+export GERBIL_BUILD_CORES := env_var_or_default("GERBIL_BUILD_CORES", `gxi -:max-heap=2G -e '(display (##core-count))'`)
 # Native package scripts spawn Scheme children: carry the same heap fence to them.
 # Nested Just/SDK calls must retain the same compiler input identity.
 export GAMBOPT := if env_var_or_default("GAMBOPT", "") == "" { "max-heap=2G,debug=q" } else if env_var("GAMBOPT") =~ "(^|,)max-heap=2G,debug=q$" { env_var("GAMBOPT") } else { env_var("GAMBOPT") + ",max-heap=2G,debug=q" }
@@ -16,7 +18,17 @@ gerbil_darwin_env := if os() == "macos" { if gerbil_homebrew_runtime == "true" {
 # Native installation spans several package builds. Keep the original deadline
 # at each package entry; a serial dependency closure is not one package build.
 deps:
-    {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q deps --install
+    timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q deps --install
+
+
+# The product owns the v0.19 tagged-update adapter over public gxpkg APIs.
+# Run after initial installation; no local updater or manifest writer.
+deps-update:
+    timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi .gerbil/pkg/github.com/tao3k/agentic-ai-lab/packages/automation/native-dependencies.ss
+
+# Use the ordinary untagged native build with the same host/compiler envelope.
+build-dependency package:
+    timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxpkg build "{{ package }}"
 
 build:
     timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q build
@@ -41,9 +53,17 @@ test-file path pattern=".*":
 
 # Serial execution preserves bounded native test ownership.
 test:
+    just test-file t/engineering-ownership-test.ss
+    just test-file t/repository-input-schema-test.ss
+    just test-file t/library-relation-types-test.ss
+    just test-file t/resource-evidence-contract-test.ss
+    just test-file t/evidence-catalog-test.ss
+    just test-file t/resource-scenario-contract-test.ss
     just test-file t/library-owner-test.ss
     just test-file t/library-selection-test.ss
     just test-file t/native-context-test.ss
+    just test-file t/native-concurrency-test.ss
+    just test-file t/rust-project-native-test.ss
     just test-file t/module-design-test.ss
     just test-gateway
     just test-file t/dependency-compatibility-test.ss
@@ -226,6 +246,8 @@ test-backpressure-durable-intake:
     power_guard=()
     if command -v caffeinate >/dev/null 2>&1; then power_guard=(caffeinate -dimsu); fi
     project_root="$PWD"
+    # Preserve the SDK child's actual signal exit; gerbil env wraps it as 70.
+    export GERBIL_PATH="${GERBIL_PATH:-$project_root/.gerbil}"
     mkdir -p .data/test-logs .data/test-runs
     : "${BACKPRESSURE_ACCEPTANCE:?Provide the actual acceptance artifact}"
     : "${BACKPRESSURE_REASSESSMENT_RUNS:?Provide the actual reassessment runs artifact}"
@@ -240,7 +262,7 @@ test-backpressure-durable-intake:
       fi
       log="$(mktemp .data/test-logs/aitia-durable-intake-XXXXXX)"
       set +e
-      "${power_guard[@]}" timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxtest -:max-heap=2G,debug=q -v 5 "$test_module" 2>&1 | tee "$log"
+      "${power_guard[@]}" timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gxtest -:max-heap=2G,debug=q -v 5 "$test_module" 2>&1 | tee "$log"
       status=${PIPESTATUS[0]}
       set -e
       echo "PROCESS-EXIT $phase $status"
@@ -266,6 +288,8 @@ test-backpressure-prefix-repair:
     power_guard=()
     if command -v caffeinate >/dev/null 2>&1; then power_guard=(caffeinate -dimsu); fi
     project_root="$PWD"
+    # Preserve the SDK child's actual signal exit; gerbil env wraps it as 70.
+    export GERBIL_PATH="${GERBIL_PATH:-$project_root/.gerbil}"
     mkdir -p .data/test-logs .data/test-runs
     : "${BACKPRESSURE_ACCEPTANCE:?Provide the actual acceptance artifact}"
     : "${BACKPRESSURE_REASSESSMENT_RUNS:?Provide the actual reassessment runs artifact}"
@@ -280,7 +304,7 @@ test-backpressure-prefix-repair:
       fi
       log="$(mktemp .data/test-logs/aitia-durable-replay-XXXXXX)"
       set +e
-      "${power_guard[@]}" timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxtest -:max-heap=2G,debug=q -v 5 "$test_module" 2>&1 | tee "$log"
+      "${power_guard[@]}" timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gxtest -:max-heap=2G,debug=q -v 5 "$test_module" 2>&1 | tee "$log"
       status=${PIPESTATUS[0]}
       set -e
       echo "PROCESS-EXIT $phase $status"

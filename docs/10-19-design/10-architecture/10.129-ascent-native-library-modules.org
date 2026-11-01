@@ -1,0 +1,170 @@
+#+TITLE: 10.129 ASCENT Native Library Modules and Branch Custody
+#+LANGUAGE: en
+#+OPTIONS: toc:2 num:nil
+#+STARTUP: overview
+
+* Revised modularity assessment
+:PROPERTIES:
+:CUSTOM_ID: ascent129-assessment
+:END:
+
+The native query and evidence controls below remain scoped results. Three
+forwarding publications under =modules/= do not constitute complete domain
+modularity. [[file:10.131-ascent-domain-owned-module-topology.org][10.131]] defines the direct domain-owner migration and explicit
+isolation/coverage gates. The layout described here is transitional.
+
+* Decision and ownership
+:PROPERTIES:
+:CUSTOM_ID: ascent129-decision
+:STATUS: transitional-module-surface
+:END:
+
+ASCENT uses the existing Yuanxu =yuanxu! :load-modules= declaration. Its root
+=init.ss= selects three Library capabilities. Core owns source discovery,
+Module authoring admission, dependency closure and compilation input guards.
+ASCENT retains its existing inference, storage, independent finite replay and
+artifact owners; publication binds their native procedures directly.
+
+#+CAPTION: Capability boundaries and native responsibilities
+| Module | Native publication | Build roots and obligations |
+|--------+--------------------+-----------------------------|
+| relations | Hash index and set storage providers | Relation/table interfaces and finite-flow primitives |
+| inference | Program construction, evaluation and session creation | Program/rules interfaces and shipped analysis applications |
+| evidence | Finite evidence production and independent verification | Candidate provenance, withdrawal, temporal views and engine interface |
+
+Each Module uses the existing =types.ss=, =objects.ss=, =func.ss=, =config.ss=,
+=interface.ss= and =build.ss= roles. Scope admission checks named callable
+operations and the existing index/storage provider object contracts through
+native Record/Type contracts. This structural check does
+not prove algorithm semantics, procedure arity or authorization.
+
+* Remove the second inventory
+:PROPERTIES:
+:CUSTOM_ID: ascent129-inventory
+:END:
+
+=build-modules.ss= projects the init-owned native specification on demand;
+it no longer maintains a second hand-ordered production list. Existing policy,
+artifact and preparation consumers request this projection explicitly. The
+root init entry is retained as an installed source target. Native dependency
+closure, rather than another recursive import walker, selects implementation
+files.
+
+=build.ss= consumes the exact init-owned specification through Core's native
+consumer. ASCENT adds its existing per-target C compiler policy and explicit
+ABI link outputs inside that dispatch. C runtime extra inputs, shared-library
+link flags, both executables, producer-output admission and source receipts
+remain ASCENT package responsibilities. Core source/product checks cover the
+Library projection; existing ASCENT artifact checks cover the complete package.
+
+No inference dispatcher, alternate module resolver, scheduler or compatibility
+export is introduced. Source inventory comparison must retain every previously
+shipped production target, including independent application entrypoints that
+are not imports of the central engine interface.
+
+* Behavioral validation
+:PROPERTIES:
+:CUSTOM_ID: ascent129-validation
+:END:
+
+The new =t/library-module-test.ss= checks scope-owned callable constructors,
+evaluates native provider-backed relations and executes a transitive-reachability
+query. Its expected rows are independent of
+the production answer. The evidence Module produces and independently replays
+the finite certificate. A changed source snapshot must reject reuse of that
+certificate; the original snapshot must still accept it. Source change
+invalidates applicability, not the historical evidence object.
+
+The original eqrel and exhaustive three-node finite-evidence tests remain.
+The build-only Rust producer must remain outside the VM inventory; its Python
+control now reads the genuine native projection instead of parsing a quoted
+Scheme list. A package build and compiler-product checks are required in
+addition to these focused tests.
+
+Every Gerbil/Gambit process retains a 2 GiB heap and 180 second watchdog.
+Native worker selection follows machine resources. Focused Module validation
+does not establish complete Aitia CI or cold dependency closure acceptance.
+
+* Source-context and nominal value ownership
+:PROPERTIES:
+:CUSTOM_ID: ascent129-source-context
+:END:
+
+Core evaluates publication source in its guarded private reader context. Kernel
+imports share that reader's context; an already imported global compiled module
+is a distinct runtime owner. Pointer equality between procedures in those two
+contexts is not a native public contract. Neither are nominal record values
+interchangeable merely because they originate from the same source text.
+
+Consequently the inference publication includes its existing relation constructor,
+and evidence includes the existing snapshot constructor, attempt, inspection and
+receipt accessors alongside certificate production and verification. Consumers
+construct and read nominal values through one selected scope cohort. No copied
+record layout, conversion adapter or alternate evaluator is needed. Index and
+storage providers remain POO objects, checked by their existing public contracts.
+
+The first integration test incorrectly mixed globally compiled constructors with
+private publication procedures, exposing a real API completeness gap. The public
+scope now supplies a complete lifecycle. Its tests exercise actual constructors,
+queries, receipts and verification; expected query answers retain whole relation
+rows, including columns constrained by the query.
+
+* Native phase defect found during integration
+:PROPERTIES:
+:CUSTOM_ID: ascent129-native-phase
+:END:
+
+The first complete native build produced the libraries and executables but
+failed when Core admitted the generated interface SSI. Its syntax-phase
+=load-module= reference was unbound. The native role =config-prelude= exported
+only phase-zero Core bindings, while an interface with a Build macro emits a
+syntax-phase object loader.
+
+The direct Core fix publishes the same phase +1 and +2 Core bindings as the
+existing root prelude. It adds no loader or adapter. The new
+=t/config-prelude-phase-test.ss= compiles a real role-prelude macro and imports
+its emitted SSI in a fresh expander with the actual output load path. The
+Case has passed with MODULE-OK, HARNESS-OK and OK. The subsequent complete ASCENT package build passed in 106.974 seconds,
+with 12 resource-derived workers and a measured process-tree physical-footprint
+peak of 5,134,614,528 bytes. The 2 GiB limit applies per Gerbil/Gambit heap,
+not to the sum of the process tree. This is a package-build result, not cold
+closure or complete Aitia CI acceptance.
+
+* Final local acceptance
+:PROPERTIES:
+:CUSTOM_ID: ascent129-final
+:END:
+
+The completed scope lifecycle passes the exact Just entry now wired into the
+semantic CI lane, in ten seconds. The original eqrel program, exhaustive finite
+oracle and artifact admission Suites pass in six, seven and fifteen seconds.
+All original 136 production inputs are present in the derived closure; its
+155 source inputs additionally contain init and eighteen Module role files.
+The final API completion's incremental native build passes in 25.864 seconds.
+The complete preceding Module build and this incremental receipt are separate
+observations. The compiler-profile control keeps every assertion and now uses
+its own package identity, preventing its isolated FFI stub from replacing
+ASCENT's real relation-view kernel.
+
+The existing ASCENT PR contains the Module migration and semantic-CI entry.
+The primary checkout was fast-forwarded without changing its unrelated dirty
+documentation or research output. Complete remote CI is still a separate gate.
+
+* Branch custody
+:PROPERTIES:
+:CUSTOM_ID: ascent129-branches
+:END:
+
+Before deletion, obsolete ASCENT histories were preserved in a verified Git
+bundle under the ignored research data directory. Nine obsolete local branches
+and five obsolete remote branches were deleted. Remote deletions used exact
+old-revision leases. =main= and the existing PR branch
+=feature/ascent-scheme-syntax= remain.
+
+The local =simplify/gerbil-ci-entrypoints-20261021= branch remains because an
+active worktree contains uncommitted work. It is not safe to classify this
+working state as disposable history. Stale registrations of missing worktrees
+were pruned; live dirty worktrees were preserved.
+
+* Paired view
+[[file:../../90-99-views/90-architecture-views/90.118-ascent-native-library-modules.d2][Native Library ownership diagram]]

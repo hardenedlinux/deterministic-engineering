@@ -1,0 +1,154 @@
+#+TITLE: 10.132 Native Types and Output Boundary Alignment
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Decision and scope
+:PROPERTIES:
+:CUSTOM_ID: native132-decision
+:STATUS: partial-implementation
+:END:
+
+Readability requires the right abstraction as well as indentation. Existing POO
+Types, Records, Functions and Yuanxu Contracts own admission and composition.
+The Library must not recreate their behavior through repeated field predicates,
+constructor dispatch or strings that stand in for structured domain objects.
+
+The inspected native API exports =define-type=. The requested named-Type plus
+Record style uses that existing declaration; no local =def-type= alias or new
+schema language is introduced. Gerbil runtime Type validation, abstract Quint
+properties, Lean proofs and actual implementation behavior remain separate
+claims. Naming a Type does not establish a static proof of an algorithm.
+
+* Use the strongest existing owner that expresses the obligation
+:PROPERTIES:
+:CUSTOM_ID: native132-contracts
+:END:
+
+| Domain obligation | Existing native abstraction | Boundary |
+|-------------------+-----------------------------+----------|
+| Finite data shape, inheritance and unknown-field rejection | Named Type over =Record= | Required fields and domain Types; preserve sealing |
+| Method arguments, keywords and results | =Function= with its real signature | A callable predicate alone establishes no input/output contract |
+| Family associations and contextual invariants | Existing =ObjectContract= refinement and Yuanxu Contract | Record normalization cannot silently erase associations |
+| Parent specialization and computed fields | Native POO inheritance and delayed field expressions | Do not capture parent values before the child supplies its overrides |
+| Verification applicability and current use | Existing evidence relations and authority owners | Shape admission never issues an execution permission |
+
+The shared =LibraryReferenceContract=, =LibraryAssetContract=,
+=LibraryPremiseContract= and =LibraryClaimContract= now use =define-type= over
+their existing Record parents. Inherited fields, domain Types and =sealed:=
+remain in place. Native Type identity is tested alongside the original missing,
+wrong-type and undeclared-field rejection cases.
+
+#+NAME: existing-library-reference-type
+#+BEGIN_SRC scheme :eval never
+(define-type
+  (LibraryReferenceContract @
+    (Record
+      identity: [Symbol]
+      revision: [LibraryNonemptyString]
+      owner: [Symbol]))
+  sealed: #t)
+#+END_SRC
+
+This is not a recommendation to convert every ObjectContract into a Record.
+A Function validator can wrap a procedure. Existing checks that associate a
+method binding with a published operation by identity must continue to hold
+after normalization. Bind from the admitted native value, or retain the
+existing association owner; never delete that check to make normalization pass.
+
+* Strings belong at a declared boundary
+:PROPERTIES:
+:CUSTOM_ID: native132-strings
+:END:
+
+The source audit counted 66 textual occurrences of =string-append= across the
+shared vocabulary, Library, Module, Profile and Scenario files. This is an
+inventory, not a count of defects or a complexity measurement.
+
+| Use | Treatment | Required preservation |
+|-----+-----------+-----------------------|
+| Evidence identities and persisted references | Retain existing structured identity owners; serialize once | No ambiguous separators, renamed authority or receipt rebinding |
+| Paths, archive suffixes and source locations | Use the native path owner where it fits; keep filesystem effects explicit | Custody, pending files, atomic rename and exact source identity |
+| External command arguments | Pass structured argument vectors | Do not turn arguments into a shell program |
+| Final model text | Write ordered fragments to one private output port | Exact escaping, ordering, quoting and refusal behavior |
+| Small literal fragments at a serialization boundary | Keep ordinary text construction where it is sufficient | No replacement with an unnecessary abstraction |
+
+=render-formation-model= now owns one private string output port. Private
+=write-model-part=, =write-model-edge= and =write-model-section= write into that
+port; they do not construct collections of intermediate strings for subsequent
+=apply string-append=. The public function still returns a string and performs
+no file write, evidence admission or authorization.
+
+The previous implementation's fragments were not automatically quadratic.
+The change removes intermediate fragment lists and makes serialization
+ownership visible. It is not a benchmarked throughput or allocation claim.
+Replacing each concatenation with =format= would not itself fix the abstraction.
+
+* Independent checks and evidence boundaries
+:PROPERTIES:
+:CUSTOM_ID: native132-checks
+:END:
+
+| Check | Required result | What it does not establish |
+|-------+-----------------+----------------------------|
+| Native Record regression | Named descriptors are Types; original required/inherited/sealed constraints hold | Full Library or native-package acceptance |
+| Scope normalization regression | Admitted values preserve associations and normalized identity | Current-use authority |
+| Actual ASCENT project formation | Existing conflict, gap, invalidation and refusal assertions still hold | Rust runtime behavior or a formal proof |
+| Projection permutation property | Reordering declared dependencies preserves the rendered model | Correctness of arbitrary input declarations |
+| Independent quoted-reference expectation | Part-to-part targets retain their required name quoting | A complete SysML validator |
+| Before/after complete output comparison | The actual selected ASCENT case produces the same 3,959 bytes | An independent semantic proof of both renderers |
+
+The output comparison caught a real quoting change that the pre-existing
+string-result checks did not detect. That difference was corrected and an
+explicit target-reference expectation was added to =t/project-formation-test.ss=.
+All original assertions remain. Test acceptance inspects every module/case and
+error marker as well as natural process exit; a zero harness exit is insufficient.
+
+The focused receipts on 2026-10-29 are:
+
+| Invocation | Cohort and outcome | Elapsed |
+|------------+--------------------+---------|
+| Named Record Type suite | Isolated native dependency prefix; three cases pass | 3.950 s |
+| Record, Scope and project formation suites | Workspace package prefix; 21 cases across all three modules pass; no error markers; natural exit 0 | 8.201 s |
+| Actual ASCENT output capture | Workspace package prefix; exit 0; all 3,959 bytes match the pre-refactor projection | 16.218 s |
+
+The tests and source changes are directly reviewable in
+[[file:../../../types.ss][the shared Type owner]],
+[[file:../../../modules/project-formation/func.ss][the existing projection owner]],
+[[file:../../../t/library-record-types-test.ss][the native Record tests]] and
+[[file:../../../t/project-formation-test.ss][the actual ASCENT formation tests]].
+
+The isolated dependency prefix and the workspace package prefix are separate
+cohorts. A Record test in one and an ASCENT case in the other are reported
+separately. Neither qualifies the unpublished domain migration or downstream CI.
+The process bound remains 2 GiB heap / 180 seconds; native build concurrency is
+machine-derived.
+
+* Remaining alignment work
+:PROPERTIES:
+:CUSTOM_ID: native132-open
+:END:
+
+1. Replace shallow Scope admission with actual argument/result and domain
+   contracts, preserving cross-field links and procedure identity boundaries.
+2. Audit evidence identity construction separately from presentation strings.
+   A persisted encoding change requires explicit replay and historical-cut
+   treatment; it is not a cosmetic rename.
+3. Finish ASCENT domain migration through the existing Core source owner.
+   Native role admission passed after fixing role direction and declaration
+   diagnostics. The first shared-source failure exposed the misplaced
+   =program/execution-control.ss= owner: foundational rule bindings depended
+   upward on Program. Moving that actual owner to Core and migrating callers
+   reveals another shared/private dependency at =rules/declaration.ss=.
+   Domain directory grouping is therefore not yet an admitted Module dependency
+   decomposition. Recheck semantic and source-context ownership; do not keep
+   moving files merely to silence admission errors, weaken the Core guard,
+   inject global imports or introduce a compatibility loader. The eight proposed
+   Scope declarations now use native named Types and Records in the unpublished
+   migration, but role admission is not native publication or query acceptance.
+4. Complete native package, Linux cold-build and Aitia CI acceptance independently.
+   The focused Type and projection checks do not close those gates.
+
+[[file:../../90-99-views/90-architecture-views/90.121-native-type-and-output-boundary-alignment.d2][Paired contract and output boundary view]]
+
+[[file:10.133-native-evidence-method-contracts.org][Native Evidence method contracts and real source-cut checks]]
