@@ -1,3 +1,5 @@
+export {DesignSchema,defineDesign,type Design} from './design';
+export {composeTaste,reviewTaste,minimumTextSize,focalBudget,type Taste,type TasteRule,type TasteNote,type TasteContext,type TasteReport,type RenderObservation,type MeasuredBox} from './taste';
 export {composeHeading,type HeadingSpec} from './heading';
 export {composeModelView,graphFromModel} from './model-view';
 import {isDeepStrictEqual} from 'node:util';

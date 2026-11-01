@@ -1,5 +1,62 @@
 {
   "status": "design explanation / source observations only",
+  "observation": {
+    "canvas": {
+      "x": 0,
+      "y": 0,
+      "width": 1120,
+      "height": 1108.4375
+    },
+    "subjects": [
+      {
+        "id": "confirmation",
+        "role": "default",
+        "x": 56,
+        "y": 268.78125,
+        "width": 179.1875,
+        "height": 111.15625
+      },
+      {
+        "id": "selection",
+        "role": "default",
+        "x": 263.1875,
+        "y": 289.5625,
+        "width": 179.203125,
+        "height": 69.578125
+      },
+      {
+        "id": "acquisition",
+        "role": "default",
+        "x": 470.390625,
+        "y": 268.78125,
+        "width": 179.203125,
+        "height": 111.15625
+      },
+      {
+        "id": "association",
+        "role": "default",
+        "x": 677.59375,
+        "y": 268.78125,
+        "width": 179.203125,
+        "height": 111.15625
+      },
+      {
+        "id": "preparation",
+        "role": "default",
+        "x": 884.796875,
+        "y": 279.96875,
+        "width": 179.1875,
+        "height": 88.765625
+      }
+    ],
+    "relations": [
+      "(confirmation -> selection)[0]",
+      "(selection -> acquisition)[0]",
+      "(acquisition -> association)[0]",
+      "(association -> preparation)[0]"
+    ],
+    "headings": []
+  },
   "canvas": {
     "background": "rgba(0, 0, 0, 0)",
     "transparent": false
@@ -8,12 +65,12 @@
     "minimumTextSize": null,
     "samples": 0
   },
-  "inputSHA256": "2884a3706f555ea35abd71c220c14abe9b82540a133672be2b4a46e551cca46d",
+  "inputSHA256": "8cd3e9d5339442b2b917b2db1772ad5d7f1ee191b194fa4d596dc10c1f64412c",
   "scenes": [],
   "svgSHA256": [
-    "b2350598de1f9c5447974498641f66e5d59b9c147de6894aba902d5ed5ac426a"
+    "36140cefcfa4b1611ff4bfa6fdc76259636b7d54a71ef7229917448bc346b70e"
   ],
-  "composedHTMLSHA256": "10b7c125c69c185ef220bfa57631c179fb1903916185f8c67b1a1fdb470f4fd1",
+  "composedHTMLSHA256": "a4a844fa4c0515cc39d5270522f8e0eba7d37c2a0d002f67cd040ab56b3d0b58",
   "dependencies": {
     "@fontsource/inter": "5.3.0",
     "@fontsource/kalam": "5.3.0",
@@ -22,17 +79,18 @@
     "elkjs": "0.12.1",
     "parse5": "8.0.1",
     "roughjs": "4.6.6",
+    "valibot": "1.2.0",
     "web-worker": "1.5.0"
   },
   "regionSHA256": {
     "workflow": "42b27640f6b0c7e886abfadfe189beb0dd0227296eeabc3ca0674967cf36be58"
   },
-  "htmlSHA256": "35ce788129d6c46fec591a2fbb67004fe63b2b29d26c50e41ba983be18bb5dbe",
+  "htmlSHA256": "a06508e773ee411f6b0a242edcd689420891d869c617368615551106568c0cc5",
   "drawing": "precise",
   "routing": "xyflow@0.0.83",
   "assetSHA256": {
-    "@fontsource/inter/files/inter-latin-700-normal.woff2": "6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491",
-    "@fontsource/inter/files/inter-latin-400-normal.woff2": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc"
+    "@fontsource/inter/files/inter-latin-400-normal.woff2": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc",
+    "@fontsource/inter/files/inter-latin-700-normal.woff2": "6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491"
   },
   "pngSHA256": "be8b0ccc256190d3b90aa9be9bd246fd85a01ba7ace774aef439c24840fcb3cd",
   "browser": "156.0.8078.4",
@@ -87,9 +145,9 @@
     "packages/render/examples/library-case/workflow-declaration.ts": "97f1bbfaa4f8fcbc98d495fabb87594d9d855dd0e2046bd1f6d9371b8d0d596a",
     "packages/render/examples/library-case/workflow-diagram.ts": "885a203bf35a3778c754f5494fb22afb431fc215de830d8fd5209841d9b6bf6f",
     "packages/render/examples/library-case/workflow.ts": "451e1983e491c87232aed23deea19a56b380917d83ec06d1d8dd12b386ff63fa",
-    "packages/render/src/d2-figure.ts": "4e739d873eed255cce09cca6d55537a2060ca54b1af4deff11186b1d65895576",
-    "packages/render/src/figure.ts": "1016cd053c2b7ab9b0842b891185449e70aac81052f909369d57bd15289e1c53",
-    "packages/render/src/index.ts": "286723ab70c635718a9eedb634131a9428b3e561b50540899a1efc5de37d8b69",
+    "packages/render/src/d2-figure.ts": "d5e0a74dab62745dde9a0ef227e84e5b513d288ed491930a727909e8fc3566b5",
+    "packages/render/src/figure.ts": "5812a87741989caeae52d2552adb3f3b27b4bad9ec30ec3062b62b2163703550",
+    "packages/render/src/index.ts": "8f2b5406fe42cd8c1932fdabf3f866b6d610ebfa1fafaa0055b590680ecc345d",
     "packages/render/src/opensysml.ts": "05386da1833db24fdda491f5d62fa3f68c1c0951b7e22abb596abde364da1d2e",
     "profiles/library-formation.ss": "47911fb8d2b9267898dfbe5d96d3f04f32393c4eec9b8f91e771102495f2fac5",
     "project.sysml": "2302803c97f52bfdf7c2aee6320f42c7bf0a4291c1a240a2efe331545c41d885",
@@ -166,7 +224,7 @@
     {
       "kind": "source-excerpt-observation",
       "source": "packages/render/src/d2-figure.ts",
-      "line": 79,
+      "line": 80,
       "excerpt": "srcArrow,dstArrow"
     },
     {
@@ -178,13 +236,13 @@
     {
       "kind": "source-excerpt-observation",
       "source": "packages/render/src/index.ts",
-      "line": 42,
+      "line": 44,
       "excerpt": "isDeepStrictEqual(saved,selected)"
     },
     {
       "kind": "source-excerpt-observation",
       "source": "packages/render/src/figure.ts",
-      "line": 80,
+      "line": 83,
       "excerpt": "Model selection differs from captured SDK trace"
     }
   ]

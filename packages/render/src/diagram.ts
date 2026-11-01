@@ -15,11 +15,12 @@ export function composeDiagram(context: FigureContext, specification: DiagramSpe
   if (!model || !graph || typeof graph.id !== 'string' || !Array.isArray(graph.children)) throw new Error('Diagram needs a captured model and declared graph');
   graph.layoutOptions = {...context.theme.layoutOptions, ...graph.layoutOptions};
   if(model.subjects.some(node=>node.id===graph.id))throw new Error('Graph root collides with model identity');
-  const seen = new Set<string>();
+  const seen = new Set<string>(),owners=new Map<string,string|undefined>();
   const routing = graph.layoutOptions?.['elk.edgeRouting'];
   if (routing && !['ORTHOGONAL', 'POLYLINE'].includes(routing)) throw new Error('Unsupported SVG edge routing: ' + routing);
   const bodies: string[] = [];
-  const walk = (node: ElkNode) => {
+  const walk = (node: ElkNode,owner?:string) => {
+    owners.set(node.id,owner);
     if (node.ports?.length || node.edges?.length) throw new Error('Ports and nested edge containers need a dedicated SVG compositor');
     if (typeof node.id !== 'string' || seen.has(node.id)) throw new Error('Duplicate or missing diagram node'); seen.add(node.id);
     const subject = model.subjects.find(subject => subject.id === node.id);
@@ -31,10 +32,10 @@ export function composeDiagram(context: FigureContext, specification: DiagramSpe
     const surface = context.theme.surfaces?.[role] ?? context.theme.surfaces?.['default'];
     if (surface && (!surface.svg.trim().startsWith('<svg') || !surface.label.trim())) throw new Error('Invalid declared scene surface');
     const content = group ? `<text class="scene-group-title">${context.text(subject.label ?? subject.id)}</text>` : nodeComposer(subject, context);
-    bodies.push(`<g data-scene-node="${context.text(node.id)}" data-scene-group="${group}" data-role="${context.text(role)}"><rect class="scene-frame"${surface ? ' opacity="0" data-custom-surface' : ''}/>${surface ? `<g class="scene-surface">${surface.svg}</g>` : ''}<g class="scene-content">${icon ? `<g class="scene-glyph">${context.glyph(icon)}</g>` : ''}<g class="scene-copy" transform="translate(${icon ? 44 : 0} 18)">${content}</g></g></g>`);
-    if (group) node.children!.forEach(walk);
+    bodies.push(`<g data-scene-node="${context.text(node.id)}" data-scene-group="${group}"${owner?` data-scene-owner="${context.text(owner)}"`:""} data-role="${context.text(role)}"><rect class="scene-frame"${surface ? ' opacity="0" data-custom-surface' : ''}/>${surface ? `<g class="scene-surface">${surface.svg}</g>` : ''}<g class="scene-content">${icon ? `<g class="scene-glyph">${context.glyph(icon)}</g>` : ''}<g class="scene-copy" transform="translate(${icon ? 44 : 0} 18)">${content}</g></g></g>`);
+    if (group) node.children!.forEach(child=>walk(child,node.id));
   };
-  graph.children.forEach(walk);
+  graph.children.forEach(node=>walk(node));
   const relations = model.relations.filter(edge => seen.has(edge.src) && seen.has(edge.dst));
   const edgeIDs = new Set<string>();
   if (graph.edges) for (const edge of graph.edges) {
@@ -46,7 +47,7 @@ export function composeDiagram(context: FigureContext, specification: DiagramSpe
   const edges = graph.edges.map(edge => {
     const relation = relations.find(relation => relation.id === edge.id)!;
     for(const arrow of [relation.srcArrow??'none',relation.dstArrow??'arrow'])if(!['none','arrow','triangle','unfilled-triangle'].includes(arrow))throw new Error('Unsupported SVG arrowhead: '+arrow);
-    return `<g data-scene-edge="${context.text(edge.id)}"><path class="scene-edge" data-source-arrow="${relation.srcArrow??'none'}" data-target-arrow="${relation.dstArrow??'arrow'}"/><g class="scene-label"><rect/>${specification.edgeLabels === false ? '' : `<text>${context.text(relation.label)}</text>`}</g></g>`;
+    return `<g data-scene-edge="${context.text(edge.id)}" data-source-id="${context.text(relation.src)}" data-target-id="${context.text(relation.dst)}" data-crosses-boundary="${owners.get(relation.src)!==owners.get(relation.dst)}"><path class="scene-edge" data-source-arrow="${relation.srcArrow??'none'}" data-target-arrow="${relation.dstArrow??'arrow'}"/><g class="scene-label"><rect/>${specification.edgeLabels === false ? '' : `<text>${context.text(relation.label)}</text>`}</g></g>`;
   }).join('');
   const id = 'arrow-'+digest(context.view.source+graph.id).slice(0,12);
   const encoded = context.text(JSON.stringify({graph,marker:id}));

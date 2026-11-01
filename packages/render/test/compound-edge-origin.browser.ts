@@ -25,3 +25,19 @@ test('compound lane edges use the actual ELK container origin',async({browser})=
   for(const endpoint of endpoints){expect(endpoint.outside).toBeLessThan(2);expect(endpoint.boundary).toBeLessThan(2);}
  }finally{await context.close();}
 });
+
+test('scope containment refuses moved descendants and internally routed relations',async({browser})=>{
+ const make=(css:string)=>composeFigure(input,context=>{const scene=composeDiagram(context,{graph:{id:'root',children:[{id:'outer',children:[{id:'inner',children:[{id:'a'},{id:'b'}]}]}]},edgeLabels:false});return{markup:`<section data-question="q">${scene.markup}</section>`,css:scene.css+css};});
+ await expect(exportFigure(make('[data-scene-node="a"]{transform:translateX(1200px)!important}'),browser)).rejects.toThrow('outside owner scope');
+ await expect(exportFigure(make('[data-scene-edge]{transform:translateX(1200px)!important}'),browser)).rejects.toThrow('internal relation outside owner scope');
+ const output=await exportFigure(make(''),browser);
+ expect(output.receipt.observation.subjects.find(subject=>subject.id==='a')!.owner).toBe('inner');
+});
+
+test('cross-boundary relationships may leave a scope and remain explicitly distinguished',async({browser})=>{
+ const candidate={...input,model:{subjects:[{id:'scope',type:'rectangle',label:'Project'},{id:'inside',type:'rectangle',label:'Profile'},{id:'outside',type:'rectangle',label:'Library'}],relations:[{id:'selected',src:'inside',dst:'outside',label:'selects'}]}};
+ const figure=composeFigure(candidate,context=>{const scene=composeDiagram(context,{graph:{id:'root',children:[{id:'scope',children:[{id:'inside'}]},{id:'outside'}]}});return{markup:`<section data-question="q">${scene.markup}</section>`,css:scene.css};});
+ const image=await exportFigure(figure,browser);expect(image.html).toContain('data-crosses-boundary="true"');
+ expect(image.receipt.observation.subjects.find(subject=>subject.id==='inside')!.owner).toBe('scope');
+ expect(image.receipt.observation.relations).toContain('selected');
+});

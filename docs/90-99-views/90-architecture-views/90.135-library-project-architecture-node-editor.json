@@ -1,4 +1,129 @@
 {
+  "observation": {
+    "canvas": {
+      "x": 0,
+      "y": 0,
+      "width": 1440,
+      "height": 1209
+    },
+    "subjects": [
+      {
+        "id": "project",
+        "role": "project-boundary",
+        "x": 379,
+        "y": 494,
+        "width": 807,
+        "height": 278
+      },
+      {
+        "id": "consumer",
+        "role": "selection",
+        "x": 276,
+        "y": 165,
+        "width": 276,
+        "height": 66
+      },
+      {
+        "id": "library",
+        "role": "publication",
+        "x": 285.3333435058594,
+        "y": 862,
+        "width": 248.00003051757812,
+        "height": 88
+      },
+      {
+        "id": "project.profile",
+        "role": "selection",
+        "owner": "project",
+        "x": 876,
+        "y": 694,
+        "width": 298,
+        "height": 66
+      },
+      {
+        "id": "project.scenario",
+        "role": "capture",
+        "owner": "project",
+        "x": 771.6666870117188,
+        "y": 563,
+        "width": 214,
+        "height": 66
+      },
+      {
+        "id": "project.inputs",
+        "role": "capture",
+        "owner": "project",
+        "x": 613,
+        "y": 694,
+        "width": 243,
+        "height": 66
+      },
+      {
+        "id": "framework",
+        "role": "external",
+        "x": 301,
+        "y": 1035,
+        "width": 325,
+        "height": 88
+      },
+      {
+        "id": "render",
+        "role": "selection",
+        "x": 573.5,
+        "y": 316,
+        "width": 241,
+        "height": 88
+      },
+      {
+        "id": "review",
+        "role": "pending",
+        "x": 563.3333740234375,
+        "y": 884,
+        "width": 292,
+        "height": 66
+      }
+    ],
+    "relations": [
+      "(consumer -> library)[0]",
+      "(consumer -> render)[0]",
+      "(render -> project.inputs)[0]",
+      "(project.profile -> library)[0]",
+      "project.(scenario -> profile)[0]",
+      "project.(scenario -> inputs)[0]",
+      "(library -> framework)[0]",
+      "(review -> framework)[0]"
+    ],
+    "headings": [
+      {
+        "role": "title",
+        "x": 20,
+        "y": 20,
+        "width": 1400,
+        "height": 37
+      },
+      {
+        "role": "question",
+        "x": 20,
+        "y": 57,
+        "width": 1400,
+        "height": 34
+      },
+      {
+        "role": "note",
+        "x": 20,
+        "y": 91,
+        "width": 1400,
+        "height": 22
+      },
+      {
+        "role": "note",
+        "x": 20,
+        "y": 1167,
+        "width": 1400,
+        "height": 22
+      }
+    ]
+  },
   "canvas": {
     "background": "rgb(246, 250, 249)",
     "transparent": false
@@ -7,21 +132,21 @@
     "minimumTextSize": 12,
     "samples": 33
   },
-  "inputSHA256": "a84187f038b7ec7294f34fed24e502079114d74fcae75f3376ca16cfc0104e28",
+  "inputSHA256": "734656d7514bcd54b19161dd7a68c6601fe473c381326df74d36f7abf9890577",
   "scenes": [
     {
       "inputSHA256": "8406d16a904daf76115724b6413047a2d434f63f71355d90fb80ae9b9ac5f366",
       "layoutSHA256": "590e4d00cbfdd73dd1e8ed547de0b4b60da888e50ea4d6c1baf1b44c490ca8a5",
       "nodes": 9,
       "edges": 8,
-      "milliseconds": 398.2289580000015
+      "milliseconds": 142.53437499999927
     }
   ],
   "svgSHA256": [
-    "0edf218d2fbb015aef32e7dcfb104d1fa8007392b2899d3bfa68a8d7c16812aa",
-    "892dcb7dcaa5dd21ea547497b4312577561c9afe91dcf621b369b491e028fe60"
+    "51af78312b4d62d92e7eda010c256e70a8620655374ec458d7888fdc411e1fee",
+    "c854f771fbacd74b2f28e1aa4acb03e7012e86d5423ac86d460619db9f273f57"
   ],
-  "composedHTMLSHA256": "e59ba77fee645e10a632119f3df99e60f6f034712e09c065ed0113973f40f3e2",
+  "composedHTMLSHA256": "1c04a05174a0a4207c7bb834d2ff7050d22d82bc17f2e00255d3ea524e4a16a7",
   "dependencies": {
     "@fontsource/inter": "5.3.0",
     "@fontsource/kalam": "5.3.0",
@@ -30,10 +155,11 @@
     "elkjs": "0.12.1",
     "parse5": "8.0.1",
     "roughjs": "4.6.6",
+    "valibot": "1.2.0",
     "web-worker": "1.5.0"
   },
   "regionSHA256": {},
-  "htmlSHA256": "3e71f8959d1984eae00a05ab3b5a34205714d7c730afa14e6f291d77bef02bf3",
+  "htmlSHA256": "a5488e803a5355d3c72bf6c3d6bc94ceb16b2167ed209090dc5f113540ef5e69",
   "drawing": "precise",
   "routing": "elkjs@0.12.1",
   "assetSHA256": {

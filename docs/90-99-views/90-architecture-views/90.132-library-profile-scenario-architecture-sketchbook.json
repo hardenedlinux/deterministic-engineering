@@ -1,5 +1,44 @@
 {
   "status": "design explanation / source observations only",
+  "observation": {
+    "canvas": {
+      "x": 0,
+      "y": 0,
+      "width": 1120,
+      "height": 1425.359375
+    },
+    "subjects": [
+      {
+        "id": "library",
+        "role": "default",
+        "x": 40,
+        "y": 421.578125,
+        "width": 310,
+        "height": 222
+      },
+      {
+        "id": "project.profile",
+        "role": "default",
+        "x": 409,
+        "y": 465.578125,
+        "width": 311,
+        "height": 111.59375
+      },
+      {
+        "id": "project.scenario",
+        "role": "default",
+        "x": 754,
+        "y": 465.578125,
+        "width": 311,
+        "height": 111.59375
+      }
+    ],
+    "relations": [
+      "(project.profile -> library)[0]",
+      "project.(scenario -> profile)[0]"
+    ],
+    "headings": []
+  },
   "canvas": {
     "background": "rgb(250, 247, 238)",
     "transparent": false
@@ -8,12 +47,12 @@
     "minimumTextSize": null,
     "samples": 0
   },
-  "inputSHA256": "6408dccbe2afaf6a74943795d9664366d9ae6c466c6dce8efa20ca32c088d8be",
+  "inputSHA256": "e1455ec57e26d14290f9bce34ab4483d6cf30c1c50c70623e44f0864ca854071",
   "scenes": [],
   "svgSHA256": [
-    "561c4768590efc4dd1cff69d63f835bdd6522de585a95b0d8c32e17c9c249a5a"
+    "73ded9fe74f0fb5698cfd9f42e8c2e0dc3f626265dcd2cd3c411dd76b9fb538d"
   ],
-  "composedHTMLSHA256": "2fa3aeb07dc92c00d2f86603d1e779e41d79b4efb29314642f3a3c4ddb9e757a",
+  "composedHTMLSHA256": "d32b9666855f429c042137255d5e60cc22ed69f10b4859f73dd7f63faf65d0e0",
   "dependencies": {
     "@fontsource/inter": "5.3.0",
     "@fontsource/kalam": "5.3.0",
@@ -22,12 +61,13 @@
     "elkjs": "0.12.1",
     "parse5": "8.0.1",
     "roughjs": "4.6.6",
+    "valibot": "1.2.0",
     "web-worker": "1.5.0"
   },
   "regionSHA256": {
     "architecture": "046951d8060a046e62ecb652776373b069c4a86ca6700dc889d3220d9d494aab"
   },
-  "htmlSHA256": "bc1884169a2c679db2c9f3dc0d72db774f965b9c376bb67b29a2d19441d3c398",
+  "htmlSHA256": "0a597a9b925eda65f2c37574a2467169ef3d2abdb1d224005dceea3bff2aeb28",
   "drawing": "roughjs@4.6.6",
   "routing": "xyflow@0.0.83",
   "assetSHA256": {
@@ -99,9 +139,9 @@
     "packages/render/examples/library-case/workflow-declaration.ts": "97f1bbfaa4f8fcbc98d495fabb87594d9d855dd0e2046bd1f6d9371b8d0d596a",
     "packages/render/examples/library-case/workflow-diagram.ts": "885a203bf35a3778c754f5494fb22afb431fc215de830d8fd5209841d9b6bf6f",
     "packages/render/examples/library-case/workflow.ts": "451e1983e491c87232aed23deea19a56b380917d83ec06d1d8dd12b386ff63fa",
-    "packages/render/src/d2-figure.ts": "4e739d873eed255cce09cca6d55537a2060ca54b1af4deff11186b1d65895576",
-    "packages/render/src/figure.ts": "1016cd053c2b7ab9b0842b891185449e70aac81052f909369d57bd15289e1c53",
-    "packages/render/src/index.ts": "286723ab70c635718a9eedb634131a9428b3e561b50540899a1efc5de37d8b69",
+    "packages/render/src/d2-figure.ts": "d5e0a74dab62745dde9a0ef227e84e5b513d288ed491930a727909e8fc3566b5",
+    "packages/render/src/figure.ts": "5812a87741989caeae52d2552adb3f3b27b4bad9ec30ec3062b62b2163703550",
+    "packages/render/src/index.ts": "8f2b5406fe42cd8c1932fdabf3f866b6d610ebfa1fafaa0055b590680ecc345d",
     "packages/render/src/opensysml.ts": "05386da1833db24fdda491f5d62fa3f68c1c0951b7e22abb596abde364da1d2e",
     "profiles/library-formation.ss": "47911fb8d2b9267898dfbe5d96d3f04f32393c4eec9b8f91e771102495f2fac5",
     "project.sysml": "2302803c97f52bfdf7c2aee6320f42c7bf0a4291c1a240a2efe331545c41d885",
@@ -178,7 +218,7 @@
     {
       "kind": "source-excerpt-observation",
       "source": "packages/render/src/d2-figure.ts",
-      "line": 79,
+      "line": 80,
       "excerpt": "srcArrow,dstArrow"
     },
     {
@@ -190,13 +230,13 @@
     {
       "kind": "source-excerpt-observation",
       "source": "packages/render/src/index.ts",
-      "line": 42,
+      "line": 44,
       "excerpt": "isDeepStrictEqual(saved,selected)"
     },
     {
       "kind": "source-excerpt-observation",
       "source": "packages/render/src/figure.ts",
-      "line": 80,
+      "line": 83,
       "excerpt": "Model selection differs from captured SDK trace"
     }
   ]

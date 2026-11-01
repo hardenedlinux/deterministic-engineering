@@ -1,3 +1,4 @@
+import {bindDesign,type Design} from './design';
 import {deepFreeze} from './immutable';
 import {parseFragment, type DefaultTreeAdapterTypes} from 'parse5';
 import type { Shape, Connection, SQLColumn, Text, Class } from '@terrastruct/d2';
@@ -27,6 +28,7 @@ export interface ModelSource {
   readonly labels?: Readonly<Record<string,string>>;
 }
 export interface FigureInput {
+  readonly design?:Design;
   readonly modelSource?: ModelSource;
   readonly modelTrace?: import('./opensysml').SysMLProjectionResult['trace'];
   /** Project-owned declaration, interpreted by its functional composition. */
@@ -39,13 +41,14 @@ export interface FigureInput {
   /** Captured project/model/composition sources; no new model or evidence ledger. */
   readonly sources: Readonly<Record<string, string>>;
   readonly references: Readonly<Record<string, string>>;
-  readonly variants?: readonly {readonly name: string; readonly theme: PresentationTheme; readonly kind?: string; readonly layout?: string; readonly icons?: Readonly<Record<string, IconAsset>>}[];
+  readonly variants?: readonly {readonly name: string; readonly theme: PresentationTheme; readonly kind?: string; readonly layout?: string; readonly presentation?:unknown; readonly design?:Design; readonly icons?: Readonly<Record<string, IconAsset>>}[];
   readonly model?: FigureModel;
   readonly copy?: Readonly<Record<string, string>>;
   readonly theme?: PresentationTheme;
   readonly icons?: Readonly<Record<string, IconAsset>>;
 }
 export interface FigureContext {
+  readonly design?:Design;
   readonly theme: PresentationTheme;
   readonly questions: readonly FigureQuestion[];
   readonly presentation?: unknown;
@@ -97,6 +100,7 @@ export function composeFigure(input: FigureInput, compose: FigureComposer): Comp
     for (const ref of question.focusRefs) if (!Object.hasOwn(references, ref)) throw new Error(`Unknown question focus: ${ref}`);
     Object.freeze(question.focusRefs); Object.freeze(question);
   }
+  const design=snapshot.design===undefined?undefined:bindDesign(snapshot.design,snapshot.questions,snapshot.model);
   const theme = snapshot.theme ?? defaultPresentationTheme;
   const icons = Object.fromEntries(Object.entries(snapshot.icons ?? defaultIcons).sort(([a], [b]) => a.localeCompare(b)));
   const question = (ref: string): FigureQuestion => {
@@ -124,8 +128,9 @@ export function composeFigure(input: FigureInput, compose: FigureComposer): Comp
   if (theme.drawing.mode === 'sketch' && (!Number.isInteger(seed) || seed <= 0 || (roughness !== undefined && (!Number.isFinite(roughness) || roughness < 0)))) throw new Error('Invalid sketch drawing parameters');
   // Freeze captured model and project declarations before calling a domain compositor.
   deepFreeze(snapshot.model);deepFreeze(snapshot.modelSource);deepFreeze(snapshot.modelTrace);deepFreeze(snapshot.presentation);deepFreeze(theme);
-  const composition = compose(Object.freeze({theme, questions:Object.freeze([...questions.values()]), view, model: snapshot.model, presentation: snapshot.presentation, layout: snapshot.layout ?? "default", question, reference, icon, glyph: name => {icon(name); return icons[name]!.svg;}, copy, relation, text: escapeHTML}));
+  const composition = compose(Object.freeze({design,theme, questions:Object.freeze([...questions.values()]), view, model: snapshot.model, presentation: snapshot.presentation, layout: snapshot.layout ?? "default", question, reference, icon, glyph: name => {icon(name); return icons[name]!.svg;}, copy, relation, text: escapeHTML}));
   const usedQuestions = new Set<string>();
+  const shownSubjects=new Set<string>(),shownRelations=new Set<string>();
   const nodes: DefaultTreeAdapterTypes.Node[] = [...parseFragment(composition.markup).childNodes];
   while (nodes.length) {
     const node = nodes.pop()!;
@@ -133,17 +138,27 @@ export function composeFigure(input: FigureInput, compose: FigureComposer): Comp
       if (node.tagName === 'template' || node.attrs.some(attribute => attribute.name === 'hidden')) continue;
       const marker = node.attrs.find(attribute => attribute.name === 'data-question');
       if (marker) usedQuestions.add(marker.value);
+      if(design){
+        const attr=(name:string)=>node.attrs.find(item=>item.name===name)?.value;
+        const id=attr('data-scene-node')??attr('data-node');if(id){if(!snapshot.model?.subjects.some(subject=>subject.id===id))throw new Error('Unknown rendered design subject: '+id);shownSubjects.add(id);}
+        const edge=attr('data-scene-edge')??attr('data-relation');if(edge){if(!snapshot.model?.relations.some(relation=>relation.id===edge))throw new Error('Unknown rendered design relation: '+edge);shownRelations.add(edge);}
+        const from=attr('data-from'),to=attr('data-to');if(from&&to)for(const relation of snapshot.model?.relations??[])if(relation.src===from&&relation.dst===to)shownRelations.add(relation.id);
+      }
     }
     if ('childNodes' in node) nodes.push(...node.childNodes);
   }
   for (const id of usedQuestions) if (!questions.has(id)) throw new Error(`Unselected rendered question: ${id}`);
   for (const id of questions.keys()) if (!usedQuestions.has(id)) throw new Error(`Question has no visible region: ${id}`);
+  if(design){
+    for(const id of [...design.requiredSubjects,...design.focalSubjects])if(!shownSubjects.has(id))throw new Error('Design subject is not rendered: '+id);
+    for(const id of design.requiredRelations)if(!shownRelations.has(id))throw new Error('Design relation is not rendered: '+id);
+  }
   const sourceSHA256 = Object.fromEntries(Object.entries(sources).map(([name, source]) => [name, digest(source)]));
   const renderer = {package: packageInfo.name, version: packageInfo.version, icons: Object.fromEntries(Object.entries(icons).map(([name, asset]) => [name, digest(asset.svg)]))};
-  const footprint = {renderer, presentation: snapshot.presentation, layout: snapshot.layout, copy: snapshot.copy, model: snapshot.model, modelSource: snapshot.modelSource, modelTrace: snapshot.modelTrace, view, questions: snapshot.questions, references, sourceSHA256, theme, icons, width: snapshot.width, language: snapshot.language, composition};
+  const footprint = {renderer, design, presentation: snapshot.presentation, layout: snapshot.layout, copy: snapshot.copy, model: snapshot.model, modelSource: snapshot.modelSource, modelTrace: snapshot.modelTrace, view, questions: snapshot.questions, references, sourceSHA256, theme, icons, width: snapshot.width, language: snapshot.language, composition};
   const inputSHA256 = digest(JSON.stringify(footprint));
   const variables = Object.entries(theme.colors).map(([key, value]) => `--${key}:${value}`).join(';') + ';' + Object.entries(theme.spacing).map(([key, value]) => `--${key}:${value}px`).join(';')+';'+Object.entries(theme.typography).map(([key,value])=>`--type-${key}:${value}`).join(';');
-  const metadata = JSON.stringify({renderer, layout: snapshot.layout, presentation: snapshot.presentation, drawing: theme.drawing, fonts: theme.fonts, palette:theme.colors, inputSHA256, model: snapshot.model, modelSource: snapshot.modelSource, modelTrace: snapshot.modelTrace, view, questions: snapshot.questions, references, sourceSHA256}).replaceAll('<', '\\u003c');
+  const metadata = JSON.stringify({renderer, design, layout: snapshot.layout, presentation: snapshot.presentation, drawing: theme.drawing, fonts: theme.fonts, palette:theme.colors, inputSHA256, model: snapshot.model, modelSource: snapshot.modelSource, modelTrace: snapshot.modelTrace, view, questions: snapshot.questions, references, sourceSHA256}).replaceAll('<', '\\u003c');
   const html = `<!doctype html><html lang="${escapeHTML(snapshot.language)}"><head><meta charset="utf-8"><meta name="viewport" content="width=${snapshot.width}"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:"><title>${escapeHTML(view.title)}</title><style>
 *{box-sizing:border-box}html,body{margin:0;padding:0}body{background:${theme.colors.background};font-family:${theme.fontFamily};color:${theme.colors.ink}}[data-figure]{${variables};width:${snapshot.width}px;margin:0;position:relative;overflow:hidden;background:var(--background);font-size:var(--type-bodySize)}.icon{display:inline-flex;flex:none;width:var(--iconSize);height:var(--iconSize)}.icon svg{width:100%;height:100%}svg{display:block}h1,h2,h3,p{margin:0}table{border-collapse:collapse}a{color:inherit}*{animation:none!important;transition:none!important}${composition.css}\n${theme.stylesheet}
 </style></head><body><figure data-figure data-purpose="${view.purpose}" aria-label="${escapeHTML(view.question.text)}">${composition.markup}</figure><script type="application/json" id="figure-provenance">${metadata}</script></body></html>`;
@@ -155,5 +170,5 @@ export function selectFigureVariant(input: FigureInput, name: string): FigureInp
   const variant = input.variants?.find(variant => variant.name === name);
   if (!variant) throw new Error(`Undeclared figure variant: ${name}`);
   return {...input, view: {...input.view, kind: variant.kind ?? input.view.kind}, layout: variant.layout ?? input.layout,
-    theme: variant.theme, icons: variant.icons ?? input.icons};
+    design:variant.design??input.design,presentation:variant.presentation===undefined?input.presentation:variant.presentation,theme: variant.theme, icons: variant.icons ?? input.icons};
 }

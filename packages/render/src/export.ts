@@ -4,6 +4,8 @@ import rough from 'roughjs';
 import packageInfo from '../package.json' with {type: 'json'};
 import { readFile } from 'node:fs/promises';
 import type { Browser } from 'playwright';
+import type {RenderObservation} from './taste';
+import type {Design} from './design';
 import type { ComposedFigure } from './figure';
 import { digest } from './source/catalog';
 export interface FigureExportOptions { readonly scale?: number; readonly regions?: readonly string[]; readonly minimumTextSize?:number; readonly transparent?:boolean; }
@@ -18,6 +20,7 @@ export interface FigureImage {
     /** Effective SVG text size in logical CSS pixels, after scene scaling. */
     readonly canvas:{readonly background:string;readonly transparent:boolean};
     readonly readability: {readonly minimumTextSize:number|null;readonly samples:number;readonly requiredMinimum?:number};
+    readonly observation:RenderObservation;
     readonly scenes: readonly SceneLayoutReceipt[]; readonly svgSHA256: readonly string[];
     readonly drawing: string; readonly routing: string; readonly dependencies: Readonly<Record<string, string>>; readonly assetSHA256: Readonly<Record<string, string>>;
     readonly regionSHA256: Readonly<Record<string, string>>;
@@ -182,7 +185,7 @@ export async function exportFigure(figure: ComposedFigure, browser: Browser, opt
       const bounds: Record<string, {x: number; y: number; width: number; height: number}> = {};
       const issues: string[] = [];
       const textSizes:number[]=[];
-      const captured: {questions: {ref: string}[]} = JSON.parse(document.getElementById('figure-provenance')!.textContent!);
+      const captured: {design?:Design;model?:import('./figure').FigureModel;questions: {ref: string}[]} = JSON.parse(document.getElementById('figure-provenance')!.textContent!);
       for (const question of captured.questions) {
         const shown = Array.from(figure.querySelectorAll<HTMLElement>('[data-question]')).some(element => element.dataset.question === question.ref && element.checkVisibility({opacityProperty: true, visibilityProperty: true}) && element.getBoundingClientRect().width > 0 && element.getBoundingClientRect().height > 0);
         if (!shown) issues.push(`Question has no visible region: ${question.ref}`);
@@ -198,10 +201,31 @@ export async function exportFigure(figure: ComposedFigure, browser: Browser, opt
       for (const element of figure.querySelectorAll<HTMLElement>('[data-fit]')) {
         if (element.scrollWidth > element.clientWidth + 1 || element.scrollHeight > element.clientHeight + 1) issues.push(`clipped text: ${element.textContent?.slice(0, 60)}`);
       }
+      const visible=(element:Element)=>element.checkVisibility({opacityProperty:true,visibilityProperty:true})&&element.getBoundingClientRect().width>0&&element.getBoundingClientRect().height>0;
+      const rect=(element:Element)=>{const box=element.getBoundingClientRect();return{x:box.x-root.x,y:box.y-root.y,width:box.width,height:box.height};};
+      const subjects=Array.from(figure.querySelectorAll<HTMLElement|SVGGElement>('[data-scene-node],[data-node]')).filter(visible).map(element=>({id:element.getAttribute('data-scene-node')??element.getAttribute('data-node')!,role:element.getAttribute('data-role')??'default',...(element.getAttribute('data-scene-owner')?{owner:element.getAttribute('data-scene-owner')!}:{}),...rect(element)}));
+      const visiblePath=(path:SVGGeometryElement)=>{const box=path.getBoundingClientRect(),style=getComputedStyle(path);return path.checkVisibility({opacityProperty:true,visibilityProperty:true})&&(box.width>0||box.height>0)&&style.stroke!=='none'&&style.strokeOpacity!=='0'&&path.getTotalLength()>0;};
+      const visibleRelation=(element:Element)=>visible(element)||Array.from(element.querySelectorAll<SVGGeometryElement>('path[d]')).some(visiblePath);
+      const relations=new Set(Array.from(figure.querySelectorAll('[data-scene-edge],[data-relation]')).filter(visibleRelation).map(element=>element.getAttribute('data-scene-edge')??element.getAttribute('data-relation')!));
+      for(const path of figure.querySelectorAll<SVGPathElement>('path[data-from][data-to]'))if(path.getAttribute('d')&&visiblePath(path))for(const edge of captured.model?.relations??[])if(edge.src===path.getAttribute('data-from')&&edge.dst===path.getAttribute('data-to'))relations.add(edge.id);
+      if(captured.design){
+        for(const id of [...captured.design.requiredSubjects,...captured.design.focalSubjects])if(!subjects.some(subject=>subject.id===id))issues.push('Design subject has no visible region: '+id);
+        for(const id of captured.design.requiredRelations)if(!relations.has(id))issues.push('Design relation has no visible region: '+id);
+      }
+      const observation:RenderObservation={canvas:{x:0,y:0,width:root.width,height:root.height},subjects,relations:[...relations],headings:Array.from(figure.querySelectorAll('svg[data-heading-role]')).filter(visible).map(element=>({role:element.getAttribute('data-heading-role')!,...rect(element)}))};
       // Observe the browser's final geometry; layout/routing remains owned by ELK.
       const overlaps = (a: DOMRect, b: DOMRect) => Math.min(a.right,b.right)-Math.max(a.left,b.left)>1 && Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>1;
       const contains = (outer: DOMRect, inner: DOMRect) => inner.left>=outer.left-1 && inner.top>=outer.top-1 && inner.right<=outer.right+1 && inner.bottom<=outer.bottom+1;
       for (const scene of figure.querySelectorAll<SVGSVGElement>('svg[data-scene]')) {
+        const declared=Array.from(scene.querySelectorAll<SVGGElement>('[data-scene-node]'));
+        const byID=new Map(declared.map(node=>[node.dataset.sceneNode!,node]));
+        const ancestors=(id:string)=>{const chain:string[]=[];let owner=byID.get(id)?.dataset.sceneOwner;while(owner){if(chain.includes(owner)||!byID.has(owner))throw new Error('Invalid displayed scope ancestry');chain.push(owner);owner=byID.get(owner)!.dataset.sceneOwner;}return chain;};
+        for(const node of declared){const owner=node.dataset.sceneOwner;if(owner&&!contains(byID.get(owner)!.querySelector('.scene-frame')!.getBoundingClientRect(),node.querySelector('.scene-frame')!.getBoundingClientRect()))issues.push('scene subject outside owner scope: '+node.dataset.sceneNode);}
+        for(const edge of scene.querySelectorAll<SVGGElement>('[data-scene-edge]')){
+          const source=edge.dataset.sourceId!,target=edge.dataset.targetId!;
+          const common=ancestors(source).filter(owner=>ancestors(target).includes(owner));
+          for(const owner of common)if(!contains(byID.get(owner)!.querySelector('.scene-frame')!.getBoundingClientRect(),edge.getBoundingClientRect()))issues.push('internal relation outside owner scope: '+edge.dataset.sceneEdge);
+        }
         const leaves = Array.from(scene.querySelectorAll<SVGGElement>('[data-scene-group="false"]'));
         const frames = leaves.map(node => node.querySelector('.scene-frame')!.getBoundingClientRect());
         leaves.forEach((node,index) => {
@@ -234,11 +258,12 @@ export async function exportFigure(figure: ComposedFigure, browser: Browser, opt
         const matrix=text.getScreenCTM(),box=text.getBoundingClientRect();
         if(matrix&&box.width>0&&box.height>0)textSizes.push(parseFloat(getComputedStyle(text).fontSize)*Math.hypot(matrix.c,matrix.d));
       }
-      return {bounds,issues,canvasBackground:getComputedStyle(figure).backgroundColor,readability:{minimumTextSize:textSizes.length?Math.min(...textSizes):null,samples:textSizes.length}};
+      return {bounds,issues,observation,canvasBackground:getComputedStyle(figure).backgroundColor,readability:{minimumTextSize:textSizes.length?Math.min(...textSizes):null,samples:textSizes.length}};
     });
     if(options.minimumTextSize!==undefined&&(report.readability.minimumTextSize===null||report.readability.minimumTextSize<options.minimumTextSize))report.issues.push('Text is below the declared minimum size');
     if (report.issues.length) throw new Error(report.issues.join('; '));
     if(options.transparent)await page.locator('[data-figure]').evaluate(element=>{(element as HTMLElement).style.setProperty('background','transparent','important');document.body.style.background='transparent';});
+    await page.evaluate(rendered=>{const element=document.getElementById('figure-provenance')!,capture=JSON.parse(element.textContent!);capture.rendered=rendered;element.textContent=JSON.stringify(capture).replaceAll('<','\\u003c');},{observation:report.observation,readability:{...report.readability,requiredMinimum:options.minimumTextSize},bounds:report.bounds});
     const svg = await extractSceneSVGs(page,options.transparent??false);
     const html = await page.content();
     const png = await page.locator('[data-figure]').screenshot({type: 'png', animations: 'disabled',omitBackground:options.transparent??false});
@@ -248,7 +273,7 @@ export async function exportFigure(figure: ComposedFigure, browser: Browser, opt
       regionImages[name] = await page.locator(`[data-region="${name}"]`).screenshot({type: 'png', animations: 'disabled',omitBackground:options.transparent??false});
     }
     const buffer = Buffer.from(png);
-    return {png, html, svg, regionImages, receipt: {canvas:{background:options.transparent?'transparent':report.canvasBackground,transparent:options.transparent??false},readability:{...report.readability,requiredMinimum:options.minimumTextSize},inputSHA256: figure.inputSHA256, scenes, svgSHA256:svg.map(svg=>digest(svg)), composedHTMLSHA256: figure.htmlSHA256, dependencies: packageInfo.dependencies, regionSHA256: Object.fromEntries(Object.entries(regionImages).map(([name, bytes]) => [name, digest(bytes)])), htmlSHA256: digest(html), drawing: figure.drawing.mode === "sketch" ? `roughjs@${packageInfo.dependencies.roughjs}` : "precise", routing: scenes.length ? `elkjs@${packageInfo.dependencies.elkjs}` : connectors.length ? `xyflow@${packageInfo.dependencies["@xyflow/system"]}` : "none", assetSHA256, pngSHA256: digest(png), browser: browser.version(),
+    return {png, html, svg, regionImages, receipt: {observation:report.observation,canvas:{background:options.transparent?'transparent':report.canvasBackground,transparent:options.transparent??false},readability:{...report.readability,requiredMinimum:options.minimumTextSize},inputSHA256: figure.inputSHA256, scenes, svgSHA256:svg.map(svg=>digest(svg)), composedHTMLSHA256: figure.htmlSHA256, dependencies: packageInfo.dependencies, regionSHA256: Object.fromEntries(Object.entries(regionImages).map(([name, bytes]) => [name, digest(bytes)])), htmlSHA256: digest(html), drawing: figure.drawing.mode === "sketch" ? `roughjs@${packageInfo.dependencies.roughjs}` : "precise", routing: scenes.length ? `elkjs@${packageInfo.dependencies.elkjs}` : connectors.length ? `xyflow@${packageInfo.dependencies["@xyflow/system"]}` : "none", assetSHA256, pngSHA256: digest(png), browser: browser.version(),
       width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20), scale, bounds: report.bounds}};
   } finally { await context.close(); }
 }
