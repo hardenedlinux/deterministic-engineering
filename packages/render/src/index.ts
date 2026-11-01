@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2026 tao3k team and Contributors
 //
-// SPDX-License-Identifier: LGPL-2.1-only
+// SPDX-License-Identifier: LGPL-2.1-or-later
 
 export {selectTaste,type TasteSelection,type TasteSelectionContext,type TasteProposal,type EvidenceProjection,EvidenceProjectionSchema} from './taste-selection';
 export {questionFocus,evidenceFocus,dependencyLayout,questionScope,visualHierarchy} from './taste-policies';

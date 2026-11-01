@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 tao3k team and Contributors
-# SPDX-License-Identifier: LGPL-2.1-only
+# SPDX-License-Identifier: LGPL-2.1-or-later
 
 #+title: 10.146 Taste selection, source observations and REUSE
 
@@ -58,7 +58,18 @@ three Taste candidates have verified source/output hashes and distinct selection
 
 Official REUSE 6.3.0 reports 725/725 files with copyright and license information,
 zero missing or invalid licenses, and REUSE Specification 3.3 compliance. The
-packed archive SHA256 is b2b4520c1fc4d8738527f2a35a5f282d6bb48ad174d73fc1bb3b02495ef5a763.
+packed archive SHA256 is e4623b66397ea2328b4fbb584160872f25bb16cb2a89026bf1ad18931b521848.
 An independent consumer installs that archive, typechecks, changes Question/source
 inputs, refuses stale selections and exports host-attributed HTML/SVG. This local
 receipt is separate from exact-head Linux/macOS and REUSE CI status in the PR.
+
+The project owner clarified that the grant is LGPL-2.1-or-later. All project
+headers, sidecars, package metadata and export attribution now use that grant;
+LGPL-2.1-only license texts are removed. Apache-2.0 remains solely because the
+mixed notice in native-concurrency-test.ss already exists in merged PR #1
+(commit 253a926); this change does not add Apache to the rest of the project.
+
+The package reuses its existing LICENSE for the LGPL text and ships the unmodified
+font text as LICENSE.OFL-1.1. Duplicate nested license copies and erroneous project
+sidecars for those canonical texts are removed; license documents are not assigned
+the project's copyright. Root LICENSES retains the canonical referenced texts.

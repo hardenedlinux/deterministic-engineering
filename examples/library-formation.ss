@@ -1,6 +1,6 @@
 ;;; SPDX-FileCopyrightText: 2026 tao3k team and Contributors
 ;;;
-;;; SPDX-License-Identifier: LGPL-2.1-only
+;;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 (import "../projects/library-formation/init.ss" "../profiles/library-formation.ss"
         "library-formation-output.ss" :clan/poo/object

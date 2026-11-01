@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2026 tao3k team and Contributors
 //
-// SPDX-License-Identifier: LGPL-2.1-only
+// SPDX-License-Identifier: LGPL-2.1-or-later
 
 import type {PresentationThemeOverrides} from '../presentation-theme';
 export const nodeEditor: PresentationThemeOverrides = Object.freeze({spacing:Object.freeze({scenePadding:20,iconSize:36}),typography:Object.freeze({titleSize:'17px',detailSize:'13px'}),stylesheet: '.scene-frame{fill:var(--surface);stroke:var(--accent);stroke-width:1.5;rx:3}.scene-edge{stroke-width:2;marker-start:var(--scene-port)}.scene-label rect{fill:var(--tint);rx:2}[data-canvas]{background-image:radial-gradient(var(--border) 1px,transparent 1px);background-size:16px 16px;padding:24px 15px!important;border-radius:8px}[data-node]{position:relative;border-radius:5px!important;background:var(--surface)!important;border:1px solid var(--accent)!important;box-shadow:0 3px 0 color-mix(in srgb,var(--accent) 12%,transparent)}[data-node]:before,[data-node]:after{content:"";position:absolute;top:50%;width:8px;height:8px;background:var(--surface);border:2px solid var(--accent);border-radius:50%;transform:translateY(-50%)}[data-node]:before{left:-5px}[data-node]:after{right:-5px}[data-flow-gap]{font-family:monospace;color:var(--accent)}[data-boundary]{border-style:dashed!important}[data-panel]{border-radius:6px!important}[data-question-marker]{border-radius:4px!important}' });

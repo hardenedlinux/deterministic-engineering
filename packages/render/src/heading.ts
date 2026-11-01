@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2026 tao3k team and Contributors
 //
-// SPDX-License-Identifier: LGPL-2.1-only
+// SPDX-License-Identifier: LGPL-2.1-or-later
 
 import type {FigureContext,FigureComposition} from './figure';
 /** A semantic part, not a page template. Roles are open; a Question is explicitly source-bound. */

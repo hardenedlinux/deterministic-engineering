@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2026 tao3k team and Contributors
 //
-// SPDX-License-Identifier: LGPL-2.1-only
+// SPDX-License-Identifier: LGPL-2.1-or-later
 
 // DE-CASE-01 organization model. Bounded formation runs are recorded in 10.80; no satisfaction or approval verdict.
 // Stable identities are existing project IDs; locations are not Contract versions.

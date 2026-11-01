@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2026 tao3k team and Contributors
 //
-// SPDX-License-Identifier: LGPL-2.1-only
+// SPDX-License-Identifier: LGPL-2.1-or-later
 
 import {composeModelView,composeHeading,composeTaste,questionFocus,evidenceFocus,questionScope,dependencyLayout,visualHierarchy,minimumTextSize,focalBudget,type FigureComposer} from '@deterministic-engineering/render';
 /** All projects use these open pure policies. No Library IDs, named layouts or diagram presets. */

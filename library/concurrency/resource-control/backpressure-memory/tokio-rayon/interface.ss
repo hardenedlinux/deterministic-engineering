@@ -1,6 +1,6 @@
 ;;; SPDX-FileCopyrightText: 2026 tao3k team and Contributors
 ;;;
-;;; SPDX-License-Identifier: LGPL-2.1-only
+;;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 ;;; Authored specialization is an atomic native Module, separate from execution.
 (import (only-in :yuanxu/module-system/source/declaration .def))

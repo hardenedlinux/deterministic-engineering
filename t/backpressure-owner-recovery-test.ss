@@ -1,6 +1,6 @@
 ;;; SPDX-FileCopyrightText: 2026 tao3k team and Contributors
 ;;;
-;;; SPDX-License-Identifier: LGPL-2.1-only
+;;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 ;;; -*- Gerbil -*-
 (import (only-in :gerbil/runtime/loader list-modules) :std/test :std/encoding/json :std/list/list :clan/poo/object (only-in :std/os/pid getpid) (only-in :std/os/signal kill SIGKILL)

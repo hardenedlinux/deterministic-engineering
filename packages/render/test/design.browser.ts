@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2026 tao3k team and Contributors
 //
-// SPDX-License-Identifier: LGPL-2.1-only
+// SPDX-License-Identifier: LGPL-2.1-or-later
 
 import {test,expect} from 'playwright/test';
 import {composeFigure,composeModelView,defineDesign,composeTaste,reviewTaste,focalBudget,minimumTextSize,type FigureInput} from '../src';
@@ -43,15 +43,15 @@ test('source selections affect geometry and SPDX export attribution stays host-o
  const base={...input,questions:input.questions.map(q=>({...q,subjectRefs:['library']})),references:{...input.references,observed:'observed.ss'},sources:{...input.sources,'observed.ss':'capture-blocked'},view:{...input.view,basis:{...input.view.basis,evidenceRefs:['observed']}},evidence:[{sourceRef:'observed',excerpt:'capture-blocked',state:'missing' as const,subjectRefs:['profile'],relationRefs:[]}]};
  const selected=selectTaste(base,policies),figure=composeFigure(selected,composeModelView);
  expect(figure.html).toContain('missing · observed');
- const attribution={copyright:['2026 Example Publisher'],license:'LGPL-2.1-only'};
+ const attribution={copyright:['2026 Example Publisher'],license:'LGPL-2.1-or-later'};
  const image=await exportFigure(figure,browser,{attribution});
  expect(image.html).toContain('<!--\nSPDX-FileCopyrightText: 2026 Example Publisher');
- expect(image.svg[0]).toContain('SPDX-License-Identifier: LGPL-2.1-only');
+ expect(image.svg[0]).toContain('SPDX-License-Identifier: LGPL-2.1-or-later');
  expect(image.html).not.toContain('tao3k team');
  const plain=await exportFigure(composeFigure(selectTaste({...base,evidence:[],view:{...base.view,basis:{...base.view.basis,evidenceRefs:[]}}},policies),composeModelView),browser);
  expect(plain.html).not.toContain('SPDX-FileCopyrightText');
  expect(image.receipt.scenes[0]!.layoutSHA256).not.toBe(plain.receipt.scenes[0]!.layoutSHA256);
- await expect(exportFigure(figure,browser,{attribution:{copyright:['bad-->'],license:'LGPL-2.1-only'}})).rejects.toThrow('attribution');
+ await expect(exportFigure(figure,browser,{attribution:{copyright:['bad-->'],license:'LGPL-2.1-or-later'}})).rejects.toThrow('attribution');
  expect(()=>composeFigure({...selected,width:900},composeModelView)).toThrow();
 });
 

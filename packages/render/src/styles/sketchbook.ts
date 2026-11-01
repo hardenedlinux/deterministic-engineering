@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2026 tao3k team and Contributors
 //
-// SPDX-License-Identifier: LGPL-2.1-only
+// SPDX-License-Identifier: LGPL-2.1-or-later
 
 import type {PresentationThemeOverrides} from '../presentation-theme';
 export const sketchbook: PresentationThemeOverrides = Object.freeze({fonts: Object.freeze([400, 700].map(weight => Object.freeze({family: 'Kalam', weight, source: `@fontsource/kalam/files/kalam-latin-${weight}-normal.woff2`}))), fontFamily: '"Kalam","Noto Sans",sans-serif', drawing: Object.freeze({mode: 'sketch' as const, options: Object.freeze({seed: 29, roughness: 1.3})}),

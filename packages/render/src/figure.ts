@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2026 tao3k team and Contributors
 //
-// SPDX-License-Identifier: LGPL-2.1-only
+// SPDX-License-Identifier: LGPL-2.1-or-later
 
 import {assertTasteSelection,bindEvidence,bindQuestionTargets,type EvidenceProjection,type TasteSelection} from './taste-selection';
 import {bindDesign,type Design} from './design';
