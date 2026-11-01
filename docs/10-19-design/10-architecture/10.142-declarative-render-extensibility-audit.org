@@ -1,0 +1,102 @@
+#+TITLE: 10.142 Declarative Static Render Extensibility Audit
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.142
+
+* Scope and resulting ownership
+This audit follows 10.141 and inspects the actual TS package, D2 declarations,
+Library/Profile/Scenario Case, native APIs and CI entrypoints. The package remains
+=@deterministic-engineering/render=, version 1.0.0 read from =package.json=.
+It is a static rendering library. No whiteboard/editor or React runtime is added.
+
+| Owner | Publishes / consumes | Does not own |
+|-------+----------------------+--------------|
+| Project D2/SysML | Questions, copy, model IDs/edges, sources, kind, layout, theme/icon selection and variants | Generic render implementation |
+| Project composer | Domain presentation schema, selected content organization, source observations | Another HTML/D2 parser, graph layout engine or evidence ledger |
+| Render core | Capture/fingerprint, immutable composition context, resource resolution and purpose boundary | Linear-workflow semantics, finite catalogue of all diagram kinds or mandatory page template |
+| Mature libraries | D2 compilation/layout/SVG, parse5 HTML parsing, Rough.js strokes/options, XYFlow connector paths, Playwright export | Project truth, evidence issuance or review authority |
+
+* Findings and disposition
+| Finding in previous implementation | Change / exact owner | Verification |
+|------------------------------------+----------------------+--------------|
+| Seven names acted as the whole diagram taxonomy; purpose checks were repeated | =source/types.ts= has open kind identifiers and one =validatePurposeKind=; reserved standard kinds retain their purpose | Custom kind through actual D2 worker and native SVG render; blank kind/reserved mismatch refuse |
+| Framework parsed/validated every workflow as one ordered preparation path with lanes | Moved schema and checks to =examples/render/library-case/workflow-declaration.ts=; D2 places it in project-owned =presentation.flow= | Case lane/node/edge negatives, actual source declarations |
+| Compiler forced ELK regardless of project selection | Both worker entry and default native theme leave compile options empty; RenderTheme accepts the complete official CompileOptions | Actual native D2 DAGRE declaration compiles |
+| Variant consumer re-resolved themes through upstream defaults and lost downstream resources | =readD2Figure= resolves each variant once against supplied =FigureResources=; =selectFigureVariant= retains it | Downstream theme remains in variant and HTML; missing/duplicate variants refuse |
+| Icons were programmatic overrides; D2 could not select packs, metadata always said engineering | Ordered immutable =composeIconPacks=, D2 =icons= and variant overrides; actual SVG hashes in metadata | Custom real Case glyphs; unknown/prototype-name pack and invalid asset refuse |
+| Question markers used a double-quote regex | parse5 parses real HTML; browser independently checks actual visibility | Single/unquoted attributes pass; comments/template/hidden/CSS invisibility refuse |
+| Captured model and project presentation could be modified by a composer | Deep-freeze cloned inputs before composition | Mutation negatives; caller input remains unchanged |
+| Drawing hardcoded rectangle/hachure/pen parameters | Reuse Rough.js =Options= directly; explicitly declared rectangle/ellipse/diamond surfaces call its primitives | Options/geometry change output; unsupported surface refuses |
+| HTML connections assumed horizontal endpoints | Declared =data-source-position=/=data-target-position= select XYFlow positions | Vertical connection passes, invalid side and reversed relation refuse |
+| Matrix variant replaced part of Case HTML via substring search | =architecture-diagram.ts= is an ordinary Case-owned pure-function table | Real default/matrix/custom resource compositions and unsupported Case layout refusal |
+| Source path checking was duplicated | Figure capture reuses =source/catalog.ts= source boundary | Source law and changed/uncaptured input controls |
+| Source excerpts were hardcoded in TS | D2 =presentation.observations= declares assertions; Case effect checks actual files | Missing/changed excerpts stop output; observations do not become execution evidence |
+| Unused SVG data-URI wrapper duplicated the existing inline SVG path | Removed; =IconAsset= remains the single payload type | Same real glyph/export tests |
+
+* Downstream declaration contract
+=compileFigureSource(sources, inputPath, resources?)= accepts data-only resources:
+=themeLayers= and =iconPacks=. Defaults are immutable. A downstream extends them
+with ordinary module exports, then D2 selects ordered names. No global registration,
+new manifest, cache or automatic discovery mechanism is required.
+
+A declared variant may select =kind=, =layout=, =themes= and =icons=. Unspecified
+resources inherit the view's resolved selection. =selectFigureVariant= preserves
+the captured sources, model, Questions and evidence links; it does not recompile
+or rewrite the model. Unknown or duplicate variants fail. Explicit icon packs are
+complete selected maps, not implicit word-based icon inference.
+
+=kind= is open. =purpose= remains architecture or workflow. Reserved standard
+kinds keep their original purpose, so allowing a new kind cannot silently turn
+an existing architecture view into a Workflow. Project =presentation= stays
+unknown at the generic boundary and is specifically validated by its compositor.
+
+The Case's =project-owned= variants declare =responsibility-map= and
+=capture-handoff= kinds, compose =field-notes + workbench + compact= and select
+=engineering + repo= glyphs. These names are absent from framework source.
+The Case remains explicitly English and still displays =capture-blocked= with
+=capture = #f= and no issued C/Q/R. Source assertions remain source observations.
+
+* Intentional retained defaults and limits
+Upstream palettes/styles and the Engineering glyph pack are optional maintained
+resources. Their existence does not limit downstream kinds or assets. The Case
+has an authored explanatory layout; its headings, role placement and section
+organization belong to that Case, not to =composeFigure=.
+
+Native D2 notation keeps D2 layout/SVG. The browser adapter measures explicitly
+authored HTML node boxes and delegates only connectors to XYFlow; it does not
+replace D2 with another graph layout solver. Rough.js adapters expose the selected
+primitives; other explicit SVG markup can be supplied by a compositor. Unknown
+primitives do not silently render as rectangles.
+
+OpenSysML's supported reflow adapter retains capability refusals for unsupported
+notation. This audit does not claim live SysML service validation. Static HTML
+export still bounds width/scale, closes its browser context, records actual fonts,
+backend pins and output hashes, and rejects stale inputs and detected clipping.
+Visual quality remains a review judgment separate from correctness controls.
+
+* Acceptance and execution entrypoints
+The normal CI entrypoints run package =bun install --frozen-lockfile=,
+=typecheck=, =bun test=, =bun run test:export=; then the actual consumer's frozen
+install, typecheck, tests, Case export, comparisons and native audit view.
+Playwright owns browser fixtures; tests do not start another test runner. Worker
+limits remain two and existing job/resource bounds are unchanged.
+
+Required positives include native D2 notation, project-only kinds/themes/icons,
+variant retention, real Library/Profile/Scenario sources, source fingerprints,
+independent architecture/Workflow artifacts and actual font/image export.
+Negatives retain unknown resources, hidden Questions, source/model mutation,
+invalid lanes/relations/ports, unsupported primitives, stale input and broken images.
+
+Ten full candidates and two comparison sheets are derived from 90.132/90.133.
+90.134 is the native D2 ownership/dependency view for this audit. CI is authoritative
+for Linux/macOS and its exact commit; local results alone do not establish both.
+No artifact-upload action is added; generated image candidates are tracked as
+requested documentation. No model publication, review or delivery is performed.
+
+* Local qualification before PR
+Package typecheck passed; 35 unit/native-D2/saved-SDK tests passed. The native
+Playwright entry passed 10 positive/negative controls. The actual consumer passed
+its typecheck and two domain integration tests, exported ten full candidate
+figures and two comparison sheets, and rendered the native D2 audit view.
+Remote Linux/macOS qualification must be read from the new PR's checks; local
+results do not substitute for those runs. The workflow keeps its ten-minute job
+bound and two-worker configuration and installs only declared packages/browser.

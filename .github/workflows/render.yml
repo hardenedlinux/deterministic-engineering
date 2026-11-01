@@ -1,0 +1,52 @@
+name: Deterministic Engineering Render
+on:
+  pull_request:
+    paths:
+      - 'packages/render/**'
+      - 'examples/render/**'
+      - 'docs/90-99-views/90-architecture-views/**'
+      - '.github/workflows/render.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'packages/render/**'
+      - 'examples/render/**'
+      - 'docs/90-99-views/90-architecture-views/**'
+      - '.github/workflows/render.yml'
+permissions:
+  contents: read
+jobs:
+  renderer:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version: 1.3.11
+      - run: bun install --frozen-lockfile
+        working-directory: packages/render
+      - run: bunx playwright install --with-deps chromium
+        working-directory: packages/render
+      - run: bun run typecheck
+        working-directory: packages/render
+      - run: bun test
+        working-directory: packages/render
+      - run: bun run test:export
+        working-directory: packages/render
+      - run: bun install --frozen-lockfile
+        working-directory: examples/render
+      - run: bun run typecheck
+        working-directory: examples/render
+      - run: bun test
+        working-directory: examples/render
+      - run: bun run case
+        working-directory: examples/render
+      - run: bun run compare
+        working-directory: examples/render
+      - run: bun run native
+        working-directory: examples/render

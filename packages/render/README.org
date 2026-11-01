@@ -1,0 +1,146 @@
+#+TITLE: Deterministic Engineering Render
+#+LANGUAGE: en
+
+* Ownership
+=@deterministic-engineering/render= is a functional static-rendering package.
+D2/SysML and their project adapters own Questions, model relationships, explanatory
+content and source associations. TS composes selected content, applies declared
+visual styles, and exports HTML/SVG/PNG. The package version is read from
+=package.json=; the namespace contains no version.
+
+The framework does not prescribe numbered panels, a fixed card template, or a
+closed list of layouts. Node and swimlane presentations are examples. Domain
+compositions can present a dependency matrix, hierarchy, business relation,
+timeline or another explanation using the same capture and export boundary.
+Native D2 system/data/assurance/routing/flow/sequence/state notation continues
+through the existing official compiler/render API; no replacement graph language
+or layout engine is introduced.
+
+* Declaration and pure composition
+=compileFigureSource(sources, inputPath, resources?)= uses the existing owned D2
+worker. D2 parses syntax/imports; its =graph.data= carries the figure declaration.
+The installed SDK requires nested metadata in a native =|json= block scalar;
+standard =JSON.parse= reads it. No second parser or TS Questions registry exists.
+
+The declaration owns =purpose=, =kind=, =language=, Questions/focus, copy, references,
+basis links, ordered =themes=, open =layout= and project-owned =presentation= data.
+The compositor receives these and the compiled model through =FigureContext=.
+=composeFigure(input, composer)= invokes a pure function returning markup/CSS.
+Every selected Question must have a visible region; invented source associations
+and requested model relations refuse. Architecture and Workflow remain separate.
+
+=layout= is an open project selector, not a package enum of allowed diagram kinds.
+=FigureInput.presentation= stays unknown until the domain compositor validates it.
+The dependency-matrix example checks declared axes against native model node IDs.
+The Case-owned linear workflow helper validates step/lane membership and actual
+consecutive model edges; the framework does not parse or constrain its schema.
+Use the model/native D2 or a domain compositor for other organizations.
+
+* Complete visual styles
+| Independent concern | Declaration / owner |
+|---------------------+---------------------|
+| Typography and fonts | =fontFamily= and explicit =fonts= assets |
+| Marks and boundaries | Immutable semantic CSS rules in independent style modules |
+| Stroke and fill | Rough.js mode, seed, roughness and surface treatment |
+| Nodes and connectors | Node/port grammar plus XYFlow's public =getSmoothStepPath= |
+| Palette and spacing | Composable color/spacing layers |
+| Icons | Replaceable SVG assets, separate from theme and language |
+| Diagram organization | Project =layout=/=presentation= and functional composer |
+
+=./presentation-theme= exports =composePresentationTheme=,
+=extendPresentationTheme= and immutable upstream layers. For example:
+
+#+begin_src typescript
+const theme = composePresentationTheme(['graphite', 'node-editor', 'compact']);
+const custom = composePresentationTheme(['sketchbook', 'brand'], {
+  ...presentationThemeLayers,
+  brand: {colors: {accent: '#356B64'}, spacing: {gap: 16}},
+});
+#+end_src
+
+D2 selects equivalent ordered layers and output variants. =sketchbook= uses actual
+Rough.js SVG strokes, hachure fill and embedded Kalam fonts. =node-editor= changes
+node outlines, ports, connectors and canvas treatment. =blueprint=, =field-notes=
+and =graphite= provide palette/typography choices; =compact= adjusts spacing.
+Downstream can supply additional layers, icons and composers without editing a
+global registry. Font resources are declared by the selected layer, not hardcoded
+inside the exporter. Current Case content remains English, matching its sources.
+
+The package imports Rough.js and the framework-independent XYFlow system utility.
+It does not mount a React/Svelte flow editor, pan/zoom runtime or whiteboard.
+Excalidraw is a visual reference; its complete editor, React dependencies and
+scene/bundle adapters are excluded from this static package.
+
+* Export and provenance
+=exportFigure(figure, browser, {scale})= uses the host's Playwright Browser.
+It owns and closes its context, settles actual fonts/images, measures nodes,
+uses XYFlow for selected connectors, and bakes Rough.js geometry into offline HTML.
+Rendered connectors must match captured native model relations, including direction.
+It rejects modified input HTML/drawing/fonts, missing/duplicate endpoints, invalid
+images and detected clipping. The host owns artifact writes and publication.
+
+The result includes PNG, materialized HTML and a rendering receipt: input/composed
+HTML/materialized HTML/PNG fingerprints, actual drawing/routing dependencies,
+font hashes, browser identity, dimensions, scale and region bounds. Captured
+sources, Questions, model, project presentation, style and icons enter the input
+fingerprint. Pixel equality across platforms or browser releases is not claimed.
+These are rendering facts, not issued C, accepted Q, review R or authority.
+
+* Existing adapters
+=renderCatalog= retains official D2-to-SVG rendering with one or two owned workers.
+=./opensysml= consumes the actual optional OpenSysML SDK, retaining model identity
+and origins in its explicit supported projection. Unsupported SDK notation refuses.
+Saved SDK response tests do not establish live service/model validation.
+
+* Case and verification
+=examples/render= consumes the package and reads canonical D2 declarations
+=90.132= and =90.133=. It captures actual Library/Profile/Scenario, =project.sysml=
+and Org sources. Source-excerpt observations remain labeled observations.
+Current =prepare-formation-capture= still reports =capture-blocked / capture = #f=.
+
+The Case exports ten independent figures: architecture/workflow baselines,
+architecture/workflow sketchbook, architecture/workflow node-editor,
+workflow swimlane, architecture dependency matrix and two project-owned resource variants. A separate comparison script
+exports their main diagram regions for visual comparison; full figures remain
+available. No automatic aesthetic approval or model publication is implied.
+
+#+begin_src sh
+bun install --frozen-lockfile
+bunx playwright install chromium
+bun run typecheck
+bun test
+bun run test:export
+# In examples/render:
+bun install --frozen-lockfile
+bun run case
+bun run compare
+#+end_src
+
+Playwright's native runner owns browser tests, with at most two workers. Core
+imports launch no browser. SVG-only D2 consumers need no browser. Generated
+artifacts are in =.cache/render/library-case=; documented candidate snapshots live
+beside the D2 view sources. Package installation and a separate packed consumer
+verify that styles/fonts are included without the editor or workspace dependencies.
+
+* Downstream resource selection and open kinds
+=FigureResources= contains immutable =themeLayers= and =iconPacks=. D2 =icons= is
+an ordered list of selected packs. Each variant may declare a kind, layout,
+theme layers and icon packs. =selectFigureVariant(input, name)= consumes the
+already-resolved variant, preserving custom resources and the same captured
+model/Questions. Unknown/duplicate declarations refuse. No mutable global registry
+or framework edit is needed for the =workbench=/=repo= Case resources.
+
+A kind is an open identifier; standard native profiles are suggestions rather
+than the complete taxonomy. Purpose stays explicit architecture/workflow. Domain
+schemas (such as the current Case's =presentation.flow=) belong in domain modules.
+Rough.js =Options= directly configure stroke/fill; selected surfaces delegate to
+its primitives. Connector sides may be declared through data attributes and use
+XYFlow paths. HTML marker parsing uses parse5; actual visibility uses the browser.
+See [[../../docs/10-19-design/10-architecture/10.142-declarative-render-extensibility-audit.org][10.142 audit]]
+for exact findings, retained defaults, negative controls and responsibility boundaries.
+
+The native D2 theme accepts its full =CompileOptions=, including supplied font
+bytes, and leaves layout unset by default. D2 source configuration or an explicit
+caller override selects the engine. HTML drawing uses Rough.js =Options= rather
+than a second pen configuration schema. Source assertions are now declared in
+D2 =presentation.observations= and observed by the Case, not hardcoded in core.
