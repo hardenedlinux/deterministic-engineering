@@ -1,0 +1,32 @@
+...@../../../packages/architecture-renderer/themes/system
+consumer: {
+  label: "Downstream repositories"
+  gateway: "Gateway / Weaver\nmodel selection and local themes"
+  case: "Engineering Library case\nOrg, SysML and decisions"
+}
+library: {
+  label: "Engineering Library / renderer package"
+  api: "Public package exports\nindex.ts / opensysml subpath"
+  core: "Functional core\ncatalog / references / pipeline"
+  runtime: "Rendering effects\nworkers / native D2 compile + render"
+  theme: "Presentation data\ndefaultTheme / custom overrides"
+  presentation: "TS visual composition\nquestion / explanations / evidence context"
+  pageTheme: "Independent page themes\ntypography / surfaces / status colors / icons"
+  model: "Optional model projection\nOpenSysML adapter and source trace"
+}
+external: {
+  label: "Official external capabilities"
+  model: "OpenSysML TS SDK\npublic model and RenderedView types"
+  engines: "Rendering libraries\nOfficial D2 compile / render"
+}
+consumer.gateway -> library.api: package dependency
+consumer.case -> library.api: same package API
+library.api -> library.core: composes functions
+library.api -> library.runtime: owns effect scopes
+library.core -> library.theme: explicit theme input
+library.runtime -> external.engines: public engine APIs
+library.model -> external.model: public SDK API
+consumer.gateway -> library.model: optional SysML projection
+
+library.api -> library.presentation: optional explanation page
+library.presentation -> library.pageTheme: explicit presentation input

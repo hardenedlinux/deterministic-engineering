@@ -1,0 +1,25 @@
+# Question-led presentation candidate derived from 90.91 and Org 10.31.
+# Short labels are a reviewed content change, not a rewrite of the original source.
+direction: right
+vars: { d2-config: { theme-id: 0; layout-engine: elk; pad: 28 } }
+classes: {
+  library: {style: {fill: "#EAF1FF"; stroke: "#245FE5"; font-color: "#173E89"; border-radius: 14; font-size: 22}}
+  profile: {style: {fill: "#F0EBFC"; stroke: "#7753D9"; font-color: "#50368A"; border-radius: 14; font-size: 22}}
+  scenario: {style: {fill: "#E7F4F0"; stroke: "#138274"; font-color: "#125F55"; border-radius: 14; font-size: 22}}
+  artifact: {style: {fill: "#FFFFFF"; stroke: "#CCD6E8"; font-color: "#364A68"; border-radius: 10; font-size: 19}}
+}
+library: {label: "Library\nPublished contracts"; class: library}
+profile: {label: "Profile\nSelected configuration"; class: profile}
+scenario: {label: "Scenario\nOne captured use"; class: scenario}
+content: {
+  label: "Project-owned content"
+  style: {fill: "#F7F9FD"; stroke: "#CCD6E8"; border-radius: 16; font-size: 20}
+  model: {label: "Architecture model"; class: artifact}
+  docs: {label: "Org documents"; class: artifact}
+  decisions: {label: "Decision records"; class: artifact}
+}
+profile -> library: "selects published contracts"
+scenario -> profile: "binds selection"
+scenario -> content.model: "captures model references"
+scenario -> content.docs: "captures document closure"
+scenario -> content.decisions: "captures decision context"

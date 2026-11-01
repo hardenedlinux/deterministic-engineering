@@ -1,0 +1,91 @@
+#+TITLE: Question-driven D2 rendering Library
+#+LANGUAGE: en
+
+* Ownership and functions
+This functional TypeScript/Bun package belongs to Deterministic Engineering.
+Gateway consumes the package and owns its project inputs and publication.
+Official @terrastruct/d2 owns compilation, layout and SVG rendering. There is no second scene, layout or typography engine.
+The package version is declared only in package.json, never in its namespace.
+
+=createCatalog= validates and freezes supplied D2/import text and view choices.
+=renderView= composes explicit compile, SVG effects. =renderCatalog=
+provides the Bun worker adapter: at most two workers, terminated in finally,
+with no partial successful result when a selected view fails. The adapter writes
+no files and starts no model service. Pure data transformations use readonly
+records, discriminated unions and ordinary functions rather than application
+class hierarchies or an additional functional runtime.
+
+* Question and model/evidence links
+Every ViewSelection requires a question (ref, text) and ViewBasis (captureRef,
+modelRefs, obligationRefs, evidenceRefs). These link to the project's existing
+capture/model/obligation/evidence records; they do not issue a Core capture C,
+authenticate a source or replace its Contract. Empty evidence references remain
+empty. A successful image is not evidence of the model's correctness.
+
+Architecture and workflow are separate purpose variants and separate outputs.
+Kinds classify views: architecture has system/data/assurance; workflow has
+routing/flow/sequence/state. Classification does not replace the D2 language.
+Native D2 shapes, nested groups, styling and sequence diagrams stay native.
+The renderer preserves native node/edge IDs, question/basis links, source digest,
+SVG bytes and hashes. Native sequence lifelines are included in edge counts.
+All supplied source/import text, links and theme options enter the input digest.
+This fingerprint is not a signature, authorization or proof of reference closure.
+
+* Themes and extensibility
+D2 profiles in themes/ are optional defaults, exposed by standardThemes().
+Downstream may supply its own captured import closure and ordinary D2 classes,
+styles, icons and layout. Theme selection is independent of model identity.
+The ./theme export contains only immutable official D2 compile/render options;
+extendTheme composes overrides without changing upstream defaults. There is no
+closed semantic-role palette or global theme registry. Assets and font access
+are governed by the underlying engines; the caller must qualify resource closure
+for a hermetic publication. SVG is the primary artifact. Built-in PNG conversion was removed after real cases exposed font substitution
+and text overflow. Raster export requires separately qualified browser rendering.
+
+* Optional OpenSysML SDK adapter
+The ./opensysml export uses the actual @openmbee/opensysml Connection and
+RenderedView public API. captureOpenSysMLView invokes connection.renderView;
+projectOpenSysMLView is a pure explicit reflow projection to D2 with model hash,
+original IDs, origins and the complete SDK response fingerprint. The SDK owns
+transport, backend capability and model operations; this package has no SysML
+parser or alternate SDK. Errors propagate unchanged.
+
+The initial projection refuses ports, compartments, tables/notes, stand-ins,
+collapsed nodes, dangling edges and cyclic ownership rather than dropping them.
+Tests use the installed SDK's real JSON decoder and actual D2 output; they do
+not establish live service/WASM model validation. Model hash remains a supplied
+reference until the project's existing source checks bind it to trusted inputs.
+
+* Run and consume
+Run bun install --frozen-lockfile, bun run typecheck and bun test here.
+examples/architecture-rendering installs this actual package via a file dependency.
+Run bun run render for separate architecture/workflow outputs, and bun run cases
+for three unchanged existing repository designs. Artifacts and rendering receipts
+are under .cache/architecture-rendering. The example references are candidate
+review inputs, not an issued capture, accepted inference view or approval.
+
+The package is source TypeScript for Bun; no Node-only compatibility is claimed.
+The Gerbil package remains independent. Gateway migration and live model-backed
+question selection require downstream acceptance and are not performed here.
+
+* TS presentation engine
+=composePresentation= is a pure page compositor, separate from D2 graph layout.
+It composes the question/answer, original diagram, explanation cards, evidence
+context and open questions into SVG. It preserves native D2 markup and embedded
+fonts. PresentationInput carries explicit design/pending/conflict/supported
+assertions. Supported assertions require a reference; this structural check does
+not authenticate the reference or establish support. Missing evidence is visible.
+
+The separate ./presentation-theme export provides typography, colors and spacing.
+extendPresentationTheme composes downstream overrides without mutating defaults.
+These page themes are independent of D2 graph themes/options. Real cases generate
+upstream blue/purple and downstream green/warm pages from identical native graphs.
+
+* Visual vocabulary
+The ./icons export provides Lucide SVG defaults plus IconAsset and iconDataURI.
+Assets are explicitly selected for nodes/claims rather than guessed from labels.
+PresentationInput.icons and each finding's icon allow downstream replacement.
+Question, model, obligation and missing-evidence icons supplement short labels;
+full references remain in metadata and receipts. The compact composition is an
+infographic, not a prose page with a graph embedded in it. Native D2 supports the
+same captured SVG assets for diagram node icons.
