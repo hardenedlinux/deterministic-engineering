@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 #
 # SPDX-License-Identifier: LGPL-2.1-or-later
 

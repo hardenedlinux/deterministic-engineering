@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2026 tao3k team and Contributors
+// SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 //
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
@@ -47,7 +47,7 @@ test('source selections affect geometry and SPDX export attribution stays host-o
  const image=await exportFigure(figure,browser,{attribution});
  expect(image.html).toContain('<!--\nSPDX-FileCopyrightText: 2026 Example Publisher');
  expect(image.svg[0]).toContain('SPDX-License-Identifier: LGPL-2.1-or-later');
- expect(image.html).not.toContain('tao3k team');
+ expect(image.html).not.toContain('hardenedlinux Linux Team');
  const plain=await exportFigure(composeFigure(selectTaste({...base,evidence:[],view:{...base.view,basis:{...base.view.basis,evidenceRefs:[]}}},policies),composeModelView),browser);
  expect(plain.html).not.toContain('SPDX-FileCopyrightText');
  expect(image.receipt.scenes[0]!.layoutSHA256).not.toBe(plain.receipt.scenes[0]!.layoutSHA256);

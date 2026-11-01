@@ -1,5 +1,5 @@
-;;; SPDX-FileCopyrightText: 2026 tao3k team and Contributors
-;;; SPDX-License-Identifier: Apache-2.0 AND LGPL-2.1-or-later
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;;; SPDX-License-Identifier: LGPL-2.1-or-later
 (import :std/test
         (only-in :std/source this-source-file)
         (only-in :std/misc/process run-process))
