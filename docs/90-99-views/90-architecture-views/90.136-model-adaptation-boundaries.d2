@@ -1,0 +1,134 @@
+vars: {d2-config: {data: {figure: |json
+{
+  "title": "SDK semantics and rendering adapter boundaries",
+  "purpose": "architecture",
+  "kind": "adapter-responsibilities",
+  "language": "en",
+  "width": 1120,
+  "primary": "q",
+  "questions": [
+    {
+      "ref": "q",
+      "text": "What does each SDK own, and what may the renderer project?",
+      "focusRefs": [
+        "source",
+        "d2-adapter",
+        "sdk-projection",
+        "source-binding",
+        "model-view"
+      ]
+    }
+  ],
+  "references": {
+    "source": "docs/90-99-views/90-architecture-views/90.136-model-adaptation-boundaries.d2",
+    "d2-adapter": "packages/render/src/d2-figure.ts",
+    "sdk-projection": "packages/render/src/opensysml.ts",
+    "source-binding": "packages/render/src/index.ts",
+    "model-view": "packages/render/src/model-view.ts"
+  },
+  "basis": {
+    "captureRef": "design-candidate:model-adaptation",
+    "modelRefs": [
+      "project.sysml"
+    ],
+    "obligationRefs": [
+      "docs/10-19-design/10-architecture/10.143-sdk-model-adaptation-audit.org"
+    ],
+    "evidenceRefs": []
+  },
+  "copy": {
+    "description": "Dependencies and trust boundaries; arrows point to consumed inputs.",
+    "status": "Source-based adapter observations \u00b7 explicit projection limits \u00b7 no C/Q/R issued"
+  },
+  "themes": [
+    "editorial",
+    "compact"
+  ],
+  "icons": [
+    "engineering"
+  ],
+  "presentation": {
+    "scenes": [
+      {
+        "graph": {
+          "id": "model-adaptation-scene",
+          "children": [
+            {
+              "id": "project.capture"
+            },
+            {
+              "id": "project.presentation"
+            },
+            {
+              "id": "native.d2"
+            },
+            {
+              "id": "native.sysml"
+            },
+            {
+              "id": "library.d2"
+            },
+            {
+              "id": "library.binding"
+            },
+            {
+              "id": "library.sysml"
+            },
+            {
+              "id": "library.scene"
+            }
+          ],
+          "layoutOptions": {
+            "elk.direction": "DOWN",
+            "elk.edgeRouting": "ORTHOGONAL",
+            "elk.spacing.nodeNode": "30",
+            "elk.layered.spacing.nodeNodeBetweenLayers": "32"
+          }
+        },
+        "icons": {
+          "project.capture": "capture",
+          "project.presentation": "selection",
+          "native.d2": "model",
+          "native.sysml": "model",
+          "library.d2": "document",
+          "library.binding": "evidence",
+          "library.sysml": "reference",
+          "library.scene": "decision"
+        },
+        "roles": {
+          "project.capture": "capture",
+          "project.presentation": "capture",
+          "native.d2": "external",
+          "native.sysml": "external",
+          "library.d2": "capture",
+          "library.binding": "capture",
+          "library.sysml": "capture",
+          "library.scene": "capture"
+        }
+      }
+    ]
+  }
+}
+|
+}}}
+project: Project-owned inputs {
+ capture: "Captured SDK result\nModel hash / view / original JSON"
+ presentation: "View declarations\nQuestions / captions / themes / graph"
+}
+native: Semantic authorities {
+ d2: "D2 SDK\nSyntax / IDs / members / arrowheads"
+ sysml: "OpenSysML SDK\nParse / check / renderView / protojson"
+}
+library: Render Library {
+ d2: "D2 observation adapter\nPreserve exact SDK output"
+ binding: "Source binding\nMatch model hash / view / captured bytes"
+ sysml: "Direct SDK model projection\nExplicit parents / checked port references"
+ scene: "TS scene composition\nNative ELK layout / measured SVG"
+}
+library.d2 -> native.d2: consumes compiled observations
+library.binding -> project.capture: checks selected snapshot
+library.binding -> library.sysml: projects matched capture
+library.sysml -> native.sysml: consumes decoded RenderedView
+library.scene -> library.binding: consumes bound model
+library.scene -> library.d2: consumes observed model
+library.scene -> project.presentation: applies explicit presentation

@@ -1,3 +1,4 @@
+import {relativeSource} from './source/catalog';
 import {composeIconPacks, type IconPacks} from './icons';
 import { composePresentationTheme, type ThemeLayers } from './presentation-theme';
 import type { Diagram } from '@terrastruct/d2';
@@ -16,7 +17,7 @@ const texts = (value: unknown, name: string): string[] => {
 };
 /** Official D2 handles syntax/imports. Its standard plugin data owns the declaration. */
 export interface D2FigureData { readonly data: unknown; readonly diagram?: Pick<Diagram, 'shapes' | 'connections'>; readonly model?: FigureInput['model']; readonly inputPath: string; readonly fs: Readonly<Record<string, string>>; }
-export interface FigureResources { readonly themeLayers?: ThemeLayers; readonly iconPacks?: IconPacks; }
+export interface FigureResources { readonly themeLayers?: ThemeLayers; readonly iconPacks?: IconPacks;readonly sysmlViews?:Readonly<Record<string,import('./opensysml').OpenSysMLCapture>>; }
 export function readD2Figure(compiled: D2FigureData, captured: Readonly<Record<string, string>>, resources: FigureResources = {}): FigureInput {
   const data = compiled.data;
   const encoded = object(data, 'D2 graph.data').figure;
@@ -37,6 +38,7 @@ export function readD2Figure(compiled: D2FigureData, captured: Readonly<Record<s
   if (typeof width !== 'number') throw new Error('Expected declared width');
   const referenceData = object(declaration.references, 'references');
   const references = Object.fromEntries(Object.entries(referenceData).map(([key, value]) => [key, text(value, `reference ${key}`)]));
+  for(const source of Object.values(references))relativeSource(source);
   const copyData = object(declaration.copy, 'copy');
   const copy = Object.fromEntries(Object.entries(copyData).map(([key, value]) => [key, text(value, `copy ${key}`)]));
   const basis = object(declaration.basis, 'basis');
@@ -58,10 +60,22 @@ export function readD2Figure(compiled: D2FigureData, captured: Readonly<Record<s
     if (new Set(result.map(variant => variant.name)).size !== result.length) throw new Error('Duplicate declared figure variant');
     return result;
   })();
-  return {view, model, theme, variants, icons, presentation: declaration.presentation, layout: declaration.layout === undefined ? undefined : text(declaration.layout, 'layout'), language: text(declaration.language, 'language'), width, questions, references, copy,
+  const origin=declaration.modelSource===undefined?undefined:object(declaration.modelSource,'model source');
+  const captions=origin?.labels===undefined?undefined:object(origin.labels,'model captions');
+  const modelSource=origin?{ref:text(origin.ref,'model source reference'),modelHash:text(origin.modelHash,'model hash'),view:text(origin.view,'SysML view'),portProjection:origin.portProjection===undefined?undefined:(origin.portProjection==='owner'?'owner' as const:(()=>{throw new Error('Unsupported port projection');})()),labels:captions?Object.fromEntries(Object.entries(captions).map(([key,value])=>[key,text(value,'model caption')])):undefined}:undefined;
+  return {modelSource,view, model, theme, variants, icons, presentation: declaration.presentation, layout: declaration.layout === undefined ? undefined : text(declaration.layout, 'layout'), language: text(declaration.language, 'language'), width, questions, references, copy,
     sources: {...compiled.fs, ...captured}};
 }
 
+/** Observe the pinned SDK output; do not parse IDs, escapes or synthetic notation. */
 export function modelFromDiagram(diagram: Pick<Diagram,'shapes'|'connections'>): NonNullable<FigureInput['model']> {
-  return {subjects:diagram.shapes.map(shape=>({id:shape.id,type:shape.type,label:'label' in shape?shape.label:undefined})),relations:diagram.connections.map(({id,src,dst,label})=>({id,src,dst,label}))};
+  return {
+    subjects: diagram.shapes.map(shape => ({
+      id: shape.id, type: shape.type, level: shape.level, classes: shape.classes,
+      label: 'label' in shape ? shape.label : undefined,
+      ...(shape.type === 'sql_table' && 'columns' in shape && Array.isArray(shape.columns) ? {columns: shape.columns.map(column=>({name:{label:column.name.label},type:{label:column.type.label},constraint:column.constraint,reference:column.reference}))} : {}),
+      ...(shape.type === 'class' && 'fields' in shape ? {fields: shape.fields??[], methods: shape.methods??[]} : {}),
+    })),
+    relations: diagram.connections.map(({id,src,dst,label,srcArrow,dstArrow}) => ({id,src,dst,label,srcArrow,dstArrow})),
+  };
 }

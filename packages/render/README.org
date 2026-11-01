@@ -15,8 +15,10 @@ is required. Downstream supplies a pure composer, theme layers and SVG icon pack
 to the official D2 SDK. It returns model IDs, labels, relationships and declared
 metadata; D2 geometry and raw SVG are discarded. =compileFigureSource= resolves
 that metadata into =FigureInput=. Nested declarations use native D2 =|json=.
-=readD2Figure= also accepts an explicitly supported model projection from the
-optional OpenSysML adapter; saved-response tests are not live model validation.
+=modelSource= may select a host-captured OpenSysML result by an existing source
+reference, exact model hash and requested view. =compileFigureSource= checks the
+captured JSON and directly projects the SDK model without emitting/recompiling D2.
+Saved-response tests do not establish live model validation.
 
 =composeFigure(input, composer)= captures immutable sources and invokes a pure
 function returning markup/CSS. Its context exposes selected Questions, copy,
@@ -129,3 +131,27 @@ References: [[https://github.com/kieler/elkjs][ELK.js]];
 [[https://eclipse.dev/elk/reference/algorithms/org-eclipse-elk-layered.html][ELK Layered]];
 [[https://roughjs.com/][Rough.js]].
 See [[../../docs/10-19-design/10-architecture/10.142-declarative-render-extensibility-audit.org][10.142 audit]].
+
+* SDK model adaptation
+The SDKs own parsing, checking and transport decoding. D2 observations retain
+exact IDs, labels, classes, typed class/SQL members and native arrowhead values.
+No dotted-name ownership guesses, escape reinterpretation or lifeline ID filters
+are applied. Automatic =graphFromModel= uses explicit parents; a nested D2 view
+selects its own graph projection. =composeModelView= is an optional pure helper.
+
+The =./opensysml= projection returns a =model= and source trace directly. Captions
+use SDK node IDs. =portProjection: owner= is explicit and checks each native port
+against its endpoint; source references survive owner-level display. Unsupported
+notation and unsupported SVG arrowheads refuse. The former generated =text=/
+=source= projection result has been replaced in this unpublished PR.
+
+=modelSource={ref,modelHash,view,portProjection?,labels?}= binds an existing entry
+in =references= and its actual captured JSON. =FigureResources.sysmlViews= supplies
+SDK snapshots. The model selection and trace enter input fingerprints and exported
+metadata; source acquisition and evidence admission remain host responsibilities.
+No rendering fact confers model validity, review authority or C/Q/R identity.
+See [[../../docs/10-19-design/10-architecture/10.143-sdk-model-adaptation-audit.org][10.143 audit]].
+
+SVG endpoint marks currently support native =none=, =arrow=, =triangle= and
+=unfilled-triangle=. Other D2 Arrowhead values remain in the observed model and
+refuse this renderer capability instead of being silently replaced.

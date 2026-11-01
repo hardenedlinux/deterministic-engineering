@@ -1,10 +1,12 @@
+export {composeModelView,graphFromModel} from './model-view';
+import {isDeepStrictEqual} from 'node:util';
 import {Worker} from 'node:worker_threads';
 import type {CompileOptions} from '@terrastruct/d2';
 import {relativeSource} from './source/catalog';
 import {readD2Figure,type FigureResources} from './d2-figure';
 import type {FigureInput,FigureModel} from './figure';
 export {composeFigure,selectFigureVariant} from './figure';
-export type {FigureInput,FigureModel,FigureQuestion,FigureContext,FigureComposer,ComposedFigure} from './figure';
+export type {FigureInput,FigureModel,FigureQuestion,FigureContext,FigureComposer,ComposedFigure,ModelSource} from './figure';
 export {composeDiagram} from './diagram';
 export type {DiagramSpec,DiagramNodeComposer} from './diagram';
 export {readD2Figure} from './d2-figure';
@@ -26,6 +28,18 @@ export async function compileModel(sources:Readonly<Record<string,string>>,input
   });}finally{await worker.terminate();}
 }
 export async function compileFigureSource(sources:Readonly<Record<string,string>>,inputPath:string,resources:FigureResources={},options:CompileOptions={}):Promise<FigureInput> {
-  const capture=await compileModel(sources,inputPath,options);
-  return readD2Figure(capture,sources,resources);
+  const captured={...sources};
+  const capture=await compileModel(captured,inputPath,options);
+  const input=readD2Figure(capture,captured,resources);
+  if(!input.modelSource)return input;
+  const selected=resources.sysmlViews && Object.hasOwn(resources.sysmlViews,input.modelSource.view) ? structuredClone(resources.sysmlViews[input.modelSource.view]) : undefined;
+  if(!selected || selected.requestedView!==input.modelSource.view || selected.modelHash!==input.modelSource.modelHash)
+    throw new Error('OpenSysML model/view binding mismatch');
+  const source=input.references[input.modelSource.ref];
+  if(!Object.hasOwn(input.references,input.modelSource.ref) || !source || !Object.hasOwn(input.sources,source)) throw new Error('Uncaptured OpenSysML source reference');
+  const saved:unknown=JSON.parse(input.sources[source]!);
+  if(!isDeepStrictEqual(saved,selected)) throw new Error('OpenSysML source bytes do not bind the selected capture');
+  const {projectOpenSysMLView}=await import('./opensysml');
+  const projection=projectOpenSysMLView(selected,{selection:input.view,layout:'reflow',portProjection:input.modelSource.portProjection,labels:input.modelSource.labels});
+  return {...input,model:projection.model,modelTrace:projection.trace};
 }

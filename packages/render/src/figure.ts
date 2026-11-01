@@ -1,5 +1,5 @@
 import {parseFragment, type DefaultTreeAdapterTypes} from 'parse5';
-import type { Shape, Connection } from '@terrastruct/d2';
+import type { Shape, Connection, SQLColumn, Text, Class } from '@terrastruct/d2';
 import packageInfo from '../package.json' with {type: 'json'};
 import { digest, relativeSource } from './source/catalog';
 import { validatePurposeKind, type QuestionRef, type ViewSelection } from './source/types';
@@ -8,10 +8,26 @@ import { defaultPresentationTheme, type PresentationTheme } from './presentation
 
 export interface FigureQuestion extends QuestionRef { readonly focusRefs: readonly string[]; }
 export interface FigureModel {
-  readonly subjects: readonly Readonly<Pick<Shape, 'id' | 'type'> & {label?: string}>[];
-  readonly relations: readonly Readonly<Pick<Connection, 'id' | 'src' | 'dst' | 'label'>>[];
+  readonly subjects: readonly Readonly<Pick<Shape, 'id' | 'type'> & {
+    label?: string; parent?: string; level?: Shape['level']; classes?: Shape['classes']; sourceName?: string;
+    columns?: readonly Readonly<Pick<SQLColumn,'constraint'|'reference'> & {name:Pick<Text,'label'>;type:Pick<Text,'label'>}>[]; fields?: Class['fields']; methods?: Class['methods'];
+  }>[];
+  readonly relations: readonly Readonly<Pick<Connection, 'id' | 'src' | 'dst' | 'label'> & {
+    srcArrow?: Connection['srcArrow']; dstArrow?: Connection['dstArrow'];
+    fromPort?: string; toPort?: string; kind?: string;
+  }>[];
+}
+export interface ModelSource {
+  readonly ref: string;
+  readonly view: string;
+  readonly modelHash: string;
+  readonly portProjection?: 'owner';
+  /** Display captions keyed by exact SDK node ID; names never become identities. */
+  readonly labels?: Readonly<Record<string,string>>;
 }
 export interface FigureInput {
+  readonly modelSource?: ModelSource;
+  readonly modelTrace?: import('./opensysml').SysMLProjectionResult['trace'];
   /** Project-owned declaration, interpreted by its functional composition. */
   readonly presentation?: unknown;
   readonly layout?: string;
@@ -107,7 +123,7 @@ export function composeFigure(input: FigureInput, compose: FigureComposer): Comp
     if (!value || typeof value !== 'object' || seen.has(value)) return;
     seen.add(value); for (const item of Object.values(value)) freeze(item, seen); Object.freeze(value);
   };
-  freeze(snapshot.model); freeze(snapshot.presentation); freeze(theme);
+  freeze(snapshot.model); freeze(snapshot.modelSource); freeze(snapshot.modelTrace); freeze(snapshot.presentation); freeze(theme);
   const composition = compose(Object.freeze({theme, view, model: snapshot.model, presentation: snapshot.presentation, layout: snapshot.layout ?? "default", question, reference, icon, glyph: name => {icon(name); return icons[name]!.svg;}, copy, relation, text: escapeHTML}));
   const usedQuestions = new Set<string>();
   const nodes: DefaultTreeAdapterTypes.Node[] = [...parseFragment(composition.markup).childNodes];
@@ -124,10 +140,10 @@ export function composeFigure(input: FigureInput, compose: FigureComposer): Comp
   for (const id of questions.keys()) if (!usedQuestions.has(id)) throw new Error(`Question has no visible region: ${id}`);
   const sourceSHA256 = Object.fromEntries(Object.entries(sources).map(([name, source]) => [name, digest(source)]));
   const renderer = {package: packageInfo.name, version: packageInfo.version, icons: Object.fromEntries(Object.entries(icons).map(([name, asset]) => [name, digest(asset.svg)]))};
-  const footprint = {renderer, presentation: snapshot.presentation, layout: snapshot.layout, copy: snapshot.copy, model: snapshot.model, view, questions: snapshot.questions, references, sourceSHA256, theme, icons, width: snapshot.width, language: snapshot.language, composition};
+  const footprint = {renderer, presentation: snapshot.presentation, layout: snapshot.layout, copy: snapshot.copy, model: snapshot.model, modelSource: snapshot.modelSource, modelTrace: snapshot.modelTrace, view, questions: snapshot.questions, references, sourceSHA256, theme, icons, width: snapshot.width, language: snapshot.language, composition};
   const inputSHA256 = digest(JSON.stringify(footprint));
   const variables = Object.entries(theme.colors).map(([key, value]) => `--${key}:${value}`).join(';') + ';' + Object.entries(theme.spacing).map(([key, value]) => `--${key}:${value}px`).join(';');
-  const metadata = JSON.stringify({renderer, layout: snapshot.layout, presentation: snapshot.presentation, drawing: theme.drawing, fonts: theme.fonts, inputSHA256, model: snapshot.model, view, questions: snapshot.questions, references, sourceSHA256}).replaceAll('<', '\\u003c');
+  const metadata = JSON.stringify({renderer, layout: snapshot.layout, presentation: snapshot.presentation, drawing: theme.drawing, fonts: theme.fonts, inputSHA256, model: snapshot.model, modelSource: snapshot.modelSource, modelTrace: snapshot.modelTrace, view, questions: snapshot.questions, references, sourceSHA256}).replaceAll('<', '\\u003c');
   const html = `<!doctype html><html lang="${escapeHTML(snapshot.language)}"><head><meta charset="utf-8"><meta name="viewport" content="width=${snapshot.width}"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:"><title>${escapeHTML(view.title)}</title><style>
 *{box-sizing:border-box}html,body{margin:0;padding:0}body{background:${theme.colors.background};font-family:${theme.fontFamily};color:${theme.colors.ink}}[data-figure]{${variables};width:${snapshot.width}px;margin:0;position:relative;overflow:hidden}.icon{display:inline-flex;flex:none;width:32px;height:32px}.icon svg{width:100%;height:100%}svg{display:block}h1,h2,h3,p{margin:0}table{border-collapse:collapse}a{color:inherit}*{animation:none!important;transition:none!important}${composition.css}\n${theme.stylesheet}
 </style></head><body><figure data-figure data-purpose="${view.purpose}" aria-label="${escapeHTML(view.question.text)}">${composition.markup}</figure><script type="application/json" id="figure-provenance">${metadata}</script></body></html>`;

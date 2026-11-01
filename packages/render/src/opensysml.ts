@@ -1,6 +1,7 @@
-import type { Connection, RenderedView, RenderSpan } from '@openmbee/opensysml';
-import { digest } from './source/catalog';
-import type { ViewSelection } from './source/catalog';
+import type {Connection, RenderedView, RenderSpan} from '@openmbee/opensysml';
+import type {FigureModel} from './figure';
+import {digest} from './source/catalog';
+import type {ViewSelection} from './source/types';
 
 export type OpenSysMLRenderOptions = Parameters<Connection['renderView']>[2];
 export interface OpenSysMLCapture {
@@ -11,90 +12,70 @@ export interface OpenSysMLCapture {
 export interface SysMLProjection {
   readonly selection: ViewSelection;
   readonly layout: 'reflow';
-  readonly roles?: Readonly<Record<string, string>>;
+  readonly portProjection?: 'owner';
+  readonly labels?: Readonly<Record<string,string>>;
 }
-export interface ModelNodeTrace { readonly id: string; readonly d2Id: string; readonly parent: string; readonly origin?: RenderSpan; }
-export interface ModelEdgeTrace { readonly index: number; readonly from: string; readonly to: string; readonly kind: string; readonly origin?: RenderSpan; }
+export interface ModelNodeTrace {readonly id:string; readonly parent:string; readonly origin?:RenderSpan;}
+export interface ModelEdgeTrace {
+  readonly id:string; readonly index:number; readonly from:string; readonly to:string;
+  readonly fromPort:string; readonly toPort:string; readonly kind:string; readonly origin?:RenderSpan;
+}
 export interface SysMLProjectionResult {
-  readonly source: string;
-  readonly text: string;
+  readonly model: FigureModel;
   readonly view: ViewSelection;
   readonly trace: {
-    readonly modelHash: string; readonly requestedView: string; readonly resolvedView: string;
-    readonly renderingSHA256: string; readonly capturedRenderingJSON: string;
-    readonly nodes: readonly ModelNodeTrace[]; readonly edges: readonly ModelEdgeTrace[];
+    readonly modelHash:string; readonly requestedView:string; readonly resolvedView:string;
+    readonly renderingSHA256:string; readonly capturedRenderingJSON:string;
+    readonly portProjection?:'owner';
+    readonly nodes:readonly ModelNodeTrace[]; readonly edges:readonly ModelEdgeTrace[];
   };
 }
-/** Effect adapter: use the SDK's capability/error/lifecycle implementation unchanged. */
-export async function captureOpenSysMLView(
-  connection: Pick<Connection, 'renderView'>, modelHash: string, viewName: string, options?: OpenSysMLRenderOptions,
-): Promise<OpenSysMLCapture> {
-  if (!modelHash.trim() || !viewName.trim()) throw new Error('Model hash and view name are required');
-  const rendering = await connection.renderView(modelHash, viewName, options);
-  // Decouple the selected SDK result from subsequent mutation by the caller.
-  return Object.freeze({ modelHash, requestedView: viewName, rendering: structuredClone(rendering) });
+/** The host owns SDK transport and capability admission. No replacement JSON decoder. */
+export async function captureOpenSysMLView(connection:Pick<Connection,'renderView'>,modelHash:string,viewName:string,options?:OpenSysMLRenderOptions):Promise<OpenSysMLCapture> {
+  if(!modelHash.trim()||!viewName.trim())throw new Error('Model hash and view name are required');
+  const rendering=await connection.renderView(modelHash,viewName,options);
+  return Object.freeze({modelHash,requestedView:viewName,rendering:structuredClone(rendering)});
 }
-/** Pure projection of the SDK's rendering, not a SysML parser or validator. */
-export function projectOpenSysMLView(capture: OpenSysMLCapture, profile: SysMLProjection): SysMLProjectionResult {
-  if (!capture.modelHash.trim() || !capture.requestedView.trim()) throw new Error('Model/view binding is required');
-  if (profile.layout !== 'reflow') throw new Error('D2 projection requires explicit reflow');
-  const rendering = capture.rendering;
-  if (!rendering.view) throw new Error('SDK rendering has no resolved view');
-  if (rendering.columns.length || rendering.rows.length || rendering.notes.length)
-    throw new Error('Table/notes notation is not supported by this D2 projection');
-  const nodes = [...rendering.nodes].sort((a, b) => a.id.localeCompare(b.id));
-  const byId = new Map(nodes.map(node => [node.id, node]));
-  if (!nodes.length || byId.size !== nodes.length || nodes.some(node => !node.id)) throw new Error('Empty or duplicate SDK node identity');
-  if (nodes.some(node => node.ports.length || node.compartment || node.standIn || node.geometry?.collapsed))
+/** Pure display projection of SDK results. SysML parsing/validation stays with the SDK. */
+export function projectOpenSysMLView(capture:OpenSysMLCapture,profile:SysMLProjection):SysMLProjectionResult {
+  if(!capture.modelHash.trim()||!capture.requestedView.trim())throw new Error('Model/view binding is required');
+  if(profile.portProjection!==undefined&&profile.portProjection!=='owner')throw new Error('Unsupported port projection');
+  if(profile.layout!=='reflow')throw new Error('Projection requires explicit reflow');
+  const rendering=capture.rendering;
+  if(!rendering.view)throw new Error('SDK rendering has no resolved view');
+  if(rendering.columns.length||rendering.rows.length||rendering.notes.length)throw new Error('Table/notes notation needs a supported notation adapter');
+  const nodes=[...rendering.nodes],byId=new Map(nodes.map(node=>[node.id,node]));
+  if(!nodes.length||byId.size!==nodes.length||nodes.some(node=>!node.id))throw new Error('Empty or duplicate SDK node identity');
+  if(nodes.some(node=>node.compartment||node.standIn||node.geometry?.collapsed||node.ports.length&&profile.portProjection!=='owner'))
     throw new Error('Ports, compartment rows, stand-ins and collapsed nodes need a supported notation adapter');
-  for (const id of Object.keys(profile.roles ?? {})) {
-    if (!byId.has(id)) throw new Error(`Role selection references a missing SDK node: ${id}`);
+  for(const id of Object.keys(profile.labels??{}))
+    if(!byId.has(id))throw new Error('Presentation references a missing SDK node ID: '+id);
+  if(Object.values(profile.labels??{}).some(label=>typeof label!=='string'||!label.trim()))throw new Error('Invalid display caption');
+  for(const node of nodes){
+    const seen=new Set([node.id]);let parent=node.parent;
+    while(parent){const owner=byId.get(parent);if(!owner)throw new Error('Missing SDK owner');if(seen.has(parent))throw new Error('Cyclic SDK ownership');seen.add(parent);parent=owner.parent;}
+    if(node.ports.some(port=>!port.id)||new Set(node.ports.map(port=>port.id)).size!==node.ports.length)throw new Error('Invalid or duplicate SDK port identity');
   }
-  for (const node of nodes) {
-    const seen = new Set<string>([node.id]);
-    let owner = node.parent;
-    while (owner) {
-      if (!byId.has(owner)) throw new Error(`Missing SDK owner: ${owner}`);
-      if (seen.has(owner)) throw new Error(`Cyclic SDK ownership: ${node.id}`);
-      seen.add(owner);
-      owner = byId.get(owner)!.parent;
-    }
+  for(const edge of rendering.edges){
+    const from=byId.get(edge.from),to=byId.get(edge.to);
+    if(!from||!to)throw new Error('Missing SDK edge endpoint');
+    if((edge.fromPort||edge.toPort)&&profile.portProjection!=='owner')throw new Error('Port edges need a supported notation adapter');
+    if(edge.fromPort&&!from.ports.some(port=>port.id===edge.fromPort)||edge.toPort&&!to.ports.some(port=>port.id===edge.toPort))
+      throw new Error('SDK port does not belong to the declared endpoint');
   }
-  for (const edge of rendering.edges) {
-    if (!byId.has(edge.from) || !byId.has(edge.to)) throw new Error('Missing SDK edge endpoint');
-    if (edge.fromPort || edge.toPort) throw new Error('Port edges need a supported notation adapter');
-  }
-  const aliases = new Map(nodes.map((node, index) => [node.id, `n${index}`]));
-  const fullId = (id: string): string => {
-    const node = byId.get(id)!;
-    return node.parent ? `${fullId(node.parent)}.${aliases.get(id)!}` : aliases.get(id)!;
-  };
-  const capturedRenderingJSON = JSON.stringify({ modelHash: capture.modelHash, requestedView: capture.requestedView, rendering });
-  const renderingSHA256 = digest(capturedRenderingJSON);
-  const lines = [`# OpenSysML rendering SHA256: ${renderingSHA256}`, '# Explicit D2 reflow; source model semantics remain with OpenSysML.'];
-  const emit = (parent: string, depth: number) => {
-    for (const node of nodes.filter(node => node.parent === parent)) {
-      const pad = '  '.repeat(depth);
-      const label = [node.name, node.type, node.detail, node.text].filter(Boolean).join('\n');
-      lines.push(`${pad}${aliases.get(node.id)!}: {`, `${pad}  label: ${JSON.stringify(label || node.id)}`);
-      const role = profile.roles?.[node.id];
-      if (role && !/^[A-Za-z_][A-Za-z0-9_-]*$/.test(role)) throw new Error('Expected a D2 class identifier');
-      if (role) lines.push(`${pad}  class: ${role}`);
-      emit(node.id, depth + 1);
-      lines.push(`${pad}}`);
-    }
-  };
-  emit('', 0);
-  for (const edge of rendering.edges) {
-    lines.push(`${fullId(edge.from)} -> ${fullId(edge.to)}: ${JSON.stringify(edge.label || edge.name || edge.kind)}`);
-  }
+  const capturedRenderingJSON=JSON.stringify(capture),renderingSHA256=digest(capturedRenderingJSON);
+  const ids=new Set(byId.keys());
+  const edges=rendering.edges.map((edge,index)=>{
+    let id=`edge:${index}`;while(ids.has(id))id='edge:'+id;ids.add(id);
+    return {id,index,from:edge.from,to:edge.to,fromPort:edge.fromPort,toPort:edge.toPort,kind:edge.kind,...(edge.origin?{origin:{...edge.origin}}:{})};
+  });
   return {
-    source: profile.selection.source, text: lines.join('\n') + '\n', view: { ...profile.selection },
-    trace: {
-      modelHash: capture.modelHash, requestedView: capture.requestedView, resolvedView: rendering.view,
-      renderingSHA256, capturedRenderingJSON,
-      nodes: nodes.map(node => ({ id: node.id, d2Id: fullId(node.id), parent: node.parent, ...(node.origin ? { origin: { ...node.origin } } : {}) })),
-      edges: rendering.edges.map((edge, index) => ({ index, from: edge.from, to: edge.to, kind: edge.kind, ...(edge.origin ? { origin: { ...edge.origin } } : {}) })),
-    },
+    view:structuredClone(profile.selection),
+    model:{subjects:nodes.map(node=>({id:node.id,type:node.kind||'rectangle',parent:node.parent||undefined,sourceName:node.name,label:profile.labels&&Object.hasOwn(profile.labels,node.id)?profile.labels[node.id]:[node.name,node.type,node.detail,node.text].filter(Boolean).join('\n')})),
+      // The SDK does not expose arrowhead notation; retain ordered endpoints and kind without inventing arrows.
+      relations:rendering.edges.map((edge,index)=>({id:edges[index]!.id,src:edge.from,dst:edge.to,label:edge.label||edge.name||edge.kind,kind:edge.kind,fromPort:edge.fromPort,toPort:edge.toPort,srcArrow:'none',dstArrow:'none'}))},
+    trace:{modelHash:capture.modelHash,requestedView:capture.requestedView,resolvedView:rendering.view,renderingSHA256,capturedRenderingJSON,
+      ...(profile.portProjection?{portProjection:profile.portProjection}:{}),
+      nodes:nodes.map(node=>({id:node.id,parent:node.parent,...(node.origin?{origin:{...node.origin}}:{})})),edges},
   };
 }

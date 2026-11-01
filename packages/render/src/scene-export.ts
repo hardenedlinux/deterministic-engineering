@@ -69,7 +69,9 @@ export async function layoutScenes(page: Page): Promise<readonly SceneLayoutRece
           const sections=edge.sections??[];
           if(!sections.length)throw new Error('Layout did not route a declared edge');
           path.setAttribute('d',sections.map(section=>`M ${section.startPoint.x} ${section.startPoint.y} `+[...(section.bendPoints??[]),section.endPoint].map(point=>`L ${point.x} ${point.y}`).join(' ')).join(' '));
-          path.setAttribute('marker-end',`url(#${input.marker})`);
+          for(const [side,kind]of [['start',path.dataset.sourceArrow],['end',path.dataset.targetArrow]] as const){
+            if(kind&&kind!=='none')path.style.setProperty('marker-'+side,`url(#${input.marker}${kind==='arrow'?'':'-'+kind})`);
+          }
           const label=edge.labels?.[0], measured=input.labels[edge.id]!;
           if(label&&measured.width){const group=element.querySelector('.scene-label')!;group.setAttribute('transform',`translate(${label.x??0} ${label.y??0})`);const rect=group.querySelector('rect')!;rect.setAttribute('width',String(label.width));rect.setAttribute('height',String(label.height));group.querySelector('text')!.setAttribute('transform',`translate(${measured.padding-measured.boxX} ${measured.padding-measured.boxY})`);}
         }
