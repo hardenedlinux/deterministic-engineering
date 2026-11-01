@@ -18,6 +18,22 @@ declared relational questions. Rust, QNT, Lean and SysML provide selected method
 capabilities. The TypeScript render package presents the selected model and
 source context through static D2, HTML, SVG and PNG artifacts.
 
+* Architecture at a glance
+This is the engineering organization used by this repository: the Library
+publishes reusable definitions, a Profile selects them, and a Scenario binds
+actual project inputs. The project boundary owns its architecture model, Org
+artifacts and decisions. Arrows point to dependencies.
+
+[[file:docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture-sketchbook-detail.png]]
+
+[[file:docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture-sketchbook.png][Full architecture explanation]] · [[file:docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture.d2][Questions and editable D2]] · [[file:project.sysml][Project SysML]] · [[file:docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture-node-editor-detail.png][Technical-node style]]
+
+Selected Rust, QNT, Lean and SysML methods consume the project's bound inputs
+and retain their result semantics and source associations. ASCENT derives answers
+from declared facts and rules; Aitia owns independent policy-bound review.
+The TS Library presents these models and associations. Rendering does not grant
+evidence or review authority. This Case currently remains =capture-blocked=.
+
 * Library, Profile and Scenario
 | Part | Owns | Project use |
 |------+-------+-------------|
@@ -41,7 +57,7 @@ The same captured model also has [[file:docs/90-99-views/90-architecture-views/9
 and [[file:docs/90-99-views/90-architecture-views/90.135-library-project-architecture-node-editor.svg][technical-node]] visual variants selected in D2.
 Aitia's end-to-end review integration remains a target boundary for this Case.
 
-[[file:docs/90-99-views/90-architecture-views/90.135-library-project-architecture.svg]]
+[[file:docs/90-99-views/90-architecture-views/90.135-library-project-architecture.svg][Detailed repository dependency diagram]]
 
 [[file:docs/90-99-views/90-architecture-views/90.135-library-project-architecture.d2][Editable D2]] · [[file:project.sysml][Project SysML model]] · [[file:docs/10-19-design/10-architecture/10.137-domain-owned-catalogs-and-native-drivers.org][Engineering ownership]]
 
@@ -99,11 +115,7 @@ not the framework's entire diagram vocabulary.
 The =project-owned= variants select kinds, a theme and a glyph pack defined only
 in the consumer. Their source associations and current blocked state stay intact.
 
-[[file:docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture-project-owned-detail.png]]
-
 Architecture: [[file:docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture.d2][D2]] · [[file:docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture-comparison.png][Hand-drawn, node, matrix and project-owned comparisons]]
-
-[[file:docs/90-99-views/90-architecture-views/90.133-capture-preparation-workflow-project-owned-detail.png]]
 
 Workflow: [[file:docs/90-99-views/90-architecture-views/90.133-capture-preparation-workflow.d2][D2]] · [[file:docs/90-99-views/90-architecture-views/90.133-capture-preparation-workflow-comparison.png][Hand-drawn, node, swimlane and project-owned comparisons]]
 
