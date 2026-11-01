@@ -1,3 +1,4 @@
+import type {LayoutOptions} from 'elkjs';
 import type {IconPack} from './icons';
 import type {Options} from 'roughjs/bin/core';
 import {sketchbook} from './styles/sketchbook';
@@ -9,6 +10,7 @@ export interface PresentationTheme {
   readonly stylesheet: string;
   /** Native SVG assets keyed by open project roles; no fixed shape taxonomy. */
   readonly surfaces?: IconPack;
+  readonly layoutOptions?: Readonly<LayoutOptions>;
   readonly fonts: readonly Readonly<{family: string; weight: number; source: string}>[];
   readonly drawing: Readonly<{mode: "precise" | "sketch"; options: Readonly<Options & {seed: number}>}>;
   readonly colors: Readonly<{
@@ -22,6 +24,7 @@ export interface PresentationThemeOverrides {
   readonly fontFamily?: string;
   readonly stylesheet?: string;
   readonly surfaces?: IconPack;
+  readonly layoutOptions?: Readonly<LayoutOptions>;
   readonly fonts?: PresentationTheme["fonts"];
   readonly drawing?: {readonly mode?: PresentationTheme["drawing"]["mode"]; readonly options?: Partial<Options>};
   readonly colors?: Partial<PresentationTheme['colors']>;
@@ -36,7 +39,7 @@ export const defaultPresentationTheme: PresentationTheme = Object.freeze({
   spacing: Object.freeze({gutter: 26, gap: 12, radius: 15}),
 });
 export function extendPresentationTheme(base: PresentationTheme, overrides: PresentationThemeOverrides = {}): PresentationTheme {
-  return Object.freeze({surfaces: Object.freeze({...base.surfaces, ...overrides.surfaces}), stylesheet: overrides.stylesheet === undefined ? base.stylesheet : [base.stylesheet, overrides.stylesheet].filter(Boolean).join("\n"),
+  return Object.freeze({layoutOptions: Object.freeze({...base.layoutOptions, ...overrides.layoutOptions}), surfaces: Object.freeze({...base.surfaces, ...overrides.surfaces}), stylesheet: overrides.stylesheet === undefined ? base.stylesheet : [base.stylesheet, overrides.stylesheet].filter(Boolean).join("\n"),
     fonts: Object.freeze([...(overrides.fonts ?? base.fonts)].map(font => Object.freeze({...font}))),
     drawing: Object.freeze({...base.drawing, ...overrides.drawing, options: Object.freeze({...base.drawing.options, ...overrides.drawing?.options})}), fontFamily: overrides.fontFamily ?? base.fontFamily,
     colors: Object.freeze({...base.colors, ...overrides.colors}), spacing: Object.freeze({...base.spacing, ...overrides.spacing})});

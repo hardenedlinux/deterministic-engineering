@@ -54,3 +54,10 @@ test('theme surfaces compose as native SVG assets and cannot mutate captured the
  const invalid={...theme,surfaces:{publication:{label:'bad',svg:'<div>wrong surface</div>'}}};
  expect(()=>composeFigure({...input,theme:invalid},composer(graph))).toThrow('Invalid declared scene surface');
 });
+
+test('native theme layout preferences reach ELK and explicit view options take precedence',async({browser})=>{
+ const theme={...composePresentationTheme(['editorial']),layoutOptions:{'elk.algorithm':'does-not-exist'}};
+ await expect(exportFigure(composeFigure({...input,theme},composer()),browser)).rejects.toThrow();
+ const selected={...spec,graph:{...spec.graph,layoutOptions:{...spec.graph.layoutOptions,'elk.algorithm':'layered'}}};
+ expect((await exportFigure(composeFigure({...input,theme},composer(selected)),browser)).receipt.scenes).toHaveLength(1);
+});

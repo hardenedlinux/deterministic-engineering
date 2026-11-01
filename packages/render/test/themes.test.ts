@@ -55,3 +55,8 @@ test('visual layers inherit and override native SVG surfaces independently of pa
  expect(theme.colors.accent).toBe('#123456');
  expect(presentationThemeLayers.editorial!.colors!.accent).toBe('#117A72');
 });
+
+test('theme layout preferences compose native ELK options without a second constraint schema',()=>{
+ const theme=composePresentationTheme(['dense','project'],{dense:{layoutOptions:{'elk.spacing.nodeNode':'20','elk.direction':'DOWN'}},project:{layoutOptions:{'elk.spacing.nodeNode':'50'}}});
+ expect(theme.layoutOptions).toEqual({'elk.spacing.nodeNode':'50','elk.direction':'DOWN'});
+});

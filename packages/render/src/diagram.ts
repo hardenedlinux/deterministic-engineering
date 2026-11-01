@@ -12,6 +12,7 @@ const defaultNode: DiagramNodeComposer = (node, {text}) => `<text class="scene-n
 /** Project declares the native ELK graph projection; labels/relations stay in the captured model. */
 export function composeDiagram(context: FigureContext, specification: DiagramSpec, nodeComposer: DiagramNodeComposer = defaultNode): FigureComposition {
   const graph = structuredClone(specification.graph), model = context.model;
+  graph.layoutOptions = {...context.theme.layoutOptions, ...graph.layoutOptions};
   if (!model || !graph || typeof graph.id !== 'string' || !Array.isArray(graph.children)) throw new Error('Diagram needs a captured model and declared graph');
   const seen = new Set<string>([graph.id]), leaves = new Set<string>();
   const routing = graph.layoutOptions?.['elk.edgeRouting'];
