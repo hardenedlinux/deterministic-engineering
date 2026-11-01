@@ -1,12 +1,155 @@
-...@../../../packages/render/themes/flow
-confirmed: {label: "User-confirmed intent\nproject inputs and responsibility"; class: note}
-llm: {label: "LLM proposes model and views\narchitecture and workflow kept separate"; class: semantic}
-check: {label: "Check obligations and model\nASCENT queries / SysML capability"; class: policy}
-selection: {label: "Select view family and theme\nexplicit candidate capture"; class: cloud}
-render: {label: "Render candidate\nfunctional core / bounded effects"; class: runtime}
-review: {label: "Review and publish\nretain source and decision links"; class: note}
-confirmed -> llm: authorized design input
-llm -> check: candidate, not evidence
-check -> selection: supported candidate
-selection -> render: immutable input
-render -> review: images and trace
+# Current authored view; arrows mean the relation explicitly written on each edge.
+vars: {d2-config: {layout-engine: elk; pad: 24; data: {figure: |json
+{
+  "title": "Static view authoring and image export workflow",
+  "purpose": "workflow",
+  "kind": "view-authoring",
+  "language": "en",
+  "width": 1120,
+  "primary": "scope",
+  "questions": [
+    {
+      "ref": "scope",
+      "text": "How does a declared candidate become a reviewable image without issuing evidence or publishing a model?",
+      "focusRefs": [
+        "source"
+      ]
+    }
+  ],
+  "references": {
+    "source": "docs/90-99-views/90-architecture-views/90.130-llm-assisted-model-view-workflow.d2"
+  },
+  "basis": {
+    "captureRef": "design-candidate:current-readme",
+    "modelRefs": [
+      "project.sysml"
+    ],
+    "obligationRefs": [
+      "docs/10-19-design/10-architecture/10.142-declarative-render-extensibility-audit.org"
+    ],
+    "evidenceRefs": []
+  },
+  "copy": {
+    "status": "Design candidate \u00b7 current source associations retained \u00b7 no C/Q/R issued",
+    "description": "Workflow describes control order; it does not authorize effects."
+  },
+  "themes": [
+    "blueprint",
+    "compact"
+  ],
+  "icons": [
+    "engineering"
+  ],
+  "presentation": {
+    "scenes": [
+      {
+        "heading": "authoring",
+        "graph": {
+          "id": "90.130-llm-assisted-model-view-workflow-scene-1",
+          "children": [
+            {
+              "id": "authoring.question"
+            },
+            {
+              "id": "authoring.proposal"
+            },
+            {
+              "id": "authoring.compile"
+            }
+          ],
+          "layoutOptions": {
+            "elk.algorithm": "layered",
+            "elk.direction": "RIGHT",
+            "elk.edgeRouting": "ORTHOGONAL",
+            "elk.spacing.nodeNode": "40",
+            "elk.layered.spacing.nodeNodeBetweenLayers": "52",
+            "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES"
+          }
+        },
+        "icons": {
+          "authoring.question": "question",
+          "authoring.proposal": "document",
+          "authoring.compile": "model"
+        }
+      },
+      {
+        "heading": "materialization",
+        "graph": {
+          "id": "90.130-llm-assisted-model-view-workflow-scene-2",
+          "children": [
+            {
+              "id": "materialization.select"
+            },
+            {
+              "id": "materialization.compose"
+            },
+            {
+              "id": "materialization.export"
+            }
+          ],
+          "layoutOptions": {
+            "elk.algorithm": "layered",
+            "elk.direction": "RIGHT",
+            "elk.edgeRouting": "ORTHOGONAL",
+            "elk.spacing.nodeNode": "40",
+            "elk.layered.spacing.nodeNodeBetweenLayers": "52",
+            "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES"
+          }
+        },
+        "icons": {
+          "materialization.select": "selection",
+          "materialization.compose": "model",
+          "materialization.export": "document"
+        }
+      },
+      {
+        "heading": null,
+        "graph": {
+          "id": "90.130-llm-assisted-model-view-workflow-scene-3",
+          "children": [
+            {
+              "id": "artifact"
+            },
+            {
+              "id": "inspect"
+            }
+          ],
+          "layoutOptions": {
+            "elk.algorithm": "layered",
+            "elk.direction": "RIGHT",
+            "elk.edgeRouting": "ORTHOGONAL",
+            "elk.spacing.nodeNode": "40",
+            "elk.layered.spacing.nodeNodeBetweenLayers": "52",
+            "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES"
+          }
+        },
+        "icons": {
+          "inspect": "evidence",
+          "artifact": "model"
+        }
+      }
+    ]
+  }
+}
+|
+}}}
+authoring: Authoring and model input {
+  question: "Questions and model/source refs\nProject-owned D2 declaration"
+  proposal: "Human / LLM candidate\nContent and organization"
+  compile: "Official D2 compilation\nNative model and metadata"
+  question -> proposal: author
+  proposal -> compile: capture source
+}
+materialization: Selected static presentation {
+  select: "Resolve variant\nKind / layout / themes / icons"
+  compose: "Pure composition\nSame model and Questions"
+  export: "Static HTML / SVG / PNG\nFonts / visibility / fingerprints"
+  select -> compose: resolved input
+  compose -> export: HTML candidate
+}
+artifact: "Captured artifacts\nTS SVG / PNG and source receipts"
+inspect: "Human visual audit\nArtifacts and remaining gaps"
+authoring.compile -> materialization.select: declared selection
+authoring.compile -> artifact: model / source binding
+artifact -> inspect: SVG candidate
+materialization.export -> inspect: image and receipt

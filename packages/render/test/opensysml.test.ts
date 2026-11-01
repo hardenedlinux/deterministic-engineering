@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test';
 import { renderedViewFromJson } from '@openmbee/opensysml';
 import { captureOpenSysMLView, projectOpenSysMLView } from '../src/opensysml';
-import { renderCatalog } from '../src';
+import { compileModel } from '../src';
 
 const selection = { source: 'models/context.d2', title: 'SDK model projection', purpose: 'architecture' as const, kind: 'system' as const, question: { ref: 'questions/model-ownership', text: 'Which model elements are related?' }, basis: { captureRef: 'capture/model', modelRefs: ['model-capture-1'], obligationRefs: [], evidenceRefs: [] } };
 function model() {
@@ -11,7 +11,7 @@ function model() {
     { id: 'Demo::Worker', name: 'Worker', kind: 'part' },
   ], edges: [{ from: 'Demo::Control', to: 'Demo::Worker', kind: 'connection', label: 'dispatch' }] });
 }
-test('SDK decoded view -> pure D2 projection -> actual image, with model identity', async () => {
+test('SDK decoded view -> pure D2 projection -> compiled model, with model identity', async () => {
   const rendering = model();
   const capture = { modelHash: 'model-capture-1', requestedView: 'Demo::Context', rendering };
   const prior = JSON.stringify(capture);
@@ -19,9 +19,9 @@ test('SDK decoded view -> pure D2 projection -> actual image, with model identit
   expect(JSON.stringify(capture)).toBe(prior);
   expect(projection.trace.nodes[0]!.origin?.file).toBe('demo.sysml');
   expect(projection.trace.edges[0]!.from).toBe('Demo::Control');
-  const image = await renderCatalog({ sources: { [projection.source]: projection.text }, views: [projection.view], presentation: { project: 'SDK consumer' } });
-  expect(image.images[0]!.nodes).toBe(2);
-  expect(image.images[0]!.edges).toBe(1);
+  const captureModel=await compileModel({[projection.source]:projection.text},projection.source);
+  expect(captureModel.model.subjects).toHaveLength(2);
+  expect(captureModel.model.relations).toHaveLength(1);
   const changed = projectOpenSysMLView({ ...capture, modelHash: 'model-capture-2' }, { selection, layout: 'reflow' });
   expect(changed.trace.renderingSHA256).not.toBe(projection.trace.renderingSHA256);
 }, 30000);

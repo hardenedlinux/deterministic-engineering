@@ -1,3 +1,4 @@
+import {layoutScenes, extractSceneSVGs, type SceneLayoutReceipt} from './scene-export';
 import {getSmoothStepPath, Position} from '@xyflow/system';
 import rough from 'roughjs';
 import packageInfo from '../package.json' with {type: 'json'};
@@ -8,11 +9,13 @@ import { digest } from './source/catalog';
 export interface FigureExportOptions { readonly scale?: number; readonly regions?: readonly string[]; }
 export interface FigureImage {
   readonly png: Uint8Array;
+  readonly svg: readonly string[];
   readonly regionImages: Readonly<Record<string, Uint8Array>>;
   /** Fully materialized, offline HTML, including embedded fonts and measured sketch strokes. */
   readonly html: string;
   readonly receipt: {
     readonly inputSHA256: string; readonly composedHTMLSHA256: string; readonly htmlSHA256: string; readonly pngSHA256: string;
+    readonly scenes: readonly SceneLayoutReceipt[]; readonly svgSHA256: readonly string[];
     readonly drawing: string; readonly routing: string; readonly dependencies: Readonly<Record<string, string>>; readonly assetSHA256: Readonly<Record<string, string>>;
     readonly regionSHA256: Readonly<Record<string, string>>;
     readonly browser: string; readonly width: number; readonly height: number; readonly scale: number;
@@ -49,6 +52,11 @@ export async function exportFigure(figure: ComposedFigure, browser: Browser, opt
         await image.decode();
       }
     });
+    // SVG annotation height follows the selected font's real ascent/descent.
+    await page.locator('svg[data-vector-annotation]').evaluateAll(elements=>{
+      for(const svg of elements){const text=svg.querySelector('text')!;const box=text.getBBox();text.setAttribute('transform',`translate(0 ${3-box.y})`);svg.setAttribute('height',String(Math.ceil(box.height+6)));}
+    });
+    const scenes = await layoutScenes(page);
     // Route declared connectors against actual font-settled node boxes, then bake to SVG.
     const connectors = await page.evaluate(() => {
       type Side = 'top' | 'bottom' | 'left' | 'right';
@@ -91,9 +99,10 @@ export async function exportFigure(figure: ComposedFigure, browser: Browser, opt
       sourcePosition: positions[sourceSide], targetPosition: positions[targetSide], borderRadius: 7, offset: 8})[0]}));
     await page.evaluate(routes => { for (const route of routes) document.querySelector(`[data-connection-index="${route.index}"]`)!.setAttribute('d', route.path); }, routes);
     if (figure.drawing.mode === 'sketch') {
-      const surfaces = await page.locator('[data-surface]').evaluateAll(elements => elements.map(element => {
+      const surfaces = await page.locator('[data-surface], rect.scene-frame:not([data-custom-surface])').evaluateAll(elements => elements.map(element => {
         const rect = element.getBoundingClientRect(), style = getComputedStyle(element);
-        return {shape: element.getAttribute('data-surface') || 'rectangle', width: rect.width, height: rect.height, stroke: style.getPropertyValue('--accent').trim(), fill: style.getPropertyValue('--tint').trim()};
+        const scene = element instanceof SVGRectElement;
+        return {scene, shape: element.getAttribute('data-surface') || 'rectangle', width: scene ? element.width.baseVal.value : rect.width, height: scene ? element.height.baseVal.value : rect.height, stroke: scene ? style.stroke : style.getPropertyValue('--accent').trim(), fill: scene ? style.fill : style.getPropertyValue('--tint').trim()};
       }));
       const generator = rough.generator();
       const sketches = surfaces.map((surface, index) => {
@@ -105,12 +114,12 @@ export async function exportFigure(figure: ComposedFigure, browser: Browser, opt
           : undefined;
         if (!drawable) throw new Error(`Unsupported declared sketch surface: ${surface.shape}`);
         const paths = generator.toPaths(drawable);
-        return {width: surface.width, height: surface.height, paths};
+        return {scene: surface.scene, width: surface.width, height: surface.height, paths};
       });
-      await page.locator('[data-surface]').evaluateAll((elements, sketches) => {
+      await page.locator('[data-surface], rect.scene-frame:not([data-custom-surface])').evaluateAll((elements, sketches) => {
         const ns = 'http://www.w3.org/2000/svg';
         elements.forEach((element, index) => {
-          const sketch = sketches[index]!, svg = document.createElementNS(ns, 'svg');
+          const sketch = sketches[index]!, svg = document.createElementNS(ns, sketch.scene ? 'g' : 'svg');
           svg.setAttribute('class', 'sketch-surface'); svg.setAttribute('aria-hidden', 'true');
           svg.setAttribute('width', String(sketch.width)); svg.setAttribute('height', String(sketch.height));
           svg.setAttribute('viewBox', `0 0 ${sketch.width} ${sketch.height}`);
@@ -119,7 +128,7 @@ export async function exportFigure(figure: ComposedFigure, browser: Browser, opt
             node.setAttribute('d', path.d); node.setAttribute('stroke', path.stroke); node.setAttribute('stroke-width', String(path.strokeWidth)); node.setAttribute('fill', path.fill || 'none');
             svg.append(node);
           }
-          element.prepend(svg);
+          if (sketch.scene) { element.after(svg); element.setAttribute('opacity','0'); } else element.prepend(svg);
         });
       }, sketches);
     }
@@ -144,10 +153,31 @@ export async function exportFigure(figure: ComposedFigure, browser: Browser, opt
       for (const element of figure.querySelectorAll<HTMLElement>('[data-fit]')) {
         if (element.scrollWidth > element.clientWidth + 1 || element.scrollHeight > element.clientHeight + 1) issues.push(`clipped text: ${element.textContent?.slice(0, 60)}`);
       }
+      // Observe the browser's final geometry; layout/routing remains owned by ELK.
+      const overlaps = (a: DOMRect, b: DOMRect) => Math.min(a.right,b.right)-Math.max(a.left,b.left)>1 && Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>1;
+      const contains = (outer: DOMRect, inner: DOMRect) => inner.left>=outer.left-1 && inner.top>=outer.top-1 && inner.right<=outer.right+1 && inner.bottom<=outer.bottom+1;
+      for (const scene of figure.querySelectorAll<SVGSVGElement>('svg[data-scene]')) {
+        const leaves = Array.from(scene.querySelectorAll<SVGGElement>('[data-scene-group="false"]'));
+        const frames = leaves.map(node => node.querySelector('.scene-frame')!.getBoundingClientRect());
+        leaves.forEach((node,index) => {
+          if (!contains(frames[index]!,node.querySelector('.scene-content')!.getBoundingClientRect())) issues.push(`scene content outside node: ${node.dataset.sceneNode}`);
+          for (let j=index+1;j<frames.length;j++) if(overlaps(frames[index]!,frames[j]!)) issues.push('overlapping scene nodes');
+        });
+        const labels = Array.from(scene.querySelectorAll<SVGGElement>('.scene-label')).filter(label=>label.querySelector('text'));
+        labels.forEach((label,index) => {
+          const box=label.getBoundingClientRect();
+          if(frames.some(frame=>overlaps(frame,box))) issues.push('scene label overlaps node');
+          if(labels.slice(index+1).some(other=>overlaps(box,other.getBoundingClientRect()))) issues.push('overlapping scene labels');
+        });
+      }
+      for (const annotation of figure.querySelectorAll<SVGSVGElement>('svg[data-vector-annotation]')) {
+        if (!contains(annotation.getBoundingClientRect(),annotation.querySelector('text')!.getBoundingClientRect())) issues.push('clipped vector annotation: '+annotation.textContent?.slice(0,60));
+      }
       if (figure.scrollWidth > figure.clientWidth + 1) issues.push('figure horizontal overflow');
       return {bounds, issues};
     });
     if (report.issues.length) throw new Error(report.issues.join('; '));
+    const svg = await extractSceneSVGs(page);
     const html = await page.content();
     const png = await page.locator('[data-figure]').screenshot({type: 'png', animations: 'disabled'});
     const regionImages: Record<string, Uint8Array> = {};
@@ -156,7 +186,7 @@ export async function exportFigure(figure: ComposedFigure, browser: Browser, opt
       regionImages[name] = await page.locator(`[data-region="${name}"]`).screenshot({type: 'png', animations: 'disabled'});
     }
     const buffer = Buffer.from(png);
-    return {png, html, regionImages, receipt: {inputSHA256: figure.inputSHA256, composedHTMLSHA256: figure.htmlSHA256, dependencies: packageInfo.dependencies, regionSHA256: Object.fromEntries(Object.entries(regionImages).map(([name, bytes]) => [name, digest(bytes)])), htmlSHA256: digest(html), drawing: figure.drawing.mode === "sketch" ? `roughjs@${packageInfo.dependencies.roughjs}` : "precise", routing: connectors.length ? `xyflow@${packageInfo.dependencies["@xyflow/system"]}` : "none", assetSHA256, pngSHA256: digest(png), browser: browser.version(),
+    return {png, html, svg, regionImages, receipt: {inputSHA256: figure.inputSHA256, scenes, svgSHA256:svg.map(svg=>digest(svg)), composedHTMLSHA256: figure.htmlSHA256, dependencies: packageInfo.dependencies, regionSHA256: Object.fromEntries(Object.entries(regionImages).map(([name, bytes]) => [name, digest(bytes)])), htmlSHA256: digest(html), drawing: figure.drawing.mode === "sketch" ? `roughjs@${packageInfo.dependencies.roughjs}` : "precise", routing: scenes.length ? `elkjs@${packageInfo.dependencies.elkjs}` : connectors.length ? `xyflow@${packageInfo.dependencies["@xyflow/system"]}` : "none", assetSHA256, pngSHA256: digest(png), browser: browser.version(),
       width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20), scale, bounds: report.bounds}};
   } finally { await context.close(); }
 }

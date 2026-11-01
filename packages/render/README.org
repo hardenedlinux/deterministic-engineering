@@ -2,107 +2,105 @@
 #+LANGUAGE: en
 
 * Ownership
-=@deterministic-engineering/render= is a functional static-rendering package.
-D2/SysML and their project adapters own Questions, model relationships, explanatory
-content and source associations. TS composes selected content, applies declared
-visual styles, and exports HTML/SVG/PNG. The package version is read from
-=package.json=; the namespace contains no version.
+=@deterministic-engineering/render= is a functional static-rendering Library.
+D2 / SysML and project adapters own Questions, model relationships, source links
+and explanatory content. Architecture and Workflow are separate selected views.
+=package.json= is the sole package version source. Namespaces have no version.
 
-The framework does not prescribe numbered panels, a fixed card template, or a
-closed list of layouts. Node and swimlane presentations are examples. Domain
-compositions can present a dependency matrix, hierarchy, business relation,
-timeline or another explanation using the same capture and export boundary.
-Native D2 system/data/assurance/routing/flow/sequence/state notation continues
-through the existing official compiler/render API; no replacement graph language
-or layout engine is introduced.
+No fixed card/page template, closed diagram taxonomy, editor or interactive runtime
+is required. Downstream supplies a pure composer, theme layers and SVG icon packs.
 
-* Declaration and pure composition
-=compileFigureSource(sources, inputPath, resources?)= uses the existing owned D2
-worker. D2 parses syntax/imports; its =graph.data= carries the figure declaration.
-The installed SDK requires nested metadata in a native =|json= block scalar;
-standard =JSON.parse= reads it. No second parser or TS Questions registry exists.
+* Model and composition
+=compileModel(sources, inputPath, options?)= delegates syntax/import compilation
+to the official D2 SDK. It returns model IDs, labels, relationships and declared
+metadata; D2 geometry and raw SVG are discarded. =compileFigureSource= resolves
+that metadata into =FigureInput=. Nested declarations use native D2 =|json=.
+=readD2Figure= also accepts an explicitly supported model projection from the
+optional OpenSysML adapter; saved-response tests are not live model validation.
 
-The declaration owns =purpose=, =kind=, =language=, Questions/focus, copy, references,
-basis links, ordered =themes=, open =layout= and project-owned =presentation= data.
-The compositor receives these and the compiled model through =FigureContext=.
-=composeFigure(input, composer)= invokes a pure function returning markup/CSS.
-Every selected Question must have a visible region; invented source associations
-and requested model relations refuse. Architecture and Workflow remain separate.
+=composeFigure(input, composer)= captures immutable sources and invokes a pure
+function returning markup/CSS. Its context exposes selected Questions, copy,
+references, glyphs, model and project-owned presentation data. The framework
+neither invents Questions nor duplicates evidence/authorization registries.
 
-=layout= is an open project selector, not a package enum of allowed diagram kinds.
-=FigureInput.presentation= stays unknown until the domain compositor validates it.
-The dependency-matrix example checks declared axes against native model node IDs.
-The Case-owned linear workflow helper validates step/lane membership and actual
-consecutive model edges; the framework does not parse or constrain its schema.
-Use the model/native D2 or a domain compositor for other organizations.
+* Layout through mature libraries
+=composeDiagram(context, {graph, icons?, edgeLabels?, roles?}, nodeComposer?)=
+creates an SVG scene. =graph= uses ELK's own =ElkNode= type and layout options,
+not another constraint language. Node IDs and edge identity/direction must exist
+in the captured model. By default, edges are the model relations between selected
+leaf nodes. The optional callback produces project-specific SVG node contents.
 
-* Complete visual styles
-| Independent concern | Declaration / owner |
-|---------------------+---------------------|
-| Typography and fonts | =fontFamily= and explicit =fonts= assets |
-| Marks and boundaries | Immutable semantic CSS rules in independent style modules |
-| Stroke and fill | Rough.js mode, seed, roughness and surface treatment |
-| Nodes and connectors | Node/port grammar plus XYFlow's public =getSmoothStepPath= |
-| Palette and spacing | Composable color/spacing layers |
-| Icons | Replaceable SVG assets, separate from theme and language |
-| Diagram organization | Project =layout=/=presentation= and functional composer |
+Export loads the declared fonts, measures actual browser SVG text and glyph boxes,
+then passes those dimensions to ELK.js. ELK owns node placement, label placement
+and routing. The Library applies its returned geometry, checks observed content
+containment and node/label overlap, and rejects detected violations. It does not
+solve the layout again or silently retry alternative layouts.
 
-=./presentation-theme= exports =composePresentationTheme=,
-=extendPresentationTheme= and immutable upstream layers. For example:
+The current SVG adapter supports orthogonal and polyline edges, root-owned
+single-source/single-target model relations and optional group nodes. Ports,
+nested edge containers and spline serialization require a dedicated compositor;
+unsupported declarations refuse rather than implying full ELK feature coverage.
+ELK's official Node worker uses =web-worker= and is terminated in =finally=.
+Function purity alone does not guarantee readable layout or optimal space usage.
 
 #+begin_src typescript
-const theme = composePresentationTheme(['graphite', 'node-editor', 'compact']);
-const custom = composePresentationTheme(['sketchbook', 'brand'], {
-  ...presentationThemeLayers,
-  brand: {colors: {accent: '#356B64'}, spacing: {gap: 16}},
-});
+const compose = context => {
+  const scene = composeDiagram(context, {
+    graph: {id: 'ownership', children: [{id: 'library'}, {id: 'profile'}],
+      layoutOptions: {'elk.direction': 'RIGHT', 'elk.edgeRouting': 'ORTHOGONAL'}},
+    icons: {library: 'library', profile: 'selection'},
+  });
+  return {markup: `<section data-question="ownership">${scene.markup}</section>`, css: scene.css};
+};
 #+end_src
 
-D2 selects equivalent ordered layers and output variants. =sketchbook= uses actual
-Rough.js SVG strokes, hachure fill and embedded Kalam fonts. =node-editor= changes
-node outlines, ports, connectors and canvas treatment. =blueprint=, =field-notes=
-and =graphite= provide palette/typography choices; =compact= adjusts spacing.
-Downstream can supply additional layers, icons and composers without editing a
-global registry. Font resources are declared by the selected layer, not hardcoded
-inside the exporter. Current Case content remains English, matching its sources.
+An existing explicitly authored HTML compositor may use XYFlow's public smooth
+step path utility for its declared connector endpoints. It is not an obstacle
+solver or fallback for ELK scenes. parse5 parses actual Question markers.
 
-The package imports Rough.js and the framework-independent XYFlow system utility.
-It does not mount a React/Svelte flow editor, pan/zoom runtime or whiteboard.
-Excalidraw is a visual reference; its complete editor, React dependencies and
-scene/bundle adapters are excluded from this static package.
+* Declarative visual styles
+=composePresentationTheme= composes immutable layers: typography/font assets,
+semantic CSS, native SVG surfaces, palette, spacing and Rough.js =Options=.
+Open project roles select theme surfaces; a surface is an ordinary SVG asset,
+not a closed rectangle/ellipse enum or another drawing language. Pure node
+composers can use the immutable selected theme as well. D2 selects ordered themes,
+icons and variants. =selectFigureVariant= preserves the same model and resolved
+custom resources. =FigureResources= allows downstream layers and packs without
+editing global registries. New diagram organization belongs in project composers,
+not palette selectors or framework kind enums.
 
-* Export and provenance
-=exportFigure(figure, browser, {scale})= uses the host's Playwright Browser.
-It owns and closes its context, settles actual fonts/images, measures nodes,
-uses XYFlow for selected connectors, and bakes Rough.js geometry into offline HTML.
-Rendered connectors must match captured native model relations, including direction.
-It rejects modified input HTML/drawing/fonts, missing/duplicate endpoints, invalid
-images and detected clipping. The host owns artifact writes and publication.
+Inter fonts are embedded for default metrics; sketchbook embeds Kalam and uses
+Rough.js primitives for measured scene frames / explicitly authored surfaces.
+Editorial uses open space, typographic hierarchy and distinct publication/external
+marks; node-editor defines technical node/connector marks; sketchbook changes
+strokes and font metrics. They are complete independent visual layers, not palette
+aliases. Node-editor CSS is a separate style layer. Icons are independent SVG assets.
+Excalidraw's complete editor and React dependencies are not installed.
+Current case language follows its English D2/SysML sources.
 
-The result includes PNG, materialized HTML and a rendering receipt: input/composed
-HTML/materialized HTML/PNG fingerprints, actual drawing/routing dependencies,
-font hashes, browser identity, dimensions, scale and region bounds. Captured
-sources, Questions, model, project presentation, style and icons enter the input
-fingerprint. Pixel equality across platforms or browser releases is not claimed.
-These are rendering facts, not issued C, accepted Q, review R or authority.
+* Export and checks
+=exportFigure(figure, browser, {scale, regions?})= owns only its browser context.
+It returns PNG, offline materialized HTML, explicit SVG scenes and a receipt.
+For scene compositions =svg[0]= combines the explicit SVG scenes/annotations;
+remaining entries are standalone scenes. Arbitrary HTML is not silently converted
+to vector. These outputs contain no raster wrapper or =foreignObject=.
 
-* Existing adapters
-=renderCatalog= retains official D2-to-SVG rendering with one or two owned workers.
-=./opensysml= consumes the actual optional OpenSysML SDK, retaining model identity
-and origins in its explicit supported projection. Unsupported SDK notation refuses.
-Saved SDK response tests do not establish live service/model validation.
+Receipts bind source/composition/style/icon fingerprints, fonts, browser identity,
+layout input/result hashes, actual dependencies and output hashes. Modified HTML,
+invalid assets, hidden selected Questions, detected clipping/overlap and failed
+layouts refuse. Host code owns writes and explicit publication. Pixel equality
+across operating systems/browser releases and aesthetic optimality are not claimed.
+Rendering receipts are not issued C, accepted Q, review R or authority.
 
-* Case and verification
-=examples/render= consumes the package and reads canonical D2 declarations
-=90.132= and =90.133=. It captures actual Library/Profile/Scenario, =project.sysml=
-and Org sources. Source-excerpt observations remain labeled observations.
-Current =prepare-formation-capture= still reports =capture-blocked / capture = #f=.
+The legacy =renderCatalog=, raw D2 SVG pipeline, duplicate D2 theme registry and
+example native renderer have been removed. No active fallback preserves old layout.
 
-The Case exports ten independent figures: architecture/workflow baselines,
-architecture/workflow sketchbook, architecture/workflow node-editor,
-workflow swimlane, architecture dependency matrix and two project-owned resource variants. A separate comparison script
-exports their main diagram regions for visual comparison; full figures remain
-available. No automatic aesthetic approval or model publication is implied.
+* Cases and qualification
+=examples/render/overviews.ts= renders current repository architecture/workflow
+views through measured TS scenes. Their layout declarations remain in D2.
+=library-case.ts= renders separate Library/Profile/Scenario explanatory figures,
+with real source observations and downstream themes/icons/diagram organizations.
+The current formation source still reports =capture-blocked / capture = #f=.
 
 #+begin_src sh
 bun install --frozen-lockfile
@@ -112,35 +110,20 @@ bun test
 bun run test:export
 # In examples/render:
 bun install --frozen-lockfile
+bun run typecheck
+bun test
 bun run case
 bun run compare
+bun run overviews
 #+end_src
 
-Playwright's native runner owns browser tests, with at most two workers. Core
-imports launch no browser. SVG-only D2 consumers need no browser. Generated
-artifacts are in =.cache/render/library-case=; documented candidate snapshots live
-beside the D2 view sources. Package installation and a separate packed consumer
-verify that styles/fonts are included without the editor or workspace dependencies.
+Playwright's native test runner uses at most two workers. Tests cover actual font
+measurement, glyph viewports, model relation admission, vector decoding, repeatable
+outputs, invalid ELK programs, context cleanup and post-layout geometry violations.
+CI runs the same package/example entries on Linux and macOS. Core imports launch
+no browser. Package consumers supply Playwright only for browser export.
 
-* Downstream resource selection and open kinds
-=FigureResources= contains immutable =themeLayers= and =iconPacks=. D2 =icons= is
-an ordered list of selected packs. Each variant may declare a kind, layout,
-theme layers and icon packs. =selectFigureVariant(input, name)= consumes the
-already-resolved variant, preserving custom resources and the same captured
-model/Questions. Unknown/duplicate declarations refuse. No mutable global registry
-or framework edit is needed for the =workbench=/=repo= Case resources.
-
-A kind is an open identifier; standard native profiles are suggestions rather
-than the complete taxonomy. Purpose stays explicit architecture/workflow. Domain
-schemas (such as the current Case's =presentation.flow=) belong in domain modules.
-Rough.js =Options= directly configure stroke/fill; selected surfaces delegate to
-its primitives. Connector sides may be declared through data attributes and use
-XYFlow paths. HTML marker parsing uses parse5; actual visibility uses the browser.
-See [[../../docs/10-19-design/10-architecture/10.142-declarative-render-extensibility-audit.org][10.142 audit]]
-for exact findings, retained defaults, negative controls and responsibility boundaries.
-
-The native D2 theme accepts its full =CompileOptions=, including supplied font
-bytes, and leaves layout unset by default. D2 source configuration or an explicit
-caller override selects the engine. HTML drawing uses Rough.js =Options= rather
-than a second pen configuration schema. Source assertions are now declared in
-D2 =presentation.observations= and observed by the Case, not hardcoded in core.
+References: [[https://github.com/kieler/elkjs][ELK.js]];
+[[https://eclipse.dev/elk/reference/algorithms/org-eclipse-elk-layered.html][ELK Layered]];
+[[https://roughjs.com/][Rough.js]].
+See [[../../docs/10-19-design/10-architecture/10.142-declarative-render-extensibility-audit.org][10.142 audit]].

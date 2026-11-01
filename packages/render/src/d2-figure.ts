@@ -15,7 +15,7 @@ const texts = (value: unknown, name: string): string[] => {
   return value.map(item => text(item, name));
 };
 /** Official D2 handles syntax/imports. Its standard plugin data owns the declaration. */
-export interface D2FigureData { readonly data: unknown; readonly diagram?: Pick<Diagram, 'shapes' | 'connections'>; readonly inputPath: string; readonly fs: Readonly<Record<string, string>>; }
+export interface D2FigureData { readonly data: unknown; readonly diagram?: Pick<Diagram, 'shapes' | 'connections'>; readonly model?: FigureInput['model']; readonly inputPath: string; readonly fs: Readonly<Record<string, string>>; }
 export interface FigureResources { readonly themeLayers?: ThemeLayers; readonly iconPacks?: IconPacks; }
 export function readD2Figure(compiled: D2FigureData, captured: Readonly<Record<string, string>>, resources: FigureResources = {}): FigureInput {
   const data = compiled.data;
@@ -42,7 +42,7 @@ export function readD2Figure(compiled: D2FigureData, captured: Readonly<Record<s
   const basis = object(declaration.basis, 'basis');
   const view = {source: compiled.inputPath, title: text(declaration.title, 'title'), purpose, kind, question,
     basis: {captureRef: text(basis.captureRef, 'capture ref'), modelRefs: texts(basis.modelRefs, 'models'), obligationRefs: texts(basis.obligationRefs, 'obligations'), evidenceRefs: texts(basis.evidenceRefs, 'evidence')}} as ViewSelection;
-  const model = compiled.diagram ? {subjects: compiled.diagram.shapes.map(({id, type}) => ({id, type})), relations: compiled.diagram.connections.map(({id, src, dst, label}) => ({id, src, dst, label}))} : undefined;
+  const model = compiled.model ?? (compiled.diagram ? modelFromDiagram(compiled.diagram) : undefined);
   const theme = composePresentationTheme(declaration.themes === undefined ? ['blueprint'] : texts(declaration.themes, 'theme layers'), resources.themeLayers);
   const icons = composeIconPacks(declaration.icons === undefined ? ['engineering'] : texts(declaration.icons, 'icon packs'), resources.iconPacks);
   const variants = declaration.variants === undefined ? [] : (() => {
@@ -59,5 +59,9 @@ export function readD2Figure(compiled: D2FigureData, captured: Readonly<Record<s
     return result;
   })();
   return {view, model, theme, variants, icons, presentation: declaration.presentation, layout: declaration.layout === undefined ? undefined : text(declaration.layout, 'layout'), language: text(declaration.language, 'language'), width, questions, references, copy,
-    sources: {...captured, ...compiled.fs}};
+    sources: {...compiled.fs, ...captured}};
+}
+
+export function modelFromDiagram(diagram: Pick<Diagram,'shapes'|'connections'>): NonNullable<FigureInput['model']> {
+  return {subjects:diagram.shapes.map(shape=>({id:shape.id,type:shape.type,label:'label' in shape?shape.label:undefined})),relations:diagram.connections.map(({id,src,dst,label})=>({id,src,dst,label}))};
 }

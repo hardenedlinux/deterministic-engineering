@@ -47,9 +47,11 @@ test('downstream icon packs compose immutably and unknown/invalid assets refuse'
   expect(() => composeIconPacks(['bad'], {bad:{asset:{label:'',svg:''}}})).toThrow('Invalid icon');
 });
 
-test('native D2 options are not limited to layout or replaced by forced defaults', async () => {
-  const {defaultTheme, extendTheme} = await import('../src/theme');
-  expect(defaultTheme.compile.layout).toBeUndefined();
-  const theme = extendTheme(defaultTheme, {compile:{layout:'dagre',fontRegular:new Uint8Array([1,2,3])}});
-  expect(theme.compile.fontRegular).toEqual(new Uint8Array([1,2,3]));
+
+test('visual layers inherit and override native SVG surfaces independently of palette',()=>{
+ const asset={label:'Domain boundary',svg:'<svg viewBox="0 0 100 100"><ellipse cx="50" cy="50" rx="48" ry="48"/></svg>'};
+ const theme=composePresentationTheme(['editorial','brand'],{...presentationThemeLayers,brand:{surfaces:{domain:asset},colors:{accent:'#123456'}}});
+ expect(theme.surfaces!.domain).toEqual(asset);expect(theme.surfaces!.publication).toEqual(presentationThemeLayers.editorial!.surfaces!.publication);
+ expect(theme.colors.accent).toBe('#123456');
+ expect(presentationThemeLayers.editorial!.colors!.accent).toBe('#117A72');
 });

@@ -1,4 +1,3 @@
-import type { RenderTheme } from '../theme';
 export const viewKinds = ['system', 'routing', 'flow', 'sequence', 'state', 'data', 'assurance'] as const;
 /** Standard profiles are suggestions; project diagram kinds are open identifiers. */
 export type ViewKind = string;
@@ -18,12 +17,4 @@ export interface ViewBasis {
 export interface ViewSelection {
   readonly source: string; readonly title: string; readonly question: QuestionRef; readonly basis: ViewBasis;
   readonly purpose: 'architecture' | 'workflow'; readonly kind: ViewKind;
-}
-export type ViewEntry = ViewSelection & { readonly id: string; readonly sha256: string };
-export interface Presentation { readonly project: string; readonly footer?: string; }
-export interface SourceCatalog {
-  readonly views: readonly ViewEntry[];
-  readonly fs: Readonly<Record<string, string>>;
-  readonly presentation: Presentation;
-  readonly theme: RenderTheme;
 }

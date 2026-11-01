@@ -8,7 +8,7 @@ import { defaultPresentationTheme, type PresentationTheme } from './presentation
 
 export interface FigureQuestion extends QuestionRef { readonly focusRefs: readonly string[]; }
 export interface FigureModel {
-  readonly subjects: readonly Readonly<Pick<Shape, 'id' | 'type'>>[];
+  readonly subjects: readonly Readonly<Pick<Shape, 'id' | 'type'> & {label?: string}>[];
   readonly relations: readonly Readonly<Pick<Connection, 'id' | 'src' | 'dst' | 'label'>>[];
 }
 export interface FigureInput {
@@ -29,6 +29,7 @@ export interface FigureInput {
   readonly icons?: Readonly<Record<string, IconAsset>>;
 }
 export interface FigureContext {
+  readonly theme: PresentationTheme;
   readonly presentation?: unknown;
   readonly model?: FigureModel;
   readonly layout: string;
@@ -36,6 +37,7 @@ export interface FigureContext {
   readonly question: (ref: string) => FigureQuestion;
   readonly reference: (ref: string) => string;
   readonly icon: (name: string) => string;
+  readonly glyph: (name: string) => string;
   readonly text: (value: string) => string;
   readonly copy: (key: string) => string;
   readonly relation: (from: string, to: string) => Readonly<Pick<Connection, 'id' | 'src' | 'dst' | 'label'>>;
@@ -105,8 +107,8 @@ export function composeFigure(input: FigureInput, compose: FigureComposer): Comp
     if (!value || typeof value !== 'object' || seen.has(value)) return;
     seen.add(value); for (const item of Object.values(value)) freeze(item, seen); Object.freeze(value);
   };
-  freeze(snapshot.model); freeze(snapshot.presentation);
-  const composition = compose(Object.freeze({view, model: snapshot.model, presentation: snapshot.presentation, layout: snapshot.layout ?? "default", question, reference, icon, copy, relation, text: escapeHTML}));
+  freeze(snapshot.model); freeze(snapshot.presentation); freeze(theme);
+  const composition = compose(Object.freeze({theme, view, model: snapshot.model, presentation: snapshot.presentation, layout: snapshot.layout ?? "default", question, reference, icon, glyph: name => {icon(name); return icons[name]!.svg;}, copy, relation, text: escapeHTML}));
   const usedQuestions = new Set<string>();
   const nodes: DefaultTreeAdapterTypes.Node[] = [...parseFragment(composition.markup).childNodes];
   while (nodes.length) {

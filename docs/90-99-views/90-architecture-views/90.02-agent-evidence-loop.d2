@@ -1,25 +1,145 @@
-# org-target: docs/10-19-design/10-architecture/10.05-agent-reasoning-and-design-convergence.org::#agent-design-purpose
-# Relationship graph: no edge prescribes the Agent's next action.
-direction: down
-classes: {
-  knowledge: {style: {fill: "#EAF2FF"; stroke: "#315B8A"; font-size: 17; border-radius: 12}}
-  open: {style: {fill: "#E6F5F3"; stroke: "#19756C"; font-size: 17; border-radius: 12}}
-  boundary: {style: {fill: "#FFF2DD"; stroke: "#9B6C25"; font-size: 17; border-radius: 12}}
+# Current authored view; arrows mean the relation explicitly written on each edge.
+vars: {d2-config: {layout-engine: elk; pad: 24; data: {figure: |json
+{
+  "title": "Question-led engineering workflow and current capture boundary",
+  "purpose": "workflow",
+  "kind": "engineering-lifecycle",
+  "language": "en",
+  "width": 1120,
+  "primary": "scope",
+  "questions": [
+    {
+      "ref": "scope",
+      "text": "How do confirmed ideas reach checked models and review without promoting candidates to evidence?",
+      "focusRefs": [
+        "source"
+      ]
+    }
+  ],
+  "references": {
+    "source": "docs/90-99-views/90-architecture-views/90.02-agent-evidence-loop.d2"
+  },
+  "basis": {
+    "captureRef": "design-candidate:current-readme",
+    "modelRefs": [
+      "project.sysml"
+    ],
+    "obligationRefs": [
+      "docs/10-19-design/10-architecture/10.142-declarative-render-extensibility-audit.org"
+    ],
+    "evidenceRefs": []
+  },
+  "copy": {
+    "status": "Design candidate \u00b7 current source associations retained \u00b7 no C/Q/R issued",
+    "description": "Current preparation is blocked. Target integration requires a separately qualified capture."
+  },
+  "themes": [
+    "blueprint",
+    "compact"
+  ],
+  "icons": [
+    "engineering"
+  ],
+  "presentation": {
+    "scenes": [
+      {
+        "heading": "preparation",
+        "graph": {
+          "id": "90.02-agent-evidence-loop-scene-1",
+          "children": [
+            {
+              "id": "preparation.intent"
+            },
+            {
+              "id": "preparation.selection"
+            },
+            {
+              "id": "preparation.scenario"
+            },
+            {
+              "id": "preparation.stop"
+            }
+          ],
+          "layoutOptions": {
+            "elk.algorithm": "layered",
+            "elk.direction": "RIGHT",
+            "elk.edgeRouting": "ORTHOGONAL",
+            "elk.spacing.nodeNode": "40",
+            "elk.layered.spacing.nodeNodeBetweenLayers": "52",
+            "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES"
+          }
+        },
+        "icons": {
+          "preparation.intent": "question",
+          "preparation.selection": "selection",
+          "preparation.scenario": "capture",
+          "preparation.stop": "pending"
+        },
+        "roles": {
+          "preparation.stop": "pending"
+        }
+      },
+      {
+        "heading": "integration",
+        "graph": {
+          "id": "90.02-agent-evidence-loop-scene-2",
+          "children": [
+            {
+              "id": "integration.capture"
+            },
+            {
+              "id": "integration.methods"
+            },
+            {
+              "id": "integration.inference"
+            },
+            {
+              "id": "integration.review"
+            }
+          ],
+          "layoutOptions": {
+            "elk.algorithm": "layered",
+            "elk.direction": "RIGHT",
+            "elk.edgeRouting": "ORTHOGONAL",
+            "elk.spacing.nodeNode": "40",
+            "elk.layered.spacing.nodeNodeBetweenLayers": "52",
+            "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES"
+          }
+        },
+        "icons": {
+          "integration.capture": "capture",
+          "integration.methods": "obligation",
+          "integration.inference": "model",
+          "integration.review": "evidence"
+        },
+        "roles": {
+          "integration.capture": "pending",
+          "integration.methods": "pending",
+          "integration.inference": "pending",
+          "integration.review": "pending"
+        }
+      }
+    ]
+  }
 }
-agent: "LLM-based AI agent\nEngineering reasoning\nQuestions, alternatives, new hypotheses" {class: open}
-library: "POO design Library\nDomains, contracts, extensible knowledge" {class: knowledge}
-ascent: "ASCENT\nEvidence Chain + DAG + Trajectory" {class: knowledge}
-view: "Progressive evidence view\nSupport, counterevidence, unknowns\nCurrent references and deeper reads" {class: open}
-experiments: "LLM-based AI agent investigation\nSource inspection, QNT, Lean, experiments" {class: open}
-observations: "Bound observations\nPremises, source, result, scope" {class: knowledge}
-aitia: "Aitia / Host boundary\nScoped admission, authorization, effects" {class: boundary}
-library -> ascent: "domain facts and associations"
-agent -> ascent: "caller-selected questions and scope"
-ascent -> view: "current truthful evidence"
-view -> agent: "inform; do not rank or choose"
-agent -> experiments: "choose, revise, or invent"
-experiments -> observations: "record results and failures"
-observations -> ascent: "checked support and changed premises"
-ascent -> aitia: "references with explicit scope"
-aitia -> observations: "actual execution / operational feedback"
-agent -> library: "propose reviewed extensions" {style.stroke-dash: 4}
+|
+}}}
+preparation: Current preparation {
+  intent: "Confirmed idea / Questions\nOriginal source and role scope"
+  selection: "Library / Profile\nModels, policies and methods"
+  scenario: "Scenario preparation\nActual inputs and observations"
+  stop: "Current DE-CASE-01\ncapture-blocked / capture = #f"
+  intent -> selection: select
+  selection -> scenario: bind
+  scenario -> stop: current return
+}
+integration: Target integration after qualified capture {
+  capture: "Qualified C\nRequired integration gate"
+  methods: "Selected methods\nBound results and findings"
+  inference: "ASCENT query view\nSupport / counters / gaps"
+  review: "Independent Aitia review\nPolicy / revision / roles"
+  capture -> methods: same inputs
+  methods -> inference: explicit facts
+  inference -> review: context, not authority
+}
+preparation.scenario -> integration.capture: after qualification

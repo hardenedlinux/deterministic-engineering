@@ -26,11 +26,109 @@ vars: {d2-config: {layout-engine: elk; data: {figure: |json
     ],
     "evidenceRefs": []
   },
-  "copy": {}
+  "copy": {
+    "status": "Design candidate \u00b7 current source associations retained \u00b7 no C/Q/R issued",
+    "description": "Architecture describes responsibilities and dependencies."
+  },
+  "themes": [
+    "blueprint",
+    "node-editor",
+    "compact"
+  ],
+  "icons": [
+    "engineering"
+  ],
+  "presentation": {
+    "scenes": [
+      {
+        "heading": null,
+        "graph": {
+          "id": "90.134-render-responsibility-boundaries-scene-1",
+          "children": [
+            {
+              "id": "project.declarations"
+            },
+            {
+              "id": "project.resources"
+            },
+            {
+              "id": "project.composer"
+            },
+            {
+              "id": "core.compile"
+            },
+            {
+              "id": "core.compose"
+            },
+            {
+              "id": "core.export"
+            },
+            {
+              "id": "libraries.d2"
+            },
+            {
+              "id": "libraries.html"
+            },
+            {
+              "id": "libraries.rough"
+            },
+            {
+              "id": "libraries.xyflow"
+            },
+            {
+              "id": "libraries.browser"
+            },
+            {
+              "id": "libraries.elk"
+            }
+          ],
+          "layoutOptions": {
+            "elk.algorithm": "layered",
+            "elk.direction": "RIGHT",
+            "elk.edgeRouting": "ORTHOGONAL",
+            "elk.spacing.nodeNode": "40",
+            "elk.layered.spacing.nodeNodeBetweenLayers": "52",
+            "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES"
+          }
+        },
+        "icons": {
+          "project.declarations": "document",
+          "project.resources": "selection",
+          "project.composer": "decision",
+          "core.compile": "capture",
+          "core.compose": "decision",
+          "core.export": "reference",
+          "libraries.d2": "model",
+          "libraries.html": "document",
+          "libraries.rough": "selection",
+          "libraries.xyflow": "reference",
+          "libraries.browser": "reference",
+          "libraries.elk": "model",
+          "project.source": "document",
+          "core.capture": "capture",
+          "core.composition": "decision",
+          "libraries.drawing": "selection"
+        },
+        "roles": {
+          "project.declarations": "capture",
+          "project.resources": "capture",
+          "project.composer": "capture",
+          "core.compile": "selection",
+          "core.compose": "selection",
+          "core.export": "selection",
+          "libraries.d2": "external",
+          "libraries.html": "external",
+          "libraries.rough": "external",
+          "libraries.xyflow": "external",
+          "libraries.browser": "external",
+          "libraries.elk": "external"
+        }
+      }
+    ]
+  }
 }
 |
 }}}
-direction: right
 project: Project-owned {
   declarations: D2 / SysML / Questions / observations
   resources: Themes / icons / selected variants
@@ -42,10 +140,11 @@ core: Render Library {
   export: Static export / input and visibility checks
 }
 libraries: Mature libraries {
-  d2: D2 compiler / layout / SVG
+  d2: D2 compiler / model projection
   html: parse5 HTML parser
   rough: Rough.js Options / primitives
   xyflow: XYFlow path utilities
+  elk: "ELK.js\nMeasured nodes / labels / routing"
   browser: Playwright browser / fonts / PNG
 }
 project.composer -> project.declarations: interprets
@@ -56,3 +155,5 @@ core.compose -> libraries.html: parses
 core.export -> libraries.rough: strokes
 core.export -> libraries.xyflow: connectors
 core.export -> libraries.browser: renders
+
+core.export -> libraries.elk: measured scene layout and routing
