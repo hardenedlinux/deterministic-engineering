@@ -1,41 +1,91 @@
 # SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-#
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
-# Current authored view; arrows mean the relation explicitly written on each edge.
-vars: {d2-config: {layout-engine: elk; pad: 24; data: {figure: |json
+# org-target: docs/10-19-design/10-architecture/10.05-agent-reasoning-and-design-convergence.org::#agent-design-purpose
+# Relationships retain the original engineering loop; no edge prescribes the next action.
+vars: {d2-config: {data: {figure: |json
 {
-  "title": "Question-led engineering workflow and current capture boundary",
+  "title": "Questions lead. Evidence informs.",
   "purpose": "workflow",
   "kind": "engineering-lifecycle",
   "language": "en",
   "width": 1120,
-  "primary": "scope",
+  "primary": "purpose",
   "questions": [
     {
-      "ref": "scope",
-      "text": "How do confirmed ideas reach checked models and review without promoting candidates to evidence?",
+      "ref": "purpose",
+      "text": "What makes this a learning loop?",
       "focusRefs": [
-        "source"
+        "source",
+        "reasoning"
+      ]
+    },
+    {
+      "ref": "ownership",
+      "text": "Who chooses, reasons and authorizes?",
+      "focusRefs": [
+        "source",
+        "reasoning"
+      ]
+    },
+    {
+      "ref": "investigation",
+      "text": "How do questions become observations?",
+      "focusRefs": [
+        "source",
+        "reasoning"
+      ]
+    },
+    {
+      "ref": "feedback",
+      "text": "How does evidence inform the next question?",
+      "focusRefs": [
+        "source",
+        "reasoning"
+      ]
+    },
+    {
+      "ref": "knowledge",
+      "text": "How does shared knowledge evolve?",
+      "focusRefs": [
+        "source",
+        "reasoning"
+      ]
+    },
+    {
+      "ref": "effects",
+      "text": "Where do execution results return?",
+      "focusRefs": [
+        "source",
+        "reasoning"
       ]
     }
   ],
   "references": {
-    "source": "docs/90-99-views/90-architecture-views/90.02-agent-evidence-loop.d2"
+    "source": "docs/90-99-views/90-architecture-views/90.02-agent-evidence-loop.d2",
+    "reasoning": "docs/10-19-design/10-architecture/10.05-agent-reasoning-and-design-convergence.org",
+    "formation": "scenarios/project-formation/func.ss"
   },
   "basis": {
-    "captureRef": "design-candidate:current-readme",
+    "captureRef": "design-candidate:engineering-evidence-loop",
     "modelRefs": [
       "project.sysml"
     ],
     "obligationRefs": [
-      "docs/10-19-design/10-architecture/10.142-declarative-render-extensibility-audit.org"
+      "docs/10-19-design/10-architecture/10.05-agent-reasoning-and-design-convergence.org"
     ],
     "evidenceRefs": []
   },
   "copy": {
-    "status": "Design candidate \u00b7 current source associations retained \u00b7 no C/Q/R issued",
-    "description": "Current preparation is blocked. Target integration requires a separately qualified capture."
+    "status": "Current DE-CASE-01: capture-blocked / capture = #f. This view issues no C/Q/R or authorization.",
+    "description": "An LLM investigates. ASCENT exposes evidence. Aitia controls effects.",
+    "agent-purpose": "Ask questions, compare alternatives,\nchoose or invent investigations.",
+    "ascent-purpose": "Expose support, counterevidence\nand changed premises.",
+    "aitia-purpose": "Keep admission, authorization\nand effects within explicit scope.",
+    "agent-purpose-title": "Explore alternatives",
+    "ascent-purpose-title": "Inspect the evidence",
+    "aitia-purpose-title": "Keep effects authorized",
+    "takeaway": "LLM judgment stays open. Evidence stays inspectable. Effects stay authorized."
   },
   "themes": [
     "sketchbook",
@@ -44,106 +94,229 @@ vars: {d2-config: {layout-engine: elk; pad: 24; data: {figure: |json
   "icons": [
     "engineering"
   ],
+  "design": {
+    "audience": "Engineering Library users",
+    "medium": "README explanatory overview",
+    "message": "The LLM chooses investigations; ASCENT exposes evidence; Aitia owns admission and authorization.",
+    "questionRefs": [
+      "purpose",
+      "ownership",
+      "investigation",
+      "feedback",
+      "knowledge",
+      "effects"
+    ],
+    "requiredSubjects": [
+      "agent",
+      "library",
+      "ascent",
+      "view",
+      "experiments",
+      "observations",
+      "aitia"
+    ],
+    "requiredRelations": [
+      "(library -> ascent)[0]",
+      "(agent -> ascent)[0]",
+      "(ascent -> view)[0]",
+      "(view -> agent)[0]",
+      "(agent -> experiments)[0]",
+      "(experiments -> observations)[0]",
+      "(observations -> ascent)[0]",
+      "(ascent -> aitia)[0]",
+      "(aitia -> observations)[0]",
+      "(agent -> library)[0]"
+    ],
+    "focalSubjects": [
+      "agent",
+      "ascent",
+      "aitia"
+    ]
+  },
   "presentation": {
-    "scenes": [
+    "sections": [
       {
-        "heading": "preparation",
-        "graph": {
-          "id": "90.02-agent-evidence-loop-scene-1",
-          "children": [
-            {
-              "id": "preparation.intent"
-            },
-            {
-              "id": "preparation.selection"
-            },
-            {
-              "id": "preparation.scenario"
-            },
-            {
-              "id": "preparation.stop"
-            }
-          ],
-          "layoutOptions": {
-            "elk.algorithm": "layered",
-            "elk.direction": "RIGHT",
-            "elk.edgeRouting": "ORTHOGONAL",
-            "elk.spacing.nodeNode": "40",
-            "elk.layered.spacing.nodeNodeBetweenLayers": "52",
-            "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES"
+        "questionRef": "purpose",
+        "ordinal": "1",
+        "leads": [
+          {
+            "subjectRef": "agent",
+            "glyph": "question",
+            "copyRef": "agent-purpose",
+            "titleRef": "agent-purpose-title",
+            "tone": "tint"
+          },
+          {
+            "subjectRef": "ascent",
+            "glyph": "model",
+            "copyRef": "ascent-purpose",
+            "titleRef": "ascent-purpose-title",
+            "tone": "secondaryTint"
+          },
+          {
+            "subjectRef": "aitia",
+            "glyph": "decision",
+            "copyRef": "aitia-purpose",
+            "titleRef": "aitia-purpose-title",
+            "tone": "surface"
           }
-        },
-        "icons": {
-          "preparation.intent": "question",
-          "preparation.selection": "selection",
-          "preparation.scenario": "capture",
-          "preparation.stop": "pending"
-        },
-        "roles": {
-          "preparation.stop": "pending"
-        }
+        ]
       },
       {
-        "heading": "integration",
-        "graph": {
-          "id": "90.02-agent-evidence-loop-scene-2",
-          "children": [
-            {
-              "id": "integration.capture"
-            },
-            {
-              "id": "integration.methods"
-            },
-            {
-              "id": "integration.inference"
-            },
-            {
-              "id": "integration.review"
+        "questionRef": "ownership",
+        "ordinal": "2",
+        "scene": {
+          "graph": {
+            "id": "scene-agent-aitia",
+            "children": [
+              {
+                "id": "agent"
+              },
+              {
+                "id": "library"
+              },
+              {
+                "id": "ascent"
+              },
+              {
+                "id": "aitia"
+              }
+            ],
+            "edges": [
+              {
+                "id": "(agent -> ascent)[0]",
+                "sources": [
+                  "agent"
+                ],
+                "targets": [
+                  "ascent"
+                ]
+              },
+              {
+                "id": "(library -> ascent)[0]",
+                "sources": [
+                  "library"
+                ],
+                "targets": [
+                  "ascent"
+                ]
+              },
+              {
+                "id": "(ascent -> aitia)[0]",
+                "sources": [
+                  "ascent"
+                ],
+                "targets": [
+                  "aitia"
+                ]
+              }
+            ],
+            "layoutOptions": {
+              "elk.direction": "RIGHT",
+              "elk.edgeRouting": "ORTHOGONAL",
+              "elk.spacing.nodeNode": "32",
+              "elk.layered.spacing.nodeNodeBetweenLayers": "42"
             }
-          ],
-          "layoutOptions": {
-            "elk.algorithm": "layered",
-            "elk.direction": "RIGHT",
-            "elk.edgeRouting": "ORTHOGONAL",
-            "elk.spacing.nodeNode": "40",
-            "elk.layered.spacing.nodeNodeBetweenLayers": "52",
-            "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES"
+          },
+          "icons": {
+            "agent": "question",
+            "library": "library",
+            "ascent": "model",
+            "aitia": "decision"
+          },
+          "roles": {
+            "aitia": "pending"
+          },
+          "edgeLabels": false
+        },
+        "relationRefs": [
+          "(agent -> ascent)[0]",
+          "(library -> ascent)[0]",
+          "(ascent -> aitia)[0]"
+        ],
+        "relationColumns": 3
+      },
+      {
+        "questionRef": "investigation",
+        "ordinal": "3",
+        "row": "learning",
+        "leads": [
+          {
+            "subjectRef": "experiments",
+            "glyph": "obligation"
+          },
+          {
+            "subjectRef": "observations",
+            "glyph": "document"
           }
-        },
-        "icons": {
-          "integration.capture": "capture",
-          "integration.methods": "obligation",
-          "integration.inference": "model",
-          "integration.review": "evidence"
-        },
-        "roles": {
-          "integration.capture": "pending",
-          "integration.methods": "pending",
-          "integration.inference": "pending",
-          "integration.review": "pending"
-        }
+        ],
+        "relationRefs": [
+          "(agent -> experiments)[0]",
+          "(experiments -> observations)[0]",
+          "(observations -> ascent)[0]"
+        ]
+      },
+      {
+        "questionRef": "feedback",
+        "ordinal": "4",
+        "row": "learning",
+        "leads": [
+          {
+            "subjectRef": "view",
+            "glyph": "evidence"
+          }
+        ],
+        "relationRefs": [
+          "(ascent -> view)[0]",
+          "(view -> agent)[0]"
+        ]
+      },
+      {
+        "questionRef": "knowledge",
+        "ordinal": "5",
+        "relationRefs": [
+          "(agent -> library)[0]"
+        ],
+        "row": "returns"
+      },
+      {
+        "questionRef": "effects",
+        "ordinal": "6",
+        "row": "returns",
+        "relationRefs": [
+          "(aitia -> observations)[0]"
+        ]
       }
-    ]
+    ],
+    "shortLabels": {
+      "agent": "LLM agent",
+      "library": "Design Library",
+      "ascent": "ASCENT",
+      "aitia": "Aitia / Host",
+      "experiments": "Investigation",
+      "observations": "Bound observations",
+      "view": "Evidence view"
+    },
+    "takeawayRef": "takeaway",
+    "minimumTextSize": 12
   }
 }
 |
 }}}
-preparation: Current preparation {
-  intent: "Confirmed idea / Questions\nOriginal source and role scope"
-  selection: "Library / Profile\nModels, policies and methods"
-  scenario: "Scenario preparation\nActual inputs and observations"
-  stop: "Current DE-CASE-01\ncapture-blocked / capture = #f"
-  intent -> selection: select
-  selection -> scenario: bind
-  scenario -> stop: current return
-}
-integration: Target integration after qualified capture {
-  capture: "Qualified C\nRequired integration gate"
-  methods: "Selected methods\nBound results and findings"
-  inference: "ASCENT query view\nSupport / counters / gaps"
-  review: "Independent Aitia review\nPolicy / revision / roles"
-  capture -> methods: same inputs
-  methods -> inference: explicit facts
-  inference -> review: context, not authority
-}
-preparation.scenario -> integration.capture: after qualification
+agent: "LLM-based AI agent\nEngineering reasoning\nQuestions, alternatives,\nnew hypotheses"
+library: "POO design Library\nDomains, contracts,\nextensible knowledge"
+ascent: "ASCENT\nEvidence Chain + DAG\n+ Trajectory"
+view: "Progressive evidence view\nSupport, counterevidence, unknowns\nCurrent references and deeper reads"
+experiments: "LLM-based AI agent investigation\nSource inspection, QNT,\nLean, experiments"
+observations: "Bound observations\nPremises, source,\nresult, scope"
+aitia: "Aitia / Host boundary\nScoped admission,\nauthorization, effects"
+library -> ascent: "domain facts and associations"
+agent -> ascent: "caller-selected questions and scope"
+ascent -> view: "current truthful evidence"
+view -> agent: "inform; do not rank or choose"
+agent -> experiments: "choose, revise, or invent"
+experiments -> observations: "record results and failures"
+observations -> ascent: "checked support and changed premises"
+ascent -> aitia: "references with explicit scope"
+aitia -> observations: "actual execution / operational feedback"
+agent -> library: "propose reviewed extensions" {style.stroke-dash: 4}

@@ -2,10 +2,12 @@
 //
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
+import {story} from './story-composition';
 import {composeHeading,composeDiagram, type DiagramSpec, type FigureComposer} from '@deterministic-engineering/render';
 /** This explanatory page is a project composition, not a required Library template. */
 export const overview: FigureComposer = context => {
   const value=context.presentation;
+  if(value&&typeof value==='object'&&'sections'in value)return story(context);
   if(!value||typeof value!=='object'||!('scenes' in value)||!Array.isArray(value.scenes))throw new Error('Declared scene projections are required');
   const text=context.text;
   const panels=value.scenes.map((value:unknown)=>{
