@@ -26,11 +26,14 @@ test('README images use one sketchbook language while alternate styles stay in p
  const readme=await readFile(new URL('README.org',root),'utf8');
  const paths=[...readme.matchAll(/\[\[file:([^\]]+\.(?:png|svg))\]/g)].map(match=>match[1]!);
  expect(paths.length).toBeGreaterThan(5);
- for(const path of paths){
-  if(path.includes('90.138-')){expect(path).not.toMatch(/publication|project\.png|matrix/);continue;}
-  const file=path.replace(/(?:-sketchbook)?(?:-detail)?\.(?:png|svg)$/,'.d2');
+ for(const path of paths.filter(path=>path.includes('90.138-')))expect(path).not.toMatch(/publication|project\.png|matrix/);
+ const sourcePath=(path:string)=>path.replace(/(?:-sketchbook)?(?:-detail)?\.(?:png|svg)$/,'.d2');
+ const inputs=paths.filter(path=>!path.includes('90.138-'));
+ for(const file of new Set(inputs.map(sourcePath))){
   const source=await readFile(new URL(file,root),'utf8');const declaration=await compileFigureSource({[file]:source},file,resources);
-  const selected=path.includes('-sketchbook')?selectFigureVariant(declaration,'sketchbook'):declaration;
-  expect(selected.theme!.drawing.mode).toBe('sketch');expect(selected.theme!.fonts.some(font=>font.family==='Kalam')).toBe(true);
+  for(const path of inputs.filter(path=>sourcePath(path)===file)){
+   const selected=path.includes('-sketchbook')?selectFigureVariant(declaration,'sketchbook'):declaration;
+   expect(selected.theme!.drawing.mode).toBe('sketch');expect(selected.theme!.fonts.some(font=>font.family==='Kalam')).toBe(true);
+  }
  }
 },30000);

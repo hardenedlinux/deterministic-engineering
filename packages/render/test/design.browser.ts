@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 import {test,expect} from 'playwright/test';
-import {composeFigure,composeModelView,defineDesign,composeTaste,reviewTaste,focalBudget,minimumTextSize,type FigureInput} from '../src';
+import {composeFigure,composeModelView,composeHeading,defineDesign,composeTaste,reviewTaste,focalBudget,minimumTextSize,type FigureInput} from '../src';
 import {exportFigure} from '../src/export';
 const input:FigureInput={view:{source:'case.d2',title:'Library ownership',purpose:'architecture',kind:'dependency-map',question:{ref:'q',text:'Who publishes and selects?'},basis:{captureRef:'candidate',modelRefs:[],obligationRefs:[],evidenceRefs:[]}},width:1100,language:'en',sources:{'case.d2':'source'},references:{source:'case.d2'},questions:[{ref:'q',text:'Who publishes and selects?',focusRefs:['source']}],model:{subjects:[{id:'library',type:'rectangle',label:'Library'},{id:'profile',type:'rectangle',label:'Profile'}],relations:[{id:'selects',src:'profile',dst:'library',label:'selects'}]},design:defineDesign({audience:'Library adopter',medium:'README',message:'Publication and selection: a < b & "</script>".',questionRefs:['q'],requiredSubjects:['library','profile'],requiredRelations:['selects'],focalSubjects:['library']})};
 test('Design fidelity and pure Taste review share actual bound export observations',async({browser})=>{
@@ -56,3 +56,13 @@ test('source selections affect geometry and SPDX export attribution stays host-o
 });
 
 // REUSE-IgnoreEnd
+
+test('a narrative relation must actually remain visible when its edge is explained outside the diagram',async({browser})=>{
+ const captured={...input,presentation:{graph:{id:'narrative',children:[{id:'library'},{id:'profile'}],edges:[]}}};
+ const compose=(hide:boolean)=>composeFigure(captured,context=>{
+  const diagram=composeModelView(context),explanation=composeHeading(context,{role:'answer',text:'Profile → Library: selects'});
+  return{markup:diagram.markup+'<aside data-relation="selects">'+explanation.markup+'</aside>',css:diagram.css+explanation.css+(hide?'[data-relation]{display:none}':'')};
+ });
+ expect((await exportFigure(compose(false),browser)).receipt.observation.relations).toEqual(['selects']);
+ await expect(exportFigure(compose(true),browser)).rejects.toThrow('Design relation');
+});
