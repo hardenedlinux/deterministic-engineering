@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;;; -*- Gerbil -*-
 ;;; Existing ASCENT intake -> native Aitia content and disposition requests.
 ;;; Completeness is bounded to the host-selected exchange, never global discovery.

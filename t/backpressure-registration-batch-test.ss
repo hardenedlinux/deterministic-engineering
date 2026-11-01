@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;;; -*- Gerbil -*-
 ;;; Actual Rust runs, full byte checks, and independent native ASCENT snapshots.
 (import :std/test :std/encoding/json :std/list/list :clan/poo/object

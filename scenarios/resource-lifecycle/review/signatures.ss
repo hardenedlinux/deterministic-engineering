@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;;; -*- Gerbil -*-
 ;;; Real OpenSSL handoff through Core Ops. Keys belong to a configured test authority.
 (import

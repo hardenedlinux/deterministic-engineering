@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+//
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
 //! Controlled resource-lifecycle observations, without network or timing gold.
 use rayon::ThreadPoolBuilder;
 use serde_json::{json, Value};

@@ -1,0 +1,364 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 10.141 Cross-language Diagram Rendering Research and Layout Correction
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.141
+#+OPTIONS: toc:2 num:nil
+
+* Scope correction
+D2 is an authoring language and a primary project input. It does not delimit the
+research ecosystem or prescribe every downstream visual rendering decision.
+Architecture diagramming, graph visualization, constraint-based drawing, routing,
+icon systems and AI-assisted diagram design must be studied across languages.
+C4/Structurizr remain viewpoint references. No additional modeling DSL or proof
+ledger is selected by this research.
+
+The c8b95c0 implementation in10.140 is a functional prototype, not an accepted
+visual baseline. Its19 tests establish API/input properties, not layout quality.
+Its TS compositor primarily surrounds finished D2 geometry. Adding icons or
+shrinking margins cannot give that compositor control of graph-internal layout.
+The current samples expose poor spatial balance, small labels after fitting,
+overlarge fixed panels and repeated responsibility explanations.
+
+* Sources inspected through GitHub
+The inspection used general architecture-diagram and diagram-renderer/layout
+queries, not a D2-only query. Stars aided discovery only; they are not selection
+criteria. Third-party skill text was read as source material, not installed or
+executed as agent instructions. Project claims are not treated as local receipts.
+
+| Project | Actual inspected surface | Capability to learn | Selection status |
+|---------+--------------------------+--------------------+------------------|
+| [[https://github.com/antvis/G6][AntV G6]] | README; packages/g6/src/runtime/layout.ts | Separate graph data, layout stages, nodes/edges/combos, rendering and interactions | Candidate; no local runtime qualification |
+| [[https://github.com/penrose/penrose][Penrose]] | README Domain/Substance/Style example; official constraint documentation | Separate domain meaning, instance and visual constraints; express containment/overlap/objectives | Research reference; no solver dependency selected |
+| [[https://github.com/mingrammer/diagrams][Diagrams]] | README examples and provider structure | Icon-first node vocabulary, clusters and concise architectural labels | Visual reference; Python/Graphviz not automatically introduced |
+| [[https://github.com/awslabs/diagram-as-code/tree/4ec965cf8bdb309d714bc6202e7954fc43338bbe][AWS Diagram-as-code]] | doc/best-practices.md; introduction image | Orientations by diagram purpose, nested resource boundaries and grouped redundancy | Visual/layout reference |
+| [[https://github.com/likec4/likec4/tree/d1d61155215ceebd909cf217eab32ebeb6a35f1e][LikeC4]] | examples/cloud-system/views.c4; demo-rank-for-better-layout.c4 | Explicit include/exclude, scoped views and rank hints | Projection reference; its DSL is not a new dependency |
+| [[https://github.com/lukilabs/beautiful-mermaid/tree/2ac8bbbb060ca0a65a6a21f3200bd99b1587b488][Beautiful Mermaid]] | README; src/theme.ts | Small composable color contract; theme independently applied to SVG primitives | TS theme reference; Mermaid is not a replacement input requirement |
+| [[https://github.com/xyflow/xyflow][XYFlow]] | README package boundaries and usage | Custom nodes/edges and interactive inspection | Interactive candidate; editor does not alone solve offline layout |
+| [[https://github.com/Agents365-ai/drawio-skill/tree/57270820d3cd71cbdf4fb6b2f7091d4fb37bb019][drawio-skill]] | README; scripts/diagram_ir.py; architecture-studio example inventory | Separate meaning/provenance/geometry, multiple projections and visual self-check | Research reference; no copied source/evidence system |
+| [[https://github.com/Cocoon-AI/architecture-diagram-generator/tree/4b9087d55268c79a935105439dbcd37b630fc3f3][Architecture Diagram Generator]] | examples/web-app.html and web-app.png; template inventory | Study actual visual hierarchy and compact layer composition beyond one DSL ecosystem | Visual reference; fixed HTML template is not itself a reusable renderer |
+
+Penrose's [[https://penrose.ink/docs/tutorial/constraints/][constraint documentation]] describes optimization objectives; that is not a
+proof that its solver suits architecture edge routing. G6's documented render
+backends do not establish font, export or cold-start acceptance in our runtime.
+XYFlow's UI extensibility must be evaluated independently of automatic placement.
+
+* Correct responsibility split
+The intended Library has three independently testable concerns:
+1. Question/model projection: use actual OpenSysML and D2 structures plus existing
+   project query/evidence associations to select what the reader needs to see.
+2. Layout and visual grammar: group boundaries, choose topology, size nodes from
+   icons/labels, route edges, place callouts and keep useful whitespace.
+3. Rendering/presentation: draw the placed view through reusable SVG/Canvas
+   capabilities with downstream themes, icon assets and output profiles.
+
+The existing D2 compiler remains a real source adapter and a comparison
+baseline. OpenSysML retains model semantics. ASCENT retains deterministic facts
+and inference; Aitia retains review. A view projection can carry their original
+IDs and references without creating a new modeling language, evidence database
+or self-appointed authority. A private renderer may use a mature engine object;
+public Library composition can remain functional and immutable.
+
+No engine is selected by README popularity. G6, existing layout engines and
+constraint-oriented alternatives must be compared on actual repository content
+and export/runtime constraints before adding a dependency. Pure static output
+and interactive inspection are separate requirements and may need distinct
+adapters rather than one mandatory browser application.
+
+* Same-case comparison protocol
+Use repository90.91,90.120 and90.84 as frozen semantic baselines. Preserve their
+original views for regression. Derive question-scoped architecture, workflow and
+explanation candidates explicitly; record any omitted/aggregated element and
+keep required obligations reachable. Do not improve density by deleting meaning.
+
+For each scope, compare:
+- The existing rendering baseline.
+- The current TS compositor baseline, retaining its visible shortcomings.
+- Candidate visual grammars backed by mature layout/render capabilities.
+
+Keep the same question, model references, required nodes/relations and evidence
+status across a comparison. Theme and engine identity are independent recorded
+inputs. A compact static figure, an explanatory infographic and an interactive
+inspection view must not all be forced into the same tall report frame.
+
+* Acceptance and research questions
+| Category | Acceptance / observation |
+|----------+--------------------------|
+| Semantic correctness | Preserve identity, containment, relation direction and required obligations; disclose aggregation and unsupported notation |
+| Mechanical drawing checks | Detect clipped text, unintended overlaps, invalid geometry, invisible required content and routes through unrelated nodes |
+| Typography | Compare actual output at its intended viewing size; enlarging the canvas cannot compensate for unreadably small labels |
+| Routing | Compare crossings, shared paths, label collisions and unnecessarily long connectors; port semantics must survive |
+| Space | Compare occupied bounds, group padding and aspect ratio; use these as diagnostics, not a universal maximum-density rule |
+| Visual vocabulary | Icons encode actual kinds; shape, grouping, color and short labels have consistent meaning and an explicit legend where needed |
+| Evidence | Missing, conflict and pending remain distinct; visual status cannot establish an accepted Q or review R |
+| Reproduction | Record actual engine, theme/assets, source closure and layout options/seed; distinguish reproducibility from aesthetic preference |
+| Human comparison | Ask whether each view answers its question faster and more accurately; do not label subjective quality as a formal proof |
+
+LLMs may propose view scope, constraints and alternative candidates, then inspect
+rendered results for visual defects. Deterministic validation protects semantics
+and mechanical requirements. Human comparison establishes whether an explanation
+actually reduces reading burden. ASCENT is not an aesthetic oracle.
+
+* Implementation order
+1. Preserve the current prototype, original sources and screenshots as baselines;
+   stop treating the fixed report layout as the target framework.
+2. Write question/view fixtures with required identities and expected distinctions,
+   independent of the source language and the chosen renderer.
+3. Qualify focused layout/render candidates for nested groups, icon-rich nodes,
+   edge routing, text metrics and static export. Compare complete figures.
+4. Select the smallest reusable capabilities that pass those cases; replace the
+   prototype composition rather than stacking another wrapper over it.
+5. Apply independent themes/icons and connect actual model/evidence references;
+   qualify downstream use and publish only reviewed outputs.
+
+Open decisions: renderer/backend selection, exact layout constraint surface,
+static versus interactive adapters, reliable font measurement, multilingual text,
+asset closure and visual regression policy. No new engine has been installed by
+this research and no automatic orchestrator or visual-acceptance claim is issued.
+
+* D2 source identity observation
+The inspected official D2 checkout6a7b4837838a3907604a1d9eec57ee98b6f3cd01
+now declares @d2lang/d2 in d2js/js/package.json. The prototype uses the older
+@terrastruct/d2 published package. This is a dependency/API comparison obligation,
+not authorization to mix an unqualified version upgrade into visual experiments.
+Source-language and rendering-backend choices remain independently reviewable.
+
+* Visual inspection notes
+The actual Cocoon web-app image and HTML use a large fixed SVG canvas with a
+horizontal chain and a separate card row. Its color discipline is useful, but
+its large unused area and fixed placement are not a solution to our current
+layout complaint. It is not selected as the target template.
+The AWS example demonstrates icon-based resource identity and nested boundaries.
+The Diagrams advanced web-service example illustrates icon-rich clusters and
+relationships as the main figure rather than a document shell. These are visual
+references, not evidence that their default layout handles our Library models.
+
+* LLM/MLLM-led architecture and explanatory figures
+The next research scope is visual design by language and multimodal models, not
+only graph libraries. Historical scores, fixed templates and the current engine
+choice are references for comparison; they must not become a universal aesthetic
+objective. The user's uploaded infographic is a concrete visual reference for
+compact information grouping, meaningful icons and low reading burden. Its exact
+six-section format is not mandatory for every future question.
+
+| Primary project and inspected revision | Actual inspected material | Relevant method and limit |
+|---------------------------------------+---------------------------+---------------------------|
+| [[https://github.com/cathrynlavery/diagram-design/tree/0cf73c3fcc56667ad91a9a04c439ac6ccfabc9d1][Diagram Design]] | Official site before/after examples; repository type/example inventory and architecture screenshot | LLM-authored self-contained HTML plus inline SVG; choose a visual genre and hierarchy from the content rather than restyling one card layout |
+| [[https://github.com/nicobailon/visual-explainer/tree/2a34c38c8bf5d0affbf60700f7cf24245bb8ed07][Visual Explainer]] | templates/page.html and kit/render.mjs | A figure and a concise answer lead; semantic references connect prose to diagram parts; rendered pages receive browser/contact-sheet inspection |
+| [[https://github.com/google-research/papervizagent/tree/e088a8fff74cc363b6897c0843631fff76484908][PaperVizAgent / PaperBanana]] | Official repository identity; agents/critic_agent.py; author project pipeline | Reference retrieval, content/style planning and visual-feedback refinement; a research method, not an instruction to add its multi-agent runtime |
+| [[https://github.com/ResearAI/AutoFigure-Edit/tree/16f3749e9d512bdf7b7b55c162307bc289750b7a][AutoFigure-Edit]] | Official README, staged reconstruction and reference-style gallery | Use a reference image to guide composition and reconstruct editable SVG; its image generation/segmentation stack is not automatically a dependency |
+
+The independently maintained llmsresearch/paperbanana implementation is not the
+official Google project. Research attribution and locally verified capabilities
+must remain distinct. No reference system has been run against our case here.
+
+** HTML as a drawing artifact
+HTML/CSS and inline SVG are valid primary visual authoring surfaces. A standalone
+figure can contain iconography, spatial grouping, annotations, comparison panels
+and a compact legend without a navigation shell or long prose document. CSS grid
+and SVG each serve the visual problem that suits them. D2 remains available for
+model relationships or an embedded subview; it does not prescribe the entire
+composition. OpenSysML and existing C/Q/evidence references retain their semantic
+ownership across every output surface.
+
+Keep the editable HTML/SVG source. Export the intended figure region to PNG or
+other requested outputs through a real browser. [[https://playwright.dev/docs/screenshots][Playwright supports page and element screenshots]];
+this establishes an export capability, not our completed exporter acceptance.
+Record viewport, device scale, browser identity, theme/assets and source identity;
+wait for fonts/images and a deliberately selected animation state. Screenshot the
+figure rather than accidentally capturing controls or the full document. Native
+browser font rendering is particularly relevant after the observed resvg fallback.
+PDF/SVG export should be qualified separately when required.
+
+** Applying the method to this Library
+1. Start with the question, audience, actual model/evidence and the explanation's
+   intended takeaway. Keep architecture and workflow as distinct visual scopes.
+2. Select relevant reference figures and visual metaphors. LLM proposes compact
+   layouts, component groupings, icon placement and short annotations; no single
+   score or fixed card hierarchy defines the solution space.
+3. Render candidate HTML/SVG at the intended reading size and inspect its actual
+   image. MLLM critique addresses reading order, ambiguity, whitespace, collisions
+   and missing meaning, then the candidate is revised with the user's feedback.
+4. Check source/model/evidence fidelity through existing framework owners. These
+   semantic checks remain separate from optional aesthetic diagnostics.
+5. Retain editable sources, export images and record the selected candidate and
+   its associated references. Publication remains an explicit project decision.
+
+This is the revised design direction. The current fixed-width, fixed-section TS
+compositor is a baseline to replace, not the contract that future LLM-designed
+figures must fit. Public TS APIs can remain functional; themes, icons, source
+acquisition and export effects stay independently composable. Existing Agent
+capabilities should drive design iteration before adding another orchestration
+runtime. No implementation change or live backend/API invocation accompanies
+this research update.
+
+Visual inspection of Diagram Design's architecture.png still shows substantial
+unused canvas. Its method and output surface are relevant, but this individual
+sample is not accepted as our density or iconography baseline. Reference projects
+are sources of techniques, not automatic aesthetic winners or fixed score targets.
+
+* Implementation: Deterministic Engineering Render
+The package is now @deterministic-engineering/render in packages/render. The
+package version remains1.0.0 and is read only from package.json. The old fixed
+composePresentation SVG/card compositor is removed; composeFigure accepts a pure
+HTML/SVG composition. The host supplies a Playwright browser to exportFigure;
+the Library owns and closes its own context and returns PNG plus rendering facts.
+It writes no project files and issues no Core/Aitia authority.
+
+** D2 owns Questions and authored content
+D2 already has the [[https://d2lang.com/tour/vars/][vars.d2-config.data plugin metadata mechanism]].
+The existing compiler exports it through graph.data. The installed SDK returns
+null for nested map values; a JSON block scalar carries the nested figure
+declaration correctly. Official D2 parses source/imports; standard JSON.parse
+reads that scalar. No second D2 parser or TS Questions registry is introduced.
+
+The90.132/90.133 D2 sources contain Questions, focus/source associations, explanatory
+copy, language, purpose, theme layers and model relations. TS contains visual
+composition and source reading adapters. A changed D2 question changes the image
+without editing TS. relation IDs/directions are retained, and the compositor
+refuses requests for undeclared relations. The case is a scoped projection with
+explicit model/source links, not a complete SysML semantic validation.
+
+** Language and own visual system
+This case uses English because its source architecture, D2 and SysML are English.
+No renderer-wide language translation is applied. Upstream maintains Blueprint,
+Field Notes and Graphite theme data plus a Compact spacing layer. Declared ordered
+layers compose through pure functions; downstream may supply its own layers.
+The previously used Lucide default dependency is removed. The Engineering glyph
+pack uses project-authored SVG assets for definitions, selection, capture, model,
+document, decision, evidence and source references. It remains independently
+replaceable. The uploaded infographic guides density and information grouping,
+not the copying of its decorative assets or a fixed universal template.
+
+** Actual case and remaining trust boundary
+The Case reads actual organization Library objects, Profile declarations, Scenario
+functions, project.sysml and Org design/dossier sources. Explicit source excerpts
+and their line positions are observed; this is not a Scheme or SysML interpreter.
+Current prepare-formation-capture still returns capture-blocked and capture=#f,
+which remains visible in both views. No C, accepted Q, independent R or delivery
+is claimed by this image-generation run.
+
+Architecture and Workflow are separate HTML/PNG artifacts. The main relationship
+region uses content-driven height rather than fitting the whole graph to the full
+page width. Browser-measured region bounds are recorded as diagnostics, not a
+universal density score or automatic aesthetic acceptance. Positive/negative
+checks cover actual D2 metadata, missing/changed questions, source footprint,
+undeclared/reversed relations, theme/icon replacement, clipping, invalid images,
+HTML modification and browser-context cleanup.
+
+An initial export-control run stalled at document.fonts.ready before layout in a
+script-disabled browser context. The corrected path uses the standard context,
+explicitly settles layout, then waits for fonts/images. The same clipping and
+invalid-image controls now return the intended refusals. Previous logs are kept
+locally; a repeated run alone is not the claimed fix.
+
+* Visual language, diagram organization and palette are independent
+A theme is a visual language: stroke treatment, typography, node/port shapes,
+connector appearance, boundary treatment and spacing. Palette layers remain
+composable but are not a complete theme on their own. =sketchbook= uses actual
+Rough.js strokes and embedded Kalam fonts; =node-editor= adds node ports,
+precise borders and a node-canvas treatment. It does not embed React Flow.
+
+Swimlane is an organization of responsibility and order, not a palette.
+The D2 figure declaration owns =flow.lanes=, =flow.steps= and =layout=.
+Steps bind existing D2 node IDs; their consecutive relations must exist.
+A missing lane, node or edge refuses composition. Responsibility labels are
+explicit project design declarations, not verified human role mandates.
+A business view similarly needs its own business entities/relations and Question;
+changing a theme cannot invent these semantics.
+
+Downstream selects ordered theme layers and a layout in the D2 declaration.
+Custom layers and functional composers remain replaceable; the package does
+not prescribe numbered sections or a universal card layout. Architecture and
+Workflow retain independent purposes. Current source/model language stays English.
+
+HTML export measures settled browser text and routes declared connectors against
+actual node boxes. Sketch surfaces are marked explicitly with =data-surface=;
+font assets and deterministic Rough.js SVG are baked into offline HTML.
+Receipts distinguish original composed HTML from materialized HTML, record font
+hashes and actual browser identity. These are rendering receipts, not C/Q/R evidence.
+
+browser controls cover deterministic sketch output, changed drawing
+parameters, missing connector endpoints, clipping and broken images. The real
+case generates architecture and workflow separately, plus sketchbook,
+node-editor and workflow-swimlane variants. Actual current source still returns
+=capture-blocked / capture = #f=; no accepted inference or published model is claimed.
+
+References: [[https://roughjs.com/][Rough.js drawing primitives]] and
+[[https://reactflow.dev/learn/customization/custom-nodes][React Flow node customization]].
+The user-provided Zhihu reference returned HTTP 403; its article contents were
+not inspected. Its hand-drawn example is used as the requested visual direction.
+
+* Static style implementation and open view organization
+The current package boundary is static rendering. Rough.js supplies sketch
+primitives and hachure strokes. XYFlow's public =getSmoothStepPath= supplies
+connector geometry; the package does not initialize an editor, interactions or
+pan/zoom state. The complete Excalidraw package and React are excluded. There is
+no editor-scene adapter, runtime bundler or additional build entry.
+
+** Three independent choices
+| Concern | Owner | Current implementation |
+|---------+-------+------------------------|
+| Meaning and Questions | D2/SysML/project | Canonical =90.132=/=90.133= declarations and captured sources |
+| View organization | Project compositor | graph, responsibility swimlane, dependency matrix and open =layout=/=presentation= |
+| Visual language | Replaceable theme layers | Independent =styles/sketchbook.ts= and =styles/node-editor.ts=, palettes, spacing, fonts and icons |
+
+Node and swimlane are examples, not the framework's complete catalogue. Native
+D2 classifications retain their existing language/rendering path. New domain
+organizations use a functional composer and validate their own presentation data;
+there is no mandatory card count or global enumeration of all future diagram kinds.
+The new dependency-matrix Case shows the same architecture relationships
+in a genuinely different organization, without converting dependencies to workflow.
+
+** Source and evidence invariants
+Questions, explanatory copy, current language and source links remain declared
+in D2. The model association remains the captured =project.sysml= and D2
+projection. Changing a theme/layout changes the rendering footprint, not the model
+or evidence status. Every rendered connector is checked against its captured
+relation and direction. Matrix axes must reference nodes. Workflow lane
+assignments are design declarations, not role-authorization evidence.
+
+Font assets are explicit theme data. Rendering records composed HTML separately
+from materialized offline HTML, actual font hashes, drawing/routing package pins,
+browser identity and output fingerprints. Rough.js deterministic-seed controls
+apply within the qualified browser/font environment; no cross-platform pixel
+identity is claimed. The current blocked capture and empty evidence remain visible.
+
+** Verification and artifacts
+The standard package checks cover source/Question capture, D2 syntax and
+notation, saved SDK projection, open custom presentation, immutable style
+composition and unknown-layer refusal. browser controls cover actual
+Rough.js output and font embedding, repeated seeded output, modified inputs,
+clipping, broken images, missing endpoints and reversed model relations.
+A separate packed-package consumer checks installed worker/font/dependency paths.
+
+Eight full HTML/PNG candidates plus rendering receipts are generated through
+=packages/render/examples/library-case.ts=. =packages/render/examples/comparison.ts= compares only
+the main diagram regions, separately for architecture and Workflow, without
+stretching a Workflow to fill the whole figure. Document snapshots are explicit
+design candidates; rendering does not submit review or publish SysML.
+
+References: [[https://roughjs.com/][Rough.js official primitives]],
+[[https://reactflow.dev/api-reference/utils/get-smooth-step-path][XYFlow public connector utility]],
+[[https://docs.excalidraw.com/docs/@excalidraw/excalidraw/installation][Excalidraw editor boundary]].
+
+** Local qualification recorded on 2026-11-01
+- Package and real consumer TypeScript checks: passed.
+- Bun unit/native D2/saved SDK controls: 29 passed, 0 failed.
+- Playwright export controls: 7 passed, 0 failed; worker limit remains two.
+- Eight complete candidates and two separate comparison sheets: generated and visually inspected.
+- Final packed consumer: =PACKED-CONSUMER-OK=, including owned D2 worker,
+  actual Rough.js SVG, embedded font resources and selected-region PNG export.
+- Qualified tarball SHA256: =ded011a886bb9ad47b69340a89bec268d1365a8b0ac79a7fe8ea9883e4f00bf5=.
+- Runtime dependencies: D2 0.1.33, Rough.js 4.6.6, Kalam 5.3.0,
+  XYFlow system 0.0.83. Neither editor nor React remains in the declarations/locks.
+- Actual local export browser: Chromium =156.0.8078.4=.
+- CI workflow syntax: actionlint passed. Remote Linux/macOS execution is not
+  established by these local results; no live SysML validation or C/Q/R is issued.
+
+* Extensibility audit follow-up
+[[file:10.142-declarative-render-extensibility-audit.org][10.142]] supersedes the earlier
+closed kind selection, framework-owned linear flow helper and programmatic-only
+icon selection. It records the current owners and executable positive/negative controls.

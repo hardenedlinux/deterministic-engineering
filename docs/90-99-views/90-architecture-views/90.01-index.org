@@ -1,15 +1,31 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
 #+TITLE: 90.01 Paired Org and D2 Architecture Views
 #+LANGUAGE: en
 #+PROPERTY: JD_ID 90.01
 #+OPTIONS: toc:2 num:nil
 #+STARTUP: overview
 #+FILETAGS: :design:diagrams:workflow:
-#+PROPERTY: RENDERER d2-v0.9.0
-#+PROPERTY: LAYOUT dagre
+#+PROPERTY: RENDERER packages/render (see package.json for dependency pins)
+#+PROPERTY: LAYOUT selected in each D2 source
 #+PROPERTY: THEME 0
 #+PROPERTY: PAD 24
 
 [[file:../../../README.org][Overview]] | [[file:../../10-19-design/10-architecture/10.05-agent-reasoning-and-design-convergence.org][Agent/design rationale]] | [[file:../../30-39-evaluation/30-benchmarks/30.03-gateway-variant-contracts.org][24 variant contracts]]
+
+* Current overview and render audit views
+- [[file:90.135-library-project-architecture.d2][Repository architecture]] · [[file:90.135-library-project-architecture.svg][SVG]]. Structural responsibilities and dependencies. [[file:90.135-library-project-architecture-sketchbook.svg][Hand-drawn]] / [[file:90.135-library-project-architecture-node-editor.svg][technical-node]] variants share the model.
+- [[file:90.02-agent-evidence-loop.d2][Engineering workflow]] · [[file:90.02-agent-evidence-loop.svg][SVG]]. Target integration and current capture stop are explicit.
+- [[file:90.129-functional-architecture-rendering.d2][Static render architecture]] · [[file:90.129-functional-architecture-rendering.svg][SVG]]. Project, Library and mature dependency owners.
+- [[file:90.130-llm-assisted-model-view-workflow.d2][View authoring workflow]] · [[file:90.130-llm-assisted-model-view-workflow.svg][SVG]]. Static candidate export, without model publication.
+- [[file:90.132-library-profile-scenario-architecture-comparison.png][Architecture style comparisons]] · [[file:90.133-capture-preparation-workflow-comparison.png][Workflow style comparisons]]. Actual TS package outputs.
+
+Earlier design iterations and evidence-oriented views below retain their historical
+scope. They are not silently relabeled as current implementation acceptance.
+
+- [[file:90.136-model-adaptation-boundaries.d2][SDK model adaptation boundaries]] · [[file:90.136-model-adaptation-boundaries.svg][SVG]]. Native SDK semantics and source-bound renderer projection.
 
 * Org and D2 are maintained together
 :PROPERTIES:
@@ -508,3 +524,35 @@ Lean proof, benchmark execution or operational effect is implemented by them.
 - [[file:90.127-native-package-cohort-and-ci-provenance.d2][90.127 Native package cohort and CI provenance]]
 
 - [[file:90.128-native-cohort-source-acquisition.d2][90.128 Native cohort and source acquisition]]
+
+- [[file:90.129-functional-architecture-rendering.d2][90.129 Functional architecture rendering]] — [[file:90.129-functional-architecture-rendering.svg][SVG]]; owner: [[file:../../10-19-design/10-architecture/10.140-functional-architecture-rendering-and-opensysml.org][10.140]].
+
+- [[file:90.130-llm-assisted-model-view-workflow.d2][90.130 Model-to-view authoring workflow]] — [[file:90.130-llm-assisted-model-view-workflow.svg][SVG]]; separate from component architecture; owner: [[file:../../10-19-design/10-architecture/10.140-functional-architecture-rendering-and-opensysml.org][10.140]].
+
+- [[file:90.131-library-responsibility-explanation.d2][90.131 Question-led Library responsibilities]] — concise candidate derived from 90.91; [[file:../../10-19-design/10-architecture/10.140-functional-architecture-rendering-and-opensysml.org][TS page composition design]].
+
+- [[file:90.132-library-profile-scenario-architecture.d2][90.132 Library / Profile / Scenario architecture]] — [[file:90.132-library-profile-scenario-architecture.html][editable HTML]] · [[file:90.132-library-profile-scenario-architecture.png][PNG]]. Questions and presentation selection live in D2.
+- [[file:90.133-capture-preparation-workflow.d2][90.133 Capture preparation workflow]] — [[file:90.133-capture-preparation-workflow.html][editable HTML]] · [[file:90.133-capture-preparation-workflow.png][PNG]]. Separate workflow, current capture-blocked result preserved.
+
+** Static visual styles and open view organizations
+The following are design candidates of the same captured Library/Profile/Scenario
+case, not acceptance of C/Q/R. Full figures retain their Questions and source links.
+Comparison sheets show the main diagram regions at readable size.
+
+- [[file:90.132-library-profile-scenario-architecture-comparison.png][Architecture comparison]] — [[file:90.132-library-profile-scenario-architecture-comparison.html][standalone HTML]]. Hand-drawn, node style and dependency matrix.
+- [[file:90.133-capture-preparation-workflow-comparison.png][Workflow comparison]] — [[file:90.133-capture-preparation-workflow-comparison.html][standalone HTML]]. Hand-drawn, node style and responsibility swimlane.
+- [[file:90.132-library-profile-scenario-architecture-sketchbook.png][Full hand-drawn architecture]] · [[file:90.132-library-profile-scenario-architecture-node-editor.png][Full node-style architecture]] · [[file:90.132-library-profile-scenario-architecture-dependency-matrix.png][Full dependency matrix]].
+- [[file:90.133-capture-preparation-workflow-sketchbook.png][Full hand-drawn Workflow]] · [[file:90.133-capture-preparation-workflow-node-editor.png][Full node-style Workflow]] · [[file:90.133-capture-preparation-workflow-swimlane.png][Full swimlane Workflow]].
+
+Upstream themes are independent visual modules; palettes, typography, drawing,
+icons and view organization compose separately. Additional domain layouts use
+project-owned declarations and pure composers. Model parsing retains official D2 semantics; unsupported notation requires an explicit adapter rather than a raw-render fallback. The static package
+uses Rough.js and XYFlow's path utility; it includes no interactive whiteboard.
+
+- [[file:90.132-library-profile-scenario-architecture-project-owned.png][Project-owned architecture style/icons]] · [[file:90.133-capture-preparation-workflow-project-owned.png][Project-owned workflow style/icons]]. Kind, layout, ordered themes and glyph packs are selected in D2.
+- [[file:90.134-render-responsibility-boundaries.d2][90.134 Static renderer responsibility boundaries]] · [[file:90.134-render-responsibility-boundaries.svg][native SVG]]. See [[file:../../10-19-design/10-architecture/10.142-declarative-render-extensibility-audit.org][10.142 audit]].
+
+- [[file:90.137-functional-render-composition.d2][90.137 Functional render component dependencies]] · [[file:90.137-functional-render-composition.svg][SVG]].
+- [[file:90.135-library-project-architecture-comfortable.png][Comfortable-density architecture]] · [[file:90.130-llm-assisted-model-view-workflow-sketchbook.png][Hand-drawn authoring Workflow]].
+
+- [[file:90.138-library-design-taste-choices.d2][90.138 Design / Taste declarations]] · [[file:90.138-library-design-taste-choices-comparison.png][Three choices with reasons and observations]]. Architecture remains separate from Workflow.

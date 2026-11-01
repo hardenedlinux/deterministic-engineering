@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;;; -*- Gerbil -*-
 (import (only-in :std/os/pid getpid) (only-in :gerbil/runtime/loader list-modules) :std/test :std/encoding/json
         (only-in :std/misc/ports read-all-as-u8vector) :clan/poo/object

@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;;; -*- Gerbil -*-
 ;;; A small native ASCENT evaluation checks the shared POO object ABI.
 ;;; The literal answers are an independent finite oracle, not gateway gold.

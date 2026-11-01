@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;;; -*- Gerbil -*-
 ;;; Integration audit of real Core Ops/QNT/TLC/Lean/native ASCENT artifacts.
 ;;; Run the example first and bind GATEWAY_REAL_REPORT to its immutable report.

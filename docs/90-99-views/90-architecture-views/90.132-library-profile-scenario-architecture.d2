@@ -1,0 +1,301 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+# Declared Questions and content for the actual DE-CASE-01 case.
+# Source observations only; no issued C, accepted Q or review R.
+vars: {
+  d2-config: {
+    layout-engine: elk
+    data: {
+      # Application declarations travel through the official graph.data interface.
+      figure: |json
+{
+  "title": "Library / Profile / Scenario architecture",
+  "purpose": "architecture",
+  "kind": "system",
+  "language": "en",
+  "width": 1120,
+  "primary": "why",
+  "questions": [
+    {
+      "ref": "why",
+      "text": "What does this Library make possible?",
+      "focusRefs": [
+        "library",
+        "profile",
+        "scenario"
+      ]
+    },
+    {
+      "ref": "ownership",
+      "text": "Who publishes, selects and binds?",
+      "focusRefs": [
+        "library",
+        "profile",
+        "scenario",
+        "model"
+      ]
+    },
+    {
+      "ref": "boundaries",
+      "text": "Which responsibilities stay independent?",
+      "focusRefs": [
+        "library",
+        "profile",
+        "types"
+      ]
+    },
+    {
+      "ref": "products",
+      "text": "How do models, docs and decisions connect?",
+      "focusRefs": [
+        "model",
+        "documents",
+        "decisions"
+      ]
+    },
+    {
+      "ref": "evidence",
+      "text": "What does the current source show?",
+      "focusRefs": [
+        "library",
+        "profile",
+        "capture-stop"
+      ]
+    }
+  ],
+  "references": {
+    "library": "library/project-organization/objects.ss",
+    "profile": "profiles/library-formation.ss",
+    "scenario": "scenarios/project-formation/func.ss",
+    "capture-stop": "scenarios/project-formation/func.ss",
+    "model": "project.sysml",
+    "documents": "docs/10-19-design/10-architecture/10.31-architecture-document-and-decision-contracts.org",
+    "decisions": "docs/10-19-design/10-architecture/10.34-case-design-review-dossier-draft.org",
+    "types": "scenarios/project-formation/types.ss",
+    "render-d2": "packages/render/src/d2-figure.ts",
+    "render-sysml": "packages/render/src/opensysml.ts",
+    "render-binding": "packages/render/src/index.ts",
+    "render-context": "packages/render/src/figure.ts"
+  },
+  "basis": {
+    "captureRef": "design-candidate:DE-CASE-01/rendering",
+    "modelRefs": [
+      "project.sysml"
+    ],
+    "obligationRefs": [
+      "docs/10-19-design/10-architecture/10.31-architecture-document-and-decision-contracts.org"
+    ],
+    "evidenceRefs": []
+  },
+  "copy": {
+    "badge": "Repository case / design view",
+    "eyebrow": "DETERMINISTIC ENGINEERING / DE-CASE-01",
+    "title": "One Library. ",
+    "emphasis": "Clear boundaries.",
+    "annotation-01": "Shared definitions. Independent choices. Traceable project use.",
+    "publish-heading": "Publish once",
+    "annotation-02": "Models, methods and policies",
+    "annotation-03": "Reusable definitions from Library",
+    "select-heading": "Choose per project",
+    "annotation-04": "Profile selects the needed capabilities",
+    "annotation-05": "Original identities stay intact",
+    "capture-heading": "Bind actual use",
+    "annotation-06": "Scenario acquires project inputs",
+    "annotation-07": "One use, with source associations",
+    "annotation-08": "Ownership / arrows point to dependencies",
+    "library-boundary": "REUSABLE PUBLICATION BOUNDARY",
+    "library-label": "Library",
+    "annotation-09": "Definitions and contracts",
+    "annotation-10": "Models / catalog / mapping",
+    "annotation-11": "Coding and design-review policies",
+    "annotation-12": "Method bindings and input demands",
+    "annotation-13": "selects",
+    "project-boundary": "PROJECT BOUNDARY / DE-CASE-01",
+    "profile-label": "Profile",
+    "annotation-14": "Select parents, policies and methods",
+    "annotation-15": "Reference catalog / mapping",
+    "annotation-16": "binds",
+    "scenario-label": "Scenario",
+    "annotation-17": "Acquire actual inputs and origins",
+    "annotation-18": "Retain choices, checks and gaps",
+    "model-label": "Architecture model",
+    "document-label": "Org documents",
+    "decision-label": "Decisions",
+    "annotation-19": "Model: project.sysml / a scoped responsibility view",
+    "annotation-20": "ASCENT",
+    "annotation-21": " reasoning and ",
+    "annotation-22": "Aitia",
+    "annotation-23": " review retain separate owners",
+    "annotation-24": "One definition owner",
+    "annotation-25": "Selection and use reference definitions",
+    "annotation-26": "Contract bodies are not copied",
+    "annotation-27": "Selection keeps its scope",
+    "annotation-28": "Retain parents and both policies",
+    "annotation-29": "Bind actual published methods",
+    "annotation-30": "Reuse existing admission",
+    "annotation-31": "POO / Core own admission",
+    "annotation-32": "Keep normalized return values",
+    "annotation-33": "Keep review independent",
+    "annotation-34": "Candidates, evidence and authority",
+    "annotation-35": "Retain each source association",
+    "annotation-36": "project.sysml / actual and target",
+    "annotation-37": "Org design basis",
+    "annotation-38": "Contracts, duties and acceptance",
+    "annotation-39": "Decisions and reassessment",
+    "annotation-40": "Choices, assumptions and triggers",
+    "annotation-41": "Design view: issued C, accepted Q and independent review still need actual binding.",
+    "annotation-42": "Library / Profile declarations are visible",
+    "annotation-43": "Objects, both policies, catalog / mapping and method selection",
+    "annotation-44": "SDK identities and source bindings are retained",
+    "annotation-45": "Exact IDs, parents and port references; original input fingerprints",
+    "annotation-46": "What is still blocked?",
+    "annotation-47": "capture-blocked \u00b7 capture = #f",
+    "annotation-48": "Preparation still reports origin and method-footprint gaps",
+    "annotation-49": "No review or delivery was executed here",
+    "annotation-50": "Source observation and image export are not execution receipts",
+    "annotation-51": "Library publishes meaning. Profile selects. Scenario binds this use.",
+    "annotation-52": "Questions / model / source observations / architecture",
+    "annotation-53": "Source observations / explicit projection limits / no verification-pass claim"
+  },
+  "themes": [
+    "blueprint",
+    "compact"
+  ],
+  "variants": [
+    {
+      "name": "sketchbook",
+      "themes": [
+        "sketchbook",
+        "compact"
+      ]
+    },
+    {
+      "name": "node-editor",
+      "themes": [
+        "blueprint",
+        "node-editor",
+        "compact"
+      ]
+    },
+    {
+      "name": "dependency-matrix",
+      "themes": [
+        "blueprint",
+        "compact"
+      ],
+      "layout": "dependency-matrix"
+    },
+    {
+      "name": "project-owned",
+      "kind": "responsibility-map",
+      "layout": "dependency-matrix",
+      "themes": [
+        "field-notes",
+        "workbench",
+        "compact"
+      ],
+      "icons": [
+        "engineering",
+        "repo"
+      ]
+    }
+  ],
+  "presentation": {
+    "matrix": [
+      {
+        "node": "library",
+        "label": "Library"
+      },
+      {
+        "node": "project.profile",
+        "label": "Profile"
+      },
+      {
+        "node": "project.scenario",
+        "label": "Scenario"
+      }
+    ],
+    "observations": [
+      {
+        "ref": "library",
+        "excerpt": "OrganizationDeclaration"
+      },
+      {
+        "ref": "library",
+        "excerpt": "catalog-value"
+      },
+      {
+        "ref": "library",
+        "excerpt": "mapping-value"
+      },
+      {
+        "ref": "profile",
+        "excerpt": "coding-policy:"
+      },
+      {
+        "ref": "profile",
+        "excerpt": "design-policy:"
+      },
+      {
+        "ref": "profile",
+        "excerpt": "resource-methods: '(native quint lean integration)"
+      },
+      {
+        "ref": "scenario",
+        "excerpt": "(def (select-formation-profile"
+      },
+      {
+        "ref": "capture-stop",
+        "excerpt": "status: 'capture-blocked"
+      },
+      {
+        "ref": "capture-stop",
+        "excerpt": "capture: #f"
+      },
+      {
+        "ref": "model",
+        "excerpt": "part 'selection' : 'IndependentProfile'"
+      },
+      {
+        "ref": "model",
+        "excerpt": "part 'scenarioUse' : 'ProjectScenario'"
+      },
+      {
+        "ref": "render-d2",
+        "excerpt": "srcArrow,dstArrow"
+      },
+      {
+        "ref": "render-sysml",
+        "excerpt": "SDK port does not belong to the declared endpoint"
+      },
+      {
+        "ref": "render-binding",
+        "excerpt": "isDeepStrictEqual(saved,selected)"
+      },
+      {
+        "ref": "render-context",
+        "excerpt": "Model selection differs from captured SDK trace"
+      }
+    ]
+  },
+  "icons": [
+    "engineering"
+  ]
+}
+      |
+    }
+  }
+}
+direction: right
+library: Library
+project: {
+  profile: Profile
+  scenario: Scenario
+  inputs: "Model / Org / decisions"
+}
+project.profile -> library: selects
+project.scenario -> project.profile: binds
+project.scenario -> library: references definitions
+project.scenario -> project.inputs: binds actual project inputs

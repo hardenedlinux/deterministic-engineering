@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;;; -*- Gerbil -*-
 (import :deterministic-engineering/init :deterministic-engineering/profiles/resource-lifecycle
         :clan/poo/object :std/encoding/json :gerbil-ascent/program/session

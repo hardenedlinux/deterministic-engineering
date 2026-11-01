@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;;; -*- Gerbil -*-
 ;;; Validate native package metadata against the registered local Git sources.
 (import :std/test (only-in :gerbil/tools/gxpkg pkg-root-dir pkg-plist pkg-list)

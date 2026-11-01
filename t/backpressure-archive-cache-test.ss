@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;;; -*- Gerbil -*-
 ;;; Real accepted prefix and real signatures; no restored receipt authority.
 (import :std/test :std/encoding/json :std/list/list :clan/poo/object

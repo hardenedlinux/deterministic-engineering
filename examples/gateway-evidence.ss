@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;;; -*- Gerbil -*-
 ;;; A replayable engineering investigation selected by the LLM-based AI agent.
 ;;; This is one example, not an Agent scheduler or a mandatory implementation plan.

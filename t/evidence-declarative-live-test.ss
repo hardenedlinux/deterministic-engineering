@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;;; -*- Gerbil -*-
 ;;; Real QNT/TLC outputs, independent BFS/trace oracles and native exchanges.
 (import :std/test :std/encoding/json :clan/poo/object :gerbil-ascent/program/session

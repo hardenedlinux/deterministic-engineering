@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;;; -*- Gerbil -*-
 ;;; Rust mechanism method observation. Core Ops owns spawning/deadlines; native ASCENT
 ;;; evaluates relations. Flow owns context exchange; the method issuer verifies receipts.

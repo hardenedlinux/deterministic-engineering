@@ -1,80 +1,176 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
 #+TITLE: Deterministic Engineering
-#+SUBTITLE: An extensible, verifiable, reproducible engineering design Library
+#+SUBTITLE: Reusable engineering knowledge, checked project choices, traceable views
 #+LANGUAGE: en
 #+OPTIONS: toc:2 num:nil
-#+STARTUP: overview
-#+FILETAGS: :architecture:design:
 
-* Engineering ownership and native drivers
+* Purpose
+:PROPERTIES:
+:CUSTOM_ID: purpose
+:END:
+
+Deterministic Engineering is a Library for organizing engineering work around
+explicit Questions, models, obligations, methods and evidence. A downstream
+repository selects reusable definitions, binds its own project inputs and keeps
+its architecture, documents and decisions associated with the checks behind them.
+
+Scheme/POO owns the engineering declarations and composition. ASCENT answers
+declared relational questions. Rust, QNT, Lean and SysML provide selected method
+capabilities. The TypeScript render package presents the selected model and
+source context through static D2, HTML, SVG and PNG artifacts.
+
+* Architecture at a glance
+This is the engineering organization used by this repository: the Library
+publishes reusable definitions, a Profile selects them, and a Scenario binds
+actual project inputs. The project boundary owns its architecture model, Org
+artifacts and decisions. The complete overview includes the numbered purpose,
+core architecture, independent boundaries and project artifacts, followed by
+current source observations and open gaps. Arrows point to dependencies.
+
+[[file:docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture-sketchbook.png]]
+
+[[file:docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture-sketchbook-detail.png][Ownership component detail]] · [[file:docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture.d2][Questions and editable D2]] · [[file:project.sysml][Project SysML]]
+
+Selected Rust, QNT, Lean and SysML methods consume the project's bound inputs
+and retain their result semantics and source associations. ASCENT derives answers
+from declared facts and rules; Aitia owns independent policy-bound review.
+The TS Library presents these models and associations. Rendering does not grant
+evidence or review authority. This Case currently remains =capture-blocked=.
+
+* Component: Library, Profile and Scenario
+| Part | Owns | Project use |
+|------+-------+-------------|
+| Library | Reusable models, obligations, method bindings, policies and contracts | Publishes definitions and their identities |
+| Profile | Model/parent selection, two policies, methods, catalog and mapping choices | Selects published definitions without copying their ownership |
+| Scenario | Repository inputs, origins, associations and capture preparation | Binds the selected definitions to one project use |
+| Project | Confirmed intent, responsibility and use scope | Composes the selected Profile and Scenario |
+
+The source contracts and declarations are authoritative. Version identity
+is read from its owning declaration or package metadata, not from a namespace,
+diagram or duplicated version table.
+
+* Component: repository dependencies
 :PROPERTIES:
 :CUSTOM_ID: engineering-ownership
 :END:
 
-The repository is organized by engineering responsibility. Modules are the
-native loading/composition mechanism, not a top-level category or directory.
-The authoritative layout is:
+<<architecture>>
+The arrows below describe responsibilities and dependencies, not execution order.
+The README uses one sketchbook visual language. Other styles remain available through
+the [[file:packages/render/README.org][render package]] and its declared D2 variants.
+Aitia's end-to-end review integration remains a target boundary for this Case.
 
-#+BEGIN_EXAMPLE
-library/
-  concurrency/                  Shared design declarations and generic obligations
-    resource-control/backpressure-memory/tokio-rayon/
-                                Native specialization Module, model contracts and SysML
-  project-organization/         Engineering organization models
-  drivers/
-    evidence/                   Scheme driver over native ASCENT evidence
-    project-formation/          Scheme organization/acquisition driver and schemas
-    rust-resources/             Scheme method bindings, execution and evidence driver
-languages-engineering/
-  rust/concurrency/resource-control/backpressure-memory/
-    Cargo.toml / Cargo.lock     Rust crate metadata and dependency lock
-    src/                        Rust source only
-  go/                           Go engineering scope; implementation not yet admitted
-profiles/                       Independent workload and design selections
-scenarios/                      Application composition, including the gateway example
-projects/                       Actual SDLC consumers
-#+END_EXAMPLE
+[[file:docs/90-99-views/90-architecture-views/90.135-library-project-architecture.svg][Detailed repository dependency diagram]]
 
-Library Scheme code maintains framework/design drivers and reusable engineering
-knowledge. Authored Rust specialization belongs to the concurrency Library;
-its method driver selects that admitted Module and invokes the actual tools.
-=languages-engineering/<language>/= contains the target-language engineering
-project. Rust source and Cargo inputs do not become Scheme Modules.
-The implementation language of a tool does not determine the language it models.
+[[file:docs/90-99-views/90-architecture-views/90.135-library-project-architecture.d2][Editable D2]] · [[file:project.sysml][Project SysML model]] · [[file:docs/10-19-design/10-architecture/10.137-domain-owned-catalogs-and-native-drivers.org][Engineering ownership]]
 
-=init.ss= exposes Scheme-owned =Library= and =Scenarios= through explicit native
-paths. The Rust driver is selected from Library; the Rust crate is an input asset.
-The former local =modules/= directory and =Modules= namespace are removed;
-there are no forwarding files or compatibility aliases.
+| Source | Responsibility |
+|--------+----------------|
+| [[file:library/][library/]] | Domain definitions and Scheme drivers, including project organization and concurrency/resource control |
+| [[file:profiles/][profiles/]] | Independent project and workload choices |
+| [[file:scenarios/][scenarios/]] | Application bindings, input acquisition and source adapters |
+| [[file:projects/][projects/]] | Actual project entrypoints and project test policy |
+| [[file:languages-engineering/][languages-engineering/]] | Target-language projects and source, including Rust/Cargo inputs |
+| [[file:packages/render/][packages/render/]] | Functional static-rendering package and optional OpenSysML SDK projection |
+| [[file:packages/render/examples/][packages/render/examples/]] | Package-owned render cases and domain-specific compositions |
+| [[file:docs/][docs/]] | Org design arguments, D2 projections, decisions and candidate image snapshots |
 
-Structured wire/data contracts use Yuanxu's existing JSON Schema compiler and
-its native Type/Contract diagnostics. POO still owns inheritance, callable
-signatures and nominal owner handles; JSON Schema does not encode those handles.
-The repository-input Schema now drives acquisition shape and bound checks.
-Filesystem custody, traversal and currentness remain with the native source owner.
+The root [[file:init.ss][init.ss]] uses Yuanxu's declared module loading. The
+[[file:build.ss][build.ss]] consumes declared public roots. This repository reuses
+POO/Core/Flow/module and contract mechanisms; it does not define another package
+loader or model runtime.
 
-OpenSysML is a modeling driver reached through its public SDK/API capabilities.
-Its Go API supports in-process parsing/diagnostics/symbols/evaluation/instantiation;
-verification, edits and Query require a surface that actually advertises them.
-No local SysML parser, text-verdict decoder or replacement model runtime is added.
-The current SDK study is not an executed SDK integration result.
+* Engineering workflow
+This diagram expresses the intended integration and its current stop. The actual
+[[file:scenarios/project-formation/func.ss][capture preparation source]] still returns
+=capture-blocked= and =capture = #f= for DE-CASE-01. A diagram or successful render
+does not issue a capture, accepted query view, review result or authorization.
 
-Historical documents preserve their original source/evidence paths. The new
-ownership map supersedes those paths for current development; moving source
-files requires fresh capture, never relabeling old evidence.
-See [[file:docs/10-19-design/10-architecture/10.137-domain-owned-catalogs-and-native-drivers.org][10.137]] and its paired D2 view for the audited model/driver boundary.
+[[file:docs/90-99-views/90-architecture-views/90.02-agent-evidence-loop.svg]]
 
-* Package and development entrypoints
+[[file:docs/90-99-views/90-architecture-views/90.02-agent-evidence-loop.d2][Editable D2]] · [[file:docs/10-19-design/10-architecture/10.31-architecture-document-and-decision-contracts.org][Architecture/document/decision contracts]]
 
-[[file:docs/10-19-design/10-architecture/10.138-native-package-cohort-and-ci-provenance.org][10.138]] records SDK-owned dependency restoration, transitive manifest refresh,
-accepted root metadata/tests and the separate open Aitia cold-build CI gate.
-[[file:docs/10-19-design/10-architecture/10.139-native-cohort-source-acquisition.org][10.139]] follows the grouped owner upgrade and native source-acquisition boundary.
+Methods and content checks must keep their actual inputs, result semantics,
+source/revision associations and open findings. ASCENT reasoning consumes explicit
+facts and rules; support does not grant execution authority. Aitia review and
+actual publication/use retain their own policy and responsibility boundaries.
 
+* Component: SDK model adaptation
+The SDKs own syntax and model semantics. Render adapters retain their identities
+and explicitly bind model/view/source snapshots before scene composition.
 
-The root [[file:gerbil.pkg][gerbil.pkg]] directly selects Agentic AI Lab and Yuanxu. The product
-owns its Parser, Orgize and ASCENT pins; their declared closure selects the same
-Yuanxu revision, which owns its POO dependency. Gerbil owns checkout/tag updates,
-installation, manifest generation, package environments and build dispatch.
-[[file:docs/10-19-design/10-architecture/10.121-native-dependency-cohort-and-expression-alignment.org][10.121]] records the current cohort, native entrypoints and qualification limits.
+[[file:docs/90-99-views/90-architecture-views/90.136-model-adaptation-boundaries.svg]]
+
+[[file:docs/10-19-design/10-architecture/10.143-sdk-model-adaptation-audit.org][Source audit and positive/negative controls]]
+
+* Component: static render package
+[[file:packages/render/README.org][@deterministic-engineering/render]] is a static, functional Library.
+Questions, copy, model/source links and resource selection stay in D2/SysML and
+the project declarations. Domain composition is a pure function. Export effects
+measure actual browser text/fonts/images and return artifacts plus rendering facts.
+
+| Choice | Declaration / extension boundary |
+|--------+---------------------------------|
+| Diagram kind | Open project identifier; architecture and Workflow purposes stay separate |
+| Organization | Project =layout= / =presentation= and a domain compositor |
+| Visual style | Ordered immutable theme layers: typography, surfaces, strokes, palette and spacing |
+| Icons | Ordered project-selected SVG packs, independently replaceable |
+| Variant | D2-selected kind, layout, themes and icon packs over the same captured model |
+
+The package reuses D2 model compilation, ELK.js scene layout/routing, parse5 HTML parsing, Rough.js
+options/primitives, XYFlow connector paths and Playwright export. It has no
+interactive whiteboard or React runtime. A node diagram or swimlane is one example,
+not the framework's entire diagram vocabulary.
+
+** Real Library / Profile / Scenario Case
+The =project-owned= variants select kinds, a theme and a glyph pack defined only
+in the consumer. Their source associations and current blocked state stay intact.
+
+Architecture: [[file:docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture.d2][D2]] · [[file:docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture-sketchbook.png][Complete hand-drawn architecture]]
+
+Workflow: [[file:docs/90-99-views/90-architecture-views/90.133-capture-preparation-workflow.d2][D2]] · [[file:docs/90-99-views/90-architecture-views/90.133-capture-preparation-workflow-sketchbook.png][Separate hand-drawn Workflow]]
+
+** Development and verification
+Use the declared Bun version from [[file:.github/workflows/render.yml][render CI]] and its pinned
+package/browser dependencies. Run in =packages/render=:
+
+#+begin_src sh
+bun install --frozen-lockfile
+bunx playwright install chromium
+bun run typecheck
+bun test ./test
+bun run test:export
+#+end_src
+
+Run the package-owned cases from =packages/render=:
+
+#+begin_src sh
+bun run test:examples
+bun run example:case
+bun run example:compare
+bun run example:overviews
+#+end_src
+
+Candidate outputs and source/browser receipts are written to =.cache/render/=.
+Tests include unknown declarations, model/source mutation, invalid relations and
+ports, hidden Questions, unsupported primitives and failed image loading.
+The Linux/macOS workflow runs the same entries with the existing resource
+bounds. [[https://github.com/hardenedlinux/deterministic-engineering/pull/2/checks][PR checks]]
+are authoritative for the actual tested commit.
+
+The [[file:docs/90-99-views/90-architecture-views/90.129-functional-architecture-rendering.svg][render architecture]] and
+[[file:docs/90-99-views/90-architecture-views/90.130-llm-assisted-model-view-workflow.svg][view-authoring Workflow]]
+are distinct current diagrams. Their D2 sources are maintained alongside the SVGs
+and rendered through the measured TS scene API. The active SVGs and PNGs come from
+the same font-settled scene; the old raw-D2 rendering path has been removed.
+
+* Scheme package entrypoints
+The canonical dependency/prelude declaration is [[file:gerbil.pkg][gerbil.pkg]]. The compiler is
+Gerbil; package commands own dependency resolution, checkout, manifests,
+compilation and loading. Current commands and existing budgets live in [[file:Justfile][Justfile]]:
 
 #+begin_src sh
 just deps
@@ -83,433 +179,55 @@ just test
 just test-project-formation
 #+end_src
 
-For an installed checkout, =just deps-update= invokes the product's existing
-native package update entry. =just build-dependency PACKAGE= rebuilds one native
-package with the same compiler environment and budget.
+These Scheme/package gates are separate from TS rendering qualification.
+Historical dependency/cohort results retain their original scope; this render PR
+does not establish a fresh full Scheme cold-build or runtime admission result.
 
-The [[file:Justfile][Justfile]] supplies bounded commands and the upstream Homebrew/Darwin
-compiler invocation policy. Build/update calls retain the 180-second deadline;
-ordinary test invocations retain 120 seconds. Native installation spans multiple
-package builds and SDK metadata work. Bounded package entries require the existing
-host tools =env -S= and GNU =timeout=. Native package resolution is unchanged. The sole package build
-entry is [[file:build.ss][build.ss]]. Project test policy lives in
-[[file:projects/library-formation/test.ss][the Library formation Project]], using Core's existing TestingScript/Fixture/Ops.
-The Codex transport belongs to [[file:scenarios/project-formation/codex-source.py][its Scenario]]. There is no development dependency resolver,
-source mount, patch application or alternate load-path configuration. Test evidence
-paths are explicit inputs; historical local results are never default inputs.
-Historical qualification against patched sources does not qualify the inherited
-unpatched package closure. See [[file:docs/10-19-design/10-architecture/10.107-implementation-progress-and-execution-gates.org::#implementation107-package-deadlines][the historical execution plan]] and [[file:docs/10-19-design/10-architecture/10.121-native-dependency-cohort-and-expression-alignment.org][current native cohort admission]].
+* Design, cases and review
+- [[file:docs/00-09-project/00-documentation/00.01-index.org][Documentation index]] — the complete design/research history.
+- [[file:docs/10-19-design/10-architecture/10.142-declarative-render-extensibility-audit.org][Current render audit]] — fixed assumptions removed, owners, extension contracts and controls.
+- [[file:docs/10-19-design/10-architecture/10.141-cross-language-diagram-renderer-research.org][Rendering research]] — references and decisions behind the visual approach.
+- [[file:docs/10-19-design/10-architecture/10.30-current-repository-engineering-case.org][DE-CASE-01]] — this Library as the engineering case.
+- [[file:docs/20-29-cases/20-gateway/20.01-gateway-sdlc.org][Gateway case]] — application questions, obligations and open work.
+- [[file:docs/90-99-views/90-architecture-views/90.01-index.org][Current and historical view index]] — architecture and Workflow artifacts with explicit scope.
 
-* Purpose
-:PROPERTIES:
-:CUSTOM_ID: purpose
-:STATUS: proposed
-:END:
+The repository is under active design and refactoring. Candidate models, source
+observations, rendered explanations, method evidence and independent review results
+remain distinct. Open findings and counterevidence stay visible for audit.
 
-Deterministic Engineering organizes reusable engineering designs in a Library.
-ASCENT provides evidence-chain-driven reasoning: current support, counterevidence,
-applicability, derivation reuse, invalidation and observable reasoning feedback.
-Scheme DSLs and POO composition express domain designs and their evidence
-associations; formal methods and architecture arguments connect claims to checked
-support. Finite obligation derivation is one part of that system. Core supplies reusable Module/Profile/Scenario
-mechanisms. Lambda Aitia owns software development lifecycle (SDLC) and assurance
-policy, through which composed work returns implementation and operational evidence
-for design revision. This Library supplies domain designs and evaluation contracts.
+* Functional rendering resources
+Render-owned examples live under [[file:packages/render/examples/][packages/render/examples/]].
+Visual styles, palettes, typography, density, ELK preferences and icon packs
+compose independently. Model Questions/content remain in D2/SysML; optional pure
+heading parts distinguish Question role markers from domain Answer glyphs and
+measure the complete group. The default exported canvas is explicit, with an
+optional transparent mode. See [[file:docs/10-19-design/10-architecture/10.144-functional-themes-layouts-and-package-examples.org][10.144 contracts and acceptance]].
 
-The repository architecture starts at [[file:project.sysml][project.sysml]], with the explicit
-[[file:docs/10-19-design/10-architecture/10.78-case-organization.sysml][DE-CASE-01 companion model]].
-The companion model's =actual::gateway= is an application-example fixture Scenario,
-not another Project or a production gateway. A gateway normally belongs to a
-consuming system as a Component; Features can cross component boundaries.
-[[file:docs/10-19-design/10-architecture/10.119-project-component-feature-and-example-boundaries.org][10.119]] makes those scope and classification rules explicit.
-[[file:docs/10-19-design/10-architecture/10.118-domain-property-testing-and-evidence-trajectories.org][10.118]] proposes domain PBT methods for backpressure and broadcast through the
-existing Library/POO/ASCENT owners, with no implementation claim.
+Detailed architecture: [[file:docs/90-99-views/90-architecture-views/90.135-library-project-architecture.png][Sketchbook dependency view]].
+Workflow: [[file:docs/90-99-views/90-architecture-views/90.130-llm-assisted-model-view-workflow.png][Sketchbook authoring Workflow]].
 
-[[file:docs/10-19-design/10-architecture/10.79-current-library-project-formation.org][10.79]] walks this repository
-from confirmed Library intent through LLM candidates to the SysML/Org layout.
-[[file:docs/10-19-design/10-architecture/10.80-declarative-project-formation.org][10.80]] places the first reasoning slice in declared Library / Profile / Module /
-Scenario / Project owners, with ASCENT consequences driving model materialization.
-The native reasoning probe generated the current design candidate, and the
-source-stage-observed Project Scope gate passes. Full orchestration, clean-build
-and recovery qualification remain open.
-[[file:docs/10-19-design/10-architecture/10.81-declarative-chain-audit.org][10.81]] audits the full declarative chain and assigns the remaining capture,
-Contract, provider/catalog binding and model-publication gaps to their owners.
-Its refactoring order is proposed; automatic orchestration is not expanded.
-[[file:docs/10-19-design/10-architecture/10.82-a0-dependencies-and-normalized-handoff.org][10.82]] details A0 dependency/build/load provenance and the three normalized
-Context/Scope handoffs, with current upstream observations and proposed controls.
-[[file:docs/10-19-design/10-architecture/10.83-a1-effective-declarations-and-contracts.org][10.83]] unifies A1 effective declaration/Type/Contract ownership, sole Library
-generation, model/policy/method selection and normalized call boundaries.
-[[file:docs/10-19-design/10-architecture/10.84-a2-project-selection-and-capture.org][10.84]] details A2 declared Project composition, checked Profile selection and
-real project-input acquisition into one Scenario capture C, with proposed controls.
-[[file:docs/10-19-design/10-architecture/10.85-a3-application-projection-and-ascent.org][10.85]] specifies A3 complete fact projection and native ASCENT acceptance,
-separating declaration conditions from qualified evidence and preserving all negatives.
-[[file:docs/10-19-design/10-architecture/10.86-a4-sysml-selection-and-materialization.org][10.86]] specifies A4 selected SysML materialization, name/reference closure,
-validation layers and explicit publication against the expected current baseline.
-[[file:docs/10-19-design/10-architecture/10.87-a5-declarative-slice-joint-acceptance.org][10.87]] unifies A5 source/compiled/cold/recovery and same-C reasoning/model
-publication acceptance, evidence products, negative controls and separate research comparisons.
-[[file:docs/10-19-design/10-architecture/10.88-declarative-slice-consistency-and-order.org][10.88]] audits A0--A5 consistency against current upstream changes, clarifies Scope-before-C
-and expected publication transitions, and assigns implementation dependencies and open gates.
-[[file:docs/10-19-design/10-architecture/10.89-i0-source-cohort-dependencies-and-load-boundaries.org][10.89]] details I0 dependency/checkouts, migrated public APIs, selected source baselines
-and phased build/load boundaries, with ordered repairs and proposed controls.
-[[file:docs/10-19-design/10-architecture/10.90-i1-normalized-context-and-scope-handoffs.org][10.90]] specifies I1 exact K1/SD/S1 handoffs, Context/reader provenance, consumer isolation
-and separate source/compiled/cold/restoration acceptance, with existing-owner repair seams.
-[[file:docs/10-19-design/10-architecture/10.91-i2-library-module-declarations-and-publication.org][10.91]] unifies I2 Library/Module declarations, sole generation, actual parent/policy/model
-and implementation/catalog bindings, construction order and normalized Scope exports.
-[[file:docs/10-19-design/10-architecture/10.92-i3-project-profile-scenario-and-capture.org][10.92]] unifies I3 declared Project/Scope consumption, checked Profile and Scenario binding,
-real project acquisition, original C and capture-once consumer boundaries.
-[[file:docs/10-19-design/10-architecture/10.93-i4-application-projection-and-accepted-inference-view.org][10.93]] specifies I4 same-C complete fact projection, actual Program/native acceptance,
-exact evidence/check and plan/edge joins, and the frozen inference view supplied to SysML.
-[[file:docs/10-19-design/10-architecture/10.94-i5-sysml-selection-materialization-and-validation.org][10.94]] unifies I5 SysML candidate selection/materialization, name/reference closure,
-actual independent validator provenance and the separate explicit-publication handoff.
-[[file:docs/10-19-design/10-architecture/10.95-i6-joint-acceptance-and-explicit-sysml-publication.org][10.95]] unifies I6 joint lanes/evidence and explicit SysML publication, guarded B -> O,
-replay/crash and distinct build/C/effect recovery; all runtime gates remain unexecuted.
-[[file:docs/10-19-design/10-architecture/10.96-declarative-slice-coherence-and-current-upstream-audit.org][10.96]] audits I0--I6 coherence against current dependencies/testing ownership,
-same-C stage ordering, transition-aware publication, recovery and actual open gates.
-[[file:docs/10-19-design/10-architecture/10.97-i0-dependency-load-and-testing-entry-migration.org][10.97]] unifies I0 dependency/checkout/build/load migration, Core TestingScript/Fixture,
-dev/just routing, migrated product helpers and actual entry/limit/acceptance boundaries.
-[[file:docs/10-19-design/10-architecture/10.98-i1-normalized-context-and-scope-retention.org][10.98]] unifies I1 exact K1/SD/S1 retention, consumer/realized-Scope isolation,
-native Context/package guards and separate compiled/load/cold/recovery control gates.
-[[file:docs/10-19-design/10-architecture/10.99-i2-effective-library-module-declarations-and-scope-publication.org][10.99]] unifies I2 sole-version/effective Types, actual model and policy graphs,
-real method/Program/catalog/mapping bindings and normalized Config/Scope publication.
-[[file:docs/10-19-design/10-architecture/10.100-i3-project-profile-scenario-binding-and-unique-capture.org][10.100]] unifies I3 checked Scope consumption, declarative selection, real input acquisition
-and unique C origin/lifetime/current-use boundaries; design only.
-[[file:docs/10-19-design/10-architecture/10.101-i4-application-projection-and-accepted-ascent-view.org][10.101]] unifies I4 same-C/actual-Program projection, complete input coverage,
-negative and evidence semantics, native reception and frozen SysML handoff; design only.
-[[file:docs/10-19-design/10-architecture/10.102-i5-sysml-selection-materialization-and-validation.org][10.102]] unifies I5 same-C/view selection, catalog/mapping names and closure,
-exact candidate staging, actual layered validation and explicit-publication boundary; design only.
-[[file:docs/10-19-design/10-architecture/10.103-i6-joint-acceptance-and-explicit-sysml-publication.org][10.103]] unifies I6 actual-chain joint acceptance, explicit B-to-O publication,
-independent cold/recovery lanes and evidence/verdict closure against current upstream changes; design only.
-[[file:docs/10-19-design/10-architecture/10.104-declarative-slice-coherence-and-implementation-gates.org][10.104]] audits 10.97--10.103 contract/control coherence, stage-qualified C/view/O
-chronology, protected publication/recovery and non-circular implementation gates; design only.
-[[file:docs/10-19-design/10-architecture/10.105-i0-dependencies-prelude-build-load-and-testing.org][10.105]] unifies I0 actual dependency/entry/prelude/build/load migration,
-package-library-spec, TestingScript and fixture/cwd ownership with bounded non-circular exits; design only.
-[[file:docs/10-19-design/10-architecture/10.106-i1-normalized-context-scope-realization-and-self-binding.org][10.106]] unifies I1 exact K1/SD/S1 retention with source-owned package overrides,
-declared config/export order, lexical self binding and isolated load/cold/recovery controls; design only.
+* Component: Design and Taste
 
-Here, *LLM-based AI agent* means an engineering system built around a large
-language model, with task context, tools and an execution environment. Later
-mentions of Agent use this shorthand. The LLM supplies reasoning capabilities;
-ASCENT evaluates explicit evidence relations. The [[file:docs/10-19-design/10-architecture/10.05-agent-reasoning-and-design-convergence.org::#llm-agent-terminology][terminology contract]] distinguishes
-models, agents, evidence trajectories and protocol actors.
+[[file:packages/render/src/design.ts][Design]] declares the reader, message and model fidelity.
+[[file:packages/render/src/taste.ts][Taste]] composes pure choices before rendering and
+inspection after export. Questions select subjects, source observations select gaps,
+and the existing ELK layout measures and routes the resulting view. Themes remain
+replaceable resources. No Case-specific drawing recipe is selected in TypeScript.
 
-Agent-authored code also needs reviewable engineering explanations: relevant
-types and ownership, algorithm principles, conditional complexity, architectural
-rationale and current evidence. The Library should help keep those claims
-connected as code changes, while selecting useful checks and avoiding repetitive
-review prose. [[file:docs/10-19-design/10-architecture/10.18-agent-authored-engineering-and-review-contracts.org][10.18]] defines this design and its prospective review-cost
-controls; no productivity or defect-rate improvement is claimed yet.
+The same Library / Profile / Scenario model is shown with changed input Questions
+and selected evidence, using one program and one hand-drawn style:
 
-The standard requirement source is separate from document numbering: Johnny.Decimal
-locates documents, AR labels review cases, and NASA SWE identifiers retain their
-selected edition/criterion identity. [[file:docs/10-19-design/10-architecture/10.19-standard-identities-and-aitia-review-traceability.org][10.19]] maps Library obligations to existing
-Lambda Aitia owners and supplies detailed review, history, authority and handoff
-packets. Existing Aitia owner unit tests passed; these packets remain design gold.
+[[file:docs/90-99-views/90-architecture-views/90.138-library-design-taste-choices-comparison.png]]
 
-[[file:docs/10-19-design/10-architecture/10.20-evidence-arrival-and-scoped-review-recovery.org][10.20]] consolidates their evidence-recovery model: an LLM-based AI agent chooses
-useful validation and repair, ASCENT preserves scoped support/counter/pending,
-and Aitia reviews exact current content. Late evidence creates a new review;
-original results, actual effects and unresolved obligations remain explicit.
-Stable method/proof content can be reused without transferring receipt authority.
-The recovery integration is not installed or qualified by these documents.
+[[file:docs/90-99-views/90-architecture-views/90.138-library-design-taste-choices-adopter.png][Adopter Question]] · [[file:docs/90-99-views/90-architecture-views/90.138-library-design-taste-choices-maintainer.png][Maintainer Question]] · [[file:docs/90-99-views/90-architecture-views/90.138-library-design-taste-choices-source-gap.png][Selected source gap]].
+The source gap is an observed declaration, not issued evidence or an accepted capture.
+Selection reasons and input fingerprints remain attached to the exported receipt;
+changed inputs require selection and rendering again.
 
-The architecture and benchmark contracts derive from this framework's own
-Library objects, evidence chains and consumer obligations. Specula and
-TLAPS-Bench are optional research references; their workflow, grader and tasks
-do not define our system or our gold. The [[file:docs/30-39-evaluation/30-benchmarks/30.04-oracle-review-data-contracts.org::#framework-owned-evaluation][framework ownership contract]] makes
-this separation and the existing POO/ASCENT/SMP/QNT/Lean/Aitia responsibilities
-explicit.
+[[file:docs/90-99-views/90-architecture-views/90.138-library-design-taste-choices.d2][Editable D2]] · [[file:docs/10-19-design/10-architecture/10.146-taste-selection-and-reuse.org][Selection, licensing and acceptance]].
 
-Contributors maintain shared domain rules, Catalog entries, evidence contracts,
-counterexamples and trajectories. Projects compose these assets through existing
-POO Modules/Profiles/Scenarios and bind their own actual context. Agent hypotheses
-and ASCENT relation derivation connect design choices to missing evidence and
-change impact. [[file:docs/10-19-design/10-architecture/10.08-engineering-library-and-rust-trajectories.org][10.08]] develops this shared Library through Rust performance,
-resource, concurrency and security trajectories; source-project measurements
-are not automatically target-project evidence.
+* Licensing
 
-The Library covers high-level architecture, components, low-level algorithms,
-frontend and backend interactions, distributed protocols, performance, and
-security. A reusable design carries its assumptions, contracts, extension points,
-verification obligations, and argument, alongside associated code, models,
-diagrams, tests, and historical evidence.
-
-Designs can be inherited and extended. Acceptance must be reconsidered when their
-premises change. Determinism means explicit inputs and checkable derivation and
-acceptance processes; it does not promise identical LLM responses or distributed
-execution schedules.
-
-* Engineering Library organization
-:PROPERTIES:
-:CUSTOM_ID: engineering-library-organization
-:END:
-
-The [[file:docs/10-19-design/10-architecture/10.27-library-delivery-repo-workflow-and-backpressure-audit.org][Library delivery and Agent repository workflow]] connects Scheme selection,
-architecture and documentation, question-specific SysML/QNT/Lean/native methods,
-ASCENT evidence reasoning and existing Aitia review. It includes a network-system
-walkthrough and the backpressure contract audit with four gated refactor steps.
-These are design specifications; no downstream delivery or refactor is implied.
-The [[file:docs/10-19-design/10-architecture/10.28-network-service-agent-design-walkthrough.org][network service walkthrough]] makes that workflow concrete, including each
-stage's inputs, outputs, document products and counterexample/repair path.
-The [[file:docs/10-19-design/10-architecture/10.29-workflow-capabilities-and-minimum-completion.org][capability audit]] separates existing framework mechanisms from missing
-domain knowledge and narrow adapters. [[file:docs/10-19-design/10-architecture/10.30-current-repository-engineering-case.org][DE-CASE-01]] uses this repository's actual
-architecture, decisions, documents and historical evidence as the first case;
-its project-wide runtime/review/delivery gates remain open.
-The [[file:docs/10-19-design/10-architecture/10.31-architecture-document-and-decision-contracts.org][minimal architecture, Org product and decision contracts]] bind the case's
-actual content to Library duties, Profile policy and Scenario capture, then to
-scoped evidence and review through existing owners. They remain design-only.
-The [[file:docs/10-19-design/10-architecture/10.32-case-content-contract-audit.org][case content audit]] checks those responsibilities item by item and records
-remaining architecture, product and decision content separately from missing
-verification, with a minimum completion sequence and paired audit view.
-Its [[file:docs/10-19-design/10-architecture/10.30-current-repository-engineering-case.org::#case-design-review-selection][C1 design-review selection]] now defines the stage scope, required authored
-products, responsibilities/unassigned roles and revision conventions, separating
-Profile policy from future Scenario content capture. It issues no review result.
-The [[file:docs/10-19-design/10-architecture/10.33-case-actual-and-target-architecture.org][C2 actual/target model inventory]] links selected elements, interfaces,
-assumptions and proposed changes to source, requirements and verification duties.
-Its detailed views keep current split capture distinct from the target path.
-The [[file:docs/10-19-design/10-architecture/10.30-current-repository-engineering-case.org::#case-decision-baseline][C3 decision baseline]] records each choice's responsibility/state and shared version source,
-assumptions, architecture/requirement/duty allocation and concrete reconsideration
-conditions. Unassigned roles and independent review remain explicit gaps.
-The [[file:docs/10-19-design/10-architecture/10.34-case-design-review-dossier-draft.org][C4 dossier draft]] binds D01-D10 to sections, selected input bytes and bounded
-reference closure. It separates historical evidence, current candidates and
-missing results; no review request has been submitted.
-
-Organize by software-engineering domain first: the Concurrency Library contains
-execution, communication and resource-control knowledge. Bounded broadcast
-close/wake belongs to communication; Rust/Tokio specializes that generic entry.
-High performance is an objective selecting obligations across these Libraries.
-Models, proofs, rules and tests belong to their engineering entry, rather than
-forming unrelated tool directories. Core Modules publish selected capabilities;
-Profiles bind premises and Scenarios consume them.
-
-[[file:docs/10-19-design/10-architecture/10.17-domain-libraries-and-atomic-specialization.org][10.17]] defines the target ownership tree, POO specialization, Lean-Poo proof
-transport boundaries and existing Core explicit-root selection. The backpressure assets now live under the resource-control Library. A generic
-parent Module publishes its model and required obligations; the Rust Module
-requires and specializes that value. The gateway and native lifecycle Scenarios
-consume the same publication. [[file:docs/10-19-design/10-architecture/10.22-domain-library-delivery-and-native-admission.org][10.22]] records delivery and qualification. No mass
-import, new loader or copied framework is required.
-
-* Rust performance knowledge and application cases
-:PROPERTIES:
-:CUSTOM_ID: rust-performance-library-boundary
-:END:
-
-Rust performance knowledge spans ownership and resource lifecycles,
-data layout/allocation/locality, asynchronous execution, runtime scheduling,
-CPU parallelism and shared-state concurrency. Tokio and Rayon specialize those
-mechanisms. A gateway is one application of the knowledge, alongside indexing,
-compression and batch processing. Its topology does not define Library ownership.
-
-[[file:docs/10-19-design/10-architecture/10.14-rust-performance-library-and-mechanism-cases.org][10.14]] sets this organizing boundary. [[file:docs/10-19-design/10-architecture/10.15-scheme-owned-rust-mechanisms-and-development-evidence.org][10.15]] directly migrates the shared
-publications and connects Scheme organization, models, native tests and Agent
-development intervention through asynchronous
-submission of owned CPU work, cancellation and actual resource release. It needs
-no HTTP service. The actual native investigation and its qualification boundary are recorded in
-10.15; the earlier 10.13 results remain historical bounded QNT/Lean evidence.
-
-The [[file:docs/10-19-design/10-architecture/10.16-tokio-broadcast-close-and-wake-library.org][broadcast close/wake entry]] extends the design Library from resource handoff
-to a separate Tokio mechanism. Its actual-source mapping and test/evidence
-contracts are specified; broadcast publication and method execution remain pending.
-
-* Status and scope
-:PROPERTIES:
-:CUSTOM_ID: status
-:STATUS: local-resource-library-slice-qualified-on-frozen-core-source
-:END:
-
-The [[file:docs/10-19-design/10-architecture/10.21-engineering-design-audit-and-delivery-plan.org][current engineering audit and delivery plan]] identifies source-level scope/input
-gaps and the next gated owner slice at its audit snapshot. Follow
-[[file:docs/10-19-design/10-architecture/10.22-domain-library-delivery-and-native-admission.org][10.22]] for the subsequent direct owner migration, native admission Contracts,
-focused acceptance controls. [[file:docs/10-19-design/10-architecture/10.23-native-aitia-backpressure-content-review.org][10.23]] adds native SWE-061/p1 consumption of
-these actual results, failure blocking and revision-bound evidence reuse. Its
-follow-up compiles real source variants and binds complete native exchange
-history, workload-specific dispositions and late-counter reassessment. The
-cross-intake extension binds two actual native exchanges to Aitia discovery and
-signed test-authority decisions, retaining rejection across intake selection,
-policy changes and reviewer handoff. Its bounded controls cover 28 gold outcomes;
-the [[file:docs/10-19-design/10-architecture/10.23-native-aitia-backpressure-content-review.org::#cross-owner-history-handover][cross-owner continuation]] requires an exact root-authorized handover and fresh
-successor-local receipts. Its 16 gold controls retain old rejection across owner
-replacement, incomplete inventory and unavailable predecessor history. Global
-discovery remains pending. The [[file:docs/10-19-design/10-architecture/10.23-native-aitia-backpressure-content-review.org::#persistent-owner-recovery][persistent recovery continuation]] uses closed
-archives, host-selected signed heads, fresh native queries and new local receipts
-across four actual Scheme processes. Its 21 gold controls include incomplete
-archives, unresolved counters, head rollback and unavailable unsealed owners.
-The [[file:docs/10-19-design/10-architecture/10.23-native-aitia-backpressure-content-review.org::#durable-counter-intake][durable intake continuation]] confirms a signed submission only after its full
-accepted prefix and selected signed head are revalidated. Actual SIGKILL cases
-cover confirmation, publication before return and incomplete writes. Power-loss
-consistency, general WAL recovery and multi-writer publication remain unqualified.
-The [[file:docs/10-19-design/10-architecture/10.23-native-aitia-backpressure-content-review.org::#explicit-prefix-repair][explicit prefix repair continuation]] binds root-authorized completion to the
-exact selected writing intent, preserves both old counters, and requires fresh
-native activation and review. Repair never restores old receipt authority.
-The optional [[file:docs/10-19-design/10-architecture/10.24-sysml-interoperability-and-authority-boundaries.org][SysML interoperability profile]] adds engineering-model exchange and
-external constraint evidence while retaining native Scheme, ASCENT and Aitia
-ownership. A small isolated OpenSysML experiment is recorded; a production
-export/import bridge is not yet implemented.
-The accepted [[file:docs/10-19-design/10-architecture/10.25-rust-sysml-quint-lean-evidence-integration.org][Rust / SysML / Quint / Lean integration design]] coordinates these methods
-through shared native obligations, explicit correspondence and existing evidence
-owners. The six-case backpressure slice is the first delivery target.
-The [[file:docs/10-19-design/10-architecture/10.26-backpressure-public-contracts.org][public Library / Profile / Scenario contracts]] explain publication, parameter
-selection and one captured use through existing native POO/Core Contracts.
-Its [[file:docs/10-19-design/10-architecture/10.25-rust-sysml-quint-lean-evidence-integration.org::#integrated-local-slice][first local execution]] records 20 results under the frozen Core baseline:
-17 support, three counter and nine pending obligations, with query-derived D2
-output and preserved history after a mapping-selection change.
-Institutional authority, broadcast and evaluation gates remain open. The
-local owner slice now has 22 real result records, nine queries and seven exchanges
-qualified on a captured Core source baseline. Two live-Core runs were refused
-when compiler-tool sources changed and remain historical evidence. This is not
-qualification of the moving Core checkout or all remaining delivery gates.
-
-This repository maintains reusable engineering Library knowledge for Agent-assisted
-software design. Read 10.14 for the Library boundary and 10.15 for the current mechanism
-implementation. The earlier qualified executable case is
-[[file:docs/10-19-design/10-architecture/10.13-real-method-results-and-agent-evidence-loop.org][10.13: real method evidence loop]]. It follows Library discovery, native obligation
-derivation, actual QNT/TLC and Lean execution, native ASCENT exchange registration
-and scoped reuse across capacity, cache and source changes.
-[[file:docs/10-19-design/10-architecture/10.12-gateway-library-registration-and-runtime-dependencies.org][10.12]] retains the finite rule and runtime-dependency design.
-
-- ~library/concurrency/resource-control/backpressure-memory/tokio-rayon/~ owns specialization, model Contracts, correspondence and review policies.
-- ~library/drivers/rust-resources/~ owns method binding, execution, observation and the independent oracle.
-- ~languages-engineering/rust/concurrency/resource-control/backpressure-memory/~ contains the Rust crate and its Cargo.lock.
-- ~library/drivers/evidence/~ runs that entry's finite obligation/applicability rules through ASCENT.
-- ~profiles/gateway.ss~ defines independent POO C1/C2/cache/retry application values.
-- ~scenarios/resource-lifecycle/~ binds the minimal native mechanism; ~scenarios/gateway-review/~ independently binds the gateway application.
-- ~t/*-test.ss~ checks real registration/query and native package compatibility.
-- ~library/concurrency/resource-control/backpressure-memory/~ owns the bounded Quint model and conditional Lean arithmetic lemma.
-
-The real local replay uses Core Ops and a trusted in-process observer; its
-content hashes do not provide remote producer authentication.
-
-Core's native init/build remains the only module and package build machinery.
-The current checks exercise a finite engineering slice. Rust source/lock/feature
-capture and native lifecycle observations belong to the 10.15 path. Production
-producer authentication, complete source refinement, matched performance evidence,
-complete benchmark closure and lambda-aitia integration remain open.
-
-#+begin_src sh :eval never :exports code
-gerbil build
-# Run the current native replay and audit using the commands in 10.15.
-# RESOURCE_REAL_REPORT identifies that completed run for the integration test.
-#+end_src
-
-* Read the design
-:PROPERTIES:
-:CUSTOM_ID: reading-order
-:END:
-
-#+NAME: document-map
-| Document | Purpose |
-|----------+---------|
-| [[file:docs/10-19-design/10-architecture/10.21-engineering-design-audit-and-delivery-plan.org][10.21 Current engineering audit and delivery plan]] | Source-backed findings, evidence qualification and G0-G4 delivery/acceptance order |
-| [[file:docs/10-19-design/10-architecture/10.22-domain-library-delivery-and-native-admission.org][10.22 Domain Library delivery and native admission]] | Generic parent publication, Rust specialization, captured native inputs and acceptance boundaries |
-| [[file:docs/10-19-design/10-architecture/10.23-native-aitia-backpressure-content-review.org][10.23 Native Aitia backpressure review]] | Actual coding-method evidence, native receipts, failure priority and content reuse |
-| [[file:docs/10-19-design/10-architecture/10.05-agent-reasoning-and-design-convergence.org][Agent reasoning and design convergence]] | Why ASCENT drives open reasoning, Rust design trajectory, and design versus implementation qualification |
-| [[file:docs/90-99-views/90-architecture-views/90.01-index.org][Paired Org and D2 views]] | Editable diagrams, rendered architecture/workflow views, stable correspondence and synchronized updates |
-| [[file:docs/10-19-design/10-architecture/10.01-core-model.org][Core design model]] | Snapshot identity, POO composition and extension, obligation derivation, invalidation, reuse, and acceptance semantics |
-| [[file:docs/10-19-design/10-architecture/10.04-evidence-driven-workflow.org][Evidence-driven architecture]] | Latest inspected ASCENT PR 1, existing SMP application discipline, Evidence Chain/DAG/Trajectory roles and QNT/TLC authoring boundary |
-| [[file:docs/10-19-design/10-architecture/10.02-domain-and-rules.org][Engineering domain and finite rules]] | Typed objects and relation planes, organizational composition, bounded R01-R15 templates, and projection semantics |
-| [[file:docs/10-19-design/10-architecture/10.03-upstream-capabilities.org][Upstream capability map]] | Pinned gerbil-ascent, lean-poo, Core PR 19 and Lambda Aitia sources, boundaries, and integration gaps |
-| [[file:docs/10-19-design/10-architecture/10.06-poo-ascent-integration.org][10.06 POO-to-ASCENT integration]] | Concrete init correspondence, domain publications, Profiles/Scenarios, content attestation, queries and invalidation/reuse |
-| [[file:docs/10-19-design/10-architecture/10.07-claim-witness-reference-contracts.org][10.07 Claim/witness/TVA contracts]] | Canonical identities, witness guards, typed references, finite rules, independent oracles and refusal/pending semantics |
-| [[file:docs/10-19-design/10-architecture/10.08-engineering-library-and-rust-trajectories.org][10.08 Shared engineering Library and Rust trajectories]] | Contributed Catalog/rules/factors, project application and performance/security/concurrency evidence trajectories |
-| [[file:docs/10-19-design/10-architecture/10.09-rust-backpressure-memory-library-entry.org][10.09 Rust backpressure and memory budget Library entry]] | Complete Catalog/POO/ASCENT design entry, resource obligations and cross-workload reuse gold |
-| [[file:docs/10-19-design/10-architecture/10.10-backpressure-capacity-stall-and-retry-trajectories.org][10.10 Capacity, stall and retry trajectories]] | Complete CA/DS/RT input and step gold, scoped dependency impact, lifecycle/holder coverage and joint budget reuse |
-| [[file:docs/10-19-design/10-architecture/10.11-live-capacity-full-cleanup-and-joint-budgets.org][10.11 Live capacity, full cleanup and joint budgets]] | Live-generation envelopes, full cleanup ownership/races and sufficient joint-budget evidence routes |
-| [[file:docs/10-19-design/10-architecture/10.16-tokio-broadcast-close-and-wake-library.org][10.16 Tokio broadcast close and wake Library]] | Source-inspected Module/Profile/Scenario design, QNT action map, independent test gold, ASCENT obligations and Agent intervention |
-| [[file:docs/10-19-design/10-architecture/10.17-domain-libraries-and-atomic-specialization.org][10.17 Domain Libraries and atomic specialization]] | Engineering hierarchy, canonical ownership, POO / Lean-Poo composition and existing Core selection |
-| [[file:docs/10-19-design/10-architecture/10.18-agent-authored-engineering-and-review-contracts.org][10.18 Agent-authored engineering and review]] | Algorithm/type/lifecycle/cost explanations and eight concrete AR review packets with independent gold and cost boundaries |
-| [[file:docs/10-19-design/10-architecture/10.19-standard-identities-and-aitia-review-traceability.org][10.19 Standard identities and Aitia traceability]] | NASA/SWE source/criterion ownership, local numbering, project applicability and opposing-evidence review |
-| [[file:docs/10-19-design/10-architecture/10.20-evidence-arrival-and-scoped-review-recovery.org][10.20 Evidence arrival and scoped review recovery]] | Shared finite recovery rules, existing owner/relationship mapping, minimal affected review and three independent recovery trajectories |
-| [[file:docs/10-19-design/10-architecture/10.15-scheme-owned-rust-mechanisms-and-development-evidence.org][10.15 Scheme-owned mechanisms and development evidence]] | Direct Module migration; native source/lock capture; QNT/Lean; real ASCENT registration, change queries and Agent intervention |
-| [[file:docs/10-19-design/10-architecture/10.14-rust-performance-library-and-mechanism-cases.org][10.14 Rust performance Library and mechanism cases]] | Mechanism-owned Catalog, current ownership debt, native lifecycle case and evidence boundaries |
-| [[file:docs/10-19-design/10-architecture/10.13-real-method-results-and-agent-evidence-loop.org][10.13 Real method evidence loop]] | Actual QNT/TLC and Lean results, native exchange, independent oracle, scoped reuse and rejection controls |
-| [[file:docs/10-19-design/10-architecture/10.12-gateway-library-registration-and-runtime-dependencies.org][10.12 Executable gateway Library application]] | Current owners, actual registration/query gold, dependency semantics and method/evidence boundaries |
-| [[file:docs/20-29-cases/20-gateway/20.03-gateway-design-audit.org][Gateway design audit]] | Current PR/source boundary, all 24 case reviews, exact reset subcontrols, 12 gap dispositions and POO/ASCENT integration plan |
-| [[file:docs/20-29-cases/20-gateway/20.01-gateway-sdlc.org][Gateway SDLC walkthrough]] | A multi-tenant gateway checks the model through changes, counterexamples, reuse, delivery, and operational feedback |
-| [[file:docs/20-29-cases/20-gateway/20.02-gateway-obligation-ledger.org][Gateway obligation/change/reuse ledger]] | Atomic GW obligations, A01-A14 premises, CH01-CH12 changes, evidence-specific reuse and GAP01-GAP12 review |
-| [[file:docs/20-29-cases/20-gateway/20.04-query-and-change-fixtures.org][20.04 Query and change fixtures]] | Six exact relation/reference cases and independent C1-to-C2, cache and source change handoffs |
-| [[file:docs/20-29-cases/20-gateway/20.05-expanded-admission-controls.org][20.05 Expanded admission controls]] | DC01-DC16 concrete inputs, T/V/A bindings, independent judgments and CW01-CW16 consistency |
-| [[file:docs/20-29-cases/20-gateway/20.06-oracle-packet-integration.org][20.06 Oracle packets in existing POO/ASCENT owners]] | Record/role and native Evidence bindings; three change-packet reviews and OA01-OA15 audit |
-| [[file:docs/20-29-cases/20-gateway/20.07-packet-query-and-history-fixtures.org][20.07 Packet query and history fixtures]] | BQ01-BQ08 exact three-path inputs/gold, fresh usage/T-use, late-prefix visibility and non-erasure controls |
-| [[file:docs/20-29-cases/20-gateway/20.08-qr-identity-and-reuse-controls.org][20.08 Expanded QR identity and reuse controls]] | Twelve exact control inputs/gold, BQ/path bindings, acyclic identity, late isolation and scoped reuse |
-| [[file:docs/20-29-cases/20-gateway/20.09-exchange-replay-and-display-trajectories.org][20.09 Exchange, replay and display trajectories]] | QR03/QR06/QR11 event inputs and step gold, three-path bindings and hidden-assumption audit |
-| [[file:docs/20-29-cases/20-gateway/20.10-existing-owner-concurrency-and-delivery.org][20.10 Existing owners for concurrency and delivery]] | Linked Core and current ASCENT source mapping; coherent capture, late replies, external display confirmation and exact closures |
-| [[file:docs/20-29-cases/20-gateway/20.11-expanded-boundary-review-packets.org][20.11 Expanded boundary review packets]] | C07/R06/D04/D05 full packet inputs and step gold; ABA, late law reuse, saved scope and refresh closures |
-| [[file:docs/20-29-cases/20-gateway/20.12-selected-read-use-race-and-counter-packets.org][20.12 Selected-read, use-race and late-counter packets]] | Exact selector/binding and relation-unit restore; use-time permission; full opposing-family display and independent review |
-| [[file:docs/20-29-cases/20-gateway/20.13-binding-confirmation-use-race-and-counter-disposition.org][20.13 Binding confirmation, use race and counter disposition]] | SR04/UR04/LC06 exact confirmation, actual use outcomes, authentic method/review and immutable reference closures |
-| [[file:docs/20-29-cases/20-gateway/20.14-partial-delivery-consumption-authority-and-blocker-closure.org][20.14 Partial delivery, consumption authority and blocker closure]] | BC04/UC04/CD05 full packets, unit completion, actual-use authorization and item-scoped blocker ledger |
-| [[file:docs/20-29-cases/20-gateway/20.15-late-outcome-origin-and-expanded-intake-reuse.org][20.15 Late outcome origin and expanded intake reuse]] | BP05-late/UA04-late/BL06-member full packets, original snapshot binding and reason-dependent item reuse |
-| [[file:docs/20-29-cases/20-gateway/20.16-unknown-order-negative-dependencies-and-defensive-engineering.org][20.16 Unknown order, negative dependencies and defensive engineering]] | Historical facts versus unknown authority, negative-reason reassessment and bounded defensive blocking |
-| [[file:docs/20-29-cases/20-gateway/20.17-sufficient-evidence-and-bounded-revalidation.org][20.17 Sufficient evidence and bounded revalidation]] | Completion-bound historical access, closed authority history, dependent-method requalification and DE01 check boundaries |
-| [[file:docs/20-29-cases/20-gateway/20.18-policy-required-checks-and-evidence-admission.org][20.18 Policy-required checks and evidence admission]] | OP/BR/AM rule trajectories, real requirements versus redundant defense, pending/refused/reusable evidence |
-| [[file:docs/00-09-project/00-documentation/00.02-local-package-links.org][00.02 Local package links]] | Executed local POO Flow/Core source links, exact checkout observations and setup qualification boundary |
-| [[file:docs/30-39-evaluation/30-benchmarks/30.01-benchmark-design.org][Benchmark and evaluation design]] | Specula/TLAPS references, component and Agent lanes, independent oracles, matched budgets, costs and scoring |
-| [[file:docs/40-49-research/40-reference-studies/40.01-specula-reference-study.org][Specula local research record]] | Authorized sparse checkouts, archive identity limits, canonical grading mechanisms and transferred controls |
-| [[file:docs/40-49-research/40-reference-studies/40.02-selected-system-and-proof-case.org][Selected system and proof task]] | Complete available etcd/raft archive, inflights abstraction audit, CommitLiveness unit, reusable assets and gateway semantic mapping |
-| [[file:docs/30-39-evaluation/30-benchmarks/30.02-gateway-minimal-benchmark.org][Minimal gateway benchmark]] | Exact pilot scope, independent oracle contracts, 12 case families/24 variants and GAP01-GAP12 exit criteria |
-| [[file:docs/30-39-evaluation/30-benchmarks/30.03-gateway-variant-contracts.org][Twenty-four detailed variant contracts]] | Exact inputs, evidence, independent oracles, proposed QNT properties, reuse and invalidation per case |
-| [[file:docs/30-39-evaluation/30-benchmarks/30.04-oracle-review-data-contracts.org][30.04 Framework-owned oracle review data]] | Independent input/gold records, DC stage/closure/cut packets, 24 variant bindings and 12 gap dispositions |
-
-* Architecture
-:PROPERTIES:
-:CUSTOM_ID: architecture
-:END:
-
-#+CAPTION: Evidence-driven Agent exploration, reusable design knowledge, and the separate effect boundary.
-#+NAME: architecture-loop
-[[file:docs/90-99-views/90-architecture-views/90.02-agent-evidence-loop.svg]]
-
-[[file:docs/90-99-views/90-architecture-views/90.02-agent-evidence-loop.d2][D2 source]]; [[file:docs/90-99-views/90-architecture-views/90.01-index.org][all synchronized architecture and workflow views]].
-
-
-#+NAME: responsibility-map
-| Part | Responsibility | Boundary |
-|------+----------------+----------|
-| Scheme DSL / POO | Design objects, composition, contracts, specialization | Successful composition does not establish behavioral correctness |
-| poo-flow-core | Native Modules, Profiles, selected Graph and test projection, Case policy | Selection is inert; currentness and execution remain explicit |
-| gerbil-ascent | Evidence Chain/DAG, current support and counterevidence, reuse/invalidation, relational inference and Trajectory feedback | Checked local support is source/premise-bound; it is not whole-task correctness or action authority |
-| D2 | Structural and trust-boundary projections | A diagram is not a proof |
-| Org / JSON | Authored arguments and versioned interchange | Parsing/schema validity does not establish semantic correspondence |
-| Quint / QNT | Maintained protocol authoring; compiled TLC exploration of transitions, concurrency and faults | Generated backend artifacts, fairness and complete exploration scope remain explicit |
-| Lean / lean-poo | Typed properties, composition laws, proof transport | Domain interpretation and source correspondence need explicit work |
-| Architecture argument | Claims, reasoning, alternatives, evidence, objections | Unresolved objections remain visible |
-| lambda-aitia / SDLC | Lifecycle assurance policy, obligations, decisions and execution integration | Pure planning does not establish Host admission or effect enforcement |
-| Agent / LLM | Proposals, specialization, artifacts, interpretation of feedback | Generated statements remain candidates until checked |
-
-The architecture argument supports the Argue Architecture direction through
-explicit claims, reasons, evidence, and objections. Applicable standards require
-versioned clause mappings and justified tailoring. This repository's concrete
-standard and lambda-aitia integration mappings remain open; inspected upstream
-capabilities are listed with their separate limits.
-
-The [[file:docs/30-39-evaluation/30-benchmarks/30.01-benchmark-design.org::#evaluation-lanes][evaluation lanes]] separately assess projection integrity, finite derivation,
-invalidation/reuse, formal capability, Module organization, Agent engineering and
-runtime handoffs. No benchmark has been executed or scored in this repository.
-
-The [[file:docs/30-39-evaluation/30-benchmarks/30.02-gateway-minimal-benchmark.org::#gap-convergence][minimal benchmark convergence matrix]] assigns concrete exit evidence to every
-gateway gap. Specula and TLAPS assets remain references; the Library's authored
-models use QNT and its existing TLC backend path alongside Lean, ASCENT and POO.
-
-* First design case
-:PROPERTIES:
-:CUSTOM_ID: gateway
-:END:
-
-The [[file:docs/20-29-cases/20-gateway/20.01-gateway-sdlc.org::#gateway-baseline][gateway baseline]] composes tenant authorization,
-bounded local resources, replication, and a retry policy. Its extensions expose
-questions that inheritance alone cannot answer: a per-instance limit does not
-establish a fixed global limit; a local timeout does not stop remote work; a
-retry does not establish exactly-once business execution.
-
-The walkthrough follows these questions into obligations, counterexamples,
-revision impact, evidence readmission, SDLC work, and operational change. All
-example evidence and decisions are hypothetical. The current
-[[file:docs/20-29-cases/20-gateway/20.01-gateway-sdlc.org::#case-open-work][open-work register]] records what remains unproved and unimplemented.
-
-* Related projects
-
-- [[https://github.com/tao3k/gerbil-ascent][gerbil-ascent]] supplies relevant Scheme relational and evidence foundations.
-- [[https://github.com/tao3k/lean-poo][lean-poo]] supplies relevant prototype composition and proof-reuse foundations.
-- [[https://github.com/tao3k/poo-flow-core/pull/19][poo-flow-core PR 19]] provides the inspected Module and test-organization foundation.
-- [[https://github.com/tao3k/lambda-aitia][Lambda Aitia]] owns the software lifecycle and causal assurance contribution.
-
-See the [[file:docs/10-19-design/10-architecture/10.03-upstream-capabilities.org::#inspection-scope][inspection scope]] for pinned sources and limitations. Their capabilities do
-not automatically qualify the system proposed here.
+This repository follows REUSE with SPDX comment headers, file-specific notices,
+and standard sidecars for binary and strict JSON files. See [[file:LICENSING.org][licensing]]
+and [[file:packages/render/THIRD-PARTY.org][rendering asset attribution]].

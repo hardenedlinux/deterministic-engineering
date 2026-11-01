@@ -1,0 +1,201 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 10.142 Declarative Static Render Extensibility Audit
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.142
+
+* Scope and resulting ownership
+This audit follows 10.141 and inspects the actual TS package, D2 declarations,
+Library/Profile/Scenario Case, public APIs and CI entrypoints. The package remains
+=@deterministic-engineering/render=, version 1.0.0 read from =package.json=.
+It is a static rendering library. No whiteboard/editor or React runtime is added.
+
+| Owner | Publishes / consumes | Does not own |
+|-------+----------------------+--------------|
+| Project D2/SysML | Questions, copy, model IDs/edges, sources, kind, layout, theme/icon selection and variants | Generic render implementation |
+| Project composer | Domain presentation schema, selected content organization, source observations | Another HTML/D2 parser, graph layout engine or evidence ledger |
+| Render core | Capture/fingerprint, immutable composition context, resource resolution and purpose boundary | Linear-workflow semantics, finite catalogue of all diagram kinds or mandatory page template |
+| Mature libraries | D2 model compilation, ELK.js layout/routing, parse5 HTML parsing, Rough.js strokes/options, XYFlow connector paths, Playwright export | Project truth, evidence issuance or review authority |
+
+* Findings and disposition
+| Finding in previous implementation | Change / exact owner | Verification |
+|------------------------------------+----------------------+--------------|
+| Seven names acted as the whole diagram taxonomy; purpose checks were repeated | =source/types.ts= has open kind identifiers and one =validatePurposeKind=; reserved standard kinds retain their purpose | Custom kind through actual D2 worker and TS SVG scene export; blank kind/reserved mismatch refuse |
+| Framework parsed/validated every workflow as one ordered preparation path with lanes | Moved schema and checks to =packages/render/examples/library-case/workflow-declaration.ts=; D2 places it in project-owned =presentation.flow= | Case lane/node/edge negatives, actual source declarations |
+| Compiler forced ELK regardless of project selection | The model worker leaves compile options empty and accepts the official CompileOptions; no raw-SVG theme path remains | Actual D2 DAGRE declaration compiles |
+| Variant consumer re-resolved themes through upstream defaults and lost downstream resources | =readD2Figure= resolves each variant once against supplied =FigureResources=; =selectFigureVariant= retains it | Downstream theme remains in variant and HTML; missing/duplicate variants refuse |
+| Icons were programmatic overrides; D2 could not select packs, metadata always said engineering | Ordered immutable =composeIconPacks=, D2 =icons= and variant overrides; actual SVG hashes in metadata | Custom real Case glyphs; unknown/prototype-name pack and invalid asset refuse |
+| Question markers used a double-quote regex | parse5 parses real HTML; browser independently checks actual visibility | Single/unquoted attributes pass; comments/template/hidden/CSS invisibility refuse |
+| Captured model and project presentation could be modified by a composer | Deep-freeze cloned inputs before composition | Mutation negatives; caller input remains unchanged |
+| Drawing hardcoded rectangle/hachure/pen parameters | Reuse Rough.js =Options= directly; explicitly declared rectangle/ellipse/diamond surfaces call its primitives | Options/geometry change output; unsupported surface refuses |
+| HTML connections assumed horizontal endpoints | Declared =data-source-position=/=data-target-position= select XYFlow positions | Vertical connection passes, invalid side and reversed relation refuse |
+| Matrix variant replaced part of Case HTML via substring search | =architecture-diagram.ts= is an ordinary Case-owned pure-function table | Real default/matrix/custom resource compositions and unsupported Case layout refusal |
+| Source path checking was duplicated | Figure capture reuses =source/catalog.ts= source boundary | Source law and changed/uncaptured input controls |
+| Source excerpts were hardcoded in TS | D2 =presentation.observations= declares assertions; Case effect checks actual files | Missing/changed excerpts stop output; observations do not become execution evidence |
+| Unused SVG data-URI wrapper duplicated the existing inline SVG path | Removed; =IconAsset= remains the single payload type | Same real glyph/export tests |
+
+* Downstream declaration contract
+=compileFigureSource(sources, inputPath, resources?)= accepts data-only resources:
+=themeLayers= and =iconPacks=. Defaults are immutable. A downstream extends them
+with ordinary module exports, then D2 selects ordered names. No global registration,
+new manifest, cache or automatic discovery mechanism is required.
+
+A declared variant may select =kind=, =layout=, =themes= and =icons=. Unspecified
+resources inherit the view's resolved selection. =selectFigureVariant= preserves
+the captured sources, model, Questions and evidence links; it does not recompile
+or rewrite the model. Unknown or duplicate variants fail. Explicit icon packs are
+complete selected maps, not implicit word-based icon inference.
+
+=kind= is open. =purpose= remains architecture or workflow. Reserved standard
+kinds keep their original purpose, so allowing a new kind cannot silently turn
+an existing architecture view into a Workflow. Project =presentation= stays
+unknown at the generic boundary and is specifically validated by its compositor.
+
+The Case's =project-owned= variants declare =responsibility-map= and
+=capture-handoff= kinds, compose =field-notes + workbench + compact= and select
+=engineering + repo= glyphs. These names are absent from framework source.
+The Case remains explicitly English and still displays =capture-blocked= with
+=capture = #f= and no issued C/Q/R. Source assertions remain source observations.
+
+* Intentional retained defaults and limits
+Upstream palettes/styles and the Engineering glyph pack are optional maintained
+resources. Their existence does not limit downstream kinds or assets. The Case
+has an authored explanatory layout; its headings, role placement and section
+organization belong to that Case, not to =composeFigure=.
+
+D2 supplies labels, relationships and metadata. Its geometry/SVG is discarded.
+Actual browser font and glyph measurements feed the existing ELK.js layout engine;
+its graph/options control placement and routing. Explicit authored HTML
+connectors may use XYFlow, separately from scene layout. No local solver is added. Rough.js adapters expose the selected
+primitives; other explicit SVG markup can be supplied by a compositor. Unknown
+primitives do not silently render as rectangles.
+
+OpenSysML's supported reflow adapter retains capability refusals for unsupported
+notation. This audit does not claim live SysML service validation. Static HTML
+export still bounds width/scale, closes its browser context, records actual fonts,
+backend pins and output hashes, and rejects stale inputs and detected clipping.
+Visual quality remains a review judgment separate from correctness controls.
+
+* Acceptance and execution entrypoints
+The normal CI entrypoints run package =bun install --frozen-lockfile=,
+=typecheck=, =bun test=, =bun run test:export=; then the actual consumer's frozen
+install, typecheck, tests, Case export, comparisons and measured TS overview views.
+Playwright owns browser fixtures; tests do not start another test runner. Worker
+limits remain two and existing job/resource bounds are unchanged.
+
+Required positives include D2 notation, project-only kinds/themes/icons,
+variant retention, real Library/Profile/Scenario sources, source fingerprints,
+independent architecture/Workflow artifacts and actual font/image export.
+Negatives retain unknown resources, hidden Questions, source/model mutation,
+invalid lanes/relations/ports, unsupported primitives, stale input and broken images.
+
+Ten full candidates and two comparison sheets are derived from 90.132/90.133.
+90.134 is the TS scene ownership/dependency view for this audit. CI is authoritative
+for Linux/macOS and its exact commit; local results alone do not establish both.
+No artifact-upload action is added; generated image candidates are tracked as
+requested documentation. No model publication, review or delivery is performed.
+
+* Measured scenes and removal of Legacy
+The previous raw-D2 fallback was a design error: it bypassed the new visual
+Library while retaining old geometry. Removed =renderCatalog=, =renderView=,
+=pipeline.ts=, duplicate D2 themes/theme registry and the former example renderer.
+Current README views are emitted by =overviews.ts= through =composeDiagram= and
+=exportFigure=. Their Questions, labels and ELK graph projections stay in
+D2. Historical diagrams remain historical, not current renderer acceptance.
+
+| Boundary | Owner / implementation | Control |
+|----------+------------------------+---------|
+| Syntax / model | Official D2 SDK; supported OpenSysML projection | No old positions or SVG in compiled model |
+| Figure organization | Downstream pure composer | No mandatory card/page layout |
+| Font / glyph dimensions | Actual browser with embedded Inter or Kalam | SVG glyph viewport explicitly set before measurement |
+| Spatial layout / routing | ELK.js graph/options | Measured node/edge-label sizes; no second constraint DSL or solver |
+| Hand-drawn geometry | Rough.js primitives/options | Actual measured scene frames; different font metrics enter layout |
+| Output checking | Browser-observed containment and pairwise overlap checks | Nodes/content/edge labels; invalid post-layout CSS refuses |
+| Export | Explicit SVG scene/annotations and browser PNG | No raster wrapper, foreignObject or raw-D2 fallback |
+
+The initial ELK bundled fake worker left timers alive after image generation;
+those successful image writes did not establish natural completion. The official
+Node worker mode, with its declared =web-worker= dependency and =terminateWorker=
+in =finally=, fixes lifecycle ownership. The overview entry now exits naturally.
+Nested SVG CSS width alone also left an oversized intrinsic glyph viewport;
+explicit viewport attributes fix that root cause before font-box measurement.
+D2 SDK compilation returns formatted source text in its output filesystem; that
+text must not overwrite captured repository bytes. The model worker now retains
+the actual input filesystem, and the overview driver verifies source hashes again
+before writing. Formatted compiler output is not relabeled as original evidence.
+
+The adapter supports orthogonal/polyline serialization and root-owned model edges.
+Ports, nested edge containers and splines require a dedicated compositor and refuse
+at this boundary. This is an adapter capability limit, not a limit on downstream
+kinds, themes or independent composers. Geometric checks detect stated violations;
+they do not prove optimal space usage or aesthetic quality. Functional composition
+makes inputs explicit and repeatable; it does not itself solve spatial constraints.
+
+Primary references: [[https://github.com/kieler/elkjs][ELK.js]] and
+[[https://eclipse.dev/elk/reference/algorithms/org-eclipse-elk-layered.html][ELK Layered]],
+[[https://roughjs.com/][Rough.js]]. Reuse these implementations rather than introducing
+another layout engine or editing/interaction runtime.
+
+* Qualification and review handoff
+Local package typecheck, 25 unit/model/SDK tests and 19 Playwright browser
+controls passed. Consumer typecheck and two domain tests passed, ten full Case
+figures and two comparison sheets regenerated, and five current overview scenes
+exported and exited naturally. These controls include unknown resources/relations,
+changed sources, hidden Questions, invalid assets, layout failure cleanup,
+post-layout overlap/overflow and standalone vector image decoding.
+
+Only original PR #2 is retained. The duplicate PR and duplicate branch were closed
+and removed. Linux/macOS checks apply only to their tested commit; pre-scene green
+commit =fce59ac= is historical evidence, not acceptance of the new scene pipeline.
+The final scene commit must pass both jobs before handoff. No model publication,
+independent review, merge or delivery authority is implied.
+
+* Visual language is a declarative extension boundary
+The first measured scenes still repeated identical rectangular nodes and nearly
+identical glyphs. That met geometry checks but failed visual communication.
+Themes now compose SVG surface assets, typography, semantic CSS, connector
+marks and spacing, alongside palette and font resources. ELK layout preferences
+compose in the theme too; explicit view options take precedence. No parallel
+constraint schema or solver is introduced. Project role names are
+open; surfaces use the existing SVG asset contract, not a new shape language.
+Node composers receive the immutable selected theme. No editor runtime is added.
+
+Editorial intentionally leaves supporting nodes unboxed, emphasizes the published
+Library and distinguishes external / pending boundaries. Technical node-editor
+uses explicit node and connector marks. Sketchbook uses actual Rough.js frames
+and Kalam metrics. These names remain optional maintained defaults; downstream
+can introduce another visual language without editing a framework switch.
+90.135 selects them as independent variants over the same captured model.
+Icons are explicitly chosen by responsibility in D2, replacing the earlier
+repetition of the generic model glyph. Architecture and Workflow remain separate.
+
+Annotation heights also follow measured selected-font ascent/descent: the first
+sketch variant correctly failed for a clipped fixed-height heading, and that
+fixed-height assumption was removed. Output checks are correctness controls;
+visual beauty remains subject to the user's review of actual rendered candidates.
+
+* README architecture explanation
+The README lead embeds the complete TS-rendered numbered architecture overview,
+including purpose (1), ownership (2), independent responsibilities (3), project
+artifacts (4), source observations and open gaps. The section-2 crop is only a
+linked component detail; it is not the overview. Questions/D2/SysML and another
+complete visual variant are linked beside the full image.
+
+The subsequent sections describe Library/Profile/Scenario, repository dependencies
+and the static renderer as components. Workflow stays separate. Source facts and
+the capture-blocked state remain visible in the full overview; style-comparison
+sheets are supplementary rather than the README's primary illustration.
+
+* SVG serialization order control
+Linux run 41284866523 failed the repeated SVG byte check while the PNG and ELK
+layout hashes matched. Preserve that failure separately from earlier green runs.
+A controlled browser CSSOM enumeration reversal reproduces the same class
+of failure: identical pixels/layout but different SVG bytes. Computed custom CSS
+properties were emitted in the browser's enumeration order. Sort those unique
+property names before standard XMLSerializer output; keep the original strict
+repeatability assertions and the new environment control. This fixes an observed
+serialization defect without replacing the serializer, relaxing checks or changing
+layout. The original failed CI did not retain SVG payloads, so its precise byte
+difference cannot be claimed as recovered; the controlled witness is explicit.

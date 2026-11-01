@@ -1,0 +1,26 @@
+// SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+//
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
+import type { FigureComposer } from '@deterministic-engineering/render';
+import { caseStyle } from './style';
+import {architectureDiagram} from './architecture-diagram';
+
+export const architecture: FigureComposer = context => {
+const {question, reference: ref, icon, text, copy, relation} = context;
+const result = {css: caseStyle, markup: `
+<header class="mast" data-region="header"><span class="badge" data-badge>${text(copy("badge"))}</span><div class="eyebrow">${text(copy("eyebrow"))}</div><h1 data-heading>${text(copy("title"))}<em>${text(copy("emphasis"))}</em></h1><p class="dek">${text(copy("annotation-01"))}</p></header>
+<section class="section" data-panel data-question="why" data-region="purpose"><h2><span class="num" data-question-marker>1</span>${text(question('why').text)}</h2><div class="lead">
+<div class="lead-item">${icon('library')}<div><h3>${text(copy("publish-heading"))}</h3><p>${text(copy("annotation-02"))}<br>${text(copy("annotation-03"))}</p></div></div>
+<div class="lead-item">${icon('selection')}<div><h3>${text(copy("select-heading"))}</h3><p>${text(copy("annotation-04"))}<br>${text(copy("annotation-05"))}</p></div></div>
+<div class="lead-item">${icon('capture')}<div><h3>${text(copy("capture-heading"))}</h3><p>${text(copy("annotation-06"))}<br>${text(copy("annotation-07"))}</p></div></div></div></section>
+<section class="section" data-panel data-question="ownership" data-region="architecture"><h2><span class="num" data-question-marker>2</span>${text(question('ownership').text)}<span class="sub">${text(copy("annotation-08"))}</span></h2>
+${architectureDiagram(context)}
+<div class="arch-note"><span ${ref('model')}>${text(copy("annotation-19"))}</span><span><b>${text(copy("annotation-20"))}</b>${text(copy("annotation-21"))}<b>${text(copy("annotation-22"))}</b>${text(copy("annotation-23"))}</span></div></section>
+<section class="section" data-panel data-question="boundaries" data-region="principles"><h2><span class="num" data-question-marker>3</span>${text(question('boundaries').text)}</h2><div class="principles">
+<div class="principle">${icon('library')}<h3>${text(copy("annotation-24"))}</h3><p>${text(copy("annotation-25"))}<br>${text(copy("annotation-26"))}</p></div><div class="principle">${icon('selection')}<h3>${text(copy("annotation-27"))}</h3><p>${text(copy("annotation-28"))}<br>${text(copy("annotation-29"))}</p></div><div class="principle">${icon('reference')}<h3>${text(copy("annotation-30"))}</h3><p>${text(copy("annotation-31"))}<br>${text(copy("annotation-32"))}</p></div><div class="principle">${icon('evidence')}<h3>${text(copy("annotation-33"))}</h3><p>${text(copy("annotation-34"))}<br>${text(copy("annotation-35"))}</p></div></div></section>
+<section class="section" data-panel data-question="products" data-region="products"><h2><span class="num" data-question-marker>4</span>${text(question('products').text)}</h2><div class="products"><div class="product" ${ref('model')}>${icon('model')}<div><strong>${text(copy("model-label"))}</strong><small>${text(copy("annotation-36"))}</small></div></div><div class="product" ${ref('documents')}>${icon('document')}<div><strong>${text(copy("annotation-37"))}</strong><small>${text(copy("annotation-38"))}</small></div></div><div class="product" ${ref('decisions')}>${icon('decision')}<div><strong>${text(copy("annotation-39"))}</strong><small>${text(copy("annotation-40"))}</small></div></div></div><div class="annotation">${icon('pending')}${text(copy("annotation-41"))}</div></section>
+<div class="split" data-question="evidence" data-region="evidence"><section class="half" data-panel><h2>${icon('reference')}${text(question('evidence').text)}</h2><div class="facts"><div class="fact">${icon('reference')}<div><b>${text(copy("annotation-42"))}</b><br><small>${text(copy("annotation-43"))}</small></div></div><div class="fact">${icon('reference')}<div><b>${text(copy("annotation-44"))}</b><br><small>${text(copy("annotation-45"))}</small></div></div></div></section><section class="half pending" data-panel><h2>${icon('pending')}${text(copy("annotation-46"))}</h2><div class="facts"><div class="fact" ${ref('capture-stop')}>${icon('pending')}<div><b>${text(copy("annotation-47"))}</b><br><small>${text(copy("annotation-48"))}</small></div></div><div class="fact">${icon('pending')}<div><b>${text(copy("annotation-49"))}</b><br><small>${text(copy("annotation-50"))}</small></div></div></div></section></div>
+<div class="takeaway" data-summary data-region="takeaway">${icon('question')}<span>${text(copy("annotation-51"))}</span></div><footer class="fineprint"><span>${text(copy("annotation-52"))}</span><span>${text(copy("annotation-53"))}</span></footer>`};
+return result;
+};

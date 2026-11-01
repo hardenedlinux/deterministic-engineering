@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+//
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
 // Generated from the ProjectFormation ASCENT result; design-only module projection.
 // Model context and companion catalog are selected in project_layout.
 package 'DeterministicEngineering' {

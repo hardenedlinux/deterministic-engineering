@@ -1,0 +1,167 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+# Current authored view; arrows mean the relation explicitly written on each edge.
+vars: {d2-config: {layout-engine: elk; pad: 24; data: {figure: |json
+{
+  "title": "Engineering Library and project responsibilities",
+  "purpose": "architecture",
+  "kind": "repository-dependencies",
+  "language": "en",
+  "width": 1440,
+  "primary": "scope",
+  "questions": [
+    {
+      "ref": "scope",
+      "text": "Who owns reusable definitions, project choices, method bindings and presentation?",
+      "focusRefs": [
+        "source"
+      ]
+    }
+  ],
+  "references": {
+    "source": "docs/90-99-views/90-architecture-views/90.135-library-project-architecture.d2"
+  },
+  "basis": {
+    "captureRef": "design-candidate:current-readme",
+    "modelRefs": [
+      "project.sysml"
+    ],
+    "obligationRefs": [
+      "docs/10-19-design/10-architecture/10.142-declarative-render-extensibility-audit.org"
+    ],
+    "evidenceRefs": []
+  },
+  "copy": {
+    "status": "Design candidate \u00b7 current source associations retained \u00b7 no C/Q/R issued",
+    "description": "Architecture describes responsibilities and dependencies."
+  },
+  "themes": [
+    "sketchbook",
+    "compact"
+  ],
+  "icons": [
+    "engineering"
+  ],
+  "presentation": {
+    "scenes": [
+      {
+        "heading": null,
+        "graph": {
+          "id": "90.135-library-project-architecture-scene-1",
+          "children": [
+            {
+              "id": "consumer"
+            },
+            {
+              "id": "library"
+            },
+            {
+              "id": "project",
+              "children": [
+                {
+                  "id": "project.profile"
+                },
+                {
+                  "id": "project.scenario"
+                },
+                {
+                  "id": "project.inputs"
+                }
+              ]
+            },
+            {
+              "id": "framework"
+            },
+            {
+              "id": "render"
+            },
+            {
+              "id": "review"
+            }
+          ],
+          "layoutOptions": {
+            "elk.algorithm": "layered",
+            "elk.edgeRouting": "ORTHOGONAL",
+            "elk.spacing.nodeNode": "30",
+            "elk.layered.spacing.nodeNodeBetweenLayers": "30",
+            "elk.layered.spacing.edgeNodeBetweenLayers": "12",
+            "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+            "elk.hierarchyHandling": "INCLUDE_CHILDREN"
+          }
+        },
+        "icons": {
+          "consumer": "reference",
+          "library": "library",
+          "framework": "model",
+          "render": "selection",
+          "review": "evidence",
+          "project.profile": "selection",
+          "project.scenario": "capture",
+          "project.inputs": "document"
+        },
+        "roles": {
+          "consumer": "selection",
+          "project": "project-boundary",
+          "library": "publication",
+          "framework": "external",
+          "render": "selection",
+          "review": "pending",
+          "project.profile": "selection",
+          "project.scenario": "capture",
+          "project.inputs": "capture"
+        }
+      }
+    ]
+  },
+  "variants": [
+    {
+      "name": "sketchbook",
+      "themes": [
+        "sketchbook",
+        "ember",
+        "compact",
+        "layered-down"
+      ]
+    },
+    {
+      "name": "node-editor",
+      "themes": [
+        "node-editor",
+        "ocean",
+        "compact",
+        "layered-down"
+      ]
+    },
+    {
+      "name": "comfortable",
+      "themes": [
+        "editorial",
+        "ocean",
+        "comfortable",
+        "layered-down"
+      ]
+    }
+  ]
+}
+|
+}}}
+consumer: "Downstream repositories\nSelected Library and render APIs"
+project: "Project-owned declarations" {
+  profile: "Profile\nSelects models, policies and methods"
+  scenario: "Scenario\nBinds real project inputs"
+  inputs: "Repository inputs\nSysML / Org / D2 / decisions"
+}
+library: "Engineering Library\nModels / obligations / policies\nScheme method bindings"
+framework: "Upstream capabilities\nPOO / Yuanxu / Core contracts and Scope\nASCENT Programs / selected methods"
+render: "Static Render Library\nD2 / HTML / SVG / PNG\nThemes and icon packs"
+review: "Aitia integration\nTarget independent review boundary"
+consumer -> library: adopts definitions
+consumer -> render: uses static views
+render -> project.inputs: reads model and Questions
+project.profile -> library: selects definitions
+project.scenario -> project.profile: binds selection
+project.scenario -> project.inputs: captures actual inputs
+library -> framework: uses public capabilities
+review -> framework: requires qualified query context

@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;;; Real repository file acquisition, using Core's source/currentness authority.
 ;;; This observation does not attest user confirmation, role mandate or final C.
 (import

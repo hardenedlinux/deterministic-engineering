@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 (import :std/test :clan/poo/object (only-in :clan/poo/mop validate)
         (only-in :std/source this-source-file)
         (only-in "../library/drivers/project-formation/inputs.ss" formation-input-observation)

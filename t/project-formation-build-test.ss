@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;;; Build through the package-root init using the inherited Core public API.
 (import :std/test :clan/poo/object
         (only-in "../init.ss" deterministic-engineering.init.exports))

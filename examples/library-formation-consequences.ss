@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;; Algorithm probe: does not acquire or qualify the declared Project Scope.
 (import "../library/drivers/project-formation/func.ss"
         "../scenarios/project-formation/func.ss"

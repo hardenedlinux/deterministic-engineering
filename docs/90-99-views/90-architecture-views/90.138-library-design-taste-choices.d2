@@ -1,0 +1,239 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+# Design choices over the current Library Case. Arrows point to dependencies, not execution order.
+vars: {d2-config: {data: {figure: |json
+{
+  "title": "Library / Profile / Scenario: Question-driven design",
+  "purpose": "architecture",
+  "kind": "design-comparison",
+  "language": "en",
+  "width": 1200,
+  "primary": "publication",
+  "questions": [
+    {
+      "ref": "publication",
+      "text": "Who owns the reusable definitions?",
+      "focusRefs": [
+        "library",
+        "profile",
+        "model"
+      ],
+      "subjectRefs": [
+        "library"
+      ]
+    },
+    {
+      "ref": "binding",
+      "text": "Who binds the actual project inputs?",
+      "focusRefs": [
+        "scenario",
+        "model"
+      ],
+      "subjectRefs": [
+        "project.scenario"
+      ]
+    }
+  ],
+  "references": {
+    "source": "docs/90-99-views/90-architecture-views/90.138-library-design-taste-choices.d2",
+    "model": "project.sysml",
+    "case": "docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture.d2",
+    "library": "library/project-organization/objects.ss",
+    "profile": "profiles/library-formation.ss",
+    "scenario": "scenarios/project-formation/func.ss",
+    "capture-gap": "scenarios/project-formation/func.ss"
+  },
+  "basis": {
+    "captureRef": "design-candidate:library-design-taste",
+    "modelRefs": [
+      "project.sysml"
+    ],
+    "obligationRefs": [
+      "docs/10-19-design/10-architecture/10.145-design-taste-public-contracts.org"
+    ],
+    "evidenceRefs": [
+      "capture-gap"
+    ]
+  },
+  "copy": {
+    "status": "Current repository source observations only \u00b7 no C/Q/R issued",
+    "comparison-title": "One Taste pipeline. Different Questions and source observations.",
+    "comparison-note": "Model facts and required references stay fixed; Taste selects scope, hierarchy and ELK preferences.",
+    "sources-label": "Selected source observations"
+  },
+  "design": {
+    "audience": "Library adopter",
+    "medium": "README component view",
+    "message": "Library publishes; Profile selects; Scenario binds actual inputs.",
+    "questionRefs": [
+      "publication"
+    ],
+    "requiredSubjects": [
+      "library",
+      "project",
+      "project.profile",
+      "project.scenario",
+      "project.inputs"
+    ],
+    "requiredRelations": [
+      "(project.profile -> library)[0]",
+      "project.(scenario -> profile)[0]",
+      "(project.scenario -> library)[0]",
+      "project.(scenario -> inputs)[0]"
+    ],
+    "focalSubjects": []
+  },
+  "themes": [
+    "sketchbook",
+    "compact"
+  ],
+  "icons": [
+    "engineering"
+  ],
+  "presentation": {
+    "graph": {
+      "id": "ownership",
+      "children": [
+        {
+          "id": "library"
+        },
+        {
+          "id": "project",
+          "children": [
+            {
+              "id": "project.profile"
+            },
+            {
+              "id": "project.scenario"
+            },
+            {
+              "id": "project.inputs"
+            }
+          ]
+        }
+      ]
+    },
+    "icons": {
+      "library": "library",
+      "project.profile": "selection",
+      "project.scenario": "capture",
+      "project.inputs": "document"
+    }
+  },
+  "variants": [
+    {
+      "name": "adopter",
+      "questionRefs": [
+        "publication"
+      ],
+      "evidenceRefs": [],
+      "design": {
+        "audience": "Library adopter",
+        "medium": "README component view",
+        "message": "Library publishes; Profile selects; Scenario binds actual inputs.",
+        "questionRefs": [
+          "publication"
+        ],
+        "requiredSubjects": [
+          "library",
+          "project",
+          "project.profile",
+          "project.scenario",
+          "project.inputs"
+        ],
+        "requiredRelations": [
+          "(project.profile -> library)[0]",
+          "project.(scenario -> profile)[0]",
+          "(project.scenario -> library)[0]",
+          "project.(scenario -> inputs)[0]"
+        ],
+        "focalSubjects": []
+      }
+    },
+    {
+      "name": "maintainer",
+      "questionRefs": [
+        "binding"
+      ],
+      "evidenceRefs": [],
+      "design": {
+        "audience": "Project maintainer",
+        "medium": "README component view",
+        "message": "Library publishes; Profile selects; Scenario binds actual inputs.",
+        "questionRefs": [
+          "binding"
+        ],
+        "requiredSubjects": [
+          "library",
+          "project",
+          "project.profile",
+          "project.scenario",
+          "project.inputs"
+        ],
+        "requiredRelations": [
+          "(project.profile -> library)[0]",
+          "project.(scenario -> profile)[0]",
+          "(project.scenario -> library)[0]",
+          "project.(scenario -> inputs)[0]"
+        ],
+        "focalSubjects": []
+      }
+    },
+    {
+      "name": "source-gap",
+      "questionRefs": [
+        "publication"
+      ],
+      "evidenceRefs": [
+        "capture-gap"
+      ],
+      "design": {
+        "audience": "Source review",
+        "medium": "README component view",
+        "message": "Library publishes; Profile selects; Scenario binds actual inputs.",
+        "questionRefs": [
+          "publication"
+        ],
+        "requiredSubjects": [
+          "library",
+          "project",
+          "project.profile",
+          "project.scenario",
+          "project.inputs"
+        ],
+        "requiredRelations": [
+          "(project.profile -> library)[0]",
+          "project.(scenario -> profile)[0]",
+          "(project.scenario -> library)[0]",
+          "project.(scenario -> inputs)[0]"
+        ],
+        "focalSubjects": []
+      }
+    }
+  ],
+  "evidence": [
+    {
+      "sourceRef": "capture-gap",
+      "excerpt": "status: 'capture-blocked",
+      "state": "missing",
+      "subjectRefs": [
+        "project.scenario"
+      ],
+      "relationRefs": []
+    }
+  ]
+}
+|
+}}}
+library: "Library\nDefinitions and contracts"
+project: Project {
+  profile: "Profile\nSelects published definitions"
+  scenario: "Scenario\nBinds project inputs"
+  inputs: "Repository inputs\nModels / Org / decisions"
+}
+project.profile -> library: selects
+project.scenario -> project.profile: binds
+project.scenario -> library: references definitions
+project.scenario -> project.inputs: binds actual inputs

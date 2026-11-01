@@ -1,0 +1,222 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+# Declared Questions and content for the actual DE-CASE-01 case.
+# Source observations only; no issued C, accepted Q or review R.
+vars: {
+  d2-config: {
+    layout-engine: elk
+    data: {
+      # Application declarations travel through the official graph.data interface.
+      figure: |json
+        {
+          "title": "DE-CASE-01 capture preparation workflow",
+          "purpose": "workflow",
+          "kind": "flow",
+          "language": "en",
+          "width": 1120,
+          "primary": "progress",
+          "questions": [
+            {
+              "ref": "progress",
+              "text": "How is a use prepared, and where does it stop?",
+              "focusRefs": [
+                "profile",
+                "scenario",
+                "capture-stop"
+              ]
+            },
+            {
+              "ref": "exchange",
+              "text": "What crosses each boundary?",
+              "focusRefs": [
+                "profile",
+                "scenario",
+                "types"
+              ]
+            },
+            {
+              "ref": "stops",
+              "text": "What must be checked before proceeding?",
+              "focusRefs": [
+                "scenario",
+                "capture-stop"
+              ]
+            }
+          ],
+          "references": {
+            "library": "library/project-organization/objects.ss",
+            "profile": "profiles/library-formation.ss",
+            "scenario": "scenarios/project-formation/func.ss",
+            "capture-stop": "scenarios/project-formation/func.ss",
+            "model": "project.sysml",
+            "documents": "docs/10-19-design/10-architecture/10.31-architecture-document-and-decision-contracts.org",
+            "decisions": "docs/10-19-design/10-architecture/10.34-case-design-review-dossier-draft.org",
+            "types": "scenarios/project-formation/types.ss"
+          },
+          "basis": {
+            "captureRef": "design-candidate:DE-CASE-01/rendering",
+            "modelRefs": [
+              "project.sysml"
+            ],
+            "obligationRefs": [
+              "docs/10-19-design/10-architecture/10.31-architecture-document-and-decision-contracts.org"
+            ],
+            "evidenceRefs": []
+          },
+          "copy": {
+            "badge": "Workflow / current stop",
+            "eyebrow": "DETERMINISTIC ENGINEERING / DE-CASE-01",
+            "title": "From project intent to ",
+            "emphasis": "traceable use",
+            "annotation-01": "Confirm origins, select and bind. Retain inputs, outputs and open items at each boundary.",
+            "annotation-02": "Control order / compact main path",
+            "annotation-03": "The path shows preparation order; the current source outcome is marked separately.",
+            "confirm-label": "Confirm intent",
+            "annotation-04": "Original intent + roles",
+            "select-label": "Select Profile",
+            "annotation-05": "Parents / policies",
+            "acquire-label": "Acquire inputs",
+            "annotation-06": "Content / origins / expiry",
+            "check-label": "Check binding",
+            "annotation-07": "Scope / parents / origins",
+            "prepare-label": "Prepare C",
+            "annotation-08": "Retain missing inputs",
+            "annotation-09": "Current return: capture-blocked / capture = #f",
+            "annotation-10": "Boundary",
+            "annotation-11": "Input",
+            "annotation-12": "Output / retained associations",
+            "annotation-13": "Project confirmation",
+            "annotation-14": "Actual intent, account origin and role mandate",
+            "annotation-15": "Original sources required for verification; declarations do not authorize",
+            "annotation-16": "Profile selection",
+            "annotation-17": "Validated Scope, parent chain and both policies",
+            "annotation-18": "Selections and actual bindings; retain normalized results",
+            "annotation-19": "Scenario acquisition",
+            "annotation-20": "Repository root and project input inventory",
+            "annotation-21": "Actual content, origin observations, lifetime and gaps",
+            "annotation-22": "Capture preparation",
+            "annotation-23": "Selections, origin authority and method input demands",
+            "annotation-24": "Current output is a blocked report; unique C is not issued",
+            "annotation-25": "Parent and policy associations must agree",
+            "annotation-26": "Select actual published method bindings",
+            "annotation-27": "Acquire current project files, origins and lifetime",
+            "annotation-28": "How are gaps and conflicts retained?",
+            "annotation-29": "Incomplete original sources: retain origin findings",
+            "annotation-30": "Missing method footprint: retain required inputs",
+            "annotation-31": "Do not issue C or promote a candidate to accepted Q",
+            "annotation-32": "Every step needs a basis. Every stop needs an explicit reason.",
+            "annotation-33": "Basis: Profile and prepare-formation-capture source / no execution acceptance",
+            "annotation-34": "Workflow / separate from architecture"
+          },
+          "themes": [
+            "blueprint",
+            "compact"
+          ],
+          "variants": [
+            {
+              "name": "sketchbook",
+              "themes": [
+                "sketchbook",
+                "compact"
+              ]
+            },
+            {
+              "name": "node-editor",
+              "themes": [
+                "blueprint",
+                "node-editor",
+                "compact"
+              ]
+            },
+            {
+              "name": "swimlane",
+              "themes": [
+                "blueprint",
+                "compact"
+              ],
+              "layout": "swimlane"
+            },
+            {
+              "name": "project-owned",
+              "kind": "capture-handoff",
+              "layout": "swimlane",
+              "themes": [
+                "field-notes",
+                "workbench",
+                "compact"
+              ],
+              "icons": [
+                "engineering",
+                "repo"
+              ]
+            }
+          ],
+          "icons": [
+            "engineering"
+          ],
+          "presentation": {
+            "flow": {
+              "lanes": [
+                {
+                  "id": "intent",
+                  "label": "Project intent"
+                },
+                {
+                  "id": "profile",
+                  "label": "Profile selection"
+                },
+                {
+                  "id": "scenario",
+                  "label": "Scenario preparation"
+                }
+              ],
+              "steps": [
+                {
+                  "node": "confirmation",
+                  "lane": "intent",
+                  "title": "confirm-label",
+                  "detail": "annotation-04",
+                  "icon": "question"
+                },
+                {
+                  "node": "selection",
+                  "lane": "profile",
+                  "title": "select-label",
+                  "detail": "annotation-05",
+                  "icon": "selection"
+                },
+                {
+                  "node": "acquisition",
+                  "lane": "scenario",
+                  "title": "acquire-label",
+                  "detail": "annotation-06",
+                  "icon": "document"
+                },
+                {
+                  "node": "association",
+                  "lane": "scenario",
+                  "title": "check-label",
+                  "detail": "annotation-07",
+                  "icon": "reference"
+                },
+                {
+                  "node": "preparation",
+                  "lane": "scenario",
+                  "title": "prepare-label",
+                  "detail": "annotation-08",
+                  "icon": "capture"
+                }
+              ]
+            }
+          }
+        }
+      |
+    }
+  }
+}
+direction: right
+confirmation -> selection -> acquisition -> association -> preparation
+preparation -> blocked: current source outcome
+blocked: "capture-blocked / capture = #f"

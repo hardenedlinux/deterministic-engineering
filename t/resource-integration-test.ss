@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;;; -*- Gerbil -*-
 (import :clan/poo/object :std/test :std/encoding/json
         (only-in :std/crypto/digest sha256) (only-in :std/encoding/hex hex-encode)

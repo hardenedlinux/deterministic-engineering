@@ -1,3 +1,7 @@
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;;;
+;;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 #!/usr/bin/env gxi
 ;;; Native package build: use the same Core/SDK boundary as agentic-ai-lab.
 (import (for-syntax

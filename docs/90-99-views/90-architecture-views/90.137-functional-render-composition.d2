@@ -1,0 +1,128 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+# Component dependencies, not execution order.
+vars: {d2-config: {data: {figure: |json
+{
+  "title": "Functional rendering: independent owners and replaceable resources",
+  "purpose": "architecture",
+  "kind": "render-composition",
+  "language": "en",
+  "width": 1440,
+  "primary": "boundaries",
+  "questions": [
+    {
+      "ref": "boundaries",
+      "text": "What can a downstream project compose without replacing model or layout semantics?",
+      "focusRefs": [
+        "source",
+        "theme",
+        "heading",
+        "measurement",
+        "export"
+      ]
+    }
+  ],
+  "references": {
+    "source": "docs/90-99-views/90-architecture-views/90.137-functional-render-composition.d2",
+    "theme": "packages/render/src/presentation-theme.ts",
+    "heading": "packages/render/src/heading.ts",
+    "measurement": "packages/render/src/scene-export.ts",
+    "export": "packages/render/src/export.ts"
+  },
+  "basis": {
+    "captureRef": "design-candidate:functional-render",
+    "modelRefs": [],
+    "obligationRefs": [
+      "docs/10-19-design/10-architecture/10.144-functional-themes-layouts-and-package-examples.org"
+    ],
+    "evidenceRefs": []
+  },
+  "copy": {
+    "description": "Architecture dependencies; arrows point to the capability consumed.",
+    "status": "Static rendering facts only \u00b7 source-bound Questions \u00b7 no C/Q/R or model publication"
+  },
+  "themes": [
+    "sketchbook",
+    "compact"
+  ],
+  "icons": [
+    "engineering"
+  ],
+  "presentation": {
+    "scenes": [
+      {
+        "graph": {
+          "id": "functional-composition",
+          "children": [
+            {
+              "id": "model"
+            },
+            {
+              "id": "composition"
+            },
+            {
+              "id": "themes"
+            },
+            {
+              "id": "icons"
+            },
+            {
+              "id": "export"
+            },
+            {
+              "id": "layout"
+            },
+            {
+              "id": "host"
+            }
+          ]
+        },
+        "icons": {
+          "model": "model",
+          "composition": "selection",
+          "themes": "library",
+          "icons": "reference",
+          "export": "document",
+          "layout": "model",
+          "host": "capture"
+        },
+        "roles": {
+          "themes": "publication",
+          "icons": "selection",
+          "host": "capture",
+          "model": "external",
+          "layout": "external"
+        }
+      }
+    ]
+  },
+  "variants": [
+    {
+      "name": "sketchbook",
+      "themes": [
+        "sketchbook",
+        "ember",
+        "compact",
+        "layered-down"
+      ]
+    }
+  ]
+}
+|
+}}}
+model: "Model adapters\nOfficial D2 / OpenSysML observations"
+composition: "Pure composition\ncomposeFigure / composeHeading / composeDiagram"
+themes: "Visual resources\nStyle + palette + type + density + role markers"
+icons: "SVG assets\nReplaceable domain icons and surfaces"
+export: "Browser export effect\nFonts / actual bounds / SVG / PNG / receipt"
+layout: "ELK layout\nMeasured node and label boxes"
+host: "Host project\nSource acquisition and explicit writes"
+composition -> model: reads captured model
+composition -> themes: selects visual layers
+composition -> icons: selects assets
+export -> composition: consumes composed HTML
+export -> layout: delegates geometry
+host -> model: captures inputs
+host -> export: requests image export

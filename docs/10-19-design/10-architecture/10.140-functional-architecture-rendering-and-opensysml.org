@@ -1,0 +1,210 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 10.140 Question-driven D2 Rendering and OpenSysML Model Views
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.140
+#+OPTIONS: toc:2 num:nil
+
+* Ownership and decision
+:PROPERTIES:
+:CUSTOM_ID: architecture-rendering-owner
+:END:
+The shared functional TypeScript rendering Library belongs to Deterministic
+Engineering. Gateway/Weaver consumes it and owns project acquisition, local
+presentation, review and publication. This work starts from main253a926 in a new
+branch; the original dirty workspace and active downstream checkout are preserved.
+The donor was Weaver's uncommitted dev/d2 working snapshot in a checkout at
+92f8848640ff53a360430178ba7adc0894793d83, not content published by that commit.
+
+D2 remains the language and rendering engine. Custom React scene reconstruction,
+manual ELK packing and text-outline machinery have been removed. Official D2
+compile/render owns layout and SVG. C4 and Structurizr are
+classification and communication references, not additional DSLs or dependencies.
+The Gerbil package, compiler and SDK are unchanged. The sole package version
+source is packages/render/package.json; namespaces stay stable.
+
+* Questions, model and evidence associations
+:PROPERTIES:
+:CUSTOM_ID: architecture-rendering-contracts
+:END:
+Every diagram answers an explicit question for an audience and scope. A useful
+association is Question -> model/obligation selection -> admitted query/evidence
+references -> view candidate -> review/publication decision. LLMs propose
+questions, model/view candidates and explanations. OpenSysML owns model operations;
+ASCENT owns deterministic queries; Core/Scenario own capture/currentness; Aitia
+owns review. The renderer cannot issue evidence or authorize publication.
+
+| Required view field | Meaning | Boundary |
+|---------------------+---------+----------|
+| question.ref / text | Existing question identity and wording | Included in output and fingerprint |
+| basis.captureRef | Existing capture or explicitly labeled design candidate | Does not create or authenticate C |
+| basis.modelRefs | Selected model/source references | Does not establish model validation |
+| basis.obligationRefs | Existing obligations | No second duty ledger |
+| basis.evidenceRefs | Existing evidence references; may be empty | Empty references cannot become a pass |
+| source/title/purpose/kind | Explicit view selection | Architecture/workflow kept separate |
+| sources/theme | Captured import texts and official D2 options | Full supplied input footprint |
+
+These TS reference fields project existing contracts. FormationProfile/Scenario
+in scenarios/project-formation already own intent, model root, catalog/mapping,
+policy and repository capture. Their capture may be blocked. This package does
+not invent a Question Contract or pretend that a rendering snapshot issues
+C. Reference resolution, accepted Q, source trust and freshness remain caller
+responsibilities. Missing obligations, conflicts and counterevidence must survive
+selection; selecting a flattering image cannot discharge an obligation.
+
+Architecture answers ownership, components, interfaces, dependencies or deployment.
+Workflow answers ordering, branches, events and recovery. Explanatory overviews
+can refer to both as distinct titled sections. Dependency edges must not silently
+become execution order. Architecture kinds are system/data/assurance; workflow
+kinds are routing/flow/sequence/state. Kinds classify intended views; D2
+notation supplies their actual semantics. Sequence diagrams use sequence_diagram,
+including its actor lifelines. No TypeScript card layout replaces it.
+
+* Functional files and call boundaries
+:PROPERTIES:
+:CUSTOM_ID: architecture-rendering-functions
+:END:
+| File under packages/render | Responsibility |
+|-------------------------------------------+----------------|
+| src/source/types.ts | Readonly QuestionRef, ViewBasis and distinct purpose variants |
+| src/source/catalog.ts | Validate paths/selection and freeze supplied snapshot |
+| src/pipeline.ts | renderView composes explicit compile/SVG effects; retains IDs |
+| src/worker.ts | Official D2 compile/render effects |
+| src/index.ts | Public API; at most two workers, always terminated; failure rejects result |
+| src/theme.ts and themes/ | Independent options and optional D2 profiles |
+| src/opensysml.ts | Real SDK call and pure explicit reflow projection |
+| packages/render/examples | Actual file-package consumer; project reads and candidate writes |
+
+The Library has no directory walker, global scene engine, semantic label guessing,
+custom compiler, FP runtime, evidence registry or publication database. Snapshots
+are immutable; ordinary functions, readonly records, unions and Promise suffice.
+Bun is the qualified runtime. No Node-only compatibility is claimed.
+
+* Independent themes
+:PROPERTIES:
+:CUSTOM_ID: architecture-rendering-themes
+:END:
+D2 profiles are optional defaults exposed by standardThemes(). Downstream can
+supply its own import closure, classes, styles, icons and layout. The ./theme
+export exposes immutable official D2 options; extendTheme composes overrides.
+Classes remain open strings rather than a closed semantic-role palette. Theme
+changes invalidate render reuse, not model identity or proof meaning.
+SVG is primary. The default PNG conversion was removed after real cases exposed font substitution
+and text overflow. Raster export requires separately qualified browser rendering. External fonts/images require separately qualified
+resource closure for hermetic publication. A digest is not authentication.
+
+* Actual OpenSysML SDK relationship
+:PROPERTIES:
+:CUSTOM_ID: architecture-rendering-opensysml
+:END:
+The optional peer/dev dependency is the published @openmbee/opensysml0.11.0.
+Research was pinned at d7e94f69bbb4324e4829afad1a40f67ad5b006d4; only fields
+present in the installed package are used.
+[[https://github.com/Open-MBEE/OpenSysML/tree/d7e94f69bbb4324e4829afad1a40f67ad5b006d4/client/node][Official TypeScript SDK]].
+
+captureOpenSysMLView invokes Connection.renderView(modelHash, viewName, options).
+projectOpenSysMLView explicitly reflows supported nodes/edges to D2 and retains
+model/view identity, original IDs, ownership, origins, full SDK response and its
+fingerprint. Ports, compartments, tables/notes, stand-ins, collapsed nodes,
+dangling edges and ownership cycles are refused rather than silently dropped.
+SDK errors propagate. There is no local SysML parser or alternative transport.
+Tests use the actual public SDK JSON decoder and real D2 rendering. They do not
+establish live service/WASM parse or model validation. A supplied modelHash is
+only a reference until existing project source checks authenticate its origin.
+
+* Current repository as the real Case
+:PROPERTIES:
+:CUSTOM_ID: architecture-rendering-cases
+:END:
+The cases command renders three original D2 files unchanged, with ELK,
+theme0 and pad24 matching their documented convention. Receipts retain original
+source hashes, element IDs and question/model/obligation links.
+
+| Original view | Review question | Content status |
+|---------------+-----------------+----------------|
+| 90.91 engineering-content-contracts | Who publishes, selects and captures architectural/document/decision content? | Existing design; rendering only |
+| 90.120 ascent-domain-owned-module-topology | Which domain owns each module and what remains transitional? | Existing target; not a fresh implementation audit |
+| 90.84 sysml-interoperability | How do observations reach reasoning and review without granting approval? | Existing design; no live model execution |
+
+Existing diagrams may mix architectural and workflow concerns. First-pass
+rendering preserves their source so a content problem is distinguishable from a
+renderer regression. A question-led redesign is a separate reviewed content change.
+The new 90.129 component architecture and 90.130 authoring workflow are separate
+outputs. Their capture references explicitly name design candidates and evidence
+references remain empty; they do not impersonate C, accepted Q or review R.
+
+* Verification, migration and open gates
+:PROPERTIES:
+:CUSTOM_ID: architecture-rendering-migration
+:END:
+Typecheck and tests cover immutable footprints, changed-question rejection,
+source/import refusal, nested D2, sequence notation, independent themes, SDK
+projection/refusal and worker completion. A real installed file dependency and
+an independent packed consumer exercise package boundaries. CI runs package tests
+and examples on Linux and macOS. Local and remote receipts must remain distinct.
+
+Correctness means D2 semantics, preserved references and refusal of lossy
+SDK projection. Whether question-led LLM selection improves explanatory quality
+is a research hypothesis requiring human comparison, not a rendering pass claim.
+Open gates include live model validation; trusted C/accepted Q integration;
+question-to-element evidence coverage; authorized publication; external asset
+closure; downstream Gateway migration; and CI acceptance for this revision.
+No full automatic LLM orchestration, independent review or delivery is implemented.
+
+* References
+- [[https://d2lang.com/tour/themes][D2 themes]] and [[https://d2lang.com/tour/sequence-diagrams][sequence diagrams]].
+- [[https://c4model.com/diagrams][C4 scopes]] and [[https://c4model.com/diagrams/notation][notation guidance]], as references only.
+- [[https://docs.structurizr.com/dsl][Structurizr model/view/style separation]], as a reference only.
+
+* TS visual composition is a first-class responsibility
+The generic D2 adapter alone does not satisfy the visual framework requirement.
+src/presentation.ts implements composePresentation: pure SVG composition of the
+question, answer, diagram, explanations, evidence context and limits.
+The separate presentation-theme export owns typography, surfaces, status colors
+and spacing. This is independent of themes/ and D2 compile/render options.
+
+Three real cases produce two themes each: upstream blue/purple and downstream
+green/warm. D2 source and diagram bytes remain identical. These demonstrate
+TS-owned visual hierarchy rather than only returning engine SVG. Architecture
+and workflow remain separate page purposes. Explanation status is project-authored;
+a referenced supported label is not independently authenticated assurance. Current
+examples use design or pending. Question-to-element highlighting, further page
+compositions, multilingual shaping and verified evidence decoration remain open.
+The first compositor is a concrete contract, not every possible explanatory genre.
+
+* Local qualification receipt
+The final D2 and TS composition suite passes19 cases, with strict typecheck
+and actionlint clean. A packed independent consumer passes using only the public
+package and presentation-theme exports. Three unchanged historical repository
+sources render successfully; three two-theme explanatory pages and one focused
+two-theme responsibility page are generated. Browser inspection confirms native
+embedded fonts and complete responsive page composition. The saved screenshot
+is a browser preview, not a separate runtime PNG export capability.
+
+Focused view90.131 is explicitly a concise content candidate derived from90.91
+and10.31. Its question is who publishes/selects/captures; its explanation associates
+Library, Profile and Scenario responsibilities. It does not infer real evidence
+or claim the live OpenSysML/ASCENT/Aitia chain has run. Remote CI is a distinct gate.
+
+* Icon-led infographic refinement
+The initial page compositor was too document-like. The current composition uses
+short labels, explicit node icons, visual grouping, icon-led responsibility tiles
+and a compact model/obligation/evidence strip. Full references remain in SVG
+metadata and sidecar receipts rather than occupying the main visual hierarchy.
+
+The ./icons export supplies official Lucide static SVG assets and an IconAsset
+contract. Project input explicitly binds icons to nodes and explanations; no label
+keyword inference assigns semantics. Downstream may replace any asset or the
+presentation icon set. Icons are embedded as data URIs, not fetched remotely.
+D2 still owns node geometry and connectors; TS owns the surrounding visual
+explanation, typography, icon selection and independent presentation theme.
+This compact composition replaces the initial prose-heavy report arrangement.
+
+The icon implementation uses [[https://github.com/lucide-icons/lucide/blob/main/docs/guide/installation.md][official Lucide static SVG exports]] and D2’s [[https://d2lang.com/tour/icons/][icon support]]. SVG defaults are embedded with explicit bindings; no remote icon fetch is needed.
+
+* Layout research supersedes prototype acceptance
+[[file:10.141-cross-language-diagram-renderer-research.org][10.141]] records the cross-language architecture/renderer survey. The current
+compositor is a retained prototype, not the accepted visual architecture. D2 is a
+primary authoring language; its ecosystem does not bound rendering research.
