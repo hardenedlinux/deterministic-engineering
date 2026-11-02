@@ -185,7 +185,7 @@ after scene scaling; =minimumTextSize= is the caller's optional CSS-pixel thresh
 not a global readability score. Font/annotation clipping and detected line overlap
 refuse; there is no hidden font shrinking or alternate-layout retry.
 
-The source-driven cases live in =packages/render/examples= and run from the parent package with its shared dependency installation.
+The source-driven cases live in =packages/render/examples= and run from the repository root with its shared dependency installation.
 See [[../../docs/10-19-design/10-architecture/10.144-functional-themes-layouts-and-package-examples.org][10.144 implementation contract]] and the separate architecture/Workflow variants.
 
 * Declared vector surfaces
@@ -273,3 +273,22 @@ bun add @deterministic-engineering/render@git+https://github.com/hardenedlinux/d
 #+end_src
 Bun owns Git fetching and the lockfile. A Git install needs no committed package
 archive. Release tags are created only after the package/consumer checks pass.
+* Compiler allocation lifetime
+=compileModel= owns one ephemeral compiler process and its internal SDK worker.
+The result is accepted only after the process closes its worker, disconnects
+IPC and exits naturally. The parent waits for native =close= before either
+resolution or rejection; spawn/IPC errors are retained until that boundary. No process exit call, signal kill, fallback renderer
+or consumer-maintained pool is used. This process boundary releases terminated
+Bun worker allocation domains that otherwise remain in the long-lived host.
+Concurrent callers remain independent; the Library imposes no CPU-count clamp.
+The host still owns cancellation, batch scheduling and browser lifetime.
+
+
+Lifecycle controls observe real native child handles. They cover successful D2
+compilation, synchronous IPC failure, native disconnected IPC, spawn failure,
+missing/duplicate results and nonzero exit. The existing 24-call parent RSS guard
+remains 256 MiB; caller scheduling and the two-worker browser CI are unchanged.
+IPC fault fixtures test protocol admission only; they are not alternate compilers.
+The child keeps IPC referenced through worker termination and send acknowledgement,
+then disconnects. Removing the last message listener before that point can make
+Bun exit before delivering the result, and must not be used as a cleanup shortcut.
