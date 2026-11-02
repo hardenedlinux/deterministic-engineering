@@ -138,3 +138,40 @@ README therefore displays the same renderer's PNG and retains an SVG export link
 The display test binds the actual PNG receipt, observed subjects/relations, measured
 readability and captured source hashes; checking
 only the D2 theme selection did not prevent the original display/content regression.
+
+
+* Compiler allocation lifetime, package release and downstream admission
+
+PR #5 is rebased onto the Git-installable root package from main. Its change is
+a compiler allocation boundary, not a second build system: D2 still owns parsing
+and model observations; the existing SDK Worker still owns compilation. A short
+native child process owns that worker so process termination can return retained
+Bun worker allocations instead of accumulating them in the publishing host.
+The host accepts a result only after native process close and zero exit, with
+exactly one response. It disconnects IPC on send errors and waits for close before
+rejecting. No process-exit call, signal-kill fallback, compiler pool or new public
+factory/configuration is introduced. Worker teardown precedes sending the result.
+
+The IPC channel must remain referenced until teardown and send acknowledgement.
+An attempted once-only listener locally caused premature exit without a result;
+that failure was retained and the listener remains active until explicit disconnect.
+Native lifecycle controls exercise spawn/IPC failures, missing and duplicate results,
+nonzero exit and a real successful D2 result. The existing 24 sequential compilations
+retain the 256-MiB parent RSS guard. These controls qualify this runtime and workload;
+they do not prove arbitrary host heaps or all process-cancellation policies.
+
+The root =package.json= remains the sole Render version declaration. Release tags,
+package archives and notices derive from it. After both platform jobs and REUSE
+pass on the exact head, squash PR #5, delete its branch and tag the merged source.
+A standard Bun package archive is an optional Release artifact, not Cedar's input.
+Cedar selects the merged Git commit in its existing manifest and Bun lockfile.
+
+Cedar must re-render its captured SDK/D2 sources using the new installed package,
+then pass the existing full tests and dependency/worker/artifact recovery controls.
+Its job-local initial Bun cache is empty. Recovery removes only node_modules,
+reinstalls from the same frozen lock and starts a new process to execute the real
+D2 worker and verify existing exports. Missing HTML, changed captured sources or
+mixed artifacts must reject; re-rendering cannot stand in for recovery acceptance.
+Neither vendor, manual receipts, an additional publisher nor a Release URL is used.
+The upstream and downstream CI results qualify their respective revisions separately;
+a release tag alone grants neither model publication nor Aitia review authority.

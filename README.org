@@ -137,17 +137,17 @@ Workflow: [[file:docs/90-99-views/90-architecture-views/90.133-capture-preparati
 
 ** Development and verification
 Use the declared Bun version from [[file:.github/workflows/render.yml][render CI]] and its pinned
-package/browser dependencies. Run in =packages/render=:
+package/browser dependencies. Run from the repository root:
 
 #+begin_src sh
 bun install --frozen-lockfile
 bunx playwright install chromium
 bun run typecheck
-bun test ./test
+bun run test
 bun run test:export
 #+end_src
 
-Run the package-owned cases from =packages/render=:
+Run the package-owned cases from the same repository root:
 
 #+begin_src sh
 bun run test:examples
@@ -160,7 +160,7 @@ Candidate outputs and source/browser receipts are written to =.cache/render/=.
 Tests include unknown declarations, model/source mutation, invalid relations and
 ports, hidden Questions, unsupported primitives and failed image loading.
 The Linux/macOS workflow runs the same entries with the existing resource
-bounds. [[https://github.com/hardenedlinux/deterministic-engineering/pull/2/checks][PR checks]]
+bounds. [[https://github.com/hardenedlinux/deterministic-engineering/actions/workflows/render.yml][Render CI checks]]
 are authoritative for the actual tested commit.
 
 The [[file:docs/90-99-views/90-architecture-views/90.129-functional-architecture-rendering.svg][render architecture]] and
@@ -168,6 +168,13 @@ The [[file:docs/90-99-views/90-architecture-views/90.129-functional-architecture
 are distinct current diagrams. Their D2 sources are maintained alongside the SVGs
 and rendered through the measured TS scene API. The active SVGs and PNGs come from
 the same font-settled scene; the old raw-D2 rendering path has been removed.
+
+The repository-root =package.json= is the Render version and dependency source.
+Downstreams install the reviewed Git revision with Bun; Release attachments are
+optional distribution. Each D2 compilation owns an ephemeral process and worker;
+the Promise settles only after native process close, including IPC failure paths.
+No compiler pool or fallback renderer is introduced. See the
+[[file:docs/10-19-design/10-architecture/10.146-taste-selection-and-reuse.org][compiler lifecycle and release audit]] for acceptance and downstream recovery.
 
 * Scheme package entrypoints
 The canonical dependency/prelude declaration is [[file:gerbil.pkg][gerbil.pkg]]. The compiler is

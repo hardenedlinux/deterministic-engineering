@@ -10,7 +10,6 @@ export {composeHeading,type HeadingSpec} from './heading';
 export {composeModelView,graphFromModel,modelDiagram} from './model-view';
 import {isDeepStrictEqual} from 'node:util';
 import {fork} from 'node:child_process';
-import {fileURLToPath} from 'node:url';
 import type {CompileOptions} from '@terrastruct/d2';
 import {relativeSource} from './source/catalog';
 import {readD2Figure,type FigureResources} from './d2-figure';
@@ -31,18 +30,22 @@ export async function compileModel(sources:Readonly<Record<string,string>>,input
   relativeSource(inputPath);
   if(!Object.hasOwn(sources,inputPath))throw new Error('Missing model source');
   for(const[file,text]of Object.entries(sources)){relativeSource(file);if(typeof text!=='string')throw new Error('Invalid model source');}
-  const child=fork(fileURLToPath(new URL('./compiler-process.ts',import.meta.url)),[],{execPath:process.execPath,stdio:['ignore','inherit','inherit','ipc']});
+  const child=fork(new URL('./compiler-process.ts',import.meta.url),[],{execPath:process.execPath,stdio:['ignore','inherit','inherit','ipc']});
   return await new Promise<CompiledModel>((resolve,reject)=>{
     let response:import('./worker').ModelResponse|undefined;
-    child.once('error',reject);
+    let failure:Error|undefined;
+    const fail=(error:Error)=>{failure??=error;if(child.connected)child.disconnect();};
+    child.on('error',fail);
     child.on('message',(value:import('./worker').ModelResponse)=>{if(response){response={error:'Duplicate compiler result'};}else response=value;});
-    child.once('exit',(code,signal)=>{
+    child.once('close',(code,signal)=>{
+      if(failure)return reject(failure);
       if(code!==0||signal)return reject(new Error('Compiler process exit: '+code+'/'+signal));
       if(!response)return reject(new Error('Compiler process exited without result'));
       if('error' in response)return reject(new Error(response.error));
       resolve(response.capture);
     });
-    child.send({fs:{...sources},inputPath,options} satisfies import('./worker').ModelRequest,error=>{if(error)reject(error);});
+    try{child.send({fs:{...sources},inputPath,options} satisfies import('./worker').ModelRequest,error=>{if(error)fail(error);});}
+    catch(error:unknown){fail(error instanceof Error?error:new Error(String(error)));}
   });
 }
 export async function compileFigureSource(sources:Readonly<Record<string,string>>,inputPath:string,resources:FigureResources={},options:CompileOptions={}):Promise<FigureInput> {
