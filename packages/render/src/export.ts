@@ -5,7 +5,7 @@
 import {layoutScenes, extractSceneSVGs, type SceneLayoutReceipt} from './scene-export';
 import {getSmoothStepPath, Position} from '@xyflow/system';
 import rough from 'roughjs';
-import packageInfo from '../package.json' with {type: 'json'};
+import packageInfo from '../../../package.json' with {type: 'json'};
 import { readFile } from 'node:fs/promises';
 import type { Browser } from 'playwright';
 import type {RenderObservation} from './taste';

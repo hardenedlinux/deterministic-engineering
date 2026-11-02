@@ -7,7 +7,7 @@
 
 These maintained cases belong to =packages/render=. They use its public exports,
 dependencies, typecheck and Bun commands. There is no nested package or
-self-dependency. From =packages/render= run:
+self-dependency. From the repository root run:
 
 #+begin_src sh
 bun install --frozen-lockfile
@@ -54,5 +54,19 @@ through an example self-dependency. See [[../../../docs/10-19-design/10-architec
 =design-case.ts= is the pure graph/matrix composition and Case-specific space rule.
 =design-choices.ts= reads 90.138, uses existing variants, exports three candidates,
 binds Taste to each output and writes their comparison. Run =bun run example:design=
-from =packages/render=. The source supplies audiences, reasons and tradeoffs.
+from the repository root. The source supplies audiences, reasons and tradeoffs.
 The Library supplies Design decoding, reference/Scope checks and pure Taste review.
+
+
+* Git dependency and package ownership
+The repository-root =package.json= is the sole TypeScript package manifest and
+version source. Implementation, examples and tests remain under =packages/render=.
+The root exports point directly to those sources; no forwarding implementation,
+installer hook or duplicated dependency list is maintained.
+
+Downstream Bun consumers install the repository Git URL at a reviewed revision:
+#+begin_src sh
+bun add @deterministic-engineering/render@git+https://github.com/hardenedlinux/deterministic-engineering.git#<commit>
+#+end_src
+Bun owns Git fetching and the lockfile. A Git install needs no committed package
+archive. Release tags are created only after the package/consumer checks pass.

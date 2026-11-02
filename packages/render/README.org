@@ -115,7 +115,7 @@ The current formation source still reports =capture-blocked / capture = #f=.
 bun install --frozen-lockfile
 bunx playwright install chromium
 bun run typecheck
-bun test ./test
+bun run test
 bun run test:export
 # Package-owned examples (same installation):
 bun run test:examples
@@ -236,7 +236,7 @@ relation IDs and heading boxes. Internal scene edges and child frames must remai
 inside their display scopes; crossing edges are distinguished by an attribute
 for project/theme styling. ELK remains the placement/routing owner.
 
-Run =bun run example:design= from this package for the real Library/Profile/Scenario
+Run =bun run example:design= from the repository root for the real Library/Profile/Scenario
 comparison. See [[../../docs/10-19-design/10-architecture/10.145-design-taste-public-contracts.org][10.145 contracts, tradeoffs and controls]].
 
 * Taste before composition and artifact rights
@@ -259,3 +259,17 @@ the publishing host. It inserts comment notices before HTML/SVG fingerprints.
 No project copyright is assigned to downstream output by default. See
 [[file:THIRD-PARTY.org][asset notices]] and the bundled LICENSE and LICENSE.OFL-1.1 texts. This repository
 uses official REUSE lint/CI; binary and strict JSON files use standard sidecars.
+
+
+* Git dependency and package ownership
+The repository-root =package.json= is the sole TypeScript package manifest and
+version source. Implementation, examples and tests remain under =packages/render=.
+The root exports point directly to those sources; no forwarding implementation,
+installer hook or duplicated dependency list is maintained.
+
+Downstream Bun consumers install the repository Git URL at a reviewed revision:
+#+begin_src sh
+bun add @deterministic-engineering/render@git+https://github.com/hardenedlinux/deterministic-engineering.git#<commit>
+#+end_src
+Bun owns Git fetching and the lockfile. A Git install needs no committed package
+archive. Release tags are created only after the package/consumer checks pass.
