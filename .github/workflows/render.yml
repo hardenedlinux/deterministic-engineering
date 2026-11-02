@@ -7,12 +7,16 @@ on:
   pull_request:
     paths:
       - 'packages/render/**'
+      - 'package.json'
+      - 'bun.lock'
       - 'docs/90-99-views/90-architecture-views/**'
       - '.github/workflows/render.yml'
   push:
     branches: [main]
     paths:
       - 'packages/render/**'
+      - 'package.json'
+      - 'bun.lock'
       - 'docs/90-99-views/90-architecture-views/**'
       - '.github/workflows/render.yml'
 permissions:
@@ -31,22 +35,23 @@ jobs:
         with:
           bun-version: 1.3.11
       - run: bun install --frozen-lockfile
-        working-directory: packages/render
       - run: bunx playwright install --with-deps chromium
-        working-directory: packages/render
       - run: bun run typecheck
-        working-directory: packages/render
-      - run: bun test ./test
-        working-directory: packages/render
+      - run: bun run test
       - run: bun run test:export
-        working-directory: packages/render
-      - run: bun test ./examples/test
-        working-directory: packages/render
+      - run: bun run test:examples
       - run: bun run example:case
-        working-directory: packages/render
       - run: bun run example:compare
-        working-directory: packages/render
       - run: bun run example:overviews
-        working-directory: packages/render
       - run: bun run example:design
-        working-directory: packages/render
+      - name: Consume the reviewed Git package through Bun
+        env:
+          RENDER_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          render_version=$(bun -e 'import metadata from "./package.json"; process.stdout.write(metadata.version)')
+          export RENDER_EXPECTED_VERSION="$render_version"
+          render_consumer=$(mktemp -d)
+          cd "$render_consumer"
+          bun init -y
+          bun add "@deterministic-engineering/render@git+https://github.com/hardenedlinux/deterministic-engineering.git#$RENDER_REVISION"
+          bun -e 'import metadata from "@deterministic-engineering/render/package.json"; import {compileModel} from "@deterministic-engineering/render"; if(metadata.version!==process.env.RENDER_EXPECTED_VERSION)throw new Error("Wrong Git package version"); const compiled=await compileModel({"consumer.d2":"Library -> Consumer"},"consumer.d2"); if(compiled.model.relations.length!==1)throw new Error("Git-installed worker did not compile the consumer model");'

@@ -13,7 +13,7 @@ import {designCase,designTaste} from './design-case';
 import {attributionFor} from './attribution';
 const root=fileURLToPath(new URL('../../../',import.meta.url)),file='docs/90-99-views/90-architecture-views/90.138-library-design-taste-choices.d2';
 const input=await compileFigureSource({[file]:await readFile(path.join(root,file),'utf8')},file);
-const files=[...new Set([...Object.values(input.references),'packages/render/examples/design-choices.ts','packages/render/examples/design-case.ts','packages/render/examples/attribution.ts',...['design','taste','taste-selection','taste-policies','model-view','figure','diagram','export','scene-export'].map(name=>'packages/render/src/'+name+'.ts'),'packages/render/package.json'])];
+const files=[...new Set([...Object.values(input.references),'packages/render/examples/design-choices.ts','packages/render/examples/design-case.ts','packages/render/examples/attribution.ts',...['design','taste','taste-selection','taste-policies','model-view','figure','diagram','export','scene-export'].map(name=>'packages/render/src/'+name+'.ts'),'package.json'])];
 const sources=Object.fromEntries(await Promise.all(files.map(async file=>[file,await readFile(path.join(root,file),'utf8')])));
 const directory=path.join(root,'.cache/render/design-choices');await mkdir(directory,{recursive:true});
 const candidates=input.variants?.length?input.variants.map(variant=>({name:variant.name,input:selectFigureVariant(input,variant.name)})):[{name:'selected',input}];

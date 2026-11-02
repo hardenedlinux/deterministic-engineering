@@ -7,7 +7,7 @@ import {bindDesign,type Design} from './design';
 import {deepFreeze} from './immutable';
 import {parseFragment, type DefaultTreeAdapterTypes} from 'parse5';
 import type { Shape, Connection, SQLColumn, Text, Class } from '@terrastruct/d2';
-import packageInfo from '../package.json' with {type: 'json'};
+import packageInfo from '../../../package.json' with {type: 'json'};
 import { digest, relativeSource } from './source/catalog';
 import { validatePurposeKind, type QuestionRef, type ViewSelection } from './source/types';
 import { defaultIcons, type IconAsset } from './icons';

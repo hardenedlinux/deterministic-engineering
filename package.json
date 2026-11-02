@@ -1,0 +1,70 @@
+{
+  "name": "@deterministic-engineering/render",
+  "private": false,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p packages/render/tsconfig.json",
+    "test": "bun test ./packages/render/test",
+    "test:export": "playwright test --config packages/render/playwright.config.ts",
+    "test:examples": "bun test ./packages/render/examples/test",
+    "example:case": "bun packages/render/examples/library-case.ts",
+    "example:compare": "bun packages/render/examples/comparison.ts",
+    "example:overviews": "bun packages/render/examples/overviews.ts",
+    "example:design": "bun packages/render/examples/design-choices.ts"
+  },
+  "dependencies": {
+    "@fontsource/inter": "5.3.0",
+    "@fontsource/kalam": "5.3.0",
+    "@terrastruct/d2": "0.1.33",
+    "@xyflow/system": "0.0.83",
+    "elkjs": "0.12.1",
+    "parse5": "8.0.1",
+    "roughjs": "4.6.6",
+    "valibot": "1.2.0",
+    "web-worker": "1.5.0"
+  },
+  "devDependencies": {
+    "@openmbee/opensysml": "0.11.0",
+    "@types/bun": "1.4.4",
+    "fast-check": "4.10.2",
+    "playwright": "1.64.1",
+    "typescript": "7.0.2"
+  },
+  "version": "1.0.1",
+  "exports": {
+    ".": "./packages/render/src/index.ts",
+    "./opensysml": "./packages/render/src/opensysml.ts",
+    "./presentation-theme": "./packages/render/src/presentation-theme.ts",
+    "./icons": "./packages/render/src/icons.ts",
+    "./export": "./packages/render/src/export.ts",
+    "./palettes": "./packages/render/src/palettes.ts",
+    "./layouts": "./packages/render/src/layouts.ts",
+    "./design": "./packages/render/src/design.ts",
+    "./taste": "./packages/render/src/taste.ts",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "packages/render/src",
+    "packages/render/README.org",
+    "packages/render/LICENSE.OFL-1.1",
+    "packages/render/THIRD-PARTY.org",
+    "LICENSES/LGPL-2.1-or-later.txt",
+    "package.json.license"
+  ],
+  "license": "LGPL-2.1-or-later",
+  "engines": {
+    "bun": ">=1.3.11"
+  },
+  "peerDependencies": {
+    "@openmbee/opensysml": "0.11.0",
+    "playwright": "1.64.1"
+  },
+  "peerDependenciesMeta": {
+    "@openmbee/opensysml": {
+      "optional": true
+    },
+    "playwright": {
+      "optional": true
+    }
+  }
+}
