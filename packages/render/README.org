@@ -292,3 +292,49 @@ IPC fault fixtures test protocol admission only; they are not alternate compiler
 The child keeps IPC referenced through worker termination and send acknowledgement,
 then disconnects. Removing the last message listener before that point can make
 Bun exit before delivering the result, and must not be used as a cleanup shortcut.
+
+
+* Raster encoding and format choice
+
+The export effect uses pinned Sharp/libvips for PNG and WebP encoding. The default
+PNG is losslessly recompressed with compressionLevel 9 and adaptiveFiltering true;
+if this grows the file the original browser PNG is retained. Default WebP is also
+lossless (effort 4). =preferredRaster= returns the smaller generated raster with
+its actual format, MIME type and bytes. The caller uses that extension/MIME; WebP
+bytes are never returned under the PNG property. =png=, =regionImages= and =svg=
+retain their existing roles. Regions use the same PNG compression options.
+
+#+begin_src typescript
+const image = await exportFigure(figure, browser);
+const {format, mimeType, bytes} = image.preferredRaster;
+// Write bytes to `overview.${format}` or send with mimeType.
+
+// Explicit compatibility/performance choice: skip WebP encoding.
+await exportFigure(figure, browser, {webp: false});
+// Explicit smaller, lossy alternatives; never implied by a quality value alone.
+await exportFigure(figure, browser, {
+  webp: {lossless: false, quality: 95, smartSubsample: true},
+});
+await exportFigure(figure, browser, {
+  pngCompression: {palette: true, quality: 95, effort: 7},
+});
+// Preserve the exact browser PNG bytes if required.
+await exportFigure(figure, browser, {pngCompression: false, webp: false});
+#+end_src
+
+Sharp owns codec validation and implementation. Unsupported controls refuse; a
+quality/quantization control requires explicit lossy WebP or palette PNG selection.
+No resizing, global Sharp concurrency/cache mutation, or external optimizer process
+is added. Errors propagate through the existing browser-context cleanup boundary.
+Receipts bind final PNG/WebP/region hashes, native encoder parameters and input/
+output byte counts. The model fingerprint still identifies model/composition;
+encoding choices belong to the export receipt. Lossless WebP can discard invisible
+RGB beneath fully transparent pixels; alpha and visible content are preserved.
+
+SVG remains an independent vector deliverable for zoomable documentation. Its
+embedded fonts, standalone behaviour and editability differ from raster formats;
+it is not silently substituted into the raster interface based on size alone.
+=bun run example:images= writes PNG/WebP and source-bound size/fidelity observations
+for actual repository figures under =.cache/render/raster-comparison/=. It also
+reports existing SVG sizes separately. Hosts choose which artifact to publish, avoiding duplicate
+committed assets and retaining existing source/publication checks.
