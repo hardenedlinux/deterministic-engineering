@@ -55,6 +55,7 @@ try {
     const image = await exportFigure(figure, browser, {scale: 2, regions: [region],attribution:attributionFor(figure)});
     for (const file of sourcePaths) if (await readFile(path.join(root, file), 'utf8') !== sources[file]) throw new Error(`Source changed during export: ${file}`);
     await writeFile(path.join(output, `${name}.html`), image.html);
+    if(image.webp)await writeFile(path.join(output, `${name}.webp`), image.webp);
     await writeFile(path.join(output, `${name}.png`), image.png);
     await writeFile(path.join(output, `${name}-detail.png`), image.regionImages[region]!);
     await writeFile(path.join(output, `${name}.json`), JSON.stringify({status: 'design explanation / source observations only', ...image.receipt, sources: figure.sourceSHA256, observations}, null, 2));

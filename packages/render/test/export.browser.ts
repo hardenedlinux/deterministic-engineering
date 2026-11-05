@@ -85,3 +85,37 @@ test('vertical connector sides are declared rather than forced into a horizontal
   expect(output.receipt.routing).toContain('xyflow@'); expect(output.html).toContain('data-source-position="bottom"');
   await expect(exportFigure(figure('unknown'), browser)).rejects.toThrow('Invalid declared connector position');
 });
+
+test('PNG compression preserves real browser pixels and region hashes',async({browser})=>{
+ const {default:sharp}=await import('sharp');
+ const {digest}=await import('../src/source/catalog');
+ const figure=composeFigure(input,normal),baseline=await exportFigure(figure,browser,{regions:['diagram'],transparent:true,pngCompression:false});
+ const optimized=await exportFigure(figure,browser,{regions:['diagram'],transparent:true});
+ for(const [before,after] of [[baseline.png,optimized.png],[baseline.regionImages.diagram!,optimized.regionImages.diagram!]] as const){
+  const original=await sharp(before).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+  const compressed=await sharp(after).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+  expect(compressed).toEqual(original);expect(after.byteLength).toBeLessThanOrEqual(before.byteLength);
+ }
+ expect(optimized.receipt.pngSHA256).toBe(digest(optimized.png));
+ expect(optimized.receipt.regionSHA256.diagram).toBe(digest(optimized.regionImages.diagram!));
+ expect(optimized.receipt.pngCompression.figure.outputBytes).toBe(optimized.png.byteLength);
+ expect(optimized.receipt.pngCompression.regions.diagram!.outputBytes).toBe(optimized.regionImages.diagram!.byteLength);
+ const contexts=browser.contexts().length;
+ await expect(exportFigure(figure,browser,{pngCompression:{compressionLevel:10}})).rejects.toThrow();
+ expect(browser.contexts().length).toBe(contexts);
+});
+
+test('preferred raster chooses actual smaller PNG/WebP with matching hashes and MIME',async({browser})=>{
+ const {default:sharp}=await import('sharp'),{digest}=await import('../src/source/catalog');
+ const figure=composeFigure(input,normal),image=await exportFigure(figure,browser);
+ expect(image.webp).toBeDefined();
+ expect((await sharp(image.webp!).metadata()).format).toBe('webp');
+ expect(await sharp(image.webp!).raw().toBuffer()).toEqual(await sharp(image.png).raw().toBuffer());
+ expect(image.receipt.webp!.sha256).toBe(digest(image.webp!));
+ const selected=image.webp!.byteLength<image.png.byteLength?'webp':'png';
+ expect(image.preferredRaster.format).toBe(selected);expect(image.receipt.preferredRaster).toBe(selected);
+ expect(image.preferredRaster.mimeType).toBe('image/'+selected);
+ expect(image.preferredRaster.bytes).toBe(selected==='webp'?image.webp!:image.png);
+ const pngOnly=await exportFigure(figure,browser,{webp:false});
+ expect(pngOnly.webp).toBeUndefined();expect(pngOnly.receipt.webp).toBeUndefined();expect(pngOnly.preferredRaster.format).toBe('png');
+});

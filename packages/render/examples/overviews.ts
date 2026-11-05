@@ -28,6 +28,7 @@ try{for(const name of names){
  if(minimumTextSize!==undefined&&typeof minimumTextSize!=='number')throw new Error('Invalid project minimumTextSize');
  const result=await exportFigure(figure,browser,{scale:1.5,minimumTextSize,attribution:attributionFor(figure)});
  for(const[file,source]of Object.entries(figure.sourceSHA256)) { const {createHash}=await import('node:crypto');if(createHash('sha256').update(await readFile(path.join(root,file))).digest('hex')!==source)throw new Error('Stale overview source: '+file); }
+ if(result.webp)await writeFile(path.join(output,outputName+'.webp'),result.webp);
  await writeFile(path.join(output,outputName+'.html'),result.html);await writeFile(path.join(output,outputName+'.png'),result.png);
  for(const[index,svg]of result.svg.entries())await writeFile(path.join(output,outputName+(index===0?'':`-scene-${index}`)+'.svg'),svg);
  await writeFile(path.join(output,outputName+'.json'),JSON.stringify({...result.receipt,sources:figure.sourceSHA256},null,2));

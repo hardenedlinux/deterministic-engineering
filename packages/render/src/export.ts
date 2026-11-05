@@ -2,6 +2,10 @@
 //
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
+import {encodeWebP,type WebPCompression,type WebPCompressionReceipt} from './webp';
+export {encodeWebP,type WebPCompression,type WebPCompressionReceipt} from './webp';
+import {compressPNG,type PNGCompression,type PNGCompressionReceipt} from './png';
+export {compressPNG,type PNGCompression,type PNGCompressionReceipt} from './png';
 import {layoutScenes, extractSceneSVGs, type SceneLayoutReceipt} from './scene-export';
 import {getSmoothStepPath, Position} from '@xyflow/system';
 import rough from 'roughjs';
@@ -21,14 +25,20 @@ export function attributionComment(attribution:ArtifactAttribution):string {
  return attribution.copyright.map(value=>'SPDX-FileCopyrightText: '+value).join('\n')+'\nSPDX-License-Identifier: '+attribution.license;
 }
 // REUSE-IgnoreEnd
-export interface FigureExportOptions { readonly attribution?:ArtifactAttribution; readonly scale?: number; readonly regions?: readonly string[]; readonly minimumTextSize?:number; readonly transparent?:boolean; }
+export interface FigureExportOptions { readonly attribution?:ArtifactAttribution; readonly scale?: number; readonly regions?: readonly string[]; readonly minimumTextSize?:number; readonly transparent?:boolean; readonly pngCompression?:PNGCompression|false; readonly webp?:WebPCompression|false; }
 export interface FigureImage {
   readonly png: Uint8Array;
+  readonly webp?:Uint8Array;
+  /** Smallest generated raster; the format always matches its bytes. */
+  readonly preferredRaster:{readonly format:"png"|"webp";readonly mimeType:"image/png"|"image/webp";readonly bytes:Uint8Array};
   readonly svg: readonly string[];
   readonly regionImages: Readonly<Record<string, Uint8Array>>;
   /** Fully materialized, offline HTML, including embedded fonts and measured sketch strokes. */
   readonly html: string;
   readonly receipt: {
+    readonly webp?:{readonly encoding:WebPCompressionReceipt;readonly sha256:string};
+    readonly preferredRaster:"png"|"webp";
+    readonly pngCompression:{readonly figure:PNGCompressionReceipt;readonly regions:Readonly<Record<string,PNGCompressionReceipt>>};
     readonly inputSHA256: string; readonly composedHTMLSHA256: string; readonly htmlSHA256: string; readonly pngSHA256: string;
     /** Effective SVG text size in logical CSS pixels, after scene scaling. */
     readonly canvas:{readonly background:string;readonly transparent:boolean};
@@ -282,14 +292,20 @@ export async function exportFigure(figure: ComposedFigure, browser: Browser, opt
     const svg = await extractSceneSVGs(page,options.transparent??false,annotation);
     const renderedHTML = await page.content();
     const html = annotation ? renderedHTML.replace(/^(<!doctype[^>]*>)/i,'$1\n<!--\n'+annotation+'\n-->\n') : renderedHTML;
-    const png = await page.locator('[data-figure]').screenshot({type: 'png', animations: 'disabled',omitBackground:options.transparent??false});
+    const rawPNG = await page.locator('[data-figure]').screenshot({type: 'png', animations: 'disabled',omitBackground:options.transparent??false});
+    const compressed=await compressPNG(rawPNG,options.pngCompression),png=compressed.bytes;
+    const webp=options.webp===false?undefined:await encodeWebP(rawPNG,options.webp);
+    const preferredRaster=webp&&webp.bytes.byteLength<png.byteLength?{format:"webp" as const,mimeType:"image/webp" as const,bytes:webp.bytes}:{format:"png" as const,mimeType:"image/png" as const,bytes:png};
     const regionImages: Record<string, Uint8Array> = {};
+    const regionCompression:Record<string,PNGCompressionReceipt>={};
     for (const name of options.regions ?? []) {
       if (!/^[a-zA-Z0-9_-]+$/.test(name) || !(name in report.bounds)) throw new Error(`Unknown requested figure region: ${name}`);
-      regionImages[name] = await page.locator(`[data-region="${name}"]`).screenshot({type: 'png', animations: 'disabled',omitBackground:options.transparent??false});
+      const rawRegion = await page.locator(`[data-region="${name}"]`).screenshot({type: 'png', animations: 'disabled',omitBackground:options.transparent??false});
+      const region=await compressPNG(rawRegion,options.pngCompression);
+      regionImages[name]=region.bytes;regionCompression[name]=region.receipt;
     }
     const buffer = Buffer.from(png);
-    return {png, html, svg, regionImages, receipt: {attribution:options.attribution,observation:report.observation,canvas:{background:options.transparent?'transparent':report.canvasBackground,transparent:options.transparent??false},readability:{...report.readability,requiredMinimum:options.minimumTextSize},inputSHA256: figure.inputSHA256, scenes, svgSHA256:svg.map(svg=>digest(svg)), composedHTMLSHA256: figure.htmlSHA256, dependencies: packageInfo.dependencies, regionSHA256: Object.fromEntries(Object.entries(regionImages).map(([name, bytes]) => [name, digest(bytes)])), htmlSHA256: digest(html), drawing: figure.drawing.mode === "sketch" ? `roughjs@${packageInfo.dependencies.roughjs}` : "precise", routing: scenes.length ? `elkjs@${packageInfo.dependencies.elkjs}` : connectors.length ? `xyflow@${packageInfo.dependencies["@xyflow/system"]}` : "none", assetSHA256, pngSHA256: digest(png), browser: browser.version(),
+    return {png,webp:webp?.bytes,preferredRaster, html, svg, regionImages, receipt: {webp:webp?{encoding:webp.receipt,sha256:digest(webp.bytes)}:undefined,preferredRaster:preferredRaster.format,pngCompression:{figure:compressed.receipt,regions:regionCompression},attribution:options.attribution,observation:report.observation,canvas:{background:options.transparent?'transparent':report.canvasBackground,transparent:options.transparent??false},readability:{...report.readability,requiredMinimum:options.minimumTextSize},inputSHA256: figure.inputSHA256, scenes, svgSHA256:svg.map(svg=>digest(svg)), composedHTMLSHA256: figure.htmlSHA256, dependencies: packageInfo.dependencies, regionSHA256: Object.fromEntries(Object.entries(regionImages).map(([name, bytes]) => [name, digest(bytes)])), htmlSHA256: digest(html), drawing: figure.drawing.mode === "sketch" ? `roughjs@${packageInfo.dependencies.roughjs}` : "precise", routing: scenes.length ? `elkjs@${packageInfo.dependencies.elkjs}` : connectors.length ? `xyflow@${packageInfo.dependencies["@xyflow/system"]}` : "none", assetSHA256, pngSHA256: digest(png), browser: browser.version(),
       width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20), scale, bounds: report.bounds}};
   } finally { await context.close(); }
 }

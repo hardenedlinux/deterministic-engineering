@@ -175,3 +175,34 @@ mixed artifacts must reject; re-rendering cannot stand in for recovery acceptanc
 Neither vendor, manual receipts, an additional publisher nor a Release URL is used.
 The upstream and downstream CI results qualify their respective revisions separately;
 a release tag alone grants neither model publication nor Aitia review authority.
+
+
+* Image compression and measured format choice
+
+Sharp (pinned in root package.json) owns native PNG/WebP encoding after the existing
+browser screenshot. Both default paths are lossless. The export returns compatible
+PNG, optional WebP and a preferredRaster selected by actual encoded byte count;
+format and MIME accompany the selected bytes. Native encoder settings and final
+hashes are retained in the existing receipt. Models, D2/SysML identity, Questions,
+fonts, dimensions and SVG composition do not select a hardcoded image format.
+A host may disable WebP, bypass PNG re-encoding or explicitly opt into lossy
+WebP/palette PNG. It must publish with the correct extension and actual receipt.
+There is no new image publisher, file watcher, optimizer subprocess or global
+resource configuration. Browser CI keeps its two workers.
+
+Local corpus observation (2026-11-05): 38 existing repository PNGs totalled
+15,313,994 bytes. Default lossless PNG retained 15,010,083 bytes (1.98% reduction);
+lossless WebP produced 7,874,400 bytes (48.58% reduction). RGBA decode comparison
+was identical for every original/WebP pair in this corpus. Explicit palette PNG
+(quality 95, effort 7) produced 6,002,680 bytes (60.80% reduction), with a nonzero
+mean absolute channel error; it must not be described as lossless. Ordered local
+encoding totals were 10.61/19.28/14.10 seconds respectively, not an isolated or
+cross-platform throughput benchmark. Source images were not replaced in-place.
+These results guide a per-image choice, not a universal WebP or PNG preference.
+
+Controls cover exact RGBA/dimensions/partial-alpha preservation, original retention
+when PNG grows, explicit codec bypass, invalid/corrupted inputs, lossy opt-in,
+real browser/region hashes and MIME/byte selection. SVG remains a separate vector
+output: embedded fonts and zoom semantics make bytes alone an insufficient reason
+to replace it. Lossless WebP may canonicalize invisible colour under alpha zero;
+no pixel-perfect hidden-colour guarantee is inferred beyond the measured corpus.
