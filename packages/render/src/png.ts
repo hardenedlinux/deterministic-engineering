@@ -17,7 +17,9 @@ export async function compressPNG(input:Uint8Array,options:PNGCompression|false=
  const parsed=options===false?false:v.parse(Options,options);
  if(parsed!==false&&!parsed.palette&&[parsed.quality,parsed.colours,parsed.dither,parsed.effort].some(value=>value!==undefined))throw new Error('Palette controls require palette: true');
  const settings:PNGCompression|false=parsed===false?false:{compressionLevel:9,adaptiveFiltering:true,...parsed} as PNGCompression;
- const candidate=settings===false?input:await sharp(input).png(settings).toBuffer();
+ const encoder=sharp(input);
+ if((await encoder.metadata()).format!=='png')throw new Error('Expected PNG input');
+ const candidate=settings===false?input:await encoder.png(settings).toBuffer();
  const smaller=candidate.byteLength<input.byteLength,bytes=smaller?candidate:input;
  return{bytes,receipt:{encoder:settings===false?'browser':'sharp@'+packageInfo.dependencies.sharp,options:settings,inputBytes:input.byteLength,outputBytes:bytes.byteLength,selected:smaller?'compressed':'original'}};
 }

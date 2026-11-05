@@ -27,6 +27,9 @@ test('invalid controls, implicit quantization and corrupted PNG fail without fal
   await expect(compressPNG(source,options as never)).rejects.toThrow();
  }
  await expect(compressPNG(new Uint8Array([1,2,3]))).rejects.toThrow();
+ const jpeg=await sharp(source).flatten().jpeg().toBuffer();
+ await expect(compressPNG(jpeg)).rejects.toThrow('Expected PNG input');
+ await expect(compressPNG(jpeg,false)).rejects.toThrow('Expected PNG input');
 });
 
 test('declared high-quality palette compression preserves canvas and alpha channel',async()=>{
