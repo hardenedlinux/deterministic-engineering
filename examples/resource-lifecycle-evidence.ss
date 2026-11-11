@@ -1,12 +1,11 @@
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
-
 ;;; -*- Gerbil -*-
-(import :deterministic-engineering/init :deterministic-engineering/profiles/resource-lifecycle
+(import :deterministic-engineering/init
         :clan/poo/object :std/encoding/json :gerbil-ascent/program/session
         (only-in :agentic-ai-lab/modules/temporal-causality/trajectory/ascent-ledger ascent-trajectory)
         (only-in :std/misc/ports read-all-as-string))
+(def LifecycleProfile (.get deterministic-engineering.init.exports Library resource-lifecycle-profiles profiles LifecycleProfile))
+(def LargerPayloadProfile (.get deterministic-engineering.init.exports Library resource-lifecycle-profiles profiles LargerPayloadProfile))
 (export main)
 (def (read-text p) (call-with-input-file p read-all-as-string))
 (def (write-text p s) (call-with-output-file (list path: p truncate: #t) (cut display s <>)))
@@ -18,11 +17,11 @@
   (create-directory output)
   ((.get deterministic-engineering.init.exports std-make-spec) '("init" "profiles/resource-lifecycle" "examples/resource-lifecycle-evidence"))
   (.call deterministic-engineering.init.exports admit-current)
-  (def scene (.get (.get deterministic-engineering.init.exports Scenarios) resource-lifecycle scope))
+  (def scene (.get (.get deterministic-engineering.init.exports Library) resource-lifecycle))
   (def entry (.ref scene 'entry)) (def m (.ref scene 'methods))
   (def digest (.ref m 'file-digest)) (def value-digest (.ref m 'value-digest))
   (def save (.ref m 'write-json)) (def record (.ref m 'record))
-  (def rules (path-expand "library/drivers/evidence/func.ss" root))
+  (def rules (path-expand "library/evidence/func.ss" root))
   (def crate (path-expand "languages-engineering/rust/concurrency/resource-control/backpressure-memory" root))
   (def records '()) (def queries '()) (def exchanges '())
   (def session #f) (def trajectory #f) (def usage #f) (def scopes #f)
@@ -121,23 +120,23 @@
     ("nativeCases" 6) ("nativeRuns" 3) ("nativePerformanceMeasured" #f)
     ("correspondence" "bounded cut-to-owner mapping reviewed; no whole-program refinement proof")
     ("sourceInputs" (map (lambda (p) (def full (path-expand p root)) (list full (digest full)))
-      '("init.ss" "build.ss" "gerbil.pkg" "profiles/resource-lifecycle.ss" "examples/resource-lifecycle-evidence.ss"
-        "library/concurrency/resource-control/backpressure-memory/abstract/objects.ss"
-        "library/concurrency/resource-control/backpressure-memory/abstract/types.ss"
-        "library/concurrency/resource-control/backpressure-memory/abstract/interface.ss"
-        "library/concurrency/resource-control/backpressure-memory/abstract/config.ss"
-        "library/concurrency/resource-control/backpressure-memory/tokio-rayon/types.ss"
-        "library/concurrency/resource-control/backpressure-memory/tokio-rayon/objects.ss"
-        "library/concurrency/resource-control/backpressure-memory/tokio-rayon/config.ss"
-        "library/concurrency/resource-control/backpressure-memory/tokio-rayon/interface.ss"
-        "library/drivers/rust-resources/interface.ss" "library/drivers/rust-resources/types.ss" "library/drivers/rust-resources/config.ss"
-        "library/drivers/rust-resources/objects.ss" "library/drivers/rust-resources/func.ss"
-        "library/drivers/rust-resources/methods.ss" "library/drivers/rust-resources/oracle.ss"
-        "library/drivers/evidence/func.ss" "library/drivers/evidence/interface.ss"
-        "library/drivers/evidence/types.ss" "library/drivers/evidence/config.ss" "library/drivers/evidence/objects.ss"
-        "scenarios/resource-lifecycle/func.ss" "scenarios/resource-lifecycle/interface.ss"
-        "scenarios/resource-lifecycle/types.ss" "scenarios/resource-lifecycle/objects.ss" "scenarios/resource-lifecycle/config.ss"
-        "library/concurrency/resource-control/backpressure-memory/model.qnt" "library/concurrency/resource-control/backpressure-memory/budget.lean")))
+      '("init.ss" "build.ss" "gerbil.pkg" "library/resource-lifecycle-profiles/objects.ss" "examples/resource-lifecycle-evidence.ss"
+        "library/backpressure-memory/objects.ss"
+        "library/backpressure-memory/types.ss"
+        "library/backpressure-memory/interface.ss"
+        "library/backpressure-memory/config.ss"
+        "library/backpressure-tokio-rayon/types.ss"
+        "library/backpressure-tokio-rayon/objects.ss"
+        "library/backpressure-tokio-rayon/config.ss"
+        "library/backpressure-tokio-rayon/interface.ss"
+        "library/rust-resources/interface.ss" "library/rust-resources/types.ss" "library/rust-resources/config.ss"
+        "library/rust-resources/objects.ss" "library/rust-resources/func.ss"
+        "library/rust-resources/methods.ss" "library/rust-resources/oracle.ss"
+        "library/evidence/func.ss" "library/evidence/interface.ss"
+        "library/evidence/types.ss" "library/evidence/config.ss" "library/evidence/objects.ss"
+        "library/resource-lifecycle/func.ss" "library/resource-lifecycle/interface.ss"
+        "library/resource-lifecycle/types.ss" "library/resource-lifecycle/objects.ss" "library/resource-lifecycle/config.ss"
+        "library/backpressure-memory/model.qnt" "library/backpressure-memory/budget.lean")))
     ("rejections" '("changed-lock" "changed-owned-source" "JSON-is-not-issuer"))))
   (save (path-expand "report.json" output) report)
   (displayln "RESOURCE-REAL-EVIDENCE-OK " (path-expand "report.json" output)))

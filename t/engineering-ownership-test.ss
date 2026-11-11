@@ -1,7 +1,4 @@
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
-
 ;;; -*- Gerbil -*-
 (import :std/test
   (only-in :clan/poo/object .get .slot? .cc)
@@ -17,12 +14,12 @@
       (check-equal? (file-exists? "modules") #f)
       (check-equal? (.get deterministic-engineering.init.exports Library evidence identity) 'evidence))
     (test-case "Rust consumes the actual generic parent without a copied model"
-      (def parent (.get deterministic-engineering.init.exports Library backpressure-memory scope entry))
-      (def rust (.get deterministic-engineering.init.exports Library rust-resources scope))
+      (def parent (.get deterministic-engineering.init.exports Library backpressure-memory entry))
+      (def rust (.get deterministic-engineering.init.exports Library rust-resources))
       (check-equal? (eq? (.get rust entry parent) parent) #t)
       (check-equal?
         (eq? (.get rust model-library)
-             (.get deterministic-engineering.init.exports Library backpressure-tokio-rayon scope)) #t)
+             (.get deterministic-engineering.init.exports Library backpressure-tokio-rayon)) #t)
       (check-equal? (eq? (.get rust model-library parent entry) parent) #t)
       (def model-library (.get rust model-library))
       (check-equal? (eq? (.get rust config coding-policy)
@@ -52,5 +49,5 @@
       (check-equal? (scheme-free? crate) #t)
       (check-equal? (file-exists? (path-expand "src/main.rs" crate)) #t)
       (check-equal? (file-exists? (path-expand "Cargo.toml" crate)) #t)
-      (check-equal? (file-exists? "library/drivers/rust-resources/interface.ss") #t)
-      (check-equal? (file-exists? "library/concurrency/resource-control/backpressure-memory/tokio-rayon/ownership.sysml") #t))))
+      (check-equal? (file-exists? "library/rust-resources/interface.ss") #t)
+      (check-equal? (file-exists? "library/backpressure-tokio-rayon/ownership.sysml") #t))))

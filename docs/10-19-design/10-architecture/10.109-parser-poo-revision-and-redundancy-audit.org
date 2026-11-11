@@ -1,0 +1,290 @@
+#+TITLE: 10.109 Parser POO Revision and Redundancy Audit
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.109
+#+OPTIONS: toc:2 num:t
+#+FILETAGS: :parser:poo:audit:contracts:collections:
+
+[[file:10.108-parser-directory-modules-and-init-build-refactor.org][Implementation and retained evidence]] | [[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][Architecture view]]
+
+* Scope and observed source tuple
+
+This is an audit and proposed refactor, not an implementation cutover. Parser
+remains at5825b32194edb0f009386587192d71036ae4e871. Its one direct dependency is
+Core0e3c1f8aa905f7b9297cebf4725ea57d74175f76; Core declares and the native prefix
+actually loads POO29c58aa9c5be103ba843767e3d22ef8802b79342.
+
+POO PR13 advances during inspection from acccaadc to
+7f133e9407f3301359ec02108044596706fefdde. The clean reference checkout is updated
+to that detached source snapshot; installed dependencies and Parser/Core source
+remain unchanged. The new head adds finite Set-image output capture before
+element recognition. The wider delta adds collection request capture before
+metadata/delegate effects, transitive origin guards, comparer ownership, ordered
+selection/decomposition and batch semantics.
+
+=type.ss=, =mop.ss=, =object-contract.ss=, =function-signature.ss=,
+=types/validation.ss= and =support/option.ss= are unchanged between the installed
+pin and this source snapshot. Ordinary Record/Function/Map/Option reuse is
+therefore already available; it must not be presented as requiring the new pin.
+At the last upstream check, the single-process POO check was still running.
+An eventual upstream pass does not qualify Core/Parser adoption by itself.
+
+The package declarations remain the revision authority. These hashes record
+audit observations; this document does not introduce a version registry.
+
+* Findings and intended ownership
+
+| ID | Priority | Parser location | Finding | Target ownership |
+|----+----------+-----------------+---------+------------------|
+| R0 | Correctness first | src/modules/parser/types.ss:154--196 | Custom boolean/validation paths duplicate Core and lose normalization; exact-descriptor identity does not guard supported mutation | Core owns admission and returned candidate; Parser owns ancestry metadata and grammar obligations |
+| R1 | Correctness first | src/utilities/lists.ss:31--37 | find conflates a present false row with absence | Preserve presence explicitly through existing Option or matched list cells; preserve domain collision policy |
+| R2 | Declaration consolidation | src/modules/parser/types.ss:36--108; compiler/types.ss | Five scalar classifiers, coarse ParserList responsibilities and a second slot inventory repeat native/Context machinery | Native value Types declare fields; Core supplies contextual evidence; retain named compatibility identity only where required |
+| R3 | Domain consolidation | runtime/function-types.ss:16--55; compiler/lr-table.ss:24--64 | Terminal/precedence/action data language has two descriptions with different fork/guard semantics | One Parser-owned data vocabulary; producer bounds and selected-action restrictions remain separate refinements |
+| R4 | Typed index boundary | modules/parser/graph-query-types.ss:22--28 and graph-query-objects.ss | Index Type checks only hash-table?, and the raw mutable index escapes | Existing typed Map and explicit graph invariants first; latest persistent collection construction only where needed |
+| R5 | Small duplication | compiler/lr.ss:38--41; utilities/lists.ss:13--16 | append-unique has identical implementations | One utility owner with unchanged order, duplicates, equality and identity behavior |
+| R6 | Metadata duplication | schema.ss:5; normalize.ss:233,245; bound-ir.ss:182; parser-ir.ss:111; language/assembly.ss:39 | Grammar IR schema literal is repeated despite an existing declaration | Read the existing native schema declaration; retain every current format/ABI value |
+
+** R0: reproduced normalization loss and mutable-Contract bypass
+
+Parser's =parser-object-validate= admits a refined descriptor through Core but
+returns the original candidate. Core's authoritative implementation at
+=object-types/contracts.ss:312--316= returns the evidence's actual candidate.
+
+Read-only native cohort67 uses a legitimate normalizing value Type on a refined
+Grammar Contract. Core evidence contains name=normalized; Parser validate returns
+name=original. The probe reports =NORMALIZATION-LOSS-REPRODUCED= in6.96s.
+
+Cohort69 then uses supported POO slot mutation in a disposable process, restoring
+the slot on exit. Adding a rejecting obligation to the exact builtin Grammar
+Contract yields Core admitted=#f, Parser member=#t and Parser validate returning
+the candidate. It reports =BUILTIN-CONTRACT-OBLIGATION-BYPASSED= in6.90s.
+The private exact-descriptor comparison protects neither revision nor the actual
+obligation/classifier/responsibility protocol. No source or installed file is
+changed by these probes.
+
+Remove the Parser-specific success path rather than adding another revision or
+validation cache. Inherit Core's element/validate/admit behavior, retaining stable
+family prototypes, Parser identities and grammar graph/composition obligations.
+Any genuinely needed fast path belongs in the framework under its complete
+mutation and normalization contract, with measured cost and parity controls.
+
+Acceptance requires the normalized result and Function wrappers to reach callers;
+supported descriptor changes to be honored or explicitly refused; classifier and
+obligation execution exactly once; correct missing-field/ancestry refusal; and
+original callback exception identity. Existing refinement tests are retained.
+The green145-module baseline did not test these two specific observations.
+
+** R1 and R5: ordered lists are not an arbitrary Set/Table
+
+Cohort68 selects Bool rows and Symbol keys through the actual typed
+=make-list-operations=. Merging existing rows=(#f) with incoming=#t under the
+same key returns(#f #t) and calls the conflict handler zero times. It reports
+=FALSE-ROW-COLLISION-LOST= in7.43s. Both values are legal Bool rows; this is not
+an invalid-input case. Existing Option distinguishes missing from=(some #f)=.
+
+Retain the existing collision policy: identical duplicates reuse the original
+rows, conflicting duplicates invoke the domain handler, and a new row appends.
+Do not replace it blindly with latest =.<-iter=, whose repeated-key policy is
+last-wins, or a backend constructor with its own duplicate convention.
+
+The duplicate append-unique body can share its existing utility implementation.
+=union-values= deliberately preserves duplicates already in the left sequence.
+An unordered Set or a sorted Table would change observable ordering and possibly
+serialized IR digests. Acceptance includes false rows, absent rows, equal versus
+conflicting duplicates, handler count/cause, left identity and exact list order.
+
+** R2: use existing native declarations without changing evidence silently
+
+Core already exports =yuanxu-predicate-contract= and native POO already exports
+Symbol, Exactly, Enum, Pair, List, Record, Map and Function. Parser's five
+scalar classification wrappers repeat this framework behavior. Ordinary field
+Types should migrate to one native value declaration; contextual responsibilities
+must describe contextual obligations rather than a second ordinary field schema.
+
+Do not replace ParserList with List Any. Give parents, roles and composition
+their actual domains; define section rows from the existing grammar vocabulary.
+Record versus nominal defstruct is a representation choice, not a requirement
+to convert all runtime carriers into open objects.
+
+There is a compatibility boundary: predicate classification can produce rejection
+evidence whereas native value validation can raise TypeError. Preserve/document
+the public identity, boolean membership, error/diagnostic order and contextual
+admission contract before removing named wrappers. Native Record must not be
+used to silently alter this distinction. Parser keeps grammar semantics.
+
+** R3: share the data vocabulary, retain producer and execution rules
+
+The compiler requires bounded state/production indexes and flat multi-alternative
+forks, and permits layout guards only under the declared layout capability.
+The runtime selected-action Type also admits layout-shift and recursively checks
+fork branches. These are distinct phases, so sharing a predicate wholesale is
+incorrect. Current duplicated leaf descriptions have already required a shift
+precedence correction during10.108.
+
+Define the common terminal/precedence/atomic-action vocabulary once using native
+Types where useful. Overlay full-table bounds/capability checks and selected-action
+projection checks at their actual owners. Preserve the existing tagged-list wire
+format unless an explicitly qualified migration replaces it. Wrong tags/arity,
+negative/out-of-range indexes, malformed precedence, raw guard escape, cycles,
+fork cardinality and original failures need distinct positive/negative controls.
+
+* Where the latest POO revision actually helps
+
+POO =table/mapping.scm:6--21= captures list spines and binding Pair shells before
+metadata discovery and constructors. =table/styles.scm:525--532= does the same
+before public style delegates. =table-sources= captures declared origins before
+later getters; operations guard supported descriptor mutations. Latest7f133e94
+also captures finite image outputs before Set element recognition.
+
+These capabilities fit declared catalog/registry or graph-index construction when
+a persistent snapshot or derived indexes are required. They do not promise deep
+immutability of arbitrary row objects, safe stateful callbacks, external-effect
+rollback, a global revision/ABA fence or a universal speed improvement.
+
+For the current graph context, start with an explicit Id-to-Row Map Type rather
+than hash-table? alone, retain the normalized index result, and specify whether
+the returned context exposes a live mutable carrier or a captured snapshot.
+Capture derived identities/parents/kinds under a declared callback policy if that
+is the intended snapshot. Membership/type checks do not prove index/view/count
+agreement; Parser must enforce those graph invariants and its duplicate/parent
+policy. Do not silently change the current #f no-parent sentinel policy.
+
+A persistent Table backend is a subsequent design choice. RationalDict is
+numerically keyed: overriding Key to Symbol does not change its numeric comparer
+or tree semantics. Generic graph Id Types require a compatible explicitly
+selected backend/equivalence, or the current hash backend. There is no automatic
+representation inference. Preserve callback exceptions and ordering.
+
+Adoption controls include mutation of input spines/Pair shells from metadata or
+child callbacks, invalid occurrences hidden by later duplicates, descriptor
+changes, normalized Function leaf identity, missing versus stored false, declared
+key equivalence, late failure without partial publication and exact row order.
+Do not reimplement Table delta/index/style/origin machinery in Parser.
+
+* Retain and avoid speculative rewrites
+
+- =compiler/funcs.ss= dense-ID bitsets, LR worklists and specialized runtime
+  action indexes are compiler representations, not redundant application tables.
+  Generic collection APIs require a separately measured semantic/cost comparison.
+- Existing token/checkpoint defstruct carriers plus POO Types retain nominal
+  worker ownership and byte-offset invariants; no blanket Record conversion.
+- Character and parse-artifact predicates express actual host/domain properties.
+  Keep them where no equivalent declared primitive exists.
+- Graph duplicate/parent/lineage semantics and grammar/LR normalization remain
+  Parser responsibilities. POO collections do not infer graph policy.
+- Gerbil module loading, Core source/currentness and build supervision are not
+  replaced by POO Table origins. The latter do not attest source bytes or issue
+  publication authority.
+- Keep the seven documented Any boundaries unless their semantics change. Do
+  not hide a broad domain behind a nominal alias merely to remove the spelling.
+
+* Proposed execution order and gates
+
+1. Fix R0 on the current dependency tuple. Add the two observed regressions and
+   verify Core/native normalization, mutation, invocation counts and errors.
+2. Fix R1 and consolidate R5 with exact order/identity/conflict controls.
+3. Consolidate field and LR declarations (R2/R3) and schema reads (R6), keeping
+   native versions, tagged formats and Parser semantic responsibilities.
+4. Qualify the chosen immutable POO PR snapshot, then update only Core's POO
+   declaration and propagate Core's revision through Parser's existing dependency.
+   Do not add a second direct POO dependency or modify the installed pin by hand.
+5. Apply R4's typed index and explicit ownership policy; use latest persistent
+   construction/index APIs only for the selected representation and actual need.
+6. Run currentness/source/normalization and callback negative controls, complete
+   source/compiled/cold/recovery gates and exact-head Linux/macOS CI. Preserve
+   two workers/current heaps, Core300s, source total90/idle5, no Parser package
+   deadline and no Gerbil/SDK edits. Profile any receipt/index cost change before
+   making a performance claim.
+
+No implementation, package pin, test source, acceptance gate or directory layout
+is changed by this audit. The three diagnostic scripts and logs are cohort67--69
+under the existing current-pr evidence directory. Their zero exits mean that the
+unexpected behavior was reproduced, not that production correctness passed.
+
+* Implementation follow-through (current working cohort)
+
+R0/R1/R2/R3/R5/R6 are implemented in the existing Parser PR13 working branch.
+Grammar field declarations now use POO Record; Core owns all admission/member/
+validate methods and the actual normalized candidate. Public contextual scalar
+Contracts use Core's predicate constructor. Native shape rejection is TypeError;
+contextual obligations retain negative evidence. The list merge matches cells,
+not truth-valued rows. LR terminal/precedence leaves share one runtime data module,
+while compiler phase bounds/fork semantics remain. All Grammar IR consumers read
+src/schema.ss. Shared precedence syntax preserves the distinct scalar domains:
+runtime native exact Integer and compiler's historical integer? (including
+inexact integral ranks). Positive/negative controls cover the distinction; no
+incidental grammar compatibility or cache-revision change is introduced.
+
+The first local source writer passes in170.09s (two workers/2GiB; no Parser build
+deadline). Focused native source execution passes six modules/39 cases in111.96s,
+including returned Function wrappers, descriptor mutation/restoration, exception
+identity and false-row/order controls. R4's optional representation/backend
+selection is not silently folded into this correctness change. No dependency
+revision, schema/ABI, Gerbil or SDK source changes are made.
+
+Full-source cohort70 stops at the ABI fixture import with idle5; cohort71 repeats
+the same refusal and captures a live native stack in dyld/dlopen. The selected
+language-entries native objects exist but their generated loader .scm is missing.
+These observations are not a Grammar regression attribution or a correctness
+pass. The local prefix lacks the complete declared test-product preparation;
+follow the existing CI library-object/conformance/test-support owners before
+qualification, without clean or a new loader. Cohort72 additionally encounters
+sandbox-denied ps during owned-child cleanup; it is not a package correctness
+result. Retain the logs and distinguish prepared-product qualification from
+unprepared diagnostics. Linux/macOS exact-head acceptance remains pending.
+
+** Prepared product and source-witness follow-up
+
+The exact missing local stage is the existing build-ffi-tests.ss writer after
+prepare-gxtest!. Its producer-spec already owns the ABI helper, language entries
+and every language fixture's dynamic closure. Generic support preparation alone
+cannot replace it. Cohort76 still refuses ABI import; running this unchanged FFI
+writer in cohort77 passes30.13s and permits ABI loading in cohort78. No loader,
+Core, compiler or SDK implementation is changed to conceal the incomplete setup.
+
+Cohort78 then detects an actual migration omission: the source witness still
+reads append-unique/precedence? from their deleted compiler declarations. Move
+those source associations to utilities/lists.ss and runtime/lr-data.ss, regenerate
+SourceData.lean using the existing writer, and extend independent Lean AST
+expectations to the shared terminal/default exact-rank bodies and explicit
+compiler predicate. Keep old source-currentness refusal and new predicate/type
+mutation controls. Cohort79 passes four focused source modules/30 cases; complete
+source and new exact-head CI remain required after the witness correction.
+
+** Final local candidate80cd0f6
+
+CompilerGrammar now inherits the Grammar value Record and overrides only its
+three compiler container Types. The native source validator adapter consumes the
+new shared declaration with its unchanged full parameter/body list; the actual
+optional default and native Integer capability are supplied lexically through
+the existing source executor. It no longer requests the removed precedence?
+declaration. A source-default versus explicit compiler-rank control is added.
+
+The final shared-Record writer passes37.01s (cohort81); three source/Scope owners
+pass24.02s. Full current-source cohort82 passes160.23s:147 modules/1097 cases,
+zero failed owners, zero timeouts, two Workers/3GiB, total90/idle5 unchanged.
+The complete Lean build passes273 targets. NativeActionsWitness.source_checked
+remains axiom-free and predicate/type mutation examples pass. Existing theorem
+axioms elsewhere are unchanged; no complete runtime/compiler equivalence is
+inferred from source AST equality alone.
+
+Commits325e4a3,27bbf33 and80cd0f6 stay on existing Parser PR13. Old27bbf33 Linux
+semantics logs reproduce the same missing append-unique source declaration;
+its both-platform native preparation/FFI/generation results do not qualify final
+semantics. Final exact-head Linux/macOS CI is pending for80cd0f6. No package pin,
+format identity, resource gate, Gerbil or SDK implementation is changed. Root
+implementation/Agentic acceptance and optional R4 backend adoption remain outside
+this Parser correctness/declaration refactor.
+
+Final-byte native conformance is rebuilt/relinked successfully in127.72s
+(cohort83), retaining240/idle5/two workers/2GiB. The existing research owner then
+passes21.77s (cohort84):24 compiled semantic groups and all five declared program
+entries, with every child exiting0. These are semantic/closure results; the
+single-sample benchmark output is not a general throughput claim. Final CI run
+40273296661 is bound to80cd0f6ee3af0b6b1d87df33a9b02485e3eb76e4 and remains
+pending until all enabled Linux/macOS jobs complete.
+
+Final baseline run40273296661 completes with11 passing enabled jobs, one failing
+macOS semantics job and five existing conditional skips. Linux semantics passes.
+macOS refuses library-build-entry-test at idle5 after real import progress;
+therefore80cd0f6 is not complete dual-platform acceptance. Continue through10.110
+without relabeling this failure or the prior local successful runs as closure.

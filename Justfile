@@ -25,10 +25,9 @@ deps:
     timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q deps --install
 
 
-# The product owns the v0.19 tagged-update adapter over public gxpkg APIs.
-# Run after initial installation; no local updater or manifest writer.
+# Gerbil's public package API owns tagged updates; no Parent path or manifest writer.
 deps-update:
-    timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi .gerbil/pkg/github.com/tao3k/agentic-ai-lab/packages/automation/native-dependencies.ss
+    timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -e '(import (only-in :gerbil/tools/gxpkg pkg-update pkg-install with-pkg-build-env)) (with-pkg-build-env (for-each (lambda (dependency) (pkg-update dependency) (pkg-install dependency)) (pgetq depend: (call-with-input-file "gerbil.pkg" read) (quote ()))))'
 
 # Use the ordinary untagged native build with the same host/compiler envelope.
 build-dependency package:
@@ -47,7 +46,7 @@ test-file path pattern=".*":
     fi
     mkdir -p .data/test-logs
     log="$(mktemp .data/test-logs/test-XXXXXX)"
-    timeout --signal=TERM --kill-after=5s 120s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxtest -:max-heap=2G,debug=q -v 5 -r "{{pattern}}" "{{path}}" 2>&1 | tee "$log"
+    timeout --signal=TERM --kill-after=5s 120s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q test -v 5 -r "{{pattern}}" "{{path}}" 2>&1 | tee "$log"
     if rg 'ERROR (MODULE|CHECK|CASE|HARNESS)|Heap overflow|Stack overflow' "$log"; then exit 1; fi
     rg -F -x 'MODULE-OK {{path}}' "$log" >/dev/null
     rg -F 'HARNESS-OK' "$log" >/dev/null
@@ -57,6 +56,7 @@ test-file path pattern=".*":
 
 # Serial execution preserves bounded native test ownership.
 test:
+    just test-source-contracts
     just test-file t/engineering-ownership-test.ss
     just test-file t/repository-input-schema-test.ss
     just test-file t/library-relation-types-test.ss
@@ -72,6 +72,22 @@ test:
     just test-gateway
     just test-file t/dependency-compatibility-test.ss
     just test-file t/package-metadata-test.ss
+
+# Real language subjects, current native tool paths and existing test harness.
+test-source-contracts:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    export SOURCE_CONTRACT_CBMC="$(realpath "$(command -v cbmc)")"
+    export SOURCE_CONTRACT_GOTO_CC="$(realpath "$(command -v goto-cc)")"
+    export SOURCE_CONTRACT_GOTO_INSTRUMENT="$(realpath "$(command -v goto-instrument)")"
+    export SOURCE_CONTRACT_CC="$(realpath "$(command -v clang)")"
+    export SOURCE_CONTRACT_CXX="$(realpath "$(command -v clang++)")"
+    just test-file t/source-contracts-test.ss
+
+investigate-source-contracts output:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi examples/source-contract-evidence.ss "{{output}}" "$(realpath "$(command -v cbmc)")" "$(realpath "$(command -v goto-cc)")" "$(realpath "$(command -v goto-instrument)")" "$(realpath "$(command -v clang)")" "$(realpath "$(command -v clang++)")"
 
 # Each existing suite receives its own bounded native invocation.
 test-gateway:

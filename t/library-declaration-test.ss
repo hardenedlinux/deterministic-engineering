@@ -5,8 +5,8 @@
 (import :std/test :clan/poo/object
         (only-in :clan/poo/mop validate)
         "../types.ss"
-        "../library/concurrency/resource-control/backpressure-memory/abstract/types.ss"
-        "../library/concurrency/resource-control/backpressure-memory/abstract/objects.ss")
+        "../library/backpressure-memory/types.ss"
+        "../library/backpressure-memory/objects.ss")
 (export library-declaration-test)
 (def library-declaration-test
  (test-suite "Library-owned declaration metadata and Generic model"

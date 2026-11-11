@@ -1,7 +1,4 @@
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
-
 ;;; Catalog control inputs exercise the real native engine; no method receipt is fabricated.
 (import
   :std/test
@@ -11,9 +8,9 @@
   (only-in :clan/poo/mop TypeError?))
 (export evidence-catalog-test)
 
-(def evidence (.get deterministic-engineering.init.exports Library evidence scope))
-(def generic (.get deterministic-engineering.init.exports Library backpressure-memory scope entry))
-(def rust (.get deterministic-engineering.init.exports Library rust-resources scope entry))
+(def evidence (.get deterministic-engineering.init.exports Library evidence))
+(def generic (.get deterministic-engineering.init.exports Library backpressure-memory entry))
+(def rust (.get deterministic-engineering.init.exports Library rust-resources entry))
 (def (rows result relation) ((.get result rows-of) relation))
 (def (same-rows? actual expected)
   (and (= (length actual) (length expected))

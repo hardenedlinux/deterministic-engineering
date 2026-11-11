@@ -4,11 +4,15 @@
 
 ;;; -*- Gerbil -*-
 (import :std/test :deterministic-engineering/init :clan/poo/object
-        :deterministic-engineering/profiles/gateway
+
         :gerbil-ascent/rules/interface)
+(def LocalProfile (.get deterministic-engineering.init.exports Library gateway-profiles profiles LocalProfile))
+(def Cap2Profile (.get deterministic-engineering.init.exports Library gateway-profiles profiles Cap2Profile))
+(def CacheProfile (.get deterministic-engineering.init.exports Library gateway-profiles profiles CacheProfile))
+(def RetryProfile (.get deterministic-engineering.init.exports Library gateway-profiles profiles RetryProfile))
 (export gateway-initial-test gateway-method-test gateway-capacity-test gateway-cache-retry-test gateway-source-test gateway-boundaries-test gateway-counter-test)
 
-(def scene (.get (.get deterministic-engineering.init.exports Scenarios) gateway-review scope))
+(def scene (.get (.get deterministic-engineering.init.exports Library) gateway-review))
 (def entry (.ref scene 'entry))
 (def expected-obligations
   '((u1 BP-O01 review) (u1 BP-O02 quint) (u1 BP-O03 lean) (u1 BP-O04 review)
@@ -142,4 +146,3 @@
       (check-equal? (length (rows r 'support)) 1)
       (check-equal? (rows r 'counter)
         '((u1 BP-O03 wcounter "V/counter-fixture" "A/counter"))))))
-

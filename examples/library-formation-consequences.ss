@@ -1,13 +1,12 @@
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
-
 ;; Algorithm probe: does not acquire or qualify the declared Project Scope.
-(import "../library/drivers/project-formation/func.ss"
-        "../scenarios/project-formation/func.ss"
+(import "../library/project-formation/func.ss"
+        "../library/project-intake/func.ss"
         "../library/project-organization/config.ss"
-        "../profiles/library-formation.ss"
+
         "library-formation-output.ss")
+(import :deterministic-engineering/init)
+(def LibraryFormationProfile (.get deterministic-engineering.init.exports Library library-formation-profiles profiles LibraryFormationProfile))
 (export main)
 (def (main output)
  (when (file-exists? output) (error "formation output must be fresh" output))

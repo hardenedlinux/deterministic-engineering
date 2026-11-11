@@ -1,11 +1,8 @@
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
-
 ;;; Shared Library declaration vocabulary. Types only: no objects, IO or Engine.
 (import
   :clan/poo/object
-  (only-in :clan/poo/mop Type Type. define-type element? raise-type-error)
+  (only-in :clan/poo/mop Type Type. Object define-type element? raise-type-error)
   (only-in :clan/poo/type Symbol String List Record Pair Exactly)
   (only-in :clan/poo/recursive-validation close-validation closed? closed-ref)
   (only-in :clan/poo/object-contract ObjectContract. refine)
@@ -27,6 +24,9 @@
   LibrarySymbolPair
   LibrarySymbolTriple
   LibraryScopeBinding
+  LibraryRuleCatalogShape
+  LibraryCatalogConfigContract
+  library-catalog-scope-contract
   library-definition-contract
   LibraryScopeType.)
 (define-type
@@ -43,6 +43,30 @@
 ;; This shape does not establish digest validity, currentness or authority.
 (define-type LibraryScopeBinding
   (Pair Symbol (Pair Symbol (Pair LibraryNonemptyString (Exactly '())))))
+
+;; Shared domain Catalog publication; language drivers do not own domain meaning.
+(def LibraryRuleCatalogShape
+  (.cc ObjectContract. 'identity 'library/rule-catalog
+    'extra-fields 'delegate 'constraints (list Object)
+    'responsibilities
+    (.o identity: Symbol
+        rules: (List LibrarySymbolTriple)
+        factor-implications: (List LibrarySymbolTriple)
+        dependencies: (List LibrarySymbolPair))))
+(def LibraryCatalogConfigContract
+  (.cc YuanxuContract. 'identity 'library/catalog-config
+    'value-contract
+    (.cc ObjectContract. 'responsibilities (.o entry: LibraryRuleCatalogShape))))
+(def (library-catalog-scope-contract identity)
+  (.cc YuanxuContract. 'identity identity
+    'value-contract
+    (refine
+      (.cc ObjectContract. 'extra-fields 'delegate 'constraints (list Object) 'responsibilities
+        (.o entry: LibraryRuleCatalogShape
+            config: (.get LibraryCatalogConfigContract value-contract)))
+      (lambda (value location)
+        (if (eq? (.get value entry) (.get value config entry)) '()
+            (list (.o kind: 'library/catalog-owner-mismatch path: location)))))))
 
 (def (finite-type identity-values choices)
   (yuanxu-predicate-type identity-values (lambda (value) (and (memq value choices) #t))))

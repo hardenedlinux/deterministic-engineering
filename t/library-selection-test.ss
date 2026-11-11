@@ -1,7 +1,4 @@
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
-
 ;;; -*- Gerbil -*-
 (import :std/test :clan/poo/object
         (only-in :std/source this-source-file)
@@ -9,14 +6,14 @@
         (only-in :yuanxu/module-system/interface yuanxu-load-modules))
 (export library-selection-test)
 (import (only-in :clan/poo/mop validate)
-        (only-in "../library/drivers/rust-resources/types.ss" RustResourcesScopeContract RustResourceModelContract))
+        (only-in "../library/rust-resources/types.ss" RustResourcesScopeContract RustResourceModelContract))
 (def repo-root (path-expand ".." (path-directory (this-source-file))))
 (def (write-source path text)
   (call-with-output-file (list path: path truncate: #t) (cut display text <>)))
 (def library-selection-test
   (test-suite "Core selection confines domain Library admission"
     (test-case "a parent-only selection leaves an invalid unrelated owner cold"
-      (def parent (path-expand "library/concurrency/resource-control/backpressure-memory/abstract" repo-root))
+      (def parent (path-expand "library/backpressure-memory" repo-root))
       (call-with-temporary-directory "library-selection"
         (lambda (root)
           (write-source (path-expand "gerbil.pkg" root) "(package: library-selection-canary)")
@@ -49,7 +46,7 @@
        (write-source path (string-append "(yuanxu! source: " (object->string (path-expand "library" repo-root)) " mode: explicit (backpressure-memory @ "
          (object->string (path-expand "abstract" base)) ") (backpressure-tokio-rayon @ "
          (object->string (path-expand "tokio-rayon" base)) ") (rust-resources @ "
-         (object->string (path-expand "library/drivers/rust-resources" repo-root)) "))"))
+         (object->string (path-expand "library/rust-resources" repo-root)) "))"))
        (def view (yuanxu-load-modules path))
        (def parent (.get view modules backpressure-memory))
        (def scope (.get view modules rust-resources))

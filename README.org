@@ -7,6 +7,36 @@
 #+LANGUAGE: en
 #+OPTIONS: toc:2 num:nil
 
+* Library boundary and current organization
+:PROPERTIES:
+:CUSTOM_ID: engineering-ownership
+:STATUS: refactor-in-progress
+:END:
+
+This repository maintains reusable engineering types, models, rules, Feature
+contracts, verification obligations and evidence data contracts. It does not
+implement an App Server, model provider, agent Runtime or platform authorization
+recovery. Those are consuming-ecosystem responsibilities.
+
+Business Scheme Modules share one flat =library/<module-name>/= tree. Native
+Yuanxu =tags:= and =profile:= classify and select the same declared leaves;
+classification does not create deeper directory layers or another loader.
+Profiles are native Modules. Test sequences are not artificial Review Modules.
+
+#+BEGIN_EXAMPLE
+library/<module-name>/    Native types, objects, config, methods and Interface roles
+languages-engineering/   Language-native subjects and verification inputs
+t/*-test.ss             Development checks through native gerbil test
+init.ss                  One declarative Yuanxu selection
+build.ss                 Native init.exports std-make-spec only
+#+END_EXAMPLE
+
+[[file:docs/10-19-design/10-architecture/10.148-flat-declarative-library-boundary.org][10.141]] records the current boundary, the SysML organization declaration and
+remaining acceptance gates; [[file:docs/90-99-views/90-architecture-views/90.140-flat-declarative-library-boundary.svg][90.130]] is its paired view. The current migration is
+not fully accepted. Older case notes below describe historical designs and
+receipts; they do not qualify the changed source tree.
+
+
 * Purpose
 :PROPERTIES:
 :CUSTOM_ID: purpose
@@ -23,6 +53,10 @@ capabilities. The TypeScript render package presents the selected model and
 source context through static D2, HTML, SVG and PNG artifacts.
 
 * Architecture at a glance
+The following upstream case figures retain their captured baseline. They do not
+qualify the current Library-boundary refactor; its current organization is recorded
+in [[file:docs/10-19-design/10-architecture/10.148-flat-declarative-library-boundary.org][10.148]].
+
 This is the engineering organization used by this repository: the Library
 publishes reusable definitions, a Profile selects them, and a Scenario binds
 actual project inputs. The project boundary owns its architecture model, Org
@@ -69,17 +103,14 @@ Aitia's end-to-end review integration remains a target boundary for this Case.
 
 | Source | Responsibility |
 |--------+----------------|
-| [[file:library/][library/]] | Domain definitions and Scheme drivers, including project organization and concurrency/resource control |
-| [[file:profiles/][profiles/]] | Independent project and workload choices |
-| [[file:scenarios/][scenarios/]] | Application bindings, input acquisition and source adapters |
-| [[file:projects/][projects/]] | Actual project entrypoints and project test policy |
-| [[file:languages-engineering/][languages-engineering/]] | Target-language projects and source, including Rust/Cargo inputs |
-| [[file:packages/render/][packages/render/]] | Functional static-rendering package and optional OpenSysML SDK projection |
-| [[file:packages/render/examples/][packages/render/examples/]] | Package-owned render cases and domain-specific compositions |
-| [[file:docs/][docs/]] | Org design arguments, D2 projections, decisions and candidate image snapshots |
+| [[file:library/][library/]] | Flat native Scheme Modules: generic domain models, specializations, Profiles, obligations and evidence contracts; classified through Yuanxu tags/profile |
+| [[file:languages-engineering/][languages-engineering/]] | Language-native subjects and verification inputs |
+| [[file:t/][t/]] | Development verification and test-only tool effects |
+| [[file:packages/render/][packages/render/]] | Existing TS static-render Library, Node/Bun export and Sharp compression |
+| [[file:docs/][docs/]] | Org arguments, SysML organization, D2 sources and source-bound rendered views |
 
 The root [[file:init.ss][init.ss]] uses Yuanxu's declared module loading. The
-[[file:build.ss][build.ss]] consumes declared public roots. This repository reuses
+[[file:build.ss][build.ss]] consumes the root =init.exports= =std-make-spec=. This repository reuses
 POO/Core/Flow/module and contract mechanisms; it does not define another package
 loader or model runtime.
 
@@ -187,7 +218,6 @@ compilation and loading. Current commands and existing budgets live in [[file:Ju
 just deps
 just build
 just test
-just test-project-formation
 #+end_src
 
 These Scheme/package gates are separate from TS rendering qualification.

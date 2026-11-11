@@ -1,17 +1,15 @@
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
-
 ;;; Real Ops and QNT; altered interpretation bytes invalidate an issued result.
 (import :std/test :clan/poo/object
         (only-in :gerbil/expander core-resolve-library-module-path datum->syntax)
         (only-in :gerbil/runtime/loader __find-library-module)
         (only-in :std/misc/ports read-all-as-string)
         (only-in :std/io/tempfile call-with-temporary-directory)
-        "../profiles/resource-lifecycle.ss"
+
         :deterministic-engineering/init)
 (def ResourceMethods
-  (.get deterministic-engineering.init.exports Library rust-resources scope methods))
+  (.get deterministic-engineering.init.exports Library rust-resources methods))
+(def LifecycleProfile (.get deterministic-engineering.init.exports Library resource-lifecycle-profiles profiles LifecycleProfile))
 (export library-method-boundary-test)
 (def library-method-boundary-test
  (test-suite "Selected method Function and interpretation footprint boundaries"
@@ -46,7 +44,7 @@
      (def out (path-expand "observation" directory))
      (def result ((.get ResourceMethods quint) root LifecycleProfile tool out))
      ((.get ResourceMethods current!) result)
-     (def path (path-expand "library/drivers/rust-resources/objects.ss" root))
+     (def path (path-expand "library/rust-resources/objects.ss" root))
      (def before (call-with-input-file path read-all-as-string))
      (try
       (call-with-output-file (list path: path truncate: #t)

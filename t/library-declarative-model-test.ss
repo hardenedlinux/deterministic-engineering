@@ -1,16 +1,15 @@
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
-
 ;;; -*- Gerbil -*-
 (import :std/test :clan/poo/object :gerbil-ascent/rules/interface
         (only-in :clan/poo/mop validate)
-        "../library/drivers/rust-resources/objects.ss"
-        "../library/concurrency/resource-control/backpressure-memory/tokio-rayon/objects.ss"
-        "../library/drivers/rust-resources/types.ss"
-        (only-in "../library/concurrency/resource-control/backpressure-memory/abstract/objects.ss" BackpressureModel)
-        (only-in "../library/drivers/evidence/func.ss" open-resource-review)
-        "../profiles/resource-lifecycle.ss")
+        "../library/rust-resources/objects.ss"
+        "../library/backpressure-tokio-rayon/objects.ss"
+        "../library/rust-resources/types.ss"
+        (only-in "../library/backpressure-memory/objects.ss" BackpressureModel)
+        (only-in "../library/evidence/func.ss" open-resource-review)
+        )
+(import :deterministic-engineering/init)
+(def LifecycleProfile (.get deterministic-engineering.init.exports Library resource-lifecycle-profiles profiles LifecycleProfile))
 (export library-declarative-model-test)
 
 (def selected-method-references

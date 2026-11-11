@@ -1,0 +1,38 @@
+# Org authority: ../../10-19-design/10-architecture/10.148-flat-declarative-library-boundary.org
+# Transitional architecture; product build and test acceptance remain open.
+direction: down
+
+package: "gerbil.pkg\nOne Yuanxu dependency\nExact PR revision; pairing admission remains open"
+selection: "Root init.ss\nOne flat library/<module-name>/ tree\nNative Tags + Profile + yuanxu! selection"
+package -> selection
+
+library: {
+  label: "Declarative Library"
+  domains: "Parent domains\nCapacity / lifetime / backpressure / organization"
+  specialization: "Language specialization\nRust / Tokio / Rayon correspondence"
+  profiles: "Native Profile Modules\nConstraints and declared method choices"
+  plans: "Source-contract method declarations\n.defgeneric + .defmethod\nTyped compiler/checker plans; no execution"
+  rules: "ASCENT rule declarations\nObligations and evidence data relationships"
+  domains -> specialization
+  domains -> profiles
+  profiles -> plans
+  domains -> rules
+}
+selection -> library
+build: "Root build.ss\nOnly init.exports std-make-spec\nNo test/example root inventory"
+selection -> build
+sysml: "SysML organization declaration\nModule responsibilities and relationships\nNot a Runtime implementation"
+sysml -> library
+
+development: "t/*-test.ss\nNative gerbil test\nReal C/C++ subjects, independent gold and external tools"
+library.plans -> development: "consumer validates the declared checks"
+library.rules -> development: "actual SDK inference controls"
+development.style.fill: "#E0F2FE"
+
+external: "External ecosystem boundary\nMarlin / Aitia / other consuming Runtime\nApp Server, providers, sessions, authorization and recovery"
+library -> external: "contracts and Feature declarations only" {style.stroke-dash: 4}
+external.style.fill: "#F3F4F6"
+
+pending: "Open review gates\nConsumer migration / native pairing\nCurrent full build and test acceptance\nEarlier passes do not qualify this snapshot"
+development -> pending
+pending.style.fill: "#FEF3C7"

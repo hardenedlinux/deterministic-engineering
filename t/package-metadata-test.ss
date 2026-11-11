@@ -1,7 +1,4 @@
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
-
 ;;; -*- Gerbil -*-
 ;;; Validate native package metadata against the registered local Git sources.
 (import :std/test (only-in :gerbil/tools/gxpkg pkg-root-dir pkg-plist pkg-list)
@@ -68,7 +65,7 @@
               (when (file-exists? path)
                 (error "Nested metadata must not override the root package" path)))
     '("modules/gerbil.pkg" "library/gerbil.pkg" "profiles/gerbil.pkg"
-      "scenarios/gerbil.pkg" "scenarios/resource-lifecycle/review/gerbil.pkg"))
+      "scenarios/gerbil.pkg" "library/backpressure-review/gerbil.pkg"))
   (check-dependency-pins root-metadata)
   ;; This published product cohort selects the same actual Core source.
   (def core-head (git-value "github.com/tao3k/gebril-yuanxu" "rev-parse" "HEAD"))

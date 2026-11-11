@@ -1,7 +1,4 @@
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
-
 ;;; -*- Gerbil -*-
 (import :std/test :std/encoding/json :clan/poo/object :deterministic-engineering/init)
 (export resource-lifecycle-test)
@@ -10,13 +7,13 @@
     (test-case "direct migration publishes one Library to independent applications"
       (check-equal? (.slot? (.get deterministic-engineering.init.exports Library) 'gateway-domain) #f)
       (check-equal? (.slot? (.get deterministic-engineering.init.exports Library) 'gateway-evidence) #f)
-      (check-equal? (.get (.get deterministic-engineering.init.exports Library) rust-resources scope entry identity) 'rust.resources.backpressure-memory)
-      (check-equal? (.get (.get deterministic-engineering.init.exports Scenarios) resource-lifecycle scope entry identity)
-                    (.get (.get deterministic-engineering.init.exports Scenarios) gateway-review scope entry identity)))
+      (check-equal? (.get (.get deterministic-engineering.init.exports Library) rust-resources entry identity) 'rust.resources.backpressure-memory)
+      (check-equal? (.get (.get deterministic-engineering.init.exports Library) resource-lifecycle entry identity)
+                    (.get (.get deterministic-engineering.init.exports Library) gateway-review entry identity)))
     (test-case "actual native/QNT/Lean receipts and change queries match independent gold"
       (def path (getenv "RESOURCE_REAL_REPORT" #f))
       (unless path (error "run examples/resource-lifecycle-evidence.ss and set RESOURCE_REAL_REPORT"))
-      (def methods (.get (.get deterministic-engineering.init.exports Library) rust-resources scope methods))
+      (def methods (.get (.get deterministic-engineering.init.exports Library) rust-resources methods))
       (def digest (.ref methods 'file-digest))
       (def (load p) (call-with-input-file p (cut read-json <> object-as-hash: #t)))
       (def report (load path))

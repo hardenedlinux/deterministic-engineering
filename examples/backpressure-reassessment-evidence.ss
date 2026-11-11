@@ -1,7 +1,4 @@
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
-
 #!/usr/bin/env gxi
 ;;; -*- Gerbil -*-
 ;;; Actual source-changing native experiment, handed off through Core Ops.
@@ -53,7 +50,7 @@
     (def log (path-expand "cargo-run.log" out))
     (def before (append dependencies (pairs (list source (path-expand "Cargo.toml" crate) (path-expand "Cargo.lock" crate) cargo rustc
       (path-expand "examples/backpressure-reassessment-evidence.ss" root)
-      (path-expand "library/drivers/rust-resources/reassessment-oracle.ss" root)))))
+      (path-expand "library/rust-resources/reassessment-oracle.ss" root)))))
     (current! before)
     (def argv (list cargo "--config" (string-append "build.rustc=\"" rustc "\"") "run" "--offline" "--locked"
       "--manifest-path" (path-expand "Cargo.toml" crate) "--target-dir" (path-expand "target" out) "--" raw (number->string size)))

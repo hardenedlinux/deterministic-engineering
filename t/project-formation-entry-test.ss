@@ -1,13 +1,12 @@
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
-
 (import :std/test :clan/poo/object (only-in :clan/poo/mop validate)
         (only-in :std/source this-source-file)
-        (only-in "../library/drivers/project-formation/inputs.ss" formation-input-observation)
+        (only-in "../library/project-formation/inputs.ss" formation-input-observation)
         (only-in :yuanxu/module-system/source/admission current-module-source-observer)
         "../projects/library-formation/init.ss"
-        "../profiles/library-formation.ss")
+        )
+(import :deterministic-engineering/init)
+(def LibraryFormationProfile (.get deterministic-engineering.init.exports Library library-formation-profiles profiles LibraryFormationProfile))
 (export project-formation-entry-test)
 (def project-formation-entry-test
  (test-suite "Declared Project entry"
@@ -16,12 +15,12 @@
      (lambda (kind amount)
        (when (and (pair? kind) (memq (car kind) '(link-stage-start link-stage-end)))
          (displayln "FORMATION-SOURCE-STAGE " kind " " amount) (force-output)))))
-   (def scene (.get deterministic-engineering/projects/library-formation.init.exports modules library-project-formation scope))
+   (def scene (.get deterministic-engineering/projects/library-formation.init.exports modules project-intake))
    (def r ((.ref scene 'run) LibraryFormationProfile))
    (check-equal? ((.ref r 'rows-of) 'structurally_covered) '(("LIB-C01")))
    (check-equal? (string? ((.ref scene 'render) r)) #t)))
   (test-case "declared Project acquires its actual selected repository files"
-   (def scene (.get deterministic-engineering/projects/library-formation.init.exports modules library-project-formation scope))
+   (def scene (.get deterministic-engineering/projects/library-formation.init.exports modules project-intake))
    (def root (path-expand ".." (path-directory (this-source-file))))
    (def acquired ((.get scene acquire) root LibraryFormationProfile))
    (check-exception (formation-input-observation acquired) error?)
@@ -31,7 +30,7 @@
    (check-equal? (length (.get observed inputs)) (length (.get LibraryFormationProfile project-inputs)))
    (check-equal? (.get observed missing-origins) '(user-confirmation proposal-occurrence role-mandate)))
   (test-case "Profile selects actual normalized definitions and missing origins block C"
-   (def scene (.get deterministic-engineering/projects/library-formation.init.exports modules library-project-formation scope))
+   (def scene (.get deterministic-engineering/projects/library-formation.init.exports modules project-intake))
    (def selected ((.get scene select) LibraryFormationProfile))
    (check-equal? (.get selected resources integration-entry parent identity) (.get selected resources entry identity))
    (check-equal? (length (.get selected methods)) 4)

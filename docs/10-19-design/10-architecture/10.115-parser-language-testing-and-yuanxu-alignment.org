@@ -1,0 +1,56 @@
+#+TITLE: Parser language/testing audit and Yuanxu alignment
+#+LANGUAGE: en
+
+* Scope and authority
+This is the integration audit for Parser PR13; its implementation contract lives
+in [[https://github.com/tao3k/gerbil-parser/blob/codex/final-event-offset-aot/docs/architecture/language-testing-ownership.org][the Parser ownership document]]. It does not qualify the enclosing Library.
+The sole direct dependency in Parser gerbil.pkg selected Yuanxu PR19 revision
+9b9f0abbbc4bdd4325f556c9c965726dd3a0aad7, inheriting POOe281ad2. These are observed
+revisions; the native manifest remains their authority. Gerbil is the compiler.
+std Djot remains paused; no Gerbil/SDK source or private installation was changed.
+
+* Responsibility corrections
+module-loader.ss was project-added code from Parser commit855982b, relocated by
+098629e. It was not a Yuanxu interface. The custom loader, import/path walker,
+live imported-context promise rewriting, hand-maintained conformance/support
+catalog and copied former-loader benchmark are removed without forwarding aliases.
+
+| Owner | Actual responsibility |
+|-------+-----------------------|
+| Yuanxu init/Core | Domain selection, normalized Scopes, for-directory/for-files source projection and source currentness |
+| Gerbil | Native import/load/reload, context promises, initialization, runtime failure cache and std/make scheduling |
+| Parser language | Exactly-one descriptor and optional export; attempted file bytes select native reload, with Core fresh/pre-post reads |
+| Parser testing | Optional runtime export procedure check, complete algorithm-source witnesses and scoped native diagnostic observation |
+| FFI entry | C header/link/object requirements before generic support consumption |
+| Research entry | Declare the two actual program inputs; Core discovers transitive helpers |
+
+No Parser table stores module contexts, results, exceptions or admission verdicts.
+Source expander retry semantics and runtime cached exceptions remain distinct.
+Native predicate contracts replace old list-shaped rejection evidence; domain
+predicates and invalid-input controls remain. Both support entries use the same
+native projection and optimized compiler policy; research adds its real roots.
+
+* Evidence and limits
+| Boundary | Observation |
+|----------+-------------|
+| Dependency installation | Normal deps --install passed in the existing prefix at the exact manifest revisions |
+| Full native entry | 183 t/languages modules plus separate test-plan Suite, zero ERROR, HARNESS/final OK and catalog PASS |
+| Compiled gparse | help0; accepted expression0; rejected expression1, with actual typed ParseArtifacts |
+| Model input discovery | Six controls passed |
+| Cold package prefix | Missing configured pkg directory reproduced exit70; correct parent produced exit0 and directory-list |
+| Cold FFI order | Preserved15 old records-abi products; original header failure reproduced; existing FFI producer then same conformance command passed |
+| Research input closure | Preserved32 provenance products; missing static module reproduced; actual roots supplied to Core regenerated the product and linked in43.65s |
+| Actual research execution | New compiled provenance program passed15 checks in2.44s |
+
+The developer support build now uses the established2GiB compiler budget rather
+than the1GiB test-runtime setting. Two workers, test heaps and process watchdogs
+remain; Parser's removed package180s cap is not reinstated. The conformance
+controls retain240/idle5. Error-output termination codes137/143 in these logs do
+not independently prove OOM or timeout.
+
+Earlier CI failures and product custody are under .data/alignment-20261024/current-pr.
+Native gxpkg update package@revision selected a tag but then inspected a literal
+@revision directory; bare update consumed the selected native tag and passed.
+That upstream tool edge remains documented, with no manual tag edit or uninstall.
+Current-head remote acceptance is tracked in10.116; earlier warm/local passes are
+not remote cold-build, recovery or delivery acceptance.

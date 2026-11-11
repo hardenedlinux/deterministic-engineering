@@ -1,0 +1,171 @@
+#+TITLE: 10.148 Flat Declarative Library Boundary
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.148
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Current decision
+:PROPERTIES:
+:CUSTOM_ID: flat141-boundary
+:STATUS: work-in-progress-not-accepted
+:END:
+
+Deterministic Engineering maintains reusable engineering knowledge and declarative
+features. It does not implement an AI agent platform or an application Runtime.
+The ownership decisions here supersede earlier proposals that placed transport,
+source capture, authorization recovery and verification execution in the Library.
+The C/C++ contract obligations in [[file:10.147-source-bound-c-and-cpp-contract-verification.org][10.140]] remain useful; execution belongs to
+development tests or a consuming ecosystem.
+
+#+BEGIN_QUOTE
+Library declarations describe what must hold and what evidence is required.
+They do not establish a platform account, execute an agent workflow, or issue
+permission to act in an application Runtime.
+#+END_QUOTE
+
+The paired view is [[file:../../90-99-views/90-architecture-views/90.140-flat-declarative-library-boundary.d2][90.130 D2]] / [[file:../../90-99-views/90-architecture-views/90.140-flat-declarative-library-boundary.svg][SVG]]. The organization is declared in
+[[file:10.148-flat-declarative-library-boundary.sysml][the companion SysML model]]. These are architecture declarations, not SDK execution
+or whole-project verification receipts.
+
+* One flat native Module tree
+:PROPERTIES:
+:CUSTOM_ID: flat141-modules
+:END:
+
+Business Scheme Modules occupy =library/<module-name>/=. Category names do not
+introduce extra directory levels. Literal =tags:= and native Yuanxu =profile:=
+selection classify the same Module leaves; they do not construct a second registry.
+Standard role files remain within their owning Module. Shared package vocabulary,
+the root declaration and the build entry remain package infrastructure.
+
+| Classification | Current Module leaves | Authored responsibility |
+|----------------+-----------------------+-------------------------|
+| Domain | =backpressure-memory=, =bounded-capacity=, =resource-lifetime= | Parent models, finite obligations and invariant statements |
+| Language specialization | =backpressure-tokio-rayon= | Rust/Tokio/Rayon model correspondence and additional obligations |
+| Method declarations | =source-contracts=, =rust-resources= | Typed verification plans, required inputs and expected evidence |
+| Rule declarations | =evidence=, =project-formation= | ASCENT rule programs and organization reasoning declarations |
+| Organization | =project-organization= | Roles, responsibility relationships and design demands |
+| Profiles | =source-contract-profiles=, =gateway-profiles=, =resource-lifecycle-profiles=, =library-formation-profiles= | Selected constraints and reusable or explicitly example-bound parameter sets |
+
+Profile implementations are consumed through their selected native Module leaf.
+Application code must not import a second copy of a Profile's =objects.ss= and
+assume it has the same prototype or nominal Contract identity.
+
+#+NAME: flat141-root-declaration
+#+BEGIN_SRC scheme :eval never
+(yuanxu!
+  :load-modules "./library"
+  mode: auto
+  profile: engineering
+  rename: Library)
+#+END_SRC
+
+The root =init.ss= owns selection. =build.ss= consumes its native =std-make-spec=
+projection. It contains no separately maintained public-root inventory and does
+not add tests or examples to product construction. Native =gerbil test= owns test
+execution. No nested =source-contract-review/init.ss= or replacement coordinator
+is retained: that former module only aggregated a test sequence and had no
+independent engineering meaning.
+
+* C/C++ methods are plans
+:PROPERTIES:
+:CUSTOM_ID: flat141-plans
+:END:
+
+The =source-contracts= Module publishes sealed native value contracts, strategy
+prototypes and =plan=. Yuanxu =.defgeneric= and =.defmethod= select the plan using
+the actual selected prototype ancestry. Method-name and language-name switches
+do not dispatch product behavior.
+
+| Selected declaration | Plan content | Consumer duty |
+|----------------------+--------------+---------------|
+| Direct C/C++ check | Translation units, entrypoint, safety checks and expected properties | Resolve inputs and run the admitted checker |
+| Enforced C function contract | Translation, contract instrumentation and solver steps | Preserve actual bodies, preconditions, frames and completeness scope |
+| Caller contract use | Checked replacement and independent caller properties | Supply the separately admitted callee proof; do not use circular summaries |
+| Native check | Compiler role, standard, build inputs and execution requirement | Bind actual artifact lineage and report the observed result |
+
+Plan arguments use symbolic input/output references. The Library performs no
+filesystem discovery, process launch, result issuance or durable storage. Unknown
+prototypes must fail dispatch; a same-named tag is not a substitute for the
+selected prototype. =ReplacedContract.= inherits its instrumentation method and
+changes declared metadata. A real descendant uses =.o (:: @ parent)=; copying a
+receiver with =.cc= does not itself add that parent to its ancestry.
+
+The earlier =implementation-root= and =contract-capture= mechanism was removed.
+Yuanxu owns Scheme source selection and currentness. Development consumers use
+its existing source observation primitives for the C/C++ inputs they actually
+check. They must not reconstruct the Scheme import graph from a hardcoded list.
+
+* Runtime and platform boundary
+:PROPERTIES:
+:CUSTOM_ID: flat141-external
+:END:
+
+| Responsibility | Owner |
+|----------------+-------|
+| Domain types, models, finite rules, Feature contracts and verification obligations | This Library |
+| App Server, model providers, agent sessions and scheduling | Consuming Runtime, including the appropriate Marlin/Aitia ecosystem owner |
+| Codex account/message transport and Python RPC bridge | Platform integration, outside this Library |
+| Durable intake/owner authorization recovery and operational receipts | Consuming platform's admitted implementation |
+| Actual compiler/solver invocations used to test Library declarations | Development support under =t/= using the existing native tools |
+
+The former =library-project-formation= name duplicated the containing Library's
+meaning. Its input-preparation role was identified as =project-intake=, but its
+platform workflow and Codex transport are outside the Library boundary. They are
+not replaced with another optional platform driver here. Retired source and
+platform-specific assertions were preserved locally in ignored research handoff
+material; they are not product modules or new passing evidence.
+
+The current change set is transitional. Some old test/example consumers still
+refer to retired runtime APIs and require migration or explicit retirement review.
+They must not be silently counted as passing because the product surface became
+smaller. A previous passing integration run does not qualify this changed tree.
+
+* Dependency ownership and exact revision
+:PROPERTIES:
+:CUSTOM_ID: flat141-dependency
+:END:
+
+The root package declares only Yuanxu. No direct ASCENT, Parent or Aitia pin is
+added to this repository. Other capabilities must use an actually supported
+Yuanxu pairing/module route; the repository must not invent an installer, loader
+or compatibility layer to fill a missing route.
+
+The observed remote head of existing Yuanxu PR #19 is
+=0fc1a866fee5cc2b3c2503f0723aca6c4a5e399d=, and =gerbil.pkg= selects that exact
+revision. At observation time its Lean and Quint checks passed while both Gerbil
+platform jobs failed. Selecting the requested revision is not dependency admission.
+
+| Gate | Observed status |
+|------+-----------------|
+| Earlier native Core package build | Exit 0 before the latest revision update; not evidence for the new head |
+| Native tagged update to PR #19 head | Checkout moved to the requested head; CLI later failed on the tagged directory spelling |
+| Standalone ASCENT install attempt | Refused: installed Core tag =e77698c...= versus requested =fd215418...=; no uninstall or fabricated manifest |
+| Current single-dependency package/pairing closure | Not accepted; coherent native provisioning still required |
+| Complete current product build and tests | Not accepted |
+
+The failed standalone attempt is historical diagnostic evidence, not the chosen
+dependency architecture. The later single-dependency instruction supersedes the
+proposal to add a direct ASCENT dependency.
+
+* Review and remaining acceptance
+:PROPERTIES:
+:CUSTOM_ID: flat141-acceptance
+:END:
+
+- [X] Root build inventory removed; native init projection is the build input.
+- [X] Business Scheme Module directories flattened and literal classifications added.
+- [X] Artificial source-contract review coordinator removed.
+- [X] Source-contract product methods changed to declarative generic plans.
+- [X] Platform transport and recovery implementations removed from the Library.
+- [X] Sole root dependency updated to the observed latest Yuanxu PR revision.
+- [ ] Finish all test/example consumers against the declarative surface.
+- [ ] Qualify native pairing/package metadata at the selected head.
+- [ ] Run the complete current product build and native test roster.
+- [ ] Reissue source-bound evidence after the final organization and API changes.
+
+Development validation retains real C capacity functions and callers, explicit
+C++ ownership-transfer/destruction checks, independent expected properties,
+negative controls and source-change tests. Process limits remain 2 GiB per Scheme
+process and the established deadlines, with machine-derived build concurrency.
+No assertion is removed to reinterpret an incomplete or failing check as success.

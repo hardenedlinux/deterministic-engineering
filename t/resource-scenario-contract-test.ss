@@ -1,7 +1,4 @@
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
-
 ;;; -*- Gerbil -*-
 (import
   :std/test
@@ -10,16 +7,17 @@
   (only-in :clan/poo/type Record)
   (only-in :clan/poo/recursive-validation close-validation closed-ref)
   :deterministic-engineering/init
-  (only-in :deterministic-engineering/profiles/resource-lifecycle LifecycleProfile)
-  (only-in "../scenarios/resource-lifecycle/func.ss" resource-lifecycle-scope))
 
+  (only-in "../library/resource-lifecycle/func.ss" resource-lifecycle-scope))
+
+(def LifecycleProfile (.get deterministic-engineering.init.exports Library resource-lifecycle-profiles profiles LifecycleProfile))
 (export
   resource-scenario-contract-test)
 
 (def resource-scenario-contract-test
   (test-suite "Owner-bound native Scenario method contracts"
     (test-case "revalidation retains the published Scope, owner handles and installed functions"
-      (def scope (.get deterministic-engineering.init.exports Scenarios resource-lifecycle scope))
+      (def scope (.get deterministic-engineering.init.exports Library resource-lifecycle))
       (def contract (.get scope contracts scope))
       (def capture (.get scope capture))
       (def review (.get scope open-review))
@@ -30,7 +28,7 @@
       (check-equal? (eq? (.get scope entry) (.get scope domain entry)) #t)
       (check-equal? (eq? (.get scope methods) (.get scope domain methods)) #t))
     (test-case "a fresh producer uses the actual selected owner Contract"
-      (def selected (.get deterministic-engineering.init.exports Scenarios resource-lifecycle scope))
+      (def selected (.get deterministic-engineering.init.exports Library resource-lifecycle))
       (def contract (.get selected contracts scope))
       (def raw
         (resource-lifecycle-scope (.get selected domain) (.get selected evidence) contract))
@@ -50,7 +48,7 @@
          (.get selected domain contracts scope)))
        TypeError?))
     (test-case "a child owner override is read after the parent fields were cached"
-      (def selected (.get deterministic-engineering.init.exports Scenarios resource-lifecycle scope))
+      (def selected (.get deterministic-engineering.init.exports Library resource-lifecycle))
       (def contract (.get selected contracts scope))
       (def original-domain (.get selected domain))
       (def child-domain (.cc original-domain))
@@ -70,7 +68,7 @@
       (check-equal? (eq? (.get parent entry) cached-entry) #t)
       (check-equal? (eq? (.get parent capture) cached-capture) #t))
     (test-case "closed validation cannot mask substituted associations or methods"
-      (def selected (.get deterministic-engineering.init.exports Scenarios resource-lifecycle scope))
+      (def selected (.get deterministic-engineering.init.exports Library resource-lifecycle))
       (def contract (.get selected contracts scope))
       (for-each
        (lambda (changed) (check-exception (validate contract changed) TypeError?))
@@ -81,7 +79,7 @@
         (.cc selected 'authorization #t)
         (.cc selected 'validation (.get selected domain validation)))))
     (test-case "a generic native closure cannot masquerade as Scenario normalization"
-      (def selected (.get deterministic-engineering.init.exports Scenarios resource-lifecycle scope))
+      (def selected (.get deterministic-engineering.init.exports Library resource-lifecycle))
       (def contract (.get selected contracts scope))
       (def raw
         (.cc
@@ -95,7 +93,7 @@
           'validation foreign-graph))
       (check-exception (validate contract forged) TypeError?))
     (test-case "capture inputs refuse before the body and result checks occur after the body"
-      (def selected (.get deterministic-engineering.init.exports Scenarios resource-lifecycle scope))
+      (def selected (.get deterministic-engineering.init.exports Library resource-lifecycle))
       (def contract (.get selected contracts scope))
       (def calls 0)
       (def raw
@@ -117,7 +115,7 @@
        TypeError?)
       (check-equal? calls 1))
     (test-case "review recognizes the selected owner's Context before calling its body"
-      (def selected (.get deterministic-engineering.init.exports Scenarios resource-lifecycle scope))
+      (def selected (.get deterministic-engineering.init.exports Library resource-lifecycle))
       (def contract (.get selected contracts scope))
       (def calls 0)
       (def checked

@@ -1,0 +1,924 @@
+#+TITLE: 10.108 Parser Directory Modules and Init-Owned Build Refactor
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.108
+#+OPTIONS: toc:3 num:t
+#+FILETAGS: :parser:architecture:modules:refactoring:
+
+[[file:10.107-implementation-progress-and-execution-gates.org][Execution evidence]] | [[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][Architecture view]]
+
+* Current ownership follow-up
+The checkpoint below is historical. [[file:10.113-parser-domain-module-ownership.org][10.113]] records the current removal of the
+mixed =src/modules= container and direct grammar/language/graph/testing ownership.
+Earlier target counts, phase-role counts and CI receipts remain historical.
+
+* Latest observed checkpoint
+
+Package declarations remain authoritative for dependency revisions and contracts;
+this document reports observations, not another version registry. Parser PR13
+=5825b32= consumes Core PR19 =0e3c1f8=. Core's package entry has the user-authorized
+300s budget; two workers/current heaps remain, and Parser has no package deadline.
+Canonical Parser build passes42.39s. Complete current-source qualification passes
+175.00s:145 modules/1087 cases, total90/idle5 and two Workers/3GiB unchanged.
+Compiler/spec observer controls and exact-old-source/candidate stream controls
+pass. The old failures and intermediate attempts below remain historical evidence.
+The ABI-only missing blocking stack is not reconstructed from later successes.
+Exact-head Linux/macOS run40262352809 completes SUCCESS:12 enabled jobs pass
+and5 existing conditional jobs skip. Both OS source entries pass145 modules/1087
+cases,24 compiled semantic groups, declared process closure and11 Worker controls.
+
+* Initial refactor checkpoint (retained)
+
+Implementation is in progress in the existing Parser PR13 and Core PR19
+checkouts. The nine =src/*= directories now have service Types, Objects, default
+Config bindings and Interface declarations; init selects those Modules in one
+explicit directory window. All nine actual Scopes loaded successfully in
+=parser-directory-scopes-cohort18.log=. Namespace discovery does not execute
+parser methods, and Config selects the existing service prototype rather than
+inventing settings.
+
+The first incomplete projection omitted 196 old entries and was refused as a
+cutover. After adding Module-owned public entry projections and the actual
+dynamic emitter/witness leaves, the independent native PackageSpec comparison
+passes (=parser-directory-native-coverage-cohort18-02.log=, 42.98 seconds).
+The comparison preserves runtime source membership and all FFI options; its
+only explicit discovery exclusions are seven phase-bound Build roles. The old
+catalog and four forwarding Module files have now been removed. Full compile,
+cold/recovery, source suite and Linux/macOS CI remain pending for this refactor.
+
+The starting Parser source is =d6e487cb99e3a97a4f38601b4d076a421ca07a18=;
+Core starts at =bf88264cf0f5c1bf2b5c0a6484ca5f2e1f08c2d5= with formal source
+changes in progress. Earlier cleanup CI cannot qualify these changes.
+
+* Initial ownership failure (retained)
+
+Before this refactor, =init.ss= selected one =parser= Module under =modules/=. That Module's
+=objects.ss= imports =build-modules.ss= and exports the same whole-library catalog.
+The root =build.ss= then appends the catalog and three explicit FFI specs to the
+init-owned =std-make-spec=. Core really does own one selection epoch and the
+normalized compiler handoff, but the retained whole-package roots remain the
+practical membership authority. Init therefore does not organize the actual
+compiler/runtime/language subsystems or control their membership separately.
+
+Changing only =:load-modules "./modules"= to ="./src"= is insufficient. The
+source loader discovers declared Module leaves, not arbitrary Scheme files;
+a directory with =interface.ss= is a leaf, and its private children are not
+additional namespace branches. Current =src/modules/parser/interface.ss= is a
+business API module, not proof that its directory is already a Yuanxu Module.
+Directory placement, native Scheme module identity and Yuanxu publication
+identity are separate concepts and must remain explicitly related.
+
+* Source-directory ownership inventory
+
+Counts below describe the current source tree before adding Module roles.
+
+| Current directory | Direct / recursive Scheme files | Target responsibility |
+|-------------------+---------------------------------+-----------------------|
+| =src/build-support= | 2 / 2 | Actual compiler-option and native-object link adapters; no new scheduler, package resolver or signer |
+| =src/compiler= | 68 / 68 | Grammar/IR lowering, machine construction and Scheme/Rust generation; separate generation from execution dependencies |
+| =src/ffi= | 10 / 10 | ABI schemas/codecs and actual C/Rust integration entries; own all three special FFI build specs/options |
+| =src/grammar= | 2 / 2 | Grammar and lexical expression algebra/contracts |
+| =src/language= | 15 / 15 | Language declarations, policy/profile composition and parser assembly |
+| =src/modules= | 1 / 29 | Existing parser POO/public protocol implementation plus runtime loader; audit its mixed responsibilities before declaring a leaf |
+| =src/runtime= | 48 / 70 | Execution, scanning, artifacts and runtime state; distinguish shared IR/types from execution orchestration |
+| =src/testing= | 9 / 9 | Published testing DSL/contracts and supported test extension surface, without installing repo-only tests |
+| =src/utilities= | 2 / 2 | Shared pure list/string primitives |
+
+Every selected =src/*= subsystem must have actual Module ownership. This does
+not require turning every private nested directory into a Module or inventing
+business configuration where none exists. Required authoring roles follow the
+current Core reader; optional roles must have a concrete purpose. Do not create
+four empty files solely to make the tree look modular.
+
+* Native construction and build chain
+
+The intended chain is:
+
+#+begin_example
+init.ss: load/choose source-directory Modules
+  -> one Core source context and selected dependency Graph
+  -> guarded native role sources and actual Scheme import closure
+  -> owner-bound additional Build projections (notably FFI)
+  -> the same init-owned std-make-spec
+  -> Core defbuild-script
+  -> Gerbil std/make and the default compiler
+#+end_example
+
+The implemented init uses =mode: explicit= to select the nine subsystem
+publications under =./src=. Core's =mode: auto= discovers eligible Modules on
+demand; an empty auto window does not itself select all Modules for compilation. Additional windows or explicit selections for language Libraries are
+part of the same init epoch. Mount names organize access; they do not create
+publication identity or permit duplicate identities. Auto mode discovers
+eligible Module declarations; it is not a raw =src/**/*.ss= build glob.
+
+Each subsystem's roles must have real responsibilities:
+
+- Types declare its actual Scope/value/function contracts using existing POO/Core types.
+- Objects expose existing implementation functions/prototypes, rather than a private source-file inventory.
+- Config supplies genuine settings/defaults consumed by that subsystem; no dummy settings.
+- Interface declares identity, real Scope, dependency contracts and selected projections.
+- Build, where needed, declares owner-relative extra native entries and their options. It does not execute another compiler loop.
+
+Core already derives role sources and their observed native import dependencies
+in =module-system/source/build.ss=. Its =BuildContributionContract= admits
+=module/build= values with owner-relative =roots=, including =gxc:= options.
+=building/build-projection.ss= and =building/interface.ss= retain the selected
+source guards and exact std/make consumer handoff. Reuse those mechanisms.
+Do not put an =all-files= scan or another whole-package catalog into every Module.
+Do not export the phase-bound Build value as a runtime Scope service.
+
+The final root =build.ss= must consume the init projection, not select files by
+itself. Remove =modules/parser= as a catalog-forwarding owner and retire the
+production =build-modules.ss= list after native coverage is demonstrated.
+A one-time migration comparison may read the old catalog as historical input;
+that comparison is not the new build driver.
+
+* Dependency cycles that must be resolved first
+
+The current directories do not yet form a valid subsystem dependency DAG.
+Concrete native import evidence includes:
+
+| Actual caller | Actual imported implementation | Consequence |
+|---------------+--------------------------------+-------------|
+| =src/runtime/parser.ss= | =src/compiler/machine.ss= | Runtime currently invokes machine construction |
+| =src/compiler/machine.ss= | =src/runtime/contextual-ir.ss=, =lexical-source.ss=, =lr-parser.ss=, =token.ss= and =scan.ss= | Compiler currently depends on runtime data and execution primitives |
+| =src/language/entry.ss= | Runtime parser, LR runtime, CST, token and artifact APIs | Language entry currently composes execution |
+| =src/compiler/rust-scanner.ss= | Language source strategy/scanner/command/part/result profiles and runtime scanner/parser APIs | Compiler generation currently consumes language orchestration as well as shared contracts |
+
+The first machine-readable audit reads the actual installed compiler interfaces
+through Gerbil's reader, not a second production source parser or resolver.
+It covers 259 library/FFI interfaces from the existing catalog and finds 50
+cross-directory edges. Aggregating the actual native imports yields one cyclic
+component: =language-support=, =src/compiler=, =src/language= and =src/runtime=.
+The raw relation is =.data/alignment-20261024/current-pr/parser-native-import-inventory-cohort17.json=;
+its bounded directory aggregation and SCCs are in
+=parser-directory-import-audit-cohort17.json= in the same evidence directory.
+These native compiler edges include syntax and runtime phases; they are not yet
+a complete proposed Scope dependency graph. The inventory is a diagnostic
+snapshot of current compiled interfaces, not authority to reuse a future build.
+The two initial reader-output API errors remain separate raw logs and did not
+produce an accepted inventory; the corrected native reader completed with exit 0.
+
+Core selection lowers required Modules into its existing dependency resolver,
+which reports =dependency-cycle=. Hiding these edges behind an empty
+=requires:= object, or retaining all files unconditionally, is not a valid fix.
+
+Classify the actual imports before assigning final Module requirements:
+
+1. Shared grammar, IR, value contracts and pure utilities belong below both
+   compilation and execution. Extract or reassign them only after checking
+   their actual native import closure and current callers.
+2. Compiler/generator code consumes that shared contract, not the assembled
+   runtime service. Runtime executes an already constructed machine/plan.
+3. Language assembly/integration binds compiler output to execution. Move the
+   current reverse composition responsibilities to that owner.
+4. Syntax-phase/native compiler imports and runtime Scope dependencies are
+   distinct edges. Keep the former in the native closure and declare the
+   latter as actual Module requirements; do not manufacture Scope cycles
+   by mechanically copying every source import into requires.
+
+These are target responsibilities. The initial native interface/SCC inventory above is complete for its 259
+inputs. Phase-specific Scope/API classification, ownership dispositions and
+exact file moves remain open; no dependency split is claimed implemented.
+
+* Facades, language Libraries and FFI
+
+The old catalog also owns root public facades, =language-support/= adapters and
+=languages/= entries. They must not disappear when the src window changes.
+Assign every currently supported facade to an actual Module API/import closure;
+use separate declared language Module selection where appropriate. Native role
+imports can provide a real public facade dependency closure without a second
+file discovery pass. Any required compatibility facade remains a thin Gerbil
+re-export with its actual source association, not an alias publication or a
+second build selection.
+
+Keep public Scheme import paths and C ABI stable by default while reorganizing
+internal ownership. An actual incompatible public API change must update its
+known consumers and tests explicitly. Unsupported/unused old catalog entries
+are dispositioned in an audit, not silently dropped to pass compilation.
+
+The three FFI entries remain =language-abi=, =language-abi-context= and
+=rust-aot-abi=. Their owner declares include paths and platform link arguments
+once in its Build projection. Avoid enrolling the same C entry through an
+unoptioned role import and again through a differently optioned Build root:
+Core rightly refuses conflicting contributions. Runtime ABI contracts can
+remain available through pure interfaces without evaluating C declarations
+while simply enumerating the Module namespace.
+
+* Full implementation order and acceptance
+
+| Stage | Concrete change | Required acceptance |
+|-------+-----------------+---------------------|
+| M0 | Freeze preceding cleanup head, actual pins and its open tests | No old CI/warm result transferred; unchanged two build workers and existing heaps/watchdogs |
+| M1 | Audit actual source imports, subsystem ownership, phase edges and facade coverage; decide shared-contract/assembly moves | Every old production entry has an owner/disposition; concrete cycles mapped; no fake dependency graph |
+| M2 | Refactor shared contracts and composition boundaries, updating internal callers | Existing grammar/IR semantics, C ABI, source/runtime ownership and negative controls remain correct |
+| M3 | Implement real directory Module roles, dependency/Scope contracts and FFI projections | Scope demand validates actual returned values; native build derives from roles/imports; namespace enumeration does not construct parsers |
+| M4 | Switch init selection and root build consumer atomically; remove forwarding Module/catalog authority | Exactly one init context/projection; selected/required Modules control actual output membership; no raw directory scanner or retained whole-package root list |
+| M5 | Rebind helper/test/CLI consumers and compatibility facades | Ordinary/default/optional builds, all three FFI specs, independent imports and real method provenance remain valid |
+| M6 | Source, native compile/load, cold/recovery and Linux/macOS qualification | Full native semantic and remaining source suites, exact-head CI and explicit failure/recovery controls; no limit widening or warm retry called repair |
+
+Positive controls include an added legitimate Module declaration being selected
+through the existing init mechanism, supported language/facade coverage, correct
+FFI options, shared-path deduplication, and preserved normalized return values.
+Negative controls include malformed/missing roles, denied required Module,
+unknown Scope/feature, source/entry/directory mutation, cycles, source-identity
+collision, conflicting FFI options, missing products and failed compilation.
+An unrelated private directory must not become an accidental publication.
+
+The preceding cleanup still has an open full-source 90s loading failure and
+separate exact-head CI; this design does not reclassify those as solved. A new
+module architecture must qualify its own native/cold/recovery behavior and
+must not add a private loader, another package policy, SDK layer or compiler.
+
+* Implementation observations and native boundaries (cohort18)
+
+** Native relative imports
+
+Core's private publication wrapper replaced the original native package with a
+temporary package. A legal symbolic =../modules/parser/objects= import therefore
+became =:modules/parser/objects=. The configuration wrapper had the same defect.
+The source fix preserves the original compiler package parent, keeps a unique
+private namespace, and indexes configuration imports by their already-admitted
+compiler identities. It does not add a package resolver or bypass source guards.
+
+The new relative-import regression and six existing Build-role cases pass,
+including helper mutation, lazy Build, runtime Build rejection and root reentry
+rejection (=core-native-relative-import-test-cohort18-02.log=). Another 21
+existing graph/artifact cases pass (=core-native-relative-import-guards-cohort18.log=).
+The native Core rebuild completed in 30.91 seconds before the later public-entry
+extension; this was incremental, not a cold-build qualification.
+
+** Execution binding ownership
+
+The real source reader refused =runtime/parser -> compiler/machine ->
+runtime/contextual-ir= as shared-source reentry. The implementations of
+=machine.ss=, =lexical-expression.ss= and =lexical-lexer.ss= now belong to
+=src/runtime=. Runtime callers import that owner directly. The previous compiler
+paths are compatibility re-exports; no parser algorithm, ABI version or policy
+was changed. This is a concrete ownership correction, not a fabricated Scope
+=requires= edge or a weakened reader guard.
+
+FFI Scope publishes the four existing values from =src/schema.ss=. It does not
+interpret =c-declare= or initialize language handles during Module selection.
+The three native C leaves retain their include/link options in the FFI Build
+projection. =projections: (list Build)= is the own-Module build boundary;
+=configuration-build= describes provider configuration and is not a substitute.
+
+** Public entry projection
+
+Owner-relative =Build.roots= cannot represent the existing root facades without
+escaping their Module directory. The formal Core extension adds optional
+=library-roots= to the existing =module/build= contract. Each selected Module
+names supported public package entrypoints; Core delegates native import-graph
+expansion to its existing =package-library-spec=. There is no filesystem scan,
+second source catalog, compiler loop or runtime evaluation of library code.
+
+Core derives the package boundary from guarded native =gerbil.pkg= input,
+confines public roots and every local native dependency, checks actual compiler
+source paths, retains per-source currentness guards and preserves selected
+explicit C options. Existing owner-relative roots and conflicting-explicit-option
+rejection remain in force. Correctness controls for public closure, no runtime
+execution, missing/escaping roots and post-capture source mutation are being
+added before this extension is accepted.
+
+A build during active source editing refused with =compiler tool source changed=;
+that failure is retained as =core-library-entry-build-cohort18-02.log=. It is a
+source-currentness refusal, not a build-performance regression or an accepted
+negative-control experiment. Subsequent qualification must use stable inputs.
+
+** Current accepted source-level results
+
+- Nine actual service Scopes load with contract validation; pure utility invocation works.
+- Core public-entry/relative-import/graph/artifact controls: 31 =CASE-OK=,
+  =HARNESS-OK= and final =OK= in 14.74 seconds
+  (=core-library-entry-final-controls-cohort18.log=).
+- Stable-input native Core incremental build: 33.28 seconds, exit 0
+  (=core-library-entry-build-cohort18-04.log=). This is not cold qualification.
+- Native Parser coverage comparison: exit 0 with =PARSER-BUILD-CATALOG-OK=;
+  no application-owned production catalog remains.
+- Root Parser host initialization now consumes the actual build-support Scope
+  method. It no longer directly imports that implementation as a parallel path.
+- Legacy =check-catalog= CLI/marker remains compatible, but development policy
+  receives the verified selected projection's sources. It does not consume a
+  copied membership list.
+
+The remote pre-refactor Parser head =d6e487cb= now has 12 successful checks and
+five skipped checks. Core baseline =bf88264c= has three failed native checks
+(Linux build/bootstrap and macOS scale/runtime), fifteen successes and one skip.
+Full baseline results are retained in =parser-pr-baseline-cohort18.json= and
+=core-pr-baseline-cohort18.json=. Neither baseline qualifies the new source.
+
+** Cold build and contribution-order control
+
+Parser's full incremental build passes in 103.46 seconds (120 module compiles,
+247 native jobs). Core product-cold builds pass within its unchanged 180-second
+limit: 173.60 seconds before the order correction, and 136.04 seconds for the
+corrected source. Both retain two workers and the existing 2 GiB VM fence;
+external dependencies remain installed. These results do not establish OS-cache
+coldness or a performance improvement caused by the semantic correction.
+
+A new source fixture reproducibly rejects the old ordering: an earlier public
+root imports a helper for which a later Module declares =-O=, producing
+=conflicting build contributions= (=core-library-option-order-before-cohort18.log=).
+Core now collects all explicit selected contributions before native library
+closure expansion. Imported leaves inherit those choices; conflicting explicit
+choices still reject. Post-correction controls pass all 32 cases with final =OK= in 58.28 seconds.
+
+** Source/compiled interoperability correction
+
+A real compiled arithmetic descriptor fails the initial source Scope's nominal
+predicate, and its machine is rejected by the private source =parse-source=
+implementation (=parser-directory-nominal-interop-before-cohort18.log=). Private
+source wrappers and compiled products have distinct nominal struct identities.
+This is not repaired by weakening predicates or sharing unchecked compiled values.
+
+Nominal descriptor/machine APIs remain in existing compiled Gerbil facades.
+Runtime Scope now exposes structural artifact validation/success/roundtrip;
+Language Scope exposes the existing schema-owned format identities. Compiler
+Scope retains the open POO grammar protocol. The source entry test actually
+passes a compiled arithmetic result through Runtime Scope and its compiled
+grammar through Compiler Scope. The corrected three-case unit passes with final
+=OK= in 31.00 seconds (=parser-directory-structural-interop-cohort18-02.log=).
+The descriptor's repeated format string is replaced by an import from its
+existing =src/schema.ss= declaration; no version value changes.
+
+The full native inventory comparison stays in the existing development CI gate.
+The source unit no longer duplicates that full discovery scan inside its bounded
+owner; it checks actual public/ABI/phase behavior and interoperability.
+
+Formal Core PR19 now publishes =f3d512ec9ec218b020ee5286b17c92b3f84339f6=.
+Parser declares that exact dependency. Native installation first reported the
+old =bf88264c= tag conflict; =gxpkg update ...@f3d512e= changed the checkout but
+reproduced the native tagged-argument =bad package; missing gerbil.pkg= failure.
+Both failures remain raw evidence. Canonical native dependency installation then
+passes (103.47 seconds), clean passes (14.48 seconds), and canonical Core rebuild
+passes (125.57 seconds under the unchanged 180-second limit), from the actual
+registered =.gerbil/pkg/github.com/tao3k/gebril-yuanxu= checkout at =f3d512e=.
+No package uninstall, Gerbil change, local patch or alternate prefix is used.
+
+** Named Record refinement requested by the user
+
+The nine Scope Types are now named native =define-type= / =Record= declarations,
+using bracket slot specifications and =Fun= for fixed signatures. Optional
+signatures retain the existing =Function= constructor. Field definitions,
+inheritance, defaults and normalization belong to the Record; the existing
+contextual Contract retains only identity/proto/value-contract references and
+its normal evidence boundary. No alternative Type or constructor system is added.
+
+The three entry/structural-interoperability cases pass with final =OK= in 36.35
+seconds (=parser-record-scopes-cohort19.log=). This working-tree refinement is
+newer than published Parser =27ede1b=; that commit's product-cold build passed
+298 targets / 660 jobs in 237.83 seconds from the registered native checkout,
+with two workers, the existing 2 GiB fence and no Parser build timeout. The old
+cold result is retained separately and does not qualify the Record refinement.
+
+The Record refinement is published as =cc40a6046cff4e165ce4853c5d932deaac866adf=.
+All nine Scopes load in 9.89 seconds; the complete incremental build passes in
+34.84 seconds. After native revision alignment and dependency installation, its
+registered-checkout product-cold build passes 298 targets / 660 jobs in 214.88
+seconds. This is the current-head result, separate from the old =27ede1b= cohort.
+Helper/command/conformance/source/recovery and exact-head OS CI gates continue.
+
+Core exact-head CI still has independent open gates: Linux 10,000-declaration
+scale timeout, =t/slot-read-cost-test.ss= importing the POO-private
+=:clan/poo/t/closure-measure= fixture, and macOS build reaching its native
+180-second watchdog. The private-fixture import already exists at baseline
+=bf88264c=. Job logs are retained as =core-f3d512e-*-job.log=. The 32 focused
+controls/local native builds do not imply complete upstream CI closure.
+
+** Record cohort completion and remaining gates
+
+At published Parser =cc40a60=, compiled research, helper/command gates, native
+objects, conformance, CLI help/check and all eleven worker controls pass. Expected
+negative worker diagnostics remain negative controls, not producer failures.
+The original generic log-matcher receipt is retained separately from the corrected
+worker-control classification; the producer was not retried as a repair.
+
+Native recovery removes only the Utilities Types product family through Core's
+existing artifact cleaner. Canonical rebuild restores Types/Objects/Config/
+Interface in 45.40 seconds; fresh startup passes in 13.13 seconds. Compiled
+=UtilitiesScope= and its compiled contextual Contract admit the source-selected
+Scope, and compiled arithmetic artifacts cross the structural Runtime boundary.
+Receipts: =parser-record-recovery-*-cohort19=.
+
+The remaining-source gate is still blocked: =t/benchmark-test.ss= reaches the
+unchanged 90-second owner budget during source-module loading. The full runner
+fails in 108.85 seconds; neither a warm retry nor preloading outside that budget
+qualifies this gate. Receipt: =parser-record-remaining-source-cohort19.log=.
+
+** Native spec stdout channel correction
+
+Exact-head Linux CI at =cc40a60= fails before canonical inventory comparison:
+preparation diagnostics contaminate native =spec= stdout, so its first datum is
+=...= rather than the standard list. The failure is retained in
+=parser-cc40a60-linux-prepare-job.log=. Root =build.ss= now parameterizes only
+host initialization/spec preparation output to stderr; Gerbil's native formatter
+still owns stdout. The existing development consumer requires exactly one list
+and EOF, without skipping or interpreting arbitrary diagnostic prefixes.
+
+A controlled preparation-noise injection exercises this boundary. All four
+entry/interop/spec cases pass with =HARNESS-OK= and final =OK= in 48.27 seconds;
+native inventory audit passes with =PARSER-BUILD-CATALOG-OK= in 28.61 seconds.
+Receipts: =parser-spec-channel-{tests,audit}-cohort20=. This is a targeted source
+verification; the preceding =cc40a60= product-cold result does not qualify the
+newer stdout-channel correction, whose exact-head OS CI remains pending.
+
+macOS Parser preparation instead fails inside the dependency Core build's own
+180-second watchdog. Parser's removed package-build cap is not reintroduced.
+Core timeout policy is awaiting explicit clarification; its two-worker/heap limits
+and all test watchdogs remain unchanged. Root Agentic dependency propagation,
+full Core CI and complete downstream qualification remain open.
+
+** Scope signature refinement: concrete domains and parametric services
+
+Named Records alone are insufficient when their method inputs and results are
+all =Any=. The refactor gives each actual service an explicit boundary:
+
+| Service | Input/result boundary | Semantic owner |
+|---------+-----------------------+----------------|
+| Compiler | Structural Grammar Record or schema-bound GrammarIR -> GrammarIR | Existing normalizer retains composition checks; source/compiled objects must interoperate |
+| Graph query constructor | Existing GraphQueryViewContract -> GraphQueryContextContract | Existing graph view/context admission and ancestry checks |
+| Artifact roundtrip | ParseArtifact -> String | Existing structural artifact validator, not a second artifact checker |
+| Host initialization | No arguments -> Unit | Existing compiler-host policy |
+| Compiler options | No arguments -> List String | Existing compiler profile |
+| Build-spec adjustment | BuildSpecification -> BuildSpecification | Gerbil std/make owns instruction semantics |
+| Native link options | List String -> String | Existing selected-object provenance check |
+| ABI / language metadata | UInt ABI values; Exactly the existing schema declarations | Existing schema.ss remains the only metadata source |
+| Test-form admission | Arbitrary syntax datum, List Symbol, optional List Symbol -> Bool | Existing syntax admission walk |
+| Text lines | String -> List String | Existing string implementation |
+| Whitespace | Character -> Bool | Native char? Type |
+| Generic lists | list-operations-for(RowType, KeyType) -> TypeValuePair | Native Record/Function input, callback and output validation; no default domain |
+
+=ListOperationsScopeOf= connects the row list, inserted row, key callback and
+conflict callback using the same caller-selected types. The published Utilities
+Scope contains concrete string services and an explicit =list-operations-for=
+factory. It accepts two native Types and returns the existing POO =TypeValuePair=:
+the concrete operations Type paired with a value validated by that Type. No
+=Any/Any= default or unconstrained list methods are published.
+
+Concrete row representations may use =defstruct=. Their owner defines a native
+POO Type using the struct predicate and supplies it, together with the Key Type,
+to this factory. A struct-row/Symbol-key test exercises admission, callback key
+validation and rejection of an unrelated string row. The Type parameter carries
+the caller's actual struct predicate; the utility does not invent a universal
+nominal struct identity across source/compiled worlds. Native =TypeValuePair=
+validation also rejects a factory result whose value does not match its Type.
+No alternate Type engine or function-wrapper implementation is introduced.
+
+Remaining =Any= occurrences have explicit reasons: membership predicates accept
+invalid candidates and return false; test syntax can be an arbitrary Scheme
+datum; native std/make option
+payloads and heterogeneous IR section bodies remain owned by their existing
+consumers. These are not evidence of semantic validation. IR typing checks the canonical schema and symbolic grammar identity as well as
+symbol-keyed rows; it does not certify grammar correctness; BuildSpecification typing does not certify
+a native instruction or compiler invocation.
+
+Validation must exercise real normalized Scope functions, reject native Type
+mismatches before target effects, check callback and output mismatches, preserve
+optional-argument checking, and retain compiled Grammar/artifact interoperability.
+An arbitrary exception from the implementation does not count as Type rejection.
+The type-focused tests therefore recognize native =TypeError= specifically.
+
+The explicit list-service factory belongs to =src/utilities/lists.ss=. Its
+=objects.ss= role publishes only the existing implementation binding; executable
+construction does not move into the declaration role. An initial misplaced
+helper is refused by the existing Interface authoring Contract, with the failure
+retained as =parser-explicit-row-types-cohort22.log=; that guard is unchanged.
+
+** Explicit Types and mixed struct/POO qualification
+
+Parser PR13 publishes the explicit-domain refinement at =1463be9= and the native
+source-phase handoff correction at =73ef43994d7ea35d2f54bc62256da91a439773e6=.
+=src/utilities/types.ss=, =objects.ss= and =lists.ss= contain no =Any=. A caller
+must choose Row and Key Types; the struct fixture additionally checks its Symbol
+key and String value fields through its POO Type. Missing Type arguments, an
+invalid Type argument, an inconsistent TypeValuePair, wrong rows/fields, callback
+mismatches and wrong method results all reject through native TypeError.
+
+The six-case source harness passes with =HARNESS-OK= and final =OK= in 56.33
+seconds. Its spec child processes explicitly remove inherited =GERBIL_LOADPATH=;
+they continue to exercise the normal entry with preparation-noise controls.
+Receipt: =parser-explicit-types-both-build-phases-cohort23=.
+
+The earlier source-copy build refusal (cohort21) also reproduces in the canonical
+registered checkout at =1463be9= (45.10 seconds, cohort22). This rules out treating
+checkout alignment or a warm retry as the repair. A diagnostic continuation had
+compiled a different set of remaining targets and was not qualification.
+
+The actual missing handoff is native source registration in phase zero. The
+entry already called Core's =register-module-build-source!= for syntax expansion,
+but not for runtime readers and compiler workers. =build.ss= now invokes the same
+existing API in both phases, using its actual source directory and the checked
+package identity. No source-admission policy or SDK resolver changes.
+
+A controlled pair of fresh processes uses the same registered files/products,
+with no inherited =GERBIL_LOADPATH=. Without runtime registration, forcing the
+Compiler Scope rejects with =source import leaves its Module and package kernel=
+(exit 70, 8.95 seconds). Calling the existing Core registrar admits that same
+Scope (exit zero, 10.31 seconds). Receipts:
+=parser-source-phase-{missing,registered}-cohort23=.
+
+At =73ef439= the standard registered-checkout =gxpkg build= passes in 56.56 seconds
+under two workers and the unchanged 2 GiB fence, without clean or a Parser build
+watchdog. This is incremental compilation, not a product-cold claim. A new process
+using the explicit native source registration then validates the source-selected
+Utilities and Compiler Scopes with their compiled Contracts. Struct-row calls,
+field-type rejection, missing-Type rejection and compiled Grammar IR consumption
+pass in 30.35 seconds. Native inventory audit passes in 49.48 seconds. Startup and
+audit ran independently; these timings are observations, not performance claims.
+
+The normal tagged =gxpkg update= still changes the registered checkout to the
+verified requested revision before its known tagged-argument dispatch error.
+That command is retained as failed; canonical build success does not certify
+update success. Full Core/exact-head OS CI, remaining-source owner90 and downstream
+Agentic/root qualification remain separate open gates. No root dependency-chain
+publication or final delivery is claimed. Consolidated receipt:
+=parser-explicit-type-final-cohort23.json=.
+
+** Remaining Any audit and explicit language domains
+
+This audit includes every =src/**/*.ss= occurrence, not only the nine exported
+Scope Types. Utilities, Compiler and scanner/action signatures no longer default
+to Any. The seven retained declaration sites have separate obligations:
+
+| Site | Retained Any position | Reason and rejection/compatibility control |
+|------+-----------------------+-------------------------------------------|
+| GrammarScope.grammar-expression? | Candidate input | Invalid atoms/objects must classify false rather than fail argument admission |
+| GrammarScope.lexical-expression? | Candidate input | Same total-candidate boundary for lexical syntax recognition |
+| RuntimeScope.parse-artifact-valid? | Candidate input | Existing artifact validator converts malformed candidates to false; consuming methods require ParseArtifact |
+| ParserModulesScope.graph-query-view? | Last candidate input | Row/Id/Kind are explicit Type inputs; membership still accepts a malformed candidate and returns false |
+| TestingScope.parser-test-form-admitted? | Inspected form | Native reader/macro data is inspected without evaluation; forbidden and owned-output names are List Symbol |
+| GraphQueryPredicateOf | Predicate result only | Scheme filter accepts any true value, including a member tail; input is the chosen Row Type |
+| BuildSpecification | Native options/metadata tail | std/make owns nested options/submodule forms. Parser checks Keyword/source-String carriers and forwards the tail; it does not implement another build grammar |
+
+The string ="Any"= in =src/compiler/rust-scanner.ss= names the emitted Rust
+=Guard::Any= variant. It is not a POO Type occurrence and is not renamed.
+
+Graph callers now provide Row, Id and Kind Types. View callbacks use those exact
+Types; parent identity is OrFalse(Id), where false is reserved for no parent.
+The Context retains the Type parameters and native TypeValuePair for its checked
+view. Query kind, scope/ancestor/descendant IDs and targets use the same captured
+Types. Predicates retain generalized truth semantics. There is no universal ID,
+kind or empty-row fallback hidden in the Scope. Public graph callers must migrate
+with the API; silently guessing UInt/Org-specific keys is not an alternative.
+
+Scanner callers provide Context and Mode Types through =SourceScannerStepOf=.
+The driver validates initial/replacement Context and the native Function checks
+all three results and Mode. The built-in line producer chooses False/Symbol;
+fixtures explicitly choose their actual domains, including a caller-owned struct
+Type. Zero/missing/extra results, malformed Context fields, wrong Mode and original
+exception propagation are controls. Existing progress/span/owner semantics remain
+algorithmic checks. Contextual scanner nominal structs remain inside their runtime
+owner; the utility does not duplicate those struct identities across worlds.
+
+LR action selection returns OrFalse(LRActionEntry), not an arbitrary state/value.
+The Type describes terminal and shift/reduce/accept/fork/layout action structure,
+rejects malformed/negative operands and cyclic branches, and separates raw action
+rows from indexed lr-action-row structs. It does not prove transition correctness.
+
+Grammar IR now checks canonical schema, unique known headers, String/Symbol/Bool
+payload domains, section row carriers, and the existing grammar/lexical expression
+validators. Opaque section values, malformed expressions and duplicate headers
+reject. Detailed name resolution, precedence, flow and compilation correctness
+remain with the existing compiler. No new schema/version source is introduced.
+
+** Native source association and test-owner boundaries
+
+The larger source build retained in =parser-any-scope-build-cohort24= reproduces
+public source rejection even with both registration phases. A sample and process
+identity receipt are retained before stopping that already-failed build, which
+had no compiler children left. This is not a new Parser timeout or a pass.
+
+Read-only inspection of native =std/make= identifies the missing boundary:
+=dependency-timestamp= temporarily removes srcdir from the shared load path while
+another Worker may evaluate a guarded role. Registering srcdir is necessary but
+cannot make that temporary ambient lookup stable. Core's existing compiler-input
+owner now retains a private, dynamic path-to-input index. The Reader accepts a
+matching selected external source association only within that owner, while its
+original source-byte/package guards still run. Outside that extent and for
+unselected paths the normal canonical native lookup remains required. Core tool
+identities are excluded from this external-source branch. No SDK mutation,
+resolver replacement, global override or publication credential is introduced.
+
+Core PR19 publishes this consumer handoff at =fd54f94e41c0938880e6455bf46eb06e2ece953a=.
+Regression controls remove the actual native source path, check Scope currentness
+inside the compiler owner, reject the same ambient state after exit, reject source
+byte mutation, and leave an unselected same-ID file unenrolled/unexecuted. The
+original graph/build/cleanup controls remain in the test cohort.
+
+Baseline Parser =73ef439= Linux/macOS prepare jobs both pass. Their semantic jobs
+fail on =t/library-init-test.ss= idle5, not Parser build180. Scope admission now
+relays actual read/parse/evaluation events through the existing Ops progress
+facility; cache-hit/check replays and timers are not progress. The Scope owner
+uses the existing exclusive execution declaration for process-expander effects;
+the Worker pool remains two. Runtime Scope obligations and external package-entry
+queries are separate source test owners. The latter makes one noisy spec query
+cover data-channel, public export and ABI checks; the existing native inventory
+audit supplies the independent ordinary query. Each owner retains total90/idle5.
+The prior combined owner total-budget failure is retained, not relabelled passed.
+
+A direct native probe also establishes that the old lazy Grammar/GrammarRole
+prototype suppliers produce different prototypes for Contract refinements.
+Family prototypes are now initialized once as private module values; derived
+Contracts inherit that same family unless explicitly overridden. Nominal
+source/compiled realms remain distinct; the structural compiler protocol still
+crosses that boundary. Constructor/refinement and compiled interoperation checks
+cover this correction rather than weakening ancestry admission.
+
+The baseline macOS FFI tests pass; only artifact upload fails with Azure endpoint
+DNS ENOTFOUND. This is a transport failure, separate from code correctness. The
+upload check remains required and is not converted to continue-on-error.
+
+** Nominal family and source-selection regression
+
+The two-owner trace =parser-family-ownership-trace-cohort28= records the compiled
+Grammar/Contract prototype equality as true at owner import, then false after the
+next owner resolves source modules. The fixture had called
+=register-module-build-source!= at module initialization. Its global source-first
+load path caused later imports to evaluate the public source Types under the
+already installed namespace. This is a test selection leak, not permission to
+weaken nominal ancestry or modify the compiler.
+
+The fixture now consumes public Types by package identity and registers its
+source root only inside exclusive Scope evaluation. A dynamic-wind restores the
+native load path on success and exception. The separate refinement correction
+retains one prototype value per module family. Source and compiled nominal
+realms are still distinct; structural compiler Scopes bridge them explicitly.
+The cohort27 five-owner run used the runner's default host capacity and is
+recorded as diagnosis only. The replacement qualification explicitly selects
+=--workers 2=, retaining total90/idle5 and the existing heap envelopes.
+
+The corrected exact source slice =parser-any-source-selection-extent-cohort29=
+passes in 73.17 seconds: five owners, 29 cases, =TEST-SUITE-WORKERS 2=,
+all =HARNESS-OK= and final =OK=. This includes base/refined nominal prototypes,
+compiled Grammar construction, source Scope interoperation and explicit
+Row/Id/Kind/Context/Mode callback failures. Parser PR13 publishes the complete
+change at =483fb2e85c9f4dd4df4a52b25fc4c724674c9087=; both OS CI and the
+canonical registered-checkout qualification remain separate gates.
+
+Canonical Parser =483fb2e= builds successfully in165.33s with two workers/2GiB,
+without clean or a Parser build deadline. The tagged update dispatcher still
+returns70 after selecting the exact expected checkout; its failure receipt is
+retained separately from the successful =gxpkg build= receipt. A CI-only followup
+=2669014= also aligns the two legacy native lifecycle commands from four workers
+to two. Their memory, timeout and control settings are unchanged. This final
+head requires its own CI result; the superseded run is not final acceptance.
+
+The final =2669014= canonical checkout also passes incremental native build in
+26.02s; its producer code is identical to =483fb2e=. Registered-checkout gates
+=parser-record-*-cohort31= pass exit support4.87s, qualification5.07s, helpers35.48s,
+CLI65.11s, library objects42.17s, complete conformance compilation/link96.05s and
+source preparation5.39s. These are local compilation results; the remaining
+source/control gates and final-head OS CI require their own results.
+
+** CI activation capacity and remaining cold dependency gate
+
+Final-head run40254724918 reaches macOS dependency installation but Core's
+build.ss child exits124 (encoded process status31744), before Parser builds.
+The raw job log also proves package bootstrap overwrote GERBIL_BUILD_CORES=2
+with host-detected3 via GITHUB_ENV. This is a distinct configuration defect:
+=tools/ci/bootstrap.ss= must preserve explicit capacity and reject invalid values;
+the Parser composite action explicitly supplies two. The three-case bootstrap
+suite passes17.37s including configured/native fallback and zero, negative,
+fractional, empty and malformed negative controls. No SDK source is modified.
+The Core180s deadline and all heaps remain unchanged. An incremental local Core
+pass is not cold CI qualification, and this corrected capacity is not yet proof
+that the cold Core gate closes.
+
+The local cohort31 remaining-source attempt omitted CI's build-ffi-tests.ss
+prerequisite and fails when the interpreter reaches a C declaration. It is kept
+as a failed non-equivalent setup; the native FFI prerequisite must run before
+repeating the complete source entry. Compilation passes do not imply executed
+conformance success. No source suite, C fixture or negative control is removed.
+
+The executed semantic conformance in cohort34 exposes a real narrowed-Type bug:
+LR compiler shifts are =(shift target precedence)=, not two-field actions.
+The Type now includes the existing precedence domain (=#f= or a none/left/right/
+dynamic pair with integer rank). Missing metadata, opaque metadata and wrong
+rank Types reject. The ten-case boundary Suite passes45.58s in cohort36 after
+correcting the fixture's parallel binding to sequential binding. Parser PR13
+publishes this repair at =bec3204579c35c356d74104fdefa08ea9b3953c0=.
+Native FFI prerequisites pass74.26s in cohort34. Semantic conformance must be
+rebuilt and executed again with this producer change before acceptance.
+
+The LR precedence producer rebuild completes311.05s in cohort35 with two
+workers/2GiB and no Parser build cutoff. A stack sample during the silent period
+shows expander/compiler work, followed by actual compiler child processes and
+language products; this is not a deadlock or a cold performance comparison.
+The unbounded Parser build policy is preserved. Registration and executed
+conformance are still separately recorded.
+
+The =graph-query-select= entry now validates its original caller predicate using
+the context's same Row Type before composing the selection predicate. Cohort40
+passes all ten boundary cases21.06s, including nonprocedure rejection and
+nonboolean true values. The first cohort38 exercised the old installed producer
+and correctly failed; the producer is rebuilt75.80s in cohort39 before cohort40.
+Parser PR13 publishes the complete callback fix at =cc00fd5=.
+
+The matching two-worker macOS run40256055847 proves bootstrap cores=2 but still
+fails Core build.ss with child124 (status31744), prior to Parser compilation.
+Thus capacity alignment is necessary but insufficient. Core180s is not removed,
+no retry/clean/cache pass is a repair, and no Linux/macOS closure is claimed.
+The local Core104.52s result is explicitly incremental. Cold dependency
+qualification remains an upstream package-build blocker, separate from the
+Parser Type and callback controls.
+
+The exact final =cc00fd5e454dfb1921d60094f8f619963772338e= registered checkout
+passes native =gxpkg build= in88.84s (cohort41), unchanged2GiB/two workers,
+without clean. Its native update still returns70 after moving to the expected
+HEAD; update is not marked passed. The checkout/source identity is verified
+before compiling and the raw receipts are retained. Final executed gates and
+CI run40256760124 remain separate from this build result.
+
+Final-head native FFI preparation passes43.98s and static library objects47.90s
+in cohort42. Worker controls pass116.48s: all11 distinct WORKER-CONTROL-OK rows
+and final OK, including failure/silence/duplicate/reexport ownership refusals.
+The generic log ERROR heuristic incorrectly marks this negative-control run;
+=parser-workers-explicit-receipt-cohort40.json= checks the actual control
+protocol and native zero exit. The raw heuristic result is retained. Compilation
+and full source/semantic execution remain separately reported.
+
+At final =cc00fd5=, cohort42 conformance compilation/link passes131.44s under
+its unchanged240s/idle5 gate. Executed research/process closure passes21.25s:
+CONFORMANCE-SEMANTIC-OK groups=24 plus concise-runtime, history,
+native-poo-runtime, provenance and all-language-benchmark child receipts. This
+closes the previously observed LR precedence failure in actual execution.
+Source owner preparation passes7.14s; complete remaining-source execution is
+still separately pending.
+
+The final-head macOS job121360398741 in run40256760124 again proves cores=2,
+then Core build.ss exits124/status31744 before Parser. It does not exercise
+Parser qualification. The failed log is retained as
+=parser-any-ci-cc00fd5-macos-prepare.log=. Parser native build and focused/full
+local semantic passes cannot replace this cold upstream dependency gate.
+
+Complete source cohort42 retains an idle5 refusal during language-abi-alignment
+owner admission. Cohort44 uses the same CI LR trace switch and still refuses
+idle5 at45.02s after real bound/contextual artifact admission. This proves the
+missing switch is not the repair. Neither failed run is a passing qualification;
+the full source loading/current-environment stall remains unresolved. The
+required total90/idle5, two Workers and3GiB full-run heap remain unchanged.
+CLI help and check separately pass4.67s/2.74s at the final installed head.
+
+** Remove duplicate compiler-index admission, retain actual use checks
+
+Comparing the passing previous dependency =f3d512e= with =fd54f94= identifies a
+new eager loop: indexing every selected path calls each input's admit-current,
+which can repeat its enclosing Context footprint. The projection already calls
+current! before and after .with-compiler-inputs (build-projection.ss:330--332).
+The index is not an admission result: module-compiler-source-input performs the
+physical current check every time before returning an input. Role materialization
+retains its own existing checks. Removing the new eager call therefore removes
+duplicate work, without removing the enclosing or actual-use admission boundary.
+
+Core PR19 =a8f48f5e9d30f1a8a6935aa8b9f11aeb5088eb18= adds a demand-count control:
+zero checks while merely indexing; one for each lookup; changed input refuses;
+association is absent after return. Existing actual-byte and unselected same-ID
+foreign-source controls remain. Incremental build passes51.56s under unchanged
+Core180s/two-worker/2GiB. Native role+graph suites pass29.07s with HARNESS-OK/final
+OK (cohort48). This establishes boundary behavior, not the cold timeout fix.
+Parser PR13 =0ece0e1= propagates this single dependency. Canonical Core build and
+new exact-head OS CI must qualify the candidate under the original constraints.
+The earlier fd54f94 cold124 failures and source idle5 refusals remain retained.
+
+The final source clone six-owner/33-case slice passes73.29s at =cc00fd5=,
+including the complete narrowed-domain and bootstrap controls (cohort45).
+With the propagated dependency, canonical Core =a8f48f5= builds47.50s under
+Core180s/two-worker/2GiB, and canonical Parser =0ece0e1= builds41.07s under
+its unchanged two-worker/2GiB/no-Parser-deadline policy (cohorts49--50).
+Both native tagged update dispatcher errors remain separate from build passes.
+Parser/Core working trees are clean. CI run40258488174 qualifies the new pin;
+earlier runs are not its acceptance. The full source idle5 gap remains open.
+
+Final registered-checkout cohort51 passes61.05s: six owners,33 cases,
+TEST-SUITE-WORKERS2, all HARNESS-OK and final OK. This is the actual
+=0ece0e1=/Core=a8f48f5= installed source selection, not merely a source-clone test.
+An isolated ABI owner diagnostic (cohort52) passes25.84s and produces no targeted
+stack sample because the trigger does not recur. It is not the full shared
+process and does not close the full source idle5 failure. No retry is labeled
+as that repair. Both repos remain clean and pushed to their existing PRs.
+
+** Current acceptance boundary after a8f48f5
+
+Run40258488174 installs declared dependencies successfully on Linux and reaches
+package-cache publication. On macOS, job121365530262 proves cores=2 then still
+exits124/status31744 in Core build.ss before Parser. The raw final-head log is
+=parser-any-ci-0ece0e1-macos-prepare.log=. Removing duplicate enrollment is a
+qualified ownership correction, but is not sufficient to repair this cold180s
+failure. Do not describe it as the timeout root cause or a closed performance
+fix. Further cold package-build profiling is required; no check, public target,
+heap or watchdog was removed. Full shared-source idle5 remains separately open.
+Parser Type audit, native build,33-case slice, semantic24-group execution,
+bootstrap negative controls and11 Worker controls are established as listed;
+Linux/macOS full CI is not established. The retained native update dispatcher
+failure is also not repaired. Gerbil/SDK source is unchanged.
+
+** Authorized Core cold-build budget change
+
+The user authorizes relaxing Core's180-second limit because macOS cold builds
+can take longer. Core PR19 =0e3c1f8= changes only its native package-entry
+shebang from180s to300s. Parser PR13 =25bcbaf= propagates that immutable pin.
+This is an explicit policy change, not a claim to have repaired a performance
+regression. Existing old-budget failures remain retained, as do the corrected
+cores=2 logs. Two workers, current heap settings, TERM/KILL behavior and all
+source/runtime watchdogs are unchanged. Parser has no restored package build
+cutoff. The same package entry applies the300s budget on both platforms; no
+platform-specific wrapper or new builder is introduced. No Gerbil/SDK change.
+
+The old macOS run at0ece0e1 explicitly exports GERBIL_BUILD_CORES=2 at bootstrap
+and dependency installation. Within the Core portion, the log records252 target
+announcements and412 backend-job announcements before exit124, with further
+compile-file work immediately before termination. These are started tasks, not
+completed products. Two workers do not bound whole-package cold duration to180s.
+The evidence establishes an enforced budget exhaustion during active native
+compilation, rather than an absent concurrency setting; it does not establish
+a minimal achievable cold-build time or a completed performance optimization.
+
+The full-source diagnostic cohort53 does not reproduce ABI idle5 and therefore
+captures no targeted stack; its non-reproduction is not a repair. It exposes a
+deterministic lexical fixture migration bug instead: Symbol Mode was selected,
+while every actual step supplies #f. The fixture now chooses False/False and
+asserts that a Symbol Mode is refused with native TypeError, preserving all
+Unicode/NUL byte-span and EOF checks. The three-case lexical Suite passes20.61s
+(cohort54); Parser PR13 =5ce3e07= publishes the correction. No Any fallback.
+Canonical Core0e3c1f8/Parser5ce3e07 builds pass45.48s/37.02s incrementally;
+new CI40260095201 and full-source cohort57 must supply their own acceptance.
+Old idle5 failures remain unclosed until a reproducible attribution is established.
+
+Full-source cohort57 passes ABI admission and the corrected lexical owner, then
+fails the qualification-output negative control because the executor sandbox
+rejects native ps -axo pid=,ppid=,pgid= (Operation not permitted). The test
+requires that topology read to stop its owned error-producing child. This is an
+execution-capability failure, not an assertion to remove or a watchdog to relax.
+The raw failure is retained. Cohort58 uses the same registered checkout, commands,
+workers, heaps and watchdogs with native process-inspection permission; no
+project/private environment or source patch is introduced to bypass the control.
+
+** Actual spec work supervision and diagnostic/data isolation
+
+Native-permission full-source cohort58 passes the previous ABI/lexical and
+process-inspection boundaries, but library-build-entry then refuses idle5 after
+BUILD-SPEC-IMPORTED4416. The import-only fixture cannot observe evaluator work
+or the subsequent Core source projection. An intermediate source-only bridge
+(cohort59) also refuses while importing Core admission before that bridge is
+installed; this attempt is retained and is not the repair.
+
+Parser PR13 =5825b32= removes the duplicate import-only observer and reuses the
+existing call-with-compiler-import-progress, which observes native import and
+evaluator boundaries. Within that extent the fixture installs Core's actual
+read/parse/projection observer. Cache hits, elapsed observations and request-only
+counters emit nothing. Spec data remains exactly one datum in its own file;
+there is no timer, new builder, new environment, or source watchdog increase.
+
+The existing compiler observer now captures its diagnostic port when installed.
+Otherwise callbacks invoked while main writes the spec redirect diagnostics into
+the data file. Cohort64 runs the exact previous profile source from5ce3e07 and
+the candidate in one native process: the former corrupts the nested data stream,
+the latter retains a clean datum plus complete diagnostics. It passes11.48s with
+OBSERVER-CHANNEL-BASELINE-REFUSED and OBSERVER-CHANNEL-CANDIDATE-OK. No installed
+source is reverted. The new declaration-safe helper case checks this property
+alongside the preserved zero/multiple values, exception/trace restoration,
+admission refusal and child-failure controls. Two-owner cohort63 passes48.58s:
+actual spec query plus16 compiler cases, all HARNESS-OK/final OK. A parser build
+passes59.92s (cohort60), two workers/2GiB and no package cutoff.
+
+Both OS run40260095201 successfully finish declared dependency installation with
+Core300s before the observer-only followup supersedes it. Linux preparation
+passes; macOS reaches conformance compilation. These prove progress beyond the
+old cold dependency gate, not full acceptance of the newer head. Final
+CI40262352809 and the complete source runner must qualify5825b32 separately.
+The older ABI-specific idle5 has not been reproduced with a blocking stack;
+passing later owners is not retroactive causal attribution for that failure.
+
+Final registered5825b32 native build passes42.39s (cohort65), two workers/2GiB,
+no Parser package deadline. Complete source cohort66 passes175.00s with
+TEST-SUITE-OK modules=145,145 owner receipts/1087 cases, zero failed owners and
+zero timeouts. It uses two Workers,3GiB, total90/idle5 and native ps permission.
+The real spec child reports12224 source events, excluding cache/request/time
+observations. This is full current-source qualification, not a replacement of
+old failed logs. It validates the reproducible fixture/progress corrections;
+it cannot reconstruct the uncaptured stack from the older ABI-only refusal.
+The final-head Linux/macOS run40262352809 remains a separate required gate.
+
+** Final exact-head OS acceptance
+
+Parser5825b32194edb0f009386587192d71036ae4e871 run40262352809 completes SUCCESS:
+12 enabled jobs pass and5 original conditional jobs skip. Both OS preparation,
+semantics, FFI and generation pass; Linux pinned corpus passes. Both semantics
+logs independently contain145 owner receipts/1087 cases,24 compiled semantic
+groups, declared process closure and all11 Worker-control receipts. The raw
+logs and parsed summary are retained under current-pr/parser-final-5825b32-*.
+Skipped diagnostics/CPU/macOS corpus are not claimed as separately qualified.
+
+The first successful macOS Core300s cohort5ce3e07 records Core's first target at
+02:42:59.291 UTC and native build return at02:47:00.464 UTC, an observed241.17s
+interval before subsequent development-package work. This is an observed log
+interval, not a CPU time or minimum-build claim. It demonstrates why the old
+180s whole-entry fence was insufficient in that cold cohort despite cores=2.
+The higher budget is explicitly authorized policy, not an optimization result.
+
+The reproducible fixture Mode mismatch, import-only supervision gap and nested
+diagnostic/data corruption have concrete controls and corrections. The earlier
+ABI-only missing stack remains an evidence limitation, not a retrospectively
+invented root cause. Current full source and OS qualification is established;
+full Core scale/independent CI, downstream Agentic/root acceptance and the native
+tagged-update dispatcher issue are outside this Parser acceptance claim.

@@ -1,0 +1,125 @@
+#+TITLE: Parser publication and Scope responsibility audit
+#+LANGUAGE: en
+
+* Scope
+This follows the qualified cb78727 / CI40457328171 domain-module baseline in10.113.
+The current audit checks init, Config, Scope and public interfaces against the
+actual pinned Yuanxu/POO/Core implementation, then implements responsibility
+corrections. std Djot remains paused; no Gerbil/SDK or dependency revision change.
+The enclosing Library implementation remains outside the Parser PR.
+
+* Framework evidence and allocation
+| Mechanism | Existing owner and source | Parser decision |
+|-----------+---------------------------+-----------------|
+| Required role files | Core module-system/source/admission.ss; types/objects/config/interface are required | Retain role files; do not delete Config based only on its small body |
+| Optional Config binding | Core source/declaration.ss export-role-config and source/deferred-declaration.ss module-role-values | Remove redundant aliases; binding-free Config publication is supported |
+| Link generation | Core source/declaration.ss lower-core | Select the existing prototype directly in core.exports; no Parser link function |
+| Normalized Scope | Core source/link.ss scope-evidence.candidate | Retain Record/Contract admission and actual checked methods; no Parser normalization wrapper |
+| Native build graph | Core building/source-package and package-library-spec; Gerbil std/make | Retain declarations and independent dev comparison, not another inventory |
+
+Pinned source observations are Yuanxu0e3c1f8 and inherited POO29c58aa. Version and
+revision ownership stays in package/native declarations, not this document.
+
+* Implemented decisions
+| Surface | Audit result | Change / retained responsibility |
+|---------+--------------+----------------------------------|
+| init | One declarative selection is appropriate | Retain nine domain selections; no new selection abstraction |
+| Nine Config roles | Each only imported Objects and aliased its prototype | Remove imports/aliases; Config declares (export); Interface directly selects the prototype |
+| Scope Record and Core Contract | Real field Types and contextual admission, not duplicated framework code | Retain explicit Types and normalization; do not add a generic Parser Scope factory |
+| BuildSupport Scope | Imperative host initialization was exposed as a declarative service | Remove initialize-build! publication; build.ss calls the existing executable initializer directly |
+| Runtime public sources | Three compiler facades obscured execution ownership | Remove compiler machine/lexical-expression/lexical-lexer; redirect real and generated consumers to runtime |
+| Build roots | Compiler published those execution aliases | Runtime owns runtime roots; dev audit rejects retired compiler targets |
+| FFI metadata Scope | UInt accepted unrelated positive versions | Exactly reads canonical schema constants; no new version value/source |
+| src/api and src/declarations | Broad execution API and narrow authoring API serve distinct consumers | Retain composition facades, with runtime ownership; no implementations copied |
+| Language/Grammar/Graph/Runtime/Testing/Utilities Types | Domain semantics and source/compiled constraints remain material | Keep typed services, structural contracts and justified arbitrary-candidate predicates |
+| Source registration | Macro/runtime phases have separate native contexts | Keep both existing registrations; phase tests remain required |
+
+* Per-module disposition
+| Module | Public responsibility | Audit disposition |
+|--------+-----------------------+-------------------|
+| build-support | compiler-gsc-options, compiler-build-spec, native-module-link-options | Keep pure typed compiler integration; remove imperative initialize-build! from Scope; no scheduler or environment registry |
+| compiler | compile-grammar over structural Grammar/IR | Keep inherited Grammar field contract, domain IR sections and normalizer; remove machine/lexical execution forwarding roots |
+| ffi | Four ABI format identities and explicit C build options | Read schema constants once as values; constrain Scope fields with POO Exactly; preserve native include/link options |
+| grammar | Grammar/Role constructors and syntax; expression classification | Keep domain families and strict/malformed-candidate semantics; remove Config alias, not grammar validation |
+| graph | Typed query context/view, projection and graph syntax | Keep Row/Id/Kind Types and caller-owned data; constructor checks remain valid for direct public calls as well as Scope consumers |
+| language | Schema identities, language assembly, source/event declarations | Keep structural metadata separate from compiled nominal descriptors; preserve narrow author facade |
+| runtime | ParseArtifact and execution/checkpoint/recovery APIs | Own actual machine/lexical sources and Build roots; keep structural artifact Type for source/compiled interchange |
+| testing | Form admission, Fixture/Suite APIs and qualification replay | Retain Core test ownership and Gerbil loading/error state; no new Harness or loader registry |
+| utilities | Typed row/key operations and coordinate-preserving string functions | Keep caller Types, dependent pair normalization, false-row merge semantics and final empty lines; no generic replacement that changes domain behavior |
+
+All nine Interfaces select their existing Objects prototypes directly. Their
+Config roles have no local settings and declare =(export)= under the current
+Core source contract. Required declaration shape is retained rather than hidden
+behind a Parser-specific factory.
+
+* Retained small adapters
+The pinned POO package has no Character Type declaration; Utilities' char?
+Type is an explicit domain boundary, not a second character implementation.
+Graph predicate results retain Scheme truth-value semantics, so arbitrary true
+results are intentional rather than replaced by a strict Bool result contract.
+BuildSpecification leaves std/make option tails opaque instead of duplicating
+Gerbil's option language. Parser does not infer stronger semantics from those
+forwarded payloads.
+
+Native link selection asks Gerbil for its actual selected object, then checks
+Parser namespace ownership and physical generation. Core's private build-artifact
+generation validation is not an equivalent public runtime linker service. The
+existing small adapter is retained with its ownership/error controls; no new
+resolver or product registry is introduced.
+
+* Acceptance
+| Boundary | Positive | Negative |
+|----------+----------+----------|
+| Config / Interface | All nine real Scopes selected and admitted directly | No Config alias/settings bodies; no missing required role workaround |
+| Typed Scopes | Existing typed list/struct/grammar/graph/artifact operations execute | Existing wrong field, parameter and result Types reject |
+| Build execution | Native build calls existing initializer and produces full catalog | Scope lacks initialize-build!; real host/compiler error and option controls retained |
+| Canonical ABI versions | Schema-derived FFI Scope admits | Each positive wrong version and prior negative value rejects |
+| Runtime ownership | Native and generated consumers compile/load runtime APIs | Retired source files and actual loaded identities reject; no forwarding modules |
+| Build completeness | Core projection equals independent source discovery, ABI options preserved | No duplicates or retired targets; missing public roots reject |
+| Final qualification | Current-head native entry and both platform CI pass | ERROR output, missing final OK, partial/previous-head results cannot close acceptance |
+
+Two build workers,2GiB build and3GiB complete-test heaps remain. Parser's180-second
+package cap stays removed; native test/process deadlines remain unchanged.
+
+* Current status
+Candidate c3e3dc9 is pushed to Parser PR13. Corrected native catalog comparison
+passes in29.65s; the native production build passes in61.45s at two workers/2GiB.
+All six model-input checks pass. Complete native tests at ce0c5f7 pass183 modules with zero ERROR and final OK
+in228.37s, including native support rebuilding. Final c3e3dc9 changes only the
+independent catalog assertions; its native catalog passes in25.46s.
+[[https://github.com/tao3k/gerbil-parser/actions/runs/40460992173][CI40460992173]] completes successfully at c3e3dc91e692505d0cca34064090f9139cfb0477:
+12 enabled jobs pass and5 conditional jobs skip. Linux and macOS each execute183
+unique native modules, with zero ERROR diagnostics, HARNESS-OK and final OK.
+The PR head was re-read and matches that CI head. Failed attempts remain separate
+from corrected results; cleanup/retry alone is not a repair.
+
+* Retained source refusal
+The first comment-only Config candidate was refused with "module role cannot be
+empty" at Core source/admission.ss:445--446. This is distinct from optional Config
+binding in the role exporter. Config now explicitly declares =(export)=, as in
+Core's existing module-source-admission test, without alias or settings. The
+original catalog/spec refusal logs are retained; Core admission is unchanged.
+
+* Local receipts
+Receipts are retained under =.data/alignment-20261024/current-pr/= in the enclosing
+repository. =parser-publication-catalog.log= and
+=parser-publication-spec-failure.log= retain the comment-only Config rejection.
+=parser-publication-catalog-corrected.log= records the corrected source projection;
+=parser-publication-build.log= records production compilation. Native complete
+entry evidence is recorded in =parser-publication-native-tests.log=. Both remote
+semantics logs, =parser-publication-ci-final.json= and
+=parser-publication-qualification.json= retain final-head execution and source
+identity evidence.
+
+* Final acceptance and scope
+Both platform cold preparations, product restoration, source/compiled phases,
+complete semantic Suites, FFI and generation pass. Linux pinned TLA+ Examples
+corpus passes. The last corpus job spent extended time in its original compiler
+activation step and later completed successfully; no job rerun, cleanup, resource
+increase or source workaround was applied. Job-log retrieval was unavailable
+until the run completed; those observation limits are not a Parser repair claim.
+
+Parser PR13 contains the publication/Scope corrections and is clean locally.
+The enclosing Org/D2 artifacts are synchronized separately from unrelated root
+Library implementation changes. std Djot remains paused; Gerbil/SDK and package
+revision declarations are unchanged.

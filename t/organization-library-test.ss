@@ -1,14 +1,11 @@
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
-
 (import :std/test :clan/poo/object
  (only-in :clan/poo/mop validate)
  "../types.ss"
  "../library/project-organization/types.ss"
  "../library/project-organization/objects.ss"
- "../library/drivers/project-formation/types.ss"
- "../library/drivers/project-formation/objects.ss")
+ "../library/project-formation/types.ss"
+ "../library/project-formation/objects.ss")
 (export organization-library-test)
 (def organization-library-test
  (test-suite "Organization declarations, independent demand and Module policy"

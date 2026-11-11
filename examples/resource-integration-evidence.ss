@@ -1,11 +1,9 @@
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
-
 ;;; -*- Gerbil -*-
-(import :deterministic-engineering/init :deterministic-engineering/profiles/resource-lifecycle
+(import :deterministic-engineering/init
         :clan/poo/object :std/encoding/json :gerbil-ascent/program/session
         (only-in :agentic-ai-lab/modules/temporal-causality/trajectory/ascent-ledger ascent-trajectory))
+(def LifecycleProfile (.get deterministic-engineering.init.exports Library resource-lifecycle-profiles profiles LifecycleProfile))
 (export main)
 (def (wire rows) (map (lambda (row) (map (lambda (v) (if (symbol? v) (symbol->string v) v)) row)) rows))
 (def (need label ok) (unless ok (error "integration acceptance failed" label)))
@@ -15,7 +13,7 @@
   (create-directory output)
   ((.get deterministic-engineering.init.exports std-make-spec) '("init" "profiles/resource-lifecycle" "examples/resource-integration-evidence"))
   (.call deterministic-engineering.init.exports admit-current)
-  (def scene (.get (.get deterministic-engineering.init.exports Scenarios) resource-lifecycle scope))
+  (def scene (.get (.get deterministic-engineering.init.exports Library) resource-lifecycle))
   (def methods (.ref scene 'methods))
   (def entry (.ref scene 'integration-entry))
   (def crate (path-expand "languages-engineering/rust/concurrency/resource-control/backpressure-memory" root))
@@ -24,7 +22,7 @@
   (def scopes (append (.ref context 'scopes) extra))
   (def digest (.ref methods 'value-digest)) (def save (.ref methods 'write-json))
   (def snapshot (digest (list (.ref context 'snapshot) scopes)))
-  (def session ((.get (.get deterministic-engineering.init.exports Library) evidence scope open-review)
+  (def session ((.get (.get deterministic-engineering.init.exports Library) evidence open-review)
     entry LifecycleProfile 'integration snapshot scopes))
   (displayln "INTEGRATION-PHASE native") (force-output)
   (def native ((.ref methods 'native) root crate cargo rustc 64 (path-expand "native" output)))
@@ -44,7 +42,7 @@
       ("event" (hash ("id" ((.ref methods 'id) r)) ("kind" "evidence")
         ("sourceIdentity" snapshot) ("resultReference" ((.ref methods 'reference) r))
         ("pathIdentity" ((.ref methods 'claim) r))))))) results)
-  (def rules (path-expand "library/drivers/evidence/func.ss" root))
+  (def rules (path-expand "library/evidence/func.ss" root))
   (def exchange ((.ref methods 'register) session results trajectory rules))
   (def (query)
     (def result (gerbil-ascent-session-run session))

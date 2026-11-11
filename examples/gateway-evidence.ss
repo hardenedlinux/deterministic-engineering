@@ -1,15 +1,13 @@
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
-
 ;;; -*- Gerbil -*-
 ;;; A replayable engineering investigation selected by the LLM-based AI agent.
 ;;; This is one example, not an Agent scheduler or a mandatory implementation plan.
-(import :deterministic-engineering/init :deterministic-engineering/profiles/gateway
+(import :deterministic-engineering/init
         :clan/poo/object :std/encoding/json
         (only-in :std/misc/ports read-all-as-string)
         :gerbil-ascent/program/session
         (only-in :agentic-ai-lab/modules/temporal-causality/trajectory/ascent-ledger ascent-trajectory))
+(def LocalProfile (.get deterministic-engineering.init.exports Library gateway-profiles profiles LocalProfile))
 (export main run-gateway-investigation)
 (def (read-text path) (call-with-input-file path read-all-as-string))
 (def (write-text path value)
@@ -22,7 +20,7 @@
   (create-directory output)
   ((.get deterministic-engineering.init.exports std-make-spec) '("init" "examples/gateway-evidence"))
   (.call deterministic-engineering.init.exports admit-current)
-  (def scene (.get (.get deterministic-engineering.init.exports Scenarios) gateway-review scope))
+  (def scene (.get (.get deterministic-engineering.init.exports Library) gateway-review))
   (def entry (.ref scene 'entry))
   (def methods (.ref scene 'methods))
   ;; Issuer-owned observations must use this SAME Scenario scope's operations.
@@ -35,7 +33,7 @@
   (def gateway-result-claim (.ref methods 'claim))
   (def gateway-result-current! (.ref methods 'current!))
   (def application-source (path-expand "application-source.ss" output))
-  (write-text application-source (read-text (path-expand "profiles/gateway.ss" root)))
+  (write-text application-source (read-text (path-expand "library/gateway-profiles/objects.ss" root)))
   ;; Actual design inputs; no invented Cargo.lock, measurements or Rust source.
   (def baseline (.cc LocalProfile 'lock "unresolved/no-Rust-implementation"
     'runtime "declared/Tokio-Rayon-topology" 'workload "bounded-five-job-review"
@@ -43,7 +41,7 @@
   (def cap2 (.cc baseline 'identity 'C2 'capacity 4))
   (def cache (.cc cap2 'identity 'C2-cache 'cache-bytes 128
     'factors '(bounded-retention tokio rayon cache)))
-  (def rules (path-expand "library/drivers/evidence/func.ss" root))
+  (def rules (path-expand "library/evidence/func.ss" root))
   (def queries '()) (def exchanges '()) (def records '()) (def events '())
   (def session #f) (def trajectory #f) (def scopes #f) (def current-profile #f)
   (def current-usage #f) (def frozen #f) (def late-proof #f)
@@ -201,20 +199,20 @@
           ("sourceInputs" (map (lambda (relative)
             (def f (path-expand relative root)) (list f (gateway-digest-file f)))
             '("init.ss" "build.ss" "gerbil.pkg" "examples/gateway-evidence.ss"
-              "library/concurrency/resource-control/backpressure-memory/abstract/objects.ss"
-        "library/concurrency/resource-control/backpressure-memory/abstract/types.ss"
-        "library/concurrency/resource-control/backpressure-memory/abstract/interface.ss"
-        "library/concurrency/resource-control/backpressure-memory/abstract/config.ss"
-              "profiles/gateway.ss" "library/drivers/rust-resources/objects.ss"
-              "library/drivers/rust-resources/types.ss" "library/drivers/rust-resources/interface.ss"
-              "library/drivers/rust-resources/config.ss" "library/drivers/evidence/func.ss"
-              "library/drivers/evidence/types.ss" "library/drivers/evidence/interface.ss"
-              "library/drivers/evidence/objects.ss" "library/drivers/evidence/config.ss"
-              "scenarios/gateway-review/interface.ss" "scenarios/gateway-review/types.ss"
-              "scenarios/gateway-review/objects.ss" "scenarios/gateway-review/config.ss"
-              "scenarios/gateway-review/func.ss" "library/drivers/rust-resources/methods.ss"
-              "library/drivers/rust-resources/oracle.ss" "library/concurrency/resource-control/backpressure-memory/model.qnt"
-              "library/concurrency/resource-control/backpressure-memory/budget.lean")))
+              "library/backpressure-memory/objects.ss"
+        "library/backpressure-memory/types.ss"
+        "library/backpressure-memory/interface.ss"
+        "library/backpressure-memory/config.ss"
+              "library/gateway-profiles/objects.ss" "library/rust-resources/objects.ss"
+              "library/rust-resources/types.ss" "library/rust-resources/interface.ss"
+              "library/rust-resources/config.ss" "library/evidence/func.ss"
+              "library/evidence/types.ss" "library/evidence/interface.ss"
+              "library/evidence/objects.ss" "library/evidence/config.ss"
+              "library/gateway-review/interface.ss" "library/gateway-review/types.ss"
+              "library/gateway-review/objects.ss" "library/gateway-review/config.ss"
+              "library/gateway-review/func.ss" "library/rust-resources/methods.ss"
+              "library/rust-resources/oracle.ss" "library/backpressure-memory/model.qnt"
+              "library/backpressure-memory/budget.lean")))
           ("rejections" '("changed-artifact" "plain-JSON-is-not-an-issuer"))
           ("methodEvidence" "real-Core-Ops-QNT-TLC-Lean-native-ASCENT")
           ("rustImplementationVerified" #f) ("nativePerformanceMeasured" #f)))

@@ -11,6 +11,1668 @@
 
 [[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.104-declarative-slice-coherence-and-implementation-gates.org][Plan and gates]] | [[file:10.105-i0-dependencies-prelude-build-load-and-testing.org][I0]] | [[file:10.106-i1-normalized-context-scope-realization-and-self-binding.org][I1]] | [[file:../../90-99-views/90-architecture-views/90.99-library-contracts.d2][Current execution map]]
 
+The next architecture refactor is specified in [[file:10.108-parser-directory-modules-and-init-build-refactor.org][10.108]]: real src-directory Modules and init-owned build selection. It is not yet an implemented cutover.
+
+* Parser prefix policy and publication-wrapper removal (2026-10-25)
+:PROPERTIES:
+:CUSTOM_ID: implementation107-parser-prefix-policy-removal
+:END:
+
+** Implemented scope and authority boundary
+
+Following the user's confirmation, remove the source of the redundant input
+policy rather than moving it into Core. =package-inputs.ss=,
+=library-publication.ss=, =preparation-snapshot.ss=, =preparation-cache.ss= and the
+now-unused =build-environment.ss= are deleted from Parser and its library catalog.
+Their dedicated tests are retired with the implementation. Compiler process,
+Core projection, FFI, worker failure, idle/silence and actual language tests remain.
+
+The separate =build-qualified-library.ss= is deleted. =qualify-library= delegates
+to the existing =build.ss=; optional/helper builds invoke their existing standard
+Gerbil entries without =publication-build-main=. =qualify.ss run= retains its
+actual process supervisor, budgets, output checks and failure propagation but
+no longer presents a Parser receipt as authorization to run. Its obsolete
+=--library-write= flag and workflow callers are removed together.
+
+Conformance preparation invokes the existing =compile-static-conformance!= and
+native link entry. The prefix-wide copied cache and =scripts/preparation-cache.ss=
+are removed; the small source-only test classification remains in the existing
+=scripts/test-plan.ss= declaration owner. No replacement cache, graph registry,
+whole-prefix observer, signer or scheduler is introduced. The failure archiver
+continues to preserve failed lib/bin outputs and original status, but stops
+expecting the removed publication record.
+
+Ordinary compiler completion is not review/delivery authorization. This change
+retires Parser's own whole-library issuance promise; it does not replace that
+promise with a weaker receipt. Core/Gerbil own the actual selected-source guards,
+normalized build spec, compilation and required-product checks. A higher-level
+consumer needing evidence must bind its actual capture, source, command and test
+result through the existing evidence owner, rather than trust a Parser marker.
+No new Core API is introduced for the removed policy.
+
+** Validation results, provenance and open gates
+
+The implementation is in existing Parser PR13: =0b68f53= removes the lifecycle
+wrappers, =850d130= retains failed process evidence, and =d6e487c= corrects loader
+comments that previously referred to the deleted publication reader. The last
+change is commentary only; it does not alter loader behavior. The initial removal
+diff deletes 1,805 lines and adds 134 across 34 files, including the obsolete
+policy/cache-specific tests. =src/build-support= now contains two modules and
+178 lines: necessary compiler options and native-object linking. No additional
+Core implementation or public API was introduced by this slice.
+
+| Gate | Result and exact scope |
+|------+------------------------|
+| Actual Gerbil syntax / existing test-plan controls | PASS; plan 4.39s |
+| Independent actual catalog / FFI comparison | PASS 108.16s; retained production catalog and all three FFI specifications |
+| Existing Core source/Graph/entry/conflict and selected-clean controls | Four PASS, 46.43s; source/Graph drift and stale entry refuse; symlinked output refuses |
+| Existing Core product/recovery controls | Six PASS, 6.14s; missing/nonregular products refuse, no-op/recursive recovery cannot issue approval |
+| Selected Core/standard clean | PASS 7.54s; one-off deleted-module cleanup uses the actual Git deletion list and standard/Core output-family APIs, not a new scanner |
+| Parser cold build under existing dependency prefix | PASS 211.72s, 264 targets / 588 backend jobs; ordinary Core/Gerbil completion checks, not Parser issuance; two workers / 2GiB; dependencies were not cold rebuilt |
+| Standard helper entries | PASS 60.81s, 46 targets / 96 jobs; no prefix snapshot or copied-store restore |
+| Compiler process suite | PASS 28.83s; module/harness/final OK; zero/multiple values, exceptions and real output controls retained |
+| Three public source-contract suites | PASS 14.07s; all three module markers, harness/final OK |
+| Build owner imports / metadata | PASS 24.18s; helper and FFI declarations still expand independently |
+| Conformance compile / native link | PASS 168.46s; actual CONFORMANCE-LINKED and process result 0; unchanged 240s total / 5s idle; no copied conformance cache |
+| Compiled semantic / research entry | PASS 17.57s, 24 semantic groups plus five other declared runtime/history/provenance/language entries; six actual exit rows all 0 |
+| Removed policy native load | Actual exit 70 with exact =module not found= and requested identity; current compiler-profile module loads successfully. An overly narrow diagnostic message matcher initially rejected this observation; original result/log retained and corrected against the existing observation without re-execution |
+
+Native process controls require the host's =ps= topology API. The first sandboxed
+run refused at the six-way cold bootstrap's unchanged 1.5s idle boundary; its
+log is retained. A subsequent intentional exec-failure custody probe exposed
+=Operation not permitted= for =ps= inside that sandbox. That permission failure
+is confirmed, but it does not by itself establish the first startup timeout's
+complete cause. No native production performance repair is claimed.
+
+With the required host capability, a fresh standard helper clean/build passed
+(4.43s / 8.42s, eight targets / 18 jobs), followed by the complete unchanged
+process controls in 23.93s. Six concurrent first loads, real silence/nonzero
+failure, closed output, Unicode flood and padded-flood backpressure, immediate
+error cancellation, escaped-session cleanup and unrelated-process survival all
+passed. Original 3s total / 1.5s startup idle and 6s backpressure controls remain.
+A deliberate nonexistent exec target separately produced six real native exec
+failures and retained six child logs. The evidence path is published on directory
+creation and failure output is never a success receipt. Failed and native-host
+cohorts remain distinct.
+
+The first remaining-source command omitted CI's existing =GERBIL_LOADPATH= and
+failed on the present =t/fixtures/progress.ss= source fixture. That was a local
+validation-command error; the original log remains. With the exact source path
+and existing 3-GiB full-suite heap / two workers, a fresh full source-suite run
+still failed during =t/benchmark-test.ss= preparation at the unchanged 90s
+per-owner total budget. This is an OPEN gate, not a passed suite or an algorithm
+failure. A scoped, sampled diagnostic subsequently passed that one owner in
+29.29s; it is diagnostic coverage only and does not repair the full-suite failure.
+
+At about 20s of that diagnostic, the native main thread spent 802 of 894 samples
+in =dlopen -> mapSegments -> fcntl= and had low CPU. This supports a host dynamic-
+loading cost observation, not complete causal attribution for the original
+full-suite timeout. It is consistent with earlier saved AMFI observations in
+this document; previously falsified signing shortcuts must not be reintroduced.
+No signing, xattr, system-policy, Gerbil/SDK source or resource-limit change was
+made. Full source-suite closure and final exact-head Linux/macOS CI remain open.
+Worker controls PASS 66.12s, all 11 existing controls including actual failure,
+real silence and duplicate/reexport/Suite ownership refusal. The comment-only
+incremental build PASS 27.11s, three targets / seven backend jobs. Final existing
+PR13 head is =d6e487cb99e3a97a4f38601b4d076a421ca07a18=; exact-head CI
+run =40200589398= is pending at this observation. Earlier =850d130= and
+=0b68f53= runs are superseded, not final-head acceptance. No retry, warm pass or old receipt closes a cold
+or failed gate.
+
+Raw receipts and failed scenes are under =.data/alignment-20261024/current-pr/=:
+=parser-removal-native-cohort16.json=, =parser-removal-conformance-cohort16.json=,
+=parser-semantic-removal-cohort16.json=,
+=parser-semantic-removal-aligned-cohort16.json=,
+=parser-native-process-controls-cohort16.json=,
+=parser-failure-custody-native-cohort16.json= and
+=parser-benchmark-owner-diagnostic-cohort16.json= plus its actual process sample.
+Original diagnostic-matcher results remain adjacent; a matcher correction is
+not a producer retry or repair. Previous runs/CI are historical evidence for
+their own source and input basis. The upstream Core Linux 180s build issue
+remains separately unresolved; this cleanup does not claim to fix it.
+
+* Parser build responsibility consolidation (2026-10-25)
+:PROPERTIES:
+:CUSTOM_ID: implementation107-parser-build-consolidation
+:END:
+
+** Architecture and first implementation slice
+
+Gerbil is the default compiler and standard build toolchain. References to a
+separate project-owned SDK layer are withdrawn. Existing toolchain environment
+variable names, such as Apple's =SDKROOT= or release-provider inputs, remain
+external interfaces; they do not define a new architectural owner.
+
+The build path remains Parser declarations -> =yuanxu!= / =init= -> the same
+=std-make-spec= -> Core =defbuild-script= -> Gerbil =std/make= / compiler.
+No new builder, dependency resolver, scheduler or compiler implementation is
+introduced. Two workers and the existing heap limits remain; the earlier
+user-authorized removal of Parser's 180-second build cutoff remains in force.
+Core's separate 180-second build boundary is unchanged.
+
+The first slice removes Parser's unused =loader-products.ss=, its sole catalog
+entry and its dedicated test suite. Production had no caller. These tests only
+exercised the removed post-build wrapper-deletion mechanism; runtime module
+loading tests and the real runtime loader remain. All current build products
+must still be checked by the existing owner.
+
+Parser's duplicate byte/text drain loop moves into the existing Core Ops
+=copy-process-output= function. Its four positional arguments and default line
+mode are retained. Optional =mode:= is limited to =lines=, =text= and =bytes=;
+chunk modes refuse line-progress callbacks. Real data is forwarded in bounded
+chunks before newline or EOF. Gerbil ports own text decoding; =run-process=
+continues to own process spawn, wait and failure propagation. Parser retains a
+thin invocation adapter, its actual compiler options and FFI configuration.
+
+** Correction: remove prefix-wide policy at its source
+
+The =package-inputs.ss= wrapper is not a Parser responsibility. Its original
+purpose was to exclude reverse-dependent products from the whole-prefix input
+snapshot in =library-publication-inputs=. The snapshot first treated unrelated
+installed library files as inputs; the policy then enumerated every package,
+validated metadata caches, inferred namespace/path ownership, computed reverse
+consumers and intercepted imports to compensate. Calling Gerbil's native graph
+functions does not make this additional Parser policy necessary.
+
+The target is to remove that whole-prefix snapshot and the compensating policy
+together, not merely make the policy lazy, rename it or move the complete file
+into Core. Ordinary builds consume declared module/FFI specifications through
+=std-make-spec= and =defbuild-script=. Verification consumes the framework's
+existing selected-source/dependency/product information; genuine external
+non-Scheme inputs remain explicit declarations. If an existing framework API
+cannot provide a required observation, identify that precise missing contract
+before proposing an addition. Parser does not acquire a general package-policy,
+namespace-ownership or publication authority role.
+
+Acceptance must preserve the actual obligations rather than the removed
+algorithm: a selected source, dependency, compiler or required FFI-input change
+invalidates affected verification; a missing required product or failed build
+refuses; unrelated downstream outputs do not become upstream compiler inputs.
+Import/source-owner boundaries are checked through existing framework owners,
+not a second Parser expander admission policy. Tests devoted solely to the
+removed implementation are retired or replaced by these boundary checks.
+The current =772689f= qualification run verifies the preceding first slice;
+its successful completion would not approve retaining this policy architecture.
+
+** Remaining removal order and acceptance boundaries
+
+| Existing owner/file | Current status | Required replacement and acceptance |
+|---------------------+----------------+-------------------------------------|
+| Parser =loader-products.ss= / catalog / dedicated test | Removed in this slice; no production callers | No remaining live reference; normal catalog/build and module loading still pass |
+| Parser =compiler-profile.ss= output drain | Delegates to existing Core Ops API | Preserve line callbacks, arbitrary bytes, split UTF-8, unterminated output, concurrent capture and child failure; malformed modes refuse |
+| Parser =library-publication.ss= and explicit writer/readers | Still used; not removed | Consume the same init-owned full-library projection and actual entry-source binding; preserve complete input/product guards and reader/writer exclusion |
+| Parser =package-inputs.ss= / prefix-wide publication inputs | Still used; removal now explicitly required | Remove whole-prefix inference and compensating reverse-dependent/namespace policy together; consume selected framework inputs, not every installed package |
+| Parser =preparation-cache.ss= / =preparation-snapshot.ss= / conformance script | Still used; not removed | Use Core-owned preparation/publication restoration with the real FFI/generated/conformance closure; no digest-only approval or second cache protocol |
+| Core build projection / artifacts | Existing framework owner; full-library publication handoff needs a public contract | Retain exact normalized projection and roots; distinguish ordinary build completion from issued qualification; preserve changed/missing/foreign/failed/replay refusal |
+
+The last two migrations cannot be completed by deleting guards or substituting
+the test-only projection for the library projection. Expose and consume the
+same init-owned projection before switching consumers. Keep qualification
+semantics separate from raw compilation and preserve failed scenes. No Gerbil
+or compiler source changes are part of this work.
+
+** Validation status
+
+| Evidence | Current result and limit |
+|----------+--------------------------|
+| Core source output-pump diagnostic | PASS 13.86s; line callbacks/forwarding, arbitrary bytes, split UTF-8, child failure and invalid mode/callback refusal; source diagnostic only |
+| Core ordinary full-spec build at the frozen pre-rebase source | PASS 166.46s, 75 targets / 166 backend jobs, two workers / 2GiB / existing 180s; incremental, not cold or issued qualification |
+| Core native Ops process-script suite | PASS 24.04s with module, harness and final OK; new pump cases plus existing cancellation/process controls |
+| Exact-revision native =pkg update= | FAIL 70 after 5.79s; checkout reached the requested revision, but the next =pkg-install-deps= passed =package@revision= to =pkg-plist-path=. The original command and failure remain in the evidence log; no compiler modification |
+| Native canonical =pkg deps --install= then =pkg build github.com/tao3k/gebril-yuanxu= | Both PASS, 162.66s combined; each retained its existing 180s bound. Dependency installation includes normal =gxtags= indexing; no alternate environment or patch |
+| Parser new strict writer | PASS 347.55s, 269 targets / 599 backend jobs, real LIBRARY-PUBLICATION-READY; two workers / 2GiB and no Parser build cutoff; this validates 772689f, not the subsequent policy-removal target |
+| Parser helpers | PASS 100.09s, 61 targets / 128 jobs / three real publications |
+| Parser compiler-process suite | PASS 35.92s, module/harness/final OK; retained zero/multiple values, exception and output controls |
+| Parser four public source-contract suites | PASS 42.44s; all four module markers, harness/final OK and no reported check/module/harness errors |
+| Core exact-head CI | Lean/Quint run 40195370768 PASS. Native run 40195370787: macOS build PASS, Linux build FAIL after about 181s with encoded child wait status 31744 (exit 124), consistent with the unchanged 180s build watchdog. Specific cost attribution remains open; no retry, cap change or cold-closure claim. Native test groups remain incomplete |
+| Parser exact-head CI | Run 40195493395: Rust lints/contracts/aot-performance PASS; Linux/macOS preparation still running at this observation; no prior-result transfer |
+
+The current Core PR baseline was refreshed from =57dbe0a= to =3a4648a= while
+preserving the upstream types-contract changes, then the shared API was normally
+rebased and published as =bf88264cf0f5c1bf2b5c0a6484ca5f2e1f08c2d5= in existing PR19.
+Parser existing PR13 =772689f6a112001e2408fc2018fee27565a526f9= pins exactly that
+Core revision as its one direct dependency. No branch replacement or force push
+was used. The frozen build and post-rebase native package results remain separate.
+
+Evidence is retained under =.data/alignment-20261024/current-pr/=:
+=core-output-pump-source-cohort15.log=,
+=core-build-support-consolidation-cohort15.json=,
+=core-ops-native-suite-cohort15.json=,
+=native-core-build-consolidation-cohort15.log= (the failed update),
+=native-core-canonical-entry-cohort15.json= and
+=parser-consolidation-cohort15.json= (written after each completed step).
+The failed Core Linux job log is =core-ci-bf88264-linux-build.log=, job =121175216511=.
+Prior Parser =5dec4bc= CI remains historical evidence for the preceding slice.
+
+* Parser diagnostic contract and cross-platform qualification (2026-10-25)
+:PROPERTIES:
+:CUSTOM_ID: implementation107-parser-diagnostic-contract
+:END:
+
+** Accepted Parser qualification
+
+Current PR13 head =5dec4bc613bc1851d7969b7e2926562464162ad9= is qualified by
+[[https://github.com/tao3k/gerbil-parser/actions/runs/40191478156][CI run40191478156]]: completed SUCCESS,12 enabled jobs pass and5 existing
+conditional jobs are skipped. CPU/diagnostic lanes and macOS corpus skipped by
+the workflow are not separately qualified. No skipped result is called a pass.
+Actual checkout merge3ded66d has no changed files relative to the PR head.
+
+Both platforms complete270 targets/601 backend jobs and issue real publication
+receipts; qualified compile entry-to-return is245.4050s (Linux) and217.3164s
+(macOS). Both complete =TEST-SUITE-OK modules=151=. Their retained logs explicitly
+confirm zero/multiple values, full COST record validation and malformed-record
+refusal, evaluator exception propagation/restoration, deferred actual SDK graph
+loading and unknown-owner refusal. Both =library-init= owners and the15-case
+=compiler-process= owner pass. Both unpadded/padded6s backpressure controls and
+existing failure-propagation/silence-watchdog controls pass without relaxed
+limits. Two compiler workers, existing heap/watchdog envelopes and the absence
+of a Parser180s build cutoff remain unchanged; no Gerbil/SDK source is modified.
+
+The source-level and package-entry fixes below are retained with their failed
+precursors, not replaced by successful retries. This closes the requested Parser
+slice and its current-head CI, not every historical performance hypothesis,
+root dependency propagation, Aitia review or delivery/mirror publication.
+
+** Implementation and retained investigation
+
+The next Parser-only step updates =t/compiler-process-test.ss= to require the
+existing complete =COMPILER-COST= record after evaluation events, rather than
+expecting only two event lines. Decimal and exponent clock representations are
+accepted; every cost field must parse as a nonnegative real. Missing, malformed,
+negative, duplicate and trailing records are rejected. The actual zero/multiple
+return values remain asserted independently. An evaluator exception control
+checks the exact propagated sentinel, cost emission without a success event,
+and restoration of the caller's importer/evaluator. Existing admission refusal,
+trace restoration, overlapping evaluation, child-failure and pipe controls remain.
+No production compiler/SDK, resource policy or source pin changes are made.
+The change is committed to existing Parser PR13 at
+=c03135c970f6d7786c2035f0b87bb2b71505871f= (one test file).
+
+The first local full-module attempt confirms the new cases but fails the existing
+runtime-CLI probe because the qualification helper has not yet been built in this
+prefix. Exit0 plus module/harness markers is insufficient: final =OK= is absent,
+so this attempt is FAIL and retained. A helper build attempted from a different
+source checkout is correctly refused (generation/source is not current). Using
+the actual strict-receipt owner checkout, the existing =just build-qualification=
+entry passes in15.05s with8 targets and a real publication receipt. The complete
+candidate test module then passes in11.08s: module, harness and final =OK= are
+present and no harness error is recorded. These are local results, not remote
+head acceptance.
+
+The previous head's Linux semantics failure is the exact output mismatch. Its
+macOS semantics lane fails independently in the existing unicode-backpressure
+control: six-second completion,4,069,471 captured bytes and pending child status.
+That scene is retained separately; the compiler assertion fix is not a repair of
+that timing failure. The padded/unpadded byte totals, deliberate1.2s reader pause,
+0.8s idle and six-second completion controls are not weakened or removed.
+A local unchanged native process-control run also fails (28.70s overall): cold
+concurrent identity, argv/exec refusal, silence, continuous output, closed output,
+error classification and escaped-session isolation pass; unicode flood fails
+before its ready file appears (six-second fence,20 captured bytes). This is a
+separate startup observation, not the old remote near-completion failure, and
+neither is fixed by the compiler assertion change. Both remain explicit pending
+items; successful retries will not be labeled a causal performance repair.
+A separate unsuspended flood diagnostic retains the CLI's6s/0.8s settings:
+exit0, CLI-reported elapsed5.2934s and whole-process10.26s. Read-only samples show
+content hashing at3s and native dyld cleanup/dlclose at7s. The outside fixture
+clock includes startup and process teardown in addition to the CLI's admitted
+operation clock. Sampling can perturb timing; this observation is diagnostic,
+not qualification or a causal fix for either prior failure. No clock has been
+widened and no destructor, source guard or negative control has been bypassed.
+Run40185104230 at c03135c completes FAIL: all three Rust jobs, both whole prepare
+jobs, Linux corpus and both platforms' FFI/generation jobs pass. Both semantics
+lanes reach =library-init-test.ss= and hit idle5s. Intentional failing/quiet
+fixture outputs are negative controls, not additional defects. Strict logs each
+show270 frontend targets,601 backend jobs and real publication readiness;
+compile elapsed is255.2299s/264.9685s (Linux/macOS). Checkout merge528ed9d has no
+changed files relative to c03135c. Both native process-control steps pass on this
+cohort, without retroactively admitting prior failure scenes.
+
+** Spec-query diagnostics and completed disposable children
+
+Follow-up commit =961b7d72335db9af0d63eea0c40b6ea311fd2978= changes only
+=t/library-init-test.ss=. SDK =run-process= inherited stderr writes to the native
+FD, bypassing the Worker's Scheme output pipe. In the failed Linux transcript,
+the owner is last observed at10:50:17.1518UTC and times out at10:50:22.5527UTC,
+although genuine SDK import completion4600 is printed at10:50:21.3199UTC.
+This is a diagnostic ownership/channel defect; the child is doing real work.
+
+The SDK coprocess now forwards actual stdout/stderr lines to the supervised
+Scheme diagnostic port. The SDK's real spec datum goes into a private temporary
+file instead of sharing the diagnostic stream. Status must be0; the parent
+requires exactly one nonempty datum, checks the same full catalog/FFI contents,
+and removes its private file. No fake heartbeat or new timer is introduced.
+A full native gxtest passes in35.07s. Forwarding alone is NOT accepted: the actual
+Worker still fails its unchanged5s idle gate (57.89s whole attempt). That scene
+contains a complete10,907-byte datum written4.23s before the final failure log.
+The datum and failed log are retained separately.
+
+The completed disposable spec child now reuses the EXISTING
+=test-child-process-exit!= fixture after the SDK spec operation and data-file
+close. This is the same completion boundary used by the existing suite runtime;
+Gerbil/SDK teardown is not added to the spec query's work. No new native binding,
+SDK source edit, clock change or admission bypass is introduced. Normal child
+errors still fail before this success-only exit and status/datum checks remain.
+The actual Worker gate then passes in19.25s with =TEST-SUITE-OK modules=1=,
+under the original owner90s/idle5s and local120s/1GiB envelope.
+
+A broad local worker-control attempt is refused by its missing prepared
+=worker-control= fixture; this is retained as a prerequisite failure, not a
+negative-control pass. Direct existing controls then qualify the required
+behaviors: intentional failing assertion exits70 in9.14s with the target case
+and batch-failed marker; actual silence exits70 in11.15s with the target case
+and idle-timeout marker. Neither clock nor fixture behavior is changed.
+Two compiler workers, existing heaps and the absence of a Parser180s build
+cutoff remain mandatory.
+
+** Public test-entry prerequisites and current head
+
+Commit =152c4f4aea85d149b029f299478b7e6831c172cf= declares the existing
+=build-test-driver= prerequisite for =test-source-contracts= and
+=build-test-support= in =justfile=. Standalone source contracts therefore prepare
+the exit helper before gxtest, without compiling unrelated benchmark helpers.
+A native Just dry-run checks that order and minimal dependency boundary. No
+recipe deadline, heap or worker setting changes. This prerequisite completes
+the adapter's public invocation contract instead of assuming CI prewarming.
+CI run40187204807 at961b7d7 is superseded/cancelled by the existing workflow
+concurrency policy and is not accepted. Run40187511440 at152c4f4 fails before
+full Scheme test execution: Linux's AST rule rejects the added direct diagnostic
+=display= in a test file; macOS's unchanged6s full-CLI backpressure control reaches
+ready at approximately5.57s and cannot finish its deliberate1.2s pause before
+that boundary (85,280 captured bytes). These failures are retained and not
+replaced by retries.
+
+** Reuse streaming diagnostics and defer the SDK graph boundary
+
+Commit =1c9a4d9c0ad68faf47849f3e0d248b513a6aea9f= replaces the added custom
+coprocess bridge in =t/library-init-test.ss= with the EXISTING =run-build-tool=
+text stream adapter. The source AST prohibition remains unchanged. No new
+printing assertion, logger framework or stdout/stderr protocol is introduced.
+
+Source-level observation shows =library-publication= eagerly loads
+=gerbil/tools/gxpkg= even when an unscoped reader never queries package ownership.
+The SDK manager imports CLI/network/template dependencies. Package-level
+=src/build-support/package-inputs.ss= now invokes that SAME SDK module and its
+qualified public procedures only when an actual graph operation is requested.
+There is no new graph resolver, metadata cache, registration or SDK modification.
+Scoped owners still use SDK list/plist/root/reverse-dependency functions and all
+existing currentness, direction, namespace and pre-expansion refusal checks.
+Unscoped readers still hash and validate their full declared inputs/products;
+the change defers unused module initialization, not source admission.
+
+The added existing policy-suite scenario checks a fresh child has no manager
+before a graph request, does load the SDK manager afterward, and refuses an
+unknown owner. A separate native-source probe confirms the actual registered
+Parser owner and nonempty real metadata closure (6.87s). AST, package-policy and
+spec-query modules pass together in21.01s with module/harness/final =OK= and no
+harness error. A first new fixture reader-parenthesis error is retained separately
+and corrected before commit; it is not treated as a qualification pass.
+
+A standard strict build from the pushed Parser project source runs in the SAME
+existing native prefix, with an unscoped project producer as in CI. No private
+runtime or dependency patch is created. Registered Parser source remains0dab146;
+this local publisher is explicitly the separate checked-out PR project source,
+not a claim that the registered package pin has already propagated. Core0353d86,
+two compiler workers,2GiB and no Parser180s cutoff remain unchanged.
+The strict project cold build passes in210.95s (270 targets/601 jobs, compile
+entry180.7483s, real receipt, no survivors). A fresh native process admits that
+actual generation before/after a real reader call and verifies the SDK manager
+is absent throughout (11.82s). This is a functional dependency/currentness check,
+not a6s performance qualification of the larger local prefix. Linux whole
+semantics at1c9a4d9 passes in run40190099011; its logs are retained separately.
+
+** Active SDK test-driver entry alignment
+
+Sequential public helper invocation exposes a real configuration mismatch:
+qualification publishes, then the driver re-enters =gerbil env= even though the
+caller already activated it. The source guard correctly refuses changed
+=GAMBOPT= mappings. Commit =5dec4bc613bc1851d7969b7e2926562464162ad9= makes
+=build-test-driver= use the SAME existing =gerbil_test_launcher= selection as
+other helpers. No mapping normalizer, environment comparison, heap or clock is
+weakened. The two helper publications then pass in47.47s with two real readiness
+markers. The actual public =just test-source-contracts= entry passes in86.87s,
+including its declared driver prerequisite and all four module/harness/final
+=OK= checks under the unchanged test envelope.
+The latest head differs from1c9a4d9 only in this launcher line. Current remote
+qualification run40191478156 at5dec4bc is completed SUCCESS as summarized above;
+preceding runs are not relabeled as that head. Root dependency propagation and mirror publication remain outside
+this Parser-only step.
+
+* Parser-first: remove the build cutoff and align Yuanxu (2026-10-25)
+:PROPERTIES:
+:CUSTOM_ID: implementation107-parser-first-no-cutoff
+:END:
+
+The user explicitly supersedes the earlier Parser180s requirement: solve one
+layer at a time, remove that build cutoff and first align Parser to latest
+Yuanxu PR. Two workers and the existing heap limits remain. This change is
+restricted to Parser; previous failed scenes and their historical policies stay
+retained, rather than being retrospectively accepted under a different policy.
+
+Live PR19 head remains =0353d86ac017442506e89617e86e6ef778a3111e=. Parser's
+single native production dependency already names that exact complete revision;
+POO remains inherited. No arbitrary pin change or floating-branch substitution
+is made. Existing Parser PR13 =0dab1467a6a6457e82f2751f5d1e60506444934e= removes
+180s from the three native build shebangs, strict base writer, qualification
+helper builder and catalog query. Native gxi/SDK/Core still own compilation.
+Test120s/idle controls, evidence-custody deadline and other package limits are
+unchanged. The README also corrects the old four-worker statement to actual2.
+
+Static entry checks, shell syntax and diff checks pass. The public SDK update
+API selects the exact Parser head in7.77s and verifies the registered checkout;
+that is source acquisition only. The native strict entry runs without a package
+cutoff and with2 workers/2GiB; no outer180s diagnostic wrapper is used. Its first
+attempt fails before Parser compilation (exit70,59.93s,zero targets/jobs): the
+previously interrupted Yuanxu build left =admission.ssi= without its loadable
+=admission~1= product. The loader consequently tries generated Scheme as a source
+module and reports an illegal =declare=. This is a prerequisite product failure,
+not a Parser deadline or a completed cold build. Complete prefix custody captures
+19256 files with zero changes and archive SHA256
+=4609b77208987235e8df10e6cbff0e1480e7c03b2476f137174824ecbd66d60f=.
+
+A native incremental Yuanxu prerequisite recovery uses its unchanged180s envelope;
+no Core source/policy is changed and no clean is used to discard the failure.
+Its observer initially cannot read =ps= in the sandbox; the already launched
+bounded command is observed separately rather than duplicated. Its original exit
+status is unavailable, so even successful product loading will not be described
+as cold-build acceptance. The native recovery reaches its final package-build
+log and produces the previously absent =admission~1.o1=. Independent import
+verification passes in29.63s, with =PARSER-PREREQUISITE-IMPORTS-OK=. Parser-owned
+clean passes in72.97s, with =LIBRARY-CLEAN-READY=. A fresh strict Parser attempt
+then passes without a package deadline: exit0 in467.83s,270 frontend targets,
+601 backend jobs, qualified compile entry-to-return416.8945s, and
+=LIBRARY-PUBLICATION-READY=. Actual compiler environment records workers2 and
+max-heap2G, retaining the existing multiple-host flag policy. One-second sampling
+observes at most two owned GSC processes, and no owned process survives exit.
+This is completion timing, not an isolated throughput comparison: the observer
+also sees up to three foreign GSC processes on the host. No Gerbil/SDK or
+compiler policy change is involved. The original failed scene
+and the later successful cold generation remain separate records. The existing
+four-module source-contract gate passes in40.42s under its unchanged120s/1GiB
+policy: four =MODULE-OK= markers, =HARNESS-OK= and final =OK= are all present. The recovery
+is incremental prerequisite restoration, not a repaired Core cold-build claim.
+
+Remote Parser run40183071009 reports its Linux /Build parser and language packs/
+step successful (10:03:52--10:07:13UTC,201s including clean and validation), then
+continues to optional command compilation. macOS also completes that step
+(10:05:53--10:12:42UTC,409s). Linux's whole prepare job succeeds. The completed
+Linux job transcript records270 targets and601 backend jobs, qualified compile
+entry-to-return194.2406s, and =LIBRARY-PUBLICATION-READY=. The two-worker build
+is complete beyond the old cutoff without weakening validation. These are build
+and preparation results, not acceptance of all semantic/FFI/corpus tests.
+Linux semantics subsequently fails in =t/compiler-process-test.ss:136=: its
+exact two-line diagnostic-output expectation predates the existing additional
+=COMPILER-COST= line. The log explicitly shows that output mismatch and
+=MODULE-BATCH-FAILED t/compiler-process-test.ss=. Earlier intentional assertion
+and timeout messages belong to successful negative controls and are not counted
+as defects. Preserve this distinct follow-up: align that diagnostic contract test
+with the current output while retaining zero/multiple-value and error controls;
+then qualify its new head. No all-green CI claim is made for this Parser head.
+The run's head is0dab146; actual actions/checkout is merge9bc87fd. Its source
+comparison against the PR head reports no changed files and is retained
+separately; the merge identity is never mislabeled as the head commit.
+
+The Parser gate must retain every compiler target, complete product/currentness
+checks, issue its real receipt, and leave no owned process. Elapsed time under
+this new policy is diagnostic, not evidence of meeting the retired180s SLO.
+
+Orgize/ASCENT/Agentic source propagation and root commit/mirror synchronization
+are deferred while this Parser layer is checked. The root's prior candidate
+manifest is not silently rewritten to claim the new Parser is already delivered.
+Core/Yuanxu build limits, source, SDK and runtime policies are not modified here.
+
+* Native CI bottlenecks, AMFI observations and package dependency boundary (2026-10-25)
+:PROPERTIES:
+:CUSTOM_ID: implementation107-native-ci-cohort09
+:END:
+
+** Exact-head Parser failure and cost attribution
+
+PR13 initially remains370e6f2; CI run40175843784 fails the unchanged180s
+strict cold fence on both operating systems. Restricting the retained logs to
+compiler-enter onwards yields270 frontend targets on each platform, with596
+backend starts on Linux and447 on macOS, versus601 for the complete local
+writer. CI ingestion timestamps place first/last frontend messages at18.65/
+47.69s (Linux) and26.38/76.94s (macOS), and first backend messages at49.17s/
+28.33s respectively. Ingestion may buffer output: these are not exact per-job
+execution timestamps. Neither platform emits compiler-return. Thus the actual
+failure includes unfinished backend work, not merely final receipt hashing.
+
+A direct unchanged-policy cost probe performs3000 actual native import-admission
+checks in4.253s (17.94s including launcher/imports). It does not replace a complete
+build profile, but does not support treating those checks alone as the dominant
+macOS backend deficit. No check is omitted, cached by mtime or normalized away.
+
+Existing PR13 =7fb57b3= adds cumulative admission/reporting cost, outer evaluation
+cost without nested double-counting, and the EXISTING runtime parse-cost observer
+at the Core/SDK entry. The counters are not an additive partition or admission.
+Direct source controls preserve multiple values, exact exceptions, rejection
+before the protected native importer and native importer results (2.16s; a later
+unchanged smoke observation5.51s). Qualified entry import passes6.12s. The current
+four-module source-contract attempt FAILS its120s fence at123.44s without module
+completion markers; it is retained and never called acceptance. Prior27s success
+cannot transfer after upstream product rebuilding.
+
+A fake failing launcher control exercises the real Just failure path: original
+exit1 remains1,35334 members are archived in35.71s, checkout credentials/SDK
+files are excluded, and the manifest explicitly says admission=none. The existing
+prepared-products restore REFUSES this archive before extraction (0.74s); the
+active receipt is unchanged. This is an exit/custody control, NOT a real compiler
+failure or performance experiment. Future strict CI failures upload their native
+products as well as logs; past remote product scenes cannot be reconstructed.
+
+** Orgize original loading wait: stronger evidence and falsified signing shortcut
+
+Read-only macOS unified logs for the preserved original failure window contain
+140 distinct Parser native-object paths with280 AMFI messages: missing CMS blob
+and CT-signature diagnostics. They overlap the saved dlopen/mapSegments/fcntl
+stack samples and actual installed image paths. These observations establish
+code-validation activity along the blocked load path; they do NOT establish
+corrupted bytes, a unique kernel/cache cause or a reason to weaken OS policy.
+The existing linker ad-hoc signatures already pass codesign verification.
+
+The frozen compiler-profile~0.o1 input is53160 bytes, SHA-256
+=250798de40810225ba1dadfeb841def303415b76fdf852d4fb8dc8d74863e859=.
+An initial fixture incorrectly renames its basename and fails native entry-symbol
+lookup; that invalid control is retained. Corrected copies preserve the original
+basename and existing SDK/prefix (fixture outputs are not GERBIL_PATHs). In
+original/explicit/explicit/original order, mapping-only loads return in9.275/
+13.303/7.833/7.006s. The explicit ad-hoc signature changes bytes to SHA-256
+=760e27c92cc43b5687bd2cd00a07aedeba55e45d322e74dab22faf0e34e999e6=;
+AMFI/amfid still reports ad-hoc/unknown-chain trust diagnostics. Raw object loads
+warn about uninitialized imported variables; exported compiler functions are not
+executed. These are mapping controls, not functional Orgize validation, and they
+do not recreate the historical kernel cache. No repeatable signing advantage or
+complete performance A/B is claimed; installed products are NOT re-signed.
+Gerbil/SDK, xattrs and system security policy remain unchanged.
+
+** Native installation versus editor indexing
+
+Orgize exactc8a0928 CI run40176583046 passes dependency compilation, then fails
+in automatic =gxtags= with Heap overflow under the unchanged2GiB maximum. This
+is an editor-indexing failure after package compilation, distinct from strict
+Parser cold issuance and the old Orgize loading wait. Its raw remote logs are
+retained; the old ephemeral remote product directory was not uploaded.
+
+The package entry now follows Agentic's EXISTING SDK script API route:
+=build-dependencies.ss= reads the current native =pkg-plist "."= and invokes
+=pkg-install= inside =with-pkg-build-env=. The SDK retains revision/tag handling,
+recursive dependencies, native builds and failures. Optional editor indexing
+moves to explicit =just package-tags= with its own unchanged resource boundary.
+No compiler target, input/currentness check, custom resolver or SDK patch is
+introduced. Empty/malformed/revision-conflict controls pass3.90/3.95/4.38s;
+checkout and tag bytes remain unchanged under the negative controls.
+
+Actual installation for the then-declared Parser370e6f2 exits0 with
+DEPENDENCIES-READY in170.09s total: POO7s, Core20s and Parser131s observed
+individually, each native child exports2 workers, each remains below180s, and
+no gxtags or surviving owned process is observed. The copied observer wrongly
+expects six packages, so its original aggregate FAIL and immediate archive
+(fd534b61cac58c1e4723ed17eb0b8f1ddee316ea27dfa8471300c7013fe2087c;
+19854 files, zero changes during capture) remain retained. An explicit offline
+audit corrects ONLY that coverage assertion to the declared three packages;
+it does not rerun installation, conceal a package failure or claim cold repair.
+The actual backend-child flags were not sampled by that observer. This result
+cannot transfer to the later source revisions below.
+
+** Frozen next dependency cohort and unresolved gates
+
+The concurrently advanced Agentic PR now declares Core gitlink0353d86. Its diff
+from productionafc447d contains only tests, their inventory and documentation.
+Parser PR13 =36f62d9= aligns its native Core declaration to0353d86; ASCENT does
+the same through its existing PR. POO stays the inherited29c58aa. This freezes
+an observed source baseline, rather than substituting newest floating checkouts.
+
+Orgize also had a real source split: its Gerbil declaration selected370e6f2,
+while Cargo selected153572a for Parser runtime/artifact. The existing alignment
+gate requires the exact same Parser checkout. Native declaration and Cargo/lock
+projections are being aligned to the same published Parser head, with ordinary
+Cargo updates. Only dependency configuration changes; Rust implementation is
+untouched. The initial missing-Cargo-PATH failure is retained; the existing
+absolute Cargo binary is used, without installing a toolchain/environment.
+
+Latest Parser diagnostic CI is queued at observation; there is no new Linux or
+macOS acceptance. Source metrics must distinguish reporting, admission, expansion
+and backend completion before claiming a causal latency repair. New native
+installer correctness, old OS loading observations, successful mapping controls,
+strict cold issuance and root C/Q/SysML acceptance remain separate obligations.
+Root commit and hardenedlinux/tao3k dual push remain closed until the complete
+new cohort and project gates pass. No retry, clean or changed-source success is
+promoted to a repair of an earlier failure.
+
+** Subsequent same-budget results and precise current blocker
+
+The frozen native SDK API update to Core0353d86 / Parser36f62d9 / ASCENT6b1ec87
+returns0/12.34s, with exact checkout heads. This is fetch/update only. Subsequent
+actual declared three-package installation passes0/58.92s; POO6s/Core20s/Parser19s,
+actual child worker exports2, a real GSC host-policy sample matches, no editor
+indexer and no survivors. Native/Cargo source-alignment gate passes0/0.78s.
+Orgize PR18 =330f48c= publishes the installer boundary plus native/Cargo/fuzz
+source configuration, using ordinary Cargo lock updates (only the two Parser
+Git source records change). No Rust implementation or extra direct dependency
+is introduced. Agentic projection/lock updates are prepared but not yet accepted.
+
+A new local Parser36f strict run retains the INTERNAL180s package fence; custody
+runs afterwards, so213.07s overall is NOT a widened build timeout. It fails124
+through Just/70 through SDK,270 frontend/557 backend starts, no compiler-return
+or publication. The automatic failure archive is retained; a second immediate
+full-prefix scene has19450 files, SHA-256
+=11c4973556350a3e175ed8b9e0bf053ebd2cdd0ae39841437c908b1013302cae=,
+zero changes during capture and no survivors. Partial native counters at2967
+imports show43.592s elapsed,1.469s admission and0.03135s reporting. These
+measurements do not support dropping guards or suppressing logs as the fix.
+Concurrent local diagnostics/lock projection and foreign workload are not a
+controlled performance A/B; no unique performance attribution is claimed.
+
+An isolated GSC experiment retains the observed SDK relocation mappings, exact
+host flags, optimization, max2GiB and worker environment2. After two retained
+invalid fixture invocations (option ordering and missing relocation mappings),
+the valid original/32MiB-floor/32MiB-floor/original sequence gives small-unit
+0.661/0.785/0.650/0.648s and larger HCL-unit8.908/9.702/6.911/7.752s. All four
+outputs have identical hashes per input. GC counts fall11->2 and24->17, but
+latency has no repeatable advantage. Production min/max heap options are NOT
+changed. This is a micro diagnostic, not package acceptance or OS-cache replay.
+
+PR36f CI run40179315837 now has a successful Linux preparation job. Its macOS
+preparation fails EARLIER in Core dependency build with status31744/124, before
+the strict Parser entry. It is incorrect to label this macOS event a new Parser
+cold180s failure. Actual CI checkout is merge17670b8077f832c5f76cfb75e60aa46ac63ae606;
+the GitHub comparison to PR36f reports no changed files. Record both identities,
+not a fabricated PR-head checkout. Linux products and logs are retained under
+the actual merge identity; no macOS strict products existed to publish.
+
+Core's same-source default-versus-existing-Parser-host-policy cold comparison
+is now running with2 workers,2GiB and separate unchanged180s clean/build entry
+fences. This tests the actual preceding blocker; it does not assume the earlier
+local SINGLE_HOST147s counterexample explains portable CI. Failed operations
+are archived before the next case. No default compiler strategy is changed
+without the comparison and native correctness/currentness controls.
+
+The new diagnostic evaluation counter also needs to account for overlapping
+compiler workers, not merely lexical nesting. Its pending refinement uses a
+short mutex only around counter updates and counts the union of active
+intervals. Value/exception/import-refusal controls pass2.40s; a synthetic crossed
+schedule retains the trailing active interval (0.155s), without claiming real
+compiler performance or source authority. This is a diagnostic correctness fix,
+not a deadline repair; it remains separate from the frozen36f observations.
+
+** Core strategy control outcomes: no supported compiler-policy repair
+
+Both Core0353 same-source cold BUILD operations fail their original180s fence:
+default181.43s/252 frontend/432 backend starts, candidate181.30s/252/392.
+Their preceding clean operations are16.83s/29.96s under separate unchanged
+fences. Owned C ancestry confirms174 O1/SINGLE_HOST observations for default
+and127 O1/MULTIPLE_HOSTS observations for the candidate. Actual simultaneous
+GSC count never exceeds2. Thus the requested policy was applied; it did not
+produce a passing package control. No production compiler policy is changed.
+
+Default's frozen scene has19345 files, SHA-256
+=5aaa0d896bee8a2bb3c82cdf4c558c9bed0d234195c28a10b87e84758263dc16=;
+candidate has19308 files, SHA-256
+=f6fecc83fe26e06d560b0fc51c58057898a25cf78796e22ff111cd9166cde980=.
+Both observe zero changes during capture. Initial timeout teardown leaves two
+owned wrapper/GXI PIDs per case; TERM is sent and subsequent exact-command PID
+checks confirm all four gone. Neither scene is cleaned before capture.
+
+One-second owned-process samples place default's first GSC at20.15s and the
+candidate's at28.40s. Longer observed units include default
+=poo-clos/syntax~1=14.10s, =test-observation~0=6.99s,
+=generic-syntax~1=6.58s and =object-family/syntax~1=6.42s; candidate's longest
+observed unit is =object-family/syntax~1=8.71s. These are sampled lifetimes,
+not exact exclusive CPU or proof of a unique cause. They identify native macro
+and aggregate backend work; no single global stuck job is established. Foreign
+workload is not controlled, so relative wall time is not a clean performance
+ranking. Default recovery is now a separate native clean/build, with no claim
+that any subsequent recovery pass repairs the cold SLO. Until it completes,
+the active prefix is incomplete and has no current Parser admission.
+
+Parser PR13 =2afad27= publishes the overlapping-interval diagnostic correction.
+On the SAME synthetic crossed schedule, old36f records only27.9 microseconds
+and loses B's150ms trailing interval, while the new counter retains155ms. The
+old-result parser first mishandles scientific notation; its failed raw assertion
+is retained and an offline audit corrects only parsing, without rerunning the
+operation. This is a positive/negative diagnostic-correctness control, not
+compiler throughput or authenticated source evidence. No runtime memory,
+optimization, target-set or SDK policy is altered by that correction.
+
+** Current candidate and final unclosed source/acceptance state
+
+Orgize734b338 keeps native/Cargo/fuzz Parser bindings at2afad27; its existing
+alignment gate passes1.50s. Agentic4a1f70d publishes that Orgize revision with
+ASCENT6b1ec87 and Core gitlink0353d86. Existing projection tools derive archive
+hashes; Bazel lock update, sync-lock and dependency-contract checks pass. Root
+=gerbil.pkg= now names ONLY that full Agentic candidate revision. This is an
+uncommitted candidate selection, not a qualified installation, accepted C,
+restored runtime or transfer of earlier36f successes.
+
+Default Core production recovery also fails its180s BUILD fence (182.06s
+including teardown),252 frontend/341 backend starts. Its immediate default-only
+failed scene has19256 files, SHA-256
+=4609b77208987235e8df10e6cbff0e1480e7c03b2476f137174824ecbd66d60f=,
+zero changes during capture. The prefix remains INCOMPLETE and unadmitted;
+no mixed-mode experimental prefix is declared production-ready. Subsequent
+recovery cannot be called a causal repair of either cold deadline failure.
+
+Implemented and positively/negatively controlled changes are the editor-index
+installation boundary, source-pin/lock alignment, failed-product custody and
+diagnostic interval correctness. Still unclosed are Core/macOS dependency cold
+throughput, Parser reliable cold throughput, the historical Orgize load-wait
+cause beyond observed AMFI validation, new full-chain build/load/restore and
+project C/Q/SysML gates. Main repository commit and dual push have NOT occurred.
+Do not lower optimization, omit targets, widen resource fences, re-sign installed
+outputs, alter SDK/OS policy, or treat a retry as the missing repair.
+
+* Preserved-scene continuation and latest PR qualification (2026-10-25)
+:PROPERTIES:
+:CUSTOM_ID: implementation107-preserved-scene-qualification
+:END:
+
+** Evidence custody and unchanged execution conditions
+
+Before alignment, =failure-scenes/pre-latest-pr-20261025-01= preserves17219
+installed library files and root publication receipts in an evidence-only tar,
+with per-file bytes/mode/mtime and package HEAD/status metadata. Its archive
+SHA-256 is =07a476f54251a5077d66ed556637d2da37f64342adb1184f810c2ed3e349f060=;
+no file changes during capture. This is the POST-clean/observed-build state from
+the preceding continuation. The original pre-clean Orgize failure products were
+not archived then and cannot retrospectively be claimed preserved. Historical
+failure logs/receipts remain retained. Every new failed cold run must be archived
+immediately before recovery or clean. Archives are never load environments.
+
+CI/native worker count stays2, package deadline180s, maximum Scheme VM heap2GiB,
+ordinary outer test deadline120s and existing focused heap/idle controls. Gerbil
+and the installed SDK are unchanged. OS sampling and completed-import reporting
+are diagnostics, not liveness heartbeats or authority. Clean/retry success must
+not be classified as causal repair.
+
+** Latest upstream source baseline and ownership
+
+The live PR refresh observes Coreafc447d9804ebb232d549f1934d55239a80c3868,
+Parserdb982ce9d422d6e83f21cada256dc808ef8a6999,
+Orgizebffe77af99f1263c97475b2a859ea2ee8c43fa07 and
+ASCENTa1feea38b6106c0910b79d42a48ce62115ee43b5. Parser/Orgize/ASCENT already
+publish their matching parent pins. Core still declares POO29c58aa; the observed
+newer POO PRae1afea is not an inherited dependency and is not substituted for it.
+Agentic PR34 remainsbc08d58 at this observation, with the earlier coherent cohort;
+the root's single direct declaration remainsbc08d58 until formal propagation.
+
+Core's new published change shares the native confined context and input registry
+between eager publication and deferred role resolution. Its regression demands
+that a role's private object and the same object imported by another role retain
+identity, and that fresh source sessions reject stale roles. This is a concrete
+upstream mechanism, distinct from mere timing variation; local validation must
+still establish its effect, retain currentness/name/source refusal and avoid
+claiming it uniquely explains a lost historical Agentic failure. This project
+changes no Core Reader, POO runtime or SDK implementation.
+
+The prospective native update returns70 after checking out all four intended
+heads. The failed SDK operation is retained rather than reported as installation
+success; actual heads match independently. Coreafc's native package compilation
+passes0/38.12s with2 workers/180s/2GiB. The prospective prefix is NOT a root
+qualification or an accepted C. A strict Parser run now observes the actual
+package entry, current Program/source paths and phase events, with bounded
+read-only parent stack samples. Failed products/receipts are frozen before any
+repair. Source, binding, execution and acceptance results remain separate.
+
+** Frozen failures, actual loading and counterexamples
+
+The strict Parserdb982ce run fails70/183.80s including launcher teardown:270
+frontend targets,391 backend starts, no READY. Its namespace was actually cold.
+At90s the parent is in native compiler optimization; at160s it is waiting in
+select. Thus this failure is not confined to the final snapshot. Both exact-head
+CI preparation jobs in run40170319385 also fail in strict Parser at180s. No
+worker, deadline, heap, target inventory or optimization change is used to hide
+these failures. The immediate frozen library/receipt archive contains17065 files,
+SHA-256 =a059c8d8fb3c922343adfaa25d37cbb9304e6e0f4049242f5b0b631958783491=,
+with zero changes during capture. Only after capture does native recovery run
+and pass0/77.02s; this is not cold issuance or repair.
+
+The two preserved library manifests have3286 and3077 native object families,
+respectively; neither has a noncontiguous generation chain. A stale-family-hole
+explanation is therefore unsupported for these scenes. Local timing regression
+also cannot be attributed solely to the Core source change: cohort07 samples
+contain216 foreign-workspace GSC process observations, versus6 in cohort06.
+This records contention, not a quantified causal explanation or an excuse for
+failed CI. Selected Parser C compiler observations retain the actual
+MULTIPLE_HOSTS override and O1 settings.
+
+Before the original native Orgize package command, a complete active-prefix
+archive (excluding source checkouts, whose HEAD/status/recursive submodules are
+recorded) captures19443 files, SHA-256
+=b80179030a1a6b35adef7edeae00e03c0945b8c694155d8a23b9780adf08bdab=.
+The command is =gerbil pkg build github.com/tao3k/orgize=, without clean or an
+importer override. It fails124/180.71s,29 frontend targets/50 backend starts,
+before GENERATION-OK. Its actual GSC child exports2 workers, the unchanged2GiB
+maximum and the expected host flags. Read-only samples at60s and150s put the
+parent in =dlopen -> mapSegments -> fcntl=, with low CPU. Loaded-image records at
+15s/120s contain no native bundles outside this prefix or the installed SDK.
+This is evidence of loader/kernel validation work, not proof that one particular
+signature is invalid or that all build time is there. Two sampled Parser
+bundles already have ad-hoc linker signatures and pass read-only strict
+codesign verification in0.010s/0.007s. No signing, xattr, SDK or system policy
+is changed. Verification may warm caches and is not an acceptance run.
+
+The failed Orgize prefix is immediately captured as19501 files, SHA-256
+=9719ffb9278fa6ffc165d0b82d6521d68d77d75479fef47277f2d882c0979359=,
+with zero file changes during capture. The outer timeout initially leaves its
+GXI child pending; TERM is sent and the later read-only PID check confirms it
+has exited. This observation motivates a package-owned deadline, not a longer
+external timeout. Root commit and dual push remain closed.
+
+** Focused source authority controls and native clean ownership
+
+Core's large publication test fails the auxiliary120s fence without completed
+harness markers. The existing deferred-reader controls pass65.38s. Shared role
+identity/fresh-epoch cases are moved into =t/module-role-context-test.ss=,
+registered in the existing full-test driver, and paired with name/byte mutation
+controls. The final four-case entry passes33.48s at2 workers/2GiB/outer120s,
+with native timing records, MODULE-OK/HARNESS-OK/final OK and no errors. Both
+public-name redirection and byte mutation produce the EXACT historical
+=public dependency source or native identity changed= message through the real
+publication Reader; the protected callback is not entered and exact restoration
+readmits. This is published in existing Core PR19 as c63188c, a test-only change
+over productionafc447d, not a Reader change or a timing repair.
+
+The actual Agentic =nix-contracts.ss= predicate control passes5.20s at2 workers/
+2GiB/180s. Unmodified source SHA-256
+=34de5fe624cf7a73d42f96d442135aa4b4207b45ede07fde85935527b5171a9b=
+admits at its registered source path, refuses when native name priority resolves
+to its installed SSI, and readmits after exact path restoration. Actual Reader
+runtime modules load from this prefix's =yuanxu/module-system/source/reader~0.o7=
+and =~1.o7=. This closes the present predicate/control verification; it does not
+reconstruct the lost historical schedule or replace a complete Agentic build.
+
+Orgize's existing clean action imports the complete grammar and constructs both
+unit plans before branching to deletion. Thus clean can itself activate the
+compiler and warm native loading. The proposed entry-only refactor separates a
+small dispatch/product-ownership module from compile-only =fold-generator.ss=;
+compile still uses the original compiler, complete units and optimization.
+Cleanup derives only the two declared generated families (including canonical
+part indices) and delegates exact native generations to Core's existing cleaner.
+It preserves source files, neighboring products and malformed lookalike names;
+it adds no publication ledger or SDK implementation.
+
+The initial forbidden eval/import-hook comparisons are INVALID controls: the
+old entry still constructs units and completes cleanup without those hooks
+seeing every compiled-library activation. They remain retained as failures and
+are replaced by the SDK's actual loading registry. Under matched1GiB/2-worker/
+120s controls, old publishedbffe77a activates the event-fold compiler while
+cleaning; the candidate performs the same deletion without that activation.
+Both retain the neighboring product. Their23.28s/9.83s observations are not a
+cold-build performance repair. The final existing four-case ownership suite,
+now checking the actual loading registry, passes15.69s with its unchanged5s
+silence watchdog. Earlier syntax and silence failures remain recorded.
+
+Native Orgize, ASCENT and Agentic entries also lack their own180s shebang fence;
+the proposed headers align them with POO/Core/Parser. Parser's strict entry and
+Orgize main gain only real command/phase-return records, with meta/spec output
+kept SDK-readable. These are resource-ownership/observability changes, not a
+claim that compilation or cold loading now meets the deadline. The entries and
+new generator split still require publication, original-entry compile and
+coherent dependency-chain qualification before root acceptance.
+
+Parser's existing source-contract entry currently passes library-init,
+package-policy and test-style modules, including the unchanged complete catalog
+and spec output; its aggregate FAIL is retained because build-product controls
+require the DECLARED optional ASP development dependency, absent from this
+production prefix. No stub or new production dependency is supplied to make it
+pass. Correct development acquisition and remaining full-source checks remain
+separate from production package ownership.
+
+** Published entry changes and remaining qualification boundary
+
+A second live refresh observes Agentic PR34 =9cd1d2b= with Core gitlink
+=afc447d=; ASCENT PR1 advances to =cdceb8f= with interface/admission changes.
+Those changes are read before entry edits are reapplied. The formal root pin
+still names =bc08d58=; this observation does not accept a new dependency cohort.
+POO remains selected by the published Core declaration, never by newest-PR age.
+
+Orgize's cleanup split is published in existing PR18 as =0d421a8=, then
+=703e6b6= binds Parser =370e6f2=. The latter publishes only qualification
+entry/return observations in existing PR13. ASCENT =1855e89= retains its new
+interface changes and adds the package-owned existing180s deadline. A mistaken
+push using local alignment branch names is corrected by fast-forwarding the
+existing PR branches and removing only the two just-created remote branches;
+no force push or replacement PR is used.
+
+The new Orgize generator's actual public compile action passes0/94.87s at
+2 workers/2GiB/180s:97 targets,194 backend starts and GENERATION-OK after the
+original full runtime-product checks. Its explicit output fixture is a product
+directory, NOT a GERBIL_PATH, SDK, source overlay or alternate load environment.
+This validates compile behavior after separation, not whole-package performance
+or cold qualification. The prior original-package failure remains controlling.
+
+The maintained Parser =prepare-dev= operation initially fails DNS in the
+restricted environment; that failed receipt is retained. Network-enabled
+acquisition uses the same native recipe, selected prefix,2 workers,2GiB and
+180s. Its result must be inspected before claiming the previously missing
+build-product contract module or full source-contract aggregate accepted.
+
+The unchanged native =prepare-dev= recipe completes0/154.64s. ASP is at its
+declared =9ae9bc3=; POO29c58aa, Coreafc447d, Parserdb982ce, Orgizebffe77a
+and ASCENTa1feea3 checkouts remain unchanged. The four-module maintained Parser
+source-contract aggregate then passes0/27.17s, with four MODULE-OK records,
+HARNESS-OK, final OK and no errors. This closes the missing development-input
+control; it neither issues strict Parser publication nor closes runtime CLI.
+
+The native update to published entry heads returns70 with =bad package; missing
+gerbil.pkg= for the tagged Core argument, even though the actual Core checkout
+contains that file. The operation's receipt is a failure, not installation
+acceptance. Independent checkout inspection confirms Coreafc447d,
+Parser370e6f2, Orgize703e6b6 and ASCENT1855e89. No uninstall is attempted.
+
+Orgize703e6b6 then passes the original native =gerbil pkg build= entry without
+pre-clean:0/102.98s,118 targets,232 backend starts, GENERATION-OK and no owned
+survivors. Actual GSC exports2 workers,2GiB and the expected host flags. Phase
+returns are syntax2.31s, fold87.54s and runtime95.78s measured from main entry;
+launcher/import overhead is included in102.98s. This is an incremental full
+package result after preserved failure and prior diagnostic loading. It does
+NOT repair or explain the earlier180s dynamic-loading failure. The unrelated
+fixture compile and source-contract passes are not substitutes for cold CI.
+
+** Latest cold result, runtime controls and remaining causal debt
+
+Parser370e6f2's strict native cold entry now passes0/177.38s (including
+observation teardown),270 frontend targets,601 backend starts and a complete
+LIBRARY-PUBLICATION-READY record. Actual workers2, maximum2GiB and host flags
+are observed in a real GSC child; no survivors remain. Core/SDK compile returns
+after161.08s from command entry. The only Parser change is observability.
+Consequently this near-limit pass establishes a valid local generation for this
+input set; it is NOT an explanation or repair of the earlier failure.
+
+Exact-head PR13 CI run40175843784 still fails on both Linux and macOS at the
+180s strict fence. Both emit compiler-enter and neither emits compiler-return.
+Aggregate preparation counts are271/598 backend starts on Linux and271/449 on
+macOS; the extra target includes prerequisite preparation, so these are not
+asserted identical to the local270-target inventory. This confirms a remaining
+backend-completion deadline failure independently of local retry success.
+
+The first qualification-helper attempt fails0 acceptance/exit70 in8.96s:
+the diagnostic runner incorrectly substitutes1GiB GAMBOPT for the root's
+2GiB compiler-child environment. The existing footprint contract correctly
+refuses this change before extension. The corrected runner inherits the root
+2GiB child environment, while the maintained Just entry still fences its parent
+GXI at1GiB; no limit or contract is widened. It passes0/16.07s and issues the
+helper extension. The failed runner/receipt remains retained.
+
+Runtime CLI controls under2 workers/parent1GiB/outer120s and the existing5s
+idle fence pass: successful child16.57s, child exit7 mapped to failure7.04s,
+and absent required output mapped to failure7.09s. Runtime loading completes
+with compiler-import refusal installed. Reader controls pass at current7.59s,
+product-mode mutation refusal5.78s, exact restoration6.80s. Temporarily
+withdrawing the publication receipt refuses the actual CLI in3.18s BEFORE the
+child sentinel is created; exact receipt bytes and mode are restored in finally.
+These source/product/admission controls are independent of latency qualification.
+
+The exact Orgize703e6b6 Linux CI log fails in its Core dependency build (SDK
+process status31744 encodes124), before Orgize's own entry. The existing
+=ci-prepare= also does not export fixed workers or a dependency-child heap
+fence, unlike this repository's controlled native command. Existing PR18
+=c8a0928= fixes only those package entrance conditions: Just exports2 even when
+the inherited value is absent,2 or7; production/development native dependency
+installation retains SDK mappings and appends the existing2GiB maximum.
+Focused1GiB entries remain unchanged. Actual Just export controls and a native
+dry-run pass. This is resource alignment, not a Core cold-build speed repair;
+its new exact-head CI and actual cold dependencies remain open.
+
+Agentic PR34 =837eb8604ab1ab08e7a7e5b113566eaf3db486c1= formally publishes
+Orgizec8a0928 and ASCENT1855e89 with Core gitlinkafc447d; Orgize selects
+Parser370e6f2, Core still selects POO29c58aa. Its existing pin tool derives
+immutable archive hashes; the indirect Parser projection derives from the
+published Orgize declaration. Existing Bazel9.2.0 updates its lock within the
+180s/2GiB JVM boundary; existing sync-lock and dependency-contract checks pass.
+No extra direct dependency is added here. This is a published candidate chain,
+NOT a completed root installation, accepted C or retrospective replacement of
+prior evidence. Root remains pinned to its earlier candidate until the new
+chain's full build/load/restore and exact-head gates close.
+
+The next causal work must retain two separate failures: Parser's accumulated
+backend deadline and Orgize's observed loader/kernel wait. Missing object-family
+generations and invalid signatures have no supporting evidence in preserved
+scenes. The clean grammar activation bug is independently demonstrated and
+fixed. A local177s cold pass and103s package pass cannot close the other causes.
+Do not reclassify a repeated pass, heap normalization, target removal, wider
+limits or SDK changes as a fix. Root commit and dual push remain NOT performed.
+
+** Core cold counterexample and freshness after upstream rebuilding
+
+A further baseline uses ONLY the current registered Coreafc447d native package
+entry: native clean, then native build, with2 workers/2GiB and an outer180s
+window covering both actions. It passes0/147.57s,252 frontend targets and541
+backend starts, with no owned survivors. Its actual C child ancestry yields99
+observations of SINGLE_HOST and zero MULTIPLE_HOSTS. This is a counterexample
+to a claim that this host policy necessarily makes Core exceed180s. It is not
+a matched portable Linux SDK experiment and does not explain that CI failure.
+No compiler-mode modification is made on this evidence. Had the combined outer
+window failed, that would not alone prove the independent build entry exceeded
+its own180s deadline.
+
+Core product cleanup/rebuilding is an actual dependency-footprint change after
+the successful Parser receipt/CLI controls above. A subsequent CLI control with
+that receipt STILL PRESENT refuses in5.20s before the child sentinel executes.
+Thus the final local prefix is deliberately NOT an admitted Parser generation;
+prior success is not claimed current after dependency rebuilding. Reissuance
+requires the actual new complete source/product closure, rather than editing
+receipt bytes or accepting a stale credential. No clean/retry performance
+claim is made, and no frozen failed scene is overwritten.
+
+| Question | Current evidence | Remaining acceptance |
+|----------+------------------+----------------------|
+| Does cleanup load the compiler? | Old/new SDK registry distinguishes behavior; ownership and compile controls pass | Implemented package-entry responsibility repair |
+| Is the Parser timeout only a final hash scan? | Failed CI has compiler-enter without compiler-return; local pass returns after161s | Backend completion/cost cause remains open |
+| Are obsolete generation holes or invalid signatures established causes? | Preserved families contiguous; sampled signatures already valid | Neither explanation is established |
+| Does SINGLE_HOST alone explain Core timeout? | Native cold counterexample passes147.57s | Portable CI cost remains open |
+| Is source refusal reproducible and bounded? | Actual Agentic predicate, exact Reader name/byte mutations and restoration pass | Historical unique interleaving and new full Agentic execution remain separate |
+| Can prior admission survive changed native dependencies? | Present receipt refuses after Core product rebuild; child not entered | Reissue from the actual next closure |
+| Can the root be committed and mirrored as complete? | New chain published; archive/lock contract passes; remote cold gates fail | NO; complete build/load/cold/recovery and project gates still required |
+
+* Fixed two-worker causal investigation (2026-10-25)
+:PROPERTIES:
+:CUSTOM_ID: implementation107-two-worker-causal-investigation
+:END:
+
+This continuation preserves CI's two workers, the180s individual package fence,
+the2GiB maximum Scheme VM budget, the existing native package prefix and the
+installed Gerbil/SDK. Ordinary tests retain their120s outer fence. No worker
+increase, alternate compiler installation, source overlay or local production
+patch is introduced. Causal repair and final root synchronization remain OPEN.
+
+** Actual worker export at the root package entrance
+
+A subsequent entry audit finds that the root Justfile still exports the literal
+=GERBIL_BUILD_CORES=4=. Just recipe exports override the caller environment.
+Consequently =native-install-current-core-01/02.json= report the observer's
+requested2, not verified package execution at2. Their failures, elapsed times and
+checkout identities remain observations; their two-worker qualification claim is
+WITHDRAWN. The direct Parser/Core diagnostic runners instead enter the package's
+own Justfile with an explicit2; this root-recipe defect does not automatically
+invalidate those separate runs or CI's explicit two-worker configuration.
+
+The only root build-entry implementation change here replaces4 with2. A real
+=just --command printenv GERBIL_BUILD_CORES= control verifies the recipe export,
+with the caller unset, set to2, and adversarially set to7: all three execute at
+2 and exit0. This controls the actual native recipe boundary, not a parsed
+source constant. The source hash and results are retained in
+=root-native-worker-export-controls-01.json=. No heap, deadline or compiler
+option changes accompany it.
+
+The new native install observer checks that recipe export before mutation and
+records only the worker environment value of each observed package process.
+It retains the180s per-package fence,2GiB maximum and owned-process cleanup.
+=native-install-fixed-recipe-two-workers-01= is a recovery/install check after
+this configuration repair; even a pass would not repair or qualify Parser's
+separate strict cold producer or identify the historical Agentic refusal.
+
+That invocation now fails143 in415.03s aggregate, with no surviving owned
+processes. Actual recipe export and each reached package process are verified2:
+
+| Native package | Observed package seconds | Actual worker export | Result |
+|----------------+--------------------------+----------------------+--------|
+| POO |11 |2 |completed |
+| Core |30 |2 |completed |
+| Parser |167 |2 |completed recovery build; not strict cold issuance |
+| Orgize |180 |2 |deadline refusal during generated fold compilation |
+| ASCENT |not reached |not observed |not qualified by this invocation |
+| Agentic |not reached |not observed |not qualified by this invocation |
+
+Orgize's last observed work includes generated document/inline fold parts.
+The concrete native entries are =build.ss= -> =build-parser.ss= ->
+=languages/org/generate-fold.ss= -> existing SDK Make, followed by the runtime
+build. This is a newly exposed installation blocker, not a Parser cold pass or
+an Agentic repair. Its package-stage cost and compiler-policy propagation require
+separate causal measurements before modifying that entry. No host-policy change,
+target reduction or resource increase was applied during that failed invocation;
+the later formal entry repair is recorded below. Root full build,
+load/recovery and configured verification have not been rerun on this partial
+prefix. Final root commit and hardenedlinux/tao3k dual push remain pending the
+required acceptance closure.
+
+** Latest published native-entry cohort and new controls
+
+A fresh upstream read finds Parser971e1d2 (bounded writer/import test changes),
+c690cda (removal of CI's explicit two-worker budget), and then8645433 (actual
+native entry change: explicit =parallelize: (min 2 ...)= for Gerbil expansion,
+separate from the SDK Gambit/C executor's environment budget). Removing the CI
+budget is not acceptable qualification under this task. The existing PR was
+rebased over8645433 and restores explicit CI2 as da14686. Neither a higher SDK
+default nor an unchanged retry closes the original180s failure.
+
+A concurrent normal Parser push was refused before that rebase. Orgize's
+intermediate36b15f8 briefly referenced the unpublished pre-rebase Parser SHA;
+14cd29d immediately replaces it with the published da14686. No native install
+or acceptance used the intermediate pin. The root was updated only after the
+final upstream pushes succeeded.
+
+Orgize's generated dynamic fold used plain SDK Make without initializing the
+existing compiler policy in its parent process. A dependency build child's
+environment does not propagate back to its installer or sibling package builds.
+The real SDK/GSC preprocessor control establishes SINGLE_HOST before, and
+MULTIPLE_HOSTS after invoking Parser's existing initialization; a child gxi
+inherits the latter exactly. The control keeps the configured optimization,
+worker and heap budgets. The first diagnostic mistakenly invokes the unrelated
+PATH =gsc= (Ghostscript) and fails; that result is retained, not accepted. The
+corrected control qualifies =bin/gsc= from the current SDK and exits0 in3.12s.
+This establishes compiler-policy propagation, not a complete performance repair.
+
+Orgize14cd29d changes only its build owners and their regression: initialize that
+existing parent policy; route =clean= through the parser-source owner and fold
+generator; derive fold identities from the existing generated units; delegate
+SSI/static cleanup to SDK Make and complete dynamic-family cleanup to Core's
+existing =clean-build-artifacts!=. The generator's default compile behavior and
+parser semantics remain unchanged. Unknown actions/profiles refuse before effects.
+
+The maintained Orgize fresh-module test initially fails the existing five-second
+quiet-output watchdog; compiling first alone still fails it. The final fixture
+moves expensive grammar imports into the Case and uses the existing compiler
+import-progress adapter to report actual import/evaluation work. It does not add
+heartbeats or change the watchdog. The corrected =t/package-build-test.ss= passes
+in19.51s with two Cases, MODULE-OK, HARNESS-OK and final OK, without error markers.
+Controls cover all owned dynamic generations, adjacent product/source retention,
+idempotence, and invalid action/profile refusal. The attempted lazy import also
+had a syntax error until its fresh top context imported the SDK core syntax;
+that failed run is retained rather than relabeled as acceptance.
+
+The authoritative native cohort is now:
+
+| Package | Published revision |
+|---------+--------------------|
+| POO |29c58aa9c5be103ba843767e3d22ef8802b79342 |
+| Core |c90d9297d774245653a400dea1ef7a46a1bca73a |
+| Parser |da14686e1db5568cee413f993a680a7a24f92db2 |
+| ASCENT |d52206eb177e5d9d31770a4c0d6a6af4a6e0b196 |
+| Orgize |14cd29d8cfc07302d544dbaa83ff7de83d4b7639 |
+| Agentic |da023668102cfe99d9d44b7e6dd2fcbd8976a1bc |
+
+Root still declares Agentic only. Agentic's maintained =pin-gerbil-dependency=
+entry updates its authoritative Orgize pin, archive hash and native/cross-platform
+lock projections and passes its direct-dependency contract in4.88s. It uses the
+already cached Bazel9.2.0 matching the project declaration, with a180s outer
+limit and2GiB JVM maximum; no tool or SDK is installed. This is a direct-pin
+projection check, not a complete Bazel build. Its indirect Parser archive remains
+971e1d2 rather than the native da14686; full transitive Bazel alignment is OPEN
+and must consume the parent declaration instead of inventing a direct authority.
+
+Native tagged update again exits70 (20.63s), but all six actual checkouts match
+the declared cohort. It is not an install pass. Orgize's subsequent genuine
+=gxpkg clean= succeeds0 in33.55s and reports its owned-fold cleanup. The new
+=native-install-entry-cohort-03-two-workers-01= invocation checks each actual
+worker export and all six package boundaries. Its complete result, strict Parser
+cold qualification, runtime CLI and root verification remain separate gates.
+
+The cohort03 native installer fails143 in280.80s aggregate. Actual process
+exports remain2 throughout: POO11s, Core31s and Parser40s complete; Orgize reaches
+180s. Unlike the previous failure, it reports GENERATION-OK and reaches its
+runtime list before termination. This is not a complete package pass or a proven
+speedup: prior partial products and phase boundaries differ. ASCENT and Agentic
+are unreached and no owned processes survive. A late read-only child-policy
+sampler finds no live matching child, so its empty result proves no compiler
+flag propagation for that completed invocation.
+
+Parser da14686 exact-head CI run40162873413 reaches the strict writer on both
+platforms and fails180s with no READY: Linux271 frontend starts/397 backend
+starts; macOS271/304. Foreign input inventories are4,415/4,416 files and hashing
+before clean takes about1.35s/4.04s. Clean-to-first-frontend is about33s on both.
+These measurements rule out attributing the whole failure to snapshot hashing;
+they do not establish a complete causal repair. Keep native recovery, source
+preparation, optimizer-interface work and backend completion distinct.
+
+** Ordered Orgize build VM reuse candidate
+
+The next package-only candidate keeps the same ordered syntax, generated fold
+and runtime target sets while reusing one native VM/compiler cache. Existing
+SDK module imports are delayed until explicit compile/clean. The syntax entry
+exports its existing main; the parent calls the existing syntax/fold mains in
+order, retains/restores the syntax-only inventory flag, and drains each native
+Make before the next phase. Repository search confirms that this flag changes
+only build inventory selection, not application grammar or parser definitions.
+There is no custom scheduler, SDK change or optimization/target reduction.
+
+Three maintained controls pass in17.47s, including a new source-import refusal
+hook proving that package spec requests cannot activate the grammar/generator.
+Existing cleanup and invalid-action controls still pass. This is not full-build
+or performance acceptance. The formal Orgize candidate is
+=da0d2053a350f9fa373d61421ce39a2f9754a69d=. Agentic consumes it as
+=308b004acdb7cb04b1ce3c51a7a33dee35638cf2= after its existing direct-pin/lock
+contract passes again in4.06s. Parser remains da14686; other cohort03 pins are
+unchanged. The root still declares only Agentic.
+
+Native update04 exits70 in16.36s while verifying all six actual source heads;
+its failed operation status remains explicit. Native clean04 and full install04
+must qualify the candidate through the same180s/2GiB/two-worker boundaries.
+Parser strict cold, runtime CLI, exact-head CI, root build/tests and the historical
+Agentic predicate remain OPEN. No final root synchronization is authorized by
+these partial receipts.
+
+Native clean04 fails70 in4.54s before owned-fold cleanup: the syntax entry
+worked as a gxi script but lacked an explicit SDK =this-source-file= binding
+when imported as a Module. The first reuse regression had exercised only the
+top-level spec path and did not cover this child entry. Orgizee3e59c8 adds that
+SDK import and extends the refusal-hook control to import BOTH actual entries
+as Modules and request spec. All three Cases pass in15.97s, with MODULE-OK,
+HARNESS-OK, final OK and no errors, under the unchanged five-second watchdog.
+This is a code/control change after a retained failure, not an unchanged retry.
+
+The final published candidate is now Orgize
+=e3e59c8b3a63e341a701f5725b134f87ea3bbc34=, consumed by Agentic
+=54cf7d0508706f25ea069d6c3dc8defbcf2bb487=. Its direct pin/lock contract passes
+in5.13s; the other cohort03 package revisions are unchanged. Native update05
+again exits70 (16.43s) while verifying all declared source heads. Clean05 and
+install05 must still complete; the earlier unbound-source failure is not erased.
+Native clean05 then passes0 in12.70s with the expected owned-fold marker. This
+separate clean result does not qualify compilation, runtime semantics or a
+performance speedup. Install05 additionally samples an actual fold compiler
+child's selected policy environment when present; an absent sample proves
+nothing about propagation.
+
+Install05 progresses beyond the former Orgize blocker: POO35s, Core54s,
+Parser23s (native recovery) and Orgize177s complete with verified worker exports2.
+Orgize follows clean05 and completes syntax, generated folds and runtime; this
+is the first completed package run after the VM-reuse/source-binding changes.
+Only about3s remains under the180s fence, so this one receipt does not establish
+host-independent margin or guarantee repeated performance. ASCENT is the next
+active package; whole-install acceptance still requires all six owners and no
+surviving owned processes.
+
+The observer captures an actual Orgize fold GSC child at its qualified current
+SDK path, worker export2 and inherited =CORCXXFLAGS_GAMBUILD= containing the
+existing MULTIPLE_HOSTS override. This supports execution-source/policy binding
+for that observed child; it is not a fabricated currentness token or a proof for
+every unobserved compiler process. The structured observation is retained in
+=orgize-native-fold-child-policy-cohort-05.json=.
+
+The complete install05 result now passes0 in655.86s aggregate. Every reached
+package process exports exactly2 workers, each package stays below180s, and no
+owned process survives. Final package observations are POO35s, Core54s,
+Parser23s recovery, Orgize177s, ASCENT176s and Agentic99s. The original Agentic
+identity refusal does not recur in this invocation; that is not proof of its
+historical cause or independent-review authority. Orgize and ASCENT have only
+3s/4s margin in this run. This receipt closes native installation for this
+cohort, not strict Parser cold issuance, CLI, fresh root build/tests or exact-head
+CI. Root configured checks run serially on this complete prefix before the
+separate destructive Parser cold gate.
+
+Root configured verification on the completed native prefix passes build0
+in100.92s; basic =just test=0 in176.51s aggregate (13 independently fenced native
+harnesses,17 Case executions/16 distinct labels, no errors); project-formation
+build controls0 in35.63s; and Library declaration controls0 in106.80s aggregate.
+The basic aggregate is not one test's120s budget: each existing entry retains
+its own original outer fence and the recipes remain serial.
+
+Organization/method verification then fails124 in177.71s aggregate. Organization
+Cases pass, while the following method-binding entry reaches its120s outer fence.
+Its complete partial transcript contains BOTH Case successes, MODULE-OK,
+HARNESS-OK and final OK, followed by =Ops execution terminated= (SIGTERM15) while
+copying process output. An earlier abbreviated read omitted the final harness
+markers; that interpretation is withdrawn. Successful semantic markers alone do
+not override the process/lifecycle failure.
+
+The unchanged single-entry lifecycle diagnostic is classified as diagnostic,
+not repair or replacement acceptance. It passes0 in92.62s. Read-only process
+observations put preparation before about66s, the gxtest child at roughly68–78s,
+and parent completion near92s. It does not reproduce a permanent EOF hang.
+One-second samples distinguish parent waiting from actual source/read work;
+they do not establish the previous failure's unique cause. The120s failure stays
+OPEN. Remaining independent configured entries continue serially without
+rerunning this failed group as a claimed fix.
+
+The remaining independent root entries pass serially on cohort05:
+project-inputs0/28.13s, Library-selection0/40.26s, Project-entry0/41.55s and
+Project-formation0/49.08s. They do not close the failed Organization/method
+entry. The later destructive strict Parser check fails on the same native
+Parserda14686: wrapper70/188.33s including startup/termination,270 frontend
+targets,461 backend starts, cold clean observed and no publication READY.
+The ordinary native Parser recovery subsequently passes0/83.90s; it restores
+products without issuing the strict publication receipt.
+
+A fresh direct publication-reader negative control after that recovery refuses
+with the exact missing-generation error in8.37s; the protected callback does
+not create its sentinel and no receipt exists. The SDK wrapper returns70, not
+the CLI's child-status domain. A separate CLI attempt stops earlier because
+qualification helper products were removed by the interrupted strict clean;
+it is NOT counted as the admission-control pass or a runtime CLI pass. Formal
+helper/runtime positive controls remain dependent on a complete strict base.
+
+** Latest upstream observation: prospective cohort06
+
+A final live refresh finds Parser PR13 has advanced from da14686 to
+7462a054307bc428a69e02874bf79450bd188500. The new commit changes only the declared
+Core dependency to4922c27b21225ada69ae19606d6cc7584315ff39 and the strict CI
+command's explicit worker2 assignment. Core's intervening changes preserve
+native lexical role bindings and resolve optional Config in its actual native
+expansion context. These are distinct changes from the previously published
+c90d929 retained-Graph replay fix; none is evidence that the historical Agentic
+identity refusal's exact schedule has been identified.
+
+Exact-head Parser CI run40166414604 has a successful Linux preparation plus
+semantics/generation/FFI/corpus lanes. Its strict base emits READY at05:50:08.656Z,
+after clean READY at05:47:13.927Z (174.73s between these markers; not the complete
+outer elapsed time). The macOS preparation fails while building Core4922c27,
+before reaching strict Parser. Therefore Linux success cannot qualify macOS or
+the root project's installed SDK. Earlier da146 CI/local failures remain
+historical failures, not errors overwritten by this new run.
+
+The SDK native tagged update returns70 after checking out both requested
+prospective source heads; the nonzero operation is retained, and both actual
+heads are verified separately. Native Core4922c27 compilation passes0/32.54s
+under2 workers/180s/2GiB. A new strict Parser7462a05 cold observation follows
+before any claim that cohort06 is accepted or propagated through all dependent
+manifests. The initial observer invocation was denied access to ps before it
+launched the build; the same bounded command is then run with read-only process
+observation allowed. No resource or source policy is relaxed.
+
+The new local strict observation on Parser7462a05 fails wrapper70/186.55s:
+cold clean is observed,270 frontend targets and601 backend jobs start, and no
+READY or publication receipt is issued. Its final transcript has entered the
+post-build foreign-product discovery walk before the180s deadline. Starting
+all backend jobs is not proof that every job completed or that the subsequent
+Core/source/product guards passed. Ordinary native recovery then passes0/21.96s;
+this remains recovery, not strict issuance.
+
+A separate read-only phase-cost diagnostic after recovery measures a fresh
+input snapshot at6.77s and a fresh product snapshot at1.23s (2012 product rows),
+24.37s including startup/module loading. It is not a cold acceptance or an A/B
+repair. It identifies nonzero admission costs without attributing the whole
+failure to hashing, silently dropping input coverage, moving checks outside the
+deadline, or admitting products with a fabricated receipt.
+
+The same final upstream refresh also finds a coherent, already-published
+Agenticbc08d5877bc002bc5aa9da38f1357bdde30485bc dependency cohort. The root now
+selects that one direct dependency. It inherits Orgize43d33e8ec684d8a5d53b06f97bd38bf06d7c8d3c,
+Parser7462a05, Core4922c27 and POO29c58aa; ASCENT is the declared
+9573529ad043a7a23983c65f94df3334f8ed8df8. ASCENT PR's later2efc661 contains
+additional VM-resource/Rust changes and is not silently substituted for that
+pinned revision. Agentic's tracked Core gitlink and indirect Bazel Parser archive
+now also name4922c27/7462a05; its maintained dependency-contract check passes.
+This closes the earlier declaration/archive mismatch at the source-contract
+level, not Bazel execution or native acceptance. The root adds no independent
+transitive override. Native tagged update again returns70 after reaching all
+three intended heads; native installation of this coherent cohort is a distinct
+pending gate. Cohort05 root/test results do not transfer automatically.
+
+The actual coherent-cohort06 native installation fails143/278.14s aggregate at
+Orgize's180s package fence. Actual process exports are2 throughout: POO11s,
+Core34s and Parser33s recovery complete; Orgize reaches180s during its syntax
+module phase (29 frontend targets/52 backend starts in the retained partial
+log), before fold GENERATION-OK. The observer terminates the owned tree and
+confirms no survivors. ASCENT and Agentic are not reached. The normal Agentic
+build has therefore not yet synchronized its initialized Core submodule to its
+new tracked4922c27 gitlink; that loading-source transition remains pending.
+
+The selected declarations now form a coherent source cohort, but the installed
+prefix is incomplete and is NOT qualified for a new C, root acceptance or
+runtime CLI admission. Earlier cohort05 complete-install/root functional results
+remain scoped to that earlier cohort. No root checks are rerun on the incomplete
+prefix and no test retries are counted as fixes. The successful source-contract
+check cannot replace this failed native install.
+
+The remaining causal work is explicitly ordered: reproduce/profile Orgize's
+syntax-phase cost at its unchanged package boundary; separate Parser's returned
+build/currentness work from its post-build snapshot work using actual phase
+observations; and obtain a captured failing predicate/state for the historical
+Agentic public-identity refusal. Preserve source/name/Graph drift negatives,
+missing-generation callback refusal and the earlier method-entry lifecycle
+failure while doing so. After an identified package-level change, qualify the
+complete selected source cohort afresh, then strict base/helper/CLI and root
+build/load/cold/recovery controls. A source-head advance, a warm recovery or an
+unmodified successful retry is not that identified change. Root commit and both
+remote pushes remain unperformed because these gates have not closed.
+
+A subsequent native Orgize clean passes0/17.21s, including owned generated-fold
+cleanup. From that cleaned state, a read-only importer observer around the
+unchanged package source entry completes all three phases0/124.31s, with153
+frontend targets,302 backend starts, GENERATION-OK and no survivors. The observed
+actual syntax GSC child has worker2 and the expected MULTIPLE_HOSTS/tail-call
+compiler flags. The observer delegates every import/reload to the original
+importer and reports only completed work; it changes no source/admission result.
+Its largest observed import costs include the Org grammar source2.11s; generated
+fold imports are reached near21s and runtime imports near108s. These observations
+are retained in =orgize-clean-import-diagnostic-cohort06-01=.
+
+This is expressly a DIAGNOSTIC PASS, not repair or replacement installation
+acceptance: both native clean and importer observation distinguish it from the
+failed installer. It does not isolate which state/scheduling/environment
+condition accounts for the earlier syntax-phase180s failure. It neither
+qualifies the unexecuted ASCENT/Agentic steps nor synchronizes Agentic's Core
+submodule. The failed install, strict Parser failure and historical identity
+cause remain open. Further A/B work must preserve the failing state and compare
+actual native package entries; a newly successful unchanged run must not be
+renamed a fix.
+
+** Candidate refusal and revised formal baseline
+
+The uncommitted compiler-child heap candidate was exercised through its actual
+package entry at two workers. =parser-candidate-native-entry-two-workers-02.json=
+records wrapper70,188.18s including observer/termination,181 frontend targets,
+110 backend starts and no READY. This is a failed qualification, not evidence that
+the candidate repairs the timeout. Its native child-option control still proves
+only inherited-budget behavior. A compiler-process preflight on the partial
+prefix reports ERROR MODULE/ERROR HARNESS and zero completed cases despite
+process exit0; =parser-candidate-compiler-process-preflight-01.json= rejects it.
+The generated =event-program~1.scm= fallback has no complete admitted loader.
+No failed prefix is accepted on the basis of a marker or shell status alone.
+
+Upstream inspection found new formal Core/POO source after the previous frozen
+cohort. Core4307dce declares POO29c58aa: issuer-owned parent-snapshot compaction,
+interrupted-build cleanup and compiler-budget preservation precede that POO pin;
+Core changes source observations, deferred role preparation and retained state.
+These are upstream implementations, not new runtime modifications in this task.
+Core's public dependency guard is unchanged. Alignment therefore carries no claim
+that the Agentic refusal is fixed, nor a causal performance claim for Parser.
+
+The new declared cohort, published through the existing dependency PRs for
+qualification, is:
+
+| Owner | Declared revision |
+|-------+-------------------|
+| =gerbil-poo= | =29c58aa9c5be103ba843767e3d22ef8802b79342= |
+| =gebril-yuanxu= | =4307dceb65b6e5ae13bc3680b3eac7fc98f7b62a= |
+| =gerbil-parser= | =c01abe3c8901c9a69cab432b7f12418eea75f2e3= |
+| =gerbil-ascent= | =1181c987265fef1bd5bb3d4decefedd9c2671db2= |
+| =orgize= | =71df74ffed4b5f421534272ec07fa0d30e650b52= |
+| =agentic-ai-lab= | =e9c7d8766837415c58325e8cc2b833af09796474= |
+
+Root still declares Agentic only. Parser and ASCENT select the same Core; Orgize
+selects Parser; Agentic selects Orgize/ASCENT and the matching Core gitlink.
+Only package declarations/gitlink were committed upstream. The unqualified heap
+candidate and regression stay local; CI continues to select two workers. The
+ASCENT dependency conflict was resolved by retaining the incoming remote history
+and selecting4307dce, followed by a normal non-force push.
+
+The native tagged update exits70 in37.06s after changing all six checkouts to the
+requested revisions. =native-update-current-core-01.json= verifies the exact heads
+but marks the operation failed. This repeats the documented tagged-argument SDK
+failure; it is not an install pass. No SDK change or uninstall is used. One
+subsequent native =just deps= invocation must build the declared closure with
+individually observed180s boundaries and no surviving owned processes.
+
+** Confirmed duplicate Graph admission in the native build adapter
+
+The native build projection prepared every ordinary retained library with a
+callback that replayed the whole selected Graph. The enclosing projection also
+checked that same Graph. This mixed local source currentness with the enclosing
+selection's admission and multiplied Graph checks when reading prepared fields
+and when admitting the retained list. The test-source adapter already separates
+these responsibilities.
+
+| Retained width | Old preparation Graph checks | Old per-boundary Graph checks | Fixed preparation / boundary | Source drift refuses | Graph drift refuses |
+|----------------+------------------------------+-------------------------------+------------------------------+----------------------+---------------------|
+|1 |4 |3 |1 /1 |yes |yes |
+|64 |193 |129 |1 /1 |yes |yes |
+
+The paired control runs the actual source =yuanxu-project-source-spec= against
+an empty selected-Graph protocol and real temporary native library files; it
+neither compiles nor issues a publication. The first malformed diagnostic script
+is retained as failed. The corrected before and after runs exit0 in13.10s and
+27.46s respectively; elapsed time is not a speedup claim. The deterministic
+Graph-check counts and refusals are the evidence. The maintained regression also
+retains every target and rejects changed package metadata.
+
+Core PR19 commit =c90d9297d774245653a400dea1ef7a46a1bca73a= changes only the
+native build adapter, its regression and its architecture record. Ordinary
+retained preparations keep their own source/package guards. The projection
+retains whole-Graph admission at each independent boundary, including compiler
+entry and return. No runtime reader, SDK, optimization, target or worker policy
+is changed. This fixes demonstrated duplicate work; the full cold-build and
+Agentic causal gates still require independent results.
+
+The heap-default and cooperative-yield candidates are retired, not published.
+The yield probe demonstrated queued SDK work before final drain, but its full
+cold build still failed (wrapper70,191.77s,270 targets/172 starts). The native
+admission cost probe also failed its180s fence and issued no strict receipt;
+its last sample attributes about4.02s to2,560 policy calls, which does not explain
+the whole stall. Do not optimize that policy merely because it runs often.
+
+The formal declaration chain now selects:
+
+| Owner | Revision |
+|-------+----------|
+| =gerbil-poo= | =29c58aa9c5be103ba843767e3d22ef8802b79342= |
+| =gebril-yuanxu= | =c90d9297d774245653a400dea1ef7a46a1bca73a= |
+| =gerbil-parser= | =87348939e98e81f56655cdf51f889960498edd5f= |
+| =gerbil-ascent= | =d52206eb177e5d9d31770a4c0d6a6af4a6e0b196= |
+| =orgize= | =33a7d9a9f677308100e13432a23dfea45a053d72= |
+| =agentic-ai-lab= | =e9eca5c7a73c02a2d1a36ec2b24c069c949aaec2= |
+
+Agentic's incoming commits =3dafb39= and =fe946df= were preserved by rebase.
+They add library roots and migrate suite sources/lock projections. Their Bazel
+projection snapshots predate this second native cohort; no Bazel qualification
+is claimed. Root still has only the inherited Agentic dependency. The native
+update again exits70 (35.12s), with all requested source heads verified; install
+success is a separate gate.
+
+The first new-cohort installer built POO in128s but stopped Core at180s
+(exit143,334.83s aggregate,no surviving owned processes). Native Core recovery
+then passed in51.65s; ASCENT recovery failed its180s fence. Native Parser cold
+qualification on the first cohort failed (wrapper70,191.45s,269 targets/147
+backend starts); its subsequent ordinary recovery failed124 in181.30s. These
+remain failures and do not certify the current prefix.
+
+The first cohort's Parser PRc01 has distinct CI outcomes: macOS's two-worker
+strict producer reaches READY about176.16s after launch; Linux completes270
+frontend targets but only423 backend starts before180s. A single platform pass is not closure.
+
+The second cohort installer =native-install-current-core-02.json= fails143 in
+255.00s aggregate: POO completes in12s, Core in42s, and Parser reaches its180s
+boundary; no owned processes survive. Agentic, ASCENT and Orgize are not reached
+by this invocation. The strict publication receipt is absent; the prefix remains
+partial and is not an admitted generation.
+
+Parser PR13 head8734893, run40157959594, still has two failed Scheme preparation
+jobs. Linux completes270 frontend targets and starts416 backend jobs before the
+strict180s deadline. macOS fails at its preceding native Core package build
+(exit status31744, representing124); it never reaches the strict Parser writer.
+These are different phases, and neither is repaired by c90d929. The latest PR
+head was re-read from GitHub after these results; Rust checks pass, while the
+remaining Scheme lanes are skipped. No CI rerun is presented as a repair.
+
+** Source-identity controls and test-entry findings
+
+The first retained-role priority probe accidentally built a catalog-only view.
+It could access a Scope but selected no compiler interface; its transient-import
+pass is not evidence for the compiler boundary. The corrected probe explicitly
+selects =custom/example= through an init declaration, requires a nonempty Graph,
+prints its admitted interface role inventory, and confirms that the actual
+objects import resolves through Core's temporary compiler-role path. Continuous
+public-name redirection is rejected at the independent Graph boundary, and exact
+restoration admits again. The attempted4307dce invocation also passes, but its
+counted control still observes one preparation Graph check, rather than the
+old adapter's expected multiplicity. Selecting a checkout alone did not isolate
+the loaded adapter from canonical same-identity imports. Those attempted
+before/after priority comparisons are discarded; they are not evidence against
+or for the causal hypothesis. The counted c90 control observes one preparation
+Graph check. Raw inputs and observations stay under the ignored =current-pr=
+evidence directory.
+
+A separate callback-ownership intervention avoids that module-identity ambiguity:
+it explicitly applies the former Graph callback and the new local callback to
+the same real retained role via the unchanged preparation API. With public-name
+redirection held, the former callback reproduces exactly =public dependency
+source or native identity changed=; the local callback admits. The independent
+Graph check still refuses, and exact path restoration admits again. This bounded
+control exits0 in13.72s (=retained-public-priority-callback-control-01.json=).
+It establishes a concrete mis-scoping mechanism with unchanged role bytes, not
+that the historical SDK schedule actually exercised it. The original production
+failure's unique cause therefore remains OPEN.
+
+The actual Agentic exception-site diagnostic preserves the original exception
+hook and all source/currentness decisions. It records resolver/path state before
+unwinding only if the original public-identity error occurs. The first attempt
+fails on a diagnostic syntax error; the next fails while the sandbox cannot
+fetch the already-declared Core gitlink. Neither reaches the relevant boundary.
+The corrected network-enabled native invocation obtains exactly c90d929, then
+fails124 at180s (181.00s including termination). It reports no identity refusal;
+that absence is NOT proof of repair or a completed install. A one-second read-only
+sample during its quiet startup attributes843 of849 main-thread samples to
+native dynamic loading; subsequent output proves frontend/backend work. This
+single sample explains only that sampled interval, not Parser's full timeout or
+the historical Agentic predicate. Partial products and termination-time linker
+errors do not count as successful recovery.
+
+The maintained native =just test-file t/module-build-spec-test.ss= entry at
+c90d929 fails its first run (wrapper70,47.88s) on an existing hardcoded overlap:
+=object-types/contracts= is no longer selected by the current Core Graph. This
+is a test-fixture membership error, not permission to remove the conflict
+control. The proposed test adjustment derives an actual selected package input
+and its full native options for overlap, conflicting options, dependency drift
+and identity-collision checks. It leaves the production adapter untouched and
+was qualified through the same maintained source =just test-file= entry with
+=CORE_QUALIFICATION_ROOT= set explicitly (no source-only skip). The corrected run
+exits0 in47.72s, with MODULE-OK, HARNESS-OK, final OK and no error markers, within
+the120s/2GiB/two-worker limits. Commit51dbc9604cc2437269fc05f338da3ed76c87a468
+publishes only this regression-fixture correction in existing Core PR19. The
+root's declared production cohort still pins c90d929; the test-only PR head is
+recorded separately and does not imply a newly installed or qualified cohort.
+
+The source regression is reproducible in the existing native dependency
+environment at Core PR19 head51dbc96, from that checkout, without constructing
+another environment:
+
+#+begin_src sh
+GERBIL_BUILD_CORES=2 GAMBOPT=max-heap=2G,debug=q \
+CORE_QUALIFICATION_ROOT="$PWD" \
+timeout --signal=TERM --kill-after=5s 120s just test-file t/module-build-spec-test.ss
+#+end_src
+
+Require actual line-anchored MODULE-OK and HARNESS-OK, final OK, outer exit0 and
+absence of ERROR CHECK/CASE/HARNESS and overflow. A skip when the explicit source
+root is unset is not acceptance. The first failed run remains in the ledger;
+the fixture change, not an unchanged retry, distinguishes the passing run.
+
+A separate read-only Parser native =build.ss spec= diagnostic completes in24.01s
+at8734893/c90d929, with two workers, a120s fence and2GiB. It executes the existing
+entry and Core's built-in operation measurement; no compiler work or publication
+is requested. It produces10,892 bytes of native spec output. Nested measured
+operations include linker import1.960s, source reads0.275s and metadata
+replay0.145s; their times overlap and must not be added as an exclusive profile.
+These observations do not identify the remaining cold timeout and do not justify
+weakening source guards or introducing persistent currentness caches. The JSON
+operation list was corrected from the completed raw log after its collector
+initially omitted parenthesized rows; no execution was retried for that repair.
+
+** Investigation and acceptance boundary
+
+The historical identity failure still has two unresolved alternatives: failed
+prepared-source/package checks and changed canonical native resolution. The
+controlled source/SSI/source experiment demonstrates resolution sensitivity;
+zero-hit Make watchers do not establish that the native failure took that path.
+Current Core still catches those alternatives into the same false result. Do not
+bypass the guard or treat upgrading, warm recovery or a retry as causal repair.
+
+The latest PR4c142e4 CI actually used merge9355bdd, SDK2591dcd and two workers;
+both Scheme producers timed out. The prior local four-worker SDK1cfb032 pass is
+not equivalent acceptance. The new declaration commit starts a new CI/source
+identity and must receive its own results. The host process observations also
+contain unrelated workspace compilers; do not attribute historical wall time or
+a speedup to a source change without a matched control.
+
+Required closure: isolate the dominating native-entry work and the exact failed
+identity predicate; reproduce failure and show the repair preserves negative
+source/name/currentness controls; complete two-worker native install, strict
+cold writer, helper/runtime CLI, build/load/cold/recovery and configured root
+checks. Check actual program/pin/input/product identities. Update this ledger
+before final root commit and normal hardenedlinux/tao3k dual push. Upstream PR
+source synchronization is neither completed qualification nor final delivery.
+
 * Parser cold qualification and runtime CLI continuation (2026-10-25)
 :PROPERTIES:
 :CUSTOM_ID: implementation107-parser-cold-runtime
@@ -210,6 +1872,194 @@ uniquely explain the earlier timeout, prove a throughput improvement, remove the
 retained Agentic source-identity failure, or qualify arbitrary concurrent workloads.
 Correctness gates, recovery, performance attribution and independent review remain
 separate claims.
+
+** Follow-up: PR identity and causal diagnosis
+:PROPERTIES:
+:CUSTOM_ID: implementation107-causal-diagnosis
+:END:
+
+The live [[https://github.com/tao3k/gerbil-parser/pull/13][Parser PR13]] head was rechecked on 2026-10-25:
+=4c142e4ebc1c0cdd6cde99a5ad84c8ea7a8c37d7=. The installed Parser
+checkout and the inherited Orgize declaration select that same revision. This is
+already the latest PR revision at this observation; no additional Parser revision
+or speculative dependency update is needed merely to repeat qualification.
+
+The PR is not fully qualified remotely. Its linked [[https://github.com/tao3k/gerbil-parser/actions/runs/40147274862][CI run40147274862]]
+checks merge =9355bddb2c19491a3a8a3b4f567f9c547d01f523=, combining
+head4c142e4 with basec6ecb40. Both Scheme preparation jobs fail at the actual
+180s =qualify-library= fence (writer124, SDK wrapper70); all downstream Scheme
+lanes are skipped. After the strict writer starts, macOS records270 frontend
+targets and282 backend job starts; Linux records270 and431. Neither publishes
+READY. The three Rust checks pass. A local Parser pass cannot close these gates.
+
+CI uses the declared SDK2591dcd and two workers, whereas the local receipts use
+SDK1cfb032 and four workers. These are distinct execution baselines. The main
+writer explicitly selects2GiB; its argument alone does not establish an inherited
+heap fence for every GSC child. No SDK is replaced to make the comparison pass.
+The raw failed logs and structured source/job summary are retained as
+=parser-pr13-head4c-ci-failed.log= and
+=parser-pr13-head4c-ci-failure-summary.json=. These current failures replace any
+interpretation that only an obsolete Parser revision remains unqualified.
+
+| Question | Observation | Causal status |
+|----------+-------------+---------------|
+| Current strict Parser entry | Exit0,110.81s; cold cleanup,270 targets,601 backend jobs and publication READY | Additional current-revision qualification; no repair attribution |
+| Old Parser writer | Exit124,181.03s;270 targets and505 backend jobs started; incomplete products | Active compilation exceeded the deadline; unique wall-time cause remains unknown |
+| Agentic native source observer | Actual =build.ss compile=,exit0,40.59s; no source-identity refusal observed | Non-reproduction; does not repair or erase install04 |
+| Controlled public-source path change | Source -> installed interface -> source resolves with admission true -> false -> true | Reproducible resolution sensitivity; not an observed scheduler interleave |
+
+The Parser compiler/runtime directories, catalog, init and compiler host policy
+have no executable performance change between =6db7eea= and =4c142e4=.
+The build entry changes its executable deadline; publication changes concern
+mode fidelity and drift diagnostics. Core =f1e57b4 -> 0a6bdac= changes the
+executable deadline, dependency declaration and proof tooling, rather than the
+Module source/build runtime. POO =4334964 -> 247a7eb= changes its executable
+deadline. These source comparisons do not identify a performance repair that
+could explain the old timeout. Historical logs lack the necessary phase/CPU/
+competing-workload observations; later passes cannot reconstruct those facts.
+
+The new Parser observer records actual process samples and observed phase
+boundaries while running the unchanged native =just qualify-library= entry.
+At two-second sampling resolution, input inventory appeared by6.15s, owned-product
+cleanup by12.29s, first frontend target by20.47s, last frontend target by49.26s,
+and publication READY by106.67s; the waited process completed by110.81s.
+These are observation times, not exclusive phase durations. A compiler job-start
+line is not job completion. Fragmented log reads cannot support a complete
+per-job timestamp trace; exact target/job counts come from the completed raw log.
+The immutable grammar input receipts remain admitted inputs. This is a cold
+Parser native-product build, not an empty-cache machine benchmark. The initial
+process snapshot also contains unrelated POO Flow and Gambit compiler processes.
+They were not stopped or reconfigured. Host contention is therefore observed in
+this run; it is not evidence of the historical timeout's unique cause.
+
+The source-priority control prepares the actual installed
+=agentic-ai-lab/nix-contracts.ss= through Core, checks its current public binding,
+then applies the path order used by SDK dependency timestamp lookup, and restores
+the exact original path in =dynamic-wind=. The prepared source/package guard
+still succeeds during the middle observation; the public canonical-path guard
+refuses because resolution returns =.gerbil/lib/agentic-ai-lab/nix-contracts.ssi=.
+SHA256 of both =nix-contracts.ss= and =gerbil.pkg= is equal before and after.
+Only the diagnostic process's search order changes. Neither an SDK file nor a
+package source, installed product or receipt is rewritten.
+
+This is a controlled intervention, not proof that install04 experienced that
+schedule. Attempts to instrument timestamp procedure bindings observed zero
+callbacks and therefore failed their own reproduction predicate. Read-only
+native Make stress observations also saw no shifted path. None is a successful
+reproduction of the historical failure. The actual Agentic observer run is
+separate from the unmodified native build acceptance recorded above.
+
+For a source-bound reproduction of the resolution condition, the diagnostic
+uses the installed Core0a6bdac reader's private inspection function. It is not a
+new public API or a production dependency. Run in the existing native package
+environment with the120s watchdog and1GiB pre-import heap fence:
+
+#+begin_src scheme :tangle no
+(import :gerbil/expander :yuanxu/module-system/source/reader
+        :yuanxu/module-system/source/preparation (only-in :clan/poo/object .ref))
+(def root (path-expand ".gerbil/pkg/github.com/tao3k/agentic-ai-lab"))
+(def source (path-expand "nix-contracts.ss" root))
+(add-load-path! root)
+(def input (yuanxu-prepare-module-tool-source source void))
+(def inspect-public (eval 'yuanxu/module-system/source/reader#public-dependency-input))
+(def original (load-path))
+(def (observe label)
+  ((.ref input 'admit-current))
+  (displayln label " resolved="
+    (core-resolve-library-module-path ':agentic-ai-lab/nix-contracts)
+    " current=" (and (inspect-public source input) #t)))
+(observe 'source)
+(dynamic-wind
+  (lambda () (set-load-path! (cons (path-expand "lib" (gerbil-path))
+    (filter (lambda (p) (not (equal? p root))) original))))
+  (lambda () (observe 'timestamp-order))
+  (lambda () (set-load-path! original)))
+(observe 'restored)
+#+end_src
+
+Local evidence: =parser-native-entry-profile-02.{json,log}=,
+=agentic-public-source-diagnostic-01.{json,log}= and
+=public-source-path-control-final-01.{json,log}=. The last control exits0,
+checks all three expected bindings and unchanged source hashes. Its21.98s is
+not a performance comparison. Failed instrumentation and zero-hit stress records
+remain under their distinct =native-identity-make-*= labels.
+
+The existing Core =t/module-publication-test.ss= controls, including changed
+public source and warm native-name redirection, pass through =just test-file=
+with an explicit120s outer fence: exit0,53.95s, Module/Harness/final OK and no
+error markers (=core-publication-native-controls-02.json=). This preserves the
+framework's existing negative controls rather than adding a second guard.
+The earlier owner-default invocation took141.63s and used Core's600s policy;
+=core-publication-native-controls-01.json= is retained but explicitly excluded
+from this task's120s acceptance. The bounded rerun changes the launch fence,
+not implementation semantics, and is not a causal repair or speedup comparison.
+
+The maintained Parser runtime entry was then rechecked without changing its
+implementation: =just test-compiler-process= exits0 in57.17s, current base HIT,
+8 formal helper targets/18 backend jobs and complete Module/Harness/final OK
+(=parser-runtime-after-causal-controls-01.json=). A fresh reader before this
+extension exits0 in15.50s. These are currentness/runtime checks, not another
+performance repair claim. This follow-up changes only Org and the D2/SVG view;
+the sole direct dependency remains Agenticbfa9498 and the formal cohort is unchanged.
+
+A local two-worker control on the same installed Parser4c142e4 and SDK1cfb032
+also fails: =parser-native-entry-profile-two-workers-01.json= records wrapper70,
+194.52s including observation/wrapper termination,233 frontend targets and139
+backend starts, without READY. The native writer retains its180s fence. Its log
+contains the SDK nonzero-child wrapper rather than a separately issued child
+status, so this is not relabeled as an exact inner124 receipt. The earlier
+four-worker pass and this failure are not a matched controlled performance
+comparison: unrelated host builds continue. They establish distinct outcomes
+under two package worker selections, not a unique scheduling cause or a repair.
+
+A proposed upstream candidate that changed CI from two to four workers was
+rejected by automatic approval review because the worker increase and bundled
+entry/heap changes exceed the fixed-resource boundary. The Git command did not
+execute; no candidate commit or push exists. The worker increase and executable
+shebang changes were removed. CI remains at two workers. A local, uncommitted
+compiler-child default-heap candidate remains in the Parser edit checkout,
+with its regression case and a corrected stale workflow comment. It preserves
+explicit caller heap choices and supplies1GiB only when no maximum was selected.
+A native child control passes in4.51s for absent/default, idempotent,512MiB and
+2GiB choices. This tests inherited options, not a total-RSS bound or a build fix.
+
+The candidate's two-worker cold build was interrupted and lost its waitable exit
+status. Its partial log and diagnostic JSON are retained and marked unaccepted.
+It must not be cited as candidate qualification. Native installed source heads
+remain the declared cohort; a subsequent ordinary native build restores any
+partial products. No manually restored binaries or source overlay is accepted.
+The candidate must receive complete bounded qualification before publication or
+dependency propagation. Source synchronization and causal repair remain pending.
+
+The post-interruption ordinary native recovery also fails under the unchanged
+limits: =gerbil pkg build github.com/tao3k/gerbil-parser=, declared4c142e4,
+four workers,2GiB inherited cap, exit124,182.66s including termination
+(=native-cohort-results-causal-interruption-recovery.json=). The sequential
+cohort runner stops at Parser; Orgize and Agentic are not retried by that run.
+No Parser build/compiler process from that invocation was visible in the immediate
+post-timeout process inventory; other workspaces' test/compiler processes were
+visible and were not stopped. Installed tracked Parser sources remain clean.
+The strict publication file is absent, consistent with the interrupted writer's
+withdrawal. Ordinary product recovery and fresh strict reader acceptance are
+therefore still OPEN. Earlier successful reader receipts describe their original
+instants; they do not certify this post-interruption prefix.
+
+This continuation has not committed or pushed either the root documentation or
+the upstream candidate. Root remains =eb52dc6=, the previously synchronized head.
+The three maintained documentation/view files are local changes. The requested
+final commit and hardenedlinux/tao3k dual push await completed repair and the
+required current-prefix verification, rather than using source synchronization
+as a substitute for acceptance.
+
+The implementation closure condition remains stronger: identify a reproducible
+native-entry failure with its actual source/package/resolution observations;
+show that a package-entry repair removes that failure while preserving source
+mutation and name-redirection refusals; then rerun native installation,
+build/load/currentness and configured controls at the fixed resource limits.
+Do not weaken canonical-source admission, accept a compiled-interface alias,
+retry a failed admission into success, alter Gerbil/SDK or mint a receipt manually.
+Until those conditions hold, causal repair is OPEN and source synchronization
+must not be reported as completed repair.
 
 ** Source synchronization boundary
 
@@ -1759,3 +3609,78 @@ structural context, current-source digest or tool transcript is insufficient to
 issue the original C. I4--I7 require that acquisition before a positive same-C
 accepted view, protected publication or end-to-end recovery can be admitted. The paper remains a research comparator; none of
 these correctness results establishes a research advantage.
+
+** Explicit utility Types and source-phase handoff
+
+Parser PR13 =73ef439= removes the Any/Any Utilities default. List services require
+explicit Row/Key Types and return native TypeValuePair; a defstruct row with
+field-checking POO Type is qualified. Six entry/type/interop/spec cases, canonical
+incremental build, compiled-Contract startup and native inventory audit pass.
+The source-identity refusal is isolated by fresh-process negative/positive
+controls and corrected through Core's existing source registrar in both build
+phases. Details, retained failures and remaining CI/source/installation gates are
+in [[file:10.108-parser-directory-modules-and-init-build-refactor.org][10.108]]. Resource limits remain unchanged.
+
+** Parser explicit graph/scanner/action domains
+
+Parser PR13 =483fb2e= completes the remaining Scope/method Any audit. Graph
+Row/Id/Kind and scanner Context/Mode are explicit caller-owned POO Types;
+LR actions and Grammar IR have checked data domains. Seven retained declaration
+sites and their individual reasons are recorded in 10.108 and Parser README.org.
+Core PR19 =fd54f94= preserves the selected compiler-source association only for
+its native action, while rechecking physical inputs. Core canonical build passes
+104.52s under its unchanged180s/2GiB/two-worker gate. The Parser five-owner,
+29-case slice passes73.17s with two workers and total90/idle5. Source-selection
+leakage and lazy prototype-family failures have explicit regression checks;
+failed earlier cohorts remain diagnosis. Parser canonical build and exact-head
+Linux/macOS run40254445150 remain pending here, independent of these local passes.
+
+
+** Final Parser Any audit qualification boundary
+
+Existing Parser PR13 =0ece0e1= contains explicit Record/struct/POO domains,
+seven individually justified Any boundaries, LR precedence and graph-select
+callback controls, and two-worker activation alignment. Formal Core PR19
+=a8f48f5= removes duplicate path-enrollment admission while retaining enclosing
+and per-access physical checks. Both checkouts are clean/pushed. Canonical
+builds pass Core47.50s/Parser41.07s and the actual registered Parser six-owner,
+33-case slice passes61.05s. Compiled semantic24 groups plus five process entries
+and all11 Worker controls pass at the preceding identical Parser implementation.
+Run40258488174 reaches successful Linux dependency installation, but macOS still
+refuses Core cold build at180s with child124. Full source entry also retains an
+ABI owner idle5 refusal; isolated success is not its repair. Full two-platform
+CI, complete shared-source qualification and tagged native update remain open.
+10.108 and the D2 view preserve failures and do not relabel retries as fixes.
+
+
+** Authorized Core budget and complete source supervision
+
+The user authorizes Core's native package-entry budget300s (Core PR19 0e3c1f8),
+retaining two workers/current heaps and all runtime fences. Old macOS logs prove
+cores=2 and active backend work at180s; the first300s cohort passes dependency
+installation on both OS. This is a policy change, not a performance repair.
+Parser PR13 5825b32 additionally fixes a concrete False scanner Mode fixture,
+reuses the existing compiler import/evaluation observer for spec queries, forwards
+real Core source events, and separates diagnostic output from nested spec data.
+The exact previous observer/candidate same-process control distinguishes corrupted
+versus clean data streams; zero/multiple values, exceptions/refusals and child
+failure controls remain. Canonical build passes42.39s and complete source passes
+175.00s:145 modules/1087 cases, two Workers/3GiB, total90/idle5 unchanged.
+Historical180s/idle5, intermediate observer attempts and sandbox ps refusals are
+retained. The older ABI-only missing stack is not retroactively inferred.
+Final-head Linux/macOS CI40262352809 is still pending separately; 10.108 and D2
+track that gate without relabeling an earlier or warm run as full acceptance.
+
+
+** Final Parser Linux/macOS closure at5825b32
+
+Run40262352809 succeeds:12 enabled jobs pass;5 existing conditional jobs skip.
+Both OS full-source logs independently establish145 modules/1087 cases,24
+compiled semantic groups, declared process closure and11 Worker controls.
+Preparation, FFI and generation pass on both platforms; Linux pinned corpus
+passes. Core300s is an explicit user-authorized policy adjustment with cores=2
+confirmed, not a claim of optimization. Full source total90/idle5/current heaps
+and Parser's unbounded package-build policy remain. Org/D2 retain old180s,
+source/fixture/sandbox failures and controlled negative evidence; the uncaptured
+historical ABI stack is not inferred from retries. Existing Parser/Core PRs are
+updated; no Gerbil/SDK source or unrelated root implementation is changed here.

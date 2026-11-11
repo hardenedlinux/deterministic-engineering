@@ -1,14 +1,13 @@
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
-
 (import
   :std/test
   :clan/poo/object
-  "../library/drivers/project-formation/func.ss"
-  "../scenarios/project-formation/func.ss"
+  "../library/project-formation/func.ss"
+  "../library/project-intake/func.ss"
   "../library/project-organization/objects.ss"
-  "../profiles/library-formation.ss")
+  )
+(import :deterministic-engineering/init)
+(def LibraryFormationProfile (.get deterministic-engineering.init.exports Library library-formation-profiles profiles LibraryFormationProfile))
 (export
   project-formation-test)
 (def project-formation-test
