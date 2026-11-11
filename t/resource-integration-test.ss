@@ -1,15 +1,15 @@
-;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
+;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;; SPDX-License-Identifier: LGPL-2.1-or-later
 
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 ;;; -*- Gerbil -*-
 (import :clan/poo/object :std/test :std/encoding/json
         (only-in :std/crypto/digest sha256) (only-in :std/encoding/hex hex-encode)
         (only-in :std/misc/ports read-all-as-u8vector)
-        "../library/drivers/rust-resources/correspondence.ss"
-        "../library/drivers/rust-resources/objects.ss"
-        "../library/concurrency/resource-control/backpressure-memory/tokio-rayon/objects.ss"
-        "../library/concurrency/resource-control/backpressure-memory/abstract/objects.ss")
+        "../library/rust-resources/correspondence.ss"
+        "../library/rust-resources/objects.ss"
+        "../library/backpressure-tokio-rayon/objects.ss"
+        "../library/backpressure-memory/objects.ss")
 (def selected-method-references
   (map (lambda (key) (method-ref (.ref RustMethodDefinitions key))) '(native quint lean)))
 (def selected-integration-reference

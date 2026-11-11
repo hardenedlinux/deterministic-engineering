@@ -1,18 +1,24 @@
-;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
+;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;; SPDX-License-Identifier: LGPL-2.1-or-later
 
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 ;;; -*- Gerbil -*-
-(import :std/test :clan/poo/object :gerbil-ascent/rules/interface
+(import :std/test :clan/poo/object :gerbil-ascent/rules/func
         (only-in :clan/poo/mop validate)
         "../library/project-organization/objects.ss" "../library/project-organization/types.ss"
-        "../library/concurrency/resource-control/backpressure-memory/abstract/objects.ss"
-        "../library/drivers/rust-resources/objects.ss"
-        "../library/concurrency/resource-control/backpressure-memory/tokio-rayon/objects.ss"
-        "../library/drivers/rust-resources/types.ss"
-        "../profiles/resource-lifecycle.ss" "../profiles/gateway.ss" "../profiles/library-formation.ss"
-        "../scenarios/project-formation/func.ss" "../scenarios/gateway-review/func.ss"
-        "../library/drivers/project-formation/func.ss" "../library/drivers/evidence/func.ss")
+        "../library/backpressure-memory/objects.ss"
+        "../library/rust-resources/objects.ss"
+        "../library/backpressure-tokio-rayon/objects.ss"
+        "../library/rust-resources/types.ss"
+
+        "../library/project-intake/func.ss" "../library/gateway-review/func.ss"
+        "../library/project-formation/func.ss" "../library/evidence/func.ss")
+(import :deterministic-engineering/init)
+(def LocalProfile (.get deterministic-engineering.init.exports Library gateway-profiles profiles LocalProfile))
+(def CacheProfile (.get deterministic-engineering.init.exports Library gateway-profiles profiles CacheProfile))
+(def RetryProfile (.get deterministic-engineering.init.exports Library gateway-profiles profiles RetryProfile))
+(def LifecycleProfile (.get deterministic-engineering.init.exports Library resource-lifecycle-profiles profiles LifecycleProfile))
+(def LibraryFormationProfile (.get deterministic-engineering.init.exports Library library-formation-profiles profiles LibraryFormationProfile))
 (export layer-declarative-alignment-test)
 (def selected-method-references
   (map (lambda (key) (method-ref (.ref RustMethodDefinitions key))) '(native quint lean)))

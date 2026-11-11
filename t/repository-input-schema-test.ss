@@ -1,13 +1,13 @@
-;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
+;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;; SPDX-License-Identifier: LGPL-2.1-or-later
 
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 ;;; -*- Gerbil -*-
 (import
   :std/test
   (only-in :clan/poo/object .get)
   (only-in :clan/poo/mop TypeError?)
-  (only-in "../library/drivers/project-formation/inputs.ss"
+  (only-in "../library/project-formation/inputs.ss"
     formation-acquire-inputs formation-input-observation formation-inputs-current!))
 (export repository-input-schema-test)
 

@@ -1,10 +1,10 @@
-;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
+;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;; SPDX-License-Identifier: LGPL-2.1-or-later
 
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 (import :std/test :clan/poo/object
  (only-in :std/io/tempfile call-with-temporary-directory)
- "../library/drivers/project-formation/inputs.ss")
+ "../library/project-formation/inputs.ss")
 (export project-inputs-test)
 (def (put path text)
  (call-with-output-file (list path: path truncate: #t) (cut display text <>)))

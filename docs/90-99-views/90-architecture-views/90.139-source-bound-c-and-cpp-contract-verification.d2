@@ -1,0 +1,77 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+# Org authority: ../../10-19-design/10-architecture/10.147-source-bound-c-and-cpp-contract-verification.org
+# Design projection; rendering is not verification or approval.
+vars: {d2-config: {data: {figure: |json
+{
+  "title": "Source contracts: from Library obligation to scoped evidence",
+  "purpose": "workflow",
+  "kind": "library-workflow",
+  "language": "en",
+  "width": 1400,
+  "primary": "ownership",
+  "questions": [
+    {
+      "ref": "ownership",
+      "text": "How does a consumer check actual C/C++ code without turning the Library into a Runtime?",
+      "focusRefs": [
+        "authority",
+        "declaration"
+      ],
+      "subjectRefs": [
+        "parent",
+        "methods",
+        "ascent"
+      ]
+    }
+  ],
+  "references": {
+    "authority": "docs/10-19-design/10-architecture/10.147-source-bound-c-and-cpp-contract-verification.org",
+    "declaration": "docs/90-99-views/90-architecture-views/90.139-source-bound-c-and-cpp-contract-verification.d2"
+  },
+  "basis": {
+    "captureRef": "design-candidate:90.139-source-bound-c-and-cpp-contract-verification",
+    "modelRefs": [
+      "docs/10-19-design/10-architecture/10.147-source-bound-c-and-cpp-contract-verification.org"
+    ],
+    "obligationRefs": [],
+    "evidenceRefs": []
+  },
+  "copy": {},
+  "themes": [
+    "sketchbook",
+    "compact"
+  ],
+  "presentation": {
+    "options": {
+      "elk.direction": "DOWN",
+      "elk.layered.spacing.nodeNodeBetweenLayers": "48"
+    },
+    "edgeLabels": false
+  }
+}
+|}}}
+direction: down
+
+parent: "Parent Library\nModels, rules and obligations"
+profile: "Profile Module\nABI, macros and method bounds"
+scenario: "Consumer Scenario\nReal source, callers and faults"
+contracts: "Source contracts\nPre/postconditions, writes and owners"
+plans: "Scheme method declarations\nTyped verification plans; no execution"
+methods: "Development verification\nReal body + callers; bounded CBMC / native tests"
+math: "Lean / Quint correspondence\nNumeric lemmas / state-order assumptions"
+oracle: "Independent checks\nLiteral gold and actual source mutants\nOccupied refusal / self transfer"
+closure: "Captured evidence inputs\nSource, harness, tools, bounds and configuration\nSix retained real results; five full test cases"
+ascent: "ASCENT relations\nSupport, counter, pending and reuse premises"
+consumer: "External consuming ecosystem\nReview and current-use authorization"
+change: "Changed source or assumptions\nNew capture; retain old witnesses and frozen queries"
+parent -> profile -> scenario
+parent -> contracts
+profile -> plans
+scenario -> methods
+contracts -> methods
+plans -> methods
+math -> oracle
+methods -> oracle -> closure -> ascent -> consumer
+consumer -> change -> scenario

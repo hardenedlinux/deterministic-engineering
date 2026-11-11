@@ -1,19 +1,23 @@
-;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
+;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;; SPDX-License-Identifier: LGPL-2.1-or-later
 
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 ;;; -*- Gerbil -*-
 (import :std/test :deterministic-engineering/init :clan/poo/object
-        :deterministic-engineering/profiles/gateway
+
         (only-in :clan/poo/mop validate)
         (only-in :gerbil-ascent/rules/declaration rule-module-program))
+(def LocalProfile (.get deterministic-engineering.init.exports Library gateway-profiles profiles LocalProfile))
+(def Cap2Profile (.get deterministic-engineering.init.exports Library gateway-profiles profiles Cap2Profile))
+(def CacheProfile (.get deterministic-engineering.init.exports Library gateway-profiles profiles CacheProfile))
+(def RetryProfile (.get deterministic-engineering.init.exports Library gateway-profiles profiles RetryProfile))
 (export module-design-test)
 (def module-design-test
   (test-suite "Gateway publications have distinct engineering responsibilities"
     (test-case "independent Profiles bind the Library and one Scenario"
-      (def domain (.get (.get deterministic-engineering.init.exports Library) rust-resources scope))
-      (def evidence (.get (.get deterministic-engineering.init.exports Library) evidence scope))
-      (def scene (.get (.get deterministic-engineering.init.exports Scenarios) gateway-review scope))
+      (def domain (.get (.get deterministic-engineering.init.exports Library) rust-resources))
+      (def evidence (.get (.get deterministic-engineering.init.exports Library) evidence))
+      (def scene (.get (.get deterministic-engineering.init.exports Library) gateway-review))
       (for-each (lambda (p) (validate (.ref domain 'profile-contract) p))
                 (list LocalProfile Cap2Profile CacheProfile RetryProfile))
       (check-equal? (.ref LocalProfile 'capacity) 2)

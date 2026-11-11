@@ -1,14 +1,14 @@
-;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
+;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;; SPDX-License-Identifier: LGPL-2.1-or-later
 
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 ;;; -*- Gerbil -*-
 (import :std/test :clan/poo/object
         (only-in :clan/poo/mop validate)
         (only-in :clan/poo/recursive-validation closed-names)
-        (only-in "../library/concurrency/resource-control/backpressure-memory/abstract/types.ss"
+        (only-in "../library/backpressure-memory/types.ss"
           BackpressureScopeContract BackpressureModelContract BackpressureDeclarationContract BackpressureConfigContract)
-        (only-in "../library/concurrency/resource-control/backpressure-memory/abstract/objects.ss"
+        (only-in "../library/backpressure-memory/objects.ss"
           BackpressureModel BackpressureDeclaration)
         (only-in "../library/project-organization/types.ss"
           OrganizationScopeContract OrganizationModelContract OrganizationDeclarationContract OrganizationConfigContract)

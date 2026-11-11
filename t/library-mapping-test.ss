@@ -1,15 +1,15 @@
-;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
+;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;; SPDX-License-Identifier: LGPL-2.1-or-later
 
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 ;;; Authored meaning versus historical observation: no execution receipt is issued.
 (import :std/test :std/encoding/json :clan/poo/object
         (only-in :clan/poo/mop validate)
-        "../library/concurrency/resource-control/backpressure-memory/abstract/objects.ss"
-        "../library/drivers/rust-resources/objects.ss"
-        "../library/concurrency/resource-control/backpressure-memory/tokio-rayon/objects.ss"
-        "../library/drivers/rust-resources/types.ss"
-        "../library/drivers/rust-resources/correspondence.ss")
+        "../library/backpressure-memory/objects.ss"
+        "../library/rust-resources/objects.ss"
+        "../library/backpressure-tokio-rayon/objects.ss"
+        "../library/rust-resources/types.ss"
+        "../library/rust-resources/correspondence.ss")
 (export library-mapping-test)
 (def selected-method-references
   (map (lambda (key) (method-ref (.ref RustMethodDefinitions key))) '(native quint lean)))

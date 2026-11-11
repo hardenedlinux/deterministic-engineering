@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
 # Declared Questions and content for the actual DE-CASE-01 case.
-# Source observations only; no issued C, accepted Q or review R.
+# Declaration/source view only; capture, execution and approval remain externally owned.
 vars: {
   d2-config: {
     layout-engine: elk
@@ -61,19 +61,19 @@ vars: {
       "focusRefs": [
         "library",
         "profile",
-        "capture-stop"
+        "declaration-boundary"
       ]
     }
   ],
   "references": {
     "library": "library/project-organization/objects.ss",
-    "profile": "profiles/library-formation.ss",
-    "scenario": "scenarios/project-formation/func.ss",
-    "capture-stop": "scenarios/project-formation/func.ss",
+    "profile": "library/library-formation-profiles/objects.ss",
+    "scenario": "library/project-formation/func.ss",
+    "declaration-boundary": "library/project-formation/objects.ss",
     "model": "project.sysml",
     "documents": "docs/10-19-design/10-architecture/10.31-architecture-document-and-decision-contracts.org",
     "decisions": "docs/10-19-design/10-architecture/10.34-case-design-review-dossier-draft.org",
-    "types": "scenarios/project-formation/types.ss",
+    "types": "library/project-formation/types.ss",
     "render-d2": "packages/render/src/d2-figure.ts",
     "render-sysml": "packages/render/src/opensysml.ts",
     "render-binding": "packages/render/src/index.ts",
@@ -102,8 +102,8 @@ vars: {
     "annotation-04": "Profile selects the needed capabilities",
     "annotation-05": "Original identities stay intact",
     "capture-heading": "Bind actual use",
-    "annotation-06": "Scenario acquires project inputs",
-    "annotation-07": "One use, with source associations",
+    "annotation-06": "Scenario declares project bindings",
+    "annotation-07": "One use, with explicit input requirements",
     "annotation-08": "Ownership / arrows point to dependencies",
     "library-boundary": "REUSABLE PUBLICATION BOUNDARY",
     "library-label": "Library",
@@ -118,8 +118,8 @@ vars: {
     "annotation-15": "Reference catalog / mapping",
     "annotation-16": "binds",
     "scenario-label": "Scenario",
-    "annotation-17": "Acquire actual inputs and origins",
-    "annotation-18": "Retain choices, checks and gaps",
+    "annotation-17": "Declare inputs and source associations",
+    "annotation-18": "External consumers acquire actual inputs",
     "model-label": "Architecture model",
     "document-label": "Org documents",
     "decision-label": "Decisions",
@@ -145,15 +145,15 @@ vars: {
     "annotation-38": "Contracts, duties and acceptance",
     "annotation-39": "Decisions and reassessment",
     "annotation-40": "Choices, assumptions and triggers",
-    "annotation-41": "Design view: issued C, accepted Q and independent review still need actual binding.",
+    "annotation-41": "This responsibility view declares C/Q/review boundaries; it issues no execution evidence.",
     "annotation-42": "Library / Profile declarations are visible",
     "annotation-43": "Objects, both policies, catalog / mapping and method selection",
-    "annotation-44": "SDK identities and source bindings are retained",
-    "annotation-45": "Exact IDs, parents and port references; original input fingerprints",
-    "annotation-46": "What is still blocked?",
-    "annotation-47": "capture-blocked \u00b7 capture = #f",
-    "annotation-48": "Preparation still reports origin and method-footprint gaps",
-    "annotation-49": "No review or delivery was executed here",
+    "annotation-44": "SDK identities and declared bindings remain distinct",
+    "annotation-45": "Model IDs and ports are checked; declarations do not attest actual input bytes",
+    "annotation-46": "Where does execution belong?",
+    "annotation-47": "design-only · declaration-layout",
+    "annotation-48": "Library declares requirements; consuming hosts acquire and verify actual inputs",
+    "annotation-49": "No capture, review or delivery executes in this formation view",
     "annotation-50": "Source observation and image export are not execution receipts",
     "annotation-51": "Library publishes meaning. Profile selects. Scenario binds this use.",
     "annotation-52": "Questions / model / source observations / architecture",
@@ -244,15 +244,15 @@ vars: {
       },
       {
         "ref": "scenario",
-        "excerpt": "(def (select-formation-profile"
+        "excerpt": "(def (reason-project-formation"
       },
       {
-        "ref": "capture-stop",
-        "excerpt": "status: 'capture-blocked"
+        "ref": "declaration-boundary",
+        "excerpt": "authority: 'design-only"
       },
       {
-        "ref": "capture-stop",
-        "excerpt": "capture: #f"
+        "ref": "declaration-boundary",
+        "excerpt": "purpose: 'declaration-layout"
       },
       {
         "ref": "model",

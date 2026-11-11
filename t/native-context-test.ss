@@ -1,18 +1,20 @@
-;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
+;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;; SPDX-License-Identifier: LGPL-2.1-or-later
 
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 ;;; -*- Gerbil -*-
 (import
   :std/test
   :clan/poo/object
   :deterministic-engineering/init
-  :deterministic-engineering/profiles/resource-lifecycle
+
   (only-in :std/io/tempfile call-with-temporary-directory)
   (only-in :std/misc/ports read-all-as-string)
   (only-in :clan/poo/mop validate TypeError?)
   (only-in :gerbil-ascent/program/session gerbil-ascent-session-run)
-  (only-in "../scenarios/resource-lifecycle/func.ss" resource-lifecycle-scope))
+  (only-in "../library/resource-lifecycle/func.ss" resource-lifecycle-scope))
+(def LifecycleProfile (.get deterministic-engineering.init.exports Library resource-lifecycle-profiles profiles LifecycleProfile))
+(def LargerPayloadProfile (.get deterministic-engineering.init.exports Library resource-lifecycle-profiles profiles LargerPayloadProfile))
 (export
   native-context-test)
 (def (scope-basis context kind)
@@ -28,7 +30,7 @@
   (test-suite "One source-bound native capture at Scenario admission"
     (test-case "source/Profile mutation and split scope forgery cannot reuse the captured snapshot"
       (def root (current-directory))
-      (def scene (.get (.get deterministic-engineering.init.exports Scenarios) resource-lifecycle scope))
+      (def scene (.get (.get deterministic-engineering.init.exports Library) resource-lifecycle))
       (def methods (.ref scene 'methods))
       (def original
         (path-expand "languages-engineering/rust/concurrency/resource-control/backpressure-memory" root))

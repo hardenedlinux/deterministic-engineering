@@ -1,17 +1,18 @@
-;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
+;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;; SPDX-License-Identifier: LGPL-2.1-or-later
 
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 ;;; Rust inputs are executed by the admitted Scheme driver, not loaded as Modules.
 (import
   :std/test
   :clan/poo/object
   :deterministic-engineering/init
-  :deterministic-engineering/profiles/resource-lifecycle
+
   :gerbil-ascent/program/session
   (only-in :agentic-ai-lab/modules/temporal-causality/trajectory/ascent-ledger ascent-trajectory)
   (only-in :std/io/tempfile call-with-temporary-directory)
   (only-in :std/misc/ports read-all-as-string))
+(def LifecycleProfile (.get deterministic-engineering.init.exports Library resource-lifecycle-profiles profiles LifecycleProfile))
 (export rust-project-native-test)
 
 (def rust-project-native-test
@@ -23,7 +24,7 @@
           "languages-engineering/rust/concurrency/resource-control/backpressure-memory"
           root))
       (def methods
-        (.get deterministic-engineering.init.exports Library rust-resources scope methods))
+        (.get deterministic-engineering.init.exports Library rust-resources methods))
       (call-with-temporary-directory
         "rust-only-native"
         (lambda (directory)
@@ -45,9 +46,9 @@
               root crate (getenv "RESOURCE_CARGO") (getenv "RESOURCE_RUSTC") 64 usage))
           (def snapshot ((.get methods value-digest) scopes))
           (def entry
-            (.get deterministic-engineering.init.exports Library rust-resources scope entry))
+            (.get deterministic-engineering.init.exports Library rust-resources entry))
           (def evidence
-            (.get deterministic-engineering.init.exports Library evidence scope))
+            (.get deterministic-engineering.init.exports Library evidence))
           (def session
             ((.get evidence open-review) entry LifecycleProfile usage snapshot scopes))
           (def trajectory
@@ -69,7 +70,7 @@
                       ("pathIdentity" ((.get methods claim) result)))))))
             results)
           ((.get methods register) session results trajectory
-            (path-expand "library/drivers/evidence/func.ss" root))
+            (path-expand "library/evidence/func.ss" root))
           (def frozen (gerbil-ascent-session-run session))
           (def (rows result relation) ((.get result rows-of) relation))
           (check-equal? (length (rows frozen 'support)) 5)
@@ -90,7 +91,7 @@
           ;; Authored meaning belongs to the actual result interpretation closure.
           (def model-source
             (path-expand
-              "library/concurrency/resource-control/backpressure-memory/tokio-rayon/objects.ss"
+              "library/backpressure-tokio-rayon/objects.ss"
               root))
           (def model-before (call-with-input-file model-source read-all-as-string))
           (try
@@ -101,7 +102,7 @@
             (check-exception ((.get methods current!) (car results)) error?)
             (check-exception
               ((.get methods register) session results trajectory
-                (path-expand "library/drivers/evidence/func.ss" root)) error?)
+                (path-expand "library/evidence/func.ss" root)) error?)
             (check-equal? (length (rows (gerbil-ascent-session-run session) 'witness)) 6)
             (finally
               (call-with-output-file (list path: model-source truncate: #t)

@@ -10,10 +10,10 @@
 (def gateway-real-results-test
   (test-suite "Real gateway method evidence, provenance and scoped reuse"
     (test-case "actual method outputs and independent native queries match review gold"
-      (def scope (.get (.get deterministic-engineering.init.exports Scenarios) gateway-review scope))
+      (def scope (.get (.get deterministic-engineering.init.exports Library) gateway-review))
       (def digest (.get scope methods file-digest))
       (def report-path (getenv "GATEWAY_REAL_REPORT" #f))
-      (unless report-path (error "run examples/gateway-evidence.ss and set GATEWAY_REAL_REPORT"))
+      (unless report-path (error "run t/support/gateway-evidence.ss and set GATEWAY_REAL_REPORT"))
       (def (load-json path) (call-with-input-file path (cut read-json <> object-as-hash: #t)))
       (def report (load-json report-path))
       (check-equal? (hash-ref report "schema") "gateway.real-investigation.v1")

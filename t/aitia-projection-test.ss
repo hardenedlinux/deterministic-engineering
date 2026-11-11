@@ -1,11 +1,11 @@
-;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
+;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;; SPDX-License-Identifier: LGPL-2.1-or-later
 
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 ;;; -*- Gerbil -*-
 (import :std/test :std/encoding/json
- "../scenarios/resource-lifecycle/review/func.ss"
- "../scenarios/resource-lifecycle/review/cross-intake.ss")
+ "../library/backpressure-review/func.ss"
+ "../library/backpressure-review/cross-intake.ss")
 (export aitia-projection-test)
 (def aitia-projection-test
  (test-suite "Pure Aitia projections preserve content and history identity"

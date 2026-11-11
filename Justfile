@@ -17,7 +17,7 @@ export GAMBOPT := if env_var_or_default("GAMBOPT", "") == "" { "max-heap=2G,debu
 gerbil_homebrew_runtime := `gerbil_executable="$(command -v gerbil 2>/dev/null || true)"; if [ -n "$gerbil_executable" ] && realpath "$gerbil_executable" | grep -F '/opt/homebrew/Cellar/' >/dev/null; then printf true; else printf false; fi`
 homebrew_openssl_prefix := `if command -v brew >/dev/null 2>&1; then brew --prefix openssl@3 2>/dev/null || true; fi`
 darwin_openssl_prefix := env_var_or_default("OPENSSL_PREFIX", homebrew_openssl_prefix)
-gerbil_darwin_env := if os() == "macos" { if gerbil_homebrew_runtime == "true" { "env -u SDKROOT -u DEVELOPER_DIR -u CPATH -u LIBRARY_PATH -u C_INCLUDE_PATH -u CPLUS_INCLUDE_PATH -u MACOSX_DEPLOYMENT_TARGET -u DYLD_LIBRARY_PATH -u DYLD_FALLBACK_LIBRARY_PATH COMPILER_PATH=/usr/bin CPATH='" + darwin_openssl_prefix + "/include' LIBRARY_PATH='" + darwin_openssl_prefix + "/lib' PKG_CONFIG_PATH='" + darwin_openssl_prefix + "/lib/pkgconfig'" } else { "env" } } else { "env" }
+gerbil_darwin_env := if os() == "macos" { if gerbil_homebrew_runtime == "true" { "env -u SDKROOT -u DEVELOPER_DIR -u CPATH -u LIBRARY_PATH -u C_INCLUDE_PATH -u CPLUS_INCLUDE_PATH -u MACOSX_DEPLOYMENT_TARGET -u DYLD_LIBRARY_PATH -u DYLD_FALLBACK_LIBRARY_PATH COMPILER_PATH=/usr/bin CPATH='" + darwin_openssl_prefix + "/include' LIBRARY_PATH='" + darwin_openssl_prefix + "/lib' PKG_CONFIG_PATH=\"" + darwin_openssl_prefix + "/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}\"" } else { "env" } } else { "env" }
 
 # Native installation spans several package builds. Keep the original deadline
 # at each package entry; a serial dependency closure is not one package build.
@@ -25,10 +25,9 @@ deps:
     timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q deps --install
 
 
-# The product owns the v0.19 tagged-update adapter over public gxpkg APIs.
-# Run after initial installation; no local updater or manifest writer.
+# Gerbil's public package API owns tagged updates; no Parent path or manifest writer.
 deps-update:
-    timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi .gerbil/pkg/github.com/tao3k/agentic-ai-lab/packages/automation/native-dependencies.ss
+    timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -e '(import (only-in :gerbil/tools/gxpkg pkg-update pkg-install with-pkg-build-env)) (with-pkg-build-env (for-each (lambda (dependency) (pkg-update dependency) (pkg-install dependency)) (pgetq depend: (call-with-input-file "gerbil.pkg" read) (quote ()))))'
 
 # Use the ordinary untagged native build with the same host/compiler envelope.
 build-dependency package:
@@ -47,7 +46,7 @@ test-file path pattern=".*":
     fi
     mkdir -p .data/test-logs
     log="$(mktemp .data/test-logs/test-XXXXXX)"
-    timeout --signal=TERM --kill-after=5s 120s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxtest -:max-heap=2G,debug=q -v 5 -r "{{pattern}}" "{{path}}" 2>&1 | tee "$log"
+    timeout --signal=TERM --kill-after=5s 120s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q test -v 5 -r "{{pattern}}" "{{path}}" 2>&1 | tee "$log"
     if rg 'ERROR (MODULE|CHECK|CASE|HARNESS)|Heap overflow|Stack overflow' "$log"; then exit 1; fi
     rg -F -x 'MODULE-OK {{path}}' "$log" >/dev/null
     rg -F 'HARNESS-OK' "$log" >/dev/null
@@ -57,6 +56,8 @@ test-file path pattern=".*":
 
 # Serial execution preserves bounded native test ownership.
 test:
+    just test-file t/user-configuration-test.ss
+    just test-source-contracts
     just test-file t/engineering-ownership-test.ss
     just test-file t/repository-input-schema-test.ss
     just test-file t/library-relation-types-test.ss
@@ -72,6 +73,22 @@ test:
     just test-gateway
     just test-file t/dependency-compatibility-test.ss
     just test-file t/package-metadata-test.ss
+
+# Real language subjects, current native tool paths and existing test harness.
+test-source-contracts pattern=".*" path="t/source-contracts-test.ss":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    export SOURCE_CONTRACT_CBMC="$(realpath "$(command -v cbmc)")"
+    export SOURCE_CONTRACT_GOTO_CC="$(realpath "$(command -v goto-cc)")"
+    export SOURCE_CONTRACT_GOTO_INSTRUMENT="$(realpath "$(command -v goto-instrument)")"
+    export SOURCE_CONTRACT_CC="$(realpath "$(command -v clang)")"
+    export SOURCE_CONTRACT_CXX="$(realpath "$(command -v clang++)")"
+    just test-file "{{path}}" "{{pattern}}"
+
+investigate-source-contracts output:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi t/support/source-contract-evidence.ss "{{output}}" "$(realpath "$(command -v cbmc)")" "$(realpath "$(command -v goto-cc)")" "$(realpath "$(command -v goto-instrument)")" "$(realpath "$(command -v clang)")" "$(realpath "$(command -v clang++)")"
 
 # Each existing suite receives its own bounded native invocation.
 test-gateway:
@@ -92,7 +109,7 @@ investigate-resource output:
     test ! -e "{{output}}"
     mkdir -p .data/test-logs
     log="$(mktemp .data/test-logs/investigation-XXXXXX)"
-    timeout --signal=TERM --kill-after=5s 600s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q examples/resource-lifecycle-evidence.ss "{{output}}" "$cargo" "$rustc" "$quint" "$lean" 2>&1 | tee "$log"
+    timeout --signal=TERM --kill-after=5s 600s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/resource-lifecycle-evidence.ss "{{output}}" "$cargo" "$rustc" "$quint" "$lean" 2>&1 | tee "$log"
     RESOURCE_REAL_REPORT="{{output}}/report.json" just test-file t/resource-lifecycle-test.ss
 
 # Optional SysML/correspondence slice with the existing native result issuer.
@@ -105,8 +122,8 @@ investigate-resource-integration output sysml:
     lean="${RESOURCE_LEAN:-$(elan which lean)}"
     test ! -e "{{output}}"
     test -x "{{sysml}}"
-    timeout --signal=TERM --kill-after=5s 600s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q examples/resource-integration-evidence.ss "{{output}}" "$cargo" "$rustc" "$quint" "$lean" "$(realpath "{{sysml}}")"
-    d2 --layout elk --theme 0 --pad 24 "{{output}}/evidence.d2" "{{output}}/evidence.svg"
+    timeout --signal=TERM --kill-after=5s 600s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/resource-integration-evidence.ss "{{output}}" "$cargo" "$rustc" "$quint" "$lean" "$(realpath "{{sysml}}")"
+    # Rendering requires the TS FigureInput contract; raw D2-to-SVG is retired.
 
 # Native SDLC consumer of the accepted owner slice. No changes to its captured roots.
 test-backpressure-review:
@@ -136,7 +153,7 @@ investigate-backpressure-reassessment output:
     mkdir -p .data/test-logs .data/test-runs
     cargo="${RESOURCE_CARGO:-$("$HOME/.cargo/bin/rustup" which cargo)}"
     rustc="${RESOURCE_RUSTC:-$("$HOME/.cargo/bin/rustup" which rustc)}"
-    timeout --signal=TERM --kill-after=5s 240s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q examples/backpressure-reassessment-evidence.ss "{{output}}" "$cargo" "$rustc"
+    timeout --signal=TERM --kill-after=5s 240s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/backpressure-reassessment-evidence.ss "{{output}}" "$cargo" "$rustc"
 
 test-backpressure-reassessment:
     #!/usr/bin/env bash
@@ -395,7 +412,7 @@ investigate-project-formation output:
     test ! -e "{{output}}"
     mkdir -p .data/test-logs
     log="$(mktemp .data/test-logs/project-formation-XXXXXX)"
-    timeout --signal=TERM --kill-after=5s 120s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q examples/library-formation.ss "{{output}}" 2>&1 | tee "$log"
+    timeout --signal=TERM --kill-after=5s 120s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/library-formation.ss "{{output}}" 2>&1 | tee "$log"
 
 # Raw facts remain an explicitly untrusted design investigation interface.
 investigate-formation-consequences output:
@@ -404,4 +421,4 @@ investigate-formation-consequences output:
     test ! -e "{{output}}"
     mkdir -p .data/test-logs
     log="$(mktemp .data/test-logs/formation-consequences-XXXXXX)"
-    timeout --signal=TERM --kill-after=5s 120s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q examples/library-formation-consequences.ss "{{output}}" 2>&1 | tee "$log"
+    timeout --signal=TERM --kill-after=5s 120s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/library-formation-consequences.ss "{{output}}" 2>&1 | tee "$log"

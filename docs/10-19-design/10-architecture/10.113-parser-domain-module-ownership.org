@@ -1,0 +1,124 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Parser domain modules and Yuanxu composition
+#+LANGUAGE: en
+
+* Current follow-up
+This is the qualified domain-migration baseline. [[file:10.114-parser-publication-and-scope-audit.org][10.114]] audits and refines Config,
+Scope and execution publication on top of this source layout. Receipts below
+remain bound to their recorded heads.
+
+* Scope and baseline
+This implementation slice removes the misleading =src/modules= container from
+Parser PR13. It does not enable std Djot, alter Gerbil/SDK, change dependency
+revisions, add a builder, or broaden test/resource controls. The prior qualified
+Parser baseline is461fa6f; this slice must earn new current-head Linux/macOS CI.
+Root Library implementation changes are outside this Parser commit.
+
+* Responsibility allocation
+| Previous owner | Current owner | Boundary |
+|----------------+---------------+----------|
+| =src/modules/parser/{types,objects,funcs,syntax}.ss= | =src/grammar/declaration-*.ss= | Grammar/Role contracts, constructors, pure grammar projections and declarative macros |
+| =src/modules/parser/contextual-*.ss= | =src/grammar/contextual-*.ss= | Contextual role/method/scanner-rule declarations; execution remains in compiler/runtime |
+| Line, list, inline-link, source-fragment, source-boundary, source-event-scope and source-pattern owners | =src/language/*.ss= | Language-owned source structures and generation forms; no generic module loader |
+| Graph query, projection and syntax owners | =src/graph/graph-*.ss= | Typed queries over caller-owned views and graph declarations |
+| =ParserModules= / =modules/scope= | =Graph= / =graph/scope= | The actual selected service is graph query construction/classification, not a module-system service |
+| =src/modules/loader.ss= | =src/testing/module-loader.ss= | Existing evaluator-safe compiler-wrapper replay used by test/product infrastructure; Gerbil retains loading, cache and failure authority |
+| Mixed parser author interface | =src/declarations.ss= | Explicit re-export of grammar/source declaration owners; no registry, execution or duplicate implementation |
+
+The former directory is removed, without compatibility forwarding modules. Source
+module identities change and consumers must rebuild. External object kinds,
+Grammar schemas, algorithms and caller data protocols retain their meanings.
+The pure Grammar projection stops re-exporting source-pattern helpers; the
+explicit author facade composes those helpers from their language owner.
+
+* Declarative composition and build ownership
+=init.ss= selects =build-support=, =compiler=, =ffi=, =grammar=, =graph=,
+=language=, =runtime=, =testing= and =utilities= directly through Yuanxu
+=:load-modules "./src"=. No second directory walker, resolver or build registry
+is introduced. Core retains source admission, normalized Scope and
+=std-make-spec= projection. Standard Gerbil build/test entries retain execution.
+
+Graph's Build contribution owns graph-query/support and graph-syntax/support.
+Language's contribution owns language products and the package's declaration/API
+facades. Testing's contribution owns its loader adapter. The independent native
+package-discovery reference excludes the new graph Build role just as it excludes
+other phase-bound Build roles. =dev/build.ss check-catalog= compares the complete
+native specifications including FFI options and rejects legacy published targets.
+
+Formal evidence discovery now includes grammar/graph domain sources and the
+explicit declaration facade. A source move must not silently remove those inputs
+from future model observation footprints. This is input coverage, not a new proof.
+
+* Verification obligations
+| Obligation | Positive control | Negative control |
+|------------+------------------+------------------|
+| Direct selection | Real Core Scopes exist for all nine declared owners | =modules= is absent; old source container is absent |
+| Graph admission | Actual Graph Scope and typed graph construction/query execute | Missing scope slots, non-function constructor, wrong candidate Types reject |
+| Declaration migration | Existing Grammar composition, source/event structures and generated language suites execute | Existing malformed grammar, missing references, bad source boundaries and conflicting declaration controls remain |
+| Build closure | Selected Core spec equals independent package source discovery | No duplicate/retired target; required public roots and FFI options remain |
+| Loader custody | Native cold/compiled/source loading and settled wrapper replay | Unsupported wrapper forms, fresh/unsettled initializers and cached failure propagation retain controls |
+| Source identity | Current declarations compile and load from qualified package identity | No success credited to old =src/modules= products |
+| Test ownership | Existing Suite/Case/Fixture and CI/development entries | No compiler/test child round added to a Case |
+| Remote acceptance | Current PR head passes enabled Linux/macOS CI jobs | Queued/local/previous-head results cannot close this gate |
+
+Builds retain two workers and2GiB; complete native tests retain3GiB. Parser's
+removed180-second package build watchdog stays removed. Existing per-test and
+process controls remain unchanged.
+
+* Execution status
+Domain migration and direct declarations are implemented and pushed to Parser
+PR13. Native catalog comparison and the production build pass (90.37s at two
+workers/2GiB). All six model-input controls pass. The final repaired test entry
+also passes183 unique modules with no ERROR and final OK (179.88s). Current-head
+[[https://github.com/tao3k/gerbil-parser/actions/runs/40457328171][CI40457328171]] passes:12 enabled jobs succeed and5 conditional jobs skip. Linux
+and macOS each execute183 unique native modules, with no ERROR, HARNESS-OK and
+final OK. The PR head was re-read and matches cb78727d224af1068914da333fac4200486aeece. std Djot
+remains paused at the previously recorded installed-module availability boundary.
+
+* Observed local failures and corrections
+The first complete native run used the normal prefix with prior compiled test
+products. Process-ownership controls failed because the sandbox denied =ps=.
+This is an execution-permission prerequisite; the code and resource controls are
+not relaxed. The failed log is retained as =parser-module-native-tests.log=.
+
+The new retired-module control separately detected old =~0= identities loaded
+by previously compiled conformance fixtures. Production compilation had passed,
+but =test-all= depended only on qualification support and did not rebuild those
+fixtures. The corrective change adds the existing =build-test-support= prerequisite
+to the development test entry. Standard Gerbil/defbuild-script currentness owns
+the rebuild. Deleting old artifacts or rerunning unchanged inputs would not fix
+that missing prerequisite. The negative control remains enabled.
+
+The failed local command returned0 despite ERROR CHECK/CASE/HARNESS and no final
+OK. Accordingly, raw CLI status is not credited as acceptance. =test-all= is
+aligned with the existing development-entry output gate: preserve native output,
+reject native errors, require HARNESS-OK and exact final OK. No test executor or
+nested test round is introduced; CI qualification already uses output admission.
+
+* Local qualification receipts
+| Receipt | Source / outcome | Evidence |
+|---------+------------------+----------|
+| Native source projection |098629e: selected spec equals independent source inventory | =parser-module-catalog.log=; PARSER-BUILD-CATALOG-OK |
+| Native production compilation |098629e: exit0 in90.37s, two workers/2GiB | =parser-module-build.log= |
+| Model input controls |a3bdf38: all6 pass after normal locked npm dependency installation | =formal/evidence/test_model_inputs.py=; moved domain discovery covered |
+| First full test attempt |a3bdf38:183 MODULE-OK markers but5 ERROR diagnostics and no final OK; rejected despite raw status0 | =parser-module-native-tests.log=; sandbox ps denial plus stale compiled test imports |
+| Standard fixture rebuild and full tests |b1e1382:183 modules, no ERROR, HARNESS-OK and final OK;208.63s including support compilation | =parser-module-native-current-tests.log=; no artifact deletion |
+| Retained failed-output control | Existing failure output is refused by entry diagnostic policy | NATIVE-FAILED-OUTPUT-REFUSED |
+| Final development entry |cb78727: exit0 in179.88s;183 unique modules, zero ERROR, HARNESS-OK and final OK | =parser-module-final-entry.log= |
+| Remote current-head CI |cb78727:12 enabled jobs pass /5 conditional skip; both OS183 unique modules, zero ERROR and final OK | CI40457328171; both semantics logs and =parser-module-ci-final.json= |
+
+Receipts are stored under the enclosing repository's
+=.data/alignment-20261024/current-pr/=. The production source did not change after
+098629e; subsequent commits add domain/footprint controls and repair the native
+development test prerequisites/output admission. No previous green head closes
+the final entry or remote gate.
+
+* Closed scope
+Both platforms pass cold preparation, product packing/restoration, complete
+semantic Suites, FFI and generation; Linux also passes the pinned TLA+ corpus.
+The CI retains phase/source controls, intentional failed-Suite refusal and
+standalone research products. Current PR13 contains only Parser changes; its
+checkout is clean. Enclosing Org/D2 updates remain separate from the unrelated
+root Library implementation. std Djot integration remains paused.

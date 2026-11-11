@@ -1,13 +1,15 @@
-;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
+;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;; SPDX-License-Identifier: LGPL-2.1-or-later
 
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 (import :std/test :clan/poo/object
         (only-in :clan/poo/mop validate)
-        "../library/drivers/rust-resources/types.ss"
-        "../library/drivers/rust-resources/objects.ss"
-        "../library/drivers/rust-resources/func.ss"
-        "../profiles/resource-lifecycle.ss")
+        "../library/rust-resources/types.ss"
+        "../library/rust-resources/objects.ss"
+        "../library/rust-resources/func.ss"
+        )
+(import :deterministic-engineering/init)
+(def LifecycleProfile (.get deterministic-engineering.init.exports Library resource-lifecycle-profiles profiles LifecycleProfile))
 (export library-method-binding-test)
 (def library-method-binding-test
   (test-suite "Actual method definition to Function/provider binding"

@@ -1,18 +1,22 @@
-;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-;;;
-;;; SPDX-License-Identifier: LGPL-2.1-or-later
+;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;; SPDX-License-Identifier: LGPL-2.1-or-later
 
+;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 ;;; -*- Gerbil -*-
 ;;; Real QNT/TLC outputs, independent BFS/trace oracles and native exchanges.
 (import :std/test :std/encoding/json :clan/poo/object :gerbil-ascent/program/session
         (only-in :std/misc/ports read-all-as-string)
         (only-in :agentic-ai-lab/modules/temporal-causality/trajectory/ascent-ledger ascent-trajectory)
-        "../profiles/resource-lifecycle.ss" "../profiles/gateway.ss"
-        "../library/concurrency/resource-control/backpressure-memory/abstract/objects.ss"
-        "../library/drivers/rust-resources/objects.ss"
-        "../library/concurrency/resource-control/backpressure-memory/tokio-rayon/objects.ss"
-        "../library/drivers/rust-resources/methods.ss"
-        "../library/drivers/evidence/func.ss")
+
+        "../library/backpressure-memory/objects.ss"
+        "../library/rust-resources/objects.ss"
+        "../library/backpressure-tokio-rayon/objects.ss"
+        "../library/rust-resources/methods.ss"
+        "../library/evidence/func.ss")
+(import :deterministic-engineering/init)
+(def Cap2Profile (.get deterministic-engineering.init.exports Library gateway-profiles profiles Cap2Profile))
+(def LifecycleProfile (.get deterministic-engineering.init.exports Library resource-lifecycle-profiles profiles LifecycleProfile))
+(def LargerPayloadProfile (.get deterministic-engineering.init.exports Library resource-lifecycle-profiles profiles LargerPayloadProfile))
 (export evidence-declarative-live-test)
 (def selected-method-references
   (map (lambda (key) (method-ref (.ref RustMethodDefinitions key))) '(native quint lean)))
@@ -31,8 +35,8 @@
     (test-case "real pass and counter retain frozen cuts, reuse and currentness boundaries"
       (def root (getenv "LIBRARY_METHOD_ROOT"))
       (def tool (getenv "LIBRARY_QUINT"))
-      (def source (path-expand "library/concurrency/resource-control/backpressure-memory/model.qnt" root))
-      (def rule-source (path-expand "library/drivers/evidence/func.ss" root))
+      (def source (path-expand "library/backpressure-memory/model.qnt" root))
+      (def rule-source (path-expand "library/evidence/func.ss" root))
       (def model (specialize-backpressure BackpressureModel selected-method-references))
       (def pass (resource-run-qnt root LifecycleProfile tool (path-expand "pass" root)))
       (def counter (resource-run-qnt root LifecycleProfile tool (path-expand "counter" root) 'early-release))
@@ -92,7 +96,7 @@
       ;; Repeated registration retains history without duplicate rows.
       (resource-register-results! session (list pass counter) trajectory rule-source)
       (check-equal? (length (rows (gerbil-ascent-session-run session) 'witness)) 2)
-      (def declaration (path-expand "library/drivers/rust-resources/objects.ss" root))
+      (def declaration (path-expand "library/rust-resources/objects.ss" root))
       (def before (call-with-input-file declaration read-all-as-string))
       (try
        (write-text declaration (string-append before "\n;; changed declaration bytes\n"))

@@ -5,7 +5,7 @@
 ;;; -*- Gerbil -*-
 ;;; A small native ASCENT evaluation checks the shared POO object ABI.
 ;;; The literal answers are an independent finite oracle, not gateway gold.
-(import :std/test :gerbil-ascent/rules/interface
+(import :std/test :gerbil-ascent/rules/func
         (only-in :gerbil-ascent/rules/declaration rule-module-program)
         (only-in :clan/poo/object .o .ref))
 

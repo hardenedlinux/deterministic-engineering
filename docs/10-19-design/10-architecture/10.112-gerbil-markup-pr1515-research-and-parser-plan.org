@@ -1,0 +1,353 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Gerbil PR1515: Typed Markup Research and Parser Improvement Checklist
+#+LANGUAGE: en
+#+STARTUP: overview
+
+* Decision and scope
+
+Reuse Gerbil's Djot/XML/HTML capabilities through their public APIs when they are
+actually published by the selected compiler distribution. Investigate transferable
+scanner, representation and output techniques inside the existing Parser engine.
+Do not build a second markup framework, parser registry, source resolver or test
+runner. This document is a research and implementation plan, not implementation
+acceptance or permission to replace the current compiler.
+
+The highest-value first slice is: establish the actual stdlib capability, choose
+an explicitly semantic Djot adapter, qualify its typed HTML output, then measure
+one bounded byte-class scanning improvement against the current scalar path.
+A lossless Djot frontend is a separate deliverable with stronger obligations.
+
+* Source baseline and completed research
+
+| Item | Observed source / result |
+|------+--------------------------|
+| Study | [[https://git.cons.io/mighty-gerbils/gerbil/pulls/1515][PR1515: v0.19: Replace SXML with typed XML and HTML modules]]; open at inspection |
+| PR repository / branch | =jay/gerbil= / =v0.19-sxml-to-typed-xml= |
+| PR head | =49b02af0585ee3884039e7b46477ce70cf401ce2= |
+| Target branch tip | =7688c85a8c75a8a8e437d4bbe391a76f0fddfea1= |
+| PR merge base | =1c6c15385979f0092574fbc2b828f3fb656319b3=; distinct from target tip |
+| Cached checkout | =.cache/gerbil-pr1515=; depth=1, shallow=true, HEAD history count=1 |
+| Diff inventory | 74 files; both API pages and the full patch saved |
+| Current Parser source | =.data/alignment-20261024/upstream-gerbil-parser= at =461fa6f5f232f854fb6dc7da82ed27caed7f50a6= |
+| Installed Gerbil | =gerbil-version-string= returns =1cfb032=; executable/library paths captured |
+| Installed Djot probe | =import :std/text/markup/djot= fails: cannot find library module |
+| Parser language inventory | Eight existing packs; no Djot, XML or HTML pack |
+
+- [X] Clone the actual PR branch with depth=1 and verify head/history depth.
+- [X] Preserve metadata, merge base, all file names, diff and inspected-file SHA256s
+  in =.cache/gerbil-pr1515-research/source-manifest.json= and adjacent evidence files.
+- [X] Inspect typed node/reader/scanner/builder/emitter/Djot changes and tests.
+- [X] Compare against current Parser source, not an old three-interface roadmap.
+- [X] Probe the installed runtime through its normal command entry.
+- [ ] Compile or run the PR implementation and upstream conformance suites.
+- [ ] Produce matched algorithm or end-to-end performance measurements.
+
+Only the first five items are complete. The failed import establishes absence of
+an importable module in the active distribution; it does not establish inability
+of Gerbil's language/compiler to compile that module. No compiler, SDK or Parser
+implementation was modified, and no PR benchmark was reproduced in this study.
+The cached source is ignored by Git; portable source links and the pinned head
+below remain the review references when that cache is absent.
+
+* What PR1515 changes
+
+- Typed XML nodes, checked public constructors, a byte-oriented XML scanner and
+  byte-buffer emitter; HTML reuses XML element/attribute/text representations.
+- A WHATWG-oriented HTML tokenizer/tree builder, fragment context support, static
+  atom tables and generated named-character-reference data.
+- Djot semantic AST to typed HTML fragment conversion. =djot->sxml= is removed,
+  =djot->html-fragment= is introduced, and HTML string output is intended to remain
+  byte-identical. =write-djot-html= uses the new HTML writer.
+- TAL reader/compiler/runtime and S3 XML consumers move to typed markup APIs;
+  old SXML remains under the deprecated =:std/text/markup/sxml= interface.
+
+The diff does not change =djot/{ast,parse,block,inline,attributes}.ss=. Those files
+are useful baseline context, but their algorithms are not innovations of this PR.
+The PR's Djot speedups primarily concern representation/rendering/output, not a
+replacement of its block or inline parsing algorithm and not an LR-table advance.
+
+The author reports median Djot parse+render speedup4.4x and render speedup7.7x,
+plus302 byte-identical fixtures,7045 tokenizer cases and1963 tree cases with four
+selectedcontent skips. These are upstream claims. Their external conformance
+runner and complete comparative benchmark corpus are not contained in this PR.
+The reported old-implementation crashes are excluded from speedup samples; our
+correctness inventory must retain equivalent failing inputs explicitly.
+
+* Source-grounded comparison
+
+| Technique / upstream source | Current implementation / classification | Proposed decision |
+|-----------------------------+-----------------------------------------+-------------------|
+| Typed node structs; checked =xml/types.ss= and private =xml/node.ss= | Grammar already shares POO Record/Contract admission in =src/grammar/declaration-types.ss=; LR action callbacks have domain Types in =src/runtime/function-types.ss= | Reuse upstream nodes for markup interoperability. Keep POO for family/strategy selection; avoid a second node hierarchy and duplicate framework validation |
+| =xml/node.ss:skip-plain= and byte tables; four-byte short-circuit scans | =src/runtime/byte-spans.ss= has scalar bounded predicate traversal; =contextual-scanner.ss= already indexes first characters | Candidate: prepare a finite byte-class kernel once, benchmark guarded bulk scans; do not add a second scanner dispatcher |
+| Scanner spans and per-request scratch; =html/scanner.ss= token registers | =source-scanner.ss:source-scanner-step= currently substrings lexemes and computes their UTF-8 length; =token.ss= exposes a four-vector protocol | Measure allocation/copy costs first. Private spans may improve materialization, but public token protocol and retained ownership are separate gates |
+| Fixed atoms; XML intern cap4096/probe cap16; HTML hash overflow RBTree | Grammar terminal identities are already prepared; contextual matching has indexes/caches | Do not re-intern static grammar symbols. Consider request-local dynamic-name indexing only if profiling finds a real cost/collision problem |
+| HTML private mutable builder, then freeze | =event-program.ss= already has bounded blocks, persistent joins and shared subtrees; =source-index.ss= already has balanced indexes and cursors | Audit remaining flatten/copy work. Keep persistent branch/history semantics; do not replace them with a global mutable builder |
+| Geometric memory buffer;64KiB Writer chunks; bounded escaping slices | Artifact publication already has canonical event walks in =runtime/artifact.ss=; source/scanner and event sequence ownership exist | Reuse std Writer for markup. Explore publication fusion only behind existing semantic backends and after measuring the complete path |
+| DjotRender interface and fresh render-context | =reduction-plan.ss= and =lr-parser/prepare.ss= select POO methods and retain prepared kernels | Preserve existing engine selection. Fresh render state and reusable immutable vocabulary are compatible; per-token generic dispatch is not a benefit |
+| Generated entity trie; =html/{gen,entities}.ss= records upstream hash | Existing lexical/contextual IR already generates matcher plans | Adopt only for a measured domain vocabulary. Reuse build inputs/projection; no runtime network fetch, ad-hoc generator registry or copied table |
+
+Upstream's sentinel scans own a buffer ending in NUL; loops distinguish embedded
+NUL from EOF by index. Parser's generic byte-span API receives borrowed bounded
+ranges. Its input must not be mutated to install a sentinel, nor scanned past
+=until=. Unchecked primitives require a verified internal ownership/bounds
+invariant; they are not a mechanical replacement for checked vector reads.
+
+* Semantic boundaries that constrain the plan
+
+1. Djot source ranges are zero-based half-open character offsets, with one-based
+   line/column; CRLF is one line ending but two characters. Parser artifacts use
+   UTF-8 byte coverage. Reuse/extend the existing source-index mapping and test
+   multilingual/astral/combining input. Do not relabel character offsets as bytes.
+2. A Djot semantic AST, normalized HTML tree, or XML tree is not a lossless CST.
+   HTML inserts/repairs nodes; XML defaults discard whitespace/comments; Djot
+   source locations are optional. Original input and digests remain authoritative.
+3. Reader acceptance is not resumable parsing: XML/HTML input helpers read the
+   whole source to EOF into growing storage; =read-djot= also reads/decode-all.
+   Chunked Writer output is not streaming parsing or incremental-edit support.
+4. HTML recovery does not provide our fail-closed accepted/rejected diagnostics.
+   HTML builder parse errors are not reported. Its scope-window512 truncates
+   search semantics beyond the window; Djot render depth512 rejects containers.
+   These are explicit policies, not exact replacements for general LR searches.
+5. Typed structs remain mutable. Upstream writers read untrusted slots and recheck
+   after callbacks; constructor validity does not certify later contents. Circular
+   lists are not detected, and Writer paths may already have emitted chunks when
+   a later error occurs. Direct port paths may instead materialize full output.
+6. =write-djot-html= builds the typed HTML tree before starting the Writer, avoiding
+   output for a rendering error, but that does not make arbitrary IO failure or
+   sink mutation atomic. A future fused renderer must preserve its promised error
+   boundary or expose a separately chosen weaker contract.
+7. =html-raw= is raw unsanitized markup, and browser-style parsing is not a
+   sanitizer. Any document delivery policy must explicitly choose raw markup/URL
+   handling. This study does not replace Org as the repository's document source.
+
+* Responsibility and integration contract
+
+| Owner | Responsibility | Must not take over |
+|-------+----------------+--------------------|
+| Gerbil distribution / stdlib | Publish Djot/XML/HTML APIs and their actual build artifacts | Parser-local patches or a private compiler installation |
+| POO/Core/Flow | Existing Module/Library/Scope, Contract normalization, selection, lifecycle and input/source binding | A second Parser framework or global cache/role registry |
+| Parser compiler | Existing grammar/contextual IR and prepared kernels; verified mappings when a language source is actually supported | Hostile mutation of borrowed input, runtime table construction, browser recovery silently substituted for strict parsing |
+| Parser runtime | Source ownership, byte ranges, branch/snapshot isolation, stable artifacts and diagnostics | Calling a semantic AST a lossless artifact |
+| Selected markup adapter | Std Djot semantic parsing/rendering and explicit source/range/result policy | Duplicating the std parser, HTML writer or XML node types |
+| Library/Profile/Scenario | Publish capabilities/obligations; select result/resource policy; capture actual project input and realized sources through existing mechanisms | Version declarations in Org, namespaces with added versions, invented capture/authority schemas |
+| CI/development | Native build/test entry, source and compiled coverage, benchmark operation selection | Test files starting another test/build round |
+
+* Implementation checklist
+
+Checked boxes below must be supported by a source or execution receipt. Proposed
+file locations are responsibilities to implement, not claims of current APIs.
+
+** M0 — Capability and source alignment (first blocker)
+
+Owner: compiler/package maintainers. Inputs: pinned PR, active compiler identity,
+stdlib publication and current native package declarations.
+
+- [ ] Identify the normal upstream release/PR chain that publishes the needed
+  stdlib modules; record actual source, checkout, compiler, build and load origins.
+- [ ] Resolve the observed absent =:std/text/markup/djot= through that publication
+  chain. Keep one inherited dependency source; do not vendor the74-file change.
+- [ ] Verify =string->djot=, =read-djot=, =djot->html-fragment=, =djot->html= and
+  =write-djot-html=, typed XML/HTML APIs, and the removed =djot->sxml= boundary.
+- [ ] Qualify native compile, import, cold start and restart with declared two
+  build workers,2GiB build/3GiB full-test ceilings and existing test budgets.
+
+Acceptance: real stdlib imports and sample parse/render work from the selected
+installed artifacts; missing module, wrong revision, old SXML entry and changed
+compiler source are refused or explicitly diagnosed. A compiler language-version
+string alone does not close this gate. No Gerbil/SDK modification is made by
+this research task.
+
+** M1 — Semantic corpus and baseline (depends M0 for execution)
+
+Owner: language/verification maintainers; =languages/<markup>/fixtures.ss= and
+existing =language-test-support=, qualification and ASP benchmark facilities.
+
+- [ ] Pin official Djot fixture source and complete expected outputs; record302
+  as an upstream expectation to reconcile, not a hard-coded successful count.
+- [ ] Pin html5lib/WPT corpus revisions, retain skips and obtain/audit the missing
+  external harness before claiming its7045/1963 results locally.
+- [ ] Establish separate parse, typed-node conversion, write, complete
+  parse+render, read+parse, artifact publication and edit/reuse measurements.
+- [ ] Include source/string/bytes/port/Reader and output/string/bytes/Writer
+  variants, malformed input, invalid UTF-8, embedded NUL, deep/wide trees,
+  entity-heavy text, large attributes and multi-megabyte source.
+
+Acceptance: immutable corpus hashes, complete positive/negative inventory and
+baseline outputs/costs; excluded crashes/skips are visible. Correctness and
+performance sample eligibility are reported independently.
+
+** M2 — First std Djot integration slice (depends M0–M1)
+
+Owner: Parser language/API maintainers. Use existing =language-support/entry.ss=,
+=src/language/source-descriptor.ss=, =src/compiler/source-language.ss= and Module selection.
+
+- [ ] Inventory existing adapter/result contracts before adding a binding. Expose
+  a named semantic Djot capability with actual stdlib method/source bindings.
+- [ ] Keep typed Djot/XML/HTML values native; use specific defstruct/Record/POO
+  family contracts where the adapter adds domain data, not =ScopeOf Any Any=.
+- [ ] Specify original-source retention, byte/character mapping and normalized
+  output identity. State result kind before selecting artifact publication.
+- [ ] If a lossless Djot pack is required, implement its real lexical/structural
+  coverage in the existing compiler IR and use std Djot as a semantic oracle;
+  preserve complete byte coverage, trivia, diagnostics and incremental state.
+
+Acceptance: named semantic input/output contract, Unicode range agreement and
+byte-identical expected HTML. Missing source locations and a normalized-only AST
+cannot satisfy a lossless ParseArtifact obligation. Existing eight packs retain
+behavior and actual normalized Contract results are consumed.
+
+** M3 — Boundary and callback ownership (depends M1–M2)
+
+Owner: runtime/adapter maintainers; current =token.ss=, =artifact.ss=,
+=source-scanner.ss= and the native markup adapter.
+
+- [ ] Audit validation at publication/use boundaries; keep existing Grammar and
+  Function contracts and avoid adding duplicate descriptor/field checks.
+- [ ] Separate checked public construction from internal kernels. For external
+  mutable nodes, choose snapshots/borrowing rules and defend against callbacks
+  invalidating cached fields; do not rely on erased typed-slot checks.
+- [ ] Keep request-local render/reference/note/intern state out of public ASTs
+  and reusable prepared backends; define cache invalidation by actual inputs.
+
+Acceptance: mutated slots/strings/lists, wrong-family nodes, cross-request state,
+re-entrant writers, exceptions and sink failure cannot corrupt retained artifacts;
+error category, partial-output policy and cleanup order remain explicit.
+
+** M4 — First algorithm experiment: finite byte-class bulk scanning (depends M1, M3)
+
+Owner: compiler/scanner maintainers; =runtime/byte-spans.ss=,
+=runtime/contextual-scanner.ss=, =runtime/scan/regular.ss= and existing lexical IR.
+
+- [ ] Profile predicate calls, checks, UTF-8 work and bytes traversed before
+  choosing a kernel. Account for existing first-character indexes.
+- [ ] Prepare class tables through existing compiler/POO method selection, once
+  per compatible plan; retain scalar fallback for arbitrary/contextual predicates.
+- [ ] Prototype bounded four-byte traversal without a sentinel write or access
+  past a borrowed span. Keep invalid UTF-8 handling and lexical-mode semantics.
+- [ ] Compare complete token/event vectors with the current scalar implementation.
+
+Acceptance: exact scalar agreement for all256 byte values and every short tail,
+empty/interior/end spans, NUL, high bytes and malformed sequences; grammar-specific
+longest-match/order semantics unchanged. A component-only win is not a parser win.
+
+** M5 — Copy/materialization and typed output (depends M1, M3; optional after M4)
+
+Owner: runtime and document consumers; =source-scanner.ss=, =token.ss=,
+=source-index.ss=, =event-program.ss=, =event-reduce.ss=, =artifact.ss=.
+
+- [ ] Measure substring allocation/UTF-8 recounting and repeated materialization;
+  distinguish source-backed spans from the public lexeme-bearing token protocol.
+- [ ] Reuse existing persistent blocks, indexes and cursors. Compare any private
+  transient builder against retained branches/snapshots, never replace them globally.
+- [ ] Reuse std typed HTML/XML writers; measure avoiding intermediate SXML and
+  repeated string/output conversions before considering producer-consumer fusion.
+- [ ] Define validation-before-write versus partial streaming output separately.
+  Inventory native artifact publication before selecting staging/atomic publication.
+
+Acceptance: old token APIs/IDs/digests, UTF-8 ranges, roundtrip, failed-branch silence,
+old snapshots, inverse edits and publication closures remain correct. A sink error
+must not falsely publish a completed artifact. Fusion is rejected if it weakens
+these obligations or only shifts work outside the measured interval.
+
+** M6 — Optional vocabulary/index optimization (depends M1, M3 and profiling)
+
+Owner: contextual-IR and language maintainers; =compiler/contextual-scanner-ir.ss=,
+=runtime/contextual-scanner.ss= and language-specific declarations.
+
+- [ ] Measure dynamic-name lookup separately from already-interned grammar kinds.
+- [ ] Evaluate bounded request-local name indexes or generated tries only for a
+  demonstrated vocabulary cost; do not add a global symbol/name cache.
+- [ ] If using generated tables, track source hash, generator, options and outputs
+  with existing Module/build input declarations. Audit upstream data licensing.
+
+Acceptance: same-name identity, collision/overflow behavior, hostile name sets,
+attribute order and longest-prefix matching remain deterministic. Changed source
+or generator invalidates reuse. No runtime network access or handwritten entity
+registry is introduced.
+
+** M7 — Resource policy and failure semantics (depends M2–M6 as applicable)
+
+Owner: policy/runtime maintainers; reuse current Core/Flow resource/Fixture policy.
+
+- [ ] Select explicit input/tree/depth/output limits for the intended consumer.
+  Record upstream whole-input buffering, unchecked circular lists and scope-window
+  behavior; do not copy512 or64KiB as universal policy constants.
+- [ ] Keep HTML recovery, strict parsing, resource exhaustion and unsupported
+  constructs distinct; expose them through existing result/diagnostic mechanisms.
+- [ ] Select raw HTML/URL handling explicitly; type validity is not sanitization.
+
+Acceptance: deep trees beyond the chosen limit, cyclic external values, oversized
+input/output, invalid namespaces, mutation and failed IO are finite, diagnosed
+outcomes. A truncated scope search must not silently certify strict grammar or
+language semantics.
+
+** M8 — Mathematical and source correspondence (depends selected M4–M7 experiment)
+
+Owner: formal/verification maintainers; existing =formal/ParserEngine= and LeanPoo.
+
+- [ ] State and prove the selected pure obligation: scalar/bulk scan agreement,
+  range preservation, ordered concatenation, capacity bounds or snapshot isolation.
+- [ ] Reuse current prepared-method and event-sequence laws; do not duplicate POO
+  inheritance/dispatch machinery or derive implementation correctness from typings.
+- [ ] Bind source witnesses, full input footprint and native controls to the exact
+  implementation. A proof over an abstract kernel does not verify unsafe machine
+  reads, callback lifetime, allocations or actual compiler optimization.
+
+Acceptance: native positive/negative and source-correspondence evidence remains
+separate from Lean results. Any unclosed correspondence or host premise is listed.
+
+** M9 — Comparative selection and release gate (depends M1 plus chosen changes)
+
+Owner: benchmark/CI maintainers; native CLI/just + existing ASP benchmarks.
+
+- [ ] Register candidate, baseline, actual compiler/options, output semantics,
+  corpus/source hashes, worker/memory policy and useful improvement/regression
+  criteria before measurements. Keep cold and warm samples distinct.
+- [ ] Use repeated matched batches with dispersion/confidence reporting; include
+  decode, parse, projection, write, complete path, retained memory, allocations,
+  GC and source/edit distributions. Report cost per input/output byte where useful.
+- [ ] Retain failures and negative controls. Counterbalance run order; CPU pinning
+  is recorded when available, otherwise report uncontrolled host scheduling.
+- [ ] Keep native test files declarative; CI/development invokes gerbil test/build.
+  Run focused source/compiled tests, native production catalog, full Parser cases,
+  restart and Linux/macOS exact-head CI without a new private executor.
+- [ ] Select or reject each experiment using the preregistered complete-path and
+  resource criteria; component gains and upstream ratios cannot substitute for it.
+
+Acceptance: useful measured improvement with no semantic/control regression;
+otherwise retain the simpler current kernel and document the rejected hypothesis.
+Only actual implemented/verified capabilities may be published by Library and
+selected/captured downstream. Org and D2 describe those results; they are not a
+second version source or an implementation acceptance certificate.
+
+* Dependency order and current open decisions
+
+=M0 -> M1 -> M2 -> M3= establishes capability, semantics and ownership.
+=M1 + M3 -> M4= is the first general engine optimization experiment.
+=M5= may follow in parallel as a separate measured hypothesis; =M6= is conditional.
+=M7/M8= apply to each selected candidate; =M9= closes its evidence and adoption.
+
+Open: installed stdlib release/publication alignment; exact std Djot API source;
+semantic adapter versus actual lossless frontend requirement; external conformance
+runner/corpora; profiling attribution; meaningful gain/regression thresholds;
+consumer raw-markup/partial-output/resource policy; source-to-proof correspondence.
+No unchecked item is implemented or qualified by this research document.
+
+* Pinned source references
+
+- [[https://git.cons.io/jay/gerbil/src/commit/49b02af0585ee3884039e7b46477ce70cf401ce2/src/std/text/markup/djot/api.ss][Djot API and whole-input/Writer behavior]]
+- [[https://git.cons.io/jay/gerbil/src/commit/49b02af0585ee3884039e7b46477ce70cf401ce2/src/std/text/markup/djot/html.ss][Typed rendering, fresh context and depth guard]]
+- [[https://git.cons.io/jay/gerbil/src/commit/49b02af0585ee3884039e7b46477ce70cf401ce2/src/std/text/markup/djot/ast.ss][Djot source coordinate contract (unchanged by this PR)]]
+- [[https://git.cons.io/jay/gerbil/src/commit/49b02af0585ee3884039e7b46477ce70cf401ce2/src/std/text/markup/xml/node.ss][Typed nodes and bounded bulk scanning]]
+- [[https://git.cons.io/jay/gerbil/src/commit/49b02af0585ee3884039e7b46477ce70cf401ce2/src/std/text/markup/xml/emitter.ss][Buffering, slicing and callback mutation checks]]
+- [[https://git.cons.io/jay/gerbil/src/commit/49b02af0585ee3884039e7b46477ce70cf401ce2/src/std/text/markup/html/builder.ss][Tree construction and bounded search policy]]
+- [[https://github.com/tao3k/gerbil-parser/tree/461fa6f5f232f854fb6dc7da82ed27caed7f50a6][Parser comparison baseline]]
+- [[file:10.111-gerbil-test-and-build-ownership.org][Existing native execution ownership]]
+
+* Current execution boundary
+The user paused std Djot integration while the Parser module-ownership slice in
+10.113 is implemented. The comparison above follows the current domain paths;
+the upstream PR1515 research snapshot remains unchanged. Module reorganization
+is not evidence that the installed compiler now provides std Djot.
