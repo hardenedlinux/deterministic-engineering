@@ -14,5 +14,6 @@
     (.o
       config: Config
       config-type: ConfigType
+      plan-library: Driver
       profiles: (source-contract-profiles (.get Driver strategies))))
   features: (.o))

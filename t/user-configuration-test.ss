@@ -25,6 +25,8 @@
       (check-equal? (decisions intent #t)
                     '(backpressure-tokio-rayon gateway-profiles))
       (check-equal? (map (cut .get <> mount) (.get intent windows)) '(Library))
+      (check-equal? (.get (car (.get intent windows)) mode) 'auto)
+      (check-equal? (.get (car (.get intent windows)) profile) 'source-contract)
       (check-equal? (andmap (cut .get <> disable-specified?) (.get intent decisions)) #t))
     (test-case "Rust example has a different explicit selection over the same Library"
       (def intent (example-intent "rust-backpressure"))

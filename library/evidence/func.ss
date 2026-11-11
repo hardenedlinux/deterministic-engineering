@@ -4,7 +4,7 @@
 ;;; -*- Gerbil -*-
 (import
   :clan/poo/object
-  :gerbil-ascent/rules/interface
+  :gerbil-ascent/rules/func
   (only-in :gerbil-ascent/rules/declaration rule-module-program))
 (export
   make-resource-evidence

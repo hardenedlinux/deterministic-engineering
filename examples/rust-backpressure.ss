@@ -4,7 +4,7 @@
 (import :yuanxu/module-system/selection/init-syntax)
 
 (yuanxu!
-  :load-modules "../library" mode: explicit rename: Library
+  :load-modules "../library" mode: auto profile: rust rename: Library
   (backpressure-tokio-rayon disable: #f)
   (evidence disable: #f)
   (source-contract-profiles disable: #t)

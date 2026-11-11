@@ -4,7 +4,7 @@
 (import :yuanxu/module-system/selection/init-syntax)
 
 (yuanxu!
-  :load-modules "../library" mode: explicit rename: Library
+  :load-modules "../library" mode: auto profile: source-contract rename: Library
   (source-contract-profiles disable: #f)
   (bounded-capacity disable: #f)
   (resource-lifetime disable: #f)

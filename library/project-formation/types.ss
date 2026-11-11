@@ -72,6 +72,7 @@
 ;; Validate their full relation and retain them; never normalize away those links.
 (define-type
   (FormationScopeType @ Type.)
+  identity: 'project-formation/scope
   .element?:
   associated?
   .validate:

@@ -16,12 +16,13 @@
   (when (file-exists? output) (error "fresh evidence output required" output))
   (create-directory output)
   (def module-view
-    (yuanxu-load-modules (path-expand "init.ss" project-directory)))
+    (yuanxu-load-modules (path-expand "examples/source-contracts.ss" project-directory)))
   (def selected (.get module-view modules Library))
+  (def profile-library (.get selected source-contract-profiles))
   (def driver
-    (source-contract-test-support (.get selected source-contracts) (.get selected evidence)))
+    (source-contract-test-support (.get profile-library plan-library) (.get selected evidence)))
   (def evidence (.get driver evidence))
-  (def profiles (.get selected source-contract-profiles profiles))
+  (def profiles (.get profile-library profiles))
   (def tool-paths (.o cbmc: cbmc-path goto-cc: goto-cc-path goto-instrument: instrument-path
                  cc: cc-path cxx: cxx-path))
   (def selected-runner driver)

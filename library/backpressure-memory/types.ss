@@ -1,3 +1,6 @@
+;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;;; Generic family Types consume neutral Library Types, never child objects.
 (import
   :clan/poo/object
@@ -76,6 +79,7 @@
           validation: (yuanxu-predicate-type 'library/value-closure closed?)))))
 (define-type
   (BackpressureScopeType @ LibraryScopeType.)
+  identity: 'backpressure-memory/scope
   scope-shape:
   ScopeShape
   closed-shape:

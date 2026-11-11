@@ -5,7 +5,7 @@
 ;;; -*- Gerbil -*-
 (import :std/test :deterministic-engineering/init :clan/poo/object
 
-        :gerbil-ascent/rules/interface)
+        :gerbil-ascent/rules/func)
 (def LocalProfile (.get deterministic-engineering.init.exports Library gateway-profiles profiles LocalProfile))
 (def Cap2Profile (.get deterministic-engineering.init.exports Library gateway-profiles profiles Cap2Profile))
 (def CacheProfile (.get deterministic-engineering.init.exports Library gateway-profiles profiles CacheProfile))

@@ -13,17 +13,35 @@
   (only-in :clan/poo/mop validate TypeError?)
   (only-in :yuanxu/poo-clos/objects poo-clos-failure?)
   (only-in :yuanxu/module-system/interface yuanxu-load-modules))
-(export source-contract-positive-test source-contract-change-test source-contract-refusal-test)
+(export source-contract-positive-test source-contract-change-test
+        source-contract-refusal-test source-contract-cross-project-test)
 
+(def (stage label)
+  (displayln "SOURCE-CONTRACT-STAGE " label)
+  (force-output))
+
+(stage 'imports-ready)
 (def root (path-expand ".." (path-directory (this-source-file))))
-(def module-view (yuanxu-load-modules (path-expand "init.ss" root)))
+(stage 'prepare-module-view)
+(def module-view (yuanxu-load-modules (path-expand "examples/source-contracts.ss" root)))
+(stage 'prepare-selected)
 (def selected (.get module-view modules Library))
-(def driver
-  (source-contract-test-support (.get selected source-contracts) (.get selected evidence)))
+(stage 'prepare-plan-library)
+(def profile-library (.get selected source-contract-profiles))
+(def plan-library (.get profile-library plan-library))
+(stage 'prepare-evidence-library)
+(def evidence-library (.get selected evidence))
+(stage 'prepare-driver)
+(def driver (source-contract-test-support plan-library evidence-library))
+(stage 'prepare-evidence)
 (def evidence (.get driver evidence))
-(def profiles (.get selected source-contract-profiles profiles))
+(stage 'prepare-profiles)
+(def profiles (.get profile-library profiles))
+(stage 'prepare-capacity)
 (def capacity (.get selected bounded-capacity entry))
+(stage 'prepare-lifetime)
 (def lifetime (.get selected resource-lifetime entry))
+(stage 'selected-domains-ready)
 (def tool-paths
   (.o cbmc: (getenv "SOURCE_CONTRACT_CBMC")
       goto-cc: (getenv "SOURCE_CONTRACT_GOTO_CC")
@@ -203,3 +221,78 @@
           (check-equal? (rows queried 'support) '())
           (check-equal? (rows queried 'pending)
                         '((occupied-lifetime-mutant LIFE-BODY cbmc))))))))
+
+;; These are independent native consumer declarations over the same actual
+;; Library and verified implementation, not two labels on one prepared view.
+(def (consumer-context directory)
+  (create-directory directory)
+  (write-text (path-expand "gerbil.pkg" directory)
+    (object->string (list package: (string->symbol (path-strip-directory directory)))))
+  (def example (read-text (path-expand "examples/source-contracts.ss" root)))
+  (def declaration
+    (string-subst example "\"../library\""
+      (object->string (path-expand "library" root))))
+  (write-text (path-expand "init.ss" directory) declaration)
+  (def selected-owner (yuanxu-load-modules (path-expand "init.ss" directory)))
+  (def modules (.get selected-owner modules Library))
+  (def profile-module (.get modules source-contract-profiles))
+  (def runner
+    (source-contract-test-support (.get profile-module plan-library) (.get modules evidence)))
+  (.o owner: selected-owner
+      driver: runner
+      entry: (.get modules bounded-capacity entry)
+      profile: (flat-profile (.get profile-module profiles capacity-body))))
+
+(def (consumer-subject context source-root)
+  (def runner (.get context driver))
+  (.o (:: @ (.get runner input))
+    root: source-root
+    entry: (.get context entry)
+    profile: (.get context profile)
+    tools: tool-paths
+    module-owner: (.get context owner)
+    driver: runner))
+
+(def (consumer-review context basis usage)
+  (def runner (.get context driver))
+  ((.get runner evidence open-review)
+    (.get context entry) (.o factors: (list (.get context profile factor)))
+    usage ((.get runner snapshot) basis) ((.get runner scopes) basis usage)))
+
+(def source-contract-cross-project-test
+  (test-suite "Real independent consumer contexts share one verified subject"
+    (test-case "two user declarations reuse one witness and retain separate source guards"
+      (call-with-temporary-directory "source-contract-projects"
+        (lambda (workspace)
+          (def source-root (path-expand "shared-subject" workspace))
+          (create-directory source-root)
+          (copy-project source-root (.get profiles capacity-body))
+          (def parser (consumer-context (path-expand "parser" workspace)))
+          (def pool (consumer-context (path-expand "pool" workspace)))
+          (check-equal? (eq? (.get parser owner) (.get pool owner)) #f)
+          (def parser-basis (consumer-subject parser source-root))
+          (def pool-basis (consumer-subject pool source-root))
+          (check-equal? ((.get parser driver snapshot) parser-basis)
+                        ((.get pool driver snapshot) pool-basis))
+          (def parser-review (consumer-review parser parser-basis 'parser-project))
+          (def pool-review (consumer-review pool pool-basis 'pool-project))
+          (def result (.call parser-basis .verify (path-expand "verified" workspace)))
+          ((.get parser driver register!) parser-review (list result))
+          ((.get pool driver register!) pool-review (list result))
+          (check-equal? (and (supported? parser-review) (supported? pool-review)) #t)
+          (def frozen (gerbil-ascent-session-run pool-review))
+          (check-equal? (length (rows frozen 'witness)) 1)
+          ;; A changed consumer selection is not a current target context.
+          (def pool-init (path-expand "pool/init.ss" workspace))
+          (write-text pool-init (string-append (read-text pool-init) "\n; New consumer revision.\n"))
+          (check-exception (.call (.get pool owner) admit-current) error?)
+          (check-equal? (length (rows frozen 'support)) 1)
+          ;; Its sibling remains current; a shared subject mutation then
+          ;; invalidates the actual issued result for every new registration.
+          (.call (.get parser owner) admit-current)
+          (def implementation (path-expand "capacity.c" source-root))
+          (write-text implementation
+            (string-append (read-text implementation) "\n/* New subject revision. */\n"))
+          (check-exception ((.get parser driver current!) result) error?)
+          (check-exception ((.get pool driver register!) pool-review (list result)) error?)
+          (check-equal? (length (rows frozen 'support)) 1))))))

@@ -225,6 +225,7 @@
           validation: (yuanxu-predicate-type 'library/value-closure closed?)))))
 (define-type
   (OrganizationScopeType @ LibraryScopeType.)
+  identity: 'project-organization/scope
   scope-shape:
   ScopeShape
   closed-shape:

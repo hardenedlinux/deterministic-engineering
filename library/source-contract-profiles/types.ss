@@ -8,5 +8,9 @@
 
 (define-type ConfigType (Record purpose: [(Exactly 'source-contract-profiles)]))
 (define-type ScopeType
-  (.cc (Record config: [ConfigType] config-type: [Type] profiles: [Object])
-       'identity 'source-contract-profiles/scope))
+  (.cc
+    (Record config: [ConfigType]
+            config-type: [Type]
+            plan-library: [Object]
+            profiles: [Object])
+    'identity 'source-contract-profiles/scope))

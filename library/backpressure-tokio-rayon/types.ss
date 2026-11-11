@@ -369,6 +369,7 @@
             (andmap (lambda (name) (eq? (.ref value name) (.ref canonical name))) names)))))))
 (define-type
   (TokioRayonScopeType @ Type.)
+  identity: 'tokio-rayon/scope
   .element?:
   (lambda (value)
     (if (and (object? value) (.slot? value 'validation))

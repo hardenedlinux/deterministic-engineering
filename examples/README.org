@@ -15,7 +15,9 @@ exercised by =t/*-test.ss=; relocating them does not qualify unfinished consumer
 - [[file:source-contracts.ss][C/C++ source-contract selection]]
 - [[file:rust-backpressure.ss][Rust backpressure selection]]
 
-The native syntax currently represents enabled selection with =disable: #f=
+Each example selects a native tag Profile. In =auto= mode Yuanxu resolves its
+required dependencies; explicit exclusions remain authoritative. The native
+syntax currently represents enabled selection with =disable: #f=
 and explicit exclusion with =disable: #t=. Required dependencies are resolved by
 Yuanxu. An explicitly disabled required dependency must reject the selection;
 it must not be silently re-enabled. Enabling declarations does not run a tool.

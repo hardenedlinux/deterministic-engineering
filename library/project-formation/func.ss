@@ -6,7 +6,7 @@
   (only-in :clan/poo/mop validate)
   :std/list/list
   :std/format
-  :gerbil-ascent/rules/interface
+  :gerbil-ascent/rules/func
   "./types.ss"
   (only-in :gerbil-ascent/rules/declaration rule-module-program rule-module-bindings))
 (export
