@@ -186,3 +186,40 @@ ASCENT evidence and application authorization are not issued by these views.
 PNG export uses the existing lossless compression path. The separate raster
 comparison checks decoded PNG/WebP pixels against each source image; compressed
 output is not substituted beneath an unchanged image digest.
+
+** Native package startup and build-projection acceptance
+:PROPERTIES:
+:CUSTOM_ID: package-startup-projection
+:ENTRY_OWNER: Justfile::test-file
+:CONSUMER: t/project-formation-build-test.ss
+:END:
+
+The native test entry is =gerbil env gxtest=. Package environment selection must
+precede test-tool initialization. With this selected SDK/cohort, plain
+=gerbil test= failed while expanding Core's generated POO import, even after a
+native Core clean/rebuild. Establishing =GERBIL_PATH= before process startup
+removed that import failure; the maintained entry delegates that selection to
+Gerbil's =env= command rather than constructing another load path or resolver.
+The independent compiled POO consumer also imports successfully. This evidence
+does not establish a general POO export defect or a stale-product-only cause.
+
+The real compiled-root consumer checks the maintained formation Profile target,
+one canonical =(gxc: "config")= row, identical specification identity on repeated
+reads and refusal to change retained roots within one init epoch. Config is
+already selected through the Profile dependency graph; it must not also appear
+as a duplicate ordinary retained target. The separate native root source build
+passes; switching the consumer to its public compiled import does not substitute
+for that source build. The removed =profiles/library-formation= path is no longer
+an asserted product.
+
+All test markers and error scanning remain mandatory. The 120-second test fence,
+180-second build fence, per-process 2 GiB heap and machine-derived compiler
+concurrency are unchanged. A zero-exit incremental package build was insufficient
+to repair the startup failure and is not treated as consumer acceptance.
+
+A real native Core clean followed by a rebuild exceeded 180 seconds (exit 124).
+The subsequent incremental recovery completed and the root source build passed;
+neither result converts the failed cold rebuild into a pass. Complete cold
+dependency installation remains open. Remote Linux rendering failed during
+Chromium system-dependency installation with Ubuntu mirror DNS errors; macOS
+passed at 4f43d48. Those infrastructure observations do not qualify Linux tests.
