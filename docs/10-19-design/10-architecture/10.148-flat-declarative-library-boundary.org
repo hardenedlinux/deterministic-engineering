@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
 #+TITLE: 10.148 Flat Declarative Library Boundary
 #+LANGUAGE: en
 #+PROPERTY: JD_ID 10.148
@@ -14,7 +17,7 @@ Deterministic Engineering maintains reusable engineering knowledge and declarati
 features. It does not implement an AI agent platform or an application Runtime.
 The ownership decisions here supersede earlier proposals that placed transport,
 source capture, authorization recovery and verification execution in the Library.
-The C/C++ contract obligations in [[file:10.147-source-bound-c-and-cpp-contract-verification.org][10.140]] remain useful; execution belongs to
+The C/C++ contract obligations in [[file:10.147-source-bound-c-and-cpp-contract-verification.org][10.147]] remain useful; execution belongs to
 development tests or a consuming ecosystem.
 
 #+BEGIN_QUOTE
@@ -23,7 +26,7 @@ They do not establish a platform account, execute an agent workflow, or issue
 permission to act in an application Runtime.
 #+END_QUOTE
 
-The paired view is [[file:../../90-99-views/90-architecture-views/90.140-flat-declarative-library-boundary.d2][90.130 D2]] / [[file:../../90-99-views/90-architecture-views/90.140-flat-declarative-library-boundary.svg][SVG]]. The organization is declared in
+The paired view is [[file:../../90-99-views/90-architecture-views/90.140-flat-declarative-library-boundary.d2][90.140 D2]] / [[file:../../90-99-views/90-architecture-views/90.140-flat-declarative-library-boundary.svg][SVG]]. The organization is declared in
 [[file:10.148-flat-declarative-library-boundary.sysml][the companion SysML model]]. These are architecture declarations, not SDK execution
 or whole-project verification receipts.
 
@@ -169,3 +172,39 @@ C++ ownership-transfer/destruction checks, independent expected properties,
 negative controls and source-change tests. Process limits remain 2 GiB per Scheme
 process and the established deadlines, with machine-derived build concurrency.
 No assertion is removed to reinterpret an incomplete or failing check as success.
+
+* Source-driven views and compression
+:PROPERTIES:
+:CUSTOM_ID: flat141-render-provenance
+:RENDER_OWNER: packages/render
+:DESIGN_STATUS: declaration-only
+:END:
+
+The refactor is rebased onto main =6f3113e=, including the existing TS renderer
+and Sharp compression. Published main document and view identities remain stable;
+this branch uses new items 10.147--10.148 and 90.139--90.140.
+
+#+NAME: flat141-render-owners
+| Stage | Existing owner | Check |
+|-------+----------------+-------|
+| Authored semantics | Org authority and paired D2 figure declaration | Source-focused Question and exact model subject identities |
+| Compilation and composition | =compileFigureSource=, =composeFigure=, =composeModelView= | D2 labels/relations; no raw D2 SVG or invented geometry |
+| Browser export | =exportFigure= with Playwright and ELK | Settled fonts, measured geometry and minimum text size 12 |
+| Raster compression | Native =compressPNG= / =encodeWebP= inside export | Sharp lossless encoding; smaller raster selected by actual byte size |
+| Audit | Source SHA-256, export receipt and decoded pixel comparison | PNG and WebP dimensions, channels and pixels must agree |
+
+#+BEGIN_SRC sh :eval never
+bun install --frozen-lockfile
+bunx playwright install chromium
+bun run example:library-boundary
+#+END_SRC
+
+The package-owned example composes both declarations through existing public
+APIs. It writes SVG, PNG, lossless WebP, offline HTML and receipts to
+=.cache/render/library-boundary/=. Reviewed SVG/PNG/WebP and receipts are published
+alongside each D2 source. SVG remains vector output; the compressed raster does
+not replace its semantics. The README uses the smaller lossless raster.
+
+Source and composition changes require regeneration. Rendering receipts establish
+captured presentation facts only: they do not establish native pairing, Scheme
+build acceptance, a verifier result or permission to use application effects.

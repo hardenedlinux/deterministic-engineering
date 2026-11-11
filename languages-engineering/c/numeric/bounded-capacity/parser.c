@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
 #include "capacity.h"
 
 /* A parser admits a payload only after accounting for its framing bytes. */

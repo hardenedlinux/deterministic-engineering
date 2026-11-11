@@ -1,3 +1,6 @@
+;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 #!/usr/bin/env gxi
 ;;; -*- Gerbil -*-

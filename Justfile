@@ -122,7 +122,7 @@ investigate-resource-integration output sysml:
     test ! -e "{{output}}"
     test -x "{{sysml}}"
     timeout --signal=TERM --kill-after=5s 600s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q examples/resource-integration-evidence.ss "{{output}}" "$cargo" "$rustc" "$quint" "$lean" "$(realpath "{{sysml}}")"
-    d2 --layout elk --theme 0 --pad 24 "{{output}}/evidence.d2" "{{output}}/evidence.svg"
+    # Rendering requires the TS FigureInput contract; raw D2-to-SVG is retired.
 
 # Native SDLC consumer of the accepted owner slice. No changes to its captured roots.
 test-backpressure-review:

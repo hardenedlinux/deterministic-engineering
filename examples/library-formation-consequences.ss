@@ -1,3 +1,6 @@
+;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 ;; Algorithm probe: does not acquire or qualify the declared Project Scope.
 (import "../library/project-formation/func.ss"

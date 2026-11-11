@@ -1,3 +1,6 @@
+;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 ;;; One declared Project source root, using existing per-owner source annotations.
 (import :yuanxu/module-system/selection/init-syntax)

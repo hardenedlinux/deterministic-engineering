@@ -1,3 +1,6 @@
+;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;;; Ownership is generic; concrete holders and language semantics are Profile inputs.
 (import :clan/poo/object)
 (export LifetimeModel)

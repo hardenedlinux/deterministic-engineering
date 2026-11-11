@@ -1,66 +1,77 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
 # Org authority: ../../10-19-design/10-architecture/10.147-source-bound-c-and-cpp-contract-verification.org
-# Design only. General C/C++ adoption; SMP is an optional illustration.
+# Design projection; rendering is not verification or approval.
+vars: {d2-config: {data: {figure: |json
+{
+  "title": "Source contracts: from Library obligation to scoped evidence",
+  "purpose": "workflow",
+  "kind": "library-workflow",
+  "language": "en",
+  "width": 1400,
+  "primary": "ownership",
+  "questions": [
+    {
+      "ref": "ownership",
+      "text": "How does a consumer check actual C/C++ code without turning the Library into a Runtime?",
+      "focusRefs": [
+        "authority",
+        "declaration"
+      ],
+      "subjectRefs": [
+        "parent",
+        "methods",
+        "ascent"
+      ]
+    }
+  ],
+  "references": {
+    "authority": "docs/10-19-design/10-architecture/10.147-source-bound-c-and-cpp-contract-verification.org",
+    "declaration": "docs/90-99-views/90-architecture-views/90.139-source-bound-c-and-cpp-contract-verification.d2"
+  },
+  "basis": {
+    "captureRef": "design-candidate:90.139-source-bound-c-and-cpp-contract-verification",
+    "modelRefs": [
+      "docs/10-19-design/10-architecture/10.147-source-bound-c-and-cpp-contract-verification.org"
+    ],
+    "obligationRefs": [],
+    "evidenceRefs": []
+  },
+  "copy": {},
+  "themes": [
+    "sketchbook",
+    "compact"
+  ],
+  "presentation": {
+    "options": {
+      "elk.direction": "DOWN",
+      "elk.layered.spacing.nodeNodeBetweenLayers": "48"
+    },
+    "edgeLabels": false
+  }
+}
+|}}}
 direction: down
 
-domain: {
-  label: "Domain Library: reusable engineering properties"
-  parent: "Numeric / memory / algorithms / concurrency / I/O / input boundaries"
-  module: "POO Module\nInherited model, Catalog rules and obligations"
-  profile: "POO Profile\nABI, widths, macros, environment and method bounds"
-  scenario: "POO Scenario\nActual source, callers, faults and claim scope"
-  parent -> module -> profile -> scenario
-}
-
-subject: "Real C/C++ subject\nProduction functions and caller paths\nCaptured headers, build configuration and source closure"
-contracts: "Local contracts\nPre/postconditions / writes / frees / owners\nUnits / failure outcomes / synchronization premises"
-driver: "Existing Scheme driver\nTool invocation, source capture and issued results\nNo copied algorithm or parallel framework"
-domain.scenario -> subject
-domain.module -> contracts
-subject -> driver
-contracts -> driver
-
-methods: {
-  label: "Separate evidence, explicit correspondence"
-  math: "Lean\nMathematical bounds and unit lemmas"
-  state: "Quint/QNT\nHandoff and phase-order model"
-  static: "CBMC first\nActual body checks AND caller preconditions\nRecorded bounds, enabled checks and allocation failures"
-  modular: "ACSL/WP when justified\nModular C contracts and invariants"
-  mapping: "Mapping obligations\nPacking / representation / events / interference\nNo automatic model-to-source theorem"
-  native: "Native regression and PBT\nReal artifact lineage, lifecycle and failure propagation"
-  math -> mapping
-  state -> mapping
-  static -> mapping
-  modular -> mapping: "optional method" {style.stroke-dash: 4}
-  native -> mapping
-}
-driver -> methods: "select methods required by the obligation"
-
-closure: "Evidence packet and reference closure\nSource / contract / harness / stubs / tool / Profile\nIndependent oracle, completeness and raw diagnostics\nCut fixed from inputs, not its own verdict"
-methods.mapping -> closure
-ascent: "Existing ASCENT evidence owner\nCatalog-scoped obligations and applicability\nPending / support / opposing evidence / reuse candidates"
-closure -> ascent: "existing registration; no success from exit status alone"
-review: "Existing Aitia review and current-use boundary\nVerification is not approval\nApplicable counters block the matching claim"
-ascent -> review
-agent: "LLM-based AI agent\nDiscover rules, propose design, choose verification\nUse local counter paths to revise code or assumptions"
-ascent -> agent: "obligations and evidence gaps"
-next_attempt: "Project-selected Scenario\nParser / pool / container / asynchronous service\nSelect relevant families and supported methods"
-agent -> next_attempt
-
-changes: "New capture after source, Profile, method or counter changes\nRecheck affected premise closure\nRetain old witnesses and frozen queries\nReuse only with discharged new-use premises"
-review -> changes: "new revision is not automatic authorization"
-changes -> next_attempt: "re-evaluate applicability through existing ASCENT owner"
-
-smp: {
-  label: "Optional SMP illustration: no source acquisition required"
-  capacity: "SG01-SG03\nOverflow and byte/word accounting\nExact payload fit leaves overhead pending"
-  growth: "SG04-SG06\nZero / partial / full acquisition\nOwner continuity and actual-count recheck"
-  reason: "SG07-SG08\nBranch operands and refusal propagation\nReal copy policy must match the bound theorem"
-  gates: "Per-project implementation gates, when execution is selected\nG0 own source -> G1 scope -> G2 static -> G3 controls\nG4 native -> G5 POO/ASCENT -> G6 review"
-  capacity -> gates
-  growth -> gates
-  reason -> gates
-}
-next_attempt -> smp: "one optional application of reusable parent rules" {style.stroke-dash: 4}
-smp.gates.style.fill: "#FEF3C7"
-limits: "No whole-SMP or unbounded proof from a bounded local check\nTimeout / unknown / unsupported remain pending\nC++ needs separate language-feature qualification"
-methods.static -> limits: "claim boundary"
+parent: "Parent Library\nModels, rules and obligations"
+profile: "Profile Module\nABI, macros and method bounds"
+scenario: "Consumer Scenario\nReal source, callers and faults"
+contracts: "Source contracts\nPre/postconditions, writes and owners"
+plans: "Scheme method declarations\nTyped verification plans; no execution"
+methods: "Development verification\nReal body + callers; bounded CBMC / native tests"
+math: "Lean / Quint correspondence\nNumeric lemmas / state-order assumptions"
+oracle: "Independent checks\nLiteral gold, negative controls and raw diagnostics"
+closure: "Captured evidence inputs\nSource, harness, tools, bounds and configuration"
+ascent: "ASCENT relations\nSupport, counter, pending and reuse premises"
+consumer: "External consuming ecosystem\nReview and current-use authorization"
+change: "Changed source or assumptions\nNew capture; retain old witnesses and frozen queries"
+parent -> profile -> scenario
+parent -> contracts
+profile -> plans
+scenario -> methods
+contracts -> methods
+plans -> methods
+math -> oracle
+methods -> oracle -> closure -> ascent -> consumer
+consumer -> change -> scenario

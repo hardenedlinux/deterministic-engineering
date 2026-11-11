@@ -1,3 +1,6 @@
+;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;;; Pure Rust/Tokio/Rayon specialization of the selected generic model.
 (import :clan/poo/object "types.ss" "../backpressure-memory/types.ss")
 (export specialize-backpressure make-backpressure-integration

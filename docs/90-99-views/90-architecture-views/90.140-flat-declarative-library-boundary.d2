@@ -1,38 +1,80 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
 # Org authority: ../../10-19-design/10-architecture/10.148-flat-declarative-library-boundary.org
-# Transitional architecture; product build and test acceptance remain open.
+# Design projection; rendering is not verification or approval.
+vars: {d2-config: {data: {figure: |json
+{
+  "title": "Declarative Library: ownership and selection",
+  "purpose": "architecture",
+  "kind": "library-architecture",
+  "language": "en",
+  "width": 1400,
+  "primary": "ownership",
+  "questions": [
+    {
+      "ref": "ownership",
+      "text": "Which responsibilities belong to the Library, its development tools and consuming ecosystems?",
+      "focusRefs": [
+        "authority",
+        "declaration"
+      ],
+      "subjectRefs": [
+        "selection",
+        "plans",
+        "external"
+      ]
+    }
+  ],
+  "references": {
+    "authority": "docs/10-19-design/10-architecture/10.148-flat-declarative-library-boundary.org",
+    "declaration": "docs/90-99-views/90-architecture-views/90.140-flat-declarative-library-boundary.d2"
+  },
+  "basis": {
+    "captureRef": "design-candidate:90.140-flat-declarative-library-boundary",
+    "modelRefs": [
+      "docs/10-19-design/10-architecture/10.148-flat-declarative-library-boundary.org"
+    ],
+    "obligationRefs": [],
+    "evidenceRefs": []
+  },
+  "copy": {},
+  "themes": [
+    "sketchbook",
+    "compact"
+  ],
+  "presentation": {
+    "options": {
+      "elk.direction": "DOWN",
+      "elk.layered.spacing.nodeNodeBetweenLayers": "48"
+    },
+    "edgeLabels": false
+  }
+}
+|}}}
 direction: down
 
-package: "gerbil.pkg\nOne Yuanxu dependency\nExact PR revision; pairing admission remains open"
-selection: "Root init.ss\nOne flat library/<module-name>/ tree\nNative Tags + Profile + yuanxu! selection"
+package: "gerbil.pkg\nOne Yuanxu dependency"
+selection: "Root init.ss\nFlat library/<module-name>/\nNative tags, Profile and yuanxu!"
+domains: "Parent domain Modules\nCapacity, lifetime and organization"
+specialization: "Language-specialized Modules\nRust / Tokio / Rayon correspondence"
+profiles: "Profile Modules\nConstraints and method choices"
+plans: "Source-contract declarations\nNative generics and typed plans"
+rules: "ASCENT declarations\nObligations and evidence relations"
+build: "Root build.ss\ninit.exports std-make-spec only"
+sysml: "SysML declarations\nResponsibilities and relationships"
+development: "Development boundary: t/*-test.ss\nActual tools, independent gold and real subjects"
+external: "External consuming ecosystem\nMarlin / Aitia / other Runtime\nSessions, approval and recovery"
+pending: "Open acceptance gates\nNative pairing and consumer migration\nCurrent full build/tests not accepted"
 package -> selection
-
-library: {
-  label: "Declarative Library"
-  domains: "Parent domains\nCapacity / lifetime / backpressure / organization"
-  specialization: "Language specialization\nRust / Tokio / Rayon correspondence"
-  profiles: "Native Profile Modules\nConstraints and declared method choices"
-  plans: "Source-contract method declarations\n.defgeneric + .defmethod\nTyped compiler/checker plans; no execution"
-  rules: "ASCENT rule declarations\nObligations and evidence data relationships"
-  domains -> specialization
-  domains -> profiles
-  profiles -> plans
-  domains -> rules
-}
-selection -> library
-build: "Root build.ss\nOnly init.exports std-make-spec\nNo test/example root inventory"
+selection -> domains
 selection -> build
-sysml: "SysML organization declaration\nModule responsibilities and relationships\nNot a Runtime implementation"
-sysml -> library
-
-development: "t/*-test.ss\nNative gerbil test\nReal C/C++ subjects, independent gold and external tools"
-library.plans -> development: "consumer validates the declared checks"
-library.rules -> development: "actual SDK inference controls"
-development.style.fill: "#E0F2FE"
-
-external: "External ecosystem boundary\nMarlin / Aitia / other consuming Runtime\nApp Server, providers, sessions, authorization and recovery"
-library -> external: "contracts and Feature declarations only" {style.stroke-dash: 4}
-external.style.fill: "#F3F4F6"
-
-pending: "Open review gates\nConsumer migration / native pairing\nCurrent full build and test acceptance\nEarlier passes do not qualify this snapshot"
+sysml -> domains
+domains -> specialization
+domains -> profiles -> plans
+domains -> rules
+plans -> development
+rules -> development
+plans -> external: "declarations"
+rules -> external: "data contracts"
 development -> pending
-pending.style.fill: "#FEF3C7"

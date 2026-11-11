@@ -1,3 +1,6 @@
+;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;;; Tool method declarations; authored domain meaning lives in the Library.
 (import :clan/poo/object "types.ss"
   "../backpressure-tokio-rayon/objects.ss"

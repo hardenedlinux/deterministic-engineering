@@ -1,3 +1,6 @@
+;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 ;;; Rust inputs are executed by the admitted Scheme driver, not loaded as Modules.
 (import

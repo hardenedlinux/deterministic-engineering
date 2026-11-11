@@ -1,3 +1,6 @@
+;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;;; Retained real-tool evidence, using the same selected owners as the tests.
 (import "../t/support/source-contracts.ss" :clan/poo/object :std/encoding/json :gerbil-ascent/program/session
         (only-in :std/source this-source-file)

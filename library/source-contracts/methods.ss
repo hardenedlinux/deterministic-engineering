@@ -1,3 +1,6 @@
+;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;;; Pure verification-plan declarations. Consumers own execution and evidence issuance.
 (import
   :clan/poo/object

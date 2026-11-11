@@ -1,3 +1,6 @@
+;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 ;;; Authored meaning versus historical observation: no execution receipt is issued.
 (import :std/test :std/encoding/json :clan/poo/object

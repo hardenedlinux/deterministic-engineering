@@ -1,3 +1,6 @@
+;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;; SPDX-License-Identifier: LGPL-2.1-or-later
+
 ;;; Development input for real compiler/solver controls; not a product Runtime.
 (import :clan/poo/object
         (only-in :yuanxu/module-system/source/observations
