@@ -3,4 +3,5 @@
 
 (import :clan/poo/object "objects.ss")
 (export Config)
-(def Config (.o entry: CapacityModel))
+(.def Config
+  entry: CapacityModel)

@@ -31,7 +31,13 @@ vars: {d2-config: {data: {figure: |json
     "declaration": "docs/90-99-views/90-architecture-views/90.140-flat-declarative-library-boundary.d2",
     "package": "gerbil.pkg",
     "selection": "init.ss",
-    "build": "build.ss"
+    "build": "build.ss",
+    "example": "examples/source-contracts.ss",
+    "disabled-example": "examples/source-contracts-disabled.ss",
+    "profiles": "library/source-contract-profiles/interface.ss",
+    "config": "library/source-contracts/config.ss",
+    "plans": "library/source-contracts/methods.ss",
+    "native-case": "t/source-contract-owner-config-test.ss"
   },
   "basis": {
     "captureRef": "design-candidate:90.140-flat-declarative-library-boundary",
@@ -61,16 +67,16 @@ package: "gerbil.pkg\nOne AI Agentic Lab dependency"
 selection: "Root init.ss\nFlat library/<module-name>/\nNative tag Profiles and yuanxu!"
 domains: "Parent domain Modules\nCapacity, lifetime and organization"
 specialization: "Language-specialized Modules\nRust / Tokio / Rayon correspondence"
-profiles: "Profile Modules\nConstraints and method choices"
-plans: "Source-contract declarations\nNative generics and typed plans\nProfile exposes its selected plan capability"
+profiles: "Profile Modules\nConfig.verification assignment\nNative dependency refinement + sealed Config Type"
+plans: "Source-contract declarations\nConfig: enable + typed settings\nFinal-scope plan / disabled refusal\nStep-derived external tool closure"
 rules: "ASCENT declarations\nObligations and evidence relations"
-build: "Root build.ss\ninit.exports std-make-spec only"
+build: "Root build.ss\ninit.exports std-make-spec only\nNative build and compiled metadata pass"
 sysml: "SysML declarations\nResponsibilities and relationships"
 development: "Development boundary: t/*-test.ss\nActual tools, independent gold and real subjects"
 external: "External consuming ecosystem\nMarlin / Aitia / other Runtime\nSessions, approval and recovery"
-pending: "Open acceptance gates\nSettings binding / Parent package closure\nCurrent whole-product acceptance pending"
-example: "User Examples\nEnable / Disable and typed Settings\nNative Settings binding remains pending"
-example -> selection
+pending: "Open acceptance gates\nCandidate cohort / full install / CI\nPartial Settings merge not implemented\nCurrent whole-product acceptance pending"
+example: "User Examples\nImport Config; direct or plain object assignment\nInternal inheritance stays in Library"
+example -> profiles: "assigned Config; native admission"
 package -> selection
 selection -> domains
 selection -> build

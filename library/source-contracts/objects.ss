@@ -2,9 +2,8 @@
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 (import :clan/poo/object)
-(export SourceContractPolicy
-        CbmcExecutor. NativeExecutor. C11Language. Cpp11Language.
-        DirectContract. CheckedContract. ReplacedContract.)
+(export CbmcExecutor. NativeExecutor. C11Language. Cpp11Language.
+        DirectContract. CheckedContract. ReplacedContract. SourceContractScenario.)
 
 ;; Pure strategy descriptors. Methods specialize their prototype ancestry.
 (.def CbmcExecutor.
@@ -37,7 +36,9 @@
   identity: 'replace
   option: "--replace-call-with-contract")
 
-(.def SourceContractPolicy
-  timeout: 45
-  safety-flags: '("--bounds-check" "--pointer-check" "--signed-overflow-check"
-                  "--unsigned-overflow-check" "--unwinding-assertions" "--unwind" "8"))
+;; A Scenario binds domain meaning and a Profile to a source location. It is
+;; declarative data; source capture, tools and issued observations belong to Host.
+(.def SourceContractScenario.
+  root: (error "The consuming project supplies its source directory")
+  entry: (error "Select a domain Catalog leaf")
+  profile: (error "Select the language Profile"))

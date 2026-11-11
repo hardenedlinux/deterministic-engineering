@@ -489,8 +489,67 @@ safety. A consumer changing these premises needs additional obligations and new
 applicable evidence. Distinct source bytes invalidate an old source-bound usage;
 old results and frozen query snapshots remain historical evidence.
 
-The complete development test =t/source-contracts-test.ss= now passes five actual
+The complete development test =t/source-contracts-test.ss= now passes eight actual
 cases at the selected native cohort, including both source mutants, separate
 consumer package owners, registration, cross-use support and source invalidation.
 The acceptance remains scoped to the shared captured implementation and declared
 bounds. See [[file:10.148-flat-declarative-library-boundary.org::#flat141-native-source-contract-acceptance][10.148]] for exact coverage and the separate incomplete package/Settings gates.
+
+* Plan-derived tool dependency closure
+:PROPERTIES:
+:CUSTOM_ID: source-contract-tool-closure
+:OWNER: source-contracts
+:AUTHORITY: selected-verification-plan
+:END:
+
+A method's external executable inputs are derived from its actual steps, not a
+host-maintained list of all installed tools. =SourceContractPlan.external-tools=
+is a deterministic, duplicate-free projection of step tool names. The generated
+=native-binary= is an output artifact, not an external tool. Its bytes remain in
+the issued observation's artifact closure, together with logs and the report.
+
+#+NAME: source-contract-external-tool-oracle
+| Profile | Expected external tool roles | Generated executable/artifact |
+|---------+------------------------------+-------------------------------|
+| C capacity body | cbmc | None |
+| C enforced contract | goto-cc, goto-instrument, cbmc | raw and checked goto modules |
+| C actual callers | goto-cc, goto-instrument, cbmc | raw and checked goto modules |
+| C native | cc | native-binary |
+| C++ lifetime body | cbmc | None |
+| C++ native | cxx | native-binary |
+
+Both method identity and retained input-file checks use this same Library-owned
+projection. An unused CBMC path need not exist for a native C run. Creating or
+changing a file at that unused path does not invalidate the native witness. The
+independent control compiles and executes the real native capacity subject, issues
+an ASCENT witness, changes that unused file and checks continued support. Replacing
+the actually invoked compiler entry file then rejects currentness and additional
+registration, while the frozen supported answer remains historical.
+
+The development input owns a native POO =verification-plan= derived field. Basis
+projection and execution read that field instead of repeatedly rebuilding the
+same pure plan. This uses the existing receiver/dependency mechanism; there is
+no added memo table or second invalidation policy. Source, object and artifact
+checks remain mandatory. A changed active compiler cannot be hidden by retaining
+a previously derived plan.
+
+The focused tool-closure case passes through the native test entry with natural
+exit. An initial combined attempt printed all case/Module/Harness markers and OK
+but hit the unchanged 120-second process deadline; that aggregate attempt remains
+failed. A focused command must use =just test-source-contracts PATTERN= so the same
+actual tool environment is supplied. Plain =test-file= without those environment
+inputs is not an equivalent invocation. Full acceptance after the derived-plan
+change must be checked separately, including natural process exit.
+
+The bound compiler entry may itself be a Nix launcher. Hashing that entry is not
+complete attestation of its backend compiler, system headers or linked libraries.
+The stable toolchain/environment premises still apply. Likewise, unused-file
+independence does not promise that arbitrary in-place mutation of the input POO
+object will preserve its owner/source admission. These are different boundaries.
+
+The subsequent complete =just test-source-contracts= invocation passes all eight
+cases and exits naturally with MODULE-OK, HARNESS-OK and final OK within the
+unchanged 120-second fence. This includes the new actual tool-closure control and
+all previous source mutants, configuration checks and cross-project ASCENT uses.
+The earlier timed-out attempt is not retroactively promoted to a pass. No isolated
+check substitutes for this complete acceptance entry.

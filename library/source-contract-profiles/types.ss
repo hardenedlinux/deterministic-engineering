@@ -3,10 +3,13 @@
 
 (import :clan/poo/object
         (only-in :clan/poo/mop define-type Object Type)
-        (only-in :clan/poo/type Record Exactly))
+        (only-in :clan/poo/type Record)
+        (only-in "../source-contracts/types.ss" SourceContractConfig))
 (export ConfigType ScopeType)
 
-(define-type ConfigType (Record purpose: [(Exactly 'source-contract-profiles)]))
+(define-type
+  (ConfigType @ (Record verification: [SourceContractConfig]))
+  sealed: #t)
 (define-type ScopeType
   (.cc
     (Record config: [ConfigType]

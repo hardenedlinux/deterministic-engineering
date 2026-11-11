@@ -46,32 +46,15 @@
          (map (lambda (key) (list (symbol->string key) (json-value (.ref value key))))
               (.all-slots value)))
         (else value)))
-(def (admit-profile! entry profile)
-  (unless (eq? (.get profile method) (.get profile executor method))
-    (error "Profile method disagrees with its selected executor"))
-  (unless (eq? (.get profile instrumentation requires-function?)
-               (not (string=? (.get profile enforce) "")))
-    (error "inconsistent contract instrumentation strategy"))
-  (unless (member (list (.get profile factor) (.get profile obligation) (.get profile method))
-                  (.get entry rules))
-    (error "Profile is not an obligation of the selected Catalog"))
-  (unless (and (pair? (.get profile units)) (pair? (.get profile inputs))
-               (or (not (.get profile executor requires-properties?))
-                   (pair? (.get profile expected-properties))))
-    (error "source-contract Profile has an empty input/property closure"))
-  (for-each
-    (lambda (unit)
-      (unless (member unit (.get profile inputs))
-        (error "translation unit missing from declared inputs" unit)))
-    (.get profile units)))
-
 (def (contract-basis subject)
   ;; A projection of the selected leaf, not a source resolver or graph walker.
   ;; Module/currentness authority stays with Yuanxu's admitted owner.
-  (def profile (validate (.get subject driver plan-library contracts profile) (.get subject profile)))
+  (def scenario
+    (validate (.get subject driver plan-library contracts scenario) (.get subject scenario)))
+  (def profile (.get scenario profile))
   (def tools (validate (.get subject driver plan-library contracts tools) (.get subject tools)))
-  (def entry (.get subject entry))
-  (admit-profile! entry profile)
+  (def entry (.get scenario entry))
+  (def plan (.get subject verification-plan))
   (list
     (cons 'source (digest-value
       (map (lambda (input) (list (car input) (cdr input))) (.get subject source-inputs))))
@@ -81,9 +64,8 @@
               (.get entry rules) (.get entry dependencies)))))
     (cons 'method
       (digest-value
-        (list (map cdr (file-pairs (map (cut .ref tools <>)
-                                   '(cbmc goto-cc goto-instrument cc cxx))))
-              (json-value (.call (.get subject driver plan-library) plan (.get profile executor) profile)))))))
+        (list (map cdr (file-pairs (map (cut .ref tools <>) (.get plan external-tools))))
+              (json-value plan))))))
 
 (def (contract-scopes subject usage)
   (map (lambda (pair) (list usage (car pair) (cdr pair))) (contract-basis subject)))
@@ -130,24 +112,25 @@
     (lambda (sources-current!)
       ;; This closure is issued by the existing native observation collector.
       ;; It observes the selected leaf and retains no hand-written Module list.
-      (.call subject admit-current)
-      (def profile (validate (.get subject driver plan-library contracts profile) (.get subject profile)))
+      (validate (.get subject driver plan-library contracts scenario) (.get subject scenario))
+      (def profile (validate (.get subject driver plan-library contracts profile) (.get subject scenario profile)))
       (def tools (validate (.get subject driver plan-library contracts tools) (.get subject tools)))
+      (def plan-library (.get subject driver plan-library))
+      (def plan (.get subject verification-plan))
+      (.call subject admit-current)
       (def basis (contract-basis subject))
       (when (file-exists? out) (error "fresh output directory required" out))
       (create-directory out)
       (def commands '())
       (def artifacts '())
       (def tool-inputs
-        (file-pairs (map (cut .ref tools <>) '(cbmc goto-cc goto-instrument cc cxx))))
+        (file-pairs (map (cut .ref tools <>) (.get plan external-tools))))
       (def (run name argv)
-        (def result (command! out name argv (.get subject driver plan-library config timeout)))
+        (def result (command! out name argv (.get subject driver plan-library config settings timeout)))
         (set! commands (cons result commands))
         (set! artifacts (cons (.get result log) artifacts))
         result)
       (def absolute-units (.get subject translation-units))
-      (def plan-library (.get subject driver plan-library))
-      (def plan (.call plan-library plan (.get profile executor) profile))
       (def native-path (path-expand "subject" out))
       (def symbols
         (.o sources: absolute-units

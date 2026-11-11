@@ -3,8 +3,10 @@
 
 (import
   :std/test
+  (only-in :std/error Error? Error-message)
   "support/source-contracts.ss"
   :clan/poo/object
+  (prefix-in "../library/source-contracts/config.ss" declared-)
   :gerbil-ascent/program/session
   (only-in :std/source this-source-file)
   (only-in :std/io/tempfile call-with-temporary-directory)
@@ -14,7 +16,8 @@
   (only-in :yuanxu/poo-clos/objects poo-clos-failure?)
   (only-in :yuanxu/module-system/interface yuanxu-load-modules))
 (export source-contract-positive-test source-contract-change-test
-        source-contract-refusal-test source-contract-cross-project-test)
+        source-contract-refusal-test source-contract-cross-project-test
+        source-contract-scenario-test source-contract-tool-closure-test)
 
 (def (stage label)
   (displayln "SOURCE-CONTRACT-STAGE " label)
@@ -23,7 +26,7 @@
 (stage 'imports-ready)
 (def root (path-expand ".." (path-directory (this-source-file))))
 (stage 'prepare-module-view)
-(def module-view (yuanxu-load-modules (path-expand "examples/source-contracts.ss" root)))
+(def module-view (yuanxu-load-modules (path-expand "t/support/source-contract-modules.ss" root)))
 (stage 'prepare-selected)
 (def selected (.get module-view modules Library))
 (stage 'prepare-plan-library)
@@ -53,7 +56,9 @@
   (def selected-runner driver)
   (def leaf
     (.o (:: @ (.get selected-runner input))
-      root: base entry: catalog profile: selected-profile
+      scenario:
+      (.o (:: @ (.get selected-runner plan-library scenario))
+        root: base entry: catalog profile: selected-profile)
       tools: tool-paths
       module-owner: module-view
       driver: selected-runner))
@@ -183,6 +188,7 @@
           (check-exception ((.get driver register!) review
                             (list ((.get driver record) failed))) error?)
           (check-exception (subject base capacity (.cc profile 'language 'rust)) TypeError?)
+          (check-exception (subject #f capacity profile) TypeError?)
           (check-exception (subject base capacity (.cc profile 'obligation 'FOREIGN)) error?)
           (check-exception (subject base capacity (.cc profile 'inputs '())) error?)
           (check-exception
@@ -228,9 +234,9 @@
   (create-directory directory)
   (write-text (path-expand "gerbil.pkg" directory)
     (object->string (list package: (string->symbol (path-strip-directory directory)))))
-  (def example (read-text (path-expand "examples/source-contracts.ss" root)))
+  (def example (read-text (path-expand "t/support/source-contract-modules.ss" root)))
   (def declaration
-    (string-subst example "\"../library\""
+    (string-subst example "\"../../library\""
       (object->string (path-expand "library" root))))
   (write-text (path-expand "init.ss" directory) declaration)
   (def selected-owner (yuanxu-load-modules (path-expand "init.ss" directory)))
@@ -246,9 +252,11 @@
 (def (consumer-subject context source-root)
   (def runner (.get context driver))
   (.o (:: @ (.get runner input))
-    root: source-root
-    entry: (.get context entry)
-    profile: (.get context profile)
+    scenario:
+    (.o (:: @ (.get runner plan-library scenario))
+      root: source-root
+      entry: (.get context entry)
+      profile: (.get context profile))
     tools: tool-paths
     module-owner: (.get context owner)
     driver: runner))
@@ -295,4 +303,136 @@
             (string-append (read-text implementation) "\n/* New subject revision. */\n"))
           (check-exception ((.get parser driver current!) result) error?)
           (check-exception ((.get pool driver register!) pool-review (list result)) error?)
+          (check-equal? (length (rows frozen 'support)) 1))))))
+
+(def source-contract-scenario-test
+  (test-suite "Declarative Library Scenario boundary"
+    (test-case "imported Config and plain assignment drive the native plan"
+      (def direct-value declared-Config)
+      (def assigned-value
+        (.o enable: #t settings: (.get direct-value settings)))
+      (validate (.get plan-library config-type) direct-value)
+      (validate (.get plan-library config-type) assigned-value)
+      (def assigned-scope (.cc plan-library 'config assigned-value))
+      (def plan
+        ((.get assigned-scope plan)
+          (.get plan-library strategies cbmc) (.get profiles capacity-body)))
+      (check-equal? (.get plan method) 'cbmc)
+      (check-equal? (and (member "--bounds-check" (.get (car (.get plan steps)) arguments)) #t) #t)
+      (for-each
+        (lambda (invalid)
+          (check-exception (validate (.get plan-library config-type) invalid) TypeError?))
+        (list (.o enable: 'yes settings: (.get direct-value settings))
+              (.o enable: #t settings: (.o timeout: 180 safety-flags: '()))
+              (.cc direct-value 'enabled #t)
+              (.o enable: #t)
+              (.o enable: #t
+                  settings: (.cc (.get direct-value settings) 'timeout-seconds 45))))
+      (check-exception
+        (validate (.get profile-library config-type)
+          (.cc (.get profile-library config)
+            'verfication (.get profile-library config verification)))
+        TypeError?)
+      (call-with-temporary-directory "source-contract-disabled"
+        (lambda (directory)
+          (def disabled-scope
+            (.cc plan-library 'config
+              (.o enable: #f settings: (.get direct-value settings))))
+          (def disabled-driver (.cc driver 'plan-library disabled-scope))
+          (def implementation-root root)
+          (def input
+            (.o (:: @ (.get disabled-driver input))
+              scenario:
+              (.o (:: @ (.get disabled-scope scenario))
+                root: implementation-root entry: capacity profile: (.get profiles capacity-body))
+              tools: tool-paths
+              module-owner: module-view
+              driver: disabled-driver))
+          (def output (path-expand "must-not-exist" directory))
+          (check-exception
+            (.call input .verify output)
+            (lambda (failure)
+              (and (Error? failure)
+                   (equal? (Error-message failure)
+                           "source-contract capability is disabled; no plan issued"))))
+          (check-equal? (file-exists? output) #f))))
+    (test-case "Scenario validation does not capture source or run a tool"
+      (call-with-temporary-directory "source-contract-declaration"
+        (lambda (directory)
+          (def absent (path-expand "not-created" directory))
+          (def declaration
+            (.o (:: @ (.get plan-library scenario))
+              root: absent
+              entry: capacity
+              profile: (.get profiles capacity-body)))
+          (def admitted (validate (.get plan-library contracts scenario) declaration))
+          (check-equal? (.get admitted root) absent)
+          (check-equal? (file-exists? absent) #f)
+          (check-equal? (.slot? declaration 'tools) #f)
+          (check-equal? (.slot? declaration '.verify) #f)
+          ;; A derived scope must use its final Config, never a captured policy.
+          (def invalid-policy-scope
+            (.o (:: @ plan-library)
+              config: (.o enable: #t settings: (.o timeout: 45 safety-flags: '()))))
+          (check-exception
+            ((.get invalid-policy-scope plan)
+              (.get plan-library strategies cbmc)
+              (.get profiles capacity-body))
+            TypeError?)
+          (for-each
+            (lambda (profile)
+              (check-exception
+                (validate (.get plan-library contracts scenario)
+                          (.cc declaration 'profile profile))
+                TypeError?))
+            (list (.cc (.get profiles capacity-body) 'method 'native)
+                  (.cc (.get profiles capacity-body) 'enforce "foreign_function")
+                  (.cc (.get profiles capacity-body) 'obligation 'FOREIGN)
+                  (.cc (.get profiles capacity-body) 'inputs '())
+                  (.cc (.get profiles capacity-body) 'inputs '("omitted-unit.c"))
+                  (.cc (.get profiles capacity-body) 'expected-properties '())))
+          (check-exception
+            (validate (.get plan-library contracts scenario)
+                      (.cc declaration 'entry (.o identity: 'unadmitted)))
+            TypeError?))))))
+
+
+(def source-contract-tool-closure-test
+  (test-suite "Actual tool dependency closure"
+    (test-case "unused tool changes preserve a native witness; compiler changes refuse reuse"
+      (for-each
+        (lambda (row)
+          (def profile (.ref profiles (car row)))
+          (check-equal?
+            (.get (.call plan-library plan (.get profile executor) profile) external-tools)
+            (cadr row)))
+        '((capacity-body (cbmc))
+          (capacity-contract (goto-cc goto-instrument cbmc))
+          (capacity-callers (goto-cc goto-instrument cbmc))
+          (capacity-native (cc))
+          (lifetime-body (cbmc))
+          (lifetime-native (cxx))))
+      (call-with-temporary-directory "source-contract-tool-closure"
+        (lambda (directory)
+          (def compiler (path-expand "compiler" directory))
+          (copy-file (.get tool-paths cc) compiler)
+          (def unused (path-expand "unused-cbmc" directory))
+          (def selected-tools (.cc tool-paths 'cc compiler 'cbmc unused))
+          (def profile (.get profiles capacity-native))
+          (def input (.cc (subject root capacity profile) 'tools selected-tools))
+          (def review (session capacity profile input 'native-tool-closure))
+          (def result (.call input .verify (path-expand "actual-native" directory)))
+          ((.get driver register!) review (list result))
+          (check-equal? (supported? review) #t)
+          (def frozen (gerbil-ascent-session-run review))
+          ;; There was no CBMC executable here, and the native plan did not need it.
+          (check-equal? (file-exists? unused) #f)
+          (write-text unused "unused tool changed; this plan never invokes it\n")
+          ((.get driver current!) result)
+          ((.get driver register!) review (list result))
+          (check-equal? (supported? review) #t)
+          ;; The actually executed compiler is retained and checked by the issuer.
+          (write-text compiler "replaced compiler bytes; no new result may be issued\n")
+          (check-exception ((.get driver current!) result) error?)
+          (check-exception ((.get driver register!) review (list result)) error?)
           (check-equal? (length (rows frozen 'support)) 1))))))

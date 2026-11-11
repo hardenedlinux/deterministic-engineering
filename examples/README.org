@@ -6,51 +6,66 @@
 #+STARTUP: overview
 #+OPTIONS: toc:1 num:nil
 
-* User responsibility
-Examples declare the selected engineering capabilities. They do not implement
-verification drivers, launch tools, register evidence or issue application
-permission. Existing development operations live under =t/support/= and are
-exercised by =t/*-test.ss=; relocating them does not qualify unfinished consumers.
-
-- [[file:source-contracts.ss][C/C++ source-contract selection]]
-- [[file:rust-backpressure.ss][Rust backpressure selection]]
-
-Each example selects a native tag Profile. In =auto= mode Yuanxu resolves its
-required dependencies; explicit exclusions remain authoritative. The native
-syntax currently represents enabled selection with =disable: #f=
-and explicit exclusion with =disable: #t=. Required dependencies are resolved by
-Yuanxu. An explicitly disabled required dependency must reject the selection;
-it must not be silently re-enabled. Enabling declarations does not run a tool.
-
-* Intended Enable and Settings boundary
+* Import and assign
 :PROPERTIES:
-:CUSTOM_ID: user-enable-settings
-:IMPLEMENTATION_STATUS: settings-binding-pending-in-native-yuanxu
+:CUSTOM_ID: user-config-assignment
+:PUBLIC_IMPORT: :deterministic-engineering/library/source-contracts/config
 :END:
 
-The user-facing contract is Module/Feature Enable plus typed Settings. Library
-Modules own their defaults, required dependencies, constraints and pure outputs.
-Users should not select internal strategies, instantiate evidence sessions,
-assemble source guards or copy orchestration into an example.
+Import the maintained Config and assign a value. Examples do not define Types,
+inheritance, generic methods, Module loading or verification orchestration.
 
-The current pinned Yuanxu init parser accepts literal =disable:= and Feature
-flags. It does not accept a per-row =settings:= override. Its existing Settings
-value constructor is not proof of an admitted binding into a Module's final
-Config. Therefore these executable examples expose only supported selection.
-The Settings part remains a native Yuanxu integration requirement. No local
-settings interpreter or inert example options are introduced to disguise it.
+** Direct assignment
+[[file:source-contracts.ss][Use the maintained Config unchanged]].
 
-#+NAME: user-configuration-acceptance
-| Gate | Required observable behavior |
-|------+------------------------------|
-| Selection | Enabled Modules and required dependencies are available; explicitly disabled required dependencies refuse |
-| Settings | A user override reaches the final typed Config and changes the actual selected Profile/plan |
-| Defaults | Omitted options inherit the Module default; unknown names and wrong types reject |
-| Laziness | Excluded Modules and unused Features construct no business scopes and launch no tools |
-| Assurance | Configuration cannot silently disable mandatory verification or erase applicable counters |
-| Change | A changed setting creates a new applicable context; frozen answers and reusable witnesses remain historical |
+#+INCLUDE: "source-contracts.ss" src scheme :lines "4-"
 
-The final Settings gate must be implemented and tested through Yuanxu's owning
-configuration/admission path. A plain object that is never consumed is not a
-configuration feature. Tool paths, output directories, invocation order, results
-and raw diagnostics stay in development/host boundaries.
+** Plain POO object assignment
+[[file:source-contracts-disabled.ss][Disable verification while retaining the maintained Settings]].
+
+#+INCLUDE: "source-contracts-disabled.ss" src scheme :lines "4-"
+
+The object literal contains ordinary assigned values. It does not require the
+user to declare prototype ancestry. Library Modules own defaults, inheritance,
+Types, dependencies and derived plans. A consuming Profile assigns this value to
+its verification Config; its existing native dependency refinement and Type
+admission supply the final method scope.
+
+* Configuration contract
+| Field | Meaning |
+|-------+---------|
+| enable | Boolean permission to produce this capability's verification plans |
+| settings | Complete maintained verification policy, reused from the imported Config in the object-assignment example |
+
+The present policy preserves the 45-second command deadline and required safety
+flags. Wrong types, missing required fields and unknown options reject. Partial
+Settings merging is not implemented: use the complete maintained value, or supply
+a complete value satisfying the named Type. Assignment itself launches no tool,
+creates no evidence session and grants no application authorization.
+
+Disabled configuration refuses plan issuance. It does not erase old witnesses or
+make an old source owner current. It also does not promise that the Module's
+namespace or compiler demand disappears; those are separate native selection
+properties.
+
+* Maintainer verification
+:PROPERTIES:
+:CUSTOM_ID: user-config-verification
+:END:
+
+=just test-file t/user-configuration-test.ss= checks the two actual imports and
+retains all internal selection-parser controls. Those selection declarations now
+live in =t/support/source-contract-modules.ss= and
+=t/support/rust-backpressure-modules.ss=, outside the user Examples.
+
+=just test-source-contracts '.*' t/source-contract-owner-config-test.ss= copies
+the actual Example files into a real native consumer package. The Profile imports
+the enabled value, the existing method compiles and runs the actual native C
+subject, and the result is registered and queried through ASCENT. Switching the
+Profile to the disabled Example rejects the old owner and old result's current
+registration, admits the new disabled dependency and preserves frozen evidence.
+
+=just test-source-contracts= retains the complete actual C/C++, independent
+counter, active-tool closure and cross-project reuse/invalidation suite. Product
+build roots do not include Examples or these execution helpers. See
+[[file:../docs/10-19-design/10-architecture/10.148-flat-declarative-library-boundary.org][the architecture and separate unqualified package/CI gates]].

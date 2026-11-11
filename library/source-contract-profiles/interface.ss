@@ -8,7 +8,14 @@
   admissions: (.o Config: (.o export-path: '(config) contract-path: '(config-type)))
   core:
   (.o
-    requires: (.o Driver: (.o module-id: 'source-contracts))
+    requires:
+    (.o
+      Driver:
+      (.o
+        module-id: 'source-contracts
+        refine:
+        (lambda (upstream)
+          (.cc upstream config: (.get Config verification)))))
     scope-contract: ScopeType
     exports:
     (.o

@@ -4,7 +4,7 @@
 ;;; -*- Gerbil -*-
 (import
   :clan/poo/object
-  (only-in :clan/poo/mop Type Type. Any Function define-type element? raise-type-error)
+  (only-in :clan/poo/mop Type Type. Any Object Function define-type element? raise-type-error)
   (only-in :clan/poo/recursive-validation close-validation closed? closed-ref)
   (only-in
    :yuanxu/object-types/contracts

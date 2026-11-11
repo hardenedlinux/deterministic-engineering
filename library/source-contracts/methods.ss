@@ -10,7 +10,7 @@
   "objects.ss")
 (export contract-plan)
 
-(.defgeneric verification-steps (executor profile))
+(.defgeneric verification-steps (executor profile policy))
 (.defgeneric instrumentation-steps (instrumentation profile))
 
 (.defmethod (instrumentation-steps
@@ -36,7 +36,7 @@
           artifacts: '(checked-module)))
     solver-inputs: '(checked-module)))
 
-(.defmethod (verification-steps (executor (prototype CbmcExecutor.)) profile)
+(.defmethod (verification-steps (executor (prototype CbmcExecutor.)) profile policy)
   (def preparation
     (instrumentation-steps (.get profile instrumentation) profile))
   (append
@@ -47,11 +47,11 @@
           (append (.get preparation solver-inputs)
                   (.get profile language verifier-flags)
                   (list "--function" (.get profile function) "--json-ui")
-                  (.get SourceContractPolicy safety-flags))
+                  (.get policy safety-flags))
           expected: 'solver
           artifacts: '()))))
 
-(.defmethod (verification-steps (executor (prototype NativeExecutor.)) profile)
+(.defmethod (verification-steps (executor (prototype NativeExecutor.)) profile policy)
   (list
     (.o tool: (.get profile language compiler-key)
         arguments: (list (.get profile language native-standard)
@@ -63,7 +63,11 @@
         expected: 'zero
         artifacts: '())))
 
-(def (contract-plan executor profile)
+(def (contract-plan configuration executor profile)
+  (def selected-config (validate SourceContractConfig configuration))
+  (unless (.get selected-config enable)
+    (error "source-contract capability is disabled; no plan issued"))
+  (def selected-policy (.get selected-config settings))
   (def selected-profile (validate SourceContractProfile profile))
   (unless (eq? (.get selected-profile method) (.get executor method))
     (error "Profile and executor declare different methods"))
@@ -74,6 +78,14 @@
     kind: 'verification-plan
     obligation: (.get selected-profile obligation)
     method: (.get selected-profile method)
-    steps: (verification-steps executor selected-profile)
+    steps: (verification-steps executor selected-profile selected-policy)
+    external-tools:
+    (foldr
+      (lambda (tool names)
+        (if (or (eq? tool 'native-binary) (memq tool names))
+            names
+            (cons tool names)))
+      '()
+      (map (lambda (step) (.get step tool)) steps))
     expected-properties: (.get selected-profile expected-properties)
     boundary: "A plan declares checks; it neither executes tools nor issues evidence or authority."))

@@ -16,7 +16,7 @@
   (when (file-exists? output) (error "fresh evidence output required" output))
   (create-directory output)
   (def module-view
-    (yuanxu-load-modules (path-expand "examples/source-contracts.ss" project-directory)))
+    (yuanxu-load-modules (path-expand "t/support/source-contract-modules.ss" project-directory)))
   (def selected (.get module-view modules Library))
   (def profile-library (.get selected source-contract-profiles))
   (def driver
@@ -34,7 +34,10 @@
       (def usage-id (.get selected-profile identity))
       (def leaf
         (.o (:: @ (.get driver input))
-          root: project-directory entry: selected-entry profile: selected-profile tools: tool-paths
+          scenario:
+          (.o (:: @ (.get driver plan-library scenario))
+            root: project-directory entry: selected-entry profile: selected-profile)
+          tools: tool-paths
           module-owner: module-view
           driver: selected-runner))
       (def session

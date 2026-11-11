@@ -14,7 +14,7 @@
     exports:
     (.o
       config: Config
-      config-type: SourceContractPolicyShape
+      config-type: SourceContractConfig
       strategies:
       (.o cbmc: CbmcExecutor.
           native: NativeExecutor.
@@ -23,9 +23,11 @@
           direct: DirectContract.
           enforce: CheckedContract.
           replace: ReplacedContract.)
-      plan: contract-plan
+      scenario: SourceContractScenario.
+      plan: (lambda (executor profile) (contract-plan config executor profile))
       contracts:
-      (.o profile: SourceContractProfile
+      (.o scenario: SourceContractScenario
+          profile: SourceContractProfile
           tools: SourceContractTools
           plan: SourceContractPlan)))
   features: (.o))

@@ -2,8 +2,8 @@
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 ;;; -*- Gerbil -*-
-(import
-  "./objects.ss")
+(import :clan/poo/object
+        "objects.ss")
 (export
   Config)
-(def Config EvidencePolicy)
+(.def (Config @ EvidencePolicy))

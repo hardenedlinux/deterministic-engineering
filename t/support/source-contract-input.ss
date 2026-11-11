@@ -10,19 +10,20 @@
 
 ;;; A language-input value delegates guards to its selected native Module owner.
 (.def (SourceContractInput. subject [])
-  root: (error "The consuming project supplies its source directory")
-  entry: (error "Select a domain Catalog leaf")
-  profile: (error "Select the language Profile")
+  scenario: (error "Select a declarative Library Scenario")
   tools: (error "Select tool paths")
   module-owner: (error "Select the native init owner")
   driver: (error "Select the native source-contract driver leaf")
+  verification-plan:
+  (.call (.get driver plan-library) plan
+    (.get scenario profile executor) (.get scenario profile))
   source-inputs:
   (map (lambda (relative)
-         (def path (path-expand relative root))
+         (def path (path-expand relative (.get scenario root)))
          (cons path (module-source-read path)))
-       (.get profile inputs))
-  translation-units: (map (cut path-expand <> root) (.get profile units))
-  value-current?: (module-source-object-policy (list subject profile entry tools))
+       (.get scenario profile inputs))
+  translation-units: (map (cut path-expand <> (.get scenario root)) (.get scenario profile units))
+  value-current?: (module-source-object-policy (list subject scenario (.get scenario profile) (.get scenario entry) tools))
   admit-current:
   (lambda ()
     (.call module-owner admit-current)

@@ -75,7 +75,7 @@ test:
     just test-file t/package-metadata-test.ss
 
 # Real language subjects, current native tool paths and existing test harness.
-test-source-contracts:
+test-source-contracts pattern=".*" path="t/source-contracts-test.ss":
     #!/usr/bin/env bash
     set -euo pipefail
     export SOURCE_CONTRACT_CBMC="$(realpath "$(command -v cbmc)")"
@@ -83,7 +83,7 @@ test-source-contracts:
     export SOURCE_CONTRACT_GOTO_INSTRUMENT="$(realpath "$(command -v goto-instrument)")"
     export SOURCE_CONTRACT_CC="$(realpath "$(command -v clang)")"
     export SOURCE_CONTRACT_CXX="$(realpath "$(command -v clang++)")"
-    just test-file t/source-contracts-test.ss
+    just test-file "{{path}}" "{{pattern}}"
 
 investigate-source-contracts output:
     #!/usr/bin/env bash

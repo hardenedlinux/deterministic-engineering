@@ -3,10 +3,15 @@
   "sources": {
     "build.ss": "7ecd0d052e15ef7ccdcb595421f18f29a82534bb3c89f0af80cc1532ff683ddc",
     "bun.lock": "641fa6fb5dd7cc87c32d15ea62a71664efe83d06b0f0f3fe8373f58fb130b346",
-    "docs/10-19-design/10-architecture/10.148-flat-declarative-library-boundary.org": "c65bfc258b25451650c915662f3b7fd8a49067210d778b10ca8a7ee193472c91",
-    "docs/90-99-views/90-architecture-views/90.140-flat-declarative-library-boundary.d2": "84a1bc83db5176181e2aa99d5a23f0683a1f060c3e30c8221b19ff9ff5f887b0",
+    "docs/10-19-design/10-architecture/10.148-flat-declarative-library-boundary.org": "959c642d6ed6b60d4ebd018eae8982f4c238a4331654553b9563f47aa45da7ca",
+    "docs/90-99-views/90-architecture-views/90.140-flat-declarative-library-boundary.d2": "5f5c95d1119fbcbd879cc73b191090ec47d0705fe3dc8f2ef58ba8c7092aed00",
+    "examples/source-contracts-disabled.ss": "447c358881f94696eaf60fc76610d5a415d581b9a3bbd4ea59d9e6b16d0cf07e",
+    "examples/source-contracts.ss": "c5234a199639dfc85e488c1f456f2d8208e6419eb8f93b78a30963bb2457b1c8",
     "gerbil.pkg": "413236e4c63a6a5dddac316be86998f32b27e45ecfd5d66f38fe96ec646d4c7b",
     "init.ss": "964584fb153d68ea2d03f3ca082d80cbcf631ddf61364fc6d18580b05237b688",
+    "library/source-contract-profiles/interface.ss": "90168aa88a218a6a9485274f2cb90c26aecb6358aeaa5f1e97dc3054abb17bfe",
+    "library/source-contracts/config.ss": "de5d4aedf8ed31168d36ae08d7fa52bfe632b6911ac498a529f66b4021c7f029",
+    "library/source-contracts/methods.ss": "e9d69a5e9d9a40bc3a154a81c1eb475de1b4d32fef216e949dcac21f33bd9fb4",
     "package.json": "b0c1736c46211bf763696ec088c92281cea4de6dece9644d3b647f5d746dfb53",
     "packages/render/examples/attribution.ts": "58f7914284a69c4ce42db61ec24c06cf9194232ed3402fc7ae12e3ded4187892",
     "packages/render/examples/library-boundary.ts": "8a797e2f1700589373bcc173d3c7b80cfc933fd3b8fdc29b1b6cec87b1a609b5",
@@ -16,7 +21,8 @@
     "packages/render/src/model-view.ts": "8a2c575c8c1a2f09770fb4cfdbe6718121a66c4fe8b32c97f7b2d88c9f7a57fc",
     "packages/render/src/png.ts": "8d1da534a9fe8d8f27fccbf61b7e4ec0e8fd6754970c09c42105381b32b34d54",
     "packages/render/src/scene-export.ts": "f5ba1250e1fe5e6c952ada3bc501979e4f9b8a8a0506a62a6e4cebdaf256a217",
-    "packages/render/src/webp.ts": "67dcfc1f1e333ae933f0f9d48b10640ba11b81fad394ff3361ca9b5f952223e0"
+    "packages/render/src/webp.ts": "67dcfc1f1e333ae933f0f9d48b10640ba11b81fad394ff3361ca9b5f952223e0",
+    "t/source-contract-owner-config-test.ss": "5b68fa16f2c8ed0e3c21d726690735d3e4e94545fdc8d89c3f7b047a98d7ccee"
   },
   "receipt": {
     "webp": {
@@ -26,10 +32,10 @@
           "lossless": true,
           "effort": 4
         },
-        "inputBytes": 559322,
-        "outputBytes": 243464
+        "inputBytes": 638145,
+        "outputBytes": 279454
       },
-      "sha256": "4ec84efd0be0be02ec30ea868bcf7b5f9b7b452d069c6dd5a2e06eae66cde481"
+      "sha256": "06849a22f2b855bd59de48a21dc6c0559a03efe7d221517134b9d5a1559f9007"
     },
     "preferredRaster": "webp",
     "pngCompression": {
@@ -39,8 +45,8 @@
           "compressionLevel": 9,
           "adaptiveFiltering": true
         },
-        "inputBytes": 559322,
-        "outputBytes": 552750,
+        "inputBytes": 638145,
+        "outputBytes": 631140,
         "selected": "compressed"
       },
       "regions": {}
@@ -57,37 +63,37 @@
         "x": 0,
         "y": 0,
         "width": 1400,
-        "height": 1203
+        "height": 1299
       },
       "subjects": [
         {
           "id": "package",
           "role": "default",
-          "x": 501.5743408203125,
-          "y": 163.19061279296875,
-          "width": 217.25244140625,
+          "x": 551.65771484375,
+          "y": 131.19061279296875,
+          "width": 217.25238037109375,
           "height": 85.652099609375
         },
         {
           "id": "selection",
           "role": "default",
-          "x": 733.0833740234375,
-          "y": 294.5800476074219,
+          "x": 554.3333740234375,
+          "y": 262.5800476074219,
           "width": 215.48077392578125,
           "height": 121.61639404296875
         },
         {
           "id": "domains",
           "role": "default",
-          "x": 513.7120361328125,
-          "y": 458,
+          "x": 305.9620361328125,
+          "y": 445.20001220703125,
           "width": 230.810791015625,
-          "height": 83.4552001953125
+          "height": 83.45526123046875
         },
         {
           "id": "specialization",
           "role": "default",
-          "x": 498.21929931640625,
+          "x": 374.96929931640625,
           "y": 588.423583984375,
           "width": 262.50360107421875,
           "height": 84.1339111328125
@@ -95,78 +101,78 @@
         {
           "id": "profiles",
           "role": "default",
-          "x": 784.25,
-          "y": 588.6495361328125,
-          "width": 215.6712646484375,
-          "height": 84.0826416015625
+          "x": 787.1666870117188,
+          "y": 588.6380615234375,
+          "width": 332.45452880859375,
+          "height": 116.2572021484375
         },
         {
           "id": "plans",
           "role": "default",
-          "x": 754.8076171875,
-          "y": 719.3423461914062,
-          "width": 273.71435546875,
-          "height": 115.85540771484375
+          "x": 824.7242431640625,
+          "y": 751.3423461914062,
+          "width": 257.3951416015625,
+          "height": 148.0562744140625
         },
         {
           "id": "rules",
           "role": "default",
-          "x": 374.5058288574219,
-          "y": 740.6171875,
-          "width": 225.56423950195312,
+          "x": 251.25582885742188,
+          "y": 793.9505615234375,
+          "width": 225.564208984375,
           "height": 83.87115478515625
         },
         {
           "id": "build",
           "role": "default",
-          "x": 768.10693359375,
-          "y": 458,
-          "width": 211.590087890625,
-          "height": 83.3809814453125
+          "x": 560.35693359375,
+          "y": 426,
+          "width": 269.753173828125,
+          "height": 115.31634521484375
         },
         {
           "id": "sysml",
           "role": "default",
-          "x": 481.91668701171875,
-          "y": 326.5283203125,
-          "width": 218.7021484375,
+          "x": 274.1666564941406,
+          "y": 294.5283203125,
+          "width": 218.70217895507812,
           "height": 83.7562255859375
         },
         {
           "id": "development",
           "role": "default",
-          "x": 731.25,
-          "y": 893.2698974609375,
-          "width": 312.0040283203125,
+          "x": 789.8333129882812,
+          "y": 957.2698974609375,
+          "width": 312.00396728515625,
           "height": 85.0068359375
         },
         {
           "id": "external",
           "role": "default",
-          "x": 359.4132995605469,
-          "y": 882.618896484375,
-          "width": 275.6872863769531,
+          "x": 236.16331481933594,
+          "y": 946.618896484375,
+          "width": 275.687255859375,
           "height": 121.009765625
         },
         {
           "id": "pending",
           "role": "default",
-          "x": 747.75,
-          "y": 1045.63818359375,
-          "width": 276.655029296875,
-          "height": 120.7816162109375
+          "x": 806.3333129882812,
+          "y": 1109.63818359375,
+          "width": 276.76727294921875,
+          "height": 151.126708984375
         },
         {
           "id": "example",
           "role": "default",
-          "x": 740.485595703125,
-          "y": 131.43519592285156,
-          "width": 265.764404296875,
-          "height": 115.56480407714844
+          "x": 852.735595703125,
+          "y": 425.4352111816406,
+          "width": 310.764404296875,
+          "height": 115.56478881835938
         }
       ],
       "relations": [
-        "(example -> selection)[0]",
+        "(example -> profiles)[0]",
         "(package -> selection)[0]",
         "(selection -> domains)[0]",
         "(selection -> build)[0]",
@@ -204,24 +210,24 @@
     },
     "readability": {
       "minimumTextSize": 12,
-      "samples": 34,
+      "samples": 38,
       "requiredMinimum": 12
     },
-    "inputSHA256": "20415c3d1b218a4021fe1029685bbd5e84bce15c5c7b74207e52a13c0f542a2a",
+    "inputSHA256": "a0e34949ef39c781e05a3f54f67d7cbcb7b83e5fa000653f32d26393ec762e53",
     "scenes": [
       {
-        "inputSHA256": "fb6dee4df91b92b582bc6de261c2d1490600f01e002b76d44249307915614d18",
-        "layoutSHA256": "f29a9277b20846883f4d55b0175a51f1472553e5a12d32609b7217596568b0fc",
+        "inputSHA256": "6cd297f19ef7fc162cc6c308af770fb65a842873c9d955c80a97de3566afd3e3",
+        "layoutSHA256": "796470c489dba0185dde3729597ea3da54274ddb361a94be25ac4a45d092d148",
         "nodes": 13,
         "edges": 14,
-        "milliseconds": 324.96795799999927
+        "milliseconds": 1178.7846250000002
       }
     ],
     "svgSHA256": [
-      "a9dd1a9653f34466f49b8e6ddc01b90052db18bc23db385d594a5afa9ae3c5d2",
-      "3467fa7ae0ea84203c0947fe5ee28c8cecc1e9fb99bc2192e8e2c7ee2bba001e"
+      "d6a747ec628aa60ddadee4b21c27bcf9414273881b02c6a582b0fedc63efbdf4",
+      "2026d9f3815eadc1fcaa20aa4a43633017608ea5db74082c40744ac1219174d6"
     ],
-    "composedHTMLSHA256": "5e3359707c2927369ec92d4a0e063ef1c07f02175f9302e1d7712f93f28b4099",
+    "composedHTMLSHA256": "144d3a0b6da4fac18ca48ec9ce7655e6345c21156356b331fe542b6eec8dc5c5",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -235,32 +241,32 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "941e41327ef3032c5afb731c7e55f3e58317565eab6a58892f67b66c97c96b2a",
+    "htmlSHA256": "9f23289a4e36617c528fc3e2d4600932aab3892f3778edb0063889834c23f6f1",
     "drawing": "roughjs@4.6.6",
     "routing": "elkjs@0.12.1",
     "assetSHA256": {
       "@fontsource/kalam/files/kalam-latin-400-normal.woff2": "954410601a823f37e219f7930b7446f86afa15621326a7078d56fb9c910135cb",
       "@fontsource/kalam/files/kalam-latin-700-normal.woff2": "252063af6ade8b9a744cde4ddad0fc21ea53b8ba711eed121a0c2e8610ea9c93"
     },
-    "pngSHA256": "e47a30ae8ebd79902410d5555686904c44b5c77b967b09ca8bd475124727450f",
+    "pngSHA256": "b482557b297ae6985b9430731d61bec7156eace6ddc5f817fbc60d126463dcc2",
     "browser": "156.0.8078.4",
     "width": 2100,
-    "height": 1805,
+    "height": 1949,
     "scale": 1.5,
     "bounds": {
       "model": {
         "x": 20,
         "y": 110,
         "width": 1360,
-        "height": 1073
+        "height": 1169
       }
     }
   },
   "rasterComparison": {
-    "pngBytes": 552750,
-    "webpBytes": 243464,
+    "pngBytes": 631140,
+    "webpBytes": 279454,
     "decodedPixelsEqual": true,
-    "decodedPixelSHA256": "1a1917ac5b69ba96be2b83d13d59212511fc9f6c9220cc21c1be0a3b26f22c63",
+    "decodedPixelSHA256": "929fdb773a2590ed4c075e2d3c96ef64b2db0e70b3b6c730f15c638d10805191",
     "preferredRaster": "webp"
   }
 }

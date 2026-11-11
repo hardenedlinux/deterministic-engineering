@@ -6,9 +6,9 @@
   :clan/poo/object
   (only-in :clan/poo/mop define-type Any Object Function Type Bool)
   (only-in :clan/poo/type Record Symbol String List Exactly Or)
-  (only-in "../../types.ss" LibraryNonemptyString))
+  (only-in "../../types.ss" LibraryNonemptyString LibraryRuleCatalogShape))
 (export SourceContractProfile SourceContractTools SourceContractPlan
-        SourceContractPolicyShape SourceContractScopeType)
+        SourceContractPolicyShape SourceContractConfig SourceContractScopeType SourceContractScenario)
 
 (define-type
   (SourceLanguage @
@@ -48,6 +48,41 @@
            expected-properties: [(List LibraryNonemptyString)]))
   sealed: #t)
 
+;; Pure finite binding checks belong to the Library, not an execution adapter.
+(def (scenario-binding-diagnostics value location)
+  (def profile (.get value profile))
+  (def entry (.get value entry))
+  (filter-map
+    (lambda (check)
+      (and (not (cdr check)) (.o kind: (car check) path: location)))
+    (list
+      (cons 'scenario/method-agreement
+        (eq? (.get profile method) (.get profile executor method)))
+      (cons 'scenario/instrumentation-boundary
+        (eq? (.get profile instrumentation requires-function?)
+             (not (string=? (.get profile enforce) ""))))
+      (cons 'scenario/catalog-obligation
+        (member (list (.get profile factor) (.get profile obligation) (.get profile method))
+                (.get entry rules)))
+      (cons 'scenario/nonempty-capture
+        (and (pair? (.get profile units)) (pair? (.get profile inputs))
+             (or (not (.get profile executor requires-properties?))
+                 (pair? (.get profile expected-properties)))))
+      (cons 'scenario/unit-closure
+        (andmap (lambda (unit) (member unit (.get profile inputs)))
+                (.get profile units))))))
+
+(define-type
+  (SourceContractScenario @
+   (Record root: [LibraryNonemptyString]
+           entry: [LibraryRuleCatalogShape]
+           profile: [SourceContractProfile]))
+  .element?: =>
+  (lambda (inherited)
+    (lambda (value)
+      (and (inherited value) (null? (scenario-binding-diagnostics value '())))))
+  sealed: #t)
+
 ;; Tool locations are an external consumer's input contract, not discovered here.
 (define-type
   (SourceContractTools @
@@ -72,6 +107,7 @@
            obligation: [Symbol]
            method: [Symbol]
            steps: [(List VerificationStep)]
+           external-tools: [(List Symbol)]
            expected-properties: [(List LibraryNonemptyString)]
            boundary: [LibraryNonemptyString]))
   sealed: #t)
@@ -85,11 +121,18 @@
                         "--unwinding-assertions" "--unwind" "8"))]))
   sealed: #t)
 
+(define-type
+  (SourceContractConfig @
+   (Record enable: [Bool]
+           settings: [SourceContractPolicyShape]))
+  sealed: #t)
+
 (define-type SourceContractScopeType
   (.cc
-    (Record config: [SourceContractPolicyShape]
+    (Record config: [SourceContractConfig]
             config-type: [Type]
             strategies: [Object]
+            scenario: [Object]
             plan: [(Function (list SourceContractPlan)
                              (list Object SourceContractProfile))]
             contracts: [Object])

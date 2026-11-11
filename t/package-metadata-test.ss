@@ -139,7 +139,8 @@
         '(".ssi" ".o1")))
     '("clan/poo/object" "yuanxu/module-system/selection/init-syntax"
       "gerbil-ascent/program/session" "gerbil-ascent/rules/interface"
-      "deterministic-engineering/init"))
+      "deterministic-engineering/init"
+      "deterministic-engineering/library/source-contracts/config"))
   ;; The current root projection owns Module products. Platform Services,
   ;; operational review/recovery and deleted forwarding paths are not roots.
   (require-build-products!
@@ -151,14 +152,21 @@
            (import (only-in :clan/poo/object object? .get)
                    (only-in :clan/poo/mop Type element?)
                    (only-in :gerbil-ascent/program/session gerbil-ascent-open-session)
+                   (only-in :deterministic-engineering/library/source-contracts/config Config)
                    (only-in :deterministic-engineering/init
                             deterministic-engineering.init.exports))
            (unless (and (object? deterministic-engineering.init.exports)
                         (procedure? gerbil-ascent-open-session)
+                        (element?
+                          (.get deterministic-engineering.init.exports Library
+                                source-contracts config-type)
+                          Config)
+                        (.get Config enable)
                         (element? Type
-                          (.get deterministic-engineering.init.exports modules Library
+                          (.get deterministic-engineering.init.exports Library
                                 source-contracts contracts profile)))
              (error "compiled root, ASCENT and source-contract Type ABI failed to load"))
+           (displayln "COMPILED-CONFIG-ASSIGNMENT-OK")
            (displayln "COMPILED-PACKAGE-LOAD-OK")))
   (displayln "NATIVE-PACKAGE-METADATA-OK"))
 
