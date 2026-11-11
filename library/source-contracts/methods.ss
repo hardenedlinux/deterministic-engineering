@@ -78,6 +78,7 @@
     kind: 'verification-plan
     obligation: (.get selected-profile obligation)
     method: (.get selected-profile method)
+    timeout: (.get selected-policy timeout)
     steps: (verification-steps executor selected-profile selected-policy)
     external-tools:
     (foldr

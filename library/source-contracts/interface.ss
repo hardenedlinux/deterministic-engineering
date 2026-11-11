@@ -15,6 +15,7 @@
     (.o
       config: Config
       config-type: SourceContractConfig
+      configure: (lambda (overrides) (resolve-config config overrides))
       strategies:
       (.o cbmc: CbmcExecutor.
           native: NativeExecutor.
@@ -26,7 +27,8 @@
       scenario: SourceContractScenario.
       plan: (lambda (executor profile) (contract-plan config executor profile))
       contracts:
-      (.o scenario: SourceContractScenario
+      (.o scope: SourceContractScopeType
+          scenario: SourceContractScenario
           profile: SourceContractProfile
           tools: SourceContractTools
           plan: SourceContractPlan)))

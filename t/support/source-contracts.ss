@@ -126,7 +126,7 @@
       (def tool-inputs
         (file-pairs (map (cut .ref tools <>) (.get plan external-tools))))
       (def (run name argv)
-        (def result (command! out name argv (.get subject driver plan-library config settings timeout)))
+        (def result (command! out name argv (.get plan timeout)))
         (set! commands (cons result commands))
         (set! artifacts (cons (.get result log) artifacts))
         result)

@@ -3,10 +3,11 @@
 
 (import :std/test
         :clan/poo/object
-        (only-in :clan/poo/mop validate)
-        (only-in "../library/source-contracts/types.ss" SourceContractConfig)
-        (prefix-in "../examples/source-contracts.ss" enabled-)
-        (prefix-in "../examples/source-contracts-disabled.ss" disabled-)
+        (only-in :clan/poo/mop validate TypeError?)
+        (only-in :yuanxu/configuration/json config-defaults)
+        (only-in "../library/source-contract-profiles/types.ss" ConfigType)
+        (prefix-in "../config.ss" defaults-)
+        (prefix-in "../examples/programs.ss" user-)
         (only-in :std/source this-source-file)
         (only-in :yuanxu/module-system/source/init module-init-intent))
 (export user-configuration-test)
@@ -22,15 +23,30 @@
 
 (def user-configuration-test
   (test-suite "Actual user declarations through native Yuanxu"
-    (test-case "direct Example assignment imports the maintained Config"
-      (def configuration (validate SourceContractConfig enabled-Config))
-      (check-equal? (.get configuration enable) #t)
-      (check-equal? (.get configuration settings timeout) 45))
-    (test-case "plain Example assignment disables without changing maintained policy"
-      (def configuration (validate SourceContractConfig disabled-Config))
-      (check-equal? (.get configuration enable) #f)
-      (check-equal? (.get configuration settings safety-flags)
-                    (.get enabled-Config settings safety-flags)))
+    (test-case "maintained unified Config leaves both languages inactive"
+      (def configuration (validate ConfigType defaults-Config))
+      (check-equal? (.get configuration programs deterministic-engineering languages c enable) #f)
+      (check-equal? (.get configuration programs deterministic-engineering languages cpp enable) #f))
+    (test-case "actual Example recursively overrides language settings"
+      (def configuration (validate ConfigType (config-defaults defaults-Config user-Config)))
+      (check-equal? (.get configuration programs deterministic-engineering languages c enable) #t)
+      (check-equal? (.get configuration programs deterministic-engineering languages c settings timeout) 30)
+      (check-equal? (.get configuration programs deterministic-engineering languages cpp settings profile) 'lifetime-native)
+      (check-equal? (.get configuration programs deterministic-engineering languages cpp settings timeout) 20))
+    (test-case "omitted siblings inherit and explicit false remains false"
+      (def supplied
+        (.o programs: (.o deterministic-engineering:
+          (.o languages: (.o c: (.o enable: #t settings: (.o timeout: 25)))))))
+      (def merged (validate ConfigType (config-defaults defaults-Config supplied)))
+      (check-equal? (.get merged programs deterministic-engineering languages c settings profile) 'capacity-body)
+      (check-equal? (.get merged programs deterministic-engineering languages c settings timeout) 25)
+      (check-equal? (.get merged programs deterministic-engineering languages cpp enable) #f)
+      (check-exception
+        (validate ConfigType
+          (config-defaults defaults-Config
+            (.o programs: (.o deterministic-engineering:
+              (.o languages: (.o c: (.o settings: (.o timout: 25))))))))
+        TypeError?))
     (test-case "C/C++ internal selection selects assurance declarations and excludes application cases"
       (def intent (example-intent "source-contract"))
       (check-equal? (decisions intent #f)

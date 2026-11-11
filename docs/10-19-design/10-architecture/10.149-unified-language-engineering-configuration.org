@@ -1,0 +1,168 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 10.149 Unified Language Engineering Configuration
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Public contract
+:PROPERTIES:
+:CUSTOM_ID: unified-engineering-config
+:OWNER: deterministic-engineering/config.ss
+:MERGE_OWNER: :yuanxu/configuration/json::config-defaults
+:SCHEMA_OWNER: library/source-contract-profiles/types.ss
+:END:
+
+The single downstream interface is
+=programs.deterministic-engineering.languages.<language>.{enable,settings}=.
+The current executable language keys are =c= and =cpp=. The maintained root
+[[file:../../../config.ss][Config]] contains defaults; [[file:../../../examples/programs.ss][the user Example]] contains ordinary
+assigned overrides. No separate enabled/disabled Example or user-authored ancestry
+is needed. This supersedes the earlier flat method-only Example interface in
+[[file:10.148-flat-declarative-library-boundary.org][10.148]]. Low-level method declarations remain reusable Library capabilities.
+
+#+NAME: unified-engineering-config-fields
+| Field | Default | Contract |
+|-------+---------+----------|
+| languages.c.enable | false | Boolean |
+| languages.c.settings.profile | capacity-body | Maintained Profile belonging to C |
+| languages.c.settings.timeout | 45 | Integer from 1 through 45 seconds |
+| languages.cpp.enable | false | Boolean |
+| languages.cpp.settings.profile | lifetime-body | Maintained Profile belonging to C++ |
+| languages.cpp.settings.timeout | 45 | Integer from 1 through 45 seconds |
+
+Unknown fields, unsupported language keys, wrong structures and invalid budgets
+refuse through native sealed Record Types. Profile names resolve against the
+existing Profile values. Language projection verifies the selected Profile's
+actual language identity; it does not trust a caller-supplied language label.
+That semantic check occurs when the projection is demanded, before tool execution.
+Mandatory method safety flags cannot be removed through language settings.
+
+* Native composition
+:PROPERTIES:
+:CUSTOM_ID: unified-config-composition
+:END:
+
+Yuanxu =config-defaults= recursively combines object/object fields using native POO
+prototype parents. Omitted values inherit defaults. Scalars, lists and explicit
+false replace the corresponding value; they are not interpreted as absence.
+There is no repository-local recursive merge, option registry or configuration
+loader. Native Types admit the final merged value.
+
+#+NAME: unified-merge-gold
+| Supplied value | Result |
+|----------------+--------|
+| Empty object | Both languages remain disabled with their maintained Profiles and 45-second deadlines |
+| C enable true and timeout 25 only | C uses timeout 25 and its default capacity-body Profile; C++ remains disabled |
+| C enable false over an enabled contribution | False remains false; neither C++ values nor historical evidence are deleted |
+| Unknown settings.timout | Refuse rather than silently retaining the default timeout |
+| Timeout 0 or 46 | Refuse; no execution budget is widened |
+| C selects lifetime-native | Refuse the language/Profile mismatch |
+
+A downstream Module can assign its complete configuration with ordinary native
+composition. The following is Module authoring, not extra syntax users must copy
+into the Example:
+
+#+BEGIN_SRC scheme :eval never
+(import :clan/poo/object
+        (only-in :yuanxu/configuration/json config-defaults)
+        (prefix-in :deterministic-engineering/config defaults-)
+        (prefix-in "project-values.ss" project-))
+
+(.def (Config @ (config-defaults defaults-Config project-Config)))
+#+END_SRC
+
+The existing Profile Scope also exports a pure =configure= operation that combines
+an override with that Scope's final Config and validates the result. Derived
+language projections read the final receiver. They do not freeze a parent's
+settings before downstream composition.
+
+* Existing Library responsibilities
+| Owner | Responsibility |
+|-------+----------------|
+| Root config.ss | One maintained programs/languages defaults tree |
+| source-contract-profiles Config Type | Sealed configuration structure |
+| Existing Profile values | Actual source units, language strategy, harness, obligations and expected property labels |
+| Language projection | Select the existing Profile, enforce its language identity and derive the configured method scope |
+| source-contracts | Native generic verification plans and protected method policy |
+| Development/consuming host | Capture actual sources/tools, execute declared steps, register actual results and query ASCENT |
+| External application owner | Authorization and actual application effects |
+
+A downstream maintained POO contribution can extend the existing =profiles=
+object and select its new Symbol in language Settings. The projection reads the
+final receiver's Profile map; there is no parallel dispatch table. The native
+consumer control adds a project-specific capacity Profile and checks that final
+selection sees it. Adding a new language still requires a maintained language
+contract and actual supported method/subject mapping.
+
+The generic =plan-library= remains a reusable method capability for Library
+composition and tests. User-configured use goes through =languages.c= or
+=languages.cpp= and its selected Profile/method scope. Disabling that projection
+refuses its plan; it is not a global prohibition on every standalone use of the
+underlying Library or a grant/revocation of application authority.
+
+Plans contain their effective command timeout. The host executes that declared
+value, and the method evidence identity includes the complete plan. A changed
+budget cannot silently reuse a result under an identical method fingerprint.
+The native process heap/build/test ceilings and all mandatory safety flags remain
+unchanged. The low-level method Config also delegates nested default composition
+to the same Yuanxu primitive.
+
+* Concrete language engineering
+| Language | Actual assets | Selected methods and evidence |
+|----------+---------------+-------------------------------|
+| C | languages-engineering/c/numeric/bounded-capacity | Capacity arithmetic, parser/pool callers, failure-state framing; CBMC body/enforced-contract/caller checks or native executable |
+| C++ | languages-engineering/cpp/memory/resource-lifetime | Unique ownership, transfer/refusal, idempotent cleanup and destructor assertions; CBMC or native executable |
+
+Profiles reuse the maintained source declarations. The interface does not invent
+new Rust/Go engines, duplicate Modules or add a platform Runtime. Additional
+languages require their maintained Types, Profiles, source mappings and actual
+verification evidence before being advertised by the interface.
+
+* Qualification and limits
+:PROPERTIES:
+:CUSTOM_ID: unified-config-qualification
+:STATUS: local-native-qualified-remote-ci-open
+:END:
+
+The configuration suite checks the actual Example, inherited sibling defaults,
+explicit false, nested override values and unknown-field rejection. The real
+native-owner case uses the same Module/Profile/Scenario framework and actual
+maintained sources. It runs C and C++, registers their privately issued native
+observations in ASCENT, checks support, switches only C off and checks historical
+retention plus the still-enabled C++ plan. No fixture result is registered.
+
+Qualification requires natural process exit in addition to case/Module/Harness
+markers. The root build and compiled public Config import have separate native
+package gates. All command/heap/process fences remain in force.
+
+The native source owner still guards its captured source files. A changed shared
+configuration file can make an old owner non-current even if C++ values happen to
+be unchanged. Preserving the C++ settings and frozen evidence does not establish
+automatic transfer of an old receipt into a new owner or field-level publication
+currentness. Likewise, disabled settings do not establish namespace absence,
+zero compiler demand, arbitrary helper hot reload or whole-environment attestation.
+Cold dependency installation, the candidate upstream cohort and complete remote
+CI remain separate unqualified gates until actually verified.
+
+* Related views
+- [[file:../../../examples/README.org][User-facing values and engineering cases]]
+- [[file:10.147-source-bound-c-and-cpp-contract-verification.org][Source-bound C/C++ contracts and independent controls]]
+- [[file:10.148-flat-declarative-library-boundary.org][Library ownership and qualification history]]
+- [[file:../../90-99-views/90-architecture-views/90.140-flat-declarative-library-boundary.d2][Synchronized D2 architecture source]]
+
+** Observed local acceptance
+| Entry | Result |
+|-------+--------|
+| Native root build | Natural exit 0 under the unchanged 180-second fence |
+| Unified configuration suite | Six cases, including all prior selection controls; natural exit with final OK |
+| Existing actual source-contract suite | All eight cases retained and pass with natural exit |
+| Native owner / language program case | Real C and C++ execution, ASCENT support, downstream POO Profile contribution, cross-language refusal and C-only disable pass |
+| Budget-change reuse | Same C source, changed method digest for 30 to 25 seconds; old witness remains but cannot support the new usage |
+| Compiled package ABI | Real root Config artifact/import and named program Config Type pass |
+
+These results apply to the observed local worktree and qualified dependency
+cohort. They do not promote the newer candidate Parent or establish clean-prefix
+installation and full remote CI. A historical source/result packet from an older
+configuration remains tied to its original capture.

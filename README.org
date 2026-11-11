@@ -26,11 +26,13 @@ Business Scheme Modules share one flat =library/<module-name>/= tree. Native
 Yuanxu =tags:= and =profile:= classify and select the same declared leaves;
 classification does not create deeper directory layers or another loader.
 Profiles are native Modules. Test sequences are not artificial Review Modules.
-[[file:examples/README.org][User examples]] import the maintained Config and use direct assignment or a
-plain POO object with =enable= and =settings=. Inheritance, Types and Module loading
-stay inside the Library and native framework. Actual tool execution and evidence
-registration stay in =t/*-test.ss= and =t/support/=. Complete maintained Settings
-are reused explicitly; partial Settings merging is not implemented.
+[[file:examples/README.org][User examples]] assign
+=programs.deterministic-engineering.languages.<language>.{enable,settings}=.
+The maintained root [[file:config.ss][Config]] supplies defaults. Downstream POO values compose
+through Yuanxu's native =config-defaults= recursive merge. Current C and C++
+settings select actual maintained Profiles and command deadlines. Inheritance,
+Types, Module loading and tool execution remain with their existing owners.
+See [[file:docs/10-19-design/10-architecture/10.149-unified-language-engineering-configuration.org][10.149]] for the interface and real engineering cases.
 
 #+BEGIN_EXAMPLE
 library/<module-name>/    Native types, objects, config, methods and Interface roles

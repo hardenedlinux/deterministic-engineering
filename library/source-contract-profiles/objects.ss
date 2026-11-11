@@ -2,8 +2,9 @@
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 ;;; Profiles consume strategies from the selected native owner, not a second import.
-(import :clan/poo/object)
-(export source-contract-profiles)
+(import :clan/poo/object
+        (only-in :clan/poo/mop validate))
+(export source-contract-profiles configured-language)
 
 (def (source-contract-profiles selected-strategies)
   (def capacity-base
@@ -80,3 +81,22 @@
       executor: (.get selected-strategies native)
       units: '("languages-engineering/cpp/memory/resource-lifetime/native-test.cpp")
       expected-properties: '())))
+
+;; Select an existing Profile and derive its method scope from final language values.
+(def (configured-language method profiles language configuration)
+  (def name (.get configuration settings profile))
+  (unless (.slot? profiles name)
+    (error "unknown engineering Profile" name))
+  (def selected (.ref profiles name))
+  (unless (eq? (.get selected language identity) (.get language identity))
+    (error "engineering Profile belongs to another language" name))
+  (.o
+    config: configuration
+    profile: selected
+    plan-library:
+    (validate (.get method contracts scope)
+      (.cc method
+        'config
+        (.call method configure
+          (.o enable: (.get configuration enable)
+              settings: (.o timeout: (.get configuration settings timeout))))))))

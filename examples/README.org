@@ -1,71 +1,66 @@
 # SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
-#+TITLE: User Configuration Examples
+#+TITLE: Unified Engineering Configuration
 #+LANGUAGE: en
 #+STARTUP: overview
 #+OPTIONS: toc:1 num:nil
 
-* Import and assign
+* One configuration tree
 :PROPERTIES:
 :CUSTOM_ID: user-config-assignment
-:PUBLIC_IMPORT: :deterministic-engineering/library/source-contracts/config
+:PUBLIC_IMPORT: :deterministic-engineering/config
+:DEFAULTS_OWNER: config.ss
+:MERGE_OWNER: :yuanxu/configuration/json::config-defaults
 :END:
 
-Import the maintained Config and assign a value. Examples do not define Types,
-inheritance, generic methods, Module loading or verification orchestration.
+[[file:programs.ss][The complete user example]] configures the same interface for C and C++:
 
-** Direct assignment
-[[file:source-contracts.ss][Use the maintained Config unchanged]].
+#+INCLUDE: "programs.ss" src scheme :lines "4-"
 
-#+INCLUDE: "source-contracts.ss" src scheme :lines "4-"
+The maintained [[file:../config.ss][Config]] disables both languages by default. A downstream
+Module combines its assigned values with that Config using Yuanxu's native
+=config-defaults=. Only supplied fields override defaults. Nested objects merge
+recursively; explicit false stays false, and lists/scalars replace their field.
+The result must pass the named Config Type. Examples contain no inheritance,
+loader, tool paths, evidence session or custom merge implementation.
 
-** Plain POO object assignment
-[[file:source-contracts-disabled.ss][Disable verification while retaining the maintained Settings]].
+* What these settings do
+| Path below programs.deterministic-engineering | Meaning |
+|----------------------------------------------+---------|
+| languages.c.enable | Enable the configured C verification capability |
+| languages.c.settings.profile | Select a maintained C Profile, such as capacity-native or capacity-contract |
+| languages.cpp.enable | Enable the configured C++ verification capability |
+| languages.cpp.settings.profile | Select a maintained C++ Profile, such as lifetime-native |
+| languages.<name>.settings.timeout | Per-command wall-clock seconds; default and maximum 45, minimum 1 |
 
-#+INCLUDE: "source-contracts-disabled.ss" src scheme :lines "4-"
+| Language / example Profile | Actual engineering subject | Check |
+|----------------------------+----------------------------+-------|
+| C / capacity-native | [[file:../languages-engineering/c/numeric/bounded-capacity/][Buffer, parser and pool capacity calculation]] | Native assertions for capacity arithmetic, overflow and preserved failure output |
+| C++ / lifetime-native | [[file:../languages-engineering/cpp/memory/resource-lifetime/][Resource ownership and transfer]] | Native assertions for transfer, occupied refusal, cleanup and destruction |
 
-The object literal contains ordinary assigned values. It does not require the
-user to declare prototype ancestry. Library Modules own defaults, inheritance,
-Types, dependencies and derived plans. A consuming Profile assigns this value to
-its verification Config; its existing native dependency refinement and Type
-admission supply the final method scope.
+Other maintained choices are C =capacity-body=, =capacity-contract= and
+=capacity-callers=, and C++ =lifetime-body=. They select the existing real CBMC
+checks. A Profile belonging to another language refuses before tool execution.
+This interface currently supports C and C++; it does not advertise executable
+support for an unimplemented language.
 
-* Configuration contract
-| Field | Meaning |
-|-------+---------|
-| enable | Boolean permission to produce this capability's verification plans |
-| settings | Complete maintained verification policy, reused from the imported Config in the object-assignment example |
-
-The present policy preserves the 45-second command deadline and required safety
-flags. Wrong types, missing required fields and unknown options reject. Partial
-Settings merging is not implemented: use the complete maintained value, or supply
-a complete value satisfying the named Type. Assignment itself launches no tool,
-creates no evidence session and grants no application authorization.
-
-Disabled configuration refuses plan issuance. It does not erase old witnesses or
-make an old source owner current. It also does not promise that the Module's
-namespace or compiler demand disappears; those are separate native selection
-properties.
+Omitting C++ while configuring C preserves the C++ defaults. Setting C enable to
+false does not change C++ settings. Disabled language plans refuse; prior evidence
+is retained as historical data. Assignment does not execute tools or grant
+application authorization. Mandatory safety flags remain Library-owned.
 
 * Maintainer verification
-:PROPERTIES:
-:CUSTOM_ID: user-config-verification
-:END:
+=just test-file t/user-configuration-test.ss= checks defaults, the actual Example,
+recursive partial overrides, false preservation and all prior selection controls.
+Internal selection declarations remain under =t/support/=.
 
-=just test-file t/user-configuration-test.ss= checks the two actual imports and
-retains all internal selection-parser controls. Those selection declarations now
-live in =t/support/source-contract-modules.ss= and
-=t/support/rust-backpressure-modules.ss=, outside the user Examples.
+=just test-source-contracts '.*' t/source-contract-owner-config-test.ss= consumes
+the actual Example through a native Module owner, compiles and runs the real C and
+C++ subjects, and registers/queries both results in ASCENT. It disables only C in
+a new configuration snapshot, checks old-owner/result refusal and frozen evidence,
+and confirms that C++ remains enabled with its original settings and plan.
 
-=just test-source-contracts '.*' t/source-contract-owner-config-test.ss= copies
-the actual Example files into a real native consumer package. The Profile imports
-the enabled value, the existing method compiles and runs the actual native C
-subject, and the result is registered and queried through ASCENT. Switching the
-Profile to the disabled Example rejects the old owner and old result's current
-registration, admits the new disabled dependency and preserves frozen evidence.
-
-=just test-source-contracts= retains the complete actual C/C++, independent
-counter, active-tool closure and cross-project reuse/invalidation suite. Product
-build roots do not include Examples or these execution helpers. See
-[[file:../docs/10-19-design/10-architecture/10.148-flat-declarative-library-boundary.org][the architecture and separate unqualified package/CI gates]].
+=just test-source-contracts= retains the complete actual C/C++ independent counter,
+tool-closure and cross-project reuse/invalidation suite. See
+[[file:../docs/10-19-design/10-architecture/10.149-unified-language-engineering-configuration.org][the interface contract and qualification limits]].

@@ -3,15 +3,16 @@
   "sources": {
     "build.ss": "7ecd0d052e15ef7ccdcb595421f18f29a82534bb3c89f0af80cc1532ff683ddc",
     "bun.lock": "641fa6fb5dd7cc87c32d15ea62a71664efe83d06b0f0f3fe8373f58fb130b346",
-    "docs/10-19-design/10-architecture/10.148-flat-declarative-library-boundary.org": "959c642d6ed6b60d4ebd018eae8982f4c238a4331654553b9563f47aa45da7ca",
-    "docs/90-99-views/90-architecture-views/90.140-flat-declarative-library-boundary.d2": "5f5c95d1119fbcbd879cc73b191090ec47d0705fe3dc8f2ef58ba8c7092aed00",
-    "examples/source-contracts-disabled.ss": "447c358881f94696eaf60fc76610d5a415d581b9a3bbd4ea59d9e6b16d0cf07e",
-    "examples/source-contracts.ss": "c5234a199639dfc85e488c1f456f2d8208e6419eb8f93b78a30963bb2457b1c8",
+    "config.ss": "3e9865637939ade5b7024295db5a6119df325333e8d8303a16294ef583b18cd2",
+    "docs/10-19-design/10-architecture/10.148-flat-declarative-library-boundary.org": "9c05b32cb0d8aa82cd1fa624a791aaeb805af23d247b66ed31385266405121d8",
+    "docs/10-19-design/10-architecture/10.149-unified-language-engineering-configuration.org": "e23813eb30db86442913d94abbc00e7f695767c8cf07a729cf03b1e87323ae08",
+    "docs/90-99-views/90-architecture-views/90.140-flat-declarative-library-boundary.d2": "ead1384c6b69bb494e0379f65579ed9199d648ac160e41f7446c5cec36501429",
+    "examples/programs.ss": "5452aaca51b2df0aefd69b5e7e8ba57f4e016245323023256fcb03f84d49e43d",
     "gerbil.pkg": "413236e4c63a6a5dddac316be86998f32b27e45ecfd5d66f38fe96ec646d4c7b",
     "init.ss": "964584fb153d68ea2d03f3ca082d80cbcf631ddf61364fc6d18580b05237b688",
-    "library/source-contract-profiles/interface.ss": "90168aa88a218a6a9485274f2cb90c26aecb6358aeaa5f1e97dc3054abb17bfe",
-    "library/source-contracts/config.ss": "de5d4aedf8ed31168d36ae08d7fa52bfe632b6911ac498a529f66b4021c7f029",
-    "library/source-contracts/methods.ss": "e9d69a5e9d9a40bc3a154a81c1eb475de1b4d32fef216e949dcac21f33bd9fb4",
+    "library/source-contract-profiles/interface.ss": "4ce4d3f31549582cd20e7ff4a17912516f88e5fcb05a56e76666eb7ff1312dac",
+    "library/source-contracts/config.ss": "1641ede3f3e85e5e64e74c41a7f7a29e7322aa8dccc6034fdf54362807ae9779",
+    "library/source-contracts/methods.ss": "ecbc50f99dbc8f63e063b6019196d2d7a967922a184ad0f3dd594e5e84ffcb55",
     "package.json": "b0c1736c46211bf763696ec088c92281cea4de6dece9644d3b647f5d746dfb53",
     "packages/render/examples/attribution.ts": "58f7914284a69c4ce42db61ec24c06cf9194232ed3402fc7ae12e3ded4187892",
     "packages/render/examples/library-boundary.ts": "8a797e2f1700589373bcc173d3c7b80cfc933fd3b8fdc29b1b6cec87b1a609b5",
@@ -22,7 +23,7 @@
     "packages/render/src/png.ts": "8d1da534a9fe8d8f27fccbf61b7e4ec0e8fd6754970c09c42105381b32b34d54",
     "packages/render/src/scene-export.ts": "f5ba1250e1fe5e6c952ada3bc501979e4f9b8a8a0506a62a6e4cebdaf256a217",
     "packages/render/src/webp.ts": "67dcfc1f1e333ae933f0f9d48b10640ba11b81fad394ff3361ca9b5f952223e0",
-    "t/source-contract-owner-config-test.ss": "5b68fa16f2c8ed0e3c21d726690735d3e4e94545fdc8d89c3f7b047a98d7ccee"
+    "t/source-contract-owner-config-test.ss": "4546d70c1447fc76c8ecff97efb9085787218514aa08bdd7fcb5e07f889f1220"
   },
   "receipt": {
     "webp": {
@@ -32,10 +33,10 @@
           "lossless": true,
           "effort": 4
         },
-        "inputBytes": 638145,
-        "outputBytes": 279454
+        "inputBytes": 640032,
+        "outputBytes": 280408
       },
-      "sha256": "06849a22f2b855bd59de48a21dc6c0559a03efe7d221517134b9d5a1559f9007"
+      "sha256": "a65e229f986761d1c51d1e408560a99ca47a8cd8fef2d64bc66f77e79b42205a"
     },
     "preferredRaster": "webp",
     "pngCompression": {
@@ -45,8 +46,8 @@
           "compressionLevel": 9,
           "adaptiveFiltering": true
         },
-        "inputBytes": 638145,
-        "outputBytes": 631140,
+        "inputBytes": 640032,
+        "outputBytes": 632815,
         "selected": "compressed"
       },
       "regions": {}
@@ -63,112 +64,112 @@
         "x": 0,
         "y": 0,
         "width": 1400,
-        "height": 1299
+        "height": 1298.984375
       },
       "subjects": [
         {
           "id": "package",
           "role": "default",
-          "x": 551.65771484375,
-          "y": 131.19061279296875,
-          "width": 217.25238037109375,
-          "height": 85.652099609375
+          "x": 584.8258666992188,
+          "y": 131.19033813476562,
+          "width": 217.24951171875,
+          "height": 85.65093994140625
         },
         {
           "id": "selection",
           "role": "default",
-          "x": 554.3333740234375,
-          "y": 262.5800476074219,
-          "width": 215.48077392578125,
-          "height": 121.61639404296875
+          "x": 587.50146484375,
+          "y": 262.5780029296875,
+          "width": 215.47796630859375,
+          "height": 121.61477661132812
         },
         {
           "id": "domains",
           "role": "default",
-          "x": 305.9620361328125,
-          "y": 445.20001220703125,
-          "width": 230.810791015625,
-          "height": 83.45526123046875
+          "x": 339.1335144042969,
+          "y": 445.1955261230469,
+          "width": 230.80770874023438,
+          "height": 83.45413208007812
         },
         {
           "id": "specialization",
           "role": "default",
-          "x": 374.96929931640625,
-          "y": 588.423583984375,
-          "width": 262.50360107421875,
-          "height": 84.1339111328125
+          "x": 408.1398620605469,
+          "y": 588.4171752929688,
+          "width": 262.5001525878906,
+          "height": 84.1328125
         },
         {
           "id": "profiles",
           "role": "default",
-          "x": 787.1666870117188,
-          "y": 588.6380615234375,
-          "width": 332.45452880859375,
-          "height": 116.2572021484375
+          "x": 818.1651000976562,
+          "y": 588.6004638671875,
+          "width": 285.45062255859375,
+          "height": 116.286865234375
         },
         {
           "id": "plans",
           "role": "default",
-          "x": 824.7242431640625,
-          "y": 751.3423461914062,
-          "width": 257.3951416015625,
-          "height": 148.0562744140625
+          "x": 832.2224731445312,
+          "y": 751.3338012695312,
+          "width": 257.39154052734375,
+          "height": 148.05426025390625
         },
         {
           "id": "rules",
           "role": "default",
-          "x": 251.25582885742188,
-          "y": 793.9505615234375,
-          "width": 225.564208984375,
-          "height": 83.87115478515625
+          "x": 284.42803955078125,
+          "y": 793.94140625,
+          "width": 225.56118774414062,
+          "height": 83.87005615234375
         },
         {
           "id": "build",
           "role": "default",
-          "x": 560.35693359375,
-          "y": 426,
-          "width": 269.753173828125,
-          "height": 115.31634521484375
+          "x": 593.5250244140625,
+          "y": 425.99578857421875,
+          "width": 269.74957275390625,
+          "height": 115.31475830078125
         },
         {
           "id": "sysml",
           "role": "default",
-          "x": 274.1666564941406,
-          "y": 294.5283203125,
-          "width": 218.70217895507812,
-          "height": 83.7562255859375
+          "x": 307.33856201171875,
+          "y": 294.52581787109375,
+          "width": 218.69927978515625,
+          "height": 83.755126953125
         },
         {
           "id": "development",
           "role": "default",
-          "x": 789.8333129882812,
-          "y": 957.2698974609375,
-          "width": 312.00396728515625,
-          "height": 85.0068359375
+          "x": 797.33203125,
+          "y": 957.258544921875,
+          "width": 311.999755859375,
+          "height": 85.0057373046875
         },
         {
           "id": "external",
           "role": "default",
-          "x": 236.16331481933594,
-          "y": 946.618896484375,
-          "width": 275.687255859375,
-          "height": 121.009765625
+          "x": 269.3357238769531,
+          "y": 946.6077270507812,
+          "width": 275.6835632324219,
+          "height": 121.00811767578125
         },
         {
           "id": "pending",
           "role": "default",
-          "x": 806.3333129882812,
-          "y": 1109.63818359375,
-          "width": 276.76727294921875,
-          "height": 151.126708984375
+          "x": 773.3323364257812,
+          "y": 1109.624755859375,
+          "width": 360.25848388671875,
+          "height": 151.124755859375
         },
         {
           "id": "example",
           "role": "default",
-          "x": 852.735595703125,
-          "y": 425.4352111816406,
-          "width": 310.764404296875,
-          "height": 115.56478881835938
+          "x": 885.8997802734375,
+          "y": 425.4309997558594,
+          "width": 243.9129638671875,
+          "height": 115.56326293945312
         }
       ],
       "relations": [
@@ -213,21 +214,21 @@
       "samples": 38,
       "requiredMinimum": 12
     },
-    "inputSHA256": "a0e34949ef39c781e05a3f54f67d7cbcb7b83e5fa000653f32d26393ec762e53",
+    "inputSHA256": "5c421e78c0092e86ed33c644cd77d6a2a6881c2beac6276266448612fe58679c",
     "scenes": [
       {
-        "inputSHA256": "6cd297f19ef7fc162cc6c308af770fb65a842873c9d955c80a97de3566afd3e3",
-        "layoutSHA256": "796470c489dba0185dde3729597ea3da54274ddb361a94be25ac4a45d092d148",
+        "inputSHA256": "777ef5defec905c56b80b24e2a7c2331ee455dd9caea1302e8759dafb8900834",
+        "layoutSHA256": "e63a5885f888a01ebc12b9077f050fade5df98a1891c1587c771254cc212162a",
         "nodes": 13,
         "edges": 14,
-        "milliseconds": 1178.7846250000002
+        "milliseconds": 598.8679999999999
       }
     ],
     "svgSHA256": [
-      "d6a747ec628aa60ddadee4b21c27bcf9414273881b02c6a582b0fedc63efbdf4",
-      "2026d9f3815eadc1fcaa20aa4a43633017608ea5db74082c40744ac1219174d6"
+      "07c6aa35342c33adc7ea390e2944f171296eee4d53434d0ed6b033f3968db3b6",
+      "f6ac725e9a3542525879ea675c949d4b56b4a67c8648b580284f14ebc7af457c"
     ],
-    "composedHTMLSHA256": "144d3a0b6da4fac18ca48ec9ce7655e6345c21156356b331fe542b6eec8dc5c5",
+    "composedHTMLSHA256": "1c0e62f2def6b29a33cfe739c24f1be1c70a91b8b5c1edce6bd20812df4a4eed",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -241,14 +242,14 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "9f23289a4e36617c528fc3e2d4600932aab3892f3778edb0063889834c23f6f1",
+    "htmlSHA256": "ff5aedd0de9896072d459cfbbe2b9b1d53007a9ae4c9c6d71f8b1ec6e0dfe4b9",
     "drawing": "roughjs@4.6.6",
     "routing": "elkjs@0.12.1",
     "assetSHA256": {
       "@fontsource/kalam/files/kalam-latin-400-normal.woff2": "954410601a823f37e219f7930b7446f86afa15621326a7078d56fb9c910135cb",
       "@fontsource/kalam/files/kalam-latin-700-normal.woff2": "252063af6ade8b9a744cde4ddad0fc21ea53b8ba711eed121a0c2e8610ea9c93"
     },
-    "pngSHA256": "b482557b297ae6985b9430731d61bec7156eace6ddc5f817fbc60d126463dcc2",
+    "pngSHA256": "9fd31b8e30f5619234dee8ed571d7c3613f8cb31470fb5b8073dfa63e4a51ebf",
     "browser": "156.0.8078.4",
     "width": 2100,
     "height": 1949,
@@ -258,15 +259,15 @@
         "x": 20,
         "y": 110,
         "width": 1360,
-        "height": 1169
+        "height": 1168.984375
       }
     }
   },
   "rasterComparison": {
-    "pngBytes": 631140,
-    "webpBytes": 279454,
+    "pngBytes": 632815,
+    "webpBytes": 280408,
     "decodedPixelsEqual": true,
-    "decodedPixelSHA256": "929fdb773a2590ed4c075e2d3c96ef64b2db0e70b3b6c730f15c638d10805191",
+    "decodedPixelSHA256": "e6b31a9a24cd72b8d8089b9db1d4c42e997052bb3b29c16101239dc06f40ee80",
     "preferredRaster": "webp"
   }
 }

@@ -4,11 +4,12 @@
 ;;; Public value contracts describe inputs and plans; none grants execution rights.
 (import
   :clan/poo/object
-  (only-in :clan/poo/mop define-type Any Object Function Type Bool)
+  (only-in :clan/poo/mop define-type Any Object Function Type Type. Bool)
   (only-in :clan/poo/type Record Symbol String List Exactly Or)
   (only-in "../../types.ss" LibraryNonemptyString LibraryRuleCatalogShape))
 (export SourceContractProfile SourceContractTools SourceContractPlan
-        SourceContractPolicyShape SourceContractConfig SourceContractScopeType SourceContractScenario)
+        SourceContractPolicyShape SourceContractConfig SourceContractConfigOverrides
+        SourceContractScopeType SourceContractScenario)
 
 (define-type
   (SourceLanguage @
@@ -101,11 +102,16 @@
            artifacts: [(List Symbol)]))
   sealed: #t)
 
+(define-type (SourceCommandTimeout @ Type.)
+  .element?: (lambda (value)
+               (and (exact-integer? value) (<= 1 value 45))))
+
 (define-type
   (SourceContractPlan @
    (Record kind: [(Exactly 'verification-plan)]
            obligation: [Symbol]
            method: [Symbol]
+           timeout: [SourceCommandTimeout]
            steps: [(List VerificationStep)]
            external-tools: [(List Symbol)]
            expected-properties: [(List LibraryNonemptyString)]
@@ -114,7 +120,7 @@
 
 (define-type
   (SourceContractPolicyShape @
-   (Record timeout: [(Exactly 45)]
+   (Record timeout: [SourceCommandTimeout]
            safety-flags:
            [(Exactly '("--bounds-check" "--pointer-check"
                         "--signed-overflow-check" "--unsigned-overflow-check"
@@ -127,10 +133,25 @@
            settings: [SourceContractPolicyShape]))
   sealed: #t)
 
+(define-type
+  (SourceContractSettingsOverrides @
+   (Record timeout: [SourceCommandTimeout optional: #t]
+           safety-flags:
+           [(.get SourceContractPolicyShape slots safety-flags type) optional: #t]))
+  sealed: #t)
+
+(define-type
+  (SourceContractConfigOverrides @
+   (Record enable: [Bool optional: #t]
+           settings: [SourceContractSettingsOverrides optional: #t]))
+  sealed: #t)
+
 (define-type SourceContractScopeType
   (.cc
     (Record config: [SourceContractConfig]
             config-type: [Type]
+            configure: [(Function (list SourceContractConfig)
+                                  (list SourceContractConfigOverrides))]
             strategies: [Object]
             scenario: [Object]
             plan: [(Function (list SourceContractPlan)

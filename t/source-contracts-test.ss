@@ -313,6 +313,24 @@
         (.o enable: #t settings: (.get direct-value settings)))
       (validate (.get plan-library config-type) direct-value)
       (validate (.get plan-library config-type) assigned-value)
+      (def partial (.call plan-library configure (.o settings: (.o timeout: 30))))
+      (check-equal? (.get partial enable) #t)
+      (check-equal? (.get partial settings timeout) 30)
+      (check-equal? (.get partial settings safety-flags) (.get direct-value settings safety-flags))
+      (check-equal? (.get (.call plan-library configure (.o)) settings timeout) 45)
+      (def partial-scope (.cc plan-library 'config partial))
+      (check-equal?
+        (.get (.call partial-scope plan (.get plan-library strategies cbmc)
+                     (.get profiles capacity-body)) timeout)
+        30)
+      (for-each
+        (lambda (invalid)
+          (check-exception (.call plan-library configure invalid) TypeError?))
+        (list (.o settings: (.o timeout: 46))
+              (.o settings: (.o timeout: 0))
+              (.o settings: (.o safety-flags: '()))
+              (.o settings: (.o timout: 30))
+              (.o enabled: #f)))
       (def assigned-scope (.cc plan-library 'config assigned-value))
       (def plan
         ((.get assigned-scope plan)
@@ -331,7 +349,7 @@
       (check-exception
         (validate (.get profile-library config-type)
           (.cc (.get profile-library config)
-            'verfication (.get profile-library config verification)))
+            'verfication (.get profile-library config programs)))
         TypeError?)
       (call-with-temporary-directory "source-contract-disabled"
         (lambda (directory)
