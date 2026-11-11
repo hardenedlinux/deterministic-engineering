@@ -14,7 +14,6 @@
   (def root (current-directory)) (set! output (path-expand output root))
   (when (file-exists? output) (error "fresh integration output required" output))
   (create-directory output)
-  ((.get deterministic-engineering.init.exports std-make-spec) '("init" "profiles/resource-lifecycle" "examples/resource-integration-evidence"))
   (.call deterministic-engineering.init.exports admit-current)
   (def scene (.get (.get deterministic-engineering.init.exports Library) resource-lifecycle))
   (def methods (.ref scene 'methods))

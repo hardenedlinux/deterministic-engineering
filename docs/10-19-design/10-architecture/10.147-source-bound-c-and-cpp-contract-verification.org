@@ -452,3 +452,43 @@ tool execution and integration gates above retain their stated pending status.
 
 These references inform method selection. They do not supply SMP contracts,
 domain rules, independent gold or executed evidence for this repository.
+
+* Current real-source controls and limits
+:PROPERTIES:
+:CUSTOM_ID: source140-lifecycle-controls
+:METHOD_STATUS: independently-executed-sdk-registration-pending
+:END:
+
+The current development subjects compile the same C/C++ implementation in native
+and CBMC checks. These source-level results are separate from the unfinished
+native package and ASCENT registration gates; raw results alone are not issued
+ASCENT observations.
+
+| Control | Actual input | Required result |
+|---------+--------------+-----------------|
+| Capacity body | Real =capacity.c= with widened independent arithmetic in =proof.c= | Overflow refuses admission and preserves the output object |
+| Capacity contract | Real function compiled and instrumented with =--enforce-contract= | Function postconditions and write-set checks hold within the selected contract |
+| Capacity clients | Actual parser/pool callers with =--replace-call-with-contract= | Independent caller assertions hold; this uses the separately checked callee contract |
+| C source mutation | Remove the actual overflow guard in a private source copy | Counter for result, output/frame and unsigned arithmetic; no relabelled pass |
+| Occupied C++ destination | Both source and destination own resources, with separate live counters | Refusal preserves both ownership states and counters |
+| Self transfer | Occupied source is also the destination | Refusal preserves its token and counter |
+| Empty transfer | Both endpoints empty | Destination availability may return true without creating a token |
+| Refusal mutation | Clear the actual source token before returning false | Counter for occupied preservation, self refusal and eventual counter destruction |
+
+The initial lifecycle harness tested occupied refusal only after the source had
+already become empty. That did not cover losing a live source token on refusal.
+The new harness and literal native checks retain the original six lifecycle
+properties and add four named properties. The Profile requires all ten labels;
+a truncated solver report cannot satisfy the expected property closure.
+
+A constructor assumes a non-null live external counter, increment headroom and
+preserved outstanding-token accounting. The selected bounded harness starts its
+counters at zero. It does not establish arbitrary caller admission, allocator
+failure, exceptions, concurrency, C++ move-constructor semantics or whole-project
+safety. A consumer changing these premises needs additional obligations and new
+applicable evidence. Distinct source bytes invalidate an old source-bound usage;
+old results and frozen query snapshots remain historical evidence.
+
+The development test =t/source-contracts-test.ss= exercises actual registration
+and queries, including both real source mutants. Until that native test completes
+at the current dependency cohort, no registration/reuse acceptance is claimed.

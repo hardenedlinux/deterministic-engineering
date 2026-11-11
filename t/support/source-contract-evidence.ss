@@ -2,7 +2,7 @@
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 ;;; Retained real-tool evidence, using the same selected owners as the tests.
-(import "../t/support/source-contracts.ss" :clan/poo/object :std/encoding/json :gerbil-ascent/program/session
+(import "source-contracts.ss" :clan/poo/object :std/encoding/json :gerbil-ascent/program/session
         (only-in :std/source this-source-file)
                     (only-in :yuanxu/module-system/interface yuanxu-load-modules))
 (export main)
@@ -11,7 +11,7 @@
   (map (lambda (row) (map (lambda (value)
                            (if (symbol? value) (symbol->string value) value)) row)) rows))
 (def (main output cbmc-path goto-cc-path instrument-path cc-path cxx-path)
-  (def project-directory (path-expand ".." (path-directory (this-source-file))))
+  (def project-directory (path-expand "../.." (path-directory (this-source-file))))
   (set! output (path-expand output project-directory))
   (when (file-exists? output) (error "fresh evidence output required" output))
   (create-directory output)

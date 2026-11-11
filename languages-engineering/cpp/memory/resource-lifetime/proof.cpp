@@ -26,4 +26,26 @@ void lifetime_harness()
     __CPROVER_assert(live == 0, "owner.inner-destruction");
   }
   __CPROVER_assert(live == 0, "owner.outer-destruction");
+
+  unsigned source_live = 0;
+  unsigned destination_live = 0;
+  {
+    ResourceSlot source(&source_live);
+    ResourceSlot destination(&destination_live);
+    __CPROVER_assert(!source.transfer_to(destination) &&
+                       source.owns() && destination.owns() &&
+                       source_live == 1 && destination_live == 1,
+                     "owner.occupied-preserves-both");
+    __CPROVER_assert(!source.transfer_to(source) &&
+                       source.owns() && source_live == 1,
+                     "owner.self-refusal");
+  }
+  __CPROVER_assert(source_live == 0 && destination_live == 0,
+                   "owner.distinct-counter-destruction");
+
+  ResourceSlot empty_source;
+  ResourceSlot empty_destination;
+  __CPROVER_assert(empty_source.transfer_to(empty_destination) &&
+                     !empty_source.owns() && !empty_destination.owns(),
+                   "owner.empty-transfer");
 }

@@ -18,7 +18,6 @@
 (def (main output cargo rustc quint lean)
   (def root (current-directory)) (set! output (path-expand output root))
   (create-directory output)
-  ((.get deterministic-engineering.init.exports std-make-spec) '("init" "profiles/resource-lifecycle" "examples/resource-lifecycle-evidence"))
   (.call deterministic-engineering.init.exports admit-current)
   (def scene (.get (.get deterministic-engineering.init.exports Library) resource-lifecycle))
   (def entry (.ref scene 'entry)) (def m (.ref scene 'methods))
@@ -123,7 +122,7 @@
     ("nativeCases" 6) ("nativeRuns" 3) ("nativePerformanceMeasured" #f)
     ("correspondence" "bounded cut-to-owner mapping reviewed; no whole-program refinement proof")
     ("sourceInputs" (map (lambda (p) (def full (path-expand p root)) (list full (digest full)))
-      '("init.ss" "build.ss" "gerbil.pkg" "library/resource-lifecycle-profiles/objects.ss" "examples/resource-lifecycle-evidence.ss"
+      '("init.ss" "build.ss" "gerbil.pkg" "library/resource-lifecycle-profiles/objects.ss" "t/support/resource-lifecycle-evidence.ss"
         "library/backpressure-memory/objects.ss"
         "library/backpressure-memory/types.ss"
         "library/backpressure-memory/interface.ss"

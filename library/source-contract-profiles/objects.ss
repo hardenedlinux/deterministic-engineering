@@ -38,7 +38,9 @@
       inputs: (cons "languages-engineering/cpp/memory/resource-lifetime/slot.hpp" units)
       expected-properties: '("owner.acquired" "owner.unique-after-transfer"
                              "owner.occupied-refusal" "owner.idempotent-release"
-                             "owner.inner-destruction" "owner.outer-destruction")))
+                             "owner.inner-destruction" "owner.outer-destruction"
+                             "owner.occupied-preserves-both" "owner.self-refusal"
+                             "owner.distinct-counter-destruction" "owner.empty-transfer")))
   (.o
     capacity-body: capacity-base
     capacity-contract:

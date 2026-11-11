@@ -16,4 +16,4 @@
   dependencies: '((LIFE-BODY source) (LIFE-BODY profile) (LIFE-BODY method)
                   (LIFE-NATIVE source) (LIFE-NATIVE profile) (LIFE-NATIVE method))
   invariant: "Transfer preserves unique ownership; refusal preserves both owners; release is idempotent."
-  limits: "The initial Profile covers explicit transfer and normal destruction, not exceptions or concurrency.")
+  limits: "The initial Profile starts live counters at zero and checks bounded explicit transfer and normal destruction. External callers must keep counters live, preserve outstanding-token accounting and reserve increment headroom. Arbitrary caller admission, exceptions and concurrency are not proved.")

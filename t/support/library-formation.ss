@@ -2,7 +2,7 @@
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-(import "../projects/library-formation/init.ss"
+(import "../../projects/library-formation/init.ss"
         "library-formation-output.ss" :clan/poo/object
         (only-in :yuanxu/module-system/source/admission current-module-source-observer))
 (import :deterministic-engineering/init)

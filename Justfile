@@ -56,6 +56,7 @@ test-file path pattern=".*":
 
 # Serial execution preserves bounded native test ownership.
 test:
+    just test-file t/user-configuration-test.ss
     just test-source-contracts
     just test-file t/engineering-ownership-test.ss
     just test-file t/repository-input-schema-test.ss
@@ -87,7 +88,7 @@ test-source-contracts:
 investigate-source-contracts output:
     #!/usr/bin/env bash
     set -euo pipefail
-    timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi examples/source-contract-evidence.ss "{{output}}" "$(realpath "$(command -v cbmc)")" "$(realpath "$(command -v goto-cc)")" "$(realpath "$(command -v goto-instrument)")" "$(realpath "$(command -v clang)")" "$(realpath "$(command -v clang++)")"
+    timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi t/support/source-contract-evidence.ss "{{output}}" "$(realpath "$(command -v cbmc)")" "$(realpath "$(command -v goto-cc)")" "$(realpath "$(command -v goto-instrument)")" "$(realpath "$(command -v clang)")" "$(realpath "$(command -v clang++)")"
 
 # Each existing suite receives its own bounded native invocation.
 test-gateway:
@@ -108,7 +109,7 @@ investigate-resource output:
     test ! -e "{{output}}"
     mkdir -p .data/test-logs
     log="$(mktemp .data/test-logs/investigation-XXXXXX)"
-    timeout --signal=TERM --kill-after=5s 600s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q examples/resource-lifecycle-evidence.ss "{{output}}" "$cargo" "$rustc" "$quint" "$lean" 2>&1 | tee "$log"
+    timeout --signal=TERM --kill-after=5s 600s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/resource-lifecycle-evidence.ss "{{output}}" "$cargo" "$rustc" "$quint" "$lean" 2>&1 | tee "$log"
     RESOURCE_REAL_REPORT="{{output}}/report.json" just test-file t/resource-lifecycle-test.ss
 
 # Optional SysML/correspondence slice with the existing native result issuer.
@@ -121,7 +122,7 @@ investigate-resource-integration output sysml:
     lean="${RESOURCE_LEAN:-$(elan which lean)}"
     test ! -e "{{output}}"
     test -x "{{sysml}}"
-    timeout --signal=TERM --kill-after=5s 600s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q examples/resource-integration-evidence.ss "{{output}}" "$cargo" "$rustc" "$quint" "$lean" "$(realpath "{{sysml}}")"
+    timeout --signal=TERM --kill-after=5s 600s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/resource-integration-evidence.ss "{{output}}" "$cargo" "$rustc" "$quint" "$lean" "$(realpath "{{sysml}}")"
     # Rendering requires the TS FigureInput contract; raw D2-to-SVG is retired.
 
 # Native SDLC consumer of the accepted owner slice. No changes to its captured roots.
@@ -152,7 +153,7 @@ investigate-backpressure-reassessment output:
     mkdir -p .data/test-logs .data/test-runs
     cargo="${RESOURCE_CARGO:-$("$HOME/.cargo/bin/rustup" which cargo)}"
     rustc="${RESOURCE_RUSTC:-$("$HOME/.cargo/bin/rustup" which rustc)}"
-    timeout --signal=TERM --kill-after=5s 240s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q examples/backpressure-reassessment-evidence.ss "{{output}}" "$cargo" "$rustc"
+    timeout --signal=TERM --kill-after=5s 240s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/backpressure-reassessment-evidence.ss "{{output}}" "$cargo" "$rustc"
 
 test-backpressure-reassessment:
     #!/usr/bin/env bash
@@ -411,7 +412,7 @@ investigate-project-formation output:
     test ! -e "{{output}}"
     mkdir -p .data/test-logs
     log="$(mktemp .data/test-logs/project-formation-XXXXXX)"
-    timeout --signal=TERM --kill-after=5s 120s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q examples/library-formation.ss "{{output}}" 2>&1 | tee "$log"
+    timeout --signal=TERM --kill-after=5s 120s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/library-formation.ss "{{output}}" 2>&1 | tee "$log"
 
 # Raw facts remain an explicitly untrusted design investigation interface.
 investigate-formation-consequences output:
@@ -420,4 +421,4 @@ investigate-formation-consequences output:
     test ! -e "{{output}}"
     mkdir -p .data/test-logs
     log="$(mktemp .data/test-logs/formation-consequences-XXXXXX)"
-    timeout --signal=TERM --kill-after=5s 120s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q examples/library-formation-consequences.ss "{{output}}" 2>&1 | tee "$log"
+    timeout --signal=TERM --kill-after=5s 120s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/library-formation-consequences.ss "{{output}}" 2>&1 | tee "$log"

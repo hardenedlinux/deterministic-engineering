@@ -28,7 +28,10 @@ vars: {d2-config: {data: {figure: |json
   ],
   "references": {
     "authority": "docs/10-19-design/10-architecture/10.148-flat-declarative-library-boundary.org",
-    "declaration": "docs/90-99-views/90-architecture-views/90.140-flat-declarative-library-boundary.d2"
+    "declaration": "docs/90-99-views/90-architecture-views/90.140-flat-declarative-library-boundary.d2",
+    "package": "gerbil.pkg",
+    "selection": "init.ss",
+    "build": "build.ss"
   },
   "basis": {
     "captureRef": "design-candidate:90.140-flat-declarative-library-boundary",
@@ -54,7 +57,7 @@ vars: {d2-config: {data: {figure: |json
 |}}}
 direction: down
 
-package: "gerbil.pkg\nOne Yuanxu dependency"
+package: "gerbil.pkg\nOne AI Agentic Lab dependency"
 selection: "Root init.ss\nFlat library/<module-name>/\nNative tags, Profile and yuanxu!"
 domains: "Parent domain Modules\nCapacity, lifetime and organization"
 specialization: "Language-specialized Modules\nRust / Tokio / Rayon correspondence"
@@ -66,6 +69,8 @@ sysml: "SysML declarations\nResponsibilities and relationships"
 development: "Development boundary: t/*-test.ss\nActual tools, independent gold and real subjects"
 external: "External consuming ecosystem\nMarlin / Aitia / other Runtime\nSessions, approval and recovery"
 pending: "Open acceptance gates\nNative pairing and consumer migration\nCurrent full build/tests not accepted"
+example: "User Examples\nEnable / Disable and typed Settings\nNative Settings binding remains pending"
+example -> selection
 package -> selection
 selection -> domains
 selection -> build

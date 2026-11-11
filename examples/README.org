@@ -1,0 +1,54 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: User Configuration Examples
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:1 num:nil
+
+* User responsibility
+Examples declare the selected engineering capabilities. They do not implement
+verification drivers, launch tools, register evidence or issue application
+permission. Existing development operations live under =t/support/= and are
+exercised by =t/*-test.ss=; relocating them does not qualify unfinished consumers.
+
+- [[file:source-contracts.ss][C/C++ source-contract selection]]
+- [[file:rust-backpressure.ss][Rust backpressure selection]]
+
+The native syntax currently represents enabled selection with =disable: #f=
+and explicit exclusion with =disable: #t=. Required dependencies are resolved by
+Yuanxu. An explicitly disabled required dependency must reject the selection;
+it must not be silently re-enabled. Enabling declarations does not run a tool.
+
+* Intended Enable and Settings boundary
+:PROPERTIES:
+:CUSTOM_ID: user-enable-settings
+:IMPLEMENTATION_STATUS: settings-binding-pending-in-native-yuanxu
+:END:
+
+The user-facing contract is Module/Feature Enable plus typed Settings. Library
+Modules own their defaults, required dependencies, constraints and pure outputs.
+Users should not select internal strategies, instantiate evidence sessions,
+assemble source guards or copy orchestration into an example.
+
+The current pinned Yuanxu init parser accepts literal =disable:= and Feature
+flags. It does not accept a per-row =settings:= override. Its existing Settings
+value constructor is not proof of an admitted binding into a Module's final
+Config. Therefore these executable examples expose only supported selection.
+The Settings part remains a native Yuanxu integration requirement. No local
+settings interpreter or inert example options are introduced to disguise it.
+
+#+NAME: user-configuration-acceptance
+| Gate | Required observable behavior |
+|------+------------------------------|
+| Selection | Enabled Modules and required dependencies are available; explicitly disabled required dependencies refuse |
+| Settings | A user override reaches the final typed Config and changes the actual selected Profile/plan |
+| Defaults | Omitted options inherit the Module default; unknown names and wrong types reject |
+| Laziness | Excluded Modules and unused Features construct no business scopes and launch no tools |
+| Assurance | Configuration cannot silently disable mandatory verification or erase applicable counters |
+| Change | A changed setting creates a new applicable context; frozen answers and reusable witnesses remain historical |
+
+The final Settings gate must be implemented and tested through Yuanxu's owning
+configuration/admission path. A plain object that is never consumed is not a
+configuration feature. Tool paths, output directories, invocation order, results
+and raw diagnostics stay in development/host boundaries.

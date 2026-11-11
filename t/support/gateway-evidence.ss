@@ -21,7 +21,6 @@
 (def (rejects? thunk) (with-catch (lambda (_) #t) (lambda () (thunk) #f)))
 (def (run-gateway-investigation root output quint lean)
   (create-directory output)
-  ((.get deterministic-engineering.init.exports std-make-spec) '("init" "examples/gateway-evidence"))
   (.call deterministic-engineering.init.exports admit-current)
   (def scene (.get (.get deterministic-engineering.init.exports Library) gateway-review))
   (def entry (.ref scene 'entry))
@@ -201,7 +200,7 @@
           ("results" (map gateway-result-record records))
           ("sourceInputs" (map (lambda (relative)
             (def f (path-expand relative root)) (list f (gateway-digest-file f)))
-            '("init.ss" "build.ss" "gerbil.pkg" "examples/gateway-evidence.ss"
+            '("init.ss" "build.ss" "gerbil.pkg" "t/support/gateway-evidence.ss"
               "library/backpressure-memory/objects.ss"
         "library/backpressure-memory/types.ss"
         "library/backpressure-memory/interface.ss"

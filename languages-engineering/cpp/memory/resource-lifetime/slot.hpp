@@ -6,7 +6,11 @@
 
 /* A single externally tracked resource. Native code and the verifier compile
  * this same implementation. The caller keeps the live counter alive and never
- * duplicates an ownership token. This is not an allocator or a concurrency API. */
+ * duplicates an ownership token. Acquisition requires a non-null counter with
+ * room for one increment; external code must not decrement outstanding tokens.
+ * This is not an allocator or a concurrency API. The bounded verification
+ * Profile starts counters at zero and does not establish these caller premises
+ * for arbitrary external projects. */
 class ResourceSlot {
   unsigned *live_;
 

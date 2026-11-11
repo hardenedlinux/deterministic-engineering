@@ -1,8 +1,8 @@
+#!/usr/bin/env gxi
 ;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-#!/usr/bin/env gxi
 ;;; -*- Gerbil -*-
 ;;; Actual source-changing native experiment, handed off through Core Ops.
 (import :clan/poo/object :std/encoding/json :std/misc/ports :std/list/list
@@ -52,7 +52,7 @@
     (def raw (path-expand "observations.json" out))
     (def log (path-expand "cargo-run.log" out))
     (def before (append dependencies (pairs (list source (path-expand "Cargo.toml" crate) (path-expand "Cargo.lock" crate) cargo rustc
-      (path-expand "examples/backpressure-reassessment-evidence.ss" root)
+      (path-expand "t/support/backpressure-reassessment-evidence.ss" root)
       (path-expand "library/rust-resources/reassessment-oracle.ss" root)))))
     (current! before)
     (def argv (list cargo "--config" (string-append "build.rustc=\"" rustc "\"") "run" "--offline" "--locked"

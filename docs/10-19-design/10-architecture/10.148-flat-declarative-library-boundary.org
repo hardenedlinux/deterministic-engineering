@@ -129,27 +129,43 @@ smaller. A previous passing integration run does not qualify this changed tree.
 :CUSTOM_ID: flat141-dependency
 :END:
 
-The root package declares only Yuanxu. No direct ASCENT, Parent or Aitia pin is
-added to this repository. Other capabilities must use an actually supported
-Yuanxu pairing/module route; the repository must not invent an installer, loader
-or compatibility layer to fill a missing route.
+The root package now declares only AI Agentic Lab, following the explicit owner
+correction after the initial single-Yuanxu design. Its native package closure
+provides Yuanxu/POO, ASCENT, Parser, Orgize and the declared Scheme/Rust bridge.
+The exact selected revision belongs in =gerbil.pkg=. At this inspection, the
+selected existing PR #63 is stacked on existing PR #34. No direct Yuanxu or
+ASCENT pin remains in this consumer.
 
-The observed remote head of existing Yuanxu PR #19 is
-=0fc1a866fee5cc2b3c2503f0723aca6c4a5e399d=, and =gerbil.pkg= selects that exact
-revision. At observation time its Lean and Quint checks passed while both Gerbil
-platform jobs failed. Selecting the requested revision is not dependency admission.
+Package inheritance does not activate a Runtime or grant application authority.
+The Library continues to publish declarative Modules and method plans. Development
+verification uses explicitly selected native capabilities, not an invented
+pairing installer. The older “Yuanxu pairing route” was not established by source
+inspection; it is superseded by the actual Parent dependency closure.
+
+An earlier observation selected Yuanxu PR #19 at =0fc1a866...= directly. That
+selection is superseded. Current native dependency identities come from the
+selected Parent's actual =gerbil.pkg= closure, not its independent =core= source
+gitlink. At inspection, ASCENT and Parser both select native Yuanxu =fd215418...=;
+that package selects POO =1f4b1720...=. Parent's =core= gitlink is =520aa69e...=.
+These are separate owners, not a requirement to force all source identities equal.
+The package metadata test checks every selected package pin against HEAD, native
+tag and generated manifest, while rejecting undeclared manifest entries.
 
 | Gate | Observed status |
 |------+-----------------|
 | Earlier native Core package build | Exit 0 before the latest revision update; not evidence for the new head |
 | Native tagged update to PR #19 head | Checkout moved to the requested head; CLI later failed on the tagged directory spelling |
 | Standalone ASCENT install attempt | Refused: installed Core tag =e77698c...= versus requested =fd215418...=; no uninstall or fabricated manifest |
-| Current single-dependency package/pairing closure | Not accepted; coherent native provisioning still required |
+| Earlier single-Yuanxu dependency proposal | Superseded: Yuanxu alone did not declare ASCENT; no pairing installer was found |
+| Current AI Agentic Lab dependency closure | Selected from actual Parent metadata; complete native installation remains open |
+| Current POO/Yuanxu/ASCENT native packages | Incremental build entries exit 0 at the Parent-selected revisions; earlier 180-second attempts remain failed evidence |
+| User selection examples | Three real-file native-parser cases pass with MODULE-OK, HARNESS-OK and final OK; Settings/scope behavior is not established |
+| Source-contract Scheme integration | Terminated with exit 137 under the unchanged 120-second test fence; no registration/reuse pass claimed |
 | Complete current product build and tests | Not accepted |
 
 The failed standalone attempt is historical diagnostic evidence, not the chosen
-dependency architecture. The later single-dependency instruction supersedes the
-proposal to add a direct ASCENT dependency.
+dependency architecture. The current instruction uses AI Agentic Lab as the single
+Parent dependency, superseding the direct-Yuanxu proposal.
 
 * Review and remaining acceptance
 :PROPERTIES:
@@ -161,9 +177,9 @@ proposal to add a direct ASCENT dependency.
 - [X] Artificial source-contract review coordinator removed.
 - [X] Source-contract product methods changed to declarative generic plans.
 - [X] Platform transport and recovery implementations removed from the Library.
-- [X] Sole root dependency updated to the observed latest Yuanxu PR revision.
+- [X] Sole root dependency selects the observed latest Parent PR revision; direct Yuanxu pin removed.
 - [ ] Finish all test/example consumers against the declarative surface.
-- [ ] Qualify native pairing/package metadata at the selected head.
+- [ ] Qualify the Parent package closure and metadata at the selected head.
 - [ ] Run the complete current product build and native test roster.
 - [ ] Reissue source-bound evidence after the final organization and API changes.
 
@@ -206,5 +222,48 @@ alongside each D2 source. SVG remains vector output; the compressed raster does
 not replace its semantics. The README uses the smaller lossless raster.
 
 Source and composition changes require regeneration. Rendering receipts establish
-captured presentation facts only: they do not establish native pairing, Scheme
+captured presentation facts only: they do not establish Parent package admission, Scheme
 build acceptance, a verifier result or permission to use application effects.
+
+* User-facing Examples: Enable and Settings
+:PROPERTIES:
+:CUSTOM_ID: flat141-user-configuration
+:CONFIGURATION_OWNER: Yuanxu
+:SETTINGS_BINDING_STATUS: native-integration-pending
+:END:
+
+Examples are user configurations, inspired by the NixOS Modules interface. A user
+selects a Module or Feature and supplies typed Settings. User-facing declarations
+do not expose method-dispatch assembly, source collectors, process invocation,
+evidence-session creation, row mutation or report serialization.
+
+The previous root Examples contained 744 lines of operational Scheme consumers.
+Those consumers now live under =t/support/=, with their existing assertions and
+inspection recipes retained. Several still refer to retired Runtime interfaces;
+relocation does not make those consumers accepted. Root Examples now contain only
+native Yuanxu selection declarations and their user guide.
+
+| Owner | Responsibility |
+|-------+----------------|
+| Example | Enable/disable choice and user Settings; no operational effects |
+| Library Module | Defaults, typed option contract, dependencies, obligations and pure derived plans |
+| Yuanxu | Selection, Settings merge/admission, source identity, lazy Module/Feature projection and build closure |
+| Test/consuming host | Explicit execution, real results, evidence registration/query and independent controls |
+| External policy owner | Application authorization and actual-use boundary |
+
+Enabling a Module is selection, not tool execution or approval. A required Module
+explicitly disabled by the user must reject, rather than being silently enabled.
+Settings must be admitted against the final inherited receiver. Changing a value
+must change the actual selected Profile/plan and its evidence applicability;
+configuration cannot remove mandatory obligations or hide applicable counters.
+
+The selected native Yuanxu parser currently supports =disable:= and Feature flags,
+but not a per-row =settings:= binding. The executable examples therefore show only
+that supported selection surface. The full Enable/Settings interface remains an
+upstream Yuanxu configuration task. This repository does not add a second option
+evaluator, inert Settings fields or an example-specific adapter.
+
+See [[file:../../../examples/README.org][the user guide and concrete acceptance table]]. Full closure requires actual
+Settings-to-Config binding, unknown-key/type refusal, inherited defaults,
+disabled-dependency refusal and zero execution during declaration. Syntax-only
+reading does not establish those behavioral gates.

@@ -15,7 +15,7 @@
                     (.get (.get deterministic-engineering.init.exports Library) gateway-review entry identity)))
     (test-case "actual native/QNT/Lean receipts and change queries match independent gold"
       (def path (getenv "RESOURCE_REAL_REPORT" #f))
-      (unless path (error "run examples/resource-lifecycle-evidence.ss and set RESOURCE_REAL_REPORT"))
+      (unless path (error "run t/support/resource-lifecycle-evidence.ss and set RESOURCE_REAL_REPORT"))
       (def methods (.get (.get deterministic-engineering.init.exports Library) rust-resources methods))
       (def digest (.ref methods 'file-digest))
       (def (load p) (call-with-input-file p (cut read-json <> object-as-hash: #t)))

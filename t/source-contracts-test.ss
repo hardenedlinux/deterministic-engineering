@@ -179,4 +179,27 @@
           ;; Changing a result log after issuance prevents registration.
           (write-text (path-expand "counter/cbmc.log" base) "[]")
           (check-exception ((.get driver register!) review (list failed)) error?)
-          (check-equal? (length (rows queried 'counter)) 1))))))
+          (check-equal? (length (rows queried 'counter)) 1))))
+    (test-case "occupied C++ transfer cannot drop a live source on refusal"
+      (call-with-temporary-directory "source-contract-lifetime-counter"
+        (lambda (base)
+          (copy-project base (.get profiles lifetime-body))
+          (def profile (flat-profile (.get profiles lifetime-body)))
+          (def source (path-expand "slot.hpp" base))
+          (def original (read-text source))
+          (def mutant
+            (string-subst original
+              "if (destination.owns())\n      return false;"
+              "if (destination.owns()) {\n      live_ = nullptr;\n      return false;\n    }"))
+          (check-equal? (equal? original mutant) #f)
+          (write-text source mutant)
+          (def basis (subject base lifetime profile))
+          (def review (session lifetime profile basis 'occupied-lifetime-mutant))
+          (def failed (run base lifetime profile (path-expand "counter" base)))
+          (check-equal? (hash-ref ((.get driver record) failed) "outcome") "fail")
+          ((.get driver register!) review (list failed))
+          (def queried (gerbil-ascent-session-run review))
+          (check-equal? (length (rows queried 'counter)) 1)
+          (check-equal? (rows queried 'support) '())
+          (check-equal? (rows queried 'pending)
+                        '((occupied-lifetime-mutant LIFE-BODY cbmc))))))))
