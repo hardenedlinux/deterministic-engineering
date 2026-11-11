@@ -223,3 +223,65 @@ neither result converts the failed cold rebuild into a pass. Complete cold
 dependency installation remains open. Remote Linux rendering failed during
 Chromium system-dependency installation with Ubuntu mirror DNS errors; macOS
 passed at 4f43d48. Those infrastructure observations do not qualify Linux tests.
+
+*** Cold-build measurement and control
+:PROPERTIES:
+:CUSTOM_ID: core-cold-measurement-control
+:END:
+
+The subsequent Core diagnostic build completed naturally in 127.41 seconds with
+=GERBIL_BUILD_VERBOSE=2=. Its native stage clocks place specification completion
+at 20.30 seconds, Make entry at 21.57 seconds and main return at 122.47 seconds.
+It generated 274 distinct Scheme targets and scheduled 587 Gambit compilation
+jobs; no repeated target-generation row was observed. This does not rule out
+repeated internal expansion or metadata work. A
+process observation found twelve =gsc= children, matching machine-derived
+concurrency; the single/dual-worker hypothesis is not supported for this run.
+
+The ordinary-entry control used native clean again. Before starting, an inventory
+found zero remaining Core =.ssi=, =.ssxi.ss=, dynamic objects or static Scheme
+products, including the off-prefix Yuanxu prelude. Prerequisite packages and the
+SDK remained installed; this is a Core-product cold control, not a fresh Parent
+dependency installation or an operating-system cache reset.
+
+That ordinary control did not pass: the 180-second timeout escalated after the
+unchanged five-second termination grace and the command ended with signal 9 at
+185.32 seconds. No natural completion marker was observed. The diagnostic pass
+therefore cannot establish ordinary cold-build acceptance. Instrumentation,
+scheduling, input order and host load remain candidate explanations; neither a
+GC diagnosis nor an accounting-based optimization has been established. The
+captured resource sample and job count do not justify a heap or worker change.
+
+The installed Core also differs from its current open upstream PR by 188
+commits, and that PR declares a different POO revision. The candidate must be
+qualified as a coherent native dependency set; upstream success cannot be
+transferred to the installed cohort. Package management remains the dependency
+owner. No isolated leaf pin, fabricated manifest or compatibility layer is used
+to hide this outstanding qualification.
+
+The observed native manifest chain is:
+
+#+NAME: native-cohort-upgrade-owners
+| Existing owner | Observed declaration | Upgrade obligation |
+|----------------+----------------------+--------------------|
+| Core PR 19 | A newer POO revision than the installed Core | Qualify the exact declared POO/Core pair |
+| Parser PR 23 | Still selects the installed older Core | Change its own declaration and qualify its native consumers before publishing a replacement revision |
+| ASCENT PR 1 | Still selects the same older Core | Qualify native rules/queries against the candidate Core before publishing its revision |
+| Orgize PR 18 | Selects the older Parser candidate | Consume the qualified Parser revision and exercise real generated parser build/consumer paths |
+| Parent PR 34 | Selects Parser, Orgize and ASCENT candidates | Compose their published compatible revisions through native package management |
+| This Library | Selects only Parent | Promote Parent only after native install, build, metadata and actual C/C++/ASCENT consumer gates |
+
+An open PR name is not a version-selection instruction. Each declaration belongs
+to its existing package owner; the root must not add a competing direct Core or
+POO pin. Parent's optional source Core gitlink is a separate source ownership
+declaration and must not silently replace the selected native package identity.
+The table records investigation and required validation, not completed upgrades.
+
+The instrumented incremental recovery subsequently completed, but the ordinary
+root source rebuild after recovery also exceeded its unchanged deadline. Earlier
+successful root/consumer results remain historical observations at the recorded
+baseline; they do not establish current whole-package acceptance after this
+control sequence. Requalification requires a naturally completed ordinary root
+build and its native metadata/consumer checks. The sampled shared host had load
+averages above thirty on twelve cores; this is relevant context, not proof that
+host contention alone caused the failures. No unrelated process was stopped.
