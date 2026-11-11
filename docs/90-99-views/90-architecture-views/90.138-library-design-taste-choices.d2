@@ -26,7 +26,7 @@ vars: {d2-config: {data: {figure: |json
     },
     {
       "ref": "binding",
-      "text": "Who binds the actual project inputs?",
+      "text": "Who declares the project input bindings?",
       "focusRefs": [
         "scenario",
         "model"
@@ -41,9 +41,9 @@ vars: {d2-config: {data: {figure: |json
     "model": "project.sysml",
     "case": "docs/90-99-views/90-architecture-views/90.132-library-profile-scenario-architecture.d2",
     "library": "library/project-organization/objects.ss",
-    "profile": "profiles/library-formation.ss",
-    "scenario": "scenarios/project-formation/func.ss",
-    "capture-gap": "scenarios/project-formation/func.ss"
+    "profile": "library/library-formation-profiles/objects.ss",
+    "scenario": "library/project-formation/func.ss",
+    "capture-gap": "library/project-formation/objects.ss"
   },
   "basis": {
     "captureRef": "design-candidate:library-design-taste",
@@ -66,7 +66,7 @@ vars: {d2-config: {data: {figure: |json
   "design": {
     "audience": "Library adopter",
     "medium": "README component view",
-    "message": "Library publishes; Profile selects; Scenario binds actual inputs.",
+    "message": "Library publishes; Profile selects; Scenario declares input bindings.",
     "questionRefs": [
       "publication"
     ],
@@ -132,7 +132,7 @@ vars: {d2-config: {data: {figure: |json
       "design": {
         "audience": "Library adopter",
         "medium": "README component view",
-        "message": "Library publishes; Profile selects; Scenario binds actual inputs.",
+        "message": "Library publishes; Profile selects; Scenario declares input bindings.",
         "questionRefs": [
           "publication"
         ],
@@ -161,7 +161,7 @@ vars: {d2-config: {data: {figure: |json
       "design": {
         "audience": "Project maintainer",
         "medium": "README component view",
-        "message": "Library publishes; Profile selects; Scenario binds actual inputs.",
+        "message": "Library publishes; Profile selects; Scenario declares input bindings.",
         "questionRefs": [
           "binding"
         ],
@@ -192,7 +192,7 @@ vars: {d2-config: {data: {figure: |json
       "design": {
         "audience": "Source review",
         "medium": "README component view",
-        "message": "Library publishes; Profile selects; Scenario binds actual inputs.",
+        "message": "Library publishes; Profile selects; Scenario declares input bindings.",
         "questionRefs": [
           "publication"
         ],
@@ -216,7 +216,7 @@ vars: {d2-config: {data: {figure: |json
   "evidence": [
     {
       "sourceRef": "capture-gap",
-      "excerpt": "status: 'capture-blocked",
+      "excerpt": "authority: 'design-only",
       "state": "missing",
       "subjectRefs": [
         "project.scenario"
@@ -236,4 +236,4 @@ project: Project {
 project.profile -> library: selects
 project.scenario -> project.profile: binds
 project.scenario -> library: references definitions
-project.scenario -> project.inputs: binds actual inputs
+project.scenario -> project.inputs: declares input bindings

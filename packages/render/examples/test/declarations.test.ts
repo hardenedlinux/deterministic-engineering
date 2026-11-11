@@ -21,7 +21,7 @@ test('real Library/Profile/Scenario D2 selects downstream kinds, themes and icon
     expect(variant.theme!.colors.accent).toBe('#246B59');
     expect(variant.icons!.library!.label).toBe('Repository publication');
     const figure = composeFigure(variant, input.view.purpose === 'architecture' ? architecture : workflow);
-    expect(figure.html).toContain('capture-blocked'); expect(figure.html).toContain('"evidenceRefs":[]');
+    expect(figure.html).toContain('design-only'); expect(figure.html).toContain('"evidenceRefs":[]');
     expect(() => composeFigure({...variant, layout:'not-declared'}, input.view.purpose === 'architecture' ? architecture : workflow)).toThrow('Unsupported case');
   }
 },30000);
