@@ -19,6 +19,7 @@
   "../../library/zero-trust-pep-pdp/objects.ss"
   "../../library/workload-identity-rotation/objects.ss"
   "../../library/microsegmentation-egress/objects.ss"
+  "../../library/oauth-token-lifecycle/objects.ss"
   "../../library/gc-tricolor-barrier/objects.ss"
   "../../library/gc-safepoint-handshake/objects.ss"
   "../../library/parallel-epoch-reclamation/objects.ss"
@@ -110,6 +111,10 @@
     (list MicrosegmentationEgressModel
           (.get ThreatModelProfiles microsegmentation-egress)
           '("library/microsegmentation-egress/objects.ss" "library/authority-currentness/objects.ss"
+            "library/quint-methods/methods.ss"))
+    (list OAuthTokenLifecycleModel
+          (.get ThreatModelProfiles oauth-token-lifecycle)
+          '("library/oauth-token-lifecycle/objects.ss" "library/authority-currentness/objects.ss"
             "library/quint-methods/methods.ss"))
     (list TricolorWriteBarrierModel
           (.get ThreatModelProfiles gc-tricolor-barrier)

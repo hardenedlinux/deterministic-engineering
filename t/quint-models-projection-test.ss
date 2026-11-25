@@ -20,6 +20,7 @@
   "../library/zero-trust-pep-pdp/objects.ss"
   "../library/workload-identity-rotation/objects.ss"
   "../library/microsegmentation-egress/objects.ss"
+  "../library/oauth-token-lifecycle/objects.ss"
   "../library/gc-tricolor-barrier/objects.ss"
   "../library/gc-safepoint-handshake/objects.ss"
   "../library/parallel-epoch-reclamation/objects.ss"
@@ -126,6 +127,7 @@
           (cons ZeroTrustPepPdpModel (.get ThreatModelProfiles zero-trust-pep-pdp))
           (cons WorkloadIdentityRotationModel (.get ThreatModelProfiles workload-identity-rotation))
           (cons MicrosegmentationEgressModel (.get ThreatModelProfiles microsegmentation-egress))
+          (cons OAuthTokenLifecycleModel (.get ThreatModelProfiles oauth-token-lifecycle))
           (cons TricolorWriteBarrierModel (.get ThreatModelProfiles gc-tricolor-barrier))
           (cons SafepointHandshakeModel (.get ThreatModelProfiles gc-safepoint-handshake))
           (cons EpochReclamationModel (.get ThreatModelProfiles parallel-epoch-reclamation))

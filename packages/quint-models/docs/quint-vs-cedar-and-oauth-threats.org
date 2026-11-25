@@ -1,0 +1,61 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Quint vs. Cedar and OAuth 2.1 Authorization Threat Modeling
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Architectural Separation: Cedar vs. Quint
+
+A frequent question in security architecture is: /"If we already verify
+authorization policies with Cedar (and Cedar SymCC), why do we still need Quint
+for OAuth / authorization threat modeling?"/
+
+The answer is a strict separation of *stateless policy decision* from *stateful
+protocol lifecycle*:
+
+| Layer | Owned By | What It Proves | What It Cannot See |
+|-------+----------+----------------+--------------------|
+| *Stateless Policy Decision (PDP)* | Cedar (=cedar-poo-spec= / SymCC) | Given =(Principal, Action, Resource, Context)= at one instant, does the policy permit? Is Policy A strictly tighter than Policy B? | Multi-step OAuth code replay, PKCE omission, concurrent refresh-vs-signout races, token family reuse, or scope escalation across refreshes |
+| *Stateful Protocol & Credential Lifecycle* | Quint (=@deterministic-engineering/quint-models=) | Across asynchronous callbacks, concurrent refreshes, cancellations, and revocations, can an attacker obtain, resurrect, replay, or escalate credentials before they reach the PDP? | Fine-grained RBAC/ABAC entity hierarchies and resource-attribute policy equivalence |
+
+* How Both Layers Compose
+
+1. *Quint guards the credential & authority lifecycle* (=threat/oauth-token-lifecycle=,
+   =threat/authority-currentness=, =threat/zero-trust-pep-pdp=): guarantees that
+   the token reaching the PEP/PDP came from a single-use PKCE+nonce exchange,
+   survived no sign-out/revocation epoch bump, and did not silently escalate
+   scopes during refresh.
+2. *Cedar guards the request decision*: evaluates the verified =(Principal,
+   Scopes, Audience, Epoch)= against declarative policies for the target
+   =(Action, Resource)=.
+
+* OAuth 2.1 Threat Matrix (RFC 9700 / Fett–Küsters–Schmitz)
+
+| Threat Class | Concrete Failure Mode | Guard in =oauth-token-lifecycle= | Required Countermodel |
+|--------------+-----------------------+----------------------------------+-----------------------|
+| *Authorization Code Replay / Injection* | Reusing a consumed code or accepting callback without PKCE / nonce check | =single-use-code= + =pkceOk and nonceOk= | =stepCodeReplay= |
+| *Refresh-vs-SignOut Zombie Resurrection* | Concurrent =RefreshToken= finishes after =SignOut= and writes refreshed token back into vault | =refresh-epoch-currency= (=epochCurrent(authEpoch, refreshStartedEpoch)=) | =stepZombieRefresh= |
+| *Refresh Scope Escalation* | Token endpoint returns wider scopes on refresh than originally granted | =scope-monotonicity= (=newScope <= grantedScopeLevel=) | =stepScopeEscalation= |
+| *OIDC Nonce / Audience Confusion* | Client ignores =expectedNonce= in ID token exchange | Mandatory constant-time =nonce= verification in exchanger | Modeled in =completeCallbackAs(pkceOk, nonceOk)= |
+
+* Real-World Case: Marlin / MyGo (=control/auth/=)
+
+Applying =threat/oauth-token-lifecycle= directly to Marlin's Tier-0 Go auth
+manager (=control/auth/manager.go=) surfaced five concrete implementation gaps:
+
+1. *Zombie token resurrection*: =ValidAccessToken= wrote refreshed tokens back
+   into =m.vault= after =SignOut= deleted the account, without checking an
+   account epoch.
+2. *CancelPending race*: in-flight =ExchangeCode= / =VerifyChallenge= could
+   admit a signed-in account after =CancelPending()=.
+3. *Refresh scope creep*: =ValidAccessToken= accepted arbitrary =refreshed.Scopes=
+   without verifying subset monotonicity against originally granted scopes.
+4. *Ignored OIDC nonce*: =HTTPOAuthExchanger.ExchangeCode= discarded its
+   =expectedNonce= parameter (=_=).
+5. *Loopback state-fixation DoS*: =LoopbackReceiver= consumed its single-use
+   slot on the first GET even if =state= did not match.
+
+Each gap is eliminated in Go and paired with race-enabled regression tests
+(=go test -race ./control/auth/...=) alongside the Quint scenario model.
