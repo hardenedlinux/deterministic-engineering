@@ -24,6 +24,7 @@
   "../../library/gc-safepoint-handshake/objects.ss"
   "../../library/parallel-epoch-reclamation/objects.ss"
   "../../library/parallel-work-stealing/objects.ss"
+  "../../library/concurrency-structured-cancel/objects.ss"
   "../../library/quint-methods/objects.ss"
   "../../library/quint-methods/methods.ss"
   "../../library/threat-model-profiles/objects.ss")
@@ -127,7 +128,10 @@
           '("library/parallel-epoch-reclamation/objects.ss" "library/quint-methods/methods.ss"))
     (list WorkStealingDequeModel
           (.get ThreatModelProfiles parallel-work-stealing)
-          '("library/parallel-work-stealing/objects.ss" "library/quint-methods/methods.ss"))))
+          '("library/parallel-work-stealing/objects.ss" "library/quint-methods/methods.ss"))
+    (list StructuredCancelModel
+          (.get ThreatModelProfiles concurrency-structured-cancel)
+          '("library/concurrency-structured-cancel/objects.ss" "library/quint-methods/methods.ss"))))
 
 (def (project-all-quint-models! repo-root)
   (def head-sha (git-head-sha repo-root))

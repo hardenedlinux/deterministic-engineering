@@ -18,6 +18,7 @@
   (only-in "../gc-safepoint-handshake/objects.ss" SafepointHandshakeModel)
   (only-in "../parallel-epoch-reclamation/objects.ss" EpochReclamationModel)
   (only-in "../parallel-work-stealing/objects.ss" WorkStealingDequeModel)
+  (only-in "../concurrency-structured-cancel/objects.ss" StructuredCancelModel)
   (only-in "../quint-methods/types.ss" QuintProfileType))
 (export ThreatModelProfiles)
 
@@ -125,6 +126,14 @@
     (checked-profile
       (.o identity: 'parallel-work-stealing
           model: WorkStealingDequeModel
+          seed: 7
+          positive-depth: 12
+          negative-depth: 4
+          require-countermodels?: #t))
+    concurrency-structured-cancel:
+    (checked-profile
+      (.o identity: 'concurrency-structured-cancel
+          model: StructuredCancelModel
           seed: 7
           positive-depth: 12
           negative-depth: 4

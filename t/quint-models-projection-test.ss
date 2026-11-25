@@ -25,6 +25,7 @@
   "../library/gc-safepoint-handshake/objects.ss"
   "../library/parallel-epoch-reclamation/objects.ss"
   "../library/parallel-work-stealing/objects.ss"
+  "../library/concurrency-structured-cancel/objects.ss"
   "../library/quint-methods/types.ss"
   "../library/quint-methods/objects.ss"
   "../library/quint-methods/methods.ss"
@@ -131,4 +132,5 @@
           (cons TricolorWriteBarrierModel (.get ThreatModelProfiles gc-tricolor-barrier))
           (cons SafepointHandshakeModel (.get ThreatModelProfiles gc-safepoint-handshake))
           (cons EpochReclamationModel (.get ThreatModelProfiles parallel-epoch-reclamation))
-          (cons WorkStealingDequeModel (.get ThreatModelProfiles parallel-work-stealing)))))))
+          (cons WorkStealingDequeModel (.get ThreatModelProfiles parallel-work-stealing))
+          (cons StructuredCancelModel (.get ThreatModelProfiles concurrency-structured-cancel)))))))

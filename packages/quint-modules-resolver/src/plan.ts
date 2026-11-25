@@ -5,6 +5,7 @@ import {createHash} from 'node:crypto';
 import {existsSync, mkdtempSync, readFileSync, rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {dirname, join, resolve} from 'node:path';
+import {type ItfTrace, traceSatisfiesItfPredicate} from './itf.ts';
 
 export interface PlanStep {
   label: string;
@@ -109,9 +110,14 @@ export function executePlan(planPath: string, options: PlanRunOptions = {}): {pa
         if (!existsSync(itfOut)) {
           throw new Error(`Countermodel step '${step.label}' did not emit ITF file: ${itfOut}`);
         }
-        const itf = JSON.parse(readFileSync(itfOut, 'utf8')) as {vars?: unknown[]; states?: unknown[]};
+        const itf = JSON.parse(readFileSync(itfOut, 'utf8')) as ItfTrace;
         if (!Array.isArray(itf.vars) || itf.vars.length === 0 || !Array.isArray(itf.states) || itf.states.length === 0) {
           throw new Error(`Countermodel step '${step.label}' emitted empty ITF trace`);
+        }
+        if (step.expectedItfPredicate && !traceSatisfiesItfPredicate(itf, step.expectedItfPredicate)) {
+          throw new Error(
+            `Countermodel step '${step.label}' ITF trace did not satisfy expected predicate: ${step.expectedItfPredicate}`,
+          );
         }
       }
       passed++;
