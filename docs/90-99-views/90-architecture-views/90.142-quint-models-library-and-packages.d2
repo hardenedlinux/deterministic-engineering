@@ -1,0 +1,80 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+# Org authority: ../../10-19-design/10-architecture/10.151-quint-models-library-and-packages.org
+# Design projection; rendering is not verification or approval.
+vars: {d2-config: {data: {figure: |json
+{
+  "title": "Quint models: declaration, projection and consumption",
+  "purpose": "architecture",
+  "kind": "library-architecture",
+  "language": "en",
+  "width": 1400,
+  "primary": "projection",
+  "questions": [
+    {
+      "ref": "projection",
+      "text": "How do Scheme domain declarations become installable Quint models checked by official Quint downstream?",
+      "focusRefs": [
+        "authority",
+        "declaration"
+      ],
+      "subjectRefs": [
+        "domains",
+        "methods",
+        "quintModels",
+        "quintModulesResolver"
+      ]
+    }
+  ],
+  "references": {
+    "authority": "docs/10-19-design/10-architecture/10.151-quint-models-library-and-packages.org",
+    "declaration": "docs/90-99-views/90-architecture-views/90.142-quint-models-library-and-packages.d2",
+    "organization": "docs/10-19-design/10-architecture/10.150-repository-organization-and-package-taxonomy.org",
+    "method-pattern": "library/source-contracts/methods.ss",
+    "config": "config.ss",
+    "existing-model": "languages-engineering/quint/concurrency/backpressure-memory/model.qnt",
+    "evidence-integration": "docs/10-19-design/10-architecture/10.25-rust-sysml-quint-lean-evidence-integration.org"
+  },
+  "basis": {
+    "captureRef": "design-candidate:90.142-quint-models-library-and-packages",
+    "modelRefs": [
+      "docs/10-19-design/10-architecture/10.151-quint-models-library-and-packages.org"
+    ],
+    "obligationRefs": [],
+    "evidenceRefs": []
+  },
+  "copy": {},
+  "themes": [
+    "sketchbook",
+    "compact"
+  ],
+  "presentation": {
+    "options": {
+      "elk.direction": "DOWN",
+      "elk.layered.spacing.nodeNodeBetweenLayers": "48"
+    },
+    "edgeLabels": false
+  }
+}
+|}}}
+direction: down
+
+domains: "Domain Modules\nthreat-capabilities / authority-currentness\neffect-handoff / effect-containment / state-rollback\nCountermodel = weakened descendant"
+profiles: "threat-model-profiles\nComposition, depth, seed, required counterexamples"
+config: "config.ss\nlanguages.quint enable + settings"
+methods: "quint-methods\nPure quint-module and quint-plan\nDispatch on prototype ancestry"
+quintModels: "packages/quint-models\nthreat/ concurrency/\nX.qnt + plan.json + receipt.json"
+quintModulesResolver: "packages/quint-modules-resolver\nPackage-aware resolver\nOfficial Quint stages unchanged"
+quint: "@informalsystems/quint 0.33.0\nPeer dependency, unmodified"
+development: "t/\nActual quint / Apalache, ITF checks"
+consumer: "Consuming host\nSupplies parameters, executes plan.json\nVerifies receipt digests"
+config -> profiles
+domains -> methods
+profiles -> methods
+methods -> quintModels: "same-commit projection"
+quintModels -> quintModulesResolver
+quint -> quintModulesResolver
+quintModulesResolver -> development
+quintModulesResolver -> consumer
+quintModels -> consumer

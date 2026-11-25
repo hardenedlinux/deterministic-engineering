@@ -3,7 +3,7 @@
 
 import sharp,{type WebpOptions} from 'sharp';
 import * as v from 'valibot';
-import packageInfo from '../../../package.json' with {type:'json'};
+import packageInfo from '../package.json' with {type:'json'};
 /** Native encoder parameters. Lossy output must be explicitly declared. */
 export type WebPCompression = Pick<WebpOptions,'effort'> & (
  {readonly lossless?:true}|({readonly lossless:false}&Pick<WebpOptions,'quality'|'alphaQuality'|'smartSubsample'>));

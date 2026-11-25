@@ -3,7 +3,7 @@
 
 import sharp, {type PngOptions} from 'sharp';
 import * as v from 'valibot';
-import packageInfo from '../../../package.json' with {type:'json'};
+import packageInfo from '../package.json' with {type:'json'};
 type LosslessPNG = Pick<PngOptions,'compressionLevel'|'adaptiveFiltering'>;
 /** Quantization is explicit; defaults preserve decoded pixels. Native sharp owns encoding. */
 export type PNGCompression = LosslessPNG & ({readonly palette?:false}|({readonly palette:true}&Pick<PngOptions,'quality'|'colours'|'dither'|'effort'>));

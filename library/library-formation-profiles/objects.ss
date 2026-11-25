@@ -68,6 +68,18 @@
                     ("entry-definitions" "project-entry" "definitions")
                     ("entry-capture" "project-entry" "capture")
                     ("entry-reasoning" "project-entry" "reasoning"))
+    ;; Physical placement instances for this repository: (slot placement-type path-pattern)
+    placement-layout: '(("library" "SchemeModule" "library/<module>/")
+                        ("languageAssets" "LanguageAssets" "languages-engineering/<lang>/<domain>/<subject>/")
+                        ("render" "DistributionPackage" "packages/render/")
+                        ("quintModels" "DistributionPackage" "packages/quint-models/")
+                        ("quintModulesResolver" "DistributionPackage" "packages/quint-modules-resolver/")
+                        ("projects" "ProjectEntry" "projects/<project>/")
+                        ("examples" "UserExample" "examples/")
+                        ("tests" "DevelopmentVerification" "t/")
+                        ("documents" "DocumentItem" "docs/<area>/<category>/<JD>-*.org")
+                        ("views" "ArchitectureView" "docs/90-99-views/90-architecture-views/90.<n>-*")
+                        ("infrastructure" "PackageInfrastructure" "root"))
     candidates:
     (list
      (.o (:: @ FormationCandidate.)

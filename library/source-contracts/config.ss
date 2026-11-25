@@ -3,8 +3,8 @@
 
 ;;; The maintained functional configuration; consumers assign Config values.
 (import :clan/poo/object
-        (only-in :clan/poo/mop validate)
-        (only-in :yuanxu/configuration/json config-defaults)
+        (only-in :clan/poo/type validate)
+        (only-in :tao3k/yuanxu/configuration/json config-defaults)
         "types.ss")
 (export Config resolve-config)
 

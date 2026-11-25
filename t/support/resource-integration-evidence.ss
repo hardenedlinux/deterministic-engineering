@@ -5,7 +5,7 @@
 ;;; -*- Gerbil -*-
 (import :deterministic-engineering/init
         :clan/poo/object :std/encoding/json :gerbil-ascent/program/session
-        (only-in :agentic-ai-lab/modules/temporal-causality/trajectory/ascent-ledger ascent-trajectory))
+        (only-in :tao3k/agentic-ai-lab/modules/temporal-causality/trajectory/ascent-ledger ascent-trajectory))
 (def LifecycleProfile (.get deterministic-engineering.init.exports Library resource-lifecycle-profiles profiles LifecycleProfile))
 (export main)
 (def (wire rows) (map (lambda (row) (map (lambda (v) (if (symbol? v) (symbol->string v) v)) row)) rows))

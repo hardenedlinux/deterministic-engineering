@@ -12,9 +12,9 @@
   (only-in :std/io/tempfile call-with-temporary-directory)
   (only-in :std/misc/ports read-all-as-string)
   (only-in :std/string/misc string-subst)
-  (only-in :clan/poo/mop validate TypeError?)
-  (only-in :yuanxu/poo-clos/objects poo-clos-failure?)
-  (only-in :yuanxu/module-system/interface yuanxu-load-modules))
+  (only-in :clan/poo/type validate TypeError?)
+  (only-in :clan/poo/mop/clos/objects poo-clos-failure?)
+  (only-in :tao3k/yuanxu/module-system/interface yuanxu-load-modules))
 (export source-contract-positive-test source-contract-change-test
         source-contract-refusal-test source-contract-cross-project-test
         source-contract-scenario-test source-contract-tool-closure-test)

@@ -6,11 +6,8 @@
   :std/test
   :clan/poo/object
   "../library/project-formation/func.ss"
-  "../library/project-intake/func.ss"
   "../library/project-organization/objects.ss"
-  )
-(import :deterministic-engineering/init)
-(def LibraryFormationProfile (.get deterministic-engineering.init.exports Library library-formation-profiles profiles LibraryFormationProfile))
+  "../library/library-formation-profiles/objects.ss")
 (export
   project-formation-test)
 (def project-formation-test

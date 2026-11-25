@@ -5,7 +5,7 @@
 ;;; -*- Gerbil -*-
 (import :deterministic-engineering/init
         :clan/poo/object :std/encoding/json :gerbil-ascent/program/session
-        (only-in :agentic-ai-lab/modules/temporal-causality/trajectory/ascent-ledger ascent-trajectory)
+        (only-in :tao3k/agentic-ai-lab/modules/temporal-causality/trajectory/ascent-ledger ascent-trajectory)
         (only-in :std/misc/ports read-all-as-string))
 (def LifecycleProfile (.get deterministic-engineering.init.exports Library resource-lifecycle-profiles profiles LifecycleProfile))
 (def LargerPayloadProfile (.get deterministic-engineering.init.exports Library resource-lifecycle-profiles profiles LargerPayloadProfile))
@@ -138,7 +138,7 @@
         "library/evidence/types.ss" "library/evidence/config.ss" "library/evidence/objects.ss"
         "library/resource-lifecycle/func.ss" "library/resource-lifecycle/interface.ss"
         "library/resource-lifecycle/types.ss" "library/resource-lifecycle/objects.ss" "library/resource-lifecycle/config.ss"
-        "library/backpressure-memory/model.qnt" "library/backpressure-memory/budget.lean")))
+        "languages-engineering/quint/concurrency/backpressure-memory/model.qnt" "languages-engineering/lean/concurrency/backpressure-memory/budget.lean")))
     ("rejections" '("changed-lock" "changed-owned-source" "JSON-is-not-issuer"))))
   (save (path-expand "report.json" output) report)
   (displayln "RESOURCE-REAL-EVIDENCE-OK " (path-expand "report.json" output)))

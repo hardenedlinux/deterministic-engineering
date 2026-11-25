@@ -9,7 +9,7 @@
   :deterministic-engineering/init
 
   :gerbil-ascent/program/session
-  (only-in :agentic-ai-lab/modules/temporal-causality/trajectory/ascent-ledger ascent-trajectory)
+  (only-in :tao3k/agentic-ai-lab/modules/temporal-causality/trajectory/ascent-ledger ascent-trajectory)
   (only-in :std/io/tempfile call-with-temporary-directory)
   (only-in :std/misc/ports read-all-as-string))
 (def LifecycleProfile (.get deterministic-engineering.init.exports Library resource-lifecycle-profiles profiles LifecycleProfile))

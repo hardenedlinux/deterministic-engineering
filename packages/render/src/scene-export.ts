@@ -7,6 +7,48 @@ import {fileURLToPath} from 'node:url';
 import type {Page} from 'playwright';
 import {digest} from './source/catalog';
 export interface SceneLayoutReceipt {readonly inputSHA256:string; readonly layoutSHA256:string; readonly nodes:number; readonly edges:number; readonly milliseconds:number;}
+
+/** Keep independent annotations and subgraphs from widening the main diagram. */
+async function layoutGraph(elk:InstanceType<typeof ELK>,graph:ElkNode,stack:boolean):Promise<ElkNode> {
+  if(!stack)return elk.layout(graph);
+  const roots=new Map<string,string>();
+  const assign=(node:ElkNode,root:string)=>{roots.set(node.id,root);node.children?.forEach(child=>assign(child,root));};
+  for(const node of graph.children??[])assign(node,node.id);
+  const parents=new Map([...new Set(roots.values())].map(id=>[id,id]));
+  const find=(id:string):string=>{const parent=parents.get(id)!;return parent===id?id:find(parent);};
+  for(const edge of graph.edges??[]){
+    const from=roots.get(edge.sources[0]!),to=roots.get(edge.targets[0]!);
+    if(from===undefined||to===undefined)throw new Error('Unbound layout endpoint');
+    parents.set(find(from),find(to));
+  }
+  const components=new Map<string,ElkNode>();
+  for(const node of graph.children??[]){
+    const root=find(node.id);
+    if(!components.has(root))components.set(root,{...graph,children:[],edges:[]});
+    components.get(root)!.children!.push(node);
+  }
+  for(const edge of graph.edges??[])components.get(find(roots.get(edge.sources[0]!)!))!.edges!.push(edge);
+  if(components.size<=1)return elk.layout(graph);
+  const children:ElkNode[]=[],edges:NonNullable<ElkNode['edges']>=[];
+  let width=0,height=0;
+  for(const component of components.values()){
+    const result=await elk.layout(component);
+    for(const node of result.children??[]){node.y=(node.y??0)+height;children.push(node);}
+    for(const edge of result.edges??[]){
+      const output=edge as typeof edge & {container?:string};
+      if(!output.container||output.container===graph.id){
+        for(const section of output.sections??[]){
+          section.startPoint.y+=height;section.endPoint.y+=height;
+          for(const point of section.bendPoints??[])point.y+=height;
+        }
+        for(const label of output.labels??[])label.y=(label.y??0)+height;
+      }
+      edges.push(edge);
+    }
+    width=Math.max(width,result.width??0);height+=(result.height??0)+24;
+  }
+  return {...graph,children,edges,width,height:height-24};
+}
 /** Actual font boxes go to the mature layout engine. No coordinates from the old D2 SVG are reused. */
 export async function layoutScenes(page: Page): Promise<readonly SceneLayoutReceipt[]> {
   const scenes = page.locator('svg[data-scene]'), count = await scenes.count();
@@ -49,7 +91,9 @@ export async function layoutScenes(page: Page): Promise<readonly SceneLayoutRece
       };
       graph.children!.forEach(size);
       for (const edge of graph.edges ?? []) {const label=input.labels[edge.id]!; if (label.width) edge.labels=[{id:edge.id+'-label',text:' ',width:label.width,height:label.height}];}
-      const start=performance.now(), result=await elk.layout(graph);
+      const stack=graph.layoutOptions['render.componentPacking']==='stack';
+      delete graph.layoutOptions['render.componentPacking'];
+      const start=performance.now(), result=await layoutGraph(elk,graph,stack);
       receipts.push({inputSHA256:digest(JSON.stringify({graph,measurements:input.nodes,labels:input.labels})),layoutSHA256:digest(JSON.stringify(result)),nodes:Object.keys(input.nodes).length,edges:graph.edges?.length??0,milliseconds:performance.now()-start});
       await scene.evaluate((svg, {result,input}) => {
         const nodes=Array.from(svg.querySelectorAll<SVGGElement>('[data-scene-node]'));

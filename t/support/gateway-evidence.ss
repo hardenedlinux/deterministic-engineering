@@ -9,7 +9,7 @@
         :clan/poo/object :std/encoding/json
         (only-in :std/misc/ports read-all-as-string)
         :gerbil-ascent/program/session
-        (only-in :agentic-ai-lab/modules/temporal-causality/trajectory/ascent-ledger ascent-trajectory))
+        (only-in :tao3k/agentic-ai-lab/modules/temporal-causality/trajectory/ascent-ledger ascent-trajectory))
 (def LocalProfile (.get deterministic-engineering.init.exports Library gateway-profiles profiles LocalProfile))
 (export main run-gateway-investigation)
 (def (read-text path) (call-with-input-file path read-all-as-string))
@@ -213,8 +213,8 @@
               "library/gateway-review/interface.ss" "library/gateway-review/types.ss"
               "library/gateway-review/objects.ss" "library/gateway-review/config.ss"
               "library/gateway-review/func.ss" "library/rust-resources/methods.ss"
-              "library/rust-resources/oracle.ss" "library/backpressure-memory/model.qnt"
-              "library/backpressure-memory/budget.lean")))
+              "library/rust-resources/oracle.ss" "languages-engineering/quint/concurrency/backpressure-memory/model.qnt"
+              "languages-engineering/lean/concurrency/backpressure-memory/budget.lean")))
           ("rejections" '("changed-artifact" "plain-JSON-is-not-an-issuer"))
           ("methodEvidence" "real-Core-Ops-QNT-TLC-Lean-native-ASCENT")
           ("rustImplementationVerified" #f) ("nativePerformanceMeasured" #f)))

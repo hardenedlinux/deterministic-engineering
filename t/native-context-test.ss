@@ -10,7 +10,7 @@
 
   (only-in :std/io/tempfile call-with-temporary-directory)
   (only-in :std/misc/ports read-all-as-string)
-  (only-in :clan/poo/mop validate TypeError?)
+  (only-in :clan/poo/type validate TypeError?)
   (only-in :gerbil-ascent/program/session gerbil-ascent-session-run)
   (only-in "../library/resource-lifecycle/func.ss" resource-lifecycle-scope))
 (def LifecycleProfile (.get deterministic-engineering.init.exports Library resource-lifecycle-profiles profiles LifecycleProfile))

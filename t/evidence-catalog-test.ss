@@ -8,7 +8,7 @@
   :clan/poo/object
   :deterministic-engineering/init
   :gerbil-ascent/program/session
-  (only-in :clan/poo/mop TypeError?))
+  (only-in :clan/poo/type TypeError?))
 (export evidence-catalog-test)
 
 (def evidence (.get deterministic-engineering.init.exports Library evidence))

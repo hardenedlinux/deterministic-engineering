@@ -2,19 +2,19 @@
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 (import
-  (only-in :yuanxu/module-system/source/declaration .def))
+  (only-in :clan/poo/object .def .o .get)
+  "types.ss" "config.ss" "func.ss"
+  (only-in "../project-organization/interface.ss" ProjectOrganizationLibrary))
+(export ProjectFormation)
+(def Library (.get ProjectOrganizationLibrary core exports))
 (.def ProjectFormation
   identity: 'project-formation
   tags: '(engineering driver organization)
-  admissions: (.o
-                Config: (.o
-                          export-path: '(config)
-                          contract-path: '(contracts config)))
   core: (.o
-          requires: (.o
-                      Library: (.o
-                                 module-id: 'project-organization
-                                 contract: (.get OrganizationScopeContract value-contract)))
+          admissions: (.o
+                        Config: (.o
+                                  export-path: '(config)
+                                  contract-path: '(contracts config)))
           scope-contract: (.get FormationScopeContract value-contract)
           exports: (.o (:: module-scope)
                      self: module-scope

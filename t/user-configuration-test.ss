@@ -3,13 +3,13 @@
 
 (import :std/test
         :clan/poo/object
-        (only-in :clan/poo/mop validate TypeError?)
-        (only-in :yuanxu/configuration/json config-defaults)
+        (only-in :clan/poo/type validate TypeError?)
+        (only-in :tao3k/yuanxu/configuration/json config-defaults)
         (only-in "../library/source-contract-profiles/types.ss" ConfigType)
         (prefix-in "../config.ss" defaults-)
         (prefix-in "../examples/programs.ss" user-)
         (only-in :std/source this-source-file)
-        (only-in :yuanxu/module-system/source/init module-init-intent))
+        (only-in :tao3k/yuanxu/module-system/source/init module-init-intent))
 (export user-configuration-test)
 
 (def root (path-expand ".." (path-directory (this-source-file))))

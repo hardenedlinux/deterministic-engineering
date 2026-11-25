@@ -5,7 +5,7 @@
 ;;; -*- Gerbil -*-
 (import
   :std/test
-  (only-in :clan/poo/mop validate TypeError?)
+  (only-in :clan/poo/type validate TypeError?)
   "../types.ss")
 
 (export

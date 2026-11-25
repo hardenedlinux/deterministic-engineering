@@ -5,7 +5,7 @@
 ;;; -*- Gerbil -*-
 (import :std/test :deterministic-engineering/init :clan/poo/object
 
-        (only-in :clan/poo/mop validate)
+        (only-in :clan/poo/type validate)
         (only-in :gerbil-ascent/rules/declaration rule-module-program))
 (def LocalProfile (.get deterministic-engineering.init.exports Library gateway-profiles profiles LocalProfile))
 (def Cap2Profile (.get deterministic-engineering.init.exports Library gateway-profiles profiles Cap2Profile))

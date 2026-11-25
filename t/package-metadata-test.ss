@@ -5,7 +5,7 @@
 ;;; -*- Gerbil -*-
 ;;; Validate native package metadata against the registered local Git sources.
 (import :std/test (only-in :gerbil/tools/gxpkg pkg-root-dir pkg-plist pkg-list)
-        (only-in :yuanxu/module-system/building/artifacts require-build-products!)
+        (only-in :tao3k/yuanxu/module-system/building/artifacts require-build-products!)
         (only-in :std/misc/process run-process))
 
 (def root-metadata (call-with-input-file "gerbil.pkg" read))
@@ -150,7 +150,7 @@
   ;; the loader's Scheme fallback. This runs in each fresh bounded test process.
   (eval '(begin
            (import (only-in :clan/poo/object object? .get)
-                   (only-in :clan/poo/mop Type element?)
+                   (only-in :clan/poo/type Type element?)
                    (only-in :gerbil-ascent/program/session gerbil-ascent-open-session)
                    (only-in :deterministic-engineering/config Config)
                    (only-in :deterministic-engineering/init

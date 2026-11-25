@@ -6,9 +6,9 @@
 (import :std/test :clan/poo/object
         (only-in :std/source this-source-file)
         (only-in :std/io/tempfile call-with-temporary-directory)
-        (only-in :yuanxu/module-system/interface yuanxu-load-modules))
+        (only-in :tao3k/yuanxu/module-system/interface yuanxu-load-modules))
 (export library-selection-test)
-(import (only-in :clan/poo/mop validate)
+(import (only-in :clan/poo/type validate)
         (only-in "../library/rust-resources/types.ss" RustResourcesScopeContract RustResourceModelContract))
 (def repo-root (path-expand ".." (path-directory (this-source-file))))
 (def (write-source path text)

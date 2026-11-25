@@ -7,12 +7,12 @@
   :std/encoding/json
   :gerbil-ascent/program/session
   (only-in :gerbil-ascent/rules/declaration rule-module-program)
-  (only-in :clan/poo/mop validate)
-  (only-in :yuanxu/ops/process-script ProcessScript.)
+  (only-in :clan/poo/type validate)
+  (only-in :tao3k/yuanxu/ops/process-script ProcessScript.)
   (only-in :std/crypto/digest sha256)
   (only-in :std/encoding/hex hex-encode)
   (only-in :std/misc/ports read-all-as-u8vector)
-  (only-in :yuanxu/module-system/source/observations call-with-collected-module-sources)
+  (only-in :tao3k/yuanxu/module-system/source/observations call-with-collected-module-sources)
   "source-contract-input.ss")
 (export source-contract-test-support)
 

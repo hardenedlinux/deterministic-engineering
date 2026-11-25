@@ -4,7 +4,7 @@
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 ;;; -*- Gerbil -*-
 (import :std/test :clan/poo/object :gerbil-ascent/rules/func
-        (only-in :clan/poo/mop validate)
+        (only-in :clan/poo/type validate)
         "../library/rust-resources/objects.ss"
         "../library/backpressure-tokio-rayon/objects.ss"
         "../library/rust-resources/types.ss"

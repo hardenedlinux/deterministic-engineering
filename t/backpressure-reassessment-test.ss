@@ -4,7 +4,7 @@
 
 ;;; -*- Gerbil -*-
 (import (only-in :gerbil/runtime/loader list-modules) (only-in :std/os/pid getpid) :std/test :std/encoding/json :std/misc/ports :std/list/list (only-in :std/misc/ports read-all-as-u8vector) :clan/poo/object
-        :yuanxu/contribution/verification
+        :tao3k/yuanxu/contribution/verification
         :deterministic-engineering/scenarios/resource-lifecycle/review/profile
         :deterministic-engineering/scenarios/resource-lifecycle/review/func
         :deterministic-engineering/scenarios/resource-lifecycle/review/reassessment)

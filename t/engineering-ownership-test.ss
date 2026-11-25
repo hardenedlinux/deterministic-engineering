@@ -5,7 +5,7 @@
 ;;; -*- Gerbil -*-
 (import :std/test
   (only-in :clan/poo/object .get .slot? .cc)
-  (only-in :clan/poo/mop validate)
+  (only-in :clan/poo/type validate)
   :deterministic-engineering/init)
 (export engineering-ownership-test)
 (def engineering-ownership-test

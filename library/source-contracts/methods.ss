@@ -4,8 +4,8 @@
 ;;; Pure verification-plan declarations. Consumers own execution and evidence issuance.
 (import
   :clan/poo/object
-  (only-in :clan/poo/mop validate)
-  (only-in :yuanxu/poo-clos/generic-syntax .defgeneric .defmethod)
+  (only-in :clan/poo/type validate)
+  (only-in :clan/poo/mop/clos/generic-syntax .defgeneric .defmethod)
   "types.ss"
   "objects.ss")
 (export contract-plan)

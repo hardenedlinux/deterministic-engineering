@@ -5,10 +5,10 @@
 ;;; Evidence admission describes inputs and results; it grants no execution authority.
 (import
   (only-in :clan/poo/object .o)
-  (only-in :clan/poo/mop Type Type. Any Object Function define-type element?)
+  (only-in :clan/poo/type Type Type. Any Object Function define-type element?)
   (only-in :clan/poo/type Record Symbol List Pair Exactly)
-  (only-in :clan/poo/object-contract ObjectContract.)
-  (only-in :yuanxu/object-types/contracts YuanxuContract.)
+  (only-in :clan/poo/types/object-contract ObjectContract.)
+  (only-in :tao3k/yuanxu/types/contracts YuanxuContract.)
   (only-in :gerbil-ascent/program/types
            GerbilAscentProgramContract)
   (only-in :gerbil-ascent/rules/declaration rule-module? rule-module-program)

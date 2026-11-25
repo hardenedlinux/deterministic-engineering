@@ -1,0 +1,204 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 10.151 Quint Models Library and Packages
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.151
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Decision
+:PROPERTIES:
+:CUSTOM_ID: qnt151-decision
+:STATUS: design-only-not-implemented
+:END:
+
+Reusable finite state models, starting with threat models, are declared once as
+Scheme POO Modules and projected to Quint. Downstream repositories install the
+projected models and a package-aware resolver through bun. Quint itself is used
+unmodified.
+
+| Concern | Owner |
+|---------+-------|
+| Model semantics: state, guards, transitions, safety, traces, weakened countermodels | Domain =SchemeModule= leaves |
+| Quint text projection and check plan | =quint-methods= Method Module, pure |
+| Reusable compositions, depths, seeds, required counterexamples | =threat-model-profiles= Profile Module |
+| User selection | =programs.deterministic-engineering.languages.quint= in [[file:../../../config.ss][config.ss]] |
+| Projected models | =@deterministic-engineering/quint-models= under =packages/quint-models/= |
+| Package-aware import resolution | =@deterministic-engineering/quint-modules-resolver= under =packages/quint-modules-resolver/= |
+| Actual quint / Apalache execution and evidence | =t/= and consuming hosts |
+
+Placements follow [[file:10.150-repository-organization-and-package-taxonomy.org][10.150]]. The Library boundary of [[file:10.148-flat-declarative-library-boundary.org][10.148]] holds: no Module
+launches a process, writes a file or issues a result. The configuration interface
+of [[file:10.149-unified-language-engineering-configuration.org][10.149]] is extended, not replaced. Quint remains a method in the sense of
+[[file:10.25-rust-sysml-quint-lean-evidence-integration.org][10.25]]: finite safety, not unbounded liveness. The paired view is
+[[file:../../90-99-views/90-architecture-views/90.142-quint-models-library-and-packages.d2][90.142 D2]].
+
+* Why Scheme projection rather than Quint modules alone
+:PROPERTIES:
+:CUSTOM_ID: qnt151-why
+:END:
+
+Quint instantiation substitutes =const= values only. It cannot inherit a module,
+drop a guard, refine an action or strengthen a safety predicate. Those are POO
+slot operations. Specialization and weakening therefore happen during projection;
+Quint receives an expanded ordinary module.
+
+A countermodel is a declared descendant that removes one guard. Its ancestry is
+queryable, so "this unsafe trace exists because durable acknowledgement was
+removed" is a property of the declaration, not of a hand-written extra action.
+
+* Domain Modules
+:PROPERTIES:
+:CUSTOM_ID: qnt151-domains
+:END:
+
+Each leaf is flat under =library/= with =tags: '(engineering domain threat)=.
+
+| Module | Meaning | Requires |
+|--------+---------+----------|
+| =threat-capabilities= | Finite attacker acquisition graph: initial, isolated, goals, rules | — |
+| =authority-currentness= | Freshness, credential validity, writer epoch, pause | — |
+| =effect-handoff= | Prepare, durable commit and emission at most once; unknown outcomes retained | =authority-currentness= |
+| =effect-containment= | Pause, revocation, pending clear and observed clearance witness | =authority-currentness= |
+| =state-rollback= | Old-snapshot replay and rollback | =effect-handoff= |
+
+Every domain prototype publishes the same slots.
+
+| Slot | Meaning | Refinement |
+|------+---------+------------|
+| =state= | Finite state vocabulary and domains | Descendants append fields |
+| =guards= | Action preconditions | Descendants append; countermodels remove exactly one |
+| =transitions= | Guarded actions | Append or refine |
+| =safety= | Safety predicate | Strengthen only |
+| =traces= | Deterministic positive and negative traces | Append |
+| =countermodels= | Weakened descendants with the required unsafe witness | Append |
+| =parameters= | Values left to the consumer, projected as Quint =const= | Declared, not defaulted |
+| =limits= | What the model does not claim | Projected as comments |
+
+* Projection and plan
+:PROPERTIES:
+:CUSTOM_ID: qnt151-methods
+:END:
+
+=quint-methods= mirrors the role of [[file:../../../library/source-contracts/methods.ss][source-contracts]]:
+
+- =(.defgeneric quint-module (model))= returns Quint source text, dispatched on
+  the selected prototype ancestry. Unknown prototypes fail dispatch.
+- =(.defgeneric quint-plan (model profile policy))= returns symbolic steps:
+  typecheck, deterministic tests with seed, bounded verification depth, and each
+  required counterexample with expected exit and ITF predicate.
+
+Neither generic writes files or launches processes. Changing a Profile depth,
+seed or required counterexample changes the plan identity, so an older result
+cannot support the changed plan.
+
+* Configuration
+:PROPERTIES:
+:CUSTOM_ID: qnt151-config
+:END:
+
+#+begin_src scheme
+languages:
+(.o
+  c:   (.o enable: #f settings: (.o profile: 'capacity-body timeout: 45))
+  cpp: (.o enable: #f settings: (.o profile: 'lifetime-body timeout: 45))
+  quint:
+  (.o enable: #f
+      settings: (.o profile: 'exact-effect-host timeout: 120)))
+#+end_src
+
+Depth, seed and required counterexamples belong to the Profile and cannot be
+removed through Settings, matching the protected C/C++ safety flags. Unknown
+fields and out-of-range timeouts refuse through the sealed Config Type.
+
+* Packages
+:PROPERTIES:
+:CUSTOM_ID: qnt151-packages
+:END:
+
+** quint-models: content organized by domain
+:PROPERTIES:
+:CUSTOM_ID: qnt151-quint-models
+:END:
+
+#+begin_example
+packages/quint-models/
+  package.json                      exports { "./*": "./*" }
+  threat/
+    capabilities/Capabilities.qnt   plan.json  receipt.json
+    authority-currentness/AuthorityCurrentness.qnt
+    effect-handoff/EffectHandoff.qnt
+    effect-containment/EffectContainment.qnt
+    state-rollback/StateRollback.qnt
+  concurrency/
+    backpressure-memory/BackpressureOwners.qnt
+#+end_example
+
+Threat models are one domain directory. =concurrency/= receives the backpressure
+model now misplaced in a Scheme Module (10.150 D3). =receipt.json= records the
+DE source commit, source =.ss= digests, artifact digests and the Quint version.
+It records no execution verdict. DE CI reprojects in the same commit and refuses
+any difference.
+
+** quint-modules-resolver: resolution for official Quint
+:PROPERTIES:
+:CUSTOM_ID: qnt151-quint-modules-resolver
+:END:
+
+Quint 0.33.0 resolves an import by joining the importer directory with the
+specifier plus =.qnt=. It has no package lookup. The resolver is an interface
+={lookupPath, load, stempath}=; =parsePhase1fromText= through =parsePhase4toposort=
+and =fileSourceResolver= are public exports, and later stages consume only the
+previous stage value.
+
+=quint-modules-resolver= replaces resolution only. Relative and absolute specifiers go to
+the native resolver. Bare specifiers resolve by Node rules, including
+=node_modules= lookup and package =exports=. Typecheck, test, compile and verify
+are the official implementations. Quint is a peer dependency pinned exactly; it
+is not forked, patched or redistributed.
+
+| Spike (scratch, Quint 0.33.0) | Result |
+|-------------------------------+--------|
+| Typecheck: bare specifier, relative import inside the package, parameterized instance | Exit 0 |
+| Test with seed 7 | 1 passing |
+| Native =quint typecheck= on the same file | QNT013 could not load |
+
+The spike is design evidence only. Two premises remain: the stage functions
+live in =dist/src/cliCommands.js=, outside the public index, so a conformance test
+must show identical native and resolver results on relative-only models before
+any Quint upgrade; and the Apalache =verify= path has not been exercised.
+
+* Downstream consumption
+:PROPERTIES:
+:CUSTOM_ID: qnt151-downstream
+:END:
+
+#+begin_src js
+"@deterministic-engineering/quint-models":  "git+https://github.com/hardenedlinux/deterministic-engineering-quint-models.git#<sha>",
+"@deterministic-engineering/quint-modules-resolver": "git+https://github.com/hardenedlinux/deterministic-engineering-quint-modules-resolver.git#<sha>",
+"@informalsystems/quint": "0.33.0"
+#+end_src
+
+#+begin_src text
+module wallet_host_case {
+  import effect_handoff(MaxSends = 1).*
+    from "@deterministic-engineering/quint-models/threat/effect-handoff/EffectHandoff"
+}
+#+end_src
+
+A consumer with its own source of truth, such as a Lean POO object, supplies
+only =parameters=. Its host replaces =quint= with =quint-modules-resolver=, executes the
+package =plan.json=, verifies =receipt.json= digests against installed bytes and
+keeps its own Quint/Apalache pins and deadlines. Gerbil and Lean POO meet only
+through Quint =const= values; neither shares the other's object implementation.
+
+* Limits
+:PROPERTIES:
+:CUSTOM_ID: qnt151-limits
+:END:
+
+No Module, package, plan or resolver is implemented by this item. Projected
+models are finite abstractions; trusted bits summarize real verifiers, storage
+and networks. No Lean/Quint refinement theorem, cryptographic property, physical
+atomicity or deployed Host behavior is established.

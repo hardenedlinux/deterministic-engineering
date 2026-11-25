@@ -3,7 +3,7 @@
 
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 (import :std/test :clan/poo/object
-        (only-in :clan/poo/mop validate)
+        (only-in :clan/poo/type validate)
         "../library/backpressure-memory/objects.ss"
         "../library/rust-resources/objects.ss"
         "../library/backpressure-tokio-rayon/objects.ss"

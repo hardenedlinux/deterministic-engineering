@@ -1,0 +1,92 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+# Org authority: ../../10-19-design/10-architecture/10.150-repository-organization-and-package-taxonomy.org
+# Design projection; rendering is not verification or approval.
+vars: {d2-config: {data: {figure: |json
+{
+  "title": "Repository organization: placements and packages",
+  "purpose": "architecture",
+  "kind": "library-architecture",
+  "language": "en",
+  "width": 1400,
+  "primary": "placement",
+  "questions": [
+    {
+      "ref": "placement",
+      "text": "Which placement owns each responsibility, and which rules keep packages within one family?",
+      "focusRefs": [
+        "authority",
+        "declaration"
+      ],
+      "subjectRefs": [
+        "organization",
+        "rules",
+        "packages"
+      ]
+    }
+  ],
+  "references": {
+    "authority": "docs/10-19-design/10-architecture/10.150-repository-organization-and-package-taxonomy.org",
+    "declaration": "docs/90-99-views/90-architecture-views/90.141-repository-organization-and-packages.d2",
+    "organization-sysml": "docs/10-19-design/10-architecture/10.150-repository-organization-and-package-taxonomy.sysml",
+    "organization": "library/project-organization/objects.ss",
+    "catalog": "library/project-organization/organization.sysml",
+    "profile": "library/library-formation-profiles/objects.ss",
+    "rules": "library/project-formation/func.ss",
+    "model": "project.sysml",
+    "selection": "init.ss",
+    "package": "package.json"
+  },
+  "basis": {
+    "captureRef": "design-candidate:90.141-repository-organization-and-packages",
+    "modelRefs": [
+      "docs/10-19-design/10-architecture/10.150-repository-organization-and-package-taxonomy.org"
+    ],
+    "obligationRefs": [],
+    "evidenceRefs": []
+  },
+  "copy": {},
+  "themes": [
+    "sketchbook",
+    "compact"
+  ],
+  "presentation": {
+    "options": {
+      "elk.direction": "DOWN",
+      "elk.layered.spacing.nodeNodeBetweenLayers": "48"
+    },
+    "edgeLabels": false
+  }
+}
+|}}}
+direction: down
+
+organization: "project-organization\nRoles + placements + package families\nScheme POO source of truth"
+profile: "library-formation-profiles\nThis repository's placement instances"
+tree: "Actual tree and package.json files\nCaptured input facts"
+rules: "project-formation rules OR01-OR06\nSingle owner / forbidden content\nPackage family / closure / coverage"
+model: "Rendered SysML v2\nproject.sysml + organization.sysml"
+findings: "Findings\nD1-D6 detected before repair"
+library: "SchemeModule\nlibrary/<module>/ flat, tags classify"
+assets: "LanguageAssets\nlanguages-engineering/<lang>/<domain>/<subject>/"
+packages: "DistributionPackage\npackages/<pkg>/ one family each"
+render: "render\npresentation"
+quintModels: "quint-models\nthreat/ concurrency/ ..."
+quintModulesResolver: "quint-modules-resolver\nresolver for official Quint"
+mirrors: "Read-only mirrors\nCI subtree split per prefix\nbun installs by commit"
+development: "DevelopmentVerification\nt/ actual tools and gold"
+organization -> profile -> rules
+tree -> rules
+rules -> model: "render"
+rules -> findings
+model -> library
+model -> assets
+model -> packages
+model -> development
+packages -> render
+packages -> quintModels
+packages -> quintModulesResolver
+render -> mirrors
+quintModels -> mirrors
+quintModulesResolver -> mirrors

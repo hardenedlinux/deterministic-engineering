@@ -3,7 +3,7 @@
 
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 (import :std/test :clan/poo/object
-        (only-in :clan/poo/mop validate)
+        (only-in :clan/poo/type validate)
         "../library/rust-resources/types.ss"
         "../library/rust-resources/objects.ss"
         "../library/rust-resources/func.ss"

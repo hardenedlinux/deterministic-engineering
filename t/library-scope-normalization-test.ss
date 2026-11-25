@@ -4,8 +4,8 @@
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 ;;; -*- Gerbil -*-
 (import :std/test :clan/poo/object
-        (only-in :clan/poo/mop validate)
-        (only-in :clan/poo/recursive-validation closed-names)
+        (only-in :clan/poo/type validate)
+        (only-in :clan/poo/recursive/validation closed-names)
         (only-in "../library/backpressure-memory/types.ss"
           BackpressureScopeContract BackpressureModelContract BackpressureDeclarationContract BackpressureConfigContract)
         (only-in "../library/backpressure-memory/objects.ss"

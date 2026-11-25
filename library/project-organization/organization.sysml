@@ -12,4 +12,13 @@ package RepositoryOrganization {
  part def MethodContracts;
  part def ReceiptBoundary;
  part def ProjectEntry;
+
+ part def SchemeModule;
+ part def LanguageAssets;
+ part def DistributionPackage;
+ part def UserExample;
+ part def DevelopmentVerification;
+ part def DocumentItem;
+ part def ArchitectureView;
+ part def PackageInfrastructure;
 }

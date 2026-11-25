@@ -6,7 +6,7 @@
 (import
   :std/test
   (only-in :clan/poo/object .o .cc .get)
-  (only-in :clan/poo/mop validate TypeError?)
+  (only-in :clan/poo/type validate TypeError?)
   :deterministic-engineering/init
 
   (only-in :gerbil-ascent/program/session

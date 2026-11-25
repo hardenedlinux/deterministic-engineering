@@ -3,7 +3,7 @@
 ;;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 (import :std/test :clan/poo/object
-        (only-in :clan/poo/mop validate)
+        (only-in :clan/poo/type validate)
         "../types.ss"
         "../library/backpressure-memory/types.ss"
         "../library/backpressure-memory/objects.ss")

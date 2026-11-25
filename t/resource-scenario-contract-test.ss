@@ -6,9 +6,10 @@
 (import
   :std/test
   (only-in :clan/poo/object .o .cc .get)
-  (only-in :clan/poo/mop validate TypeError? map-object-values)
+  (only-in :clan/poo/type validate TypeError?)
+  (only-in :clan/poo/mop map-object-values)
   (only-in :clan/poo/type Record)
-  (only-in :clan/poo/recursive-validation close-validation closed-ref)
+  (only-in :clan/poo/recursive/validation close-validation closed-ref)
   :deterministic-engineering/init
 
   (only-in "../library/resource-lifecycle/func.ss" resource-lifecycle-scope))

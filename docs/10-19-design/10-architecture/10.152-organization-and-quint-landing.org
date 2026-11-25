@@ -1,0 +1,71 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 10.152 Organization and Quint Models Landing
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.152
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Scope
+:PROPERTIES:
+:CUSTOM_ID: land152-scope
+:STATUS: planned-no-stage-accepted
+:END:
+
+This item orders the implementation of [[file:10.150-repository-organization-and-package-taxonomy.org][10.150]] and [[file:10.151-quint-models-library-and-packages.org][10.151]]. Organization lands
+before Quint content: placements and rules first detect the current debt, then
+the repair, then publication, then models. Each stage has positive and refusal
+conditions; observed results are appended below as stages execute.
+
+* Stages
+:PROPERTIES:
+:CUSTOM_ID: land152-stages
+:END:
+
+| Stage | Products | Passing condition | Refusal condition |
+|-------+----------+-------------------+-------------------|
+| L0 Documents | 10.150-10.152, companion SysML, views 90.141 and 90.142, index rows | Review accepted; view receipts bind current sources | A view references an absent source |
+| L1 Organization declaration | Placement definitions and package families in =project-organization=; instances in =library-formation-profiles=; rules OR01-OR06 in =project-formation= | D1-D6 each reported as a finding; =render= emits placement parts in =project.sysml= | Any debt row passes silently |
+| L2 Organization repair | Workspace root; render manifest under =packages/render/=; D2-D5 repairs | Zero findings; native build and current tests unchanged; render example receipts regenerated | A forwarding file or compatibility manifest remains |
+| L3 Publication channel | Three read-only mirrors; subtree split publication CI; render first | Downstream renders from the render mirror with unchanged output and receipts | Mirror accepts a non-CI push; mirror commit lacks =DE-Source-Commit= |
+| L4 Quint models | Domain Modules, =quint-methods=, =threat-model-profiles=, =packages/quint-models=, =packages/quint-modules-resolver= | Every projection typechecks; same-commit reprojection matches; resolver conformance passes; Apalache verify path passes | A plan without its required counterexample is accepted; unknown prototype projects |
+| L5 Downstream migration | cedar-poo-spec installs both Quint packages | All 37 deterministic controls, 4 positive depth-12 checks, 5 broken-boundary countermodels and 2 false-claim witnesses retained | Any result differs from the hand-written baseline; a forwarding model remains |
+
+* Downstream baseline
+:PROPERTIES:
+:CUSTOM_ID: land152-baseline
+:END:
+
+L5 compares against the current cedar-poo-spec gate: hand-written
+=Capabilities.qnt=, =WalletSigning.qnt=, =WalletContainment.qnt=, =WalletHost.qnt=
+and =WalletReplay.qnt=, Lean-exported instances, Quint 0.33.0, Apalache 0.62.1,
+seed 7, positive depth 12 and negative depth 4, each command under a 120-second
+deadline. A migrated model is accepted only when the same trace counts, safety
+results and ITF failure predicates are observed. Wallet-specific observation bits
+remain in the consumer.
+
+* Open decisions
+:PROPERTIES:
+:CUSTOM_ID: land152-open
+:END:
+
+| Decision | Current proposal |
+|----------+------------------|
+| Mirror repository names and creator | Decided: the three public repositories in 10.150 were created empty on 2026-11-25; issues and wiki disabled; first push and push restriction belong to L3 |
+| =quint-modules-resolver= as a separate package | Decided: separate package, reusable by other Quint model libraries |
+| Status of =observation/= | Classify each file as retained evidence or development output before L2 |
+| Additional placements | Add Rust crate or Python package placements only when an actual subject exists |
+
+* Observed results
+:PROPERTIES:
+:CUSTOM_ID: land152-observed
+:END:
+
+| Stage | Result |
+|-------+--------|
+| L0 | Documents, SysML model and views drafted; views exported through the existing library-boundary example with decoded PNG/WebP pixels equal; example tests 6 pass; REUSE lint compliant; all =file:= links resolve. Review pending |
+| L1 | Aligned DE to =agentic-ai-lab@976b5c8e= / =gebril-yuanxu@47f02f44=; =gerbil build= exit 0; added 9 placements, =placement-roles=, 3 package families, =OrganizationPlacementProgram= (OR01-OR06) and =render-formation-model-with-placements=; =organization-library-test=, =project-formation-test= and =repository-organization-test= pass (live debts D1, D3, D4, D5, D6 reported; D2 checked as OR05 negative control; repaired baseline zero findings) |
+| L2 | Converted root =package.json= to private bun workspace and moved =@deterministic-engineering/render= manifest into =packages/render/package.json=; relocated =model.qnt= and =budget.lean= under =languages-engineering/=; relocated =observation/= to =t/fixtures/historical-backpressure-observation/=; removed retired =project-intake= from =projects/library-formation/init.ss=; regenerated =project.sysml= with =part 'placements'=; OR01-OR06 report zero findings on the actual repository |
+| L3 | Added =.github/workflows/publish-packages.yml= (=git subtree split= to read-only mirrors on release tags) and updated =.github/workflows/render.yml= to test local subtree split consumption; first mirror push and branch protection pending release tag and =PACKAGE_MIRROR_PUSH_TOKEN= |
+| L4 | Added 5 flat threat domain Modules (=threat-capabilities=, =authority-currentness=, =effect-handoff=, =effect-containment=, =state-rollback=), =quint-methods= (sealed =Record= contracts + =.defgeneric quint-module/quint-plan=), =threat-model-profiles=, =languages.quint= in =config.ss=, =packages/quint-models/= (6 models + plans + receipts) and =packages/quint-modules-resolver/=; =just build= exit 0, =quint-models-projection-test= 4/4 pass, =repository-organization-test= 4/4 pass (zero findings), =quint-modules-resolver= typecheck + conformance tests 3/3 pass (9 passing traces via bare specifier); Apalache =verify= path and L5 cedar migration remain next |

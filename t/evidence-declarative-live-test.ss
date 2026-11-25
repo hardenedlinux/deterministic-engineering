@@ -6,7 +6,7 @@
 ;;; Real QNT/TLC outputs, independent BFS/trace oracles and native exchanges.
 (import :std/test :std/encoding/json :clan/poo/object :gerbil-ascent/program/session
         (only-in :std/misc/ports read-all-as-string)
-        (only-in :agentic-ai-lab/modules/temporal-causality/trajectory/ascent-ledger ascent-trajectory)
+        (only-in :tao3k/agentic-ai-lab/modules/temporal-causality/trajectory/ascent-ledger ascent-trajectory)
 
         "../library/backpressure-memory/objects.ss"
         "../library/rust-resources/objects.ss"
@@ -35,7 +35,7 @@
     (test-case "real pass and counter retain frozen cuts, reuse and currentness boundaries"
       (def root (getenv "LIBRARY_METHOD_ROOT"))
       (def tool (getenv "LIBRARY_QUINT"))
-      (def source (path-expand "library/backpressure-memory/model.qnt" root))
+      (def source (path-expand "languages-engineering/quint/concurrency/backpressure-memory/model.qnt" root))
       (def rule-source (path-expand "library/evidence/func.ss" root))
       (def model (specialize-backpressure BackpressureModel selected-method-references))
       (def pass (resource-run-qnt root LifecycleProfile tool (path-expand "pass" root)))

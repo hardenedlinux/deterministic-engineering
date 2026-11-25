@@ -1,15 +1,16 @@
 ;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
-(import (only-in :yuanxu/module-system/source/declaration .def))
+(import (only-in :clan/poo/object .def .o)
+        "types.ss" "objects.ss" "config.ss" "methods.ss")
+(export SourceContracts)
 (.def SourceContracts
   identity: 'source-contracts
   tags: '(engineering method verification source-contract)
-  admissions:
-  (.o Config: (.o export-path: '(config) contract-path: '(config-type)))
   core:
   (.o
-    requires: (.o)
+    admissions:
+    (.o Config: (.o export-path: '(config) contract-path: '(config-type)))
     scope-contract: SourceContractScopeType
     exports:
     (.o

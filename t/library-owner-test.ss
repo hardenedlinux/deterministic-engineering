@@ -6,7 +6,7 @@
 (import :std/test :clan/poo/object :deterministic-engineering/init
 
 
-        (only-in :clan/poo/mop validate)
+        (only-in :clan/poo/type validate)
         (only-in :std/io/tempfile call-with-temporary-directory)
         (only-in "../library/rust-resources/types.ss"
           ResourceProfileContract ResourceNativeProfileContract)

@@ -3,7 +3,7 @@
 
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 (import :std/test :clan/poo/object
- (only-in :clan/poo/mop validate)
+ (only-in :clan/poo/type validate)
  "../types.ss"
  "../library/project-organization/types.ss"
  "../library/project-organization/objects.ss"

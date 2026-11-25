@@ -9,7 +9,7 @@
         (only-in :std/source this-source-file)
         (only-in :std/io/tempfile call-with-temporary-directory)
         (only-in :std/misc/ports read-all-as-string)
-        (only-in :yuanxu/module-system/interface yuanxu-load-modules))
+        (only-in :tao3k/yuanxu/module-system/interface yuanxu-load-modules))
 (export source-contract-owner-config-test)
 
 (def root (path-expand ".." (path-directory (this-source-file))))
@@ -52,7 +52,7 @@
           (def (write-configuration disabled?)
             (write-text configuration
               (string-append
-                "(import :clan/poo/object (only-in :yuanxu/configuration/json config-defaults) (prefix-in \"../../config.ss\" defaults-) (prefix-in \"../../examples/programs.ss\" user-))\n(export Config)\n"
+                "(import :clan/poo/object (only-in :tao3k/yuanxu/configuration/json config-defaults) (prefix-in \"../../config.ss\" defaults-) (prefix-in \"../../examples/programs.ss\" user-))\n(export Config)\n"
                 "(.def (Config @ (config-defaults defaults-Config "
                 (if disabled?
                     "(config-defaults user-Config (.o programs: (.o deterministic-engineering: (.o languages: (.o c: (.o enable: #f))))))"
@@ -61,7 +61,7 @@
           (write-configuration #f)
           (def entry (path-expand "init.ss" directory))
           (write-text entry
-            "(import :yuanxu/module-system/selection/init-syntax)\n(yuanxu! :load-modules \"./library\" mode: auto rename: Library (source-contract-profiles))\n")
+            "(import :tao3k/yuanxu/module-system/selection/init-syntax)\n(yuanxu! :load-modules \"./library\" mode: auto mount: Library (source-contract-profiles))\n")
           (def owner (yuanxu-load-modules entry))
           (def selected (.get owner modules Library))
           (def profile-module (.get selected source-contract-profiles))

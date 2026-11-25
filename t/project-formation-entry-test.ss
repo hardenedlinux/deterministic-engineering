@@ -2,10 +2,10 @@
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-(import :std/test :clan/poo/object (only-in :clan/poo/mop validate)
+(import :std/test :clan/poo/object (only-in :clan/poo/type validate)
         (only-in :std/source this-source-file)
         (only-in "../library/project-formation/inputs.ss" formation-input-observation)
-        (only-in :yuanxu/module-system/source/admission current-module-source-observer)
+        (only-in :tao3k/yuanxu/module-system/source/admission current-module-source-observer)
         "../projects/library-formation/init.ss"
         )
 (import :deterministic-engineering/init)

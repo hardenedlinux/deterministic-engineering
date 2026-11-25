@@ -5,48 +5,39 @@
 // Generated from the ProjectFormation ASCENT result; design-only module projection.
 // Model context and companion catalog are selected in project_layout.
 package 'DeterministicEngineering' {
-    private import 'DECaseOrganization'::*;
-    doc /* Project 'DE-CASE-01'; confirmed intent 'reusable-library'; structural candidate 'LIB-C01'. Design assertions only; runtime capability gates remain separate. */
-    part def 'LibraryDefinitions';
-    part def 'DocumentOrganization';
-    part def 'MethodContracts';
-    part def 'ProjectEntry';
-    part def 'ApplicationReasoning';
-    part def 'ReceiptBoundary';
-    part def 'ReviewBoundary';
-    part def 'ProjectScenario';
-    part def 'IndependentProfile';
+    private import 'RepositoryOrganization'::*;
+    doc /* Project 'DE-CASE-01'; declared intent 'reusable-library'; structural candidate 'LIB-C01'. Design assertions only; runtime capability gates remain separate. */
     part <'DE-PROJECT'> 'libraryProject' {
-        part 'definitions' : 'LibraryDefinitions';
-        part 'documentation' : 'DocumentOrganization';
-        part 'methodContracts' : 'MethodContracts';
-        part 'projectEntry' : 'ProjectEntry';
-        part 'reasoning' : 'ApplicationReasoning';
-        part 'receiptIssuance' : 'ReceiptBoundary';
-        part 'review' : 'ReviewBoundary';
-        part 'scenarioUse' : 'ProjectScenario';
-        part 'selection' : 'IndependentProfile';
+        part 'definitions' : 'RepositoryOrganization'::LibraryDefinitions;
+        part 'documentation' : 'RepositoryOrganization'::DocumentOrganization;
+        part 'methodContracts' : 'RepositoryOrganization'::MethodContracts;
+        part 'projectEntry' : 'RepositoryOrganization'::ProjectEntry;
+        part 'reasoning' : 'RepositoryOrganization'::ApplicationReasoning;
+        part 'receiptIssuance' : 'RepositoryOrganization'::ReceiptBoundary;
+        part 'review' : 'RepositoryOrganization'::ReviewBoundary;
+        part 'scenarioUse' : 'RepositoryOrganization'::ProjectScenario;
+        part 'selection' : 'RepositoryOrganization'::IndependentProfile;
     }
-    dependency edge0 from 'libraryProject'::'documentation' to 'libraryProject'::'definitions';
-    dependency edge1 from 'libraryProject'::'methodContracts' to 'libraryProject'::'definitions';
-    dependency edge2 from 'libraryProject'::'projectEntry' to 'libraryProject'::'definitions';
-    dependency edge3 from 'libraryProject'::'projectEntry' to 'libraryProject'::'reasoning';
-    dependency edge4 from 'libraryProject'::'projectEntry' to 'libraryProject'::'scenarioUse';
-    dependency edge5 from 'libraryProject'::'reasoning' to 'libraryProject'::'scenarioUse';
-    dependency edge6 from 'libraryProject'::'receiptIssuance' to 'libraryProject'::'scenarioUse';
-    dependency edge7 from 'libraryProject'::'review' to 'libraryProject'::'reasoning';
-    dependency edge8 from 'libraryProject'::'scenarioUse' to 'libraryProject'::'definitions';
-    dependency edge9 from 'libraryProject'::'scenarioUse' to 'libraryProject'::'selection';
-    dependency edge10 from 'libraryProject'::'selection' to 'libraryProject'::'definitions';
-    dependency source0 from 'libraryProject'::'definitions' to 'DECaseOrganization'::actual::projectFormation::organizationLibrary;
-    dependency source1 from 'libraryProject'::'documentation' to 'DECaseOrganization'::products::architecture;
-    dependency source2 from 'libraryProject'::'methodContracts' to 'DECaseOrganization'::actual::methods;
-    dependency source3 from 'libraryProject'::'projectEntry' to 'DECaseOrganization'::actual::projectFormation::projectEntry;
-    dependency source4 from 'libraryProject'::'reasoning' to 'DECaseOrganization'::actual::projectFormation::reasoning;
-    dependency source5 from 'libraryProject'::'receiptIssuance' to 'DECaseOrganization'::external::yuanxu;
-    dependency source6 from 'libraryProject'::'review' to 'DECaseOrganization'::actual::review;
-    dependency source7 from 'libraryProject'::'scenarioUse' to 'DECaseOrganization'::actual::projectFormation::scenario;
-    dependency source8 from 'libraryProject'::'selection' to 'DECaseOrganization'::actual::projectFormation::profile;
+    dependency 'capture-definitions' from 'libraryProject'::'scenarioUse' to 'libraryProject'::'definitions';
+    dependency 'capture-selection' from 'libraryProject'::'scenarioUse' to 'libraryProject'::'selection';
+    dependency 'documentation-definitions' from 'libraryProject'::'documentation' to 'libraryProject'::'definitions';
+    dependency 'entry-capture' from 'libraryProject'::'projectEntry' to 'libraryProject'::'scenarioUse';
+    dependency 'entry-definitions' from 'libraryProject'::'projectEntry' to 'libraryProject'::'definitions';
+    dependency 'entry-reasoning' from 'libraryProject'::'projectEntry' to 'libraryProject'::'reasoning';
+    dependency 'methods-definitions' from 'libraryProject'::'methodContracts' to 'libraryProject'::'definitions';
+    dependency 'reasoning-capture' from 'libraryProject'::'reasoning' to 'libraryProject'::'scenarioUse';
+    dependency 'receipts-capture' from 'libraryProject'::'receiptIssuance' to 'libraryProject'::'scenarioUse';
+    dependency 'review-reasoning' from 'libraryProject'::'review' to 'libraryProject'::'reasoning';
+    dependency 'selection-definitions' from 'libraryProject'::'selection' to 'libraryProject'::'definitions';
+    dependency 'source-definitions' from 'libraryProject'::'definitions' to 'RepositoryOrganization'::LibraryDefinitions;
+    dependency 'source-documentation' from 'libraryProject'::'documentation' to 'RepositoryOrganization'::DocumentOrganization;
+    dependency 'source-methodContracts' from 'libraryProject'::'methodContracts' to 'RepositoryOrganization'::MethodContracts;
+    dependency 'source-projectEntry' from 'libraryProject'::'projectEntry' to 'RepositoryOrganization'::ProjectEntry;
+    dependency 'source-reasoning' from 'libraryProject'::'reasoning' to 'RepositoryOrganization'::ApplicationReasoning;
+    dependency 'source-receiptIssuance' from 'libraryProject'::'receiptIssuance' to 'RepositoryOrganization'::ReceiptBoundary;
+    dependency 'source-review' from 'libraryProject'::'review' to 'RepositoryOrganization'::ReviewBoundary;
+    dependency 'source-scenarioUse' from 'libraryProject'::'scenarioUse' to 'RepositoryOrganization'::ProjectScenario;
+    dependency 'source-selection' from 'libraryProject'::'selection' to 'RepositoryOrganization'::IndependentProfile;
     part 'requiredProducts' {
         part 'D01';
         part 'D02';
@@ -71,5 +62,18 @@ package 'DeterministicEngineering' {
         part 'capture-origin';
         part 'method-validation';
         part 'source-load';
+    }
+    part 'placements' {
+        part 'documents' : 'RepositoryOrganization'::'DocumentItem';
+        part 'examples' : 'RepositoryOrganization'::'UserExample';
+        part 'infrastructure' : 'RepositoryOrganization'::'PackageInfrastructure';
+        part 'languageAssets' : 'RepositoryOrganization'::'LanguageAssets';
+        part 'library' : 'RepositoryOrganization'::'SchemeModule';
+        part 'projects' : 'RepositoryOrganization'::'ProjectEntry';
+        part 'quintModels' : 'RepositoryOrganization'::'DistributionPackage';
+        part 'quintModulesResolver' : 'RepositoryOrganization'::'DistributionPackage';
+        part 'render' : 'RepositoryOrganization'::'DistributionPackage';
+        part 'tests' : 'RepositoryOrganization'::'DevelopmentVerification';
+        part 'views' : 'RepositoryOrganization'::'ArchitectureView';
     }
 }

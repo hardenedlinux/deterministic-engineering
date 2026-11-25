@@ -6,7 +6,7 @@
 (import
   :std/test
   :clan/poo/object
-  (only-in :clan/poo/mop Type validate element?)
+  (only-in :clan/poo/type Type validate element?)
   "../types.ss")
 (export
   library-record-types-test)

@@ -2,16 +2,18 @@
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 (import
-  (only-in :yuanxu/module-system/source/declaration .def))
+  (only-in :clan/poo/object .def .o .get)
+  "types.ss"
+  "config.ss")
+(export BackpressureLibrary)
 (.def BackpressureLibrary
   identity: 'backpressure-memory
   tags: '(engineering domain concurrency)
-  admissions: (.o
-                Config: (.o
-                          export-path: '(config)
-                          contract-path: '(contracts config)))
   core: (.o
-          requires: (.o)
+          admissions: (.o
+                        Config: (.o
+                                  export-path: '(config)
+                                  contract-path: '(contracts config)))
           scope-contract: (.get BackpressureScopeContract value-contract)
           exports: (.o (:: scope)
                      self: scope

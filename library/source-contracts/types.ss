@@ -4,7 +4,7 @@
 ;;; Public value contracts describe inputs and plans; none grants execution rights.
 (import
   :clan/poo/object
-  (only-in :clan/poo/mop define-type Any Object Function Type Type. Bool)
+  (only-in :clan/poo/type define-type Any Object Function Type Type. Bool)
   (only-in :clan/poo/type Record Symbol String List Exactly Or)
   (only-in "../../types.ss" LibraryNonemptyString LibraryRuleCatalogShape))
 (export SourceContractProfile SourceContractTools SourceContractPlan

@@ -283,6 +283,12 @@ Bun worker allocation domains that otherwise remain in the long-lived host.
 Concurrent callers remain independent; the Library imposes no CPU-count clamp.
 The host still owns cancellation, batch scheduling and browser lifetime.
 
+=compileFigureSources= captures up to sixteen unique entries from one source
+snapshot. The D2 SDK instance compiles them sequentially in one owned worker.
+The caller receives the ordered batch after worker cleanup and natural process
+exit. A failed entry rejects the batch, and no compiler is retained between
+batches.
+
 
 Lifecycle controls observe real native child handles. They cover successful D2
 compilation, synchronous IPC failure, native disconnected IPC, spawn failure,

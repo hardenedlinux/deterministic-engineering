@@ -46,14 +46,16 @@ jobs:
       - run: bun run example:design
       - run: bun run example:library-boundary
       - run: bun run example:images
-      - name: Consume the reviewed Git package through Bun
-        env:
-          RENDER_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Consume the reviewed Git package through Bun (local subtree split)
         run: |
-          render_version=$(bun -e 'import metadata from "./package.json"; process.stdout.write(metadata.version)')
+          render_version=$(bun -e 'import metadata from "./packages/render/package.json"; process.stdout.write(metadata.version)')
           export RENDER_EXPECTED_VERSION="$render_version"
+          split_sha=$(git subtree split --prefix=packages/render HEAD)
+          mirror_bare=$(mktemp -d)
+          git init --bare "$mirror_bare"
+          git push "$mirror_bare" "$split_sha:refs/heads/main"
           render_consumer=$(mktemp -d)
           cd "$render_consumer"
           bun init -y
-          bun add "@deterministic-engineering/render@git+https://github.com/hardenedlinux/deterministic-engineering.git#$RENDER_REVISION"
+          bun add "@deterministic-engineering/render@git+file://${mirror_bare}#${split_sha}"
           bun -e 'import metadata from "@deterministic-engineering/render/package.json"; import {compileModel} from "@deterministic-engineering/render"; import {encodeWebP} from "@deterministic-engineering/render/export"; if(metadata.version!==process.env.RENDER_EXPECTED_VERSION)throw new Error("Wrong Git package version"); const compiled=await compileModel({"consumer.d2":"Library -> Consumer"},"consumer.d2"); if(compiled.model.relations.length!==1)throw new Error("Git-installed worker did not compile the consumer model"); const webp=await encodeWebP(Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAADklEQVQImWP4DwUMMAYAj4IP8cvlVgcAAAAASUVORK5CYII=","base64")); if(Buffer.from(webp.bytes).toString("ascii",8,12)!=="WEBP")throw new Error("Git-installed native WebP encoder failed");'

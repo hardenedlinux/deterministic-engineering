@@ -1,0 +1,126 @@
+#!/usr/bin/env bun
+// SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
+import {readFileSync} from 'node:fs';
+import {createRequire} from 'node:module';
+import {basename, dirname, resolve} from 'node:path';
+import {
+  fileSourceResolver,
+  newIdGenerator,
+  parsePhase1fromText,
+  parsePhase2sourceResolution,
+  parsePhase3importAndNameResolution,
+  parsePhase4toposort,
+} from '@informalsystems/quint';
+import {packageSourceResolver} from './resolver.ts';
+
+const req = createRequire(import.meta.url);
+const quintPkg = req.resolve('@informalsystems/quint/package.json');
+const quintReq = createRequire(quintPkg);
+const cliCommands = quintReq('./dist/src/cliCommands.js');
+const cliHelpers = quintReq('./dist/src/cliHelpers.js');
+const {left, right} = quintReq('@sweet-monads/either');
+const {just, none} = quintReq('@sweet-monads/maybe');
+
+interface ParsedArgs {
+  command: string;
+  input: string;
+  main?: string;
+  seed?: string;
+  maxSamples?: number;
+  maxSteps?: number;
+  invariant?: string;
+  step?: string;
+  init?: string;
+  backend?: string;
+  verbosity: number;
+  out?: string;
+  outItf?: string;
+  match?: string;
+  apalacheVersion?: string;
+}
+
+function parseCliArgs(argv: string[]): ParsedArgs {
+  const [command, input, ...rest] = argv;
+  if (!command || !input) {
+    console.error('Usage: quint-modules-resolver <parse|typecheck|test|verify> <input.qnt> [options]');
+    process.exit(2);
+  }
+  const args: ParsedArgs = {command, input, verbosity: 2};
+  for (let i = 0; i < rest.length; i++) {
+    const token = rest[i]!;
+    const eq = token.indexOf('=');
+    const key = eq >= 0 ? token.slice(0, eq) : token;
+    const val = eq >= 0 ? token.slice(eq + 1) : rest[++i];
+    switch (key) {
+      case '--main': args.main = val; break;
+      case '--seed': args.seed = val; break;
+      case '--max-samples': args.maxSamples = Number(val); break;
+      case '--max-steps': args.maxSteps = Number(val); break;
+      case '--invariant': args.invariant = val; break;
+      case '--step': args.step = val; break;
+      case '--init': args.init = val; break;
+      case '--backend': args.backend = val; break;
+      case '--verbosity': args.verbosity = Number(val); break;
+      case '--out': args.out = val; break;
+      case '--out-itf': args.outItf = val; break;
+      case '--match': args.match = val; break;
+      case '--apalache-version': args.apalacheVersion = val; break;
+      default:
+        console.error(`Unknown option: ${token}`);
+        process.exit(2);
+    }
+  }
+  return args;
+}
+
+async function parseWithPackages(args: ParsedArgs) {
+  const fullPath = resolve(process.cwd(), args.input);
+  let text: string;
+  try {
+    text = readFileSync(fullPath, 'utf8');
+  } catch (err) {
+    return left({
+      msg: `file ${args.input} could not be opened due to ${String(err)}`,
+      stage: {stage: 'loading', args, errors: [], sourceCode: new Map()},
+    });
+  }
+  const sourceCode = new Map([[fullPath, text]]);
+  const idGen = newIdGenerator();
+  const phase1 = parsePhase1fromText(idGen, text, fullPath);
+  const defaultModuleName = phase1.modules.length === 1 ? just(phase1.modules[0]!.name) : none();
+  const resolver = packageSourceResolver(sourceCode);
+  const mainLookup = fileSourceResolver(sourceCode).lookupPath(dirname(fullPath), basename(fullPath));
+  const phase2 = parsePhase2sourceResolution(idGen, resolver, mainLookup, phase1);
+  const phase3 = parsePhase3importAndNameResolution(phase2);
+  const phase4 = parsePhase4toposort(phase3);
+  const stage = {stage: 'parsing', args, path: fullPath, sourceCode, warnings: [], ...phase4, defaultModuleName, idGen};
+  if (phase4.errors.length > 0) {
+    const errors = phase4.errors.map(cliHelpers.mkErrorMessage(phase4.sourceMap));
+    return left({msg: 'parsing failed', stage: {...stage, errors}});
+  }
+  return right(stage);
+}
+
+export async function runCli(argv: string[]) {
+  const args = parseCliArgs(argv);
+  let result = await parseWithPackages(args);
+  if (args.command === 'typecheck' || args.command === 'test' || args.command === 'verify') {
+    result = await result.asyncChain(cliCommands.typecheck);
+  }
+  if (args.command === 'test') {
+    result = await result.asyncChain(cliCommands.runTests);
+  } else if (args.command === 'verify') {
+    result = await result.asyncChain(cliCommands.compile);
+    result = await result.asyncChain(cliCommands.verifySpec);
+  } else if (args.command !== 'parse' && args.command !== 'typecheck') {
+    console.error(`Unsupported command: ${args.command}`);
+    process.exit(2);
+  }
+  cliCommands.outputResult(result);
+}
+
+if (import.meta.main) {
+  await runCli(process.argv.slice(2));
+}

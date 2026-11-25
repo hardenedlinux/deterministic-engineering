@@ -18,4 +18,8 @@
         cpp:
         (.o
           enable: #f
-          settings: (.o profile: 'lifetime-body timeout: 45))))))
+          settings: (.o profile: 'lifetime-body timeout: 45))
+        quint:
+        (.o
+          enable: #f
+          settings: (.o profile: 'exact-effect-host timeout: 120))))))

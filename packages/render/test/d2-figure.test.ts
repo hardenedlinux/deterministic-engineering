@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 import { test, expect } from 'bun:test';
-import { compileFigureSource, composeFigure, selectFigureVariant, type FigureContext } from '../src';
+import { compileFigureSource, compileFigureSources, composeFigure, selectFigureVariant, type FigureContext } from '../src';
 import { readD2Figure } from '../src/d2-figure';
 const declaration = (wording: string) => ({title: 'Declared view', purpose: 'architecture', kind: 'system', language: 'en', width: 800, primary: 'ownership',
   questions: [{ref: 'ownership', text: wording, focusRefs: ['model']}], references: {model: 'project.sysml'},
@@ -21,6 +21,16 @@ test('official D2 data owns Questions; changing D2 changes HTML without editing 
 }, 30000);
 test('syntax errors refuse through the owned worker', async () => {
   await expect(compileFigureSource({'view.d2': 'node: {'}, 'view.d2')).rejects.toThrow();
+}, 30000);
+
+test('one compiler batch binds every source in requested order', async () => {
+  const sources={'a.d2':source('Who accepts?'),'b.d2':source('Who releases?').replace('publishes','releases'),'project.sysml':'model'};
+  const results=await compileFigureSources(sources,['b.d2','a.d2']);
+  expect(results.map(result=>result.view.source)).toEqual(['b.d2','a.d2']);
+  expect(results.map(result=>result.view.question.text)).toEqual(['Who releases?','Who accepts?']);
+  expect(results.map(result=>result.model?.relations[0]?.label)).toEqual(['releases','publishes']);
+  await expect(compileFigureSources({...sources,'a.d2':'node: {'},['b.d2','a.d2'])).rejects.toThrow();
+  await expect(compileFigureSources(sources,['b.d2','b.d2'])).rejects.toThrow('Invalid compiler batch');
 }, 30000);
 test('missing metadata, malformed JSON and purpose mismatch are refused', () => {
   const fs = {'view.d2': 'source'};

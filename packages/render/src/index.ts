@@ -17,6 +17,7 @@ import type {FigureInput,FigureModel} from './figure';
 export {composeFigure,selectFigureVariant} from './figure';
 export type {FigureInput,FigureModel,FigureQuestion,FigureContext,FigureComposer,ComposedFigure,ModelSource} from './figure';
 export {composeDiagram} from './diagram';
+export {wrapDiagramText} from './text';
 export type {DiagramSpec,DiagramNodeComposer} from './diagram';
 export {readD2Figure} from './d2-figure';
 export type {FigureResources} from './d2-figure';
@@ -27,11 +28,18 @@ export interface CompiledModel {
 }
 /** D2 supplies language/model observations only. Its old geometry/SVG is not a renderer path. */
 export async function compileModel(sources:Readonly<Record<string,string>>,inputPath:string,options:CompileOptions={}):Promise<CompiledModel> {
-  relativeSource(inputPath);
-  if(!Object.hasOwn(sources,inputPath))throw new Error('Missing model source');
+  return (await compileModels(sources,[inputPath],options))[0]!;
+}
+async function compileModels(sources:Readonly<Record<string,string>>,inputPaths:readonly string[],options:CompileOptions):Promise<readonly CompiledModel[]> {
+  if(inputPaths.length<1||inputPaths.length>16||new Set(inputPaths).size!==inputPaths.length)throw new Error('Invalid compiler batch');
+  const captured={...sources},requested=[...inputPaths];
+  for(const inputPath of requested){
+    relativeSource(inputPath);
+    if(!Object.hasOwn(captured,inputPath))throw new Error('Missing model source');
+  }
   for(const[file,text]of Object.entries(sources)){relativeSource(file);if(typeof text!=='string')throw new Error('Invalid model source');}
   const child=fork(new URL('./compiler-process.ts',import.meta.url),[],{execPath:process.execPath,stdio:['ignore','inherit','inherit','ipc']});
-  return await new Promise<CompiledModel>((resolve,reject)=>{
+  return await new Promise<readonly CompiledModel[]>((resolve,reject)=>{
     let response:import('./worker').ModelResponse|undefined;
     let failure:Error|undefined;
     const fail=(error:Error)=>{failure??=error;if(child.connected)child.disconnect();};
@@ -42,16 +50,24 @@ export async function compileModel(sources:Readonly<Record<string,string>>,input
       if(code!==0||signal)return reject(new Error('Compiler process exit: '+code+'/'+signal));
       if(!response)return reject(new Error('Compiler process exited without result'));
       if('error' in response)return reject(new Error(response.error));
-      resolve(response.capture);
+      if(response.captures.length!==requested.length||response.captures.some((item,index)=>item.inputPath!==requested[index]))
+        return reject(new Error('Compiler batch differs from requested source order'));
+      resolve(response.captures.map(item=>({...item,fs:{...captured}})));
     });
-    try{child.send({fs:{...sources},inputPath,options} satisfies import('./worker').ModelRequest,error=>{if(error)fail(error);});}
+    try{child.send({fs:captured,inputPaths:requested,options} satisfies import('./worker').ModelRequest,error=>{if(error)fail(error);});}
     catch(error:unknown){fail(error instanceof Error?error:new Error(String(error)));}
   });
 }
 export async function compileFigureSource(sources:Readonly<Record<string,string>>,inputPath:string,resources:FigureResources={},options:CompileOptions={}):Promise<FigureInput> {
-  const captured={...sources};
-  const capture=await compileModel(captured,inputPath,options);
-  const input=readD2Figure(capture,captured,resources);
+  return (await compileFigureSources(sources,[inputPath],resources,options))[0]!;
+}
+/** Capture a small, ordered source set within one compiler allocation domain. */
+export async function compileFigureSources(sources:Readonly<Record<string,string>>,inputPaths:readonly string[],resources:FigureResources={},options:CompileOptions={}):Promise<readonly FigureInput[]> {
+  const captures=await compileModels(sources,inputPaths,options);
+  return Promise.all(captures.map(capture=>bindFigure(capture,resources)));
+}
+async function bindFigure(capture:CompiledModel,resources:FigureResources):Promise<FigureInput> {
+  const input=readD2Figure(capture,capture.fs,resources);
   if(!input.modelSource)return input;
   const selected=resources.sysmlViews && Object.hasOwn(resources.sysmlViews,input.modelSource.view) ? structuredClone(resources.sysmlViews[input.modelSource.view]) : undefined;
   if(!selected || selected.requestedView!==input.modelSource.view || selected.modelHash!==input.modelSource.modelHash)

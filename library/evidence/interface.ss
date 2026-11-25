@@ -3,14 +3,15 @@
 
 ;;; -*- Gerbil -*-
 (import
-  (only-in :yuanxu/module-system/source/declaration .def))
+  (only-in :clan/poo/object .def .o .get)
+  "types.ss" "objects.ss" "config.ss" "func.ss")
+(export ResourceEvidence)
 (.def ResourceEvidence
   identity: 'evidence
   tags: '(engineering driver reasoning source-contract)
-  admissions: (.o Config: (.o export-path: '(config) contract-path: '(config-contract)))
   core:
   (.o
-    requires: (.o)
+    admissions: (.o Config: (.o export-path: '(config) contract-path: '(config-contract)))
     scope-contract: (.get ResourceEvidenceScopeContract value-contract)
     exports: (.o
                sources: resource-review-sources

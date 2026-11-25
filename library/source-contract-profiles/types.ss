@@ -2,7 +2,7 @@
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 (import :clan/poo/object
-        (only-in :clan/poo/mop define-type Object Type Bool Function)
+        (only-in :clan/poo/type define-type Object Type Bool Function)
         (only-in :clan/poo/type Record Symbol)
         (only-in "../source-contracts/types.ss" SourceContractPolicyShape))
 (export ConfigType ScopeType)
@@ -16,7 +16,9 @@
   (LanguageConfig @ (Record enable: [Bool] settings: [LanguageSettings]))
   sealed: #t)
 (define-type
-  (Languages @ (Record c: [LanguageConfig] cpp: [LanguageConfig]))
+  (Languages @ (Record c: [LanguageConfig]
+                       cpp: [LanguageConfig]
+                       quint: [Object optional: #t]))
   sealed: #t)
 (define-type
   (EngineeringProgram @ (Record languages: [Languages]))
