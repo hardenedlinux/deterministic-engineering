@@ -10,15 +10,16 @@
 #+BEGIN_QUOTE
 The later [[file:10.148-flat-declarative-library-boundary.org][10.148 Library boundary]] supersedes this proposal's placement of source
 capture, process execution and evidence issuance. They are consumer/test duties,
-not a Runtime implemented by this Library. The contract obligations below remain
-design requirements, not executed proof claims.
+not a Runtime implemented by this Library. The general contract obligations remain
+requirements. The bounded C/C++ subjects and observed acceptance are identified
+explicitly below; they do not establish arbitrary-project correctness.
 #+END_QUOTE
 
 * Goal and decision boundary
 :PROPERTIES:
 :JD_ID: 10.147
 :CUSTOM_ID: source140-goal
-:STATUS: design-proposed-not-implemented
+:STATUS: bounded-real-source-qualified-cold-install-open
 :END:
 
 Extend the existing Library, POO and ASCENT architecture so that a domain
@@ -26,8 +27,11 @@ obligation can be checked against actual C/C++ function bodies, their callers
 and the native artifact that uses them. The subject is reusable C/C++ engineering
 capability across projects, not an SMP integration project. SMP illustrates one
 possible application of capacity and resource-lifecycle contracts. This document
-defines the design and per-project implementation gates; it reports no executed
-C/C++ verification. Acquiring SMP source is not a prerequisite for this work.
+defines the reusable design and per-project implementation gates. Maintained C
+capacity/caller and C++ resource-lifetime subjects now have actual CBMC/native
+results and ASCENT integration controls. Other families and consuming projects
+still require their own captures and evidence. Acquiring SMP source is not a
+prerequisite for this work.
 
 #+BEGIN_QUOTE
 A checked model is not a checked implementation. A checked function under a
@@ -389,20 +393,22 @@ reasoning without inheriting unsupported implementation conclusions.
 
 | Gate | Completion condition | Current state |
 |------+----------------------+---------------|
-| G0 Source | The selected consuming project's actual functions/callers and full configuration captured | Required when verifying that implementation; no project selected here |
-| G1 Scope | Reviewed local contract, parent refinement, reachable-state assumptions and independent oracle | Designed; source-specific review pending |
-| G2 Static | Real-body checks, caller premises, nonvacuity controls and explicit completeness classification | Not implemented |
-| G3 Counter | Historical reproduction where available, fixed replay and negative controls for excluded failure/units | Not executed |
-| G4 Native | Same-source real build, artifact lineage, regression and propagation behavior | Not executed |
-| G5 Integration | Native POO selection, actual ASCENT registration/queries, invalidation and reuse controls | Not implemented |
-| G6 Review | Scoped closure of findings and required authorization under existing Aitia policy | Not executed |
+| G0 Source | Actual functions/callers, harnesses and declared configuration captured | Observed for maintained C bounded-capacity and C++ resource-lifetime subjects; no SMP or arbitrary consumer capture claimed |
+| G1 Scope | Local contract, parent refinement, reachable-state assumptions and independent oracle | Explicit for these subjects; C caller premises and C++ constructor/counter premises remain part of applicability |
+| G2 Static | Real-body checks, caller premises, nonvacuity controls and explicit completeness classification | Actual C body/contract/caller and C++ bounded checks pass; bounded solver results are not universal language proofs |
+| G3 Counter | Real negative controls for the selected failure semantics | Actual missing-overflow-guard and occupied-transfer source mutants produce counters; no historical SMP repair claimed |
+| G4 Native | Same-source build, artifact lineage and native regression | Actual C and C++ native artifacts execute successfully; full compiler backend/SDK attestation remains unsupported |
+| G5 Integration | Native POO selection, actual ASCENT registration/queries, invalidation and reuse | Eight real-source cases plus native language-owner controls pass; reuse shares an identical implementation capture, not unrelated code |
+| G6 External review | Consumer-required findings disposition and current-use authorization | Owned by the consuming ecosystem; Library support is not an Aitia approval or application permit |
+| G7 Package qualification | Native package identities, compiled ABI and complete cold dependency installation | Earlier local manifests/compiled consumers and root source build pass; subsequent ordinary Core/root deadline failures require requalification; full cold installation remains open |
 
 Implementation tests for Scheme integration belong in =t/*-test.ss=. Future
 verifier harnesses remain C/C++ assets. Preserve the established per-process
 2 GiB heap and 180-second acceptance budget for applicable Gerbil processes;
 derive concurrency from machine resources. Before any solver run, record a
 method-specific resource policy; a budget termination is pending, never proof.
-This design does not change existing budgets or claim a solver run occurred.
+These results do not change existing budgets. Their authority is limited to the
+actual maintained subjects, declared tool/method inputs and observed runs.
 
 The maintenance cost is contracts, environment models, tool qualification and
 representation mappings. A consuming project can begin with a critical boundary
@@ -421,22 +427,27 @@ defect detection and review effort before expanding a project's verified scope.
 - [X] Define historical counter retention, current applicability and reuse boundaries.
 - [X] Use existing Module, Profile, Scenario, Catalog and evidence/review owners.
 - [X] Separate generic C/C++ adoption from optional SMP illustration.
-- [ ] For a later selected consumer, capture its source before claiming implementation evidence.
-- [ ] Validate the proposed mapping with actual Yuanxu/ASCENT APIs and real results.
+- [X] Capture maintained C/C++ subjects before issuing their implementation evidence.
+- [X] Exercise native Yuanxu selection and actual ASCENT registration/query with real results.
+- [ ] Capture and qualify each additional consuming implementation before transferring a claim.
+- [ ] Complete cold dependency installation without treating incremental recovery as a cold pass.
 
 * Documentation verification
 :PROPERTIES:
 :CUSTOM_ID: source140-documentation-checks
 :END:
 
-The new Org document passes =org-lint= with no findings. Local file links,
+The original design revision passed =org-lint= with no findings. Local file links,
 English-only text, unique CUSTOM_ID values, eight SG gold rows and eight SC-R
 rule rows were checked. D2 was formatted and rendered with =--layout elk
 --theme 0 --pad 24=; the SVG was visually reviewed after simplifying long
 feedback edges. README and both indexes link the new design and view.
 
-These checks establish document structure and navigability only. All source,
-tool execution and integration gates above retain their stated pending status.
+Those historical checks establish document structure and navigability only.
+The current view is maintained by the repository's TypeScript rendering and
+source-receipt checks. Actual source/tool/integration results are qualified
+separately in the gate table and current real-source controls; rendering never
+promotes a pending package gate to acceptance.
 
 * Primary references
 :PROPERTIES:

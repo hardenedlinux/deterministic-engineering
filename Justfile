@@ -46,7 +46,8 @@ test-file path pattern=".*":
     fi
     mkdir -p .data/test-logs
     log="$(mktemp .data/test-logs/test-XXXXXX)"
-    timeout --signal=TERM --kill-after=5s 120s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q test -v 5 -r "{{pattern}}" "{{path}}" 2>&1 | tee "$log"
+    # Establish the native package environment before gxtest initializes imports.
+    timeout --signal=TERM --kill-after=5s 120s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxtest -v 5 -r "{{pattern}}" "{{path}}" 2>&1 | tee "$log"
     if rg 'ERROR (MODULE|CHECK|CASE|HARNESS)|Heap overflow|Stack overflow' "$log"; then exit 1; fi
     rg -F -x 'MODULE-OK {{path}}' "$log" >/dev/null
     rg -F 'HARNESS-OK' "$log" >/dev/null
