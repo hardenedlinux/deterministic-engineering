@@ -1,6 +1,10 @@
 // SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 // SPDX-License-Identifier: LGPL-2.1-or-later
-// Projected from Scheme POO module threat.effect-handoff. Do not edit by hand.
+// @quint-model threat.effect-handoff
+// @quint-version 0.33.0
+// @apalache-version 0.62.1
+// @verify safety max-steps=12
+// @countermodel durable-ack step=stepNoDurability max-steps=6 itf="h.unsafe == true and h.sent >= 1"
 // Limits: Finite protocol abstraction; trusted bits summarize native interpreters; no cryptography, real CAS, codec correctness or Lean refinement is claimed.
 module effect_handoff {
   import authority_currentness.* from "../authority-currentness/AuthorityCurrentness"

@@ -1,6 +1,10 @@
 // SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 // SPDX-License-Identifier: LGPL-2.1-or-later
-// Projected from Scheme POO module engineering.gc.safepoint-handshake. Do not edit by hand.
+// @quint-model engineering.gc.safepoint-handshake
+// @quint-version 0.33.0
+// @apalache-version 0.62.1
+// @verify safety max-steps=12
+// @countermodel mutator-safepoint-ack step=stepSkipHandshake max-steps=6 itf="h.phase == 2 and (not(h.m1Barrier) or not(h.m2Barrier))"
 // Limits: Finite 2-mutator safepoint handshake abstraction; does not model OS thread preemption, page-fault polling, or stack scanning.
 module gc_safepoint_handshake {
   type State = { phase: int, m1Barrier: bool, m2Barrier: bool, unbarrieredWrite: bool }

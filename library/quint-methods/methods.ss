@@ -41,7 +41,16 @@
       (display "// SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors\n" out)
       (display "// SPDX-License-Identifier: LGPL-2.1-or-later\n" out)
       ;; REUSE-IgnoreEnd
-      (fprintf out "// Projected from Scheme POO module %a. Do not edit by hand.\n" (.get model identity))
+      (fprintf out "// @quint-model %a\n" (.get model identity))
+      (display "// @quint-version 0.33.0\n" out)
+      (display "// @apalache-version 0.62.1\n" out)
+      (when (has-state-record? state-rows)
+        (display "// @verify safety max-steps=12\n" out))
+      (for-each
+        (lambda (cm)
+          (fprintf out "// @countermodel %a step=%a max-steps=6 itf=\"%a\"\n"
+                   (.get cm dropped-guard) (.get cm step-action) (.get cm expected-itf-predicate)))
+        countermodels)
       (fprintf out "// Limits: %a\n" limits)
       (fprintf out "module %a {\n" mod-name)
       (for-each

@@ -185,14 +185,14 @@ export async function runCli(argv: string[]) {
     return;
   }
   if (argv[0] === 'run-plan') {
-    const planPath = argv[1];
-    if (!planPath) {
-      console.error('Usage: quint-modules-resolver run-plan <plan.json> [--verify]');
+    const targetPath = argv[1];
+    if (!targetPath) {
+      console.error('Usage: quint-modules-resolver run-plan <Model.qnt|plan.json> [--verify]');
       process.exit(2);
     }
     const verify = argv.includes('--verify');
-    const summary = executePlan(planPath, {verify});
-    console.log(`PLAN-OK ${planPath} (passed=${summary.passed}, skipped=${summary.skipped}, verify=${verify})`);
+    const summary = executePlan(targetPath, {verify});
+    console.log(`PLAN-OK ${targetPath} (passed=${summary.passed}, skipped=${summary.skipped}, verify=${verify})`);
     return;
   }
   const args = parseCliArgs(argv);

@@ -1,6 +1,10 @@
 // SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 // SPDX-License-Identifier: LGPL-2.1-or-later
-// Projected from Scheme POO module engineering.parallel.work-stealing-deque. Do not edit by hand.
+// @quint-model engineering.parallel.work-stealing-deque
+// @quint-version 0.33.0
+// @apalache-version 0.62.1
+// @verify safety max-steps=12
+// @countermodel last-item-cas step=stepNoLastItemCas max-steps=6 itf="h.doubleTaken == true and h.ownerPopped + h.thiefStolen > h.pushed"
 // Limits: Finite 1-owner/1-thief Chase-Lev deque abstraction; does not model circular array resizing or ARMv8/TSO weak memory fences.
 module parallel_work_stealing {
   type State = { top: int, bottom: int, pushed: int, ownerPopped: int, thiefStolen: int, doubleTaken: bool }

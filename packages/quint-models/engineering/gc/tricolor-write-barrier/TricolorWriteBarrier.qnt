@@ -1,6 +1,10 @@
 // SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 // SPDX-License-Identifier: LGPL-2.1-or-later
-// Projected from Scheme POO module engineering.gc.tricolor-write-barrier. Do not edit by hand.
+// @quint-model engineering.gc.tricolor-write-barrier
+// @quint-version 0.33.0
+// @apalache-version 0.62.1
+// @verify safety max-steps=12
+// @countermodel dijkstra-write-barrier step=stepNoWriteBarrier max-steps=6 itf="h.colorA == 2 and h.aToC == true and h.colorC == 0"
 // Limits: Finite 3-object tri-color marking abstraction; does not model hardware weak memory ordering, compaction, or allocator fragmentation.
 module gc_tricolor_barrier {
   type State = { phase: int, colorA: int, colorB: int, colorC: int, aToB: bool, bToC: bool, aToC: bool, sweptC: bool, unsafe: bool }

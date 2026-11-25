@@ -2,10 +2,9 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 import {expect, test} from 'bun:test';
-import {createHash} from 'node:crypto';
-import {mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync} from 'node:fs';
+import {mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
-import {dirname, join, resolve} from 'node:path';
+import {join, resolve} from 'node:path';
 
 const pkgRoot = resolve(import.meta.dir, '..');
 const repoRoot = resolve(pkgRoot, '../..');
@@ -89,33 +88,18 @@ test('conformance: relative-only models match native quint exit code and pass co
   }
 }, 30000);
 
-test('all projected models in packages/quint-models pass run-plan (typecheck, traces, receipt digests)', () => {
+test('all projected pure .qnt models in packages/quint-models pass run-plan with zero JSON sidecars', () => {
   const qntFiles = walkFiles(modelsRoot, name => name.endsWith('.qnt'));
   const planFiles = walkFiles(modelsRoot, name => name === 'plan.json');
   const receipts = walkFiles(modelsRoot, name => name === 'receipt.json');
-  expect(qntFiles.length).toBeGreaterThan(0);
-  expect(planFiles.length).toBe(qntFiles.length);
-  expect(receipts.length).toBe(qntFiles.length);
+  expect(qntFiles.length).toBeGreaterThanOrEqual(20);
+  expect(planFiles.length).toBe(0);
+  expect(receipts.length).toBe(0);
 
-  for (const planPath of planFiles) {
-    const res = run(['bun', cliPath, 'run-plan', planPath], repoRoot);
+  for (const qntPath of qntFiles) {
+    const res = run(['bun', cliPath, 'run-plan', qntPath], repoRoot);
     expect(res.exitCode).toBe(0);
     expect(res.stdout).toContain('PLAN-OK');
-  }
-  for (const receiptPath of receipts) {
-    const dir = dirname(receiptPath);
-    const receipt = JSON.parse(readFileSync(receiptPath, 'utf8')) as {
-      sources: Record<string, string>;
-      artifacts: Record<string, string>;
-    };
-    for (const [rel, expected] of Object.entries(receipt.sources)) {
-      const actual = createHash('sha256').update(readFileSync(join(repoRoot, rel))).digest('hex');
-      expect(actual).toBe(expected);
-    }
-    for (const [rel, expected] of Object.entries(receipt.artifacts)) {
-      const actual = createHash('sha256').update(readFileSync(join(dir, rel))).digest('hex');
-      expect(actual).toBe(expected);
-    }
   }
   const ver = run(['bun', cliPath, '--version'], repoRoot);
   expect(ver.exitCode).toBe(0);

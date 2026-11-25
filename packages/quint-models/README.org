@@ -49,7 +49,8 @@ packages/quint-models/
 │   ├── oidc-federation/                # OIDC Core azp binding, UserInfo sub equality & JWKS refresh cooldown
 │   ├── device-authorization/           # RFC 8628 device-code cancel/expiry epoch & multi-account token binding
 │   ├── governance-sod/                 # Separation of Duties (distinct approver) & forbid-veto precedence
-│   └── data-lineage-disclosure/        # Cumulative disclosure k-anonymity narrowing floor & budget cap
+│   ├── data-lineage-disclosure/        # Cumulative disclosure k-anonymity narrowing floor & budget cap
+│   └── oauth-revocation-recovery/      # OAuth PAR binding & crash-safe durable revocation recovery
 └── engineering/
     ├── concurrency/
     │   ├── backpressure-memory/        # Bounded backpressure & memory-ownership state machine
@@ -76,13 +77,10 @@ module my_wallet_host {
 }
 #+end_src
 
-Every model directory ships three artifacts:
-
-| File | Role |
-|------+------|
-| =*.qnt= | Projected Quint module (do not edit by hand in mirror) |
-| =plan.json= | Declarative verification plan (typecheck, deterministic traces, positive depth-12, required negative depth-4 countermodels) |
-| =receipt.json= | Source/artifact SHA-256 projection receipt bound to =deSourceCommit= |
+Every model directory ships a single self-contained pure =.qnt= file with
+embedded verification directives (=// @quint-model=, =// @verify=,
+=// @countermodel=). Git commit integrity owns provenance — no redundant
+=plan.json= or =receipt.json= sidecars are committed.
 
 * Documentation Index
 

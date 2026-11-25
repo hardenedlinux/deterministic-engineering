@@ -25,6 +25,7 @@
   "../library/device-authorization/objects.ss"
   "../library/governance-sod/objects.ss"
   "../library/data-lineage-disclosure/objects.ss"
+  "../library/oauth-revocation-recovery/objects.ss"
   "../library/gc-tricolor-barrier/objects.ss"
   "../library/gc-safepoint-handshake/objects.ss"
   "../library/parallel-epoch-reclamation/objects.ss"
@@ -137,6 +138,7 @@
           (cons DeviceAuthorizationModel (.get ThreatModelProfiles device-authorization))
           (cons GovernanceSodModel (.get ThreatModelProfiles governance-sod))
           (cons DataLineageDisclosureModel (.get ThreatModelProfiles data-lineage-disclosure))
+          (cons OAuthRevocationRecoveryModel (.get ThreatModelProfiles oauth-revocation-recovery))
           (cons TricolorWriteBarrierModel (.get ThreatModelProfiles gc-tricolor-barrier))
           (cons SafepointHandshakeModel (.get ThreatModelProfiles gc-safepoint-handshake))
           (cons EpochReclamationModel (.get ThreatModelProfiles parallel-epoch-reclamation))

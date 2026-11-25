@@ -1,6 +1,12 @@
 // SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 // SPDX-License-Identifier: LGPL-2.1-or-later
-// Projected from Scheme POO module threat.oidc-federation. Do not edit by hand.
+// @quint-model threat.oidc-federation
+// @quint-version 0.33.0
+// @apalache-version 0.62.1
+// @verify safety max-steps=12
+// @countermodel userinfo-sub-binding step=stepSubSubstitution max-steps=6 itf="h.admitted == true and h.userInfoSub != h.idTokenSub"
+// @countermodel multi-aud-azp-binding step=stepAzpBypass max-steps=6 itf="h.multiAud == true and not(h.azpMatchesClient)"
+// @countermodel jwks-refresh-cooldown step=stepJwksStorm max-steps=6 itf="h.jwksRefreshes > 2"
 // Limits: Finite OIDC Federation protocol abstraction; does not model RSA/ECDSA/EdDSA signature mathematics, TLS certificate validation, or IdP internal key storage.
 module oidc_federation {
   import authority_currentness.* from "../authority-currentness/AuthorityCurrentness"

@@ -1,6 +1,10 @@
 // SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 // SPDX-License-Identifier: LGPL-2.1-or-later
-// Projected from Scheme POO module threat.workload-identity-rotation. Do not edit by hand.
+// @quint-model threat.workload-identity-rotation
+// @quint-version 0.33.0
+// @apalache-version 0.62.1
+// @verify safety max-steps=12
+// @countermodel revocation-overrides-overlap step=stepGraceWindowReuse max-steps=6 itf="h.unsafe == true and h.accepted >= 1"
 // Limits: Finite SVID generation-rotation abstraction; does not model X.509/JWT cryptography, clock drift, or CRL/OCSP transport latency.
 module workload_identity_rotation {
   import authority_currentness.* from "../authority-currentness/AuthorityCurrentness"

@@ -1,6 +1,12 @@
 // SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 // SPDX-License-Identifier: LGPL-2.1-or-later
-// Projected from Scheme POO module threat.device-authorization. Do not edit by hand.
+// @quint-model threat.device-authorization
+// @quint-version 0.33.0
+// @apalache-version 0.62.1
+// @verify safety max-steps=12
+// @countermodel device-flow-epoch-currency step=stepCancelledDeviceAdmit max-steps=6 itf="h.admitted == true and h.deviceCancelled == true"
+// @countermodel device-code-freshness step=stepExpiredDeviceAdmit max-steps=6 itf="h.admitted == true and h.deviceExpired == true"
+// @countermodel ticket-account-binding step=stepCrossAccountBind max-steps=6 itf="h.attachedTokenAccount > 0 and h.attachedTokenAccount != h.ticketAccount"
 // Limits: Finite RFC 8628 device authorization and two-account binding abstraction; does not model network polling backoff intervals or TLS transport.
 module device_authorization {
   import authority_currentness.* from "../authority-currentness/AuthorityCurrentness"

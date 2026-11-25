@@ -1,6 +1,10 @@
 // SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 // SPDX-License-Identifier: LGPL-2.1-or-later
-// Projected from Scheme POO module engineering.parallel.epoch-reclamation. Do not edit by hand.
+// @quint-model engineering.parallel.epoch-reclamation
+// @quint-version 0.33.0
+// @apalache-version 0.62.1
+// @verify safety max-steps=12
+// @countermodel grace-period-quiescence step=stepPrematureReclaim max-steps=6 itf="h.freed == true and ((h.w1Pinned and h.w1Epoch <= h.retiredEpoch) or (h.w2Pinned and h.w2Epoch <= h.retiredEpoch))"
 // Limits: Finite 2-worker single-object EBR abstraction; does not model hardware memory fences (Acquire/Release/SeqCst) or allocator reuse.
 module parallel_epoch_reclamation {
   type State = { globalEpoch: int, w1Pinned: bool, w1Epoch: int, w2Pinned: bool, w2Epoch: int, retired: bool, retiredEpoch: int, freed: bool, useAfterFree: bool }

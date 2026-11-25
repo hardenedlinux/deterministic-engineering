@@ -19,7 +19,7 @@ import {
   type QuintTypeDef,
 } from '@informalsystems/quint';
 import {isBareSpecifier} from './resolver.ts';
-import {type QuintPlan, verifyPlanReceipt} from './plan.ts';
+import {type QuintPlan} from './plan.ts';
 
 export interface ResolvedBaseQnt {
   fullPath: string;
@@ -405,10 +405,6 @@ export function composeQuintFiles(
   outPlanPath?: string,
 ): QuintModule {
   const baseInfo = resolveQuintSpec(baseSpecOrPath, process.cwd());
-  const baseDir = dirname(baseInfo.fullPath);
-  if (existsSync(resolve(baseDir, 'receipt.json'))) {
-    verifyPlanReceipt(baseDir);
-  }
 
   const baseMod = parseSingleModule(baseInfo.fullPath);
   const overlayMod = parseSingleModule(resolve(process.cwd(), overlayQntPath));

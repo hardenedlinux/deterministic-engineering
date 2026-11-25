@@ -1,6 +1,12 @@
 // SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 // SPDX-License-Identifier: LGPL-2.1-or-later
-// Projected from Scheme POO module threat.oauth-token-lifecycle. Do not edit by hand.
+// @quint-model threat.oauth-token-lifecycle
+// @quint-version 0.33.0
+// @apalache-version 0.62.1
+// @verify safety max-steps=12
+// @countermodel single-use-code step=stepCodeReplay max-steps=6 itf="h.unsafe == true and h.exchanges >= 2"
+// @countermodel refresh-epoch-currency step=stepZombieRefresh max-steps=6 itf="h.vaultHasToken == true and not(h.signedIn)"
+// @countermodel scope-monotonicity step=stepScopeEscalation max-steps=6 itf="h.activeScopeLevel > h.grantedScopeLevel"
 // Limits: Finite OAuth 2.1 lifecycle abstraction; does not model TLS, JWT signature cryptography, or IdP internal storage.
 module oauth_token_lifecycle {
   import authority_currentness.* from "../authority-currentness/AuthorityCurrentness"

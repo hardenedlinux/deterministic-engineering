@@ -3,26 +3,28 @@
 
 import {existsSync, readdirSync, readFileSync} from 'node:fs';
 import {dirname, join, relative, resolve} from 'node:path';
-import {verifyPlanReceipt} from './plan.ts';
+import {newIdGenerator, parsePhase1fromText} from '@informalsystems/quint';
+import {parseQntHeaderDirectives} from './plan.ts';
 
 export interface InstalledQuintModel {
   packageName: string;
   packageVersion: string;
   modelIdentity: string;
   bareSpecifier: string;
+  filePath: string;
   modelDir: string;
   quintVersion: string;
 }
 
-function walkReceipts(dir: string): string[] {
+function walkQntFiles(dir: string): string[] {
   const found: string[] = [];
   if (!existsSync(dir)) return found;
   for (const entry of readdirSync(dir, {withFileTypes: true})) {
     if (entry.name === 'node_modules' || entry.name === '.git') continue;
     const full = join(dir, entry.name);
     if (entry.isDirectory()) {
-      found.push(...walkReceipts(full));
-    } else if (entry.name === 'receipt.json') {
+      found.push(...walkQntFiles(full));
+    } else if (entry.name.endsWith('.qnt')) {
       found.push(full);
     }
   }
@@ -54,25 +56,19 @@ export function discoverInstalledQuintModels(projectRoot: string = process.cwd()
     if (!existsSync(pkgJsonPath)) continue;
     const pkgJson = JSON.parse(readFileSync(pkgJsonPath, 'utf8')) as {name?: string; version?: string};
     if (!pkgJson.name) continue;
-    for (const receiptPath of walkReceipts(pkgDir)) {
-      const modelDir = dirname(receiptPath);
-      const receipt = JSON.parse(readFileSync(receiptPath, 'utf8')) as {
-        modelIdentity?: string;
-        quintVersion?: string;
-        artifacts?: Record<string, string>;
-      };
-      if (!receipt.modelIdentity || !receipt.artifacts) continue;
-      const qntFile = Object.keys(receipt.artifacts).find(k => k.endsWith('.qnt'));
-      if (!qntFile) continue;
-      const relDir = relative(pkgDir, modelDir).replaceAll('\\', '/');
-      const bareBase = `${pkgJson.name}/${relDir}`;
+    for (const qntPath of walkQntFiles(pkgDir)) {
+      const source = readFileSync(qntPath, 'utf8');
+      const directives = parseQntHeaderDirectives(source);
+      if (!directives.modelIdentity) continue;
+      const relNoExt = relative(pkgDir, qntPath).replaceAll('\\', '/').replace(/\.qnt$/, '');
       results.push({
         packageName: pkgJson.name,
         packageVersion: pkgJson.version ?? '0.0.0',
-        modelIdentity: receipt.modelIdentity,
-        bareSpecifier: `${bareBase}/${qntFile.replace(/\.qnt$/, '')}`,
-        modelDir,
-        quintVersion: receipt.quintVersion ?? 'unknown',
+        modelIdentity: directives.modelIdentity,
+        bareSpecifier: `${pkgJson.name}/${relNoExt}`,
+        filePath: qntPath,
+        modelDir: dirname(qntPath),
+        quintVersion: directives.quintVersion,
       });
     }
   }
@@ -85,7 +81,11 @@ export function verifyInstalledQuintPackages(
 ): {verified: number; models: InstalledQuintModel[]} {
   const models = discoverInstalledQuintModels(projectRoot);
   for (const m of models) {
-    verifyPlanReceipt(m.modelDir);
+    const source = readFileSync(m.filePath, 'utf8');
+    const parsed = parsePhase1fromText(newIdGenerator(), source, m.filePath);
+    if (parsed.errors.length > 0) {
+      throw new Error(`Quint parse error in installed model ${m.bareSpecifier}: ${parsed.errors[0]!.message}`);
+    }
     if (expectedQuintVersion && m.quintVersion !== expectedQuintVersion) {
       throw new Error(
         `Quint version mismatch in ${m.bareSpecifier}: package expects ${m.quintVersion}, installed ${expectedQuintVersion}`,

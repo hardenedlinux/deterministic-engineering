@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 // SPDX-License-Identifier: LGPL-2.1-or-later
-// Projected from Scheme POO module threat.data-lineage-disclosure. Do not edit by hand.
+// @quint-model threat.data-lineage-disclosure
+// @quint-version 0.33.0
+// @apalache-version 0.62.1
+// @verify safety max-steps=12
+// @countermodel k-anonymity-narrowing step=stepSinglingOut max-steps=6 itf="h.unsafe == true"
+// @countermodel disclosure-budget step=stepBudgetOverrun max-steps=6 itf="h.disclosures > 2"
 // Limits: Finite cardinality-based singling-out indicator (k=2 over 4 records); does not provide differential privacy or inference resistance against auxiliary side-information.
 module data_lineage_disclosure {
   import authority_currentness.* from "../authority-currentness/AuthorityCurrentness"

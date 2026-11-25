@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 // SPDX-License-Identifier: LGPL-2.1-or-later
-// Projected from Scheme POO module threat.authority-currentness. Do not edit by hand.
+// @quint-model threat.authority-currentness
+// @quint-version 0.33.0
+// @apalache-version 0.62.1
 // Limits: Trusted boolean bits abstract real clock freshness, revocation checks, signature verification and writer fencing.
 module authority_currentness {
   pure def isCurrent(paused: bool, fresh: bool, credential: bool, bytes: bool): bool =

@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
-import {createHash} from 'node:crypto';
 import {existsSync, mkdtempSync, readFileSync, rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
-import {dirname, join, resolve} from 'node:path';
+import {basename, dirname, join, resolve} from 'node:path';
+import {newIdGenerator, parsePhase1fromText} from '@informalsystems/quint';
 import {type ItfTrace, traceSatisfiesItfPredicate} from './itf.ts';
 
 export interface PlanStep {
@@ -33,8 +33,134 @@ export interface PlanRunOptions {
   cliPath?: string;
 }
 
-function sha256File(path: string): string {
-  return createHash('sha256').update(readFileSync(path)).digest('hex');
+export interface QntHeaderDirectives {
+  modelIdentity?: string;
+  quintVersion: string;
+  apalacheVersion: string;
+  verify?: {invariant: string; maxSteps: number};
+  countermodels: Array<{
+    droppedGuard: string;
+    stepAction: string;
+    maxSteps: number;
+    expectedItfPredicate?: string;
+  }>;
+}
+
+export function parseQntHeaderDirectives(source: string): QntHeaderDirectives {
+  const result: QntHeaderDirectives = {
+    quintVersion: '0.33.0',
+    apalacheVersion: '0.62.1',
+    countermodels: [],
+  };
+  for (const rawLine of source.split('\n')) {
+    const line = rawLine.trim();
+    if (!line.startsWith('//')) {
+      if (line.startsWith('module ')) break;
+      continue;
+    }
+    const modelMatch = line.match(/^\/\/\s*@quint-model\s+(\S+)/);
+    if (modelMatch) {
+      result.modelIdentity = modelMatch[1];
+      continue;
+    }
+    const verMatch = line.match(/^\/\/\s*@quint-version\s+(\S+)/);
+    if (verMatch) {
+      result.quintVersion = verMatch[1]!;
+      continue;
+    }
+    const apaMatch = line.match(/^\/\/\s*@apalache-version\s+(\S+)/);
+    if (apaMatch) {
+      result.apalacheVersion = apaMatch[1]!;
+      continue;
+    }
+    const verifyMatch = line.match(/^\/\/\s*@verify\s+(\S+)(?:\s+max-steps=(\d+))?/);
+    if (verifyMatch) {
+      result.verify = {
+        invariant: verifyMatch[1]!,
+        maxSteps: verifyMatch[2] ? Number(verifyMatch[2]) : 12,
+      };
+      continue;
+    }
+    const cmMatch = line.match(
+      /^\/\/\s*@countermodel\s+(\S+)\s+step=(\S+)(?:\s+max-steps=(\d+))?(?:\s+itf="([^"]*)")?/,
+    );
+    if (cmMatch) {
+      result.countermodels.push({
+        droppedGuard: cmMatch[1]!,
+        stepAction: cmMatch[2]!,
+        maxSteps: cmMatch[3] ? Number(cmMatch[3]) : 6,
+        expectedItfPredicate: cmMatch[4],
+      });
+    }
+  }
+  return result;
+}
+
+export function parsePlanFromQnt(qntPath: string): QuintPlan {
+  const fullPath = resolve(process.cwd(), qntPath);
+  const source = readFileSync(fullPath, 'utf8');
+  const fileName = basename(fullPath);
+  const directives = parseQntHeaderDirectives(source);
+
+  const parsed = parsePhase1fromText(newIdGenerator(), source, fullPath);
+  if (parsed.errors.length > 0 || parsed.modules.length === 0) {
+    throw new Error(`Failed to parse Quint module '${fullPath}' while building plan`);
+  }
+  const mod = parsed.modules[0]!;
+  const hasRuns = mod.declarations.some(d => d.kind === 'def' && d.qualifier === 'run');
+  const steps: PlanStep[] = [
+    {label: 'typecheck', command: ['typecheck', fileName], expectedExit: 0, kind: 'typecheck'},
+  ];
+  if (hasRuns) {
+    steps.push({
+      label: 'traces',
+      command: ['test', fileName, `--main=${mod.name}`, '--max-samples=1', '--seed=7', '--backend=typescript'],
+      expectedExit: 0,
+      kind: 'deterministic-traces',
+    });
+  }
+  if (directives.verify) {
+    steps.push({
+      label: directives.verify.invariant,
+      command: [
+        'verify',
+        fileName,
+        `--main=${mod.name}`,
+        `--invariant=${directives.verify.invariant}`,
+        `--max-steps=${directives.verify.maxSteps}`,
+      ],
+      expectedExit: 0,
+      kind: 'bounded-safety',
+    });
+  }
+  for (const cm of directives.countermodels) {
+    steps.push({
+      label: `countermodel-${cm.droppedGuard}`,
+      command: [
+        'verify',
+        fileName,
+        `--main=${mod.name}`,
+        `--step=${cm.stepAction}`,
+        '--invariant=safety',
+        `--max-steps=${cm.maxSteps}`,
+      ],
+      expectedExit: 1,
+      kind: 'required-countermodel',
+      droppedGuard: cm.droppedGuard,
+      expectedItfPredicate: cm.expectedItfPredicate,
+    });
+  }
+  return {
+    module: mod.name,
+    file: fileName,
+    quintVersion: directives.quintVersion,
+    apalacheVersion: directives.apalacheVersion,
+    seed: 7,
+    positiveDepth: directives.verify?.maxSteps ?? 12,
+    negativeDepth: directives.countermodels[0]?.maxSteps ?? 6,
+    timeout: 120,
+    steps,
+  };
 }
 
 function hasUnboundConst(qntPath: string): boolean {
@@ -42,29 +168,13 @@ function hasUnboundConst(qntPath: string): boolean {
   return /^\s*const\s+[A-Za-z0-9_]+\s*:/m.test(source);
 }
 
-export function verifyPlanReceipt(planDir: string): void {
-  const receiptPath = join(planDir, 'receipt.json');
-  if (!existsSync(receiptPath)) {
-    throw new Error(`Missing sibling receipt.json in ${planDir}`);
-  }
-  const receipt = JSON.parse(readFileSync(receiptPath, 'utf8')) as {
-    artifacts?: Record<string, string>;
-  };
-  for (const [rel, expected] of Object.entries(receipt.artifacts ?? {})) {
-    const actual = sha256File(join(planDir, rel));
-    if (actual !== expected) {
-      throw new Error(`Stale artifact ${rel} in ${planDir}: ${actual} !== ${expected}`);
-    }
-  }
-}
-
-export function executePlan(planPath: string, options: PlanRunOptions = {}): {passed: number; skipped: number} {
-  const fullPlanPath = resolve(process.cwd(), planPath);
-  const planDir = dirname(fullPlanPath);
-  verifyPlanReceipt(planDir);
-
-  const plan = JSON.parse(readFileSync(fullPlanPath, 'utf8')) as QuintPlan;
-  const qntPath = join(planDir, plan.file);
+export function executePlan(planOrQntPath: string, options: PlanRunOptions = {}): {passed: number; skipped: number} {
+  const fullPath = resolve(process.cwd(), planOrQntPath);
+  const planDir = dirname(fullPath);
+  const plan = fullPath.endsWith('.qnt')
+    ? parsePlanFromQnt(fullPath)
+    : (JSON.parse(readFileSync(fullPath, 'utf8')) as QuintPlan);
+  const qntPath = fullPath.endsWith('.qnt') ? fullPath : join(planDir, plan.file);
   const parameterized = hasUnboundConst(qntPath);
   const cliPath = options.cliPath ?? resolve(dirname(new URL(import.meta.url).pathname), 'cli.ts');
 

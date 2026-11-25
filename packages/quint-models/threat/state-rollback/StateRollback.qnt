@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 // SPDX-License-Identifier: LGPL-2.1-or-later
-// Projected from Scheme POO module threat.state-rollback. Do not edit by hand.
+// @quint-model threat.state-rollback
+// @quint-version 0.33.0
+// @apalache-version 0.62.1
+// @verify safety max-steps=12
+// @countermodel durable-ack step=stepNoDurability max-steps=6 itf="h.unsafe == true and h.sent >= 1"
+// @countermodel monotonic-storage step=stepRollback max-steps=6 itf="h.unsafe == true and h.sent >= 2"
 // Limits: Finite rollback model; does not prove physical storage atomicity or external rail deduplication.
 module state_rollback {
   import authority_currentness.* from "../authority-currentness/AuthorityCurrentness"

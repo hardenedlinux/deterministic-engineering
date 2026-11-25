@@ -18,6 +18,7 @@
   (only-in "../device-authorization/objects.ss" DeviceAuthorizationModel)
   (only-in "../governance-sod/objects.ss" GovernanceSodModel)
   (only-in "../data-lineage-disclosure/objects.ss" DataLineageDisclosureModel)
+  (only-in "../oauth-revocation-recovery/objects.ss" OAuthRevocationRecoveryModel)
   (only-in "../gc-tricolor-barrier/objects.ss" TricolorWriteBarrierModel)
   (only-in "../gc-safepoint-handshake/objects.ss" SafepointHandshakeModel)
   (only-in "../parallel-epoch-reclamation/objects.ss" EpochReclamationModel)
@@ -133,6 +134,14 @@
           seed: 7
           positive-depth: 12
           negative-depth: 4
+          require-countermodels?: #t))
+    oauth-revocation-recovery:
+    (checked-profile
+      (.o identity: 'oauth-revocation-recovery
+          model: OAuthRevocationRecoveryModel
+          seed: 7
+          positive-depth: 12
+          negative-depth: 6
           require-countermodels?: #t))
     gc-tricolor-barrier:
     (checked-profile

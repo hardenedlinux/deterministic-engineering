@@ -1,6 +1,10 @@
 // SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 // SPDX-License-Identifier: LGPL-2.1-or-later
-// Projected from Scheme POO module engineering.concurrency.structured-cancellation. Do not edit by hand.
+// @quint-model engineering.concurrency.structured-cancellation
+// @quint-version 0.33.0
+// @apalache-version 0.62.1
+// @verify safety max-steps=12
+// @countermodel child-quiescence-barrier step=stepFireAndForgetExit max-steps=6 itf="h.parentExited == true and (h.c1State == 1 or h.c2State == 1)"
 // Limits: Finite 2-child structured concurrency abstraction; does not model OS thread scheduling, panic unwinding, or non-cooperative blocking I/O.
 module concurrency_structured_cancel {
   type State = { cancelRequested: bool, parentExited: bool, c1State: int, c2State: int, orphanEffect: bool }

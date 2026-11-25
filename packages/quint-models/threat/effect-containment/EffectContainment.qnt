@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 // SPDX-License-Identifier: LGPL-2.1-or-later
-// Projected from Scheme POO module threat.effect-containment. Do not edit by hand.
+// @quint-model threat.effect-containment
+// @quint-version 0.33.0
+// @apalache-version 0.62.1
+// @verify safety max-steps=12
+// @countermodel not-revoked step=stepStaleRecovery max-steps=6 itf="h.unsafe == true"
+// @countermodel clear-verified step=stepFalseClear max-steps=6 itf="h.cleared == true and h.witness == false"
 // Limits: Finite containment abstraction; verified/finalized/noCode bits abstract trusted Host observations, not EVM/consensus proofs.
 module effect_containment {
   const MaxSignatures: int

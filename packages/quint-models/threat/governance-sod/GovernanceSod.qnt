@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 // SPDX-License-Identifier: LGPL-2.1-or-later
-// Projected from Scheme POO module threat.governance-sod. Do not edit by hand.
+// @quint-model threat.governance-sod
+// @quint-version 0.33.0
+// @apalache-version 0.62.1
+// @verify safety max-steps=12
+// @countermodel sod-distinct-actor step=stepSelfApproval max-steps=6 itf="h.executed == true and h.approver == h.proposer"
+// @countermodel veto-precedence step=stepVetoOverride max-steps=6 itf="h.executed == true and h.vetoed == true"
 // Limits: Finite two-principal governance abstraction; does not model cryptographic identity attestation or multi-quorum threshold committees.
 module governance_sod {
   import authority_currentness.* from "../authority-currentness/AuthorityCurrentness"

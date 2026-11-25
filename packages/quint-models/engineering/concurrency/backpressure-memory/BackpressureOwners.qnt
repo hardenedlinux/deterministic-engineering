@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 //
 // SPDX-License-Identifier: LGPL-2.1-or-later
+// @quint-model engineering.concurrency.backpressure-memory
+// @quint-version 0.33.0
 
 // Project-owned bounded abstraction; no Rust scheduler or allocation claim.
 module BackpressureOwners {

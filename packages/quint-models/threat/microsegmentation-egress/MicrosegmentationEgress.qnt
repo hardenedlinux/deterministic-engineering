@@ -1,6 +1,10 @@
 // SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 // SPDX-License-Identifier: LGPL-2.1-or-later
-// Projected from Scheme POO module threat.microsegmentation-egress. Do not edit by hand.
+// @quint-model threat.microsegmentation-egress
+// @quint-version 0.33.0
+// @apalache-version 0.62.1
+// @verify safety max-steps=12
+// @countermodel sidecar-attestation step=stepBypassSidecar max-steps=6 itf="h.leaked == true and h.delivered >= 1"
 // Limits: Finite 2-tenant egress mediation abstraction; does not model L3/L4 packet filtering, DNS tunneling, or kernel namespace escapes.
 module microsegmentation_egress {
   import authority_currentness.* from "../authority-currentness/AuthorityCurrentness"
