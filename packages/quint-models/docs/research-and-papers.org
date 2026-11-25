@@ -1,0 +1,94 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Research Notes and Canonical Papers
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Purpose
+
+This index collects the foundational papers, specifications, and technical
+references behind =@deterministic-engineering/quint-models=. Each entry is
+grouped by modeling domain and linked to the concrete Quint primitives it
+informs.
+
+* 1. Specification Languages & Bounded Model Checking (TLA+ / Quint / Apalache)
+
+- *Leslie Lamport (2002)*, /Specifying Systems: The TLA+ Language and Tools for
+  Hardware and Software Engineers/, Addison-Wesley.
+  - Foundation for action-based state machines, safety/liveness invariants, and
+    refinement mappings.
+- *Igor Konnov, Jure Kukovec, Thanh-Hai Tran (2019)*, /TLA+ Model Checking Made
+  Symbolic/, OOPSLA 2019 (Apalache).
+  - Symbolic bounded model checking via SMT (Z3) that underpins our positive
+    depth-12 checks and depth-4 ITF counterexample generation.
+- *Informal Systems*, /Quint Specification Language/ (=0.33.0=).
+  - Modern typed surface syntax over TLA+ semantics with deterministic
+    TypeScript simulation and Apalache verification backend.
+
+* 2. Threat-First Modeling, Zero Trust & Capability Security
+
+- *NIST Special Publication 800-207 (2020)*, /Zero Trust Architecture/ (Scott
+  Rose, Oliver Borchert, Stu Mitchell, Sean Connelly).
+  - Defines PEP/PDP separation, continuous per-request verification, and
+    assume-breach posture mapped in [[file:zero-trust-and-state-layers.org][Zero Trust and State Layers]].
+- *Rory Ward & Betsy Beyer (2014)*, /BeyondCorp: A New Approach to Enterprise
+  Security/, USENIX ;login:.
+  - Separates network location from workload/device authorization — directly
+    reflected in =capabilities= (network reachability ≠ credential possession).
+- *Mark S. Miller (2006)*, /Robust Composition: Towards a Unified Approach to
+  Access Control and Concurrency Control/ (PhD Thesis, Johns Hopkins University).
+  - Object-Capability (OCap) security, authority attenuation, and non-ambient
+    authority; informs =threat/capabilities= and =threat/authority-currentness=.
+- *Adam Shostack (2014)*, /Threat Modeling: Designing for Security/, Wiley.
+  - Structured threat identification; our framework elevates these from static
+    diagrams into executable Quint state machines with mandatory countermodels.
+
+* 3. Exact-Effect Handoff, Durability & Rollback Resistance
+
+- *Pat Helland (2007 / 2016)*, /Life Beyond Distributed Transactions: An
+  Apostate's Opinion/, CIDR.
+  - Idempotence, uncertain outcomes (=unknown=), and why retries across
+    uncertain boundaries cannot assume prior non-execution.
+- *Hector Garcia-Molina & Kenneth Salem (1987)*, /Sagas/, ACM SIGMOD.
+  - Multi-step effect coordination and compensating/containment boundaries;
+    informs =effect-handoff= and =effect-containment=.
+- *Marcos K. Aguilera et al. / State Rollback Literature*:
+  - Distinguishes pure-state consumption from monotonic persistent storage
+    (rollback attacks against crash-recovery snapshots); directly modeled in
+    =threat/state-rollback=.
+
+* 4. Concurrency & Parallel Runtime Verification
+
+- *David Chase & Yossi Lev (2005)*, /Dynamic Circular Work-Stealing Deque/,
+  SPAA 2005; and *Nhat Minh Lê et al. (2013)*, /Correct and Efficient
+  Work-Stealing for Weak Memory Models/, PPoPP 2013.
+  - Basis for planned =engineering/parallel/= work-stealing deque models.
+- *Keir Fraser (2004)*, /Practical Lock-Freedom/ (PhD Thesis, Cambridge) &
+  *Thomas E. Hart et al. (2007)*, /Performance of Memory Reclamation for
+  Lockless Synchronization/, JPDC.
+  - Epoch-Based Reclamation (EBR) and safe memory reclamation invariants.
+- *Backpressure & Bounded Ownership*:
+  - Informed by reactive-streams / bounded-queue flow control and realized in
+    =engineering/concurrency/backpressure-memory=.
+
+* 5. Garbage Collection & Memory-Barrier Verification
+
+- *Edsger W. Dijkstra, Leslie Lamport, A. J. Martin, C. S. Scholten, E. F. M.
+  Steffens (1978)*, /On-the-Fly Garbage Collection: An Exercise in Cooperation/,
+  CACM 21(11).
+  - Original tri-color abstraction and insertion write-barrier invariant.
+- *Taichi Yuasa (1990)*, /Real-Time Garbage Collection on General-Purpose
+  Machines/, Journal of Systems and Software.
+  - Snapshot-at-the-Beginning (SATB) deletion barrier and weak tri-color
+    invariant.
+- *Damien Doligez & Xavier Leroy (1993)*, /A Concurrent, Generational Garbage
+  Collector for a Multithreaded Implementation of ML/, POPL 1993; and *Damien
+  Doligez & Georges Gonthier (1994)*, /Portable, Unobtrusive Garbage Collection
+  for Multiprocessor Systems/, POPL 1994.
+  - Formal handshake protocols between mutators and collector across GC phases.
+- *Richard Jones, Antony Hosking, Eliot Moss (2023)*, /The Garbage Collection
+  Handbook: The Art of Automatic Memory Management/ (2nd ed.), CRC Press.
+  - Comprehensive taxonomy of concurrent marking, barriers, and safepoints used
+    to structure =engineering/gc/=.

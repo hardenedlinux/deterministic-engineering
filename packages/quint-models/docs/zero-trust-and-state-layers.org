@@ -1,0 +1,83 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Zero Trust and State-Machine Layers in Quint
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+Zero Trust Architecture (ZTA) is often reduced to network plumbing (mTLS,
+proxies, identity headers). In practice, high-impact failures happen at the
+*state-machine layer*: a request that was valid at =prepare= time is executed
+after policy freeze, credential revocation, writer-epoch change, or host-state
+rollback.
+
+This document maps core Zero Trust principles directly onto Quint state-machine
+layers so that ZTA guarantees are checked as formal invariants rather than
+informal deployment slogans.
+
+* Mapping Zero Trust Principles to State Layers
+
+| Zero Trust Principle | State-Machine Failure Mode | Quint Layer / Primitive | Invariant & Countermodel |
+|----------------------+----------------------------+-------------------------+--------------------------|
+| *Never Trust, Always Verify* | Time-of-check to time-of-use (TOCTOU): ticket approved in epoch $e$, executed in epoch $e+1$ or after revocation | =authority-currentness= (=isCurrent=, =epochCurrent=) | Every effect-releasing transition re-evaluates =not(paused) and fresh and credential and bytes and epoch == planned=; countermodel drops currency check |
+| *Least Privilege & Capability Isolation* | Lateral movement from compromised dev/CI surface to signing or control-plane roots | =capabilities= (=canLearn=) | Isolated root set =Isolated= has empty intersection with attacker =known= set across all reachable acquisition steps |
+| *Assume Breach & Blast-Radius Containment* | Local pause does not survive restart, or operator declares "cleared" without finalized external witness | =effect-containment= (=pauseRetention=, =clearingTruth=) | =everPaused => (paused and revoked)=; =cleared => (not(delegated) and witness)=; countermodels =stepStaleRecovery= and =stepFalseClear= |
+| *Explicit Effect Boundary (PEP/PDP Split)* | Policy decision point (PDP) authorizes an intent, but policy enforcement point (PEP) emits without durable commitment or replays after host rollback | =effect-handoff= + =state-rollback= | =sent <= MaxSends and (sent == 0 or unknown)=; countermodels =stepNoDurability= and =stepRollback= |
+
+* The Four State Layers of a Zero Trust Boundary
+
+When modeling a new security-critical system in Quint, decompose its state into
+four explicit layers:
+
+** Layer 1: Capability & Identity Graph (=known=, =actor=, =Isolated=)
+
+- Models *who* can reach *what* through explicit acquisition rules
+  ={ needs: Set[str], grants: str }=.
+- Enforces the Zero Trust rule that network reachability (=signerNetwork=) is
+  *never* sufficient to authorize an effect without the isolated workload
+  identity/credential (=signerCredential=).
+- Typically exported from a higher-level declarative specification (such as Lean
+  POO objects in =cedar-poo-spec=) so the Quint threat model never drifts from
+  the policy graph.
+
+** Layer 2: Authority Currentness (=epoch=, =generation=, =fresh=, =revoked=, =paused=, =bytes=)
+
+- Models *temporal validity* and *payload binding* of every authorization.
+- Separates *ticket issuance* (=planned = epoch=) from *effect release*
+  (=epochCurrent(epoch, planned)=).
+- Any policy freeze, key rotation, writer-epoch change, payload substitution, or
+  revocation invalidates in-flight prepared tickets immediately.
+
+** Layer 3: Durable Effect Handoff & Monotonic Storage (=phase=, =durable=, =unknown=, =sent=)
+
+- Models the boundary between pure authorization logic and an irreversible
+  external side effect (payment rail, signing HSM, cloud IAM mutation).
+- Once an external send is initiated, the outcome enters =unknown= until
+  observed; recovery *never* silently resets =unknown= or remints a burned grant.
+- Explicitly models host rollback (=replayOldState=) as a first-class
+  countermodel so the specification distinguishes pure-logic correctness from
+  monotonic-storage assumptions.
+
+** Layer 4: Containment, Quarantine & Clearing Witness (=delegated=, =everPaused=, =clearPending=, =cleared=, =witness=)
+
+- Models post-compromise reality under *Assume Breach*.
+- Distinguishes *local containment* (blocking new intents) from *external state*
+  (in-flight settlement or prior delegation that local pause cannot magically
+  undo — verified via false-claim witnesses).
+- Requires multi-factor external observation (=verified=, =finalized=, =noCode=
+  or domain-specific equivalents) before =cleared= may become true.
+
+* Planned Zero Trust Extensions
+
+Future modules under =threat/= will follow the same flat Scheme-POO-to-Quint
+pattern:
+
+- =zero-trust-pep-pdp=: policy-version drift between PDP decision and PEP
+  enforcement under concurrent policy updates.
+- =workload-identity-rotation=: short-lived SVID/credential issuance, overlap
+  windows, and immediate revocation propagation.
+- =microsegmentation-egress=: cross-tenant / cross-zone capability mediation
+  under compromised sidecar or proxy assumptions.

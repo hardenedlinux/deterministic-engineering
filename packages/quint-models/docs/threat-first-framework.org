@@ -1,0 +1,103 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Threat-First Modeling Framework with Quint
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Why Threat-First Modeling?
+
+Conventional security engineering treats threat modeling as post-hoc prose
+(architecture diagrams, checklists, or audit spreadsheets) detached from
+executable state transitions. By the time code is written, subtle state-machine
+bugs — stale authorization tickets, missing durable acknowledgements, unverified
+clearing reports, or host-rollback replay — are already baked into control flow.
+
+*Threat-First Modeling* inverts this order:
+
+1. *Model the threat boundary before implementation*: express attacker
+   capabilities, trust boundaries, authority freshness, and irreversible external
+   effects as a finite-state machine in Quint.
+2. *Separate reusable protocol primitives from scenario bindings*: keep generic
+   guards and state transitions in =@deterministic-engineering/quint-models/threat/*=,
+   and let downstream projects (such as =cedar-poo-spec=) bind concrete domain
+   capability graphs, constants, and host observation bits.
+3. *Require both positive proofs and negative countermodels*: a safety invariant
+   that passes only because transitions are vacuous proves nothing. Every
+   security-critical guard must have a corresponding *weakened countermodel* that
+   drops that single guard and produces an explicit Apalache ITF counterexample.
+
+* The Four-Layer Workflow
+
+#+begin_example
+Scheme POO Source (DE library/)
+   │  Declarative state, guards, invariants, weakened countermodel descendants
+   ▼
+Quint Projection (library/quint-methods/)
+   │  Emits *.qnt + plan.json + receipt.json (SHA-256 bound to deSourceCommit)
+   ▼
+Subtree Distribution (@deterministic-engineering/quint-models)
+   │  Consumed via bare specifiers with @deterministic-engineering/quint-modules-resolver
+   ▼
+Downstream Scenario Gate (e.g. cedar-poo-spec)
+   │  Binds domain capability graph (e.g. Lean-exported POO rules) + scenario constants
+   ▼
+Bounded Verification (Quint 0.33.0 + Apalache 0.62.1)
+   ├─ Deterministic traces (seed=7, max-samples=1)
+   ├─ Positive bounded check (depth 12, exit 0)
+   ├─ Required broken-boundary countermodels (depth 4, exit 1 + ITF predicate check)
+   └─ Deliberate false-claim witnesses (depth 4, exit 1 + ITF predicate check)
+#+end_example
+
+* Mandatory Discipline for Every Threat Model
+
+** 1. Explicit Limits and Trust Assumptions
+
+Every module must state what it *does* model (finite-state transitions, authority
+currency, durable-ack ordering, quarantine retention) and what it *does not*
+model (cryptography, real consensus, codec parsing, side channels, or Lean/Quint
+refinement unless separately proven).
+
+** 2. Hardened Step vs. Weakened Countermodels
+
+Never weaken the hardened =step= action to test failure modes. Instead:
+
+- Keep =step= strictly hardened and verify =safety= at positive depth (default 12,
+  expected exit =0=).
+- Define each countermodel as an explicit additive transition (derived from a
+  weakened POO descendant with a declared =dropped-guard=), e.g.
+  =stepNoDurability = any { step, noDurability }= or
+  =stepRollback = any { step, replayOldState }=.
+- Verify each countermodel at negative depth (default 4, expected exit =1=) and
+  assert on the generated Informal Trace Format (=*.itf.json=) that the exact
+  intended failure predicate holds (e.g. =unsafe == true and durable == false= or
+  =unsafe == true and sent == 2=).
+
+** 3. False-Claim Witnesses
+
+Where operators or stakeholders might assume a control does more than it
+actually can (for example, assuming a local =pause= cancels an already-settled
+on-chain transaction or revokes an already-confirmed external delegation), encode
+those assumptions as explicit *false-claim invariants* (=falseCancelClaim=,
+=falseRevokeClaim=) and require Apalache to refute them with retained ITF traces.
+
+** 4. Receipt-Bound Reproducibility
+
+Downstream verification gates must:
+- Verify =receipt.json= SHA-256 digests for every consumed =quint-models= artifact
+  before running Quint/Apalache.
+- Pin Quint (=0.33.0=), Apalache (=0.62.1=), seed (=7=), positive/negative
+  depths, and per-command timeouts.
+- Record all input digests and command exits in a downstream evidence receipt
+  that is invalidated immediately if any run fails.
+
+* Current Threat-First Primitives
+
+| Module | Bare Specifier | Core Property | Required Countermodels |
+|--------+----------------+---------------+------------------------|
+| =threat_capabilities= | =.../threat/capabilities/Capabilities= | Monotonic capability acquisition & isolated-root unreachability | — (pure predicate) |
+| =authority_currentness= | =.../threat/authority-currentness/AuthorityCurrentness= | Explicit freshness, revocation, pause, payload-binding & epoch currency | — (pure predicates) |
+| =effect_handoff= | =.../threat/effect-handoff/EffectHandoff= | Prepare → durable-commit → single emit (=sent <= MaxSends=) | =stepNoDurability= (dropped =durable-ack=) |
+| =effect_containment= | =.../threat/effect-containment/EffectContainment= | Pause retention, quarantine under delegation, verified clearing witness | =stepStaleRecovery=, =stepFalseClear= |
+| =state_rollback= | =.../threat/state-rollback/StateRollback= | Monotonic storage against host snapshot rollback | =stepNoDurability=, =stepRollback= |

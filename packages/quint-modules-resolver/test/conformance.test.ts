@@ -82,7 +82,7 @@ test('all projected models in packages/quint-models typecheck cleanly', () => {
     'threat/effect-handoff/EffectHandoff.qnt',
     'threat/effect-containment/EffectContainment.qnt',
     'threat/state-rollback/StateRollback.qnt',
-    'concurrency/backpressure-memory/BackpressureOwners.qnt',
+    'engineering/concurrency/backpressure-memory/BackpressureOwners.qnt',
   ];
   for (const rel of files) {
     const res = run(['bun', cliPath, 'typecheck', join(modelsRoot, rel)], repoRoot);

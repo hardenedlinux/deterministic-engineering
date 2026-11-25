@@ -1,0 +1,90 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: @deterministic-engineering/quint-models
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+=@deterministic-engineering/quint-models= is the reusable Quint model library
+projected from =hardenedlinux/deterministic-engineering= and distributed as a
+read-only =git subtree= mirror.
+
+It organizes finite-state protocol specifications into two primary domains,
+together with methodology guides, Zero Trust state-layer mappings, and research
+references:
+
+1. *Threat-First Modeling (=threat/=)*: pre-implementation security and Zero
+   Trust state-machine models — capability acquisition, authority currentness,
+   exact-effect handoff, blast-radius containment, and monotonic state against
+   host rollback.
+2. *Engineering State Models (=engineering/=)*: deterministic systems-engineering
+   state machines addressing *Concurrency* (backpressure, memory budgets,
+   ownership), *Parallelism* (scheduling, work-stealing, barrier synchronization),
+   and *Garbage Collection* (tri-color invariants, write barriers, safepoints).
+
+* Repository Layout
+
+#+begin_example
+packages/quint-models/
+├── README.org
+├── package.json
+├── docs/
+│   ├── threat-first-framework.org      # Threat-First QNT methodology & countermodel discipline
+│   ├── zero-trust-and-state-layers.org # Mapping Zero Trust principles to state-machine invariants
+│   ├── engineering-state-models.org    # GC, Concurrency, and Parallel state modeling taxonomy
+│   └── research-and-papers.org         # Research notes & canonical papers (TLA+/Quint, ZTA, OCap, GC, Concurrency)
+├── threat/
+│   ├── capabilities/                   # Capability acquisition graph & isolated-root reachability
+│   ├── authority-currentness/          # Explicit verification, freshness, revocation & epoch currency
+│   ├── effect-handoff/                 # Prepare / durable-commit / emit exact-effect handoff
+│   ├── effect-containment/             # Assume-breach pause, quarantine & verified clearing witness
+│   └── state-rollback/                 # Monotonic storage guard & host-rollback replay countermodel
+└── engineering/
+    ├── concurrency/
+    │   └── backpressure-memory/        # Bounded backpressure & memory-ownership state machine
+    ├── parallel/                       # Parallel scheduling & synchronization models (planned)
+    └── gc/                             # Tri-color marking, write barriers & safepoint models (planned)
+#+end_example
+
+* Consuming Models
+
+Official =@informalsystems/quint= resolves relative paths only. To import models
+from this package using bare package specifiers, pair it with
+=@deterministic-engineering/quint-modules-resolver= and pinned
+=@informalsystems/quint= (=0.33.0=):
+
+#+begin_src quint
+module my_wallet_host {
+  import state_rollback(MaxSends = 1).*
+    from "@deterministic-engineering/quint-models/threat/state-rollback/StateRollback"
+}
+#+end_src
+
+Every model directory ships three artifacts:
+
+| File | Role |
+|------+------|
+| =*.qnt= | Projected Quint module (do not edit by hand in mirror) |
+| =plan.json= | Declarative verification plan (typecheck, deterministic traces, positive depth-12, required negative depth-4 countermodels) |
+| =receipt.json= | Source/artifact SHA-256 projection receipt bound to =deSourceCommit= |
+
+* Documentation Index
+
+- [[file:docs/threat-first-framework.org][Threat-First Modeling Framework]] — how to build pre-implementation threat models
+  with Quint, Apalache, weakened countermodels, and false-claim witnesses.
+- [[file:docs/zero-trust-and-state-layers.org][Zero Trust and State Layers]] — translating Zero Trust Architecture (ZTA)
+  principles into explicit state-machine guards and invariants.
+- [[file:docs/engineering-state-models.org][Engineering State Models (GC, Concurrency, Parallel)]] — modeling runtime
+  determinism, memory budgets, parallel scheduling, and collector invariants.
+- [[file:docs/research-and-papers.org][Research and Papers]] — curated bibliography of formal methods, Zero Trust,
+  object-capability, distributed effects, concurrency, and GC literature.
+
+* Limits
+
+These models are finite-state protocol abstractions checked with bounded model
+checking (Apalache) and deterministic traces. They do *not* prove cryptography,
+compiler/codec correctness, kernel isolation, or physical storage atomicity.
+Every model declares its explicit limits in its header and =receipt.json=.

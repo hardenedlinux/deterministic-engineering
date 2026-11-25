@@ -127,12 +127,12 @@
               ("artifacts" art-digests)))
       (write-json-with-license! (path-expand "receipt.json" out-dir) receipt))
     threat-entries)
-  ;; Also publish the maintained concurrency/backpressure-memory Quint model (D3).
+  ;; Also publish the maintained engineering/concurrency/backpressure-memory Quint model (D3).
   (def bp-src-rel "languages-engineering/quint/concurrency/backpressure-memory/model.qnt")
   (def bp-src (path-expand bp-src-rel repo-root))
   (when (file-exists? bp-src)
     (let ()
-      (def bp-dir (path-expand "concurrency/backpressure-memory" pkg-root))
+      (def bp-dir (path-expand "engineering/concurrency/backpressure-memory" pkg-root))
       (create-directory* bp-dir)
       (def bp-text (read-file-string bp-src))
       (def bp-qnt (path-expand "BackpressureOwners.qnt" bp-dir))
@@ -158,7 +158,7 @@
         (path-expand "receipt.json" bp-dir)
         (hash ("status" "Projection receipt only; no verifier execution verdict")
               ("deSourceCommit" head-sha)
-              ("modelIdentity" "concurrency.backpressure-memory")
+              ("modelIdentity" "engineering.concurrency.backpressure-memory")
               ("quintVersion" (.get DefaultQuintPolicy quint-version))
               ("sources" bp-src-digests)
               ("artifacts"

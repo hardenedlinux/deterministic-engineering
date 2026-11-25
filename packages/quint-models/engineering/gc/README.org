@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Engineering Quint Models — Garbage Collection
+#+LANGUAGE: en
+
+This sub-domain hosts finite-state Quint models for concurrent and incremental
+garbage collection invariants:
+
+- Tri-color marking with Dijkstra insertion barrier (Strong Tri-Color Invariant)
+  and Yuasa SATB deletion barrier (Weak Tri-Color Invariant), paired with a
+  =stepNoWriteBarrier= countermodel showing live-object sweep.
+- Mutator/collector safepoint handshakes across =Idle -> Mark -> Remark -> Sweep=
+  phase transitions.
+
+See [[file:../../docs/engineering-state-models.org][Engineering State Models]] and [[file:../../docs/research-and-papers.org][Research and Papers]] for references.

@@ -91,7 +91,8 @@ export async function exportFigure(figure: ComposedFigure, browser: Browser, opt
     // SVG annotation height follows the selected font's real ascent/descent.
     await page.locator('svg[data-vector-annotation]').evaluateAll(elements=>{
       for(const svg of elements){const content=svg.querySelector<SVGGElement>('[data-annotation-content]');
-        if(content){
+        const svgRect=svg.getBoundingClientRect();
+        if(content&&svgRect.width>0){
           const metric=(name:string)=>{const value=parseFloat(getComputedStyle(svg).getPropertyValue(name));if(!Number.isFinite(value)||value<0)throw new Error('Invalid heading metric: '+name);return value;};
           const gap=metric('--gap'),markerSize=metric('--markerSize'),markerPadding=metric('--markerPadding'),padding=metric('--annotationPadding');
           for(const glyph of content.querySelectorAll<SVGSVGElement>('[data-annotation-part="glyph"]>svg')){const size=parseFloat(getComputedStyle(glyph).width);glyph.setAttribute('width',String(size));glyph.setAttribute('height',String(size));}
