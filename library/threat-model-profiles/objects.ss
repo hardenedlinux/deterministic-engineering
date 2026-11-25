@@ -14,6 +14,7 @@
   (only-in "../workload-identity-rotation/objects.ss" WorkloadIdentityRotationModel)
   (only-in "../microsegmentation-egress/objects.ss" MicrosegmentationEgressModel)
   (only-in "../oauth-token-lifecycle/objects.ss" OAuthTokenLifecycleModel)
+  (only-in "../oidc-federation/objects.ss" OidcFederationModel)
   (only-in "../gc-tricolor-barrier/objects.ss" TricolorWriteBarrierModel)
   (only-in "../gc-safepoint-handshake/objects.ss" SafepointHandshakeModel)
   (only-in "../parallel-epoch-reclamation/objects.ss" EpochReclamationModel)
@@ -97,6 +98,14 @@
           seed: 7
           positive-depth: 12
           negative-depth: 6
+          require-countermodels?: #t))
+    oidc-federation:
+    (checked-profile
+      (.o identity: 'oidc-federation
+          model: OidcFederationModel
+          seed: 7
+          positive-depth: 12
+          negative-depth: 4
           require-countermodels?: #t))
     gc-tricolor-barrier:
     (checked-profile
