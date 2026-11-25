@@ -22,6 +22,8 @@
   "../../library/oauth-token-lifecycle/objects.ss"
   "../../library/oidc-federation/objects.ss"
   "../../library/device-authorization/objects.ss"
+  "../../library/governance-sod/objects.ss"
+  "../../library/data-lineage-disclosure/objects.ss"
   "../../library/gc-tricolor-barrier/objects.ss"
   "../../library/gc-safepoint-handshake/objects.ss"
   "../../library/parallel-epoch-reclamation/objects.ss"
@@ -126,6 +128,14 @@
     (list DeviceAuthorizationModel
           (.get ThreatModelProfiles device-authorization)
           '("library/device-authorization/objects.ss" "library/authority-currentness/objects.ss"
+            "library/quint-methods/methods.ss"))
+    (list GovernanceSodModel
+          (.get ThreatModelProfiles governance-sod)
+          '("library/governance-sod/objects.ss" "library/authority-currentness/objects.ss"
+            "library/quint-methods/methods.ss"))
+    (list DataLineageDisclosureModel
+          (.get ThreatModelProfiles data-lineage-disclosure)
+          '("library/data-lineage-disclosure/objects.ss" "library/authority-currentness/objects.ss"
             "library/quint-methods/methods.ss"))
     (list TricolorWriteBarrierModel
           (.get ThreatModelProfiles gc-tricolor-barrier)

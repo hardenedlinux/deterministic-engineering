@@ -16,6 +16,8 @@
   (only-in "../oauth-token-lifecycle/objects.ss" OAuthTokenLifecycleModel)
   (only-in "../oidc-federation/objects.ss" OidcFederationModel)
   (only-in "../device-authorization/objects.ss" DeviceAuthorizationModel)
+  (only-in "../governance-sod/objects.ss" GovernanceSodModel)
+  (only-in "../data-lineage-disclosure/objects.ss" DataLineageDisclosureModel)
   (only-in "../gc-tricolor-barrier/objects.ss" TricolorWriteBarrierModel)
   (only-in "../gc-safepoint-handshake/objects.ss" SafepointHandshakeModel)
   (only-in "../parallel-epoch-reclamation/objects.ss" EpochReclamationModel)
@@ -115,6 +117,22 @@
           seed: 7
           positive-depth: 12
           negative-depth: 5
+          require-countermodels?: #t))
+    governance-sod:
+    (checked-profile
+      (.o identity: 'governance-sod
+          model: GovernanceSodModel
+          seed: 7
+          positive-depth: 12
+          negative-depth: 4
+          require-countermodels?: #t))
+    data-lineage-disclosure:
+    (checked-profile
+      (.o identity: 'data-lineage-disclosure
+          model: DataLineageDisclosureModel
+          seed: 7
+          positive-depth: 12
+          negative-depth: 4
           require-countermodels?: #t))
     gc-tricolor-barrier:
     (checked-profile
