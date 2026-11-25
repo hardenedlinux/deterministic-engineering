@@ -17,6 +17,8 @@
   "../library/effect-handoff/objects.ss"
   "../library/effect-containment/objects.ss"
   "../library/state-rollback/objects.ss"
+  "../library/zero-trust-pep-pdp/objects.ss"
+  "../library/gc-tricolor-barrier/objects.ss"
   "../library/quint-methods/types.ss"
   "../library/quint-methods/objects.ss"
   "../library/quint-methods/methods.ss"
@@ -101,4 +103,6 @@
           (cons AuthorityCurrentnessModel (.get ThreatModelProfiles authority-currentness))
           (cons EffectHandoffModel (.get ThreatModelProfiles effect-handoff))
           (cons EffectContainmentModel (.get ThreatModelProfiles effect-containment))
-          (cons StateRollbackModel (.get ThreatModelProfiles exact-effect-host)))))))
+          (cons StateRollbackModel (.get ThreatModelProfiles exact-effect-host))
+          (cons ZeroTrustPepPdpModel (.get ThreatModelProfiles zero-trust-pep-pdp))
+          (cons TricolorWriteBarrierModel (.get ThreatModelProfiles gc-tricolor-barrier)))))))

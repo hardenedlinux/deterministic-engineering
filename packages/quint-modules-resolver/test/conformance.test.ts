@@ -2,15 +2,29 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 import {expect, test} from 'bun:test';
-import {mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import {mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
-import {join, resolve} from 'node:path';
+import {dirname, join, resolve} from 'node:path';
 
 const pkgRoot = resolve(import.meta.dir, '..');
 const repoRoot = resolve(pkgRoot, '../..');
 const cliPath = join(pkgRoot, 'src/cli.ts');
 const nativeQuint = join(pkgRoot, 'node_modules/.bin/quint');
 const modelsRoot = join(repoRoot, 'packages/quint-models');
+
+function walkFiles(dir: string, predicate: (name: string) => boolean): string[] {
+  const found: string[] = [];
+  for (const entry of readdirSync(dir, {withFileTypes: true})) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      found.push(...walkFiles(full, predicate));
+    } else if (predicate(entry.name)) {
+      found.push(full);
+    }
+  }
+  return found.sort();
+}
 
 function run(cmd: string[], cwd: string) {
   const proc = Bun.spawnSync(cmd, {cwd, stdout: 'pipe', stderr: 'pipe'});
@@ -75,20 +89,31 @@ test('conformance: relative-only models match native quint exit code and pass co
   }
 }, 30000);
 
-test('all projected models in packages/quint-models typecheck cleanly', () => {
-  const files = [
-    'threat/capabilities/Capabilities.qnt',
-    'threat/authority-currentness/AuthorityCurrentness.qnt',
-    'threat/effect-handoff/EffectHandoff.qnt',
-    'threat/effect-containment/EffectContainment.qnt',
-    'threat/state-rollback/StateRollback.qnt',
-    'engineering/concurrency/backpressure-memory/BackpressureOwners.qnt',
-  ];
-  for (const rel of files) {
-    const res = run(['bun', cliPath, 'typecheck', join(modelsRoot, rel)], repoRoot);
+test('all projected models in packages/quint-models typecheck cleanly and match receipt digests', () => {
+  const qntFiles = walkFiles(modelsRoot, name => name.endsWith('.qnt'));
+  expect(qntFiles.length).toBeGreaterThan(0);
+  for (const full of qntFiles) {
+    const res = run(['bun', cliPath, 'typecheck', full], repoRoot);
     expect(res.exitCode).toBe(0);
+  }
+  const receipts = walkFiles(modelsRoot, name => name === 'receipt.json');
+  expect(receipts.length).toBe(qntFiles.length);
+  for (const receiptPath of receipts) {
+    const dir = dirname(receiptPath);
+    const receipt = JSON.parse(readFileSync(receiptPath, 'utf8')) as {
+      sources: Record<string, string>;
+      artifacts: Record<string, string>;
+    };
+    for (const [rel, expected] of Object.entries(receipt.sources)) {
+      const actual = createHash('sha256').update(readFileSync(join(repoRoot, rel))).digest('hex');
+      expect(actual).toBe(expected);
+    }
+    for (const [rel, expected] of Object.entries(receipt.artifacts)) {
+      const actual = createHash('sha256').update(readFileSync(join(dir, rel))).digest('hex');
+      expect(actual).toBe(expected);
+    }
   }
   const ver = run(['bun', cliPath, '--version'], repoRoot);
   expect(ver.exitCode).toBe(0);
   expect(ver.stdout.trim()).toBe('0.33.0');
-}, 30000);
+}, 60000);

@@ -10,6 +10,8 @@
   (only-in "../effect-handoff/objects.ss" EffectHandoffModel)
   (only-in "../effect-containment/objects.ss" EffectContainmentModel)
   (only-in "../state-rollback/objects.ss" StateRollbackModel)
+  (only-in "../zero-trust-pep-pdp/objects.ss" ZeroTrustPepPdpModel)
+  (only-in "../gc-tricolor-barrier/objects.ss" TricolorWriteBarrierModel)
   (only-in "../quint-methods/types.ss" QuintProfileType))
 (export ThreatModelProfiles)
 
@@ -53,6 +55,22 @@
     (checked-profile
       (.o identity: 'exact-effect-host
           model: StateRollbackModel
+          seed: 7
+          positive-depth: 12
+          negative-depth: 4
+          require-countermodels?: #t))
+    zero-trust-pep-pdp:
+    (checked-profile
+      (.o identity: 'zero-trust-pep-pdp
+          model: ZeroTrustPepPdpModel
+          seed: 7
+          positive-depth: 12
+          negative-depth: 4
+          require-countermodels?: #t))
+    gc-tricolor-barrier:
+    (checked-profile
+      (.o identity: 'gc-tricolor-barrier
+          model: TricolorWriteBarrierModel
           seed: 7
           positive-depth: 12
           negative-depth: 4

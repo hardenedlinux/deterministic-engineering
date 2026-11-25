@@ -32,32 +32,4 @@ jobs:
         with:
           bun-version: 1.3.11
       - run: bun install --frozen-lockfile
-      - run: bun run typecheck:quint
-      - run: bun run test:quint
-      - name: Verify packages/quint-models projection receipts
-        run: |
-          bun -e '
-            import {createHash} from "node:crypto";
-            import {readFileSync} from "node:fs";
-            import {join} from "node:path";
-            const dirs = [
-              "threat/capabilities",
-              "threat/authority-currentness",
-              "threat/effect-handoff",
-              "threat/effect-containment",
-              "threat/state-rollback",
-              "engineering/concurrency/backpressure-memory",
-            ];
-            for (const d of dirs) {
-              const dir = join("packages/quint-models", d);
-              const r = JSON.parse(readFileSync(join(dir, "receipt.json"), "utf8"));
-              for (const [p, h] of Object.entries(r.sources)) {
-                if (createHash("sha256").update(readFileSync(p)).digest("hex") !== h)
-                  throw new Error("Stale source " + p + " in " + d);
-              }
-              for (const [p, h] of Object.entries(r.artifacts)) {
-                if (createHash("sha256").update(readFileSync(join(dir, p))).digest("hex") !== h)
-                  throw new Error("Stale artifact " + p + " in " + d);
-              }
-            }
-          '
+      - run: bun run check:quint

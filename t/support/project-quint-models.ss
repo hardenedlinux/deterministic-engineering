@@ -16,6 +16,8 @@
   "../../library/effect-handoff/objects.ss"
   "../../library/effect-containment/objects.ss"
   "../../library/state-rollback/objects.ss"
+  "../../library/zero-trust-pep-pdp/objects.ss"
+  "../../library/gc-tricolor-barrier/objects.ss"
   "../../library/quint-methods/objects.ss"
   "../../library/quint-methods/methods.ss"
   "../../library/threat-model-profiles/objects.ss")
@@ -91,7 +93,14 @@
     (list StateRollbackModel
           (.get ThreatModelProfiles exact-effect-host)
           '("library/state-rollback/objects.ss" "library/effect-handoff/objects.ss"
-            "library/authority-currentness/objects.ss" "library/quint-methods/methods.ss"))))
+            "library/authority-currentness/objects.ss" "library/quint-methods/methods.ss"))
+    (list ZeroTrustPepPdpModel
+          (.get ThreatModelProfiles zero-trust-pep-pdp)
+          '("library/zero-trust-pep-pdp/objects.ss" "library/authority-currentness/objects.ss"
+            "library/quint-methods/methods.ss"))
+    (list TricolorWriteBarrierModel
+          (.get ThreatModelProfiles gc-tricolor-barrier)
+          '("library/gc-tricolor-barrier/objects.ss" "library/quint-methods/methods.ss"))))
 
 (def (project-all-quint-models! repo-root)
   (def head-sha (git-head-sha repo-root))

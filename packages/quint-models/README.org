@@ -41,12 +41,14 @@ packages/quint-models/
 │   ├── authority-currentness/          # Explicit verification, freshness, revocation & epoch currency
 │   ├── effect-handoff/                 # Prepare / durable-commit / emit exact-effect handoff
 │   ├── effect-containment/             # Assume-breach pause, quarantine & verified clearing witness
-│   └── state-rollback/                 # Monotonic storage guard & host-rollback replay countermodel
+│   ├── state-rollback/                 # Monotonic storage guard & host-rollback replay countermodel
+│   └── zero-trust-pep-pdp/             # Zero Trust PEP/PDP split under policy-epoch drift & revocation
 └── engineering/
     ├── concurrency/
     │   └── backpressure-memory/        # Bounded backpressure & memory-ownership state machine
     ├── parallel/                       # Parallel scheduling & synchronization models (planned)
-    └── gc/                             # Tri-color marking, write barriers & safepoint models (planned)
+    └── gc/
+        └── tricolor-write-barrier/     # Concurrent tri-color GC with Dijkstra write barrier & omission countermodel
 #+end_example
 
 * Consuming Models

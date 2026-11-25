@@ -423,3 +423,7 @@ investigate-formation-consequences output:
     mkdir -p .data/test-logs
     log="$(mktemp .data/test-logs/formation-consequences-XXXXXX)"
     timeout --signal=TERM --kill-after=5s 120s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/library-formation-consequences.ss "{{output}}" 2>&1 | tee "$log"
+
+# Unified engineering entrypoint for Quint packages (typecheck, conformance, dynamic model & receipt checks).
+check-quint:
+    bun run check:quint
