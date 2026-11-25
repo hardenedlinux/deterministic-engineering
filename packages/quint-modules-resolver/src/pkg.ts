@@ -10,7 +10,6 @@ export interface InstalledQuintModel {
   packageVersion: string;
   modelIdentity: string;
   bareSpecifier: string;
-  prototypeSpecifier?: string;
   modelDir: string;
   quintVersion: string;
 }
@@ -67,13 +66,11 @@ export function discoverInstalledQuintModels(projectRoot: string = process.cwd()
       if (!qntFile) continue;
       const relDir = relative(pkgDir, modelDir).replaceAll('\\', '/');
       const bareBase = `${pkgJson.name}/${relDir}`;
-      const hasProto = existsSync(join(modelDir, 'prototype.json'));
       results.push({
         packageName: pkgJson.name,
         packageVersion: pkgJson.version ?? '0.0.0',
         modelIdentity: receipt.modelIdentity,
         bareSpecifier: `${bareBase}/${qntFile.replace(/\.qnt$/, '')}`,
-        prototypeSpecifier: hasProto ? `${bareBase}/prototype.json` : undefined,
         modelDir,
         quintVersion: receipt.quintVersion ?? 'unknown',
       });

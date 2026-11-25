@@ -15,7 +15,7 @@ import {
 } from '@informalsystems/quint';
 import {packageSourceResolver} from './resolver.ts';
 import {executePlan} from './plan.ts';
-import {composeToFiles} from './compose.ts';
+import {composeQuintFiles} from './compose.ts';
 import {discoverInstalledQuintModels, verifyInstalledQuintPackages} from './pkg.ts';
 
 const req = createRequire(import.meta.url);
@@ -152,8 +152,7 @@ export async function runCli(argv: string[]) {
       console.log(JSON.stringify(models, null, 2));
     } else {
       for (const m of models) {
-        const protoTag = m.prototypeSpecifier ? ' [POO]' : '';
-        console.log(`${m.bareSpecifier} (${m.modelIdentity}, quint@${m.quintVersion})${protoTag}`);
+        console.log(`${m.bareSpecifier} (${m.modelIdentity}, quint@${m.quintVersion})`);
       }
       console.log(`Total: ${models.length} installed Quint model(s)`);
     }
@@ -165,10 +164,11 @@ export async function runCli(argv: string[]) {
     return;
   }
   if (argv[0] === 'compose') {
-    const overlayPath = argv[1];
+    const baseSpec = argv[1];
+    const overlayPath = argv[2];
     let outQnt: string | undefined;
     let outPlan: string | undefined;
-    for (let i = 2; i < argv.length; i++) {
+    for (let i = 3; i < argv.length; i++) {
       const tok = argv[i]!;
       const eq = tok.indexOf('=');
       const key = eq >= 0 ? tok.slice(0, eq) : tok;
@@ -176,12 +176,12 @@ export async function runCli(argv: string[]) {
       if (key === '--out') outQnt = val;
       else if (key === '--plan') outPlan = val;
     }
-    if (!overlayPath || !outQnt) {
-      console.error('Usage: quint-modules-resolver compose <overlay.proto.json> --out <Derived.qnt> [--plan <plan.json>]');
+    if (!baseSpec || !overlayPath || !outQnt) {
+      console.error('Usage: quint-modules-resolver compose <base.qnt|bare-spec> <overlay.qnt> --out <Derived.qnt> [--plan <plan.json>]');
       process.exit(2);
     }
-    const proto = composeToFiles(overlayPath, outQnt, outPlan);
-    console.log(`COMPOSE-OK ${proto.identity} -> ${outQnt}${outPlan ? ` (+ ${outPlan})` : ''}`);
+    const mod = composeQuintFiles(baseSpec, overlayPath, outQnt, outPlan);
+    console.log(`COMPOSE-OK ${mod.name} -> ${outQnt}${outPlan ? ` (+ ${outPlan})` : ''}`);
     return;
   }
   if (argv[0] === 'run-plan') {

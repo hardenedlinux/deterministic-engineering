@@ -20,90 +20,97 @@ function run(cmd: string[], cwd: string) {
   };
 }
 
-test('downstream POO compose extends upstream prototype.json without Scheme and runs traces', () => {
-  const work = mkdtempSync(join(tmpdir(), 'qmr-poo-'));
+test('pure .qnt structural AST compose extends upstream model without JSON IR or Scheme', () => {
+  const work = mkdtempSync(join(tmpdir(), 'qmr-ast-compose-'));
   try {
     mkdirSync(join(work, 'node_modules/@deterministic-engineering'), {recursive: true});
     symlinkSync(modelsRoot, join(work, 'node_modules/@deterministic-engineering/quint-models'), 'dir');
 
-    // 1. Package manager commands: list and verify-deps.
+    // 1. Package manager commands: list and verify-deps (pure .qnt, no prototype.json).
     const listed = run(['bun', cliPath, 'list'], work);
     expect(listed.exitCode).toBe(0);
     expect(listed.stdout).toContain('@deterministic-engineering/quint-models/threat/oauth-token-lifecycle/OAuthTokenLifecycle');
-    expect(listed.stdout).toContain('[POO]');
 
     const verified = run(['bun', cliPath, 'verify-deps'], work);
     expect(verified.exitCode).toBe(0);
     expect(verified.stdout).toContain('DEPS-OK');
 
-    // 2. Downstream POO overlay extending oauth-token-lifecycle without installing Scheme.
-    const overlayPath = join(work, 'marlin-auth.proto.json');
-    const outQnt = join(work, 'MarlinAuthComposed.qnt');
+    // 2. Pure .qnt overlay extending upstream OAuthTokenLifecycle.qnt via structural AST merge.
+    const baseSpec = '@deterministic-engineering/quint-models/threat/oauth-token-lifecycle/OAuthTokenLifecycle';
+    const overlayPath = join(work, 'ConsumerAuthOverlay.qnt');
+    const outQnt = join(work, 'ConsumerAuthComposed.qnt');
     const outPlan = join(work, 'plan.json');
     writeFileSync(
       overlayPath,
-      JSON.stringify(
-        {
-          extends: '@deterministic-engineering/quint-models/threat/oauth-token-lifecycle/prototype.json',
-          identity: 'downstream.marlin-auth',
-          module: 'marlin_auth_composed',
-          addState: [['cedarPolicyEpoch', 'int', '1']],
-          addGuards: [['cedar-policy-active', 'h.cedarPolicyEpoch >= 1']],
-          addTransitions: [
-            [
-              'bumpCedarPolicy',
-              'action bumpCedarPolicy = if (h.cedarPolicyEpoch < 3) h\' = h.with("cedarPolicyEpoch", h.cedarPolicyEpoch + 1) else h\' = h',
-            ],
-          ],
-          addStepActions: ['bumpCedarPolicy'],
-          strengthenSafety: 'h.cedarPolicyEpoch >= 1',
-          addTraces: [
-            [
-              'marlinCedarPolicyTest',
-              'run marlinCedarPolicyTest = init.then(beginOAuth).then(completeCallbackAs(true, true)).then(bumpCedarPolicy).then(all { assert(h.cedarPolicyEpoch == 2), assert(safety), h\' = h })',
-            ],
-          ],
-        },
-        null,
-        2,
-      ),
+      [
+        'module consumer_auth_composed {',
+        '  type State = { cedarPolicyEpoch: int }',
+        "  action init = h' = { cedarPolicyEpoch: 1 }",
+        '  action bumpCedarPolicy = if (h.cedarPolicyEpoch < 3) h\' = h.with("cedarPolicyEpoch", h.cedarPolicyEpoch + 1) else h\' = h',
+        '  action step = any { bumpCedarPolicy }',
+        '  val safety = h.cedarPolicyEpoch >= 1',
+        '  run consumerCedarPolicyTest = init.then(beginOAuth).then(completeCallbackAs(true, true)).then(bumpCedarPolicy).then(all { assert(h.cedarPolicyEpoch == 2), assert(safety), h\' = h })',
+        '}',
+        '',
+      ].join('\n'),
     );
 
-    const comp = run(['bun', cliPath, 'compose', overlayPath, `--out=${outQnt}`, `--plan=${outPlan}`], work);
+    const comp = run(['bun', cliPath, 'compose', baseSpec, overlayPath, `--out=${outQnt}`, `--plan=${outPlan}`], work);
     expect(comp.exitCode).toBe(0);
-    expect(comp.stdout).toContain('COMPOSE-OK downstream.marlin-auth');
+    expect(comp.stdout).toContain('COMPOSE-OK consumer_auth_composed');
 
     const tc = run(['bun', cliPath, 'typecheck', outQnt], work);
     expect(tc.exitCode).toBe(0);
 
     const tst = run(
-      ['bun', cliPath, 'test', outQnt, '--main=marlin_auth_composed', '--max-samples=1', '--seed=7', '--backend=typescript'],
+      ['bun', cliPath, 'test', outQnt, '--main=consumer_auth_composed', '--max-samples=1', '--seed=7', '--backend=typescript'],
       work,
     );
     expect(tst.exitCode).toBe(0);
     expect(tst.stdout + tst.stderr).toContain('6 passing');
 
-    // 3. Negative control: undeclared droppedGuard in overlay countermodel must refuse.
-    const badOverlay = join(work, 'bad.proto.json');
+    // 3. Negative control: State field type conflict must refuse.
+    const badTypeOverlay = join(work, 'BadTypeOverlay.qnt');
     writeFileSync(
-      badOverlay,
-      JSON.stringify({
-        extends: '@deterministic-engineering/quint-models/threat/oauth-token-lifecycle/prototype.json',
-        module: 'bad_composed',
-        addCountermodels: [
-          {
-            identity: 'bad.cm',
-            droppedGuard: 'nonexistent-guard',
-            stepAction: 'stepBad',
-            counterAction: 'action stepBad = step',
-            expectedItfPredicate: 'h.unsafe == true',
-          },
-        ],
-      }),
+      badTypeOverlay,
+      [
+        'module bad_type_composed {',
+        '  type State = { authEpoch: bool }',
+        "  action init = h' = { authEpoch: false }",
+        '}',
+      ].join('\n'),
     );
-    const badRes = run(['bun', cliPath, 'compose', badOverlay, `--out=${join(work, 'Bad.qnt')}`], work);
-    expect(badRes.exitCode).not.toBe(0);
-    expect(badRes.stderr + badRes.stdout).toContain('undeclared droppedGuard');
+    const badType = run(['bun', cliPath, 'compose', baseSpec, badTypeOverlay, `--out=${join(work, 'BadType.qnt')}`], work);
+    expect(badType.exitCode).not.toBe(0);
+    expect(badType.stderr + badType.stdout).toContain('type conflict');
+
+    // 4. Negative control: new State field without init initializer must refuse.
+    const badInitOverlay = join(work, 'BadInitOverlay.qnt');
+    writeFileSync(
+      badInitOverlay,
+      [
+        'module bad_init_composed {',
+        '  type State = { extraFlag: bool }',
+        '}',
+      ].join('\n'),
+    );
+    const badInit = run(['bun', cliPath, 'compose', baseSpec, badInitOverlay, `--out=${join(work, 'BadInit.qnt')}`], work);
+    expect(badInit.exitCode).not.toBe(0);
+    expect(badInit.stderr + badInit.stdout).toContain("defines no 'action init'");
+
+    // 5. Negative control: colliding non-mergeable action name must refuse.
+    const badCollideOverlay = join(work, 'BadCollideOverlay.qnt');
+    writeFileSync(
+      badCollideOverlay,
+      [
+        'module bad_collide_composed {',
+        "  action beginOAuth = h' = h",
+        '}',
+      ].join('\n'),
+    );
+    const badCollide = run(['bun', cliPath, 'compose', baseSpec, badCollideOverlay, `--out=${join(work, 'BadCollide.qnt')}`], work);
+    expect(badCollide.exitCode).not.toBe(0);
+    expect(badCollide.stderr + badCollide.stdout).toContain('redeclares non-mergeable symbol');
   } finally {
     rmSync(work, {recursive: true, force: true});
   }

@@ -63,38 +63,6 @@
         ("timeout" (.get plan timeout))
         ("steps" (map step->json-hash (.get plan steps)))))
 
-(def (normalize-import-for-package imp)
-  (def mod (car imp))
-  (def raw-path (cadr imp))
-  (if (and (>= (string-length raw-path) 3) (equal? (substring raw-path 0 3) "../"))
-    (list mod (string-append "@deterministic-engineering/quint-models/threat/"
-                             (substring raw-path 3 (string-length raw-path))))
-    (list mod raw-path)))
-
-(def (model->prototype-hash model)
-  (def imports (if (.slot? model 'quint-imports) (.get model quint-imports) '()))
-  (hash ("schemaVersion" 1)
-        ("identity" (symbol->string (.get model identity)))
-        ("module" (.get model quint-module))
-        ("file" (.get model quint-file))
-        ("domainDir" (.get model domain-dir))
-        ("imports" (map normalize-import-for-package imports))
-        ("parameters" (map (lambda (p) (list (symbol->string (car p)) (cadr p))) (.get model parameters)))
-        ("state" (map (lambda (s) (cons (symbol->string (car s)) (cdr s))) (.get model state)))
-        ("guards" (map (lambda (g) (list (symbol->string (car g)) (cadr g))) (.get model guards)))
-        ("transitions" (map (lambda (t) (list (symbol->string (car t)) (cadr t))) (.get model transitions)))
-        ("safety" (.get model safety))
-        ("traces" (map (lambda (t) (list (symbol->string (car t)) (cadr t))) (.get model traces)))
-        ("countermodels"
-         (map (lambda (cm)
-                (hash ("identity" (symbol->string (.get cm identity)))
-                      ("droppedGuard" (symbol->string (.get cm dropped-guard)))
-                      ("stepAction" (.get cm step-action))
-                      ("counterAction" (.get cm counter-action))
-                      ("expectedItfPredicate" (.get cm expected-itf-predicate))))
-              (.get model countermodels)))
-        ("limits" (.get model limits))))
-
 (def (write-json-with-license! path value)
   (call-with-output-file path
     (lambda (port)
@@ -182,8 +150,6 @@
       (def plan (quint-plan model profile DefaultQuintPolicy))
       (def plan-path (path-expand "plan.json" out-dir))
       (write-json-with-license! plan-path (plan->json-hash plan))
-      (def proto-path (path-expand "prototype.json" out-dir))
-      (write-json-with-license! proto-path (model->prototype-hash model))
       (def src-digests (make-hash-table))
       (for-each
         (lambda (rel)
@@ -192,7 +158,6 @@
       (def art-digests (make-hash-table))
       (hash-put! art-digests qnt-file (sha256-hex-string qnt-text))
       (hash-put! art-digests "plan.json" (sha256-hex-file plan-path))
-      (hash-put! art-digests "prototype.json" (sha256-hex-file proto-path))
       (def receipt
         (hash ("status" "Projection receipt only; no verifier execution verdict")
               ("deSourceCommit" head-sha)
