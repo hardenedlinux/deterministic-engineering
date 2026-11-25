@@ -17,6 +17,7 @@
   dependencies: '((ROLL-SAFE source) (ROLL-SAFE profile) (ROLL-SAFE method)
                   (ROLL-COUNTER source) (ROLL-COUNTER profile) (ROLL-COUNTER method))
   invariant: "Monotonic storage prevents replaying a pre-handoff snapshot to emit a second effect."
+  guards: => (cut append <> '((monotonic-storage "monotonic storage prevents pre-handoff snapshot replay")))
   traces: => (cut append <>
                   '((rollbackCountermodelTest
                      "run rollbackCountermodelTest = init.then(prepare).then(commitAs(true)).then(emit).then(replayOldState).then(unsafe)")))

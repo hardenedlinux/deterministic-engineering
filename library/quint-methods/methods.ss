@@ -25,6 +25,7 @@
   (and (pair? state-rows) (= (length (car state-rows)) 3)))
 
 (.defmethod (quint-module (model (prototype ThreatModel.)))
+  (validate QuintDomainModelType model)
   (def mod-name (.get model quint-module))
   (def limits (.get model limits))
   (def imports (if (.slot? model 'quint-imports) (.get model quint-imports) '()))
@@ -76,6 +77,7 @@
       (display "}\n" out))))
 
 (.defmethod (quint-plan (model (prototype ThreatModel.)) profile policy)
+  (validate QuintDomainModelType model)
   (validate QuintProfileType profile)
   (validate QuintPolicyType policy)
   (def mod-name (.get model quint-module))

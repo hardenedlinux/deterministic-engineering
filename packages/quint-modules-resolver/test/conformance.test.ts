@@ -89,15 +89,19 @@ test('conformance: relative-only models match native quint exit code and pass co
   }
 }, 30000);
 
-test('all projected models in packages/quint-models typecheck cleanly and match receipt digests', () => {
+test('all projected models in packages/quint-models pass run-plan (typecheck, traces, receipt digests)', () => {
   const qntFiles = walkFiles(modelsRoot, name => name.endsWith('.qnt'));
-  expect(qntFiles.length).toBeGreaterThan(0);
-  for (const full of qntFiles) {
-    const res = run(['bun', cliPath, 'typecheck', full], repoRoot);
-    expect(res.exitCode).toBe(0);
-  }
+  const planFiles = walkFiles(modelsRoot, name => name === 'plan.json');
   const receipts = walkFiles(modelsRoot, name => name === 'receipt.json');
+  expect(qntFiles.length).toBeGreaterThan(0);
+  expect(planFiles.length).toBe(qntFiles.length);
   expect(receipts.length).toBe(qntFiles.length);
+
+  for (const planPath of planFiles) {
+    const res = run(['bun', cliPath, 'run-plan', planPath], repoRoot);
+    expect(res.exitCode).toBe(0);
+    expect(res.stdout).toContain('PLAN-OK');
+  }
   for (const receiptPath of receipts) {
     const dir = dirname(receiptPath);
     const receipt = JSON.parse(readFileSync(receiptPath, 'utf8')) as {
@@ -116,4 +120,4 @@ test('all projected models in packages/quint-models typecheck cleanly and match 
   const ver = run(['bun', cliPath, '--version'], repoRoot);
   expect(ver.exitCode).toBe(0);
   expect(ver.stdout.trim()).toBe('0.33.0');
-}, 60000);
+}, 120000);

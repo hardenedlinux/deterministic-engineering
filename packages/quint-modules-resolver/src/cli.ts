@@ -14,6 +14,7 @@ import {
   parsePhase4toposort,
 } from '@informalsystems/quint';
 import {packageSourceResolver} from './resolver.ts';
+import {executePlan} from './plan.ts';
 
 const req = createRequire(import.meta.url);
 const quintPkg = req.resolve('@informalsystems/quint/package.json');
@@ -143,6 +144,17 @@ async function parseWithPackages(args: ParsedArgs) {
 }
 
 export async function runCli(argv: string[]) {
+  if (argv[0] === 'run-plan') {
+    const planPath = argv[1];
+    if (!planPath) {
+      console.error('Usage: quint-modules-resolver run-plan <plan.json> [--verify]');
+      process.exit(2);
+    }
+    const verify = argv.includes('--verify');
+    const summary = executePlan(planPath, {verify});
+    console.log(`PLAN-OK ${planPath} (passed=${summary.passed}, skipped=${summary.skipped}, verify=${verify})`);
+    return;
+  }
   const args = parseCliArgs(argv);
   let result = await parseWithPackages(args);
   if (args.command === 'typecheck' || args.command === 'test' || args.command === 'verify') {

@@ -11,7 +11,12 @@
   (only-in "../effect-containment/objects.ss" EffectContainmentModel)
   (only-in "../state-rollback/objects.ss" StateRollbackModel)
   (only-in "../zero-trust-pep-pdp/objects.ss" ZeroTrustPepPdpModel)
+  (only-in "../workload-identity-rotation/objects.ss" WorkloadIdentityRotationModel)
+  (only-in "../microsegmentation-egress/objects.ss" MicrosegmentationEgressModel)
   (only-in "../gc-tricolor-barrier/objects.ss" TricolorWriteBarrierModel)
+  (only-in "../gc-safepoint-handshake/objects.ss" SafepointHandshakeModel)
+  (only-in "../parallel-epoch-reclamation/objects.ss" EpochReclamationModel)
+  (only-in "../parallel-work-stealing/objects.ss" WorkStealingDequeModel)
   (only-in "../quint-methods/types.ss" QuintProfileType))
 (export ThreatModelProfiles)
 
@@ -67,10 +72,50 @@
           positive-depth: 12
           negative-depth: 4
           require-countermodels?: #t))
+    workload-identity-rotation:
+    (checked-profile
+      (.o identity: 'workload-identity-rotation
+          model: WorkloadIdentityRotationModel
+          seed: 7
+          positive-depth: 12
+          negative-depth: 4
+          require-countermodels?: #t))
+    microsegmentation-egress:
+    (checked-profile
+      (.o identity: 'microsegmentation-egress
+          model: MicrosegmentationEgressModel
+          seed: 7
+          positive-depth: 12
+          negative-depth: 4
+          require-countermodels?: #t))
     gc-tricolor-barrier:
     (checked-profile
       (.o identity: 'gc-tricolor-barrier
           model: TricolorWriteBarrierModel
+          seed: 7
+          positive-depth: 12
+          negative-depth: 4
+          require-countermodels?: #t))
+    gc-safepoint-handshake:
+    (checked-profile
+      (.o identity: 'gc-safepoint-handshake
+          model: SafepointHandshakeModel
+          seed: 7
+          positive-depth: 12
+          negative-depth: 4
+          require-countermodels?: #t))
+    parallel-epoch-reclamation:
+    (checked-profile
+      (.o identity: 'parallel-epoch-reclamation
+          model: EpochReclamationModel
+          seed: 7
+          positive-depth: 12
+          negative-depth: 4
+          require-countermodels?: #t))
+    parallel-work-stealing:
+    (checked-profile
+      (.o identity: 'parallel-work-stealing
+          model: WorkStealingDequeModel
           seed: 7
           positive-depth: 12
           negative-depth: 4

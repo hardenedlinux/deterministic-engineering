@@ -42,13 +42,18 @@ packages/quint-models/
 │   ├── effect-handoff/                 # Prepare / durable-commit / emit exact-effect handoff
 │   ├── effect-containment/             # Assume-breach pause, quarantine & verified clearing witness
 │   ├── state-rollback/                 # Monotonic storage guard & host-rollback replay countermodel
-│   └── zero-trust-pep-pdp/             # Zero Trust PEP/PDP split under policy-epoch drift & revocation
+│   ├── zero-trust-pep-pdp/             # Zero Trust PEP/PDP split under policy-epoch drift & revocation
+│   ├── workload-identity-rotation/     # Short-lived SVID rotation overlap & emergency revocation precedence
+│   └── microsegmentation-egress/       # Cross-tenant egress mediation, sidecar attestation & quarantine
 └── engineering/
     ├── concurrency/
     │   └── backpressure-memory/        # Bounded backpressure & memory-ownership state machine
-    ├── parallel/                       # Parallel scheduling & synchronization models (planned)
+    ├── parallel/
+    │   ├── epoch-reclamation/          # Lock-free Epoch-Based Reclamation (EBR) & premature-reclaim countermodel
+    │   └── work-stealing-deque/        # Chase-Lev work-stealing deque & missing last-item CAS countermodel
     └── gc/
-        └── tricolor-write-barrier/     # Concurrent tri-color GC with Dijkstra write barrier & omission countermodel
+        ├── tricolor-write-barrier/     # Concurrent tri-color GC with Dijkstra write barrier & omission countermodel
+        └── safepoint-handshake/        # Mutator/collector safepoint handshake & skipped-handshake countermodel
 #+end_example
 
 * Consuming Models

@@ -18,7 +18,12 @@
   "../library/effect-containment/objects.ss"
   "../library/state-rollback/objects.ss"
   "../library/zero-trust-pep-pdp/objects.ss"
+  "../library/workload-identity-rotation/objects.ss"
+  "../library/microsegmentation-egress/objects.ss"
   "../library/gc-tricolor-barrier/objects.ss"
+  "../library/gc-safepoint-handshake/objects.ss"
+  "../library/parallel-epoch-reclamation/objects.ss"
+  "../library/parallel-work-stealing/objects.ss"
   "../library/quint-methods/types.ss"
   "../library/quint-methods/objects.ss"
   "../library/quint-methods/methods.ss"
@@ -56,7 +61,21 @@
       ;; Profile requiring countermodels refuses a model with none.
       (def strict-cap
         (.cc (.get ThreatModelProfiles threat-capabilities) 'require-countermodels? #t))
-      (check-exception (quint-plan CapabilitiesModel strict-cap DefaultQuintPolicy) error?))
+      (check-exception (quint-plan CapabilitiesModel strict-cap DefaultQuintPolicy) error?)
+      ;; Relational sealed Record checks: unknown dropped-guard and cross-domain misuse must refuse.
+      (check-exception
+        (validate ThreatDomainModelType TricolorWriteBarrierModel)
+        TypeError?)
+      (check-exception
+        (validate EngineeringDomainModelType ZeroTrustPepPdpModel)
+        TypeError?)
+      (check-exception
+        (validate EngineeringDomainModelType (.cc TricolorWriteBarrierModel 'countermodels '()))
+        TypeError?)
+      (check-exception
+        (validate QuintDomainModelType
+          (.cc ZeroTrustPepPdpModel 'guards '((unrelated-guard "true"))))
+        TypeError?))
 
     (test-case "languages.quint Config validates defaults and refuses invalid settings"
       (validate QuintConfigType Config)
@@ -105,4 +124,9 @@
           (cons EffectContainmentModel (.get ThreatModelProfiles effect-containment))
           (cons StateRollbackModel (.get ThreatModelProfiles exact-effect-host))
           (cons ZeroTrustPepPdpModel (.get ThreatModelProfiles zero-trust-pep-pdp))
-          (cons TricolorWriteBarrierModel (.get ThreatModelProfiles gc-tricolor-barrier)))))))
+          (cons WorkloadIdentityRotationModel (.get ThreatModelProfiles workload-identity-rotation))
+          (cons MicrosegmentationEgressModel (.get ThreatModelProfiles microsegmentation-egress))
+          (cons TricolorWriteBarrierModel (.get ThreatModelProfiles gc-tricolor-barrier))
+          (cons SafepointHandshakeModel (.get ThreatModelProfiles gc-safepoint-handshake))
+          (cons EpochReclamationModel (.get ThreatModelProfiles parallel-epoch-reclamation))
+          (cons WorkStealingDequeModel (.get ThreatModelProfiles parallel-work-stealing)))))))

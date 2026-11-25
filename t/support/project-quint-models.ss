@@ -17,7 +17,12 @@
   "../../library/effect-containment/objects.ss"
   "../../library/state-rollback/objects.ss"
   "../../library/zero-trust-pep-pdp/objects.ss"
+  "../../library/workload-identity-rotation/objects.ss"
+  "../../library/microsegmentation-egress/objects.ss"
   "../../library/gc-tricolor-barrier/objects.ss"
+  "../../library/gc-safepoint-handshake/objects.ss"
+  "../../library/parallel-epoch-reclamation/objects.ss"
+  "../../library/parallel-work-stealing/objects.ss"
   "../../library/quint-methods/objects.ss"
   "../../library/quint-methods/methods.ss"
   "../../library/threat-model-profiles/objects.ss")
@@ -98,9 +103,26 @@
           (.get ThreatModelProfiles zero-trust-pep-pdp)
           '("library/zero-trust-pep-pdp/objects.ss" "library/authority-currentness/objects.ss"
             "library/quint-methods/methods.ss"))
+    (list WorkloadIdentityRotationModel
+          (.get ThreatModelProfiles workload-identity-rotation)
+          '("library/workload-identity-rotation/objects.ss" "library/authority-currentness/objects.ss"
+            "library/quint-methods/methods.ss"))
+    (list MicrosegmentationEgressModel
+          (.get ThreatModelProfiles microsegmentation-egress)
+          '("library/microsegmentation-egress/objects.ss" "library/authority-currentness/objects.ss"
+            "library/quint-methods/methods.ss"))
     (list TricolorWriteBarrierModel
           (.get ThreatModelProfiles gc-tricolor-barrier)
-          '("library/gc-tricolor-barrier/objects.ss" "library/quint-methods/methods.ss"))))
+          '("library/gc-tricolor-barrier/objects.ss" "library/quint-methods/methods.ss"))
+    (list SafepointHandshakeModel
+          (.get ThreatModelProfiles gc-safepoint-handshake)
+          '("library/gc-safepoint-handshake/objects.ss" "library/quint-methods/methods.ss"))
+    (list EpochReclamationModel
+          (.get ThreatModelProfiles parallel-epoch-reclamation)
+          '("library/parallel-epoch-reclamation/objects.ss" "library/quint-methods/methods.ss"))
+    (list WorkStealingDequeModel
+          (.get ThreatModelProfiles parallel-work-stealing)
+          '("library/parallel-work-stealing/objects.ss" "library/quint-methods/methods.ss"))))
 
 (def (project-all-quint-models! repo-root)
   (def head-sha (git-head-sha repo-root))
