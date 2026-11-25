@@ -15,6 +15,7 @@
   (only-in "../microsegmentation-egress/objects.ss" MicrosegmentationEgressModel)
   (only-in "../oauth-token-lifecycle/objects.ss" OAuthTokenLifecycleModel)
   (only-in "../oidc-federation/objects.ss" OidcFederationModel)
+  (only-in "../device-authorization/objects.ss" DeviceAuthorizationModel)
   (only-in "../gc-tricolor-barrier/objects.ss" TricolorWriteBarrierModel)
   (only-in "../gc-safepoint-handshake/objects.ss" SafepointHandshakeModel)
   (only-in "../parallel-epoch-reclamation/objects.ss" EpochReclamationModel)
@@ -106,6 +107,14 @@
           seed: 7
           positive-depth: 12
           negative-depth: 4
+          require-countermodels?: #t))
+    device-authorization:
+    (checked-profile
+      (.o identity: 'device-authorization
+          model: DeviceAuthorizationModel
+          seed: 7
+          positive-depth: 12
+          negative-depth: 5
           require-countermodels?: #t))
     gc-tricolor-barrier:
     (checked-profile

@@ -22,6 +22,7 @@
   "../library/microsegmentation-egress/objects.ss"
   "../library/oauth-token-lifecycle/objects.ss"
   "../library/oidc-federation/objects.ss"
+  "../library/device-authorization/objects.ss"
   "../library/gc-tricolor-barrier/objects.ss"
   "../library/gc-safepoint-handshake/objects.ss"
   "../library/parallel-epoch-reclamation/objects.ss"
@@ -131,6 +132,7 @@
           (cons MicrosegmentationEgressModel (.get ThreatModelProfiles microsegmentation-egress))
           (cons OAuthTokenLifecycleModel (.get ThreatModelProfiles oauth-token-lifecycle))
           (cons OidcFederationModel (.get ThreatModelProfiles oidc-federation))
+          (cons DeviceAuthorizationModel (.get ThreatModelProfiles device-authorization))
           (cons TricolorWriteBarrierModel (.get ThreatModelProfiles gc-tricolor-barrier))
           (cons SafepointHandshakeModel (.get ThreatModelProfiles gc-safepoint-handshake))
           (cons EpochReclamationModel (.get ThreatModelProfiles parallel-epoch-reclamation))

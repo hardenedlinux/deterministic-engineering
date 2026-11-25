@@ -21,6 +21,7 @@
   "../../library/microsegmentation-egress/objects.ss"
   "../../library/oauth-token-lifecycle/objects.ss"
   "../../library/oidc-federation/objects.ss"
+  "../../library/device-authorization/objects.ss"
   "../../library/gc-tricolor-barrier/objects.ss"
   "../../library/gc-safepoint-handshake/objects.ss"
   "../../library/parallel-epoch-reclamation/objects.ss"
@@ -121,6 +122,10 @@
     (list OidcFederationModel
           (.get ThreatModelProfiles oidc-federation)
           '("library/oidc-federation/objects.ss" "library/authority-currentness/objects.ss"
+            "library/quint-methods/methods.ss"))
+    (list DeviceAuthorizationModel
+          (.get ThreatModelProfiles device-authorization)
+          '("library/device-authorization/objects.ss" "library/authority-currentness/objects.ss"
             "library/quint-methods/methods.ss"))
     (list TricolorWriteBarrierModel
           (.get ThreatModelProfiles gc-tricolor-barrier)
