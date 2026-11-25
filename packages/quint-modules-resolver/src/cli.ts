@@ -15,6 +15,8 @@ import {
 } from '@informalsystems/quint';
 import {packageSourceResolver} from './resolver.ts';
 import {executePlan} from './plan.ts';
+import {composeToFiles} from './compose.ts';
+import {discoverInstalledQuintModels, verifyInstalledQuintPackages} from './pkg.ts';
 
 const req = createRequire(import.meta.url);
 const quintPkg = req.resolve('@informalsystems/quint/package.json');
@@ -144,6 +146,44 @@ async function parseWithPackages(args: ParsedArgs) {
 }
 
 export async function runCli(argv: string[]) {
+  if (argv[0] === 'list') {
+    const models = discoverInstalledQuintModels(process.cwd());
+    if (argv.includes('--json')) {
+      console.log(JSON.stringify(models, null, 2));
+    } else {
+      for (const m of models) {
+        const protoTag = m.prototypeSpecifier ? ' [POO]' : '';
+        console.log(`${m.bareSpecifier} (${m.modelIdentity}, quint@${m.quintVersion})${protoTag}`);
+      }
+      console.log(`Total: ${models.length} installed Quint model(s)`);
+    }
+    return;
+  }
+  if (argv[0] === 'verify-deps') {
+    const res = verifyInstalledQuintPackages(process.cwd(), quintVersion);
+    console.log(`DEPS-OK verified ${res.verified} installed Quint model(s) (quint@${quintVersion})`);
+    return;
+  }
+  if (argv[0] === 'compose') {
+    const overlayPath = argv[1];
+    let outQnt: string | undefined;
+    let outPlan: string | undefined;
+    for (let i = 2; i < argv.length; i++) {
+      const tok = argv[i]!;
+      const eq = tok.indexOf('=');
+      const key = eq >= 0 ? tok.slice(0, eq) : tok;
+      const val = eq >= 0 ? tok.slice(eq + 1) : argv[++i];
+      if (key === '--out') outQnt = val;
+      else if (key === '--plan') outPlan = val;
+    }
+    if (!overlayPath || !outQnt) {
+      console.error('Usage: quint-modules-resolver compose <overlay.proto.json> --out <Derived.qnt> [--plan <plan.json>]');
+      process.exit(2);
+    }
+    const proto = composeToFiles(overlayPath, outQnt, outPlan);
+    console.log(`COMPOSE-OK ${proto.identity} -> ${outQnt}${outPlan ? ` (+ ${outPlan})` : ''}`);
+    return;
+  }
   if (argv[0] === 'run-plan') {
     const planPath = argv[1];
     if (!planPath) {
