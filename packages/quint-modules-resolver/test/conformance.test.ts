@@ -88,4 +88,7 @@ test('all projected models in packages/quint-models typecheck cleanly', () => {
     const res = run(['bun', cliPath, 'typecheck', join(modelsRoot, rel)], repoRoot);
     expect(res.exitCode).toBe(0);
   }
+  const ver = run(['bun', cliPath, '--version'], repoRoot);
+  expect(ver.exitCode).toBe(0);
+  expect(ver.stdout.trim()).toBe('0.33.0');
 }, 30000);

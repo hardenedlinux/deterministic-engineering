@@ -20,6 +20,8 @@ const quintPkg = req.resolve('@informalsystems/quint/package.json');
 const quintReq = createRequire(quintPkg);
 const cliCommands = quintReq('./dist/src/cliCommands.js');
 const cliHelpers = quintReq('./dist/src/cliHelpers.js');
+const apalache = quintReq('./dist/src/apalache.js');
+const {version: quintVersion} = quintReq('./dist/src/version.js');
 const {left, right} = quintReq('@sweet-monads/either');
 const {just, none} = quintReq('@sweet-monads/maybe');
 
@@ -31,6 +33,8 @@ interface ParsedArgs {
   maxSamples?: number;
   maxSteps?: number;
   invariant?: string;
+  invariants?: string[];
+  inductiveInvariant?: string;
   step?: string;
   init?: string;
   backend?: string;
@@ -39,15 +43,24 @@ interface ParsedArgs {
   outItf?: string;
   match?: string;
   apalacheVersion?: string;
+  apalacheConfig?: string;
+  tlcConfig?: string;
+  randomTransitions?: boolean;
+  serverEndpoint?: {hostname: string; port: number};
 }
 
 function parseCliArgs(argv: string[]): ParsedArgs {
+  if (argv[0] === '--version' || argv[0] === '-v') {
+    console.log(quintVersion);
+    process.exit(0);
+  }
   const [command, input, ...rest] = argv;
   if (!command || !input) {
     console.error('Usage: quint-modules-resolver <parse|typecheck|test|verify> <input.qnt> [options]');
     process.exit(2);
   }
   const args: ParsedArgs = {command, input, verbosity: 2};
+  let rawServerEndpoint = 'localhost:8822';
   for (let i = 0; i < rest.length; i++) {
     const token = rest[i]!;
     const eq = token.indexOf('=');
@@ -59,6 +72,10 @@ function parseCliArgs(argv: string[]): ParsedArgs {
       case '--max-samples': args.maxSamples = Number(val); break;
       case '--max-steps': args.maxSteps = Number(val); break;
       case '--invariant': args.invariant = val; break;
+      case '--invariants':
+        args.invariants = [...(args.invariants ?? []), ...(val ? val.split(',').filter(Boolean) : [])];
+        break;
+      case '--inductive-invariant': args.inductiveInvariant = val; break;
       case '--step': args.step = val; break;
       case '--init': args.init = val; break;
       case '--backend': args.backend = val; break;
@@ -67,10 +84,32 @@ function parseCliArgs(argv: string[]): ParsedArgs {
       case '--out-itf': args.outItf = val; break;
       case '--match': args.match = val; break;
       case '--apalache-version': args.apalacheVersion = val; break;
+      case '--apalache-config': args.apalacheConfig = val; break;
+      case '--tlc-config': args.tlcConfig = val; break;
+      case '--random-transitions': args.randomTransitions = val !== 'false'; break;
+      case '--server-endpoint': rawServerEndpoint = val ?? rawServerEndpoint; break;
       default:
         console.error(`Unknown option: ${token}`);
         process.exit(2);
     }
+  }
+  if (command === 'test' && args.maxSamples === undefined) {
+    args.maxSamples = args.seed !== undefined ? 1 : 10000;
+  }
+  if (command === 'verify') {
+    args.init ??= 'init';
+    args.step ??= 'step';
+    args.invariants ??= [];
+    args.maxSteps ??= 10;
+    args.randomTransitions ??= false;
+    args.backend ??= 'apalache';
+    args.apalacheVersion ??= apalache.DEFAULT_APALACHE_VERSION_TAG;
+    const parsedEndpoint = apalache.parseServerEndpoint(rawServerEndpoint);
+    if (parsedEndpoint.isLeft()) {
+      console.error(parsedEndpoint.value);
+      process.exit(2);
+    }
+    args.serverEndpoint = parsedEndpoint.value;
   }
   return args;
 }

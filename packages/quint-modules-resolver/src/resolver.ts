@@ -27,12 +27,30 @@ export function packageSourceResolver(
       if (!isBareSpecifier(importPath)) {
         return nativeResolver.lookupPath(basepath, importPath);
       }
-      const importer = resolve(basepath, '_quint_importer_.qnt');
-      let target: string;
-      try {
-        target = createRequire(importer).resolve(importPath);
-      } catch {
-        target = createRequire(resolve(process.cwd(), '_quint_importer_.qnt')).resolve(importPath);
+      const candidates: string[] = [
+        resolve(basepath, '_quint_importer_.qnt'),
+        resolve(process.cwd(), '_quint_importer_.qnt'),
+      ];
+      if (process.env.QUINT_RESOLVE_ROOT) {
+        candidates.push(resolve(process.env.QUINT_RESOLVE_ROOT, '_quint_importer_.qnt'));
+      }
+      if (process.argv[1]) {
+        candidates.push(resolve(process.argv[1]));
+      }
+      candidates.push(import.meta.url);
+
+      let target: string | undefined;
+      let lastError: unknown;
+      for (const anchor of candidates) {
+        try {
+          target = createRequire(anchor).resolve(importPath);
+          break;
+        } catch (err) {
+          lastError = err;
+        }
+      }
+      if (!target) {
+        throw lastError;
       }
       return {
         normalizedPath: target,
