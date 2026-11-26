@@ -51,7 +51,10 @@ export const LEANPOO_TOOL_SANDBOX_FACADE_MODULE =
 export const LEANPOO_CONTEXT_DISTILLATION_FACADE_MODULE =
   'DeterministicEngineering.Engineering.ContextDistillationAndProvenance';
 
-export const LEANPOO_TOP_FACADE_MODULE = LEANPOO_CONTEXT_DISTILLATION_FACADE_MODULE;
+export const LEANPOO_FEDERATED_ARBITRATION_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.FederatedArbitrationLiveness';
+
+export const LEANPOO_TOP_FACADE_MODULE = LEANPOO_FEDERATED_ARBITRATION_FACADE_MODULE;
 
 export const LEANPOO_LIBRARY_EXPORT_MANIFEST: readonly LeanPooExportModuleSpec[] = [
   {
@@ -257,6 +260,23 @@ export const LEANPOO_LIBRARY_EXPORT_MANIFEST: readonly LeanPooExportModuleSpec[]
       'disablingPinnedRetention_invalidates_reuse',
     ],
   },
+  {
+    moduleName: LEANPOO_FEDERATED_ARBITRATION_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/FederatedArbitrationLiveness.lean',
+    pillars: ['B13', 'FederatedArbitration', 'BoundedLiveness'],
+    theorems: [
+      'retry_budget_exhaustion_blocks_auto_retry',
+      'deadlock_immediately_blocks_auto_retry',
+      'exhausted_or_deadlocked_leaves_active_phase',
+      'routed_escalation_reaches_human_phase',
+      'unrouted_escalation_fails_closed_to_safe_abort',
+      'terminal_phases_are_absorbing',
+      'bounded_transition_never_auto_admits_on_failure',
+      'federatedArbitrationContract_preserves_rejection',
+      'escalationAlertDelayTuning_preserves_certificate',
+      'disablingRetryCap_invalidates_reuse',
+    ],
+  },
 ];
 
 export const LEANPOO_EXPECTED_MODULE_COUNT = LEANPOO_LIBRARY_EXPORT_MANIFEST.length;
@@ -400,18 +420,20 @@ export function verifyLeanPooLibraryFleet(params?: {
   }
 
   const facadeToImport = manifest.some(
-    m => m.moduleName === LEANPOO_CONTEXT_DISTILLATION_FACADE_MODULE,
+    m => m.moduleName === LEANPOO_FEDERATED_ARBITRATION_FACADE_MODULE,
   )
-    ? LEANPOO_CONTEXT_DISTILLATION_FACADE_MODULE
-    : manifest.some(m => m.moduleName === LEANPOO_TOOL_SANDBOX_FACADE_MODULE)
-      ? LEANPOO_TOOL_SANDBOX_FACADE_MODULE
-      : manifest.some(m => m.moduleName === LEANPOO_MERKLE_ASYNC_FACADE_MODULE)
-        ? LEANPOO_MERKLE_ASYNC_FACADE_MODULE
-        : manifest.some(m => m.moduleName === LEANPOO_RELEASE_CERT_FACADE_MODULE)
-          ? LEANPOO_RELEASE_CERT_FACADE_MODULE
-          : manifest.some(m => m.moduleName === LEANPOO_FOUR_PARADIGM_FACADE_MODULE)
-            ? LEANPOO_FOUR_PARADIGM_FACADE_MODULE
-            : LEANPOO_EXPORT_FACADE_MODULE;
+    ? LEANPOO_FEDERATED_ARBITRATION_FACADE_MODULE
+    : manifest.some(m => m.moduleName === LEANPOO_CONTEXT_DISTILLATION_FACADE_MODULE)
+      ? LEANPOO_CONTEXT_DISTILLATION_FACADE_MODULE
+      : manifest.some(m => m.moduleName === LEANPOO_TOOL_SANDBOX_FACADE_MODULE)
+        ? LEANPOO_TOOL_SANDBOX_FACADE_MODULE
+        : manifest.some(m => m.moduleName === LEANPOO_MERKLE_ASYNC_FACADE_MODULE)
+          ? LEANPOO_MERKLE_ASYNC_FACADE_MODULE
+          : manifest.some(m => m.moduleName === LEANPOO_RELEASE_CERT_FACADE_MODULE)
+            ? LEANPOO_RELEASE_CERT_FACADE_MODULE
+            : manifest.some(m => m.moduleName === LEANPOO_FOUR_PARADIGM_FACADE_MODULE)
+              ? LEANPOO_FOUR_PARADIGM_FACADE_MODULE
+              : LEANPOO_EXPORT_FACADE_MODULE;
 
   const stdinScript = [
     `import ${facadeToImport}`,

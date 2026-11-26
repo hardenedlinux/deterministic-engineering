@@ -38,8 +38,8 @@ const DISTILLATION_THEOREMS = LEANPOO_LIBRARY_EXPORT_MANIFEST.find(
 describe('Phase 36 — B12 Controlled Context Distillation & Epistemic Provenance + 126-Theorem 11-Module LeanPoo Library (10.184 / 30.05 AG186-AG190)', () => {
   test('AG186: Live Lean 4 / LeanPoo verifies all 10 ContextDistillationAndProvenance theorems + single-shot 126/126-theorem 11-module fleet attestation', () => {
     expect(DISTILLATION_THEOREMS.length).toBe(10);
-    expect(LEANPOO_EXPECTED_MODULE_COUNT).toBe(11);
-    expect(LEANPOO_EXPECTED_THEOREM_COUNT).toBe(126);
+    expect(LEANPOO_EXPECTED_MODULE_COUNT).toBeGreaterThanOrEqual(11);
+    expect(LEANPOO_EXPECTED_THEOREM_COUNT).toBeGreaterThanOrEqual(126);
 
     const kv = new ContentAddressedKvStore();
     if (!isLeanToolchainAvailable()) {
@@ -67,8 +67,8 @@ describe('Phase 36 — B12 Controlled Context Distillation & Epistemic Provenanc
     const fleet = verifyLeanPooLibraryFleet({kv});
     expect(fleet.kind).toBe('Proven');
     if (fleet.kind !== 'Proven') throw new Error('expected Proven');
-    expect(fleet.moduleCount).toBe(11);
-    expect(fleet.verifiedTheoremCount).toBe(126);
+    expect(fleet.moduleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);
+    expect(fleet.verifiedTheoremCount).toBe(LEANPOO_EXPECTED_THEOREM_COUNT);
 
     kv.gcUnreferenced();
     expect(kv.hasBlob(modRes.pinnedCertificateHash!)).toBe(true);
@@ -292,8 +292,8 @@ describe('Phase 36 — B12 Controlled Context Distillation & Epistemic Provenanc
       };
       expect(out.verdict).toBe('Proven');
       expect(out.quintModelCount).toBe(EXPECTED_QUINT_DEFENSE_MODELS.length);
-      expect(out.moduleCount).toBe(11);
-      expect(out.verifiedTheoremCount).toBe(126);
+      expect(out.moduleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);
+      expect(out.verifiedTheoremCount).toBe(LEANPOO_EXPECTED_THEOREM_COUNT);
       expect(out.zeroMathlib).toBe(true);
       expect(out.zeroCedar).toBe(true);
       opDigest = out.releaseAttestationDigest;
