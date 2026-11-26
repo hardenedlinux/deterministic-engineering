@@ -677,6 +677,80 @@ class BadLwwMergeSUT extends AsyncMerkleCutSUT {
   }
 }
 
+// ── Concrete Stateful SUT 9: ByzantineEncryptedStore (R4 + R5 / 10.156) ──
+class ByzantineEncryptedStoreSUT {
+  coderCompromised = false;
+  goldEncrypted = true;
+  ciphertextTampered = false;
+  aeadVerified = true;
+  upstreamDrifted = false;
+  memoRevalidated = true;
+  oracleLeaks = 0;
+  forgedVerdicts = 0;
+  driftedReplays = 0;
+
+  apply(action: string): void {
+    switch (action) {
+      case 'injectPromptIntoCoder':
+        if (!this.coderCompromised) this.coderCompromised = true;
+        break;
+      case 'tamperOrTransplantRow':
+        if (this.coderCompromised && !this.ciphertextTampered) {
+          this.ciphertextTampered = true;
+          this.aeadVerified = false;
+        }
+        break;
+      case 'restoreAuthenticCiphertext':
+        if (this.ciphertextTampered) {
+          this.ciphertextTampered = false;
+          this.aeadVerified = true;
+        }
+        break;
+      case 'driftUpstreamManifest':
+        if (!this.upstreamDrifted) {
+          this.upstreamDrifted = true;
+          this.memoRevalidated = false;
+        }
+        break;
+      case 'repromptDriftedStep':
+        if (this.upstreamDrifted && !this.memoRevalidated) this.memoRevalidated = true;
+        break;
+      case 'readReviewerGold':
+      case 'acceptEncryptedVerdict':
+      case 'replayMemoizedLlmStep':
+        // Safe guarded actions preserve all zero violation counters
+        break;
+      default:
+        throw new Error(`Unknown ByzantineEncryptedStoreSUT action: ${action}`);
+    }
+  }
+
+  snapshot() {
+    return {
+      coderCompromised: this.coderCompromised,
+      goldEncrypted: this.goldEncrypted,
+      ciphertextTampered: this.ciphertextTampered,
+      aeadVerified: this.aeadVerified,
+      upstreamDrifted: this.upstreamDrifted,
+      memoRevalidated: this.memoRevalidated,
+      oracleLeaks: this.oracleLeaks,
+      forgedVerdicts: this.forgedVerdicts,
+      driftedReplays: this.driftedReplays,
+    };
+  }
+}
+
+class BadBlindReplaySUT extends ByzantineEncryptedStoreSUT {
+  override apply(action: string): void {
+    if (action === 'driftUpstreamManifest' && !this.upstreamDrifted) {
+      // Anti-pattern: blindly keeps memoRevalidated = true after upstream M2 drift!
+      this.upstreamDrifted = true;
+      return;
+    }
+    super.apply(action);
+  }
+}
+
 const repoRoot = resolve(import.meta.dir, '../../../..');
 
 function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(): Record<string, unknown>}>(
@@ -729,7 +803,7 @@ function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(
   }
 }
 
-describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (8 Defense Models)', () => {
+describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (9 Defense Models)', () => {
   test('EpistemicStateLattice ITF actions drive EpistemicLatticeSUT with exact step-by-step state isomorphism', () => {
     const stats = replayModelAgainstSut(
       'packages/quint-models/engineering/defense/epistemic-state-lattice/EpistemicStateLattice.qnt',
@@ -883,6 +957,28 @@ describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (8 Defense Models)
       () => new AsyncMerkleCutSUT(),
       projectH,
       () => new BadLwwMergeSUT(),
+    );
+    expect(stats.transitions).toBeGreaterThan(50);
+    expect(stats.brokenDiverged).toBe(true);
+  }, 30_000);
+
+  test('ByzantineEncryptedStore ITF actions drive ByzantineEncryptedStoreSUT with exact state isomorphism and reject BadBlindReplaySUT', () => {
+    const projectH = (h: Record<string, unknown>) => ({
+      coderCompromised: Boolean(h.coderCompromised),
+      goldEncrypted: Boolean(h.goldEncrypted),
+      ciphertextTampered: Boolean(h.ciphertextTampered),
+      aeadVerified: Boolean(h.aeadVerified),
+      upstreamDrifted: Boolean(h.upstreamDrifted),
+      memoRevalidated: Boolean(h.memoRevalidated),
+      oracleLeaks: asInt(h.oracleLeaks),
+      forgedVerdicts: asInt(h.forgedVerdicts),
+      driftedReplays: asInt(h.driftedReplays),
+    });
+    const stats = replayModelAgainstSut(
+      'packages/quint-models/engineering/defense/byzantine-encrypted-store/ByzantineEncryptedStore.qnt',
+      () => new ByzantineEncryptedStoreSUT(),
+      projectH,
+      () => new BadBlindReplaySUT(),
     );
     expect(stats.transitions).toBeGreaterThan(50);
     expect(stats.brokenDiverged).toBe(true);

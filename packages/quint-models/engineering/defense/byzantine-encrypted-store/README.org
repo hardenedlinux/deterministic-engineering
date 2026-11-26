@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Byzantine AEAD-Partitioned Persistent Store & LLM Semantic-Drift Memoization
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.defense.byzantine-encrypted-store=
+- *Subdomain*: =quint.engineering.defense=
+- *Quint Module*: =byzantine_encrypted_store= (=[[file:ByzantineEncryptedStore.qnt][ByzantineEncryptedStore.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/defense/byzantine-encrypted-store/ByzantineEncryptedStore=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Reviewer gold rows stay AEAD-encrypted, no compromised agent leaks gold oracles (oracleLeaks == 0), no tampered/transplanted ciphertext is accepted (forgedVerdicts == 0), and no drifted LLM memo is blindly replayed (driftedReplays == 0).
+
+#+begin_src quint
+val safety = (h.goldEncrypted and h.oracleLeaks == 0 and h.forgedVerdicts == 0 and h.driftedReplays == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =require-partition-aead-key= | =stepPlaintextLeak= | =h.oracleLeaks > 0= |
+| =require-aead-tag-and-aad= | =stepCiphertextForgery= | =h.forgedVerdicts > 0= |
+| =require-m2-memo-freshness= | =stepDriftedReplay= | =h.driftedReplays > 0= |
+
+* Grounded Papers & Specifications
+
+- *Mighty Gerbils (gerbil-persist)*: Row-level encryption over minimal ACID KV combined with content-addressed Merkle DAG.
+- *J. S. Shapiro, J. M. Smith & D. J. Farber (SOSP 1999)*: EROS: A Capability System (pure capability isolation across shared persistent storage).
+- *Deterministic Engineering (10.156 R4 / R5)*: M2 semantic-dependency manifests for stochastic LLM memoization and per-role AES-256-GCM AAD partition isolation.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/defense/byzantine-encrypted-store/ByzantineEncryptedStore.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/defense/byzantine-encrypted-store/ByzantineEncryptedStore.qnt --main=byzantine_encrypted_store --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite single-partition Byzantine AEAD confidentiality/integrity and single-step M2 semantic-drift abstraction; does not model side-channel timing attacks, compromised KMS root keys, or multi-step prompt-injection covert channels.

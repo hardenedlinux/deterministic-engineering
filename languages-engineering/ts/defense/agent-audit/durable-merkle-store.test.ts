@@ -3,10 +3,13 @@
 
 import {describe, expect, test} from 'bun:test';
 import {
+  AeadPartitionKey,
+  CapabilityPartitionedAeadStore,
   ContentAddressedKvStore,
   DurableMultiAgentCoordinator,
   hotUpgradePolicyAndRevalidate,
   LiveM3Capability,
+  LlmMemoizationLedger,
   PerAgentAsyncCutCoordinator,
 } from './durable-merkle-store.ts';
 import {runGovernedAgentRepairLoop} from './governance-harness.ts';
@@ -216,5 +219,76 @@ describe('Phase 6 Orthogonal Persistence x Durable Multi-Agent Governance (10.15
     asyncCoord.commitAgentBranch('verifier', {'src/shared.ts': 'verifier-edit'});
     const conflictMerge = asyncCoord.mergeTwoBranches(baseFiles, 'coder', 'verifier');
     expect(conflictMerge).toEqual({kind: 'Conflict', conflictingFiles: ['src/shared.ts']});
+  });
+
+  test('AG46-AG47 (R4): LlmMemoizationLedger deterministically reuses matched M1 outputs and surgically invalidates M2 drift', () => {
+    const kv = new ContentAddressedKvStore();
+    const ledger = new LlmMemoizationLedger(kv);
+    const envV1 = {
+      repoCommitDigest: 'git-abc123',
+      promptTemplateDigest: 'prompt-v1',
+      policyDigest: 'policy-v1',
+      modelId: 'gemini-pro',
+    };
+    const recAuth = ledger.recordLlmStep('step-auth', envV1, {patch: 'auth-fix'});
+    const recFmt = ledger.recordLlmStep('step-fmt', envV1, {patch: 'fmt-fix'});
+
+    // AG46: Exact upstream M2 match reuses immutable M1 bytes with zero stochastic re-prompting:
+    const hit = ledger.lookupStep('step-auth', envV1);
+    expect(hit).toEqual({kind: 'ReuseM1', m1OutputHash: recAuth.m1OutputHash, output: {patch: 'auth-fix'}});
+
+    // AG47: Upstream policyDigest & repoCommitDigest drift invalidates step-auth with exact drifted axes,
+    // while prior M1 bytes stay preserved in KV for forensics and unaffected env stays ReuseM1:
+    const driftedEnv = {...envV1, policyDigest: 'policy-v2', repoCommitDigest: 'git-def456'};
+    const drifted = ledger.lookupStep('step-auth', driftedEnv);
+    expect(drifted).toEqual({
+      kind: 'InvalidatedByDrift',
+      driftedAxes: ['repoCommitDigest', 'policyDigest'],
+      priorM1Hash: recAuth.m1OutputHash,
+    });
+    expect(kv.hasBlob(recAuth.m1OutputHash)).toBe(true);
+    expect(ledger.lookupStep('step-fmt', envV1).kind).toBe('ReuseM1');
+    expect(kv.hasBlob(recFmt.m1OutputHash)).toBe(true);
+  });
+
+  test('AG48-AG50 (R5 x R3): AES-256-GCM AEAD partition isolation blocks compromised peers, ciphertext tamper/transplant, and key leakage', () => {
+    const kv = new ContentAddressedKvStore();
+    const aeadStore = new CapabilityPartitionedAeadStore();
+    const coderKey = new AeadPartitionKey('coder');
+    const reviewerKey = new AeadPartitionKey('reviewer');
+
+    const goldRow = aeadStore.putEncryptedRow(reviewerKey, 'gold-oracle', {expected: 'Refuted', secretCase: 'AG48'});
+    const coderRow = aeadStore.putEncryptedRow(coderKey, 'draft-patch', {expected: 'Proven'});
+
+    // Authorized reviewer decrypts its own partition cleanly:
+    expect(aeadStore.getEncryptedRow(reviewerKey, 'reviewer', 'gold-oracle')).toEqual({
+      kind: 'Proven',
+      value: {expected: 'Refuted', secretCase: 'AG48'},
+    });
+
+    // AG48: Prompt-injected Coder holding coderKey CANNOT decrypt Reviewer gold oracle:
+    expect(aeadStore.getEncryptedRow(coderKey, 'reviewer', 'gold-oracle')).toEqual({
+      kind: 'Refuted',
+      reason: 'unauthorized-partition-key',
+    });
+
+    // AG49a: Single-bit ciphertext tampering fails AES-256-GCM authentication tag:
+    const flipped = (parseInt(goldRow.ciphertextHex.slice(0, 2), 16) ^ 0xff).toString(16).padStart(2, '0') +
+      goldRow.ciphertextHex.slice(2);
+    aeadStore.injectRawRowForTest('reviewer', 'gold-oracle', {...goldRow, ciphertextHex: flipped});
+    expect(aeadStore.getEncryptedRow(reviewerKey, 'reviewer', 'gold-oracle')).toEqual({
+      kind: 'Refuted',
+      reason: 'aead-integrity-or-aad-tamper',
+    });
+
+    // AG49b: Cross-partition ciphertext transplant (coder's valid ciphertext copied into reviewer's row) fails AAD + key check:
+    aeadStore.injectRawRowForTest('reviewer', 'gold-oracle', coderRow);
+    expect(aeadStore.getEncryptedRow(reviewerKey, 'reviewer', 'gold-oracle')).toEqual({
+      kind: 'Refuted',
+      reason: 'aead-integrity-or-aad-tamper',
+    });
+
+    // AG50 (R5 x R3): AeadPartitionKey is branded non-serializable M3 capability and can NEVER leak into M1 Merkle blobs!
+    expect(() => kv.putBlob('accidental-key-leak', {meta: {key: reviewerKey}})).toThrow(/R3 ReachabilityLeakError/);
   });
 });

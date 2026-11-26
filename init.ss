@@ -76,6 +76,7 @@
   (agent-patch-governance profiles: (bound.compact))
   (durable-agent-persistence profiles: (bound.compact))
   (async-merkle-cut profiles: (bound.compact))
+  (byzantine-encrypted-store profiles: (bound.compact))
 
   ;; ── Threat-First Formal Security Models (5 subdomains) ──
   :load-modules "./packages/quint-models/threat/zero-trust"

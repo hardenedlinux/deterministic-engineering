@@ -18,7 +18,7 @@
  *   5. O(1) Time-Travel Branching from any historical Merkle root.
  */
 
-import {createHash} from 'node:crypto';
+import {createCipheriv, createDecipheriv, createHash, randomBytes} from 'node:crypto';
 import type {GovernanceTranscript} from './governance-harness.ts';
 
 /**
@@ -550,5 +550,156 @@ export class PerAgentAsyncCutCoordinator {
     }
     const mergedRootHash = this.kv.putBlob('merged-agent-cut', {agentA, agentB, mergedFiles}, [hashA, hashB]);
     return {kind: 'Proven', mergedRootHash, mergedFiles};
+  }
+}
+
+// ── R4: Stochastic LLM Memoization vs. M2 Semantic-Drift Selective Re-Prompting ──
+
+export interface LlmUpstreamEnv {
+  repoCommitDigest: string;
+  promptTemplateDigest: string;
+  policyDigest: string;
+  modelId: string;
+}
+
+export interface LlmMemoEntry {
+  stepId: string;
+  env: LlmUpstreamEnv;
+  m1OutputHash: string;
+}
+
+export type LlmMemoLookupVerdict<T = unknown> =
+  | {kind: 'ReuseM1'; m1OutputHash: string; output: T}
+  | {kind: 'InvalidatedByDrift'; driftedAxes: Array<keyof LlmUpstreamEnv>; priorM1Hash: string}
+  | {kind: 'CacheMiss'};
+
+export class LlmMemoizationLedger {
+  private readonly entries = new Map<string, LlmMemoEntry>();
+
+  constructor(private readonly kv: ContentAddressedKvStore) {}
+
+  recordLlmStep<T>(stepId: string, env: LlmUpstreamEnv, output: T): LlmMemoEntry {
+    const m1OutputHash = this.kv.putBlob('m1-llm-step-output', {stepId, output}, []);
+    const entry: LlmMemoEntry = {stepId, env: {...env}, m1OutputHash};
+    this.entries.set(stepId, entry);
+    return entry;
+  }
+
+  lookupStep<T = unknown>(stepId: string, currentEnv: LlmUpstreamEnv): LlmMemoLookupVerdict<T> {
+    const entry = this.entries.get(stepId);
+    if (!entry) return {kind: 'CacheMiss'};
+
+    const driftedAxes: Array<keyof LlmUpstreamEnv> = [];
+    for (const axis of ['repoCommitDigest', 'promptTemplateDigest', 'policyDigest', 'modelId'] as const) {
+      if (entry.env[axis] !== currentEnv[axis]) driftedAxes.push(axis);
+    }
+    if (driftedAxes.length > 0) {
+      return {kind: 'InvalidatedByDrift', driftedAxes, priorM1Hash: entry.m1OutputHash};
+    }
+    const blob = this.kv.getBlob<{stepId: string; output: T}>(entry.m1OutputHash);
+    return {kind: 'ReuseM1', m1OutputHash: entry.m1OutputHash, output: blob.payload.output};
+  }
+}
+
+// ── R5: Byzantine / Prompt-Injected Peers — Capability-Partitioned AES-256-GCM AEAD Store ──
+
+export class AeadPartitionKey {
+  readonly [M3_NON_SERIALIZABLE_CAPABILITY] = true;
+  readonly mutability = 'M3-mutable-root' as const;
+  readonly capabilityId: string;
+  private readonly keyBytes: Buffer;
+
+  constructor(readonly partitionId: string, keyBytes?: Buffer) {
+    this.capabilityId = `aead-key:${partitionId}`;
+    this.keyBytes = keyBytes ?? randomBytes(32);
+    if (this.keyBytes.length !== 32) {
+      throw new Error('AES-256-GCM requires a 32-byte key');
+    }
+  }
+
+  /** Package-internal raw key accessor for AEAD cipher operations */
+  _rawKey(): Buffer {
+    return this.keyBytes;
+  }
+
+  toJSON(): never {
+    throw new Error(
+      `R3 ReachabilityLeakError: AeadPartitionKey '${this.capabilityId}' is non-serializable and cannot enter M1 persistence`,
+    );
+  }
+}
+
+export interface EncryptedKvRow {
+  partitionId: string;
+  rowKey: string;
+  ivHex: string;
+  authTagHex: string;
+  ciphertextHex: string;
+}
+
+export type AeadReadVerdict<T = unknown> =
+  | {kind: 'Proven'; value: T}
+  | {kind: 'Refuted'; reason: 'missing-row' | 'unauthorized-partition-key' | 'aead-integrity-or-aad-tamper'};
+
+/**
+ * gerbil-persist row-level encryption x EROS capability isolation:
+ * Every row is encrypted with AES-256-GCM and AAD-bound to `partitionId:rowKey`,
+ * blocking both unauthorized reads and cross-partition ciphertext transplant attacks.
+ */
+export class CapabilityPartitionedAeadStore {
+  private readonly rows = new Map<string, EncryptedKvRow>();
+
+  private rowAddress(partitionId: string, rowKey: string): string {
+    return `${partitionId}::${rowKey}`;
+  }
+
+  putEncryptedRow<T>(key: AeadPartitionKey, rowKey: string, payload: T): EncryptedKvRow {
+    assertM1Persistable(payload, `encrypted(${key.partitionId}/${rowKey})`);
+    const iv = randomBytes(12);
+    const aad = Buffer.from(`${key.partitionId}:${rowKey}`, 'utf8');
+    const cipher = createCipheriv('aes-256-gcm', key._rawKey(), iv);
+    cipher.setAAD(aad);
+    const plaintext = Buffer.from(canonicalJson(payload), 'utf8');
+    const encrypted = Buffer.concat([cipher.update(plaintext), cipher.final()]);
+    const authTag = cipher.getAuthTag();
+    const row: EncryptedKvRow = {
+      partitionId: key.partitionId,
+      rowKey,
+      ivHex: iv.toString('hex'),
+      authTagHex: authTag.toString('hex'),
+      ciphertextHex: encrypted.toString('hex'),
+    };
+    this.rows.set(this.rowAddress(key.partitionId, rowKey), row);
+    return {...row};
+  }
+
+  /** Simulates Byzantine storage tampering or cross-partition ciphertext transplant */
+  injectRawRowForTest(partitionId: string, rowKey: string, rawRow: EncryptedKvRow): void {
+    this.rows.set(this.rowAddress(partitionId, rowKey), {...rawRow});
+  }
+
+  getEncryptedRow<T = unknown>(
+    callerKey: AeadPartitionKey,
+    partitionId: string,
+    rowKey: string,
+  ): AeadReadVerdict<T> {
+    const row = this.rows.get(this.rowAddress(partitionId, rowKey));
+    if (!row) return {kind: 'Refuted', reason: 'missing-row'};
+    if (callerKey.partitionId !== partitionId) {
+      return {kind: 'Refuted', reason: 'unauthorized-partition-key'};
+    }
+    try {
+      const iv = Buffer.from(row.ivHex, 'hex');
+      const authTag = Buffer.from(row.authTagHex, 'hex');
+      const ciphertext = Buffer.from(row.ciphertextHex, 'hex');
+      const aad = Buffer.from(`${partitionId}:${rowKey}`, 'utf8');
+      const decipher = createDecipheriv('aes-256-gcm', callerKey._rawKey(), iv);
+      decipher.setAAD(aad);
+      decipher.setAuthTag(authTag);
+      const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString('utf8');
+      return {kind: 'Proven', value: JSON.parse(decrypted) as T};
+    } catch {
+      return {kind: 'Refuted', reason: 'aead-integrity-or-aad-tamper'};
+    }
   }
 }

@@ -149,9 +149,10 @@ formally proves three guards, each witnessed by a dedicated Apalache countermode
    =inFlightIntent= into explicit =PendingUnknownEffect= until explicit
    reconciliation completes.
 
-* Frontier Research Problems (=R1=–=R5=): Landed Breakthroughs (=R1=–=R3=) and Open Work (=R4=–=R5=)
+* Frontier Research Problems (=R1=–=R5=): All Five Implemented & Verified
 :PROPERTIES:
 :CUSTOM_ID: op156-frontier
+:STATUS: executed-verified
 :END:
 
 - *R1 — Hot Code/Policy Evolution Across Suspended Agents* (*implemented & verified*):
@@ -175,19 +176,25 @@ formally proves three guards, each witnessed by a dedicated Apalache countermode
 - *R3 — Type/Contract-Level Prevention of Accidental Reachability Leaks* (*implemented & verified*):
   Sealed =M3TransientCapabilityType= + recursive =assert-m1-persistable!= in
   [[file:../../../library/defensive-governance/func.ss][defensive-governance/func.ss]]
-  and branded =LiveM3Capability= + =assertM1Persistable= inside
-  =ContentAddressedKvStore.putBlob= mechanically refuse any object graph
-  reaching a live =M3= credential, capability, or I/O port before hashing.
-- *R4 — Semantic Drift vs. Stochastic LLM Memoization* (*open research*):
-  Cached LLM outputs are immutable =M1= bytes, *not* timeless truths. Defining
-  principled =M2= dependency manifests linking each memoized LLM reasoning node
-  to exact upstream commit hashes, policy digests, and prompt templates enables
-  surgical selective re-prompting instead of stale blind replay or full re-runs.
-- *R5 — Byzantine / Prompt-Injected Peers on a Shared Persistent Store* (*open research*):
-  Formalizing *capability-isolated Merkle partitions* (EROS capabilities +
-  =gerbil-persist= per-role AEAD keys + independent oracle attestation) protects
-  the Reviewer's gold state even when a Coder Agent is actively compromised by
-  indirect prompt injection.
+  and branded =LiveM3Capability= / =AeadPartitionKey= + =assertM1Persistable=
+  inside =ContentAddressedKvStore.putBlob= mechanically refuse any object graph
+  reaching a live =M3= credential, encryption key, capability, or I/O port.
+- *R4 — Semantic Drift vs. Stochastic LLM Memoization* (*implemented & verified*):
+  =LlmMemoizationLedger= in [[file:../../../languages-engineering/ts/defense/agent-audit/durable-merkle-store.ts][durable-merkle-store.ts]]
+  binds every immutable =M1= LLM output to an explicit 4-axis =M2= manifest
+  (=repoCommitDigest=, =promptTemplateDigest=, =policyDigest=, =modelId=):
+  exact matches yield deterministic =ReuseM1=, while upstream drift yields
+  =InvalidatedByDrift= naming exact drifted axes while retaining prior =M1=
+  bytes (formally proved by =SemanticDriftBlindReplayCountermodel= in
+  [[file:../../../packages/quint-models/engineering/defense/byzantine-encrypted-store/ByzantineEncryptedStore.qnt][ByzantineEncryptedStore.qnt]]).
+- *R5 — Byzantine / Prompt-Injected Peers on a Shared Persistent Store* (*implemented & verified*):
+  =CapabilityPartitionedAeadStore= in [[file:../../../languages-engineering/ts/defense/agent-audit/durable-merkle-store.ts][durable-merkle-store.ts]]
+  encrypts every row with real *AES-256-GCM AEAD* whose AAD binds
+  =(partitionId, rowKey)= under non-serializable per-role =AeadPartitionKey=
+  capabilities—blocking unauthorized oracle reads (=PlaintextOracleLeakCountermodel=),
+  single-bit ciphertext tampering, and cross-partition ciphertext transplants
+  (=ByzantineCiphertextForgeryCountermodel= in
+  [[file:../../../packages/quint-models/engineering/defense/byzantine-encrypted-store/ByzantineEncryptedStore.qnt][ByzantineEncryptedStore.qnt]]).
 
 * Executable Artifacts & Limits
 :PROPERTIES:
@@ -195,9 +202,9 @@ formally proves three guards, each witnessed by a dedicated Apalache countermode
 :STATUS: executed-verified
 :END:
 
-- Formal models: [[file:../../../packages/quint-models/engineering/defense/durable-agent-persistence/DurableAgentPersistence.qnt][DurableAgentPersistence.qnt]] and [[file:../../../packages/quint-models/engineering/defense/async-merkle-cut/AsyncMerkleCut.qnt][AsyncMerkleCut.qnt]] (Apalache 0.62.1 =run-plan --verify= + 100% MBT + =DurableAgentPersistenceSUT= / =AsyncMerkleCutSUT=).
+- Formal models: [[file:../../../packages/quint-models/engineering/defense/durable-agent-persistence/DurableAgentPersistence.qnt][DurableAgentPersistence.qnt]], [[file:../../../packages/quint-models/engineering/defense/async-merkle-cut/AsyncMerkleCut.qnt][AsyncMerkleCut.qnt]], and [[file:../../../packages/quint-models/engineering/defense/byzantine-encrypted-store/ByzantineEncryptedStore.qnt][ByzantineEncryptedStore.qnt]] (Apalache 0.62.1 =run-plan --verify= + 100% MBT + action-driven SUT refinement).
 - Scheme POO & ASCENT implementation: =M3TransientCapabilityType=, =assert-m1-persistable!=, and =HotPolicyCoEvolutionProgram= in [[file:../../../library/defensive-governance/func.ss][defensive-governance/func.ss]].
-- TypeScript reference store & async-cut engine: [[file:../../../languages-engineering/ts/defense/agent-audit/durable-merkle-store.ts][durable-merkle-store.ts]] & [[file:../../../languages-engineering/ts/defense/agent-audit/durable-merkle-store.test.ts][durable-merkle-store.test.ts]] (=AG37=–=AG45= in [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05]]).
+- TypeScript reference store, async-cut, LLM drift ledger & AES-256-GCM AEAD store: [[file:../../../languages-engineering/ts/defense/agent-audit/durable-merkle-store.ts][durable-merkle-store.ts]] & [[file:../../../languages-engineering/ts/defense/agent-audit/durable-merkle-store.test.ts][durable-merkle-store.test.ts]] (=AG37=–=AG50= in [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05]]).
 - *Limits*: =durable-merkle-store.ts= is an in-process reference implementation
   verifying the logical Merkle/CAS/re-attestation/intent-fence invariants; real
   production backing over SQLite/LMDB/PostgreSQL additionally requires durable
