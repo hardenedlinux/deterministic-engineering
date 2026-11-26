@@ -1235,6 +1235,101 @@ class BadPivotRollbackSagaSUT extends DurableSagaBudgetSUT {
   }
 }
 
+class DifcExfiltrationFenceSUT {
+  secretRead = false;
+  untrustedInputRead = false;
+  valueTaintedSecret = false;
+  controlTaintedUntrusted = false;
+  hasDeclassCap = false;
+  sanitizerPassed = false;
+  declassifiedClean = false;
+  exfiltrationViolations = 0;
+  controlHijackViolations = 0;
+  unauthorizedDeclassViolations = 0;
+  safePublicSinks = 0;
+
+  apply(action: string): void {
+    switch (action) {
+      case 'readSecretSource':
+        if (!this.secretRead) {
+          this.secretRead = true;
+          this.valueTaintedSecret = true;
+        }
+        break;
+      case 'readUntrustedWeb':
+        if (!this.untrustedInputRead) {
+          this.untrustedInputRead = true;
+          this.controlTaintedUntrusted = true;
+        }
+        break;
+      case 'grantDeclassCap':
+        if (!this.hasDeclassCap) {
+          this.hasDeclassCap = true;
+        }
+        break;
+      case 'runDeterministicSanitizer':
+        if (this.valueTaintedSecret && !this.sanitizerPassed) {
+          this.sanitizerPassed = true;
+        }
+        break;
+      case 'useTrustedControlTarget':
+        if (this.controlTaintedUntrusted) {
+          this.controlTaintedUntrusted = false;
+        }
+        break;
+      case 'declassifyValue': {
+        const capAndSan = this.hasDeclassCap && this.sanitizerPassed;
+        if (this.valueTaintedSecret && !this.declassifiedClean && capAndSan) {
+          this.declassifiedClean = true;
+          this.valueTaintedSecret = false;
+          if (!capAndSan) this.unauthorizedDeclassViolations += 1;
+        }
+        break;
+      }
+      case 'emitToPublicSink': {
+        const noSecret = !this.valueTaintedSecret;
+        const noHijack = !this.controlTaintedUntrusted;
+        if (noSecret && noHijack) {
+          this.safePublicSinks += 1;
+          if (!noSecret) this.exfiltrationViolations += 1;
+          if (!noHijack) this.controlHijackViolations += 1;
+        }
+        break;
+      }
+      default:
+        throw new Error(`Unknown DifcExfiltrationFenceSUT action: ${action}`);
+    }
+  }
+
+  snapshot() {
+    return {
+      secretRead: this.secretRead,
+      untrustedInputRead: this.untrustedInputRead,
+      valueTaintedSecret: this.valueTaintedSecret,
+      controlTaintedUntrusted: this.controlTaintedUntrusted,
+      hasDeclassCap: this.hasDeclassCap,
+      sanitizerPassed: this.sanitizerPassed,
+      declassifiedClean: this.declassifiedClean,
+      exfiltrationViolations: this.exfiltrationViolations,
+      controlHijackViolations: this.controlHijackViolations,
+      unauthorizedDeclassViolations: this.unauthorizedDeclassViolations,
+      safePublicSinks: this.safePublicSinks,
+    };
+  }
+}
+
+class BadExfiltratingAgentSUT extends DifcExfiltrationFenceSUT {
+  override apply(action: string): void {
+    if (action === 'emitToPublicSink' && !this.controlTaintedUntrusted) {
+      // Anti-pattern: drops `forbid-secret-to-public-sink` guard and leaks tainted secret to public sink!
+      this.safePublicSinks += 1;
+      if (this.valueTaintedSecret) this.exfiltrationViolations += 1;
+      return;
+    }
+    super.apply(action);
+  }
+}
+
 const repoRoot = resolve(import.meta.dir, '../../../..');
 
 function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(): Record<string, unknown>}>(
@@ -1287,7 +1382,7 @@ function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(
   }
 }
 
-describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (14 Defense Models)', () => {
+describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (15 Defense Models)', () => {
   test('EpistemicStateLattice ITF actions drive EpistemicLatticeSUT with exact step-by-step state isomorphism', () => {
     const stats = replayModelAgainstSut(
       'packages/quint-models/engineering/defense/epistemic-state-lattice/EpistemicStateLattice.qnt',
@@ -1586,6 +1681,30 @@ describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (14 Defense Models
       () => new DurableSagaBudgetSUT(),
       projectH,
       () => new BadPivotRollbackSagaSUT(),
+    );
+    expect(stats.transitions).toBeGreaterThan(50);
+    expect(stats.brokenDiverged).toBe(true);
+  }, 30_000);
+
+  test('DifcExfiltrationFence ITF actions drive DifcExfiltrationFenceSUT with exact state isomorphism and reject BadExfiltratingAgentSUT', () => {
+    const projectH = (h: Record<string, unknown>) => ({
+      secretRead: Boolean(h.secretRead),
+      untrustedInputRead: Boolean(h.untrustedInputRead),
+      valueTaintedSecret: Boolean(h.valueTaintedSecret),
+      controlTaintedUntrusted: Boolean(h.controlTaintedUntrusted),
+      hasDeclassCap: Boolean(h.hasDeclassCap),
+      sanitizerPassed: Boolean(h.sanitizerPassed),
+      declassifiedClean: Boolean(h.declassifiedClean),
+      exfiltrationViolations: asInt(h.exfiltrationViolations),
+      controlHijackViolations: asInt(h.controlHijackViolations),
+      unauthorizedDeclassViolations: asInt(h.unauthorizedDeclassViolations),
+      safePublicSinks: asInt(h.safePublicSinks),
+    });
+    const stats = replayModelAgainstSut(
+      'packages/quint-models/engineering/defense/difc-exfiltration-fence/DifcExfiltrationFence.qnt',
+      () => new DifcExfiltrationFenceSUT(),
+      projectH,
+      () => new BadExfiltratingAgentSUT(),
     );
     expect(stats.transitions).toBeGreaterThan(50);
     expect(stats.brokenDiverged).toBe(true);
