@@ -207,22 +207,42 @@
 
 (def (run-source-contract-op repo-root step-name payload)
   (def subj-dir (path-expand (alist-ref payload 'subject-dir "") repo-root))
-  (def offline-flag (if (alist-ref payload 'offline? #f) "--offline " ""))
-  (def script
-    (string-append
-      "CARGO_BIN=\"${RESOURCE_CARGO:-$(\"$HOME/.cargo/bin/rustup\" which cargo 2>/dev/null || command -v cargo)}\"\n"
-      "export PATH=\"$(dirname \"$CARGO_BIN\"):$HOME/.cargo/bin:$PATH\"\n"
-      "\"$CARGO_BIN\" clippy " offline-flag "--all-targets -- -D warnings\n"))
-  (let-values (((code out) (exec-bash-captured subj-dir script)))
-    (def ok? (= code 0))
-    (validate VerificationRawReceiptType
-      (.o step: step-name
-          exit-code: code
-          artifacts: (list (cons 'subject-dir subj-dir) (cons 'tool 'clippy))
-          summary: (if ok?
-                     "Rust Clippy source-contract (-D warnings) passed"
-                     (string-append "Clippy source-contract failed: "
-                                    (last-nonempty-line out "clippy error")))))))
+  (def tool (alist-ref payload 'tool 'clippy))
+  (if (eq? tool 'cbmc)
+    (let* ((files (alist-ref payload 'cbmc-files '()))
+           (files-arg (apply string-append (map (lambda (f) (string-append " \"" f "\"")) files)))
+           (script
+            (string-append
+              "export PATH=\"/opt/homebrew/bin:/usr/local/bin:$PATH\"\n"
+              "cbmc" files-arg " --bounds-check --pointer-check --unsigned-overflow-check\n")))
+      (let-values (((code out) (exec-bash-captured subj-dir script)))
+        (def ok? (and (= code 0) (and (string-contains out "VERIFICATION SUCCESSFUL") #t)))
+        (validate VerificationRawReceiptType
+          (.o step: step-name
+              exit-code: (if ok? 0 (if (= code 0) 1 code))
+              artifacts: (list (cons 'subject-dir subj-dir)
+                               (cons 'tool 'cbmc)
+                               (cons 'files files))
+              summary: (if ok?
+                         "CBMC C source-memory-ub proof (bounds/pointer/unsigned-overflow) VERIFICATION SUCCESSFUL"
+                         (string-append "CBMC source-contract failed: "
+                                        (last-nonempty-line out "cbmc error")))))))
+    (let* ((offline-flag (if (alist-ref payload 'offline? #f) "--offline " ""))
+           (script
+            (string-append
+              "CARGO_BIN=\"${RESOURCE_CARGO:-$(\"$HOME/.cargo/bin/rustup\" which cargo 2>/dev/null || command -v cargo)}\"\n"
+              "export PATH=\"$(dirname \"$CARGO_BIN\"):$HOME/.cargo/bin:$PATH\"\n"
+              "\"$CARGO_BIN\" clippy " offline-flag "--all-targets -- -D warnings\n")))
+      (let-values (((code out) (exec-bash-captured subj-dir script)))
+        (def ok? (= code 0))
+        (validate VerificationRawReceiptType
+          (.o step: step-name
+              exit-code: code
+              artifacts: (list (cons 'subject-dir subj-dir) (cons 'tool 'clippy))
+              summary: (if ok?
+                         "Rust Clippy source-contract (-D warnings) passed"
+                         (string-append "Clippy source-contract failed: "
+                                        (last-nonempty-line out "clippy error")))))))))
 
 (def (verify-lifecycle-json-zero-leak json-path)
   (and (file-exists? json-path)
@@ -369,7 +389,7 @@
   (unless *cached-host-toolchain-map*
     (let ((script
            (string-append
-             "export PATH=\"$HOME/.bun/bin:$HOME/.elan/bin:$HOME/.cargo/bin:$PATH\"\n"
+             "export PATH=\"/opt/homebrew/bin:/usr/local/bin:$HOME/.bun/bin:$HOME/.elan/bin:$HOME/.cargo/bin:$PATH\"\n"
              "CARGO_BIN=\"${RESOURCE_CARGO:-$(\"$HOME/.cargo/bin/rustup\" which cargo 2>/dev/null || command -v cargo || true)}\"\n"
              "if [ -n \"$CARGO_BIN\" ]; then export PATH=\"$(dirname \"$CARGO_BIN\"):$PATH\"; fi\n"
              "printf 'os=%s/%s\\n' \"$(uname -s)\" \"$(uname -m)\"\n"
@@ -378,7 +398,8 @@
              "printf 'bun=%s\\n' \"$(bun --version 2>/dev/null | head -n 1 | tr -d '\\r' || echo unknown)\"\n"
              "printf 'lean=%s\\n' \"$(lean --version 2>/dev/null | head -n 1 | tr -d '\\r' || echo unknown)\"\n"
              "printf 'rustc=%s\\n' \"$(rustc --version 2>/dev/null | head -n 1 | tr -d '\\r' || echo unknown)\"\n"
-             "printf 'clippy=%s\\n' \"$(cargo clippy --version 2>/dev/null | head -n 1 | tr -d '\\r' || echo unknown)\"\n")))
+             "printf 'clippy=%s\\n' \"$(cargo clippy --version 2>/dev/null | head -n 1 | tr -d '\\r' || echo unknown)\"\n"
+             "printf 'cbmc=%s\\n' \"$(cbmc --version 2>/dev/null | head -n 1 | tr -d '\\r' || echo unknown)\"\n")))
       (let-values (((_code out) (exec-bash-captured repo-root script)))
         (def tbl (make-hash-table))
         (for-each
@@ -405,7 +426,7 @@
    ((equal? method-str "de-lean-poo")
     (string-append "lean=" (v "lean") "|sysml=" (v "sysml") "|os=" (v "os")))
    ((equal? method-str "de-source-contract")
-    (string-append "rustc=" (v "rustc") "|clippy=" (v "clippy") "|os=" (v "os")))
+    (string-append "rustc=" (v "rustc") "|clippy=" (v "clippy") "|cbmc=" (v "cbmc") "|os=" (v "os")))
    ((equal? method-str "de-native-oracle")
     (string-append "rustc=" (v "rustc") "|os=" (v "os")))
    (else

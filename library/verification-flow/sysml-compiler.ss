@@ -77,6 +77,7 @@
     (list
       (cons 'subject-dir (alist-ref attrs "subjectDir" ""))
       (cons 'offline? (equal? (alist-ref attrs "offlineMode" "false") "true"))
+      (cons 'cbmc-files (split-csv-s (alist-ref attrs "cbmcFiles" "")))
       (cons 'tool (string->symbol (alist-ref attrs "staticTool" "clippy")))))
    ((eq? fam 'de-native-oracle)
     (let ((supps (.get tspec supports-premises)))

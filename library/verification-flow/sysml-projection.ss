@@ -281,25 +281,27 @@
                                     attrs: cattrs)
                                 target-specs)))
                        (subj-dir
-                        (set! subj-obls (cons (list sid "source-api-ban-lint" "api-ban-lint") subj-obls))
-                        (set! fsteps (cons (list cname sid "source-api-ban-lint" "de-source-contract" "api-ban-lint") fsteps))
-                        (set! target-specs
-                          (cons (.o bind-these: #f
-                                    name: cname
-                                    family: 'de-source-contract
-                                    obligation: 'source-api-ban-lint
-                                    claim-kind: 'api-ban-lint
-                                    operation: 'run-source-contract
-                                    stateful-quint?: #f
-                                    mutability: (or mut-override "M1-immutable-proof")
-                                    produces: prods
-                                    consumes: conss
-                                    requires-premises: reqp
-                                    supports-premises: supp
-                                    countermodels: '()
-                                    input-files: in-files
-                                    attrs: cattrs)
-                                target-specs)))
+                        (let ((scl (or (part-attr cid "sourceClaimKind") "api-ban-lint"))
+                              (sobl (or (part-attr cid "sourceObligation") "source-api-ban-lint")))
+                          (set! subj-obls (cons (list sid sobl scl) subj-obls))
+                          (set! fsteps (cons (list cname sid sobl "de-source-contract" scl) fsteps))
+                          (set! target-specs
+                            (cons (.o bind-these: #f
+                                      name: cname
+                                      family: 'de-source-contract
+                                      obligation: (string->symbol sobl)
+                                      claim-kind: (string->symbol scl)
+                                      operation: 'run-source-contract
+                                      stateful-quint?: #f
+                                      mutability: (or mut-override "M1-immutable-proof")
+                                      produces: prods
+                                      consumes: conss
+                                      requires-premises: reqp
+                                      supports-premises: supp
+                                      countermodels: '()
+                                      input-files: in-files
+                                      attrs: cattrs)
+                                  target-specs))))
                        (crate-p
                         (let ((ocl (or (part-attr cid "oracleClaimKind") "os-sigkill-oracle"))
                               (oobl (or (part-attr cid "oracleObligation") "os-sigkill-leak-oracle")))

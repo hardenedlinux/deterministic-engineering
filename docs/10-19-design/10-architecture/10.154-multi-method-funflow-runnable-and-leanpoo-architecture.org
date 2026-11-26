@@ -14,14 +14,16 @@
 * Decision and motivation
 :PROPERTIES:
 :CUSTOM_ID: mm154-decision
-:STATUS: design-draft
+:STATUS: implemented-verified
 :END:
 
 #+BEGIN_QUOTE
-Status: architecture and SysML v2 design draft only. No package, Scheme module,
-Quint model, Lean proof, runtime execution, or regenerated =project.sysml= is
-landed by this item. Existing =OR01=–=OR06= repository gates remain authoritative
-for the current tree.
+Status: *implemented and end-to-end verified (M0–M5 + Zero-Glue SysML v2 Compiler +
+Ed25519 Signed Cache/Fleet + 4-Subject / 12-Engine Fleet)*. The companion
+[[file:10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml][10.154 SysML v2 specification]]
+is the live single source of truth compiled directly into Fun-Flow DAGs by
+[[file:../../../library/verification-flow/sysml-compiler.ss][sysml-compiler.ss]] and
+gated by =just check-multi-method= and =just fleet-multi-method=.
 #+END_QUOTE
 
 This item defines the macro multi-method verification architecture that complements
@@ -111,13 +113,15 @@ method family is authorized to discharge only its own =claim-kind= set:
 | *Source Verifiers (CBMC / Kani / Clippy / Miri)* | =languages-engineering/<lang>/= | Bound via =Methods= / =Defense= | =source-memory-ub=, =drop-unwind-safety=, =api-ban-lint= | Distributed protocol safety, multi-process crash orchestration | Native C/C++/Rust harnesses & checked subjects |
 | *Native OS Fault Oracles* | =t/= & consumer harnesses | =DevelopmentVerification= | =empirical-mbt-replay=, =os-sigkill-oracle=, =zero-leak-assertion= | Claiming exhaustive schedule coverage or universal liveness | Replayed ITF runs, =SIGKILL (137)= controls, leak receipts |
 
-** Zero-duplication verification on two concrete engineering subjects
+** Zero-duplication verification across four concrete engineering subjects (live 4-subject / 12-engine Fleet)
 
 #+NAME: zero-duplication-examples
-| Engineering subject | Quint owns (finite races & MBT) | LeanPoo owns (unbounded laws & refinement) | Source / OS Oracle owns (physical grounding) |
-|---------------------+---------------------------------+--------------------------------------------+----------------------------------------------|
-| =backpressure-memory= (existing baseline) | Disjoint holder-set transitions (=queued=/=running=/=returned=/=cleanup=/=done=), cancellation races, =earlyRelease= countermodel | Monotonic additive memory bound =(q + a) * item + fixed + cache=, budget-reuse inequality, =Patch.frame= transport under workload changes | Tokio/Rayon owned-permit Rust harness, 6-case cut oracle (=RL-M01..RL-M06=) |
-| =process-tree-reclamation= (pilot vertical slice) | 3-tier finite transitions (=Guardian= / =Supervisor= / =c1, c2= / =GraceTimer= / =Container=), 5 guard-pruning countermodels, =--mbt= ITF traces | $\forall d, k$ arbitrary-depth tree containment closure, =ObjectContract.refine= platform specializations (=LinuxCgroupV2= vs =DarwinPgidPipe=), =Patch.frame= proof transport | Rust =ProcessTreeGuard= typestate, Clippy ban on bare =Command::spawn= & =kill_on_drop=, real =SIGKILL= / hung-child / panic-drop zero-orphan oracle |
+| Engineering subject | Quint owns (finite races & MBT) | LeanPoo owns (unbounded laws & 5/5 cores) | Source / OS Oracle owns (physical grounding) | Premise handoff (=MR03=/=ER03=) |
+|---------------------+---------------------------------+-------------------------------------------+----------------------------------------------+---------------------------------|
+| =process-tree-reclamation= (pilot vertical slice) | 3-tier finite transitions, 5 guard-pruning countermodels, 20 =--mbt= ITF traces | =Core.Containment= + =Engineering.ProcessTree= ($\forall d,k$ tree closure, =LinuxCgroupV2= / =DarwinPgidPipe= refinement, =Patch.frame= reuse) | Rust =ProcessTreeGuard= + Clippy ban + 3 HTTP =/shutdown= E2E + 4 live Quint/online-OS MBT + 6 OS =SIGKILL=/Darwin =setsid()= controls | =SpawnPreservesContainer= (Rust Oracle -> LeanPoo) |
+| =backpressure-memory= (horizontal reuse) | Disjoint holder-set transitions, 4 countermodels, 10 =--mbt= ITF traces | =Core.Budget= + =Engineering.Backpressure= (monotonic additive memory bound, shrink safety, =Patch.frame= reuse) | Rust Clippy (=--offline=) + Tokio/Rayon 6-case lifecycle oracle (=RL-M01..RL-M06=, =live=0, available=1=) | =PayloadDropPrecedesPermitRelease= (Rust Oracle -> LeanPoo) |
+| =lease-fencing-token= (zero-glue 3rd subject) | 2-client GC-pause lease race, =monotonic-fencing-token= countermodel, Apalache verify + 10 =--mbt= ITF traces | =Core.Order= + =Core.Transport= + =Engineering.LeaseFencing= (unbounded =Nat= zombie-write rejection, 2-step =ObjectContract.refine=, 1-line =Proof.reuse=) | (Pure formal 2-engine subject; no OS premise required) | None (closed) |
+| =c-boundary-conservation= (zero-glue 4th subject) | (Pure C + LeanPoo 2-engine subject; zero Quint duplication) | =Core.Conservation= + =Core.Transport= + =Engineering.BoundaryConservation= (unbounded single-ownership cap & idempotent release, 2-step refinement, 1-line =Proof.reuse=) | *CBMC 6.11* (=source-memory-ub= on =deterministic_boundary.c= + =proof.c=: bounds, pointer, unsigned-overflow proof) | =NoCSourceOverflowOrPointerUB= (CBMC -> LeanPoo) |
 
 * LeanPoo distribution package family (=packages/lean-models/=)
 :PROPERTIES:
@@ -514,34 +518,37 @@ testing):
 4. Hung grandchild ignoring =SIGTERM= -> grace deadline triggers container
    =SIGKILL= -> 0 orphans.
 
-* Staged landing plan and refusal gates (M0–M5)
+* Implemented verification milestones and refusal gates (M0–M5 + Fleet)
 :PROPERTIES:
 :CUSTOM_ID: mm154-landing-plan
-:STATUS: design-draft
+:STATUS: implemented-verified
 :END:
 
 #+NAME: staged-landing-plan
-| Stage | Deliverables | Passing gate | Refusal gate |
-|-------+--------------+--------------+--------------|
-| M0 Architecture & SysML v2 | =10.154-*.org=, companion =10.154-*.sysml=, =90.143= D2/SVG, index rows | =sysml -validate -strict= passes with 0 errors; =90.143= lossless PNG/WebP pixel match verified | Claiming execution before landing; breaking existing =OR01=–=OR07= |
-| M1 + M2 SysML v2 Linkage, Fun-Flow Runnable & ASCENT =MR01=–=MR06= / =ER01=–=ER04= | =library/verification-flow/= (dedicated =ascent-rules.ss= for pure Datalog =MR01=–=MR06= + =ER01=–=ER04=, =sysml-projection.ss= for OpenSysML =api-json=, =syntax.ss= =defrules=, CLOS =runnable-*=) + qualification tests | Pure zero-I/O build passes; =OR01=–=OR07= & =test-de-layout= pass; live =sysml -convert api-json= drives ASCENT =MR01=–=MR06= with 0 findings + all 6 negative controls fire | Duplicating SysML v2 tables into =project-organization/objects.ss=; spawning subprocesses inside =library/=; inventing a non-Fun-Flow alist DSL |
-| M3 LeanPoo package foundation | =packages/lean-models/= (=Core/Containment.lean=, =Engineering/ProcessTree.lean=) | =lake build= passes with zero =sorryAx= and standard axioms only; =ObjectContract.refine= + =Proof.reuse= positive & negative checks pass | Mirroring Quint finite state machine in Lean; ungrounded =axiom= without ASCENT =open_premise= |
-| M4 Pilot slice (=ProcessTreeReclamation=) | Quint model (5 countermodels) + Rust =ProcessTreeGuard= + Clippy ban + 4-case =SIGKILL= Leak Oracle | Apalache safety + all 5 countermodels pass; =mbt-audit= 100%; all 4 OS controls assert 0 orphan processes/ports/FDs | Skipping =SIGKILL= injection control; relying on =kill_on_drop(true)= |
-| M5 End-to-end Fun-Flow + ASCENT run | =t/support/verification-flow-runner.ss= + =end-to-end-ops-runner-test.ss= + =just check-multi-method= / =just investigate-multi-method= | Real upstream Fun-Flow =make-runner= / =runner-run= / =validate-replay-report= executes all 4 engines and passes ASCENT =ER01=–=ER04= joined against live SysML v2 =api-json= | Silent admission with missing/failed evidence, unverified premise, or replay drift |
+| Stage | Deliverables (landed) | Passing gate (verified) | Refusal gate |
+|-------+-----------------------+-------------------------+--------------|
+| M0 Architecture & SysML v2 | =10.154-*.org=, companion =10.154-*.sysml=, =90.143= D2/SVG | =sysml -validate -strict= exits 0 with 0 warnings | Claiming execution before landing; breaking existing =OR01=–=OR07= |
+| M1 + M2 Pure Control Plane, Compiler & ASCENT =MR01=–=MR06= / =ER01=–=ER04= / =IR01=–=IR06= | =library/verification-flow/{types,objects,config,func,ascent-rules,sysml-projection,sysml-compiler,rules,methods,syntax,interface}.ss= | Zero-I/O pure library; zero-glue SysML v2 -> Fun-Flow DAG compiler; all 6 MR + 4 ER + 6 IR (incl. =IR05= toolchain drift & =IR06= Ed25519 attestation) positive & negative controls pass | Duplicating SysML v2 into Scheme glue; spawning subprocesses inside =library/= |
+| M3 Complete 5-Core LeanPoo Package | =packages/lean-models/DeterministicEngineering/Core/{Conservation,Budget,Containment,Order,Transport}.lean= + =Engineering/{ProcessTree,Backpressure,LeaseFencing,BoundaryConservation}.lean= | =lake build= passes (81/81 jobs), 0 =sorryAx=, standard axioms only; all 5 cores actively refined | Mirroring Quint finite state machine in Lean; ungrounded =axiom= without ASCENT =open_premise= |
+| M4 Pilot & Multi-Domain Subjects | Quint =ProcessTreeReclamation= (5 countermodels) + Rust =ProcessTreeGuard= (Clippy ban, 3 HTTP =/shutdown= E2E, 4 live Quint/online-OS MBT, 6 OS =SIGKILL=/Darwin =setsid()= controls) + =BackpressureMemory= + =LeaseFencingToken= + C =CBMC= (=c-boundary-conservation=) | Apalache + 100% MBT + 13/13 Rust tests + Clippy =-D warnings= + CBMC 6.11 =VERIFICATION SUCCESSFUL= | Skipping =SIGKILL=/=setsid()= negative controls; silent UB fallback |
+| M5 Signed Incremental Cache & 4-Subject Fleet | [[file:../../../t/support/verification-flow-runner.ss][verification-flow-runner.ss]] + 7 qualification suites under =t/yanxu/Library/verification-flow/= + =just check-multi-method= / =just fleet-multi-method= | Cold 12/0 -> Warm 0/12 Ed25519-verified cache reuse; 2-level Merkle pinned-key attestation rejects rogue keys & child tampering; =replayValid = true= | Silent admission with missing/failed evidence, unsigned/tampered cache, toolchain drift, or replay drift |
 
 * Limits
 :PROPERTIES:
 :CUSTOM_ID: mm154-limits
-:STATUS: design-draft
+:STATUS: implemented-verified
 :END:
 
-- This document and its companion [[file:10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml][SysML v2 model]] are *design specifications
-  only*. They do not establish compilation, Lake/Lean proof checks, Apalache
-  verification, or runtime execution acceptance.
-- Upstream Fun-Flow (=:tao3k/agentic-ai-lab/modules/funflow/control-plane/api=),
-  =gerbil-ascent=, and =lean-poo= APIs referenced here reflect local pinned
-  dependency inspections; concrete integration remains gated by stages M1–M5.
-- Bounded Quint verification plus unbounded LeanPoo containment theorems plus
-  native =SIGKILL= oracles still depend on trusted kernel semantics (Linux
-  cgroup v2 / Darwin =killpg=/pipe-EOF) and the finite correspondence between
-  concrete Rust code and abstract premise obligations.
+- Bounded Quint verification, unbounded LeanPoo algebraic/containment proofs,
+  CBMC bit-precise C UB proofs, and native =SIGKILL= / =setsid()= oracles still
+  depend on trusted kernel and verifier semantics (Linux cgroup v2 / Darwin
+  =killpg=+Pipe-EOF, Lean 4 kernel, Apalache/CBMC SMT solvers, OpenSSL Ed25519).
+- As empirically witnessed by =control_6= in
+  [[file:../../../languages-engineering/rust/lifecycle/process-tree-guard/tests/sigkill_leak_oracle.rs][sigkill_leak_oracle.rs]],
+  Darwin userspace containment (=setpgid= + Pipe-EOF) closes =setsid()= escapes
+  only for cooperating processes that retain =PTREE_WATCHDOG_FD=; untrusted
+  adversarial binaries require kernel-enforced Linux =cgroup v2= (=cgroup.kill=)
+  or PID namespaces to uphold =SpawnPreservesContainer= unconditionally.
+- Pinned-key offline verification (=verify-fleet-report-with-pinned-key=)
+  protects report and cache integrity against tampering and key substitution,
+  assuming the verifier pins the producer's public key out of band.

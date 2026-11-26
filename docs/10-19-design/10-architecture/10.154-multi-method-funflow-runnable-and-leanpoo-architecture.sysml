@@ -364,6 +364,12 @@ package MultiMethodFunFlowArchitecture {
             attribute redefines roles = "checked-rust-subjects,os-containment-guards";
         }
 
+        part cSubjects : LanguageSubjectPlacement {
+            attribute redefines pathPattern = "languages-engineering/c/<domain>/<subject>/";
+            attribute redefines ecosystem = "clang,cbmc";
+            attribute redefines roles = "checked-c-trust-boundaries,cbmc-ub-proofs";
+        }
+
         part controlPlane : FunFlowControlPlane;
         part governance : AscentGovernanceProgram;
         part runtimeAdapter : ContainedRuntimeAdapter;
@@ -507,6 +513,35 @@ package MultiMethodFunFlowArchitecture {
                 attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Order.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Engineering/LeaseFencing.lean";
             }
         }
+
+        // Fourth Engineering Subject uniting CBMC (source-memory-ub) + LeanPoo (Core.Conservation + Core.Transport) with ZERO Scheme glue
+        part cBoundaryConservation {
+            attribute subjectKey : String = "c-boundary-conservation";
+            attribute identity : String = "engineering.defense.c-boundary-conservation";
+            attribute tags : String = "engineering,defense,c-boundary,defense.mutability.immutable-proof,hazard.silent-fallback-ub";
+            attribute factors : String = "c-trust-boundary-conservation";
+
+            part cbCbmcTarget {
+                attribute subjectDir : String = "languages-engineering/c/defense/silent-fallback-contrast";
+                attribute staticTool : String = "cbmc";
+                attribute sourceObligation : String = "c-cbmc-memory-ub";
+                attribute sourceClaimKind : String = "source-memory-ub";
+                attribute cbmcFiles : String = "deterministic_boundary.c,proof.c";
+                attribute supportsPremise : String = "NoCSourceOverflowOrPointerUB";
+                attribute inputFiles : String = "languages-engineering/c/defense/silent-fallback-contrast/boundary.h,languages-engineering/c/defense/silent-fallback-contrast/deterministic_boundary.c,languages-engineering/c/defense/silent-fallback-contrast/proof.c";
+                port premiseOut : PremiseHandoffPort;
+            }
+
+            part cbLeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.BoundaryConservation";
+                attribute refinesCore : String = "DeterministicEngineering.Core.Conservation,DeterministicEngineering.Core.Transport";
+                attribute requiresPremise : String = "NoCSourceOverflowOrPointerUB";
+                attribute transportContract : String = "ObjectContract.refine+Patch.frame+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Core.Conservation.admit_preserves_withinCap,DeterministicEngineering.Core.Conservation.release_idempotent,DeterministicEngineering.Core.Conservation.uncheckedAdmit_violates_withinCap,DeterministicEngineering.Engineering.BoundaryConservation.boundaryAdmit_preserves_cap,DeterministicEngineering.Engineering.BoundaryConservation.boundaryRelease_idempotent,DeterministicEngineering.Engineering.BoundaryConservation.strictBoundaryContract_preserves_rejection,DeterministicEngineering.Engineering.BoundaryConservation.telemetryTunedCertified,DeterministicEngineering.Engineering.BoundaryConservation.disableOverflowGuard_invalidates_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Conservation.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Engineering/BoundaryConservation.lean";
+                port premiseIn : PremiseConsumerPort;
+            }
+        }
     }
 
     // ── 12. Architectural, Cross-Method, and Requirement Dependencies ──
@@ -532,11 +567,17 @@ package MultiMethodFunFlowArchitecture {
     dependency 'lf-lean-refines-order' from system::leaseFencingToken::lfLeanPooTarget to system::leanModels::core::order;
     dependency 'lf-lean-refines-transport' from system::leaseFencingToken::lfLeanPooTarget to system::leanModels::core::transport;
 
+    dependency 'cb-cbmc-source' from system::cBoundaryConservation::cbCbmcTarget to system::cSubjects;
+    dependency 'cb-lean-source' from system::cBoundaryConservation::cbLeanPooTarget to system::leanModels;
+    dependency 'cb-lean-refines-conservation' from system::cBoundaryConservation::cbLeanPooTarget to system::leanModels::core::conservation;
+    dependency 'cb-lean-refines-transport' from system::cBoundaryConservation::cbLeanPooTarget to system::leanModels::core::transport;
+
     // Cross-method edges enforced by MR03 & MR04 (zero model duplication)
     dependency 'pt-mbt-itf-edge' from system::processTreeReclamation::rustOracleTarget::traceIn to system::processTreeReclamation::quintTarget::traceOut;
     dependency 'pt-premise-handoff-edge' from system::processTreeReclamation::leanPooTarget::premiseIn to system::processTreeReclamation::rustOracleTarget::premiseOut;
     dependency 'bp-mbt-itf-edge' from system::backpressureMemory::bpRustOracleTarget::traceIn to system::backpressureMemory::bpQuintTarget::traceOut;
     dependency 'bp-premise-handoff-edge' from system::backpressureMemory::bpLeanPooTarget::premiseIn to system::backpressureMemory::bpRustOracleTarget::premiseOut;
+    dependency 'cb-premise-handoff-edge' from system::cBoundaryConservation::cbLeanPooTarget::premiseIn to system::cBoundaryConservation::cbCbmcTarget::premiseOut;
 
     // Verification obligation allocations (planned checks, no execution verdict)
     dependency 'alloc-mr-gate' from obligations::ascentMultiMethodGate to system::governance;

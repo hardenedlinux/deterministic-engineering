@@ -218,4 +218,5 @@
       (check (and (member '("engineering.lifecycle.process-tree-reclamation") admitted-subjs) #t) => #t)
       (check (and (member '("engineering.concurrency.backpressure-memory") admitted-subjs) #t) => #t)
       (check (and (member '("engineering.concurrency.lease-fencing-token") admitted-subjs) #t) => #t)
-      (check-equal? (length (.get projected subject-specs)) 3))))
+      (check (and (member '("engineering.defense.c-boundary-conservation") admitted-subjs) #t) => #t)
+      (check-equal? (length (.get projected subject-specs)) 4))))

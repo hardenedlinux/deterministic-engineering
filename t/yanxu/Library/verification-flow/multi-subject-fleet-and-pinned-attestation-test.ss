@@ -39,29 +39,30 @@
       (run-process (list "rm" "-rf" cache-dir cold-dir warm-dir rogue-key-dir tamper-copy-dir))
       (create-directory* cache-dir)
 
-      ;; Phase 1 — Cold Fleet across all 3 SysML v2 subjects (4 + 4 + 2 = 10 engines).
+      ;; Phase 1 — Cold Fleet across all 4 SysML v2 subjects (4 + 4 + 2 + 2 = 12 engines,
+      ;;           covering Quint/Apalache, LeanPoo 5/5 cores, Clippy, CBMC, and Rust OS/MBT Oracles!).
       (let ((f1 (run-multi-method-fleet repo-root cold-dir cache-dir: cache-dir fleet-id: "fleet-test-cold")))
         (def frpath (.get f1 fleet-report-path))
         (def trusted-pub (.get f1 public-key-path))
-        (check-equal? (length (.get f1 subject-keys)) 3)
+        (check-equal? (length (.get f1 subject-keys)) 4)
         (check-equal? (.get f1 all-admitted?) #t)
-        (check-equal? (.get f1 total-executed) 10)
+        (check-equal? (.get f1 total-executed) 12)
         (check-equal? (.get f1 total-reused) 0)
 
-        ;; Genuine Fleet + all 3 child reports verify cleanly against externally pinned public key!
+        ;; Genuine Fleet + all 4 child reports verify cleanly against externally pinned public key!
         (check-equal? (verify-fleet-report-with-pinned-key frpath trusted-pub) #t)
 
         ;; Negative Control A: Rogue/untrusted Ed25519 public key MUST be rejected!
         (let* ((rogue-kp (ensure-cache-signing-keypair! rogue-key-dir))
                (rogue-pub (.get rogue-kp public-key))
-               (child-rep (path-expand "lease-fencing-token/report.json" cold-dir)))
+               (child-rep (path-expand "c-boundary-conservation/report.json" cold-dir)))
           (check-equal? (verify-fleet-report-with-pinned-key frpath rogue-pub) #f)
           (check-equal? (verify-report-with-pinned-key child-rep rogue-pub) #f))
 
         ;; Negative Control B: Tampering 1 field inside a child report breaks 2-level Fleet Merkle check!
         (run-process (list "cp" "-R" cold-dir tamper-copy-dir))
         (let* ((copied-fleet (path-expand "fleet-report.json" tamper-copy-dir))
-               (copied-child (path-expand "lease-fencing-token/report.json" tamper-copy-dir))
+               (copied-child (path-expand "c-boundary-conservation/report.json" tamper-copy-dir))
                (cdoc (call-with-input-file copied-child (cut read-json <> object-as-hash: #t))))
           (hash-put! cdoc "requestId" "forged-child-request")
           (call-with-output-file copied-child
@@ -69,12 +70,12 @@
           (check-equal? (verify-fleet-report-with-pinned-key copied-fleet trusted-pub) #f)))
       (##gc)
 
-      ;; Phase 2 — Warm Fleet: 0 engines executed, 10/10 verified Ed25519 cache hits across all 3 subjects!
+      ;; Phase 2 — Warm Fleet: 0 engines executed, 12/12 verified Ed25519 cache hits across all 4 subjects!
       (let ((f2 (run-multi-method-fleet repo-root warm-dir cache-dir: cache-dir fleet-id: "fleet-test-warm")))
-        (check-equal? (length (.get f2 subject-keys)) 3)
+        (check-equal? (length (.get f2 subject-keys)) 4)
         (check-equal? (.get f2 all-admitted?) #t)
         (check-equal? (.get f2 total-executed) 0)
-        (check-equal? (.get f2 total-reused) 10)
+        (check-equal? (.get f2 total-reused) 12)
         (check-equal? (verify-fleet-report-with-pinned-key
                         (.get f2 fleet-report-path)
                         (.get f2 public-key-path))

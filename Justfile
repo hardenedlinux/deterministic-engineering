@@ -480,7 +480,7 @@ check-defense:
       just test-file "$f"
     done
 
-# M5 multi-method verification gate (SysML v2 -> Zero-Glue Fun-Flow DAG Compiler -> Quint + LeanPoo + Clippy + Native Oracles -> ASCENT MR01-MR06/ER01-ER04/IR01-IR06 + Ed25519 Signed Cache & 3-Subject Fleet).
+# M5 multi-method verification gate (SysML v2 -> Zero-Glue Fun-Flow DAG Compiler -> Quint + LeanPoo 5-Core + Clippy + CBMC + Native Oracles -> ASCENT MR01-MR06/ER01-ER04/IR01-IR06 + Ed25519 Signed Cache & 4-Subject Fleet).
 check-multi-method:
     just test-file t/yanxu/Library/verification-flow/governance-and-sysml-linkage-test.ss
     just test-file t/yanxu/Library/verification-flow/sysml-compiler-and-lease-fencing-test.ss ".*" 240s
@@ -490,7 +490,7 @@ check-multi-method:
     just test-file t/yanxu/Library/verification-flow/multi-subject-backpressure-test.ss ".*" 240s
     just test-file t/yanxu/Library/verification-flow/multi-subject-fleet-and-pinned-attestation-test.ss ".*" 360s
 
-# Run the M5 multi-method Fun-Flow Ops Runner (optional cache_dir & subject: process-tree-reclamation | backpressure-memory | lease-fencing-token) and write a fresh signed JSON evidence report.
+# Run the M5 multi-method Fun-Flow Ops Runner (optional cache_dir & subject: process-tree-reclamation | backpressure-memory | lease-fencing-token | c-boundary-conservation) and write a fresh signed JSON evidence report.
 investigate-multi-method output cache_dir="" subject="process-tree-reclamation":
     #!/usr/bin/env bash
     set -euo pipefail
