@@ -22,10 +22,12 @@ informal deployment slogans.
 
 | Zero Trust Principle | State-Machine Failure Mode | Quint Layer / Primitive | Invariant & Countermodel |
 |----------------------+----------------------------+-------------------------+--------------------------|
-| *Never Trust, Always Verify* | Time-of-check to time-of-use (TOCTOU): ticket approved in epoch $e$, executed in epoch $e+1$ or after revocation | =authority-currentness= (=isCurrent=, =epochCurrent=) | Every effect-releasing transition re-evaluates =not(paused) and fresh and credential and bytes and epoch == planned=; countermodel drops currency check |
-| *Least Privilege & Capability Isolation* | Lateral movement from compromised dev/CI surface to signing or control-plane roots | =capabilities= (=canLearn=) | Isolated root set =Isolated= has empty intersection with attacker =known= set across all reachable acquisition steps |
-| *Assume Breach & Blast-Radius Containment* | Local pause does not survive restart, or operator declares "cleared" without finalized external witness | =effect-containment= (=pauseRetention=, =clearingTruth=) | =everPaused => (paused and revoked)=; =cleared => (not(delegated) and witness)=; countermodels =stepStaleRecovery= and =stepFalseClear= |
-| *Explicit Effect Boundary (PEP/PDP Split)* | Policy decision point (PDP) authorizes an intent, but policy enforcement point (PEP) emits without durable commitment or replays after host rollback | =effect-handoff= + =state-rollback= | =sent <= MaxSends and (sent == 0 or unknown)=; countermodels =stepNoDurability= and =stepRollback= |
+| *Never Trust, Always Verify* | Time-of-check to time-of-use (TOCTOU): ticket approved in epoch $e$, executed in epoch $e+1$ or after revocation | =threat/zero-trust/authority-currentness= + =threat/zero-trust/zero-trust-pep-pdp= | Every effect-releasing transition re-evaluates =not(paused) and fresh and credential and bytes and epoch == planned=; countermodels drop epoch currency or revocation checks |
+| *Least Privilege & Capability Isolation* | Lateral movement from compromised surface to signing or control-plane roots, or tainted data steering tool invocation | =threat/execution/capabilities= + =threat/execution/agent-ifc-capability= + =threat/execution/wasm-sandbox-confinement= | Isolated root set has empty intersection with attacker =known= set; untrusted data cannot authorize privileged sinks; WASI handles stay beneath preopened root |
+| *Assume Breach & Blast-Radius Containment* | Local pause does not survive restart, quarantined workload bypasses egress proxy, or operator declares "cleared" without finalized witness | =threat/execution/effect-containment= + =threat/zero-trust/microsegmentation-egress= | =everPaused => (paused and revoked)=; =cleared => (not(delegated) and witness)=; sidecar attestation & quarantine block unattested egress |
+| *Explicit Effect Boundary (PEP/PDP Split)* | Policy decision point (PDP) authorizes an intent, but policy enforcement point (PEP) emits without durable commitment or replays after host rollback | =threat/execution/effect-handoff= + =threat/execution/state-rollback= | =sent <= MaxSends and (sent == 0 or unknown)=; countermodels =stepNoDurability= and =stepRollback= |
+| *Cryptographic Binding & Identity Currentness* | Bearer token theft, refresh race after sign-out, OIDC =sub=/=azp= confusion, phishing MitM, or 0-RTT replay | =threat/identity/*= + =threat/protocol/*= | Sender-constrained DPoP =cnf.jkt= + =jti=, OAuth refresh-epoch fence, WebAuthn RP-ID + =signCount=, Macaroons monotonic caveats, TLS 1.3 strike-register & PFS |
+| *Governance & Supply-Chain Integrity* | Self-approval bypassing Separation of Duties, cumulative privacy leakage, TUF rollback/freeze, or transparency-log split view | =threat/zero-trust/{governance-sod,data-lineage-disclosure}= + =threat/supply-chain/*= | Distinct approver + =forbid=-veto precedence, =k=-anonymity + budget cap, TUF monotonic metadata & STH gossip consistency |
 
 * The Four State Layers of a Zero Trust Boundary
 
@@ -70,14 +72,19 @@ four explicit layers:
 - Requires multi-factor external observation (=verified=, =finalized=, =noCode=
   or domain-specific equivalents) before =cleared= may become true.
 
-* Planned Zero Trust Extensions
+* Implemented Zero Trust Subdomains (22 Co-Located Models)
 
-Future modules under =threat/= will follow the same flat Scheme-POO-to-Quint
-pattern:
+All threat models are co-located Yuanxu units under
+=packages/quint-models/threat/<subdomain>/<model>/= with 3-axis Profile
+convergence (=assurance.*=, =bound.*=, =governance.*=):
 
-- =zero-trust-pep-pdp=: policy-version drift between PDP decision and PEP
-  enforcement under concurrent policy updates.
-- =workload-identity-rotation=: short-lived SVID/credential issuance, overlap
-  windows, and immediate revocation propagation.
-- =microsegmentation-egress=: cross-tenant / cross-zone capability mediation
-  under compromised sidecar or proxy assumptions.
+- =threat/zero-trust/=: =authority-currentness=, =zero-trust-pep-pdp=,
+  =microsegmentation-egress=, =governance-sod=, =data-lineage-disclosure=.
+- =threat/identity/=: =oauth-token-lifecycle=, =oauth-revocation-recovery=,
+  =oidc-federation=, =device-authorization=, =webauthn-passkey-ceremony=,
+  =workload-identity-rotation=.
+- =threat/protocol/=: =dpop-sender-constrain=, =macaroon-delegation-chain=,
+  =tls13-0rtt-forward-secrecy=.
+- =threat/supply-chain/=: =supply-chain-tuf=, =transparency-log-gossip=.
+- =threat/execution/=: =capabilities=, =effect-handoff=, =effect-containment=,
+  =state-rollback=, =agent-ifc-capability=, =wasm-sandbox-confinement=.

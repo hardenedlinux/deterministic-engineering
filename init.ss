@@ -38,6 +38,7 @@
     export: QuintEngineeringConcurrencySource
     :profiles (assurance.bounded-proof bound.standard governance.mandatory-countermodels)
     :test-dir "./t"
+  (backpressure-memory profiles: (bound.compact))
 
   :load-modules "./packages/quint-models/engineering/parallel"
     mode: auto

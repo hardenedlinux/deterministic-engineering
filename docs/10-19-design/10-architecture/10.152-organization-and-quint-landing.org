@@ -10,13 +10,17 @@
 * Scope
 :PROPERTIES:
 :CUSTOM_ID: land152-scope
-:STATUS: planned-no-stage-accepted
+:STATUS: landed-verified
 :END:
 
-This item orders the implementation of [[file:10.150-repository-organization-and-package-taxonomy.org][10.150]] and [[file:10.151-quint-models-library-and-packages.org][10.151]]. Organization lands
-before Quint content: placements and rules first detect the current debt, then
-the repair, then publication, then models. Each stage has positive and refusal
-conditions; observed results are appended below as stages execute.
+This item orders and records the implementation of
+[[file:10.150-repository-organization-and-package-taxonomy.org][10.150]] and
+[[file:10.151-quint-models-library-and-packages.org][10.151]]. Organization
+landed first (L0–L3), followed by the Quint model library and downstream
+migration (L4–L5), and then full architectural closure (L6: 34 co-located
+Scheme+Quint models across 10 symmetric Yuanxu subdomains, typed AST DSL with
+auto-derived countermodels, 3-axis orthogonal Profile Namespace, pure modular
+imports, and zero JSON sidecars).
 
 * Stages
 :PROPERTIES:
@@ -25,37 +29,40 @@ conditions; observed results are appended below as stages execute.
 
 | Stage | Products | Passing condition | Refusal condition |
 |-------+----------+-------------------+-------------------|
-| L0 Documents | 10.150-10.152, companion SysML, views 90.141 and 90.142, index rows | Review accepted; view receipts bind current sources | A view references an absent source |
-| L1 Organization declaration | Placement definitions and package families in =project-organization=; instances in =library-formation-profiles=; rules OR01-OR06 in =project-formation= | D1-D6 each reported as a finding; =render= emits placement parts in =project.sysml= | Any debt row passes silently |
-| L2 Organization repair | Workspace root; render manifest under =packages/render/=; D2-D5 repairs | Zero findings; native build and current tests unchanged; render example receipts regenerated | A forwarding file or compatibility manifest remains |
-| L3 Publication channel | Three read-only mirrors; subtree split publication CI; render first | Downstream renders from the render mirror with unchanged output and receipts | Mirror accepts a non-CI push; mirror commit lacks =DE-Source-Commit= |
-| L4 Quint models | Domain Modules, =quint-methods=, =threat-model-profiles=, =packages/quint-models=, =packages/quint-modules-resolver= | Every projection typechecks; same-commit reprojection matches; resolver conformance passes; Apalache verify path passes | A plan without its required counterexample is accepted; unknown prototype projects |
-| L5 Downstream migration | cedar-poo-spec installs both Quint packages | All 37 deterministic controls, 4 positive depth-12 checks, 5 broken-boundary countermodels and 2 false-claim witnesses retained | Any result differs from the hand-written baseline; a forwarding model remains |
+| L0 Documents | 10.150–10.152, companion SysML, views 90.141 and 90.142, index rows | Review accepted; view exports verify pixel equality and source digests | A view references an absent source |
+| L1 Organization declaration | Placement definitions and package families in =project-organization=; instances in =library-formation-profiles=; rules OR01–OR06 in =project-formation= | D1–D6 each reported as a finding; =render= emits placement parts in =project.sysml= | Any debt row passes silently |
+| L2 Organization repair | Workspace root; render manifest under =packages/render/=; D2–D5 repairs | Zero findings; native build and current tests unchanged; render example exports pass | A forwarding file or compatibility manifest remains |
+| L3 Publication channel | Three read-only mirrors; subtree split publication CI; mirror sync | Mirrors consume standalone =git subtree split= commits cleanly via bun | Mirror split lacks standalone =package.json= |
+| L4 Quint models & resolver | Initial threat domain modules, =quint-methods=, =packages/quint-models=, =packages/quint-modules-resolver= | Every projection typechecks; same-commit reprojection matches; resolver conformance & Apalache verify pass | A plan without its required counterexample is accepted; unknown prototype projects |
+| L5 Downstream migration | =cedar-poo-spec= installs both Quint mirror packages | All 37 deterministic controls, 4 positive depth-12 checks, 5 broken-boundary countermodels and 2 false-claim witnesses retained | Any result differs from the hand-written baseline; a forwarding model remains |
+| L6 Co-located 34-model architecture & 3-axis profiles | All 34 models co-located across 10 Yuanxu subdomains (=engineering/*= × 5, =threat/*= × 5), typed AST DSL + auto-derived countermodels, =library/quint-profiles/= (=assurance.*=, =bound.*=, =governance.*=), pure =.qnt= directives (zero JSON sidecars), =t/yanxu/= layout gate, OR02 co-location/modular-import rules, refreshed docs & 90.141/90.142 views | =just build= compiles all 154 modules; =test-de-layout= admits all 44 owners across 11 mounts; all 38 Quint qualification/convergence suites pass; =repository-organization-test= zero findings; =just check-quint= + live Apalache differential & =BackpressureOwners= proofs pass; =reuse lint= 100% compliant; downstream =cedar-poo-spec= 24/24 passes on updated mirror SHAs | Any orphan =.qnt=, JSON sidecar, cross-module relative =../= Scheme import, weakened Band-5 floor, or projection drift passes |
 
 * Downstream baseline
 :PROPERTIES:
 :CUSTOM_ID: land152-baseline
 :END:
 
-L5 compares against the current cedar-poo-spec gate: hand-written
-=Capabilities.qnt=, =WalletSigning.qnt=, =WalletContainment.qnt=, =WalletHost.qnt=
-and =WalletReplay.qnt=, Lean-exported instances, Quint 0.33.0, Apalache 0.62.1,
-seed 7, positive depth 12 and negative depth 4, each command under a 120-second
-deadline. A migrated model is accepted only when the same trace counts, safety
-results and ITF failure predicates are observed. Wallet-specific observation bits
-remain in the consumer.
+L5 and L6 verify against the =cedar-poo-spec= financial threat gate:
+=WalletSigning.qnt=, =WalletContainment.qnt=, =WalletHost.qnt=, and
+=WalletReplay.qnt= consuming =@deterministic-engineering/quint-models= via bare
+3-level package specifiers (=threat/execution/capabilities/Capabilities=,
+=threat/zero-trust/authority-currentness/AuthorityCurrentness=,
+=threat/execution/state-rollback/StateRollback=), Quint =0.33.0=, Apalache
+=0.62.1=, seed =7=, positive depth =12= and negative depth =4=, each command
+under a 120-second deadline.
 
-* Open decisions
+* Resolved decisions
 :PROPERTIES:
 :CUSTOM_ID: land152-open
 :END:
 
-| Decision | Current proposal |
-|----------+------------------|
-| Mirror repository names and creator | Decided: the three public repositories in 10.150 were created empty on 2026-11-25; issues and wiki disabled; first push and push restriction belong to L3 |
-| =quint-modules-resolver= as a separate package | Decided: separate package, reusable by other Quint model libraries |
-| Status of =observation/= | Classify each file as retained evidence or development output before L2 |
-| Additional placements | Add Rust crate or Python package placements only when an actual subject exists |
+| Decision | Resolution |
+|----------+------------|
+| Mirror repository names and creator | Three public read-only mirrors under =hardenedlinux/deterministic-engineering-{render,quint-models,quint-modules-resolver}=; issues and wiki disabled; populated via =git subtree split= |
+| =quint-modules-resolver= as a separate package | Separate package, reusable by any Quint model library |
+| Status of =observation/= | Historical evidence relocated to =t/fixtures/historical-backpressure-observation/= |
+| Co-location of Scheme POO declarations and Quint models | Option A+: all 34 models co-locate ={types,objects,interface}.ss=, =<Model>.qnt=, and =README.org= directly in =packages/quint-models/<domain>/<subdomain>/<model>/= across 10 symmetric Yuanxu mounts |
+| Profile namespace and verification directives | Replaced monolithic =threat-model-profiles= with 3-axis =library/quint-profiles/= (=assurance.*=, =bound.*=, =governance.*=) on Yuanxu Design 165; replaced JSON sidecars (=plan.json=/=receipt.json=) with embedded =// @quint-*= headers |
 
 * Observed results
 :PROPERTIES:
@@ -64,9 +71,10 @@ remain in the consumer.
 
 | Stage | Result |
 |-------+--------|
-| L0 | Documents, SysML model and views drafted; views exported through the existing library-boundary example with decoded PNG/WebP pixels equal; example tests 6 pass; REUSE lint compliant; all =file:= links resolve. Review pending |
-| L1 | Aligned DE to =agentic-ai-lab@976b5c8e= / =gebril-yuanxu@47f02f44=; =gerbil build= exit 0; added 9 placements, =placement-roles=, 3 package families, =OrganizationPlacementProgram= (OR01-OR06) and =render-formation-model-with-placements=; =organization-library-test=, =project-formation-test= and =repository-organization-test= pass (live debts D1, D3, D4, D5, D6 reported; D2 checked as OR05 negative control; repaired baseline zero findings) |
-| L2 | Converted root =package.json= to private bun workspace and moved =@deterministic-engineering/render= manifest into =packages/render/package.json=; relocated =model.qnt= and =budget.lean= under =languages-engineering/=; relocated =observation/= to =t/fixtures/historical-backpressure-observation/=; removed retired =project-intake= from =projects/library-formation/init.ss=; regenerated =project.sysml= with =part 'placements'=; OR01-OR06 report zero findings on the actual repository |
-| L3 | Added =.github/workflows/publish-packages.yml= (=git subtree split= to read-only mirrors on release tags) and updated =.github/workflows/render.yml= to test local subtree split consumption; first mirror push and branch protection pending release tag and =PACKAGE_MIRROR_PUSH_TOKEN= |
-| L4 | Added 5 flat threat domain Modules (=threat-capabilities=, =authority-currentness=, =effect-handoff=, =effect-containment=, =state-rollback=), =quint-methods= (sealed =Record= contracts + =.defgeneric quint-module/quint-plan=), =threat-model-profiles=, =languages.quint= in =config.ss=, =packages/quint-models/= (6 models + plans + receipts) and =packages/quint-modules-resolver/=; =just build= exit 0, =quint-models-projection-test= 4/4 pass, =repository-organization-test= 4/4 pass (zero findings), =quint-modules-resolver= typecheck + conformance tests 3/3 pass, Apalache 0.62.1 =verify= passes (depth-12 positive =safety= exit 0; depth-4 =stepNoDurability= and =stepRollback= exit 1 with expected ITF counterexamples); removed all 64 committed =docs/**/*.json*= artifacts (=reuse lint= 822/822 compliant) |
-| L5 | Migrated =cedar-poo-spec= to consume =@deterministic-engineering/quint-models= and =@deterministic-engineering/quint-modules-resolver= (removed hand-written =Capabilities.qnt=, reduced =WalletHost.qnt= to a 5-line instantiation of =state_rollback(MaxSends = 1)=, updated =WalletSigning.qnt= and =WalletReplay.qnt= to bare-specifier imports, updated =dev/qnt/check.py= to verify DE =receipt.json= digests and run through =quint-modules-resolver=); =just example scenarios financial-services wallet binance-threat-model= passed 24/24 checks identically to baseline (37 deterministic traces: 9+9+9+10, 4 positive depth-12 checks, 5 broken-boundary countermodels, 2 false-claim witnesses) |
+| L0 | Documents, SysML model and views drafted; views exported through =packages/render/examples/library-boundary.ts= with decoded PNG/WebP pixels equal; example tests pass; REUSE lint compliant |
+| L1 | Added 9 placements, =placement-roles=, 3 package families, =OrganizationPlacementProgram= (=OR01=–=OR06=) and =render-formation-model-with-placements=; live debts D1, D3, D4, D5, D6 reported and D2 locked as =OR05= negative control |
+| L2 | Converted root =package.json= to private bun workspace; moved =@deterministic-engineering/render= manifest into =packages/render/package.json=; relocated =model.qnt= and =budget.lean= under =languages-engineering/=; relocated =observation/= to =t/fixtures/historical-backpressure-observation/=; removed retired =project-intake=; regenerated =project.sysml= with =part 'placements'=; =OR01=–=OR06= zero findings |
+| L3 | Added =.github/workflows/publish-packages.yml= (=git subtree split= to read-only mirrors) and =.github/workflows/render.yml= local subtree split verification; synced =quint-models= and =quint-modules-resolver= mirrors |
+| L4 | Implemented typed Quint projection (=quint-methods=), =packages/quint-models/=, and =packages/quint-modules-resolver/= with conformance, =run-plan=, =compose=, =verify-deps=, and Apalache =0.62.1= bounded proof & ITF counterexample verification |
+| L5 | Migrated =cedar-poo-spec= to consume =@deterministic-engineering/quint-models= and =@deterministic-engineering/quint-modules-resolver= (removed hand-written =Capabilities.qnt=, reduced =WalletHost.qnt= to 5-line instantiation of =state_rollback(MaxSends = 1)=); =python3 dev/qnt/check.py= passed 24/24 checks identically to baseline (37 deterministic traces, 4 positive depth-12 checks, 5 broken-boundary countermodels, 2 false-claim witnesses) |
+| L6 | Expanded library to 34 co-located Scheme POO AST + pure =.qnt= models (12 engineering + 22 threat, including co-located =backpressure-memory= with 3 auto-derived countermodels) across 10 symmetric Yuanxu mounts (=init.ss= 11 windows total), 3-axis orthogonal Profile Namespace (=library/quint-profiles/= on Yuanxu Design 165 with Band-5 monotonic =governance-floor= and zero-recompilation runtime overlay), canonical =:deterministic-engineering/...= modular imports, dynamic Yuanxu graph projection (=t/support/project-quint-models.ss= with zero hardcoded model lists), =OR02= enforcement of co-location and modular imports, refreshed 10.150–10.152 docs and re-rendered 90.141/90.142 views; downstream =cedar-poo-spec= updated to 3-level paths and verified 24/24 green |

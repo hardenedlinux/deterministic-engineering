@@ -112,8 +112,13 @@ function parseCliArgs(argv: string[]): ParsedArgs {
         process.exit(2);
     }
   }
-  if (command === 'test' && args.maxSamples === undefined) {
-    args.maxSamples = args.seed !== undefined ? 1 : 10000;
+  if (command === 'test') {
+    if (args.maxSamples === undefined) {
+      args.maxSamples = args.seed !== undefined ? 1 : 10000;
+    }
+    if (typeof args.seed === 'string') {
+      args.seed = BigInt(args.seed);
+    }
   }
   if (command === 'run') {
     args.init ??= 'init';

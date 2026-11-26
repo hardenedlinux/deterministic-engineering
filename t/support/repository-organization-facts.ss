@@ -80,6 +80,107 @@
              (cons (symbol->string (car item)) (caddr item))))
       (cdr yuanxu-form))))
 
+(def (collect-relative-import-strings form)
+  (cond
+   ((string? form)
+    (if (string-prefix? "../" form) (list form) '()))
+   ((pair? form)
+    (append (collect-relative-import-strings (car form))
+            (collect-relative-import-strings (cdr form))))
+   (else '())))
+
+(def (scan-scheme-relative-imports file-path rel-path placement)
+  (def forms
+    (call-with-input-file file-path
+      (lambda (port)
+        (let loop ((acc '()))
+          (let (form (read port))
+            (if (eof-object? form) (reverse acc) (loop (cons form acc))))))))
+  (def import-forms
+    (filter (lambda (f) (and (pair? f) (eq? (car f) 'import))) forms))
+  (def bad-specs
+    (apply append (map (lambda (f) (collect-relative-import-strings (cdr f))) import-forms)))
+  (map (lambda (spec)
+         (list rel-path
+               placement
+               "relative-cross-module-import"
+               (string-append "cross-module-relative-import:" spec)))
+       bad-specs))
+
+(def (capture-quint-models-forbidden repo-root)
+  (def qm-root (path-expand "packages/quint-models" repo-root))
+  (def findings '())
+  (def (record! row) (set! findings (cons row findings)))
+  (def (walk dir rel-dir)
+    (for-each
+      (lambda (entry)
+        (def full (path-expand entry dir))
+        (def rel (string-append rel-dir "/" entry))
+        (cond
+         ((eq? (file-type full) 'directory)
+          (walk full rel))
+         ((or (string-suffix? ".ts" entry)
+              (string-suffix? ".js" entry)
+              (equal? entry "plan.json")
+              (equal? entry "receipt.json"))
+          (record! (list rel
+                         "DistributionPackage"
+                         "tool-code-or-sidecar"
+                         (string-append "forbidden-in-quint-models:" entry))))
+         ((string-suffix? ".ss" entry)
+          (for-each record!
+                    (scan-scheme-relative-imports full rel "DistributionPackage")))))
+      (list-dir-sorted dir)))
+  (when (file-exists? qm-root)
+    (walk qm-root "packages/quint-models")
+    ;; Enforce complete Option A+ co-location on every 3-level <domain>/<subdomain>/<model>/ unit.
+    (for-each
+      (lambda (domain)
+        (def dom-dir (path-expand domain qm-root))
+        (when (and (file-exists? dom-dir) (eq? (file-type dom-dir) 'directory))
+          (for-each
+            (lambda (sub)
+              (def sub-dir (path-expand sub dom-dir))
+              (when (eq? (file-type sub-dir) 'directory)
+                (for-each
+                  (lambda (model)
+                    (def model-dir (path-expand model sub-dir))
+                    (when (eq? (file-type model-dir) 'directory)
+                      (let ((files (list-dir-sorted model-dir))
+                            (rel-model (string-append "packages/quint-models/" domain "/" sub "/" model)))
+                        (for-each
+                          (lambda (req)
+                            (unless (member req files)
+                              (record! (list rel-model
+                                             "DistributionPackage"
+                                             "incomplete-co-located-quint-unit"
+                                             (string-append "missing:" req)))))
+                          '("types.ss" "objects.ss" "interface.ss" "README.org"))
+                        (unless (find (cut string-suffix? ".qnt" <>) files)
+                          (record! (list rel-model
+                                         "DistributionPackage"
+                                         "incomplete-co-located-quint-unit"
+                                         "missing:*.qnt"))))))
+                  (list-dir-sorted sub-dir))))
+            (list-dir-sorted dom-dir))))
+      '("engineering" "threat")))
+  ;; Also enforce canonical modular imports inside core Quint library modules.
+  (for-each
+    (lambda (mod)
+      (def mod-dir (path-expand (string-append "library/" mod) repo-root))
+      (when (and (file-exists? mod-dir) (eq? (file-type mod-dir) 'directory))
+        (for-each
+          (lambda (fname)
+            (when (string-suffix? ".ss" fname)
+              (for-each record!
+                        (scan-scheme-relative-imports
+                          (path-expand fname mod-dir)
+                          (string-append "library/" mod "/" fname)
+                          "SchemeModule"))))
+          (list-dir-sorted mod-dir))))
+    '("quint-methods" "quint-profiles"))
+  (reverse findings))
+
 (def (capture-repository-organization-facts repo-root organization (sysml-override #f))
   (def placements (.get organization placements))
   (def placement-names (map car placements))
@@ -195,6 +296,7 @@
                         file-refs)))
           (parse-project-init-modules init-file))))
     (list-dir-sorted projects-dir))
+  (def quint-models-forbidden (capture-quint-models-forbidden repo-root))
   ;; Inspect project.sysml (or override) for rendered placements (OR06).
   (def sysml-text
     (or sysml-override
@@ -211,7 +313,7 @@
           (map (lambda (r) (list (car r) (caddr r))) (.get organization package-families)))
     (cons 'managed_path managed-paths)
     (cons 'path_placement path-placements)
-    (cons 'forbidden_item (append library-forbidden root-forbidden))
+    (cons 'forbidden_item (append library-forbidden root-forbidden quint-models-forbidden))
     (cons 'package_manifest pkg-manifests)
     (cons 'package_export_family pkg-export-families)
     (cons 'package_reference pkg-references)

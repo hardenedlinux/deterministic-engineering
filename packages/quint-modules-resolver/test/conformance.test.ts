@@ -92,7 +92,7 @@ test('all projected pure .qnt models in packages/quint-models pass run-plan with
   const qntFiles = walkFiles(modelsRoot, name => name.endsWith('.qnt'));
   const planFiles = walkFiles(modelsRoot, name => name === 'plan.json');
   const receipts = walkFiles(modelsRoot, name => name === 'receipt.json');
-  expect(qntFiles.length).toBeGreaterThanOrEqual(20);
+  expect(qntFiles.length).toBe(34);
   expect(planFiles.length).toBe(0);
   expect(receipts.length).toBe(0);
 
@@ -105,3 +105,30 @@ test('all projected pure .qnt models in packages/quint-models pass run-plan with
   expect(ver.exitCode).toBe(0);
   expect(ver.stdout.trim()).toBe('0.33.0');
 }, 300000);
+
+test('test command coerces --seed to BigInt for nondet oneOf() traces', () => {
+  const work = mkdtempSync(join(tmpdir(), 'qmr-seed-'));
+  try {
+    const specFile = join(work, 'nondet_seed.qnt');
+    writeFileSync(
+      specFile,
+      [
+        'module nondet_seed {',
+        '  var x: int',
+        '  action init = x\' = 0',
+        '  action pick = { nondet v = Set(1, 2, 3).oneOf() x\' = v }',
+        '  run pickTest = init.then(pick).then(all { assert(x >= 1), x\' = x })',
+        '}',
+        '',
+      ].join('\n'),
+    );
+    const res = run(
+      ['bun', cliPath, 'test', specFile, '--main=nondet_seed', '--max-samples=1', '--seed=7', '--backend=typescript'],
+      work,
+    );
+    expect(res.exitCode).toBe(0);
+    expect(res.stdout + res.stderr).toContain('1 passing');
+  } finally {
+    rmSync(work, {recursive: true, force: true});
+  }
+}, 30000);

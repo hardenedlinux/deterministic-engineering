@@ -5,7 +5,7 @@
 # Design projection; rendering is not verification or approval.
 vars: {d2-config: {data: {figure: |json
 {
-  "title": "Repository organization: placements and packages",
+  "title": "Repository organization: placements, multi-window Yuanxu, and packages",
   "purpose": "architecture",
   "kind": "library-architecture",
   "language": "en",
@@ -14,7 +14,7 @@ vars: {d2-config: {data: {figure: |json
   "questions": [
     {
       "ref": "placement",
-      "text": "Which placement owns each responsibility, and which rules keep packages within one family?",
+      "text": "Which placement owns each responsibility, and how do OR01-OR06 enforce co-located formal packages?",
       "focusRefs": [
         "authority",
         "declaration"
@@ -62,20 +62,20 @@ vars: {d2-config: {data: {figure: |json
 |}}}
 direction: down
 
-organization: "project-organization\nRoles + placements + package families\nScheme POO source of truth"
-profile: "library-formation-profiles\nThis repository's placement instances"
-tree: "Actual tree and package.json files\nCaptured input facts"
-rules: "project-formation rules OR01-OR06\nSingle owner / forbidden content\nPackage family / closure / coverage"
+organization: "project-organization\nRoles + 9 placements + 3 package families\nScheme POO source of truth"
+profile: "library-formation-profiles\nRepository placement instances"
+tree: "Live tree, package.json & Scheme imports\nCaptured facts (repository-organization-facts.ss)"
+rules: "project-formation rules OR01-OR06\nSingle owner / forbidden content / co-location\nModular imports / family / closure / coverage"
 model: "Rendered SysML v2\nproject.sysml + organization.sysml"
-findings: "Findings\nD1-D6 detected before repair"
-library: "SchemeModule\nlibrary/<module>/ flat, tags classify"
+findings: "Findings\nZero findings on live tree\nD1-D6 + co-location negative controls"
+library: "SchemeModule\nlibrary/<module>/ flat core\nquint-methods, quint-profiles, organization"
 assets: "LanguageAssets\nlanguages-engineering/<lang>/<domain>/<subject>/"
 packages: "DistributionPackage\npackages/<pkg>/ one family each"
 render: "render\npresentation"
-quintModels: "quint-models\nthreat/ concurrency/ ..."
-quintModulesResolver: "quint-modules-resolver\nresolver for official Quint"
-mirrors: "Read-only mirrors\nCI subtree split per prefix\nbun installs by commit"
-development: "DevelopmentVerification\nt/ actual tools and gold"
+quintModels: "quint-models (Option A+ co-located)\n10 Yuanxu mounts: engineering/* (12) + threat/* (22)\n{types,objects,interface}.ss + *.qnt + README.org"
+quintModulesResolver: "quint-modules-resolver\nPackage-aware resolver, compose & run-plan\nOfficial Quint 0.33.0 unmodified"
+mirrors: "Read-only mirrors\ngit subtree split per prefix\nbun installs by commit SHA"
+development: "DevelopmentVerification\nt/yanxu/<Mount>/<owner>/ (11 mounts, 44 owners)\nActual tools, Apalache & gold tests"
 organization -> profile -> rules
 tree -> rules
 rules -> model: "render"

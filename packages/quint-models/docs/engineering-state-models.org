@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
-#+TITLE: Engineering State Models: Concurrency, Parallelism, and GC
+#+TITLE: Engineering State Models: Storage, Consensus, Concurrency, Parallel, and GC
 #+LANGUAGE: en
 #+STARTUP: overview
 #+OPTIONS: toc:2 num:nil
@@ -9,80 +9,85 @@
 * Overview
 
 Beyond security and Zero Trust threat boundaries, Quint is equally effective for
-*systems-engineering determinism*: verifying finite-state protocols where
-interleavings, resource budgets, parallel scheduling, or memory reclamation can
-violate safety or liveness invariants.
+*systems-engineering determinism*: verifying finite-state protocols where crash
+reordering, distributed elections, concurrency interleavings, weak-memory
+parallel scheduling, or collector barriers can violate safety invariants.
 
-All engineering models live under =engineering/= and are partitioned into three
-sub-domains corresponding to distinct runtime failure classes:
+All 12 engineering models live as co-located Scheme POO AST + Quint Yuanxu units
+under =packages/quint-models/engineering/<subdomain>/<model>/=, partitioned into
+five formal subdomains corresponding to distinct runtime failure classes:
 
-| Sub-domain | Path | Failure Classes Addressed |
-|------------+------+---------------------------|
-| *Concurrency* | =engineering/concurrency/= | Backpressure exhaustion, memory-budget overrun, ownership leaks across async boundaries, cancellation races, non-idempotent retries |
-| *Parallel* | =engineering/parallel/= | Work-stealing deque ABA/lost-task races, barrier/phase desynchronization, epoch-based reclamation (EBR) premature free, parallel worker admission |
-| *GC* | =engineering/gc/= | Tri-color invariant violations (black-to-white pointer without barrier), lost objects during concurrent marking, mutator/collector safepoint deadlocks, write-barrier omission |
+| Subdomain | Yuanxu Mount | Path | Failure Classes Addressed |
+|-----------+--------------+------+---------------------------|
+| *Storage* | =Quint.Engineering.Storage= | =engineering/storage/= | WAL/ARIES page-cache write reordering, crash data loss, MVCC/SSI write skew (A5B) & lost =SIREAD= locks |
+| *Consensus* | =Quint.Engineering.Consensus= | =engineering/consensus/= | Raft §5.4.1 stale-log leader election & §5.4.2 Figure 8 indirect previous-term commit overwrite |
+| *Concurrency* | =Quint.Engineering.Concurrency= | =engineering/concurrency/= | Backpressure permit leak / overflow, structured-cancellation orphan tasks, stale lease zombie writes, duplicate saga effects |
+| *Parallel* | =Quint.Engineering.Parallel= | =engineering/parallel/= | Lock-free EBR premature reclamation, Chase-Lev work-stealing deque lost/duplicate pop, x86-TSO hazard-pointer store-buffer UAF |
+| *GC* | =Quint.Engineering.GC= | =engineering/gc/= | Concurrent tri-color missing write barrier (lost live object), mutator/collector safepoint handshake races |
 
-* 1. Concurrency (=engineering/concurrency/=)
+* 1. Storage (=engineering/storage/=)
 
-** Current Model: =backpressure-memory=
+- *=wal-crash-recovery=* (=WalCrashRecovery.qnt=): models ARIES write-ahead
+  logging with volatile page-cache writeback reordering and =fsync= ordering;
+  auto-derived countermodels drop WAL-before-page flush or commit =fsync=.
+- *=mvcc-ssi-write-skew=* (=MvccSsiWriteSkew.qnt=): models PostgreSQL/Cahill
+  Serializable Snapshot Isolation (SSI) with First-Committer-Wins, =SIREAD= lock
+  retention across commits, and read-time =rw=-antidependency detection
+  (=bound.extended-counterexample=).
 
-- Path: =engineering/concurrency/backpressure-memory/BackpressureOwners.qnt=
-- Source of truth: =languages-engineering/quint/concurrency/backpressure-memory/model.qnt=
-- Focus: explicit ownership of allocated memory budgets under bounded
-  backpressure, verifying that admission, handoff, and release preserve total
-  memory bounds without silent leaks or double-release.
+* 2. Consensus (=engineering/consensus/=)
 
-** Planned Concurrency Primitives
+- *=raft-leader-commitment=* (=RaftLeaderCommitment.qnt=): models Raft §5.4.1
+  up-to-date log election restriction and §5.4.2 Figure 8 current-term
+  commitment rule; dropping the current-term guard automatically synthesizes the
+  classic 8-step Figure 8 commit-overwrite counterexample
+  (=bound.extended-counterexample=).
 
-- Bounded MPSC/SPSC channel handoff with explicit cancellation and drain.
-- Structured concurrency supervision trees (parent cancellation waits for child
-  effect quiescence).
+* 3. Concurrency (=engineering/concurrency/=)
 
-* 2. Parallel (=engineering/parallel/=)
+- *=backpressure-memory=* (=BackpressureOwners.qnt=): co-located declarative
+  bounded ownership conservation across =queued=, =running=, =returned=, and
+  non-abortable =cleanup= buckets; auto-derived countermodels for early permit
+  release on cancellation, admission over-capacity, and queue overflow.
+- *=structured-cancellation=* (=StructuredCancellation.qnt=): parent-child
+  cancellation quiescence preventing fire-and-forget orphan effects.
+- *=lease-fencing-token=* (=LeaseFencingToken.qnt=): monotonic fencing token
+  guard neutralizing zombie writes from GC-paused lease holders.
+- *=saga-compensation-idempotency=* (=SagaCompensationIdempotency.qnt=):
+  compensating transactions, idempotency key deduplication under reply loss, and
+  durable cancellation tombstones blocking late in-flight retries.
 
-Parallel runtime primitives fail subtly when multiple workers mutate shared
-metadata concurrently without a global lock. Quint models in =engineering/parallel/=
-target:
+* 4. Parallel (=engineering/parallel/=)
 
-- *Work-stealing deques (Chase-Lev)*: verifying no task is lost or executed twice
-  under concurrent owner =push/pop= and thief =steal=, plus countermodels for
-  missing memory ordering / CAS failure handling.
-- *Epoch-Based Reclamation (EBR)*: verifying that no worker dereferences a
-  retired object while pinned in an active epoch, with a countermodel for
-  premature epoch advancement.
-- *Parallel Admission & Barriers*: bounded worker-pool admission derived from
-  observed host budgets, preventing oversubscription and barrier livelock.
+- *=epoch-reclamation=* (=EpochReclamation.qnt=): lock-free Epoch-Based
+  Reclamation (EBR) with safe grace-period calculation and premature-reclaim
+  countermodel.
+- *=work-stealing-deque=* (=WorkStealingDeque.qnt=): Chase-Lev lock-free
+  work-stealing deque with owner =push/pop= vs thief =steal= and missing
+  last-item CAS countermodel.
+- *=hazard-pointers-tso=* (=HazardPointersTso.qnt=): Michael Hazard Pointers
+  under explicit x86-TSO per-thread store-buffer reordering; omitting the
+  =mfence= before validation automatically synthesizes a 7-step emergent
+  Use-After-Free counterexample (=bound.deep-counterexample=).
 
-* 3. Garbage Collection (=engineering/gc/=)
+* 5. Garbage Collection (=engineering/gc/=)
 
-Concurrent and incremental garbage collectors are classic state-machine
-verification targets: a single missing write barrier or misordered handshake
-produces rare, non-deterministic use-after-free or heap corruption.
-
-Quint models in =engineering/gc/= target:
-
-- *Tri-Color Marking & Write Barriers*:
-  - State: object graph colors (=White=, =Grey=, =Black=), mutator pointer
-    writes, collector mark/sweep steps.
-  - Hardened invariants: *Strong Tri-Color Invariant* (no Black object points to
-    a White object — Dijkstra insertion barrier) or *Weak Tri-Color Invariant*
-    (any White object reachable from Black is also protected by a Grey path —
-    Yuasa SATB deletion barrier).
-  - Required countermodel: =stepNoWriteBarrier= (mutator stores a White pointer
-    into a Black object and drops the old reference → collector sweeps a live
-    object, violating =noLiveObjectSwept=).
-- *Mutator/Collector Safepoints & Handshakes*:
-  - Asymmetric safepoint polling and phase transitions (=Idle → Mark → Remark →
-    Sweep=) ensuring no mutator runs with stale barrier state across phase
-    boundaries.
+- *=tricolor-write-barrier=* (=TricolorWriteBarrier.qnt=): concurrent tri-color
+  marking with Dijkstra insertion write barrier; dropping the barrier yields a
+  swept-live-object counterexample.
+- *=safepoint-handshake=* (=SafepointHandshake.qnt=): asymmetric
+  mutator/collector safepoint handshake preventing stale barrier phases during
+  collection transitions.
 
 * Shared Verification Discipline
 
-Just like =threat/= models, every =engineering/= model must:
+Every =engineering/= model shares the exact same Yuanxu Design 165 contract as
+=threat/= models:
 
-1. Declare explicit abstraction limits (e.g. finite heap size, abstract memory
-   model rather than hardware TSO/ARMv8 weak memory unless explicitly modeled).
-2. Ship =plan.json= and =receipt.json= bound to =deSourceCommit=.
-3. Pair every safety invariant with at least one *broken-invariant countermodel*
-   (such as missing write barrier, missing CAS check, or dropped backpressure
-   guard) that fails at bounded depth with an inspectable ITF trace.
+1. Co-located Scheme POO AST (=types.ss=, =objects.ss=, =interface.ss=),
+   projected pure =.qnt= with embedded =// @quint-*= verification directives
+   (zero JSON sidecars), and auto-projected =README.org=.
+2. Emergent relational safety invariants (zero synthetic =unsafe= boolean flags)
+   backed by Band-5 monotonic =governance.mandatory-countermodels=.
+3. Every declared guard paired with an auto-derived weakened countermodel
+   refuted by Apalache =0.62.1= with an inspectable ITF predicate witness.

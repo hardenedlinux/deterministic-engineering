@@ -12,7 +12,8 @@ Conventional security engineering treats threat modeling as post-hoc prose
 (architecture diagrams, checklists, or audit spreadsheets) detached from
 executable state transitions. By the time code is written, subtle state-machine
 bugs — stale authorization tickets, missing durable acknowledgements, unverified
-clearing reports, or host-rollback replay — are already baked into control flow.
+clearing reports, host-rollback replay, zombie refresh tokens, or cross-tenant
+egress leaks — are already baked into control flow.
 
 *Threat-First Modeling* inverts this order:
 
@@ -20,34 +21,38 @@ clearing reports, or host-rollback replay — are already baked into control flo
    capabilities, trust boundaries, authority freshness, and irreversible external
    effects as a finite-state machine in Quint.
 2. *Separate reusable protocol primitives from scenario bindings*: keep generic
-   guards and state transitions in =@deterministic-engineering/quint-models/threat/*=,
+   guards and state transitions in
+   =@deterministic-engineering/quint-models/threat/<subdomain>/<model>/*=,
    and let downstream projects (such as =cedar-poo-spec=) bind concrete domain
    capability graphs, constants, and host observation bits.
-3. *Require both positive proofs and negative countermodels*: a safety invariant
-   that passes only because transitions are vacuous proves nothing. Every
-   security-critical guard must have a corresponding *weakened countermodel* that
-   drops that single guard and produces an explicit Apalache ITF counterexample.
+3. *Require both positive proofs and auto-derived negative countermodels*: a
+   safety invariant that passes only because transitions are vacuous proves
+   nothing. Every security-critical guard is wrapped in a typed Scheme AST
+   =(guard id expr)= node and paired with an *auto-derived weakened
+   countermodel* that drops that single guard and produces an explicit Apalache
+   ITF counterexample.
 
 * The Four-Layer Workflow
 
 #+begin_example
-Scheme POO Source (DE library/)
-   │  Declarative state, guards, invariants, weakened countermodel descendants
+Co-Located Scheme POO AST Unit (packages/quint-models/<domain>/<subdomain>/<model>/)
+   │  types.ss + objects.ss + interface.ss (Yuanxu Design 165 slots + 3-axis Profiles)
    ▼
-Quint Projection (library/quint-methods/)
-   │  Emits *.qnt + plan.json + receipt.json (SHA-256 bound to deSourceCommit)
+Pure Quint Projection (library/quint-methods/ + library/quint-profiles/)
+   │  Validates typed AST refs, derives countermodels by guard pruning,
+   │  emits self-contained *.qnt (embedded // @quint-* headers) + README.org
    ▼
 Subtree Distribution (@deterministic-engineering/quint-models)
    │  Consumed via bare specifiers with @deterministic-engineering/quint-modules-resolver
    ▼
-Downstream Scenario Gate (e.g. cedar-poo-spec)
-   │  Binds domain capability graph (e.g. Lean-exported POO rules) + scenario constants
+Downstream Scenario Gate & MBT Refinement (e.g. cedar-poo-spec / host implementations)
+   │  Binds domain capability graphs, constants, or AST overlays (compose)
    ▼
 Bounded Verification (Quint 0.33.0 + Apalache 0.62.1)
    ├─ Deterministic traces (seed=7, max-samples=1)
-   ├─ Positive bounded check (depth 12, exit 0)
-   ├─ Required broken-boundary countermodels (depth 4, exit 1 + ITF predicate check)
-   └─ Deliberate false-claim witnesses (depth 4, exit 1 + ITF predicate check)
+   ├─ Positive bounded check (profile bound.*, exit 0)
+   ├─ Required broken-boundary countermodels (exit 1 + ITF predicate check)
+   └─ Model-based testing (--mbt ITF trace replay against concrete implementations)
 #+end_example
 
 * Mandatory Discipline for Every Threat Model
@@ -55,49 +60,94 @@ Bounded Verification (Quint 0.33.0 + Apalache 0.62.1)
 ** 1. Explicit Limits and Trust Assumptions
 
 Every module must state what it *does* model (finite-state transitions, authority
-currency, durable-ack ordering, quarantine retention) and what it *does not*
-model (cryptography, real consensus, codec parsing, side channels, or Lean/Quint
-refinement unless separately proven).
+currency, durable-ack ordering, quarantine retention, revocation epochs) and what
+it *does not* model (cryptography, real consensus, codec parsing, side channels,
+or implementation refinement unless separately checked via =--mbt= ITF replay).
 
-** 2. Hardened Step vs. Weakened Countermodels
+** 2. Hardened Step vs. Auto-Derived Weakened Countermodels
 
 Never weaken the hardened =step= action to test failure modes. Instead:
 
-- Keep =step= strictly hardened and verify =safety= at positive depth (default 12,
-  expected exit =0=).
-- Define each countermodel as an explicit additive transition (derived from a
-  weakened POO descendant with a declared =dropped-guard=), e.g.
-  =stepNoDurability = any { step, noDurability }= or
-  =stepRollback = any { step, replayOldState }=.
-- Verify each countermodel at negative depth (default 4, expected exit =1=) and
-  assert on the generated Informal Trace Format (=*.itf.json=) that the exact
-  intended failure predicate holds (e.g. =unsafe == true and durable == false= or
-  =unsafe == true and sent == 2=).
+- Keep =step= strictly hardened and verify emergent relational =safety= at the
+  converged positive depth (default =12=, expected exit =0=).
+- Declare each countermodel with =derive-from-transition:= and =dropped-guard:=
+  so =library/quint-methods/ast.ss= structurally prunes that single guard from
+  the hardened transition and emits a separate weakened =step*= action (or, for
+  additive host-environment attacks like =state-rollback=, declares the explicit
+  host fault transition).
+- Verify each countermodel at bounded negative depth (default =6= or profile
+  override =bound.extended-counterexample= / =bound.deep-counterexample=,
+  expected exit =1=) and assert on the generated Informal Trace Format
+  (=*.itf.json=) that the exact intended failure predicate holds.
+- Enforce Band-5 monotonic =governance.mandatory-countermodels= via Yuanxu
+  Design 165 so no peer profile can silently disable countermodels on stateful
+  models.
 
 ** 3. False-Claim Witnesses
 
 Where operators or stakeholders might assume a control does more than it
 actually can (for example, assuming a local =pause= cancels an already-settled
-on-chain transaction or revokes an already-confirmed external delegation), encode
+external transaction or revokes an already-confirmed external delegation), encode
 those assumptions as explicit *false-claim invariants* (=falseCancelClaim=,
 =falseRevokeClaim=) and require Apalache to refute them with retained ITF traces.
 
-** 4. Receipt-Bound Reproducibility
+** 4. Self-Contained Pure =.qnt= Directives & Commit-Bound Provenance
 
-Downstream verification gates must:
-- Verify =receipt.json= SHA-256 digests for every consumed =quint-models= artifact
-  before running Quint/Apalache.
-- Pin Quint (=0.33.0=), Apalache (=0.62.1=), seed (=7=), positive/negative
-  depths, and per-command timeouts.
-- Record all input digests and command exits in a downstream evidence receipt
-  that is invalidated immediately if any run fails.
+Every projected =.qnt= embeds its verification contract directly in leading
+header directives (=// @quint-model=, =// @quint-version=, =// @apalache-version=,
+=// @verify=, =// @countermodel=, =// Limits:=) with zero JSON sidecars:
 
-* Current Threat-First Primitives
+- Downstream gates pin exact mirror commit SHAs in =package.json= + =bun.lock=,
+  verify all installed models via =quint-modules-resolver verify-deps=, and run
+  =quint-modules-resolver run-plan <Model.qnt> --verify=.
+- DE CI re-projects all 34 co-located models dynamically from =init.ss= and
+  refuses any drift between Scheme POO sources, =*.qnt=, and =README.org=.
+
+* Threat-First Model Catalog (22 Models across 5 Subdomains)
+
+** Identity (=threat/identity/=)
 
 | Module | Bare Specifier | Core Property | Required Countermodels |
 |--------+----------------+---------------+------------------------|
-| =threat_capabilities= | =.../threat/capabilities/Capabilities= | Monotonic capability acquisition & isolated-root unreachability | — (pure predicate) |
-| =authority_currentness= | =.../threat/authority-currentness/AuthorityCurrentness= | Explicit freshness, revocation, pause, payload-binding & epoch currency | — (pure predicates) |
-| =effect_handoff= | =.../threat/effect-handoff/EffectHandoff= | Prepare → durable-commit → single emit (=sent <= MaxSends=) | =stepNoDurability= (dropped =durable-ack=) |
-| =effect_containment= | =.../threat/effect-containment/EffectContainment= | Pause retention, quarantine under delegation, verified clearing witness | =stepStaleRecovery=, =stepFalseClear= |
-| =state_rollback= | =.../threat/state-rollback/StateRollback= | Monotonic storage against host snapshot rollback | =stepNoDurability=, =stepRollback= |
+| =oauth_token_lifecycle= | =.../threat/identity/oauth-token-lifecycle/OAuthTokenLifecycle= | OAuth 2.1 PKCE/nonce single-use, refresh-epoch fence & scope monotonicity | =stepNoPkce=, =stepStaleRefresh=, =stepScopeEscalation= |
+| =oauth_revocation_recovery= | =.../threat/identity/oauth-revocation-recovery/OAuthRevocationRecovery= | PAR request binding & crash-safe durable revocation recovery | =stepNoParBind=, =stepCrashDropsRevoke= |
+| =oidc_federation= | =.../threat/identity/oidc-federation/OidcFederation= | OIDC multi-=aud= =azp= binding, UserInfo =sub= equality & JWKS cooldown | =stepNoAzpCheck=, =stepNoSubMatch=, =stepNoJwksCooldown= |
+| =device_authorization= | =.../threat/identity/device-authorization/DeviceAuthorization= | RFC 8628 device-code cancel/expiry fence & ticket-bound Bearer token | =stepStaleDevicePoll=, =stepCrossAccountBearer= |
+| =webauthn_passkey_ceremony= | =.../threat/identity/webauthn-passkey-ceremony/WebAuthnPasskeyCeremony= | RP-ID origin binding, single-use challenge & monotonic =signCount= clone detection | =stepNoOriginBind=, =stepChallengeReplay=, =stepNoSignCountCheck= |
+| =workload_identity_rotation= | =.../threat/identity/workload-identity-rotation/WorkloadIdentityRotation= | Short-lived SPIFFE/SVID rotation overlap & immediate revocation | =stepStaleSvid=, =stepRevokedSvidAccepted= |
+
+** Zero Trust (=threat/zero-trust/=)
+
+| Module | Bare Specifier | Core Property | Required Countermodels |
+|--------+----------------+---------------+------------------------|
+| =authority_currentness= | =.../threat/zero-trust/authority-currentness/AuthorityCurrentness= | Explicit freshness, revocation, pause, payload-binding & epoch currency | — (stateless reference predicates) |
+| =zero_trust_pep_pdp= | =.../threat/zero-trust/zero-trust-pep-pdp/ZeroTrustPepPdp= | PEP/PDP split under concurrent policy-epoch drift & subject revocation | =stepStalePolicyEpoch=, =stepRevokedPepEnforce= |
+| =microsegmentation_egress= | =.../threat/zero-trust/microsegmentation-egress/MicrosegmentationEgress= | Cross-tenant egress mediation, sidecar attestation & quarantine | =stepUnattestedSidecar=, =stepQuarantineBypass= |
+| =governance_sod= | =.../threat/zero-trust/governance-sod/GovernanceSod= | Separation of Duties (distinct approver) & =forbid=-veto precedence | =stepSelfApprove=, =stepForbidBypass= |
+| =data_lineage_disclosure= | =.../threat/zero-trust/data-lineage-disclosure/DataLineageDisclosure= | Cumulative disclosure =k=-anonymity floor & privacy budget cap | =stepKAnonViolation=, =stepBudgetOverrun= |
+
+** Protocol (=threat/protocol/=)
+
+| Module | Bare Specifier | Core Property | Required Countermodels |
+|--------+----------------+---------------+------------------------|
+| =dpop_sender_constrain= | =.../threat/protocol/dpop-sender-constrain/DpopSenderConstrain= | RFC 9449 DPoP sender-constrained tokens & single-use =jti= anti-replay | =stepBearerFallback=, =stepJtiReplay= |
+| =macaroon_delegation_chain= | =.../threat/protocol/macaroon-delegation-chain/MacaroonDelegationChain= | Multi-hop caveat monotonic attenuation & chained HMAC integrity | =stepCaveatWidening=, =stepForgedChain= |
+| =tls13_0rtt_forward_secrecy= | =.../threat/protocol/tls13-0rtt-forward-secrecy/Tls13ZeroRttForwardSecrecy= | TLS 1.3 0-RTT non-idempotent exclusion, strike-register sync & ECDHE PFS | =stepNonIdempotent0Rtt=, =stepUnsyncedStrikeReplay=, =stepStaticPskNoPfs= |
+
+** Supply Chain (=threat/supply-chain/=)
+
+| Module | Bare Specifier | Core Property | Required Countermodels |
+|--------+----------------+---------------+------------------------|
+| =supply_chain_tuf= | =.../threat/supply-chain/supply-chain-tuf/SupplyChainTuf= | TUF / Sigstore / in-toto rollback, freeze & mix-and-match defense | =stepVersionRollback=, =stepFrozenMetadata=, =stepMixAndMatch= |
+| =transparency_log_gossip= | =.../threat/supply-chain/transparency-log-gossip/TransparencyLogGossip= | RFC 9162 / Rekor inclusion & STH consistency gossip against split-view | =stepInclusionOnlySplitView=, =stepUnverifiedStaleSth= |
+
+** Execution (=threat/execution/=)
+
+| Module | Bare Specifier | Core Property | Required Countermodels |
+|--------+----------------+---------------+------------------------|
+| =threat_capabilities= | =.../threat/execution/capabilities/Capabilities= | Monotonic capability acquisition & isolated-root unreachability | — (stateless reference predicate) |
+| =effect_handoff= | =.../threat/execution/effect-handoff/EffectHandoff= | Prepare → durable-commit → single emit (=sent <= MaxSends=) | =stepNoDurability= |
+| =effect_containment= | =.../threat/execution/effect-containment/EffectContainment= | Pause retention, quarantine under delegation & verified clearing witness | =stepStaleRecovery=, =stepFalseClear= |
+| =state_rollback= | =.../threat/execution/state-rollback/StateRollback= | Monotonic storage against host snapshot rollback | =stepNoDurability=, =stepRollback= |
+| =agent_ifc_capability= | =.../threat/execution/agent-ifc-capability/AgentIfcCapability= | AI Agent control/data segregation & capability IFC (CaMeL / FIDES) | =stepTaintedControlFlow=, =stepUncheckedExfil= |
+| =wasm_sandbox_confinement= | =.../threat/execution/wasm-sandbox-confinement/WasmSandboxConfinement= | Wasm linear-memory bounds, WASI OCap handles & =openat2= root confinement | =stepOobLinearMemory=, =stepPathTraversalEscape= |

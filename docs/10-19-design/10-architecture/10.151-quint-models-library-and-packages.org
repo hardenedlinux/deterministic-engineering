@@ -10,166 +10,172 @@
 * Decision
 :PROPERTIES:
 :CUSTOM_ID: qnt151-decision
-:STATUS: design-only-not-implemented
+:STATUS: implemented-verified
 :END:
 
-Reusable finite state models, starting with threat models, are declared once as
-Scheme POO Modules and projected to Quint. Downstream repositories install the
-projected models and a package-aware resolver through bun. Quint itself is used
+Reusable finite-state threat and systems-engineering models are declared once as
+co-located Gerbil Scheme POO AST modules mounted via Yuanxu's multi-window
+=init.ss= directly inside =packages/quint-models/<domain>/<subdomain>/<model>/=
+and projected into self-contained pure =.qnt= files and =README.org= documents.
+Downstream repositories install the projected model mirror and package-aware
+resolver through bun. Official =@informalsystems/quint= (=0.33.0=) is used
 unmodified.
 
 | Concern | Owner |
 |---------+-------|
-| Model semantics: state, guards, transitions, safety, traces, weakened countermodels | Domain =SchemeModule= leaves |
-| Quint text projection and check plan | =quint-methods= Method Module, pure |
-| Reusable compositions, depths, seeds, required counterexamples | =threat-model-profiles= Profile Module |
-| User selection | =programs.deterministic-engineering.languages.quint= in [[file:../../../config.ss][config.ss]] |
-| Projected models | =@deterministic-engineering/quint-models= under =packages/quint-models/= |
-| Package-aware import resolution | =@deterministic-engineering/quint-modules-resolver= under =packages/quint-modules-resolver/= |
-| Actual quint / Apalache execution and evidence | =t/= and consuming hosts |
+| Model semantics: typed AST state, guards, transitions, emergent safety, traces, auto-derived countermodels | Co-located Yuanxu units under =packages/quint-models/<domain>/<subdomain>/<model>/{types,objects,interface}.ss= |
+| Typed AST validator, automatic guard-pruning countermodel derivation, Quint & README projection, sealed plan contracts | =library/quint-methods/= (=ast.ss=, =types.ss=, =objects.ss=, =methods.ss=), pure |
+| 3-axis orthogonal Profile Namespace (=assurance.*=, =bound.*=, =governance.*=) & Yuanxu Design 165 convergence | =library/quint-profiles/= (=types.ss=, =objects.ss=, =interface.ss=, =profile-catalog:=), pure |
+| User selection | =programs.deterministic-engineering.languages.quint= in [[file:../../../config.ss][config.ss]] (default ='assurance.bounded-proof=) |
+| Projected models & docs | =@deterministic-engineering/quint-models= under =packages/quint-models/= (34 pure =.qnt= models across 10 subdomains, zero JSON sidecars) |
+| Package-aware import resolution, AST overlay composition, plan execution & ITF verification | =@deterministic-engineering/quint-modules-resolver= under =packages/quint-modules-resolver/= |
+| Dynamic projection & qualification execution | =t/support/project-quint-models.ss=, =t/yanxu/<Mount>/<owner>/qualification-test.ss=, and consuming hosts |
 
-Placements follow [[file:10.150-repository-organization-and-package-taxonomy.org][10.150]]. The Library boundary of [[file:10.148-flat-declarative-library-boundary.org][10.148]] holds: no Module
-launches a process, writes a file or issues a result. The configuration interface
-of [[file:10.149-unified-language-engineering-configuration.org][10.149]] is extended, not replaced. Quint remains a method in the sense of
-[[file:10.25-rust-sysml-quint-lean-evidence-integration.org][10.25]]: finite safety, not unbounded liveness. The paired view is
+Placements follow [[file:10.150-repository-organization-and-package-taxonomy.org][10.150]]. The Library boundary of [[file:10.148-flat-declarative-library-boundary.org][10.148]] holds: neither
+=library/quint-methods/= nor =library/quint-profiles/= nor any co-located model
+unit launches a process, writes a file, or issues an execution verdict. All
+imports across modules use canonical Gerbil modular paths
+(=:deterministic-engineering/...=), never cross-module relative =../= paths.
+The paired view is
 [[file:../../90-99-views/90-architecture-views/90.142-quint-models-library-and-packages.d2][90.142 D2]].
 
-* Why Scheme projection rather than Quint modules alone
+* Why Typed Scheme POO AST Projection Rather Than Quint Modules Alone
 :PROPERTIES:
 :CUSTOM_ID: qnt151-why
 :END:
 
 Quint instantiation substitutes =const= values only. It cannot inherit a module,
-drop a guard, refine an action or strengthen a safety predicate. Those are POO
-slot operations. Specialization and weakening therefore happen during projection;
-Quint receives an expanded ordinary module.
+structurally prune a single guard to synthesize a weakened countermodel, refine
+an action, or enforce a monotonic governance floor across a fleet of models.
+Those are POO + typed AST + Yuanxu Design 165 operations:
 
-A countermodel is a declared descendant that removes one guard. Its ancestry is
-queryable, so "this unsafe trace exists because durable acknowledgement was
-removed" is a property of the declaration, not of a hand-written extra action.
+1. *Typed S-expression AST DSL (=library/quint-methods/ast.ss=)*: every stateful
+   model encodes its guards, transitions, emergent safety predicate, and traces
+   as typed Scheme AST forms validated against declared state fields before any
+   =.qnt= text is emitted.
+2. *Automatic guard-pruning countermodel derivation*: every critical guard is
+   marked with =(guard <id> <expr> [fallback])=. Declaring
+   =derive-from-transition:= and =dropped-guard:= automatically rewrites the
+   hardened transition AST to drop that single guard and emits a weakened
+   =step*= countermodel action alongside its =// @countermodel= ITF assertion.
+3. *Emergent relational invariants*: safety predicates assert direct relational
+   properties over protocol state (for example, partition conservation,
+   monotonic storage, non-disjoint ownership exclusion, or capability
+   isolation) rather than synthetic =unsafe= boolean flags.
 
-* Domain Modules
+* Multi-Window 10-Subdomain Co-Located Architecture (34 Models)
 :PROPERTIES:
 :CUSTOM_ID: qnt151-domains
 :END:
 
-Each leaf is flat under =library/= with =tags: '(engineering domain threat)=.
+Root [[file:../../../init.ss][init.ss]] mounts =Library= plus 10 symmetric subdomain windows (5
+=Quint.Engineering.*= + 5 =Quint.Threat.*=), each using =mode: auto= with
+orthogonal dotted tags (=quint=, =quint.model=, =quint.domain.*=,
+=quint.property.*=, =quint.failure.*=):
 
-| Module | Meaning | Requires |
-|--------+---------+----------|
-| =threat-capabilities= | Finite attacker acquisition graph: initial, isolated, goals, rules | — |
-| =authority-currentness= | Freshness, credential validity, writer epoch, pause | — |
-| =effect-handoff= | Prepare, durable commit and emission at most once; unknown outcomes retained | =authority-currentness= |
-| =effect-containment= | Pause, revocation, pending clear and observed clearance witness | =authority-currentness= |
-| =state-rollback= | Old-snapshot replay and rollback | =effect-handoff= |
+| Domain | Subdomain Mount | Path | Models |
+|--------+-----------------+------+--------|
+| Engineering (12) | =Quint.Engineering.Storage= | =engineering/storage/= | =wal-crash-recovery=, =mvcc-ssi-write-skew= |
+| Engineering | =Quint.Engineering.Consensus= | =engineering/consensus/= | =raft-leader-commitment= |
+| Engineering | =Quint.Engineering.Concurrency= | =engineering/concurrency/= | =backpressure-memory=, =structured-cancellation=, =lease-fencing-token=, =saga-compensation-idempotency= |
+| Engineering | =Quint.Engineering.Parallel= | =engineering/parallel/= | =epoch-reclamation=, =work-stealing-deque=, =hazard-pointers-tso= |
+| Engineering | =Quint.Engineering.GC= | =engineering/gc/= | =tricolor-write-barrier=, =safepoint-handshake= |
+| Threat (22) | =Quint.Threat.Identity= | =threat/identity/= | =oauth-token-lifecycle=, =oauth-revocation-recovery=, =oidc-federation=, =device-authorization=, =webauthn-passkey-ceremony=, =workload-identity-rotation= |
+| Threat | =Quint.Threat.ZeroTrust= | =threat/zero-trust/= | =authority-currentness= (stateless), =zero-trust-pep-pdp=, =microsegmentation-egress=, =governance-sod=, =data-lineage-disclosure= |
+| Threat | =Quint.Threat.Protocol= | =threat/protocol/= | =dpop-sender-constrain=, =macaroon-delegation-chain=, =tls13-0rtt-forward-secrecy= |
+| Threat | =Quint.Threat.SupplyChain= | =threat/supply-chain/= | =supply-chain-tuf=, =transparency-log-gossip= |
+| Threat | =Quint.Threat.Execution= | =threat/execution/= | =capabilities= (stateless), =effect-handoff=, =effect-containment=, =state-rollback=, =agent-ifc-capability=, =wasm-sandbox-confinement= |
 
-Every domain prototype publishes the same slots.
+Every model directory contains the exact same five co-located files:
+=types.ss=, =objects.ss=, =interface.ss=, =<PascalModel>.qnt=, and =README.org=.
 
-| Slot | Meaning | Refinement |
-|------+---------+------------|
-| =state= | Finite state vocabulary and domains | Descendants append fields |
-| =guards= | Action preconditions | Descendants append; countermodels remove exactly one |
-| =transitions= | Guarded actions | Append or refine |
-| =safety= | Safety predicate | Strengthen only |
-| =traces= | Deterministic positive and negative traces | Append |
-| =countermodels= | Weakened descendants with the required unsafe witness | Append |
-| =parameters= | Values left to the consumer, projected as Quint =const= | Declared, not defaulted |
-| =limits= | What the model does not claim | Projected as comments |
+* 3-Axis Orthogonal Profile Namespace (=library/quint-profiles/=)
+:PROPERTIES:
+:CUSTOM_ID: qnt151-profiles
+:END:
 
-* Projection and plan
+Built on Yuanxu Design 165 (=profile-catalog:= auto-discovery, =by-tag=
+targeting, Band-5 monotonic =governance-floor= meet lattice, and
+zero-recompilation runtime overlays), =library/quint-profiles/= replaces the
+earlier monolithic =threat-model-profiles= with three strictly orthogonal axes:
+
+| Axis | Stage | Profiles | Semantics |
+|------+-------+----------+-----------|
+| =assurance.*= | =runtime= | =assurance.syntax-only=, =assurance.deterministic-trace=, =assurance.bounded-proof=, =assurance.mbt-oracle= | *HOW* thoroughly to check; switchable cold via =apply-quint-runtime-profile= without recompiling |
+| =bound.*= | =assembly= | =bound.fast=, =bound.standard=, =bound.compact=, =bound.extended-counterexample=, =bound.deep-counterexample= | *WHAT* finite state-diameter envelope (=verify-depth= / =countermodel-depth=); immutable at runtime |
+| =governance.*= | =assembly= (Band 5 meet) | =governance.mandatory-countermodels=, =governance.zero-trust-assurance= | *NON-NEGOTIABLE* monotonic =(or a b)= floor on =quint.property.stateful=; no peer profile can weaken =require-countermodels?= back to =#f= |
+
+* Projection, Plan & Configuration
 :PROPERTIES:
 :CUSTOM_ID: qnt151-methods
 :END:
 
-=quint-methods= mirrors the role of [[file:../../../library/source-contracts/methods.ss][source-contracts]]:
+=library/quint-methods/= exports three pure CLOS generics dispatched on
+prototype ancestry (=ThreatModel.=):
 
-- =(.defgeneric quint-module (model))= returns Quint source text, dispatched on
-  the selected prototype ancestry. Unknown prototypes fail dispatch.
-- =(.defgeneric quint-plan (model profile policy))= returns symbolic steps:
-  typecheck, deterministic tests with seed, bounded verification depth, and each
-  required counterexample with expected exit and ITF predicate.
+- =(.defgeneric quint-module (model))= validates =QuintDomainModelType= + AST
+  state references and emits self-contained pure =.qnt= text with embedded
+  =// @quint-model=, =// @quint-version=, =// @apalache-version=, =// @verify=,
+  =// @countermodel=, and =// Limits:= directives.
+- =(.defgeneric quint-model-readme (model))= emits each model's =README.org=
+  directly from the POO metadata, invariant AST, countermodel table, and paper
+  references.
+- =(.defgeneric quint-plan (model profile policy))= validates the sealed
+  =QuintProfileType= + =QuintPolicyType= contract and returns a sealed
+  =QuintPlanType= object; stateful models with =require-countermodels?: #t= and
+  zero countermodels are rejected.
 
-Neither generic writes files or launches processes. Changing a Profile depth,
-seed or required counterexample changes the plan identity, so an older result
-cannot support the changed plan.
-
-* Configuration
-:PROPERTIES:
-:CUSTOM_ID: qnt151-config
-:END:
+User selection in [[file:../../../config.ss][config.ss]]:
 
 #+begin_src scheme
 languages:
 (.o
-  c:   (.o enable: #f settings: (.o profile: 'capacity-body timeout: 45))
-  cpp: (.o enable: #f settings: (.o profile: 'lifetime-body timeout: 45))
-  quint:
-  (.o enable: #f
-      settings: (.o profile: 'exact-effect-host timeout: 120)))
+  c:     (.o enable: #f settings: (.o profile: 'capacity-body timeout: 45))
+  cpp:   (.o enable: #f settings: (.o profile: 'lifetime-body timeout: 45))
+  quint: (.o enable: #f settings: (.o profile: 'assurance.bounded-proof timeout: 120)))
 #+end_src
 
-Depth, seed and required counterexamples belong to the Profile and cannot be
-removed through Settings, matching the protected C/C++ safety flags. Unknown
-fields and out-of-range timeouts refuse through the sealed Config Type.
-
-* Packages
+* Packages and Tooling
 :PROPERTIES:
 :CUSTOM_ID: qnt151-packages
 :END:
 
-** quint-models: content organized by domain
+** =@deterministic-engineering/quint-models=
 :PROPERTIES:
 :CUSTOM_ID: qnt151-quint-models
 :END:
 
-#+begin_example
-packages/quint-models/
-  package.json                      exports { "./*": "./*" }
-  threat/
-    capabilities/Capabilities.qnt   plan.json  receipt.json
-    authority-currentness/AuthorityCurrentness.qnt
-    effect-handoff/EffectHandoff.qnt
-    effect-containment/EffectContainment.qnt
-    state-rollback/StateRollback.qnt
-  concurrency/
-    backpressure-memory/BackpressureOwners.qnt
-#+end_example
+Distributed via =git subtree split --prefix=packages/quint-models=. Every
+model ships a self-contained pure =.qnt= file with embedded header directives
+and zero redundant =plan.json= / =receipt.json= sidecars; exact mirror commit
+SHAs in downstream =package.json= + =bun.lock= provide immutable content
+provenance, while DE's dynamic Yuanxu projection script
+([[file:../../../t/support/project-quint-models.ss][project-quint-models.ss]]) and per-model qualification suites verify zero drift
+between Scheme POO sources, =.qnt=, and =README.org=.
 
-Threat models are one domain directory. =concurrency/= receives the backpressure
-model now misplaced in a Scheme Module (10.150 D3). =receipt.json= records the
-DE source commit, source =.ss= digests, artifact digests and the Quint version.
-It records no execution verdict. DE CI reprojects in the same commit and refuses
-any difference.
-
-** quint-modules-resolver: resolution for official Quint
+** =@deterministic-engineering/quint-modules-resolver=
 :PROPERTIES:
 :CUSTOM_ID: qnt151-quint-modules-resolver
 :END:
 
-Quint 0.33.0 resolves an import by joining the importer directory with the
-specifier plus =.qnt=. It has no package lookup. The resolver is an interface
-={lookupPath, load, stempath}=; =parsePhase1fromText= through =parsePhase4toposort=
-and =fileSourceResolver= are public exports, and later stages consume only the
-previous stage value.
+Wraps official =@informalsystems/quint= (=0.33.0=, exact peer dependency,
+unmodified) with package-aware bare-specifier resolution plus five engineering
+workflows:
 
-=quint-modules-resolver= replaces resolution only. Relative and absolute specifiers go to
-the native resolver. Bare specifiers resolve by Node rules, including
-=node_modules= lookup and package =exports=. Typecheck, test, compile and verify
-are the official implementations. Quint is a peer dependency pinned exactly; it
-is not forked, patched or redistributed.
+- =typecheck=, =test=, =run= (including =--mbt= ITF trace generation), and
+  =verify= (Apalache =0.62.1=) with Node-style =exports= resolution.
+- =run-plan <Model.qnt> [--verify]=: parses embedded =// @verify= and
+  =// @countermodel= directives, runs deterministic traces + bounded Apalache
+  safety + required countermodel refutations, and evaluates pure zero-=eval=
+  ITF predicates ([[file:../../../packages/quint-modules-resolver/src/itf.ts][itf.ts]]).
+- =compose <base> <overlay> --out <Derived.qnt>=: performs structural Quint AST
+  overlay composition (differential-tested against DE's =gerbil-parser= SpanEdit
+  composer on live Apalache proofs).
+- =list= and =verify-deps=: discovers and verifies all installed
+  =@deterministic-engineering/quint-models= modules against the pinned Quint
+  version.
 
-| Spike (scratch, Quint 0.33.0) | Result |
-|-------------------------------+--------|
-| Typecheck: bare specifier, relative import inside the package, parameterized instance | Exit 0 |
-| Test with seed 7 | 1 passing |
-| Native =quint typecheck= on the same file | QNT013 could not load |
-
-The spike is design evidence only. Two premises remain: the stage functions
-live in =dist/src/cliCommands.js=, outside the public index, so a conformance test
-must show identical native and resolver results on relative-only models before
-any Quint upgrade; and the Apalache =verify= path has not been exercised.
-
-* Downstream consumption
+* Downstream Consumption
 :PROPERTIES:
 :CUSTOM_ID: qnt151-downstream
 :END:
@@ -180,25 +186,25 @@ any Quint upgrade; and the Apalache =verify= path has not been exercised.
 "@informalsystems/quint": "0.33.0"
 #+end_src
 
-#+begin_src text
+#+begin_src quint
 module wallet_host_case {
-  import effect_handoff(MaxSends = 1).*
-    from "@deterministic-engineering/quint-models/threat/effect-handoff/EffectHandoff"
+  import state_rollback(MaxSends = 1).*
+    from "@deterministic-engineering/quint-models/threat/execution/state-rollback/StateRollback"
 }
 #+end_src
 
-A consumer with its own source of truth, such as a Lean POO object, supplies
-only =parameters=. Its host replaces =quint= with =quint-modules-resolver=, executes the
-package =plan.json=, verifies =receipt.json= digests against installed bytes and
-keeps its own Quint/Apalache pins and deadlines. Gerbil and Lean POO meet only
-through Quint =const= values; neither shares the other's object implementation.
+Downstream consumers supply domain constants, capability graphs, or AST
+overlays, execute =quint-modules-resolver verify-deps= / =typecheck= / =test= /
+=verify= / =run --mbt=, and replay generated ITF traces against concrete
+implementations without sharing DE's Scheme runtime.
 
 * Limits
 :PROPERTIES:
 :CUSTOM_ID: qnt151-limits
 :END:
 
-No Module, package, plan or resolver is implemented by this item. Projected
-models are finite abstractions; trusted bits summarize real verifiers, storage
-and networks. No Lean/Quint refinement theorem, cryptographic property, physical
-atomicity or deployed Host behavior is established.
+Projected models are finite abstractions; trusted bits summarize real
+verifiers, storage, and networks. Bounded model checking and MBT ITF trace
+replay establish bounded conformance over modeled state transitions — not
+unbounded liveness, cryptographic proofs, physical storage atomicity, or full
+compiler/runtime refinement.

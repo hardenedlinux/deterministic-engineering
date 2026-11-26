@@ -5,7 +5,7 @@
 # Design projection; rendering is not verification or approval.
 vars: {d2-config: {data: {figure: |json
 {
-  "title": "Quint models: declaration, projection and consumption",
+  "title": "Quint models: co-located AST, 3-axis profiles, projection and consumption",
   "purpose": "architecture",
   "kind": "library-architecture",
   "language": "en",
@@ -14,13 +14,14 @@ vars: {d2-config: {data: {figure: |json
   "questions": [
     {
       "ref": "projection",
-      "text": "How do Scheme domain declarations become installable Quint models checked by official Quint downstream?",
+      "text": "How do 34 co-located Scheme POO AST models converge via 3-axis Yuanxu profiles into pure Quint models verified downstream?",
       "focusRefs": [
         "authority",
         "declaration"
       ],
       "subjectRefs": [
         "domains",
+        "profiles",
         "methods",
         "quintModels",
         "quintModulesResolver"
@@ -31,9 +32,10 @@ vars: {d2-config: {data: {figure: |json
     "authority": "docs/10-19-design/10-architecture/10.151-quint-models-library-and-packages.org",
     "declaration": "docs/90-99-views/90-architecture-views/90.142-quint-models-library-and-packages.d2",
     "organization": "docs/10-19-design/10-architecture/10.150-repository-organization-and-package-taxonomy.org",
-    "method-pattern": "library/source-contracts/methods.ss",
+    "methods": "library/quint-methods/methods.ss",
+    "profiles": "library/quint-profiles/objects.ss",
     "config": "config.ss",
-    "existing-model": "languages-engineering/quint/concurrency/backpressure-memory/model.qnt",
+    "init": "init.ss",
     "evidence-integration": "docs/10-19-design/10-architecture/10.25-rust-sysml-quint-lean-evidence-integration.org"
   },
   "basis": {
@@ -60,19 +62,19 @@ vars: {d2-config: {data: {figure: |json
 |}}}
 direction: down
 
-domains: "Domain Modules\nthreat-capabilities / authority-currentness\neffect-handoff / effect-containment / state-rollback\nCountermodel = weakened descendant"
-profiles: "threat-model-profiles\nComposition, depth, seed, required counterexamples"
-config: "config.ss\nlanguages.quint enable + settings"
-methods: "quint-methods\nPure quint-module and quint-plan\nDispatch on prototype ancestry"
-quintModels: "packages/quint-models\nthreat/ concurrency/\nX.qnt + plan.json + receipt.json"
-quintModulesResolver: "packages/quint-modules-resolver\nPackage-aware resolver\nOfficial Quint stages unchanged"
-quint: "@informalsystems/quint 0.33.0\nPeer dependency, unmodified"
-development: "t/\nActual quint / Apalache, ITF checks"
-consumer: "Consuming host\nSupplies parameters, executes plan.json\nVerifies receipt digests"
+domains: "34 Co-Located Scheme POO AST Units\npackages/quint-models/<domain>/<subdomain>/<model>/\n5 Engineering subdomains (12) + 5 Threat subdomains (22)\nEmergent invariants + guard-pruned countermodels"
+profiles: "library/quint-profiles (Yuanxu Design 165)\nassurance.* (runtime) | bound.* (assembly)\ngovernance.* (Band-5 monotonic meet floor)"
+config: "config.ss + init.ss (11 Yuanxu mounts)\nlanguages.quint profile: 'assurance.bounded-proof"
+methods: "library/quint-methods (Pure)\nast.ss validator + guard pruning\nquint-module / quint-plan / quint-model-readme"
+quintModels: "packages/quint-models (git subtree mirror)\nSelf-contained pure *.qnt (// @quint-* headers)\nAuto-projected README.org (zero JSON sidecars)"
+quintModulesResolver: "packages/quint-modules-resolver\nPackage resolver, AST compose, run-plan, verify-deps\nPure zero-eval ITF predicate verifier"
+quint: "@informalsystems/quint 0.33.0 + Apalache 0.62.1\nPeer dependency, unmodified"
+development: "t/yanxu/<Mount>/<owner>/ + t/support/\nDynamic Yuanxu projection, 38 suites, differential compose"
+consumer: "Consuming host (e.g. cedar-poo-spec)\nPins mirror SHA, supplies consts/overlays\nRuns verify-deps, run-plan --verify & --mbt ITF replay"
 config -> profiles
 domains -> methods
 profiles -> methods
-methods -> quintModels: "same-commit projection"
+methods -> quintModels: "dynamic same-commit projection"
 quintModels -> quintModulesResolver
 quint -> quintModulesResolver
 quintModulesResolver -> development

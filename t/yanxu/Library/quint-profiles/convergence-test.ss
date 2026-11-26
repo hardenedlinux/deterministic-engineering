@@ -3,7 +3,7 @@
 
 ;;; Loader-owned qualification tests for library/quint-profiles:
 ;;; verifies Yuanxu Design 165 7-Band Plural Profile Convergence across all 10
-;;; co-located Quint subdomains (33 models) in init.ss:
+;;; co-located Quint subdomains (34 models) in init.ss:
 ;;;  - profile-catalog: auto-discovery off QuintProfiles (zero manual registry wiring)
 ;;;  - by-tag global profiles (assurance.bounded-proof, bound.standard, governance.mandatory-countermodels)
 ;;;  - per-module bound overrides (extended-counterexample, deep-counterexample, compact)
@@ -24,6 +24,8 @@
 
 (def wal-id
   'deterministic-engineering/packages/quint-models/engineering/storage/wal-crash-recovery/interface)
+(def bp-id
+  'deterministic-engineering/packages/quint-models/engineering/concurrency/backpressure-memory/interface)
 (def mvcc-id
   'deterministic-engineering/packages/quint-models/engineering/storage/mvcc-ssi-write-skew/interface)
 (def raft-id
@@ -39,7 +41,7 @@
 
 (def quint-profiles-convergence-test
   (test-suite "Quint 3-axis Profile Namespace (assurance.*, bound.*, governance.*) over 10 subdomains"
-    (test-case "all 33 co-located models converge cleanly via profile-catalog auto-discovery and by-tag targeting"
+    (test-case "all 34 co-located models converge cleanly via profile-catalog auto-discovery and by-tag targeting"
       (def view (yuanxu-load-modules init-path))
       (def graph (.ref view 'selected-graph))
       (def res (converge-quint-graph graph))
@@ -51,6 +53,10 @@
       (check-equal? (.ref (.ref eff wal-id) 'countermodel-depth) 6)
       (check-equal? (.ref (.ref eff wal-id) 'require-countermodels?) #t)
       (check-equal? (.ref (.ref eff wal-id) 'verification-mode) 'bounded-proof)
+      ;; Compact override (10 / 6): backpressure-memory and TLS 1.3 0-RTT.
+      (check-equal? (.ref (.ref eff bp-id) 'verify-depth) 10)
+      (check-equal? (.ref (.ref eff bp-id) 'countermodel-depth) 6)
+      (check-equal? (.ref (.ref eff bp-id) 'require-countermodels?) #t)
       ;; Extended-counterexample overrides (10 / 9): MVCC/SSI and Raft.
       (check-equal? (.ref (.ref eff mvcc-id) 'verify-depth) 10)
       (check-equal? (.ref (.ref eff mvcc-id) 'countermodel-depth) 9)

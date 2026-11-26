@@ -40,7 +40,8 @@ informs.
 - *Mark S. Miller (2006)*, /Robust Composition: Towards a Unified Approach to
   Access Control and Concurrency Control/ (PhD Thesis, Johns Hopkins University).
   - Object-Capability (OCap) security, authority attenuation, and non-ambient
-    authority; informs =threat/capabilities= and =threat/authority-currentness=.
+    authority; informs =threat/execution/capabilities= and
+    =threat/zero-trust/authority-currentness=.
 - *Adam Shostack (2014)*, /Threat Modeling: Designing for Security/, Wiley.
   - Structured threat identification; our framework elevates these from static
     diagrams into executable Quint state machines with mandatory countermodels.
@@ -51,40 +52,42 @@ informs.
   Security/.
   - Formalizes OAuth 2.0/2.1 protocol attacks, sender-constrained tokens (DPoP
     =cnf.jkt= + single-use =jti=), and PAR/revocation recovery directly modeled
-    in =threat/oauth-token-lifecycle=, =threat/oidc-federation=,
-    =threat/device-authorization=, =threat/oauth-revocation-recovery=, and
-    =threat/dpop-sender-constrain=.
+    in =threat/identity/oauth-token-lifecycle=,
+    =threat/identity/oidc-federation=, =threat/identity/device-authorization=,
+    =threat/identity/oauth-revocation-recovery=, and
+    =threat/protocol/dpop-sender-constrain=.
 - *Justin Samuel, Nick Mathewson, Justin Cappos, Roger Dingledine (2010)*,
   /Survivable Key Compromise in Software Update Systems/ (TUF), ACM CCS 2010;
   *Santiago Torres-Arias et al. (2019)*, /in-toto: Providing farm-to-table
   guarantees for bits and bytes/, USENIX Security 2019; and *Zachary Newman et
   al. (2022)*, /Sigstore: Software Signing for Everybody/, ACM CCS 2022.
   - Rollback, indefinite freeze, and mix-and-match metadata defenses modeled
-    with emergent invariants in =threat/supply-chain-tuf=.
+    with emergent invariants in =threat/supply-chain/supply-chain-tuf=.
 - *Arnar Birgisson, Joe Gibbs Politz, Úlfar Erlingsson, Ankur Taly, Michael
   Vrable, Mark Lentczner (2014)*, /Macaroons: Cookies with Contextual Caveats
   for Decentralized Authorization in the Cloud/, NDSS 2014.
   - Monotonic multi-hop caveat attenuation and chained HMAC integrity for
-    agent-to-subagent delegation modeled in =threat/macaroon-delegation-chain=.
+    agent-to-subagent delegation modeled in
+    =threat/protocol/macaroon-delegation-chain=.
 - *Edoardo Debenedetti, Ilia Shumailov, Nicholas Carlini, Florian Tramèr et al.
   (2025)*, /Defeating Prompt Injections by Design/ (CaMeL, Google DeepMind & ETH
   Zurich, arXiv:2503.18813).
   - Separates privileged control flow from quarantined untrusted data flow and
     tracks capability-based provenance; directly informs
-    =threat/agent-ifc-capability=.
+    =threat/execution/agent-ifc-capability=.
 - *Manuel Costa, Boris Köpf, Aashish Kolluri, Andrew Paverd, Mark Russinovich et
   al. (2025)*, /Securing AI Agents with Information-Flow Control/ (FIDES,
   Microsoft Research, NeurIPS 2025, arXiv:2505.23643).
   - Confidentiality/integrity lattice labels and deterministic policy
     enforcement outside the LLM reasoning loop; directly informs
-    =threat/agent-ifc-capability=.
+    =threat/execution/agent-ifc-capability=.
 - *Manuel Barbosa, Alexandra Boldyreva, Shan Chen, Bogdan Warinschi (2021)*,
   /Provable Security Analysis of FIDO2/, CRYPTO 2021; *Charlie Jacomme & Steve
   Kremer (2021)*, /An Extensive Formal Analysis of Multi-Factor Authentication
   Protocols/, ACM TOPS / IEEE CSF; and *W3C WebAuthn Level 3*.
   - Formalizes RP-ID origin binding against MitM phishing proxies, single-use
     ceremony challenges, and monotonic =signCount= roaming-authenticator clone
-    detection; directly informs =threat/webauthn-passkey-ceremony=.
+    detection; directly informs =threat/identity/webauthn-passkey-ceremony=.
 - *IETF RFC 9162 (2021)*, /Certificate Transparency Version 2.0/ (§2.1.4
   Consistency Proofs); *Laurent Chuat, Pawel Szalachowski, Adrian Perrig, Ben
   Laurie, Eran Messeri (2015)*, /Efficient Gossip Protocols for Verifying the
@@ -92,14 +95,14 @@ informs.
   Omniwitness*.
   - Demonstrates why inclusion proofs alone cannot stop a compromised log from
     serving a forked split-view tree and why STH consistency gossip is mandatory;
-    directly informs =threat/transparency-log-gossip=.
+    directly informs =threat/supply-chain/transparency-log-gossip=.
 - *Andreas Haas, Andreas Rossberg, Derek L. Schuff, Ben L. Titzer et al. (2017)*,
   /Bringing the Web up to Speed with WebAssembly/, PLDI 2017; *Shravan Narayan
   et al. (2020)*, /Retrofitting Fine Grain Isolation in the Firefox Renderer/
   (RLBox), USENIX Security 2020; and *WASI Preview 2 / Linux =openat2(RESOLVE_BENEATH)=*.
   - Linear-memory bounds checking, non-ambient capability handle tables, and
     preopened root confinement against path traversal directly modeled in
-    =threat/wasm-sandbox-confinement=.
+    =threat/execution/wasm-sandbox-confinement=.
 - *Eric Rescorla (2018)*, /IETF RFC 8446: The Transport Layer Security (TLS)
   Protocol Version 1.3/ (§2.3, §8, Appendix E.5) & *IETF RFC 8470*
   (=Early-Data= / =425 Too Early=); *Cas Cremers, Marko Horvat, Jonathan
@@ -112,7 +115,7 @@ informs.
   - Non-idempotent 0-RTT exclusion, multi-node cross-edge strike-register
     replication against replay, and ephemeral (EC)DHE forward secrecy against
     retroactive long-term PSK/STEK compromise directly modeled in
-    =threat/tls13-0rtt-forward-secrecy=.
+    =threat/protocol/tls13-0rtt-forward-secrecy=.
 
 * 3. Exact-Effect Handoff, Durability & Rollback Resistance
 
@@ -122,18 +125,19 @@ informs.
     uncertain boundaries cannot assume prior non-execution.
 - *Hector Garcia-Molina & Kenneth Salem (1987)*, /Sagas/, ACM SIGMOD.
   - Multi-step effect coordination and compensating/containment boundaries;
-    informs =effect-handoff= and =effect-containment=.
+    informs =threat/execution/effect-handoff= and
+    =threat/execution/effect-containment=.
 - *Marcos K. Aguilera et al. / State Rollback Literature*:
   - Distinguishes pure-state consumption from monotonic persistent storage
     (rollback attacks against crash-recovery snapshots); directly modeled in
-    =threat/state-rollback=.
+    =threat/execution/state-rollback=.
 
 * 4. Concurrency & Parallel Runtime Verification
 
 - *David Chase & Yossi Lev (2005)*, /Dynamic Circular Work-Stealing Deque/,
   SPAA 2005; and *Nhat Minh Lê et al. (2013)*, /Correct and Efficient
   Work-Stealing for Weak Memory Models/, PPoPP 2013.
-  - Basis for planned =engineering/parallel/= work-stealing deque models.
+  - Basis for =engineering/parallel/work-stealing-deque=.
 - *Keir Fraser (2004)*, /Practical Lock-Freedom/ (PhD Thesis, Cambridge) &
   *Thomas E. Hart et al. (2007)*, /Performance of Memory Reclamation for
   Lockless Synchronization/, JPDC.

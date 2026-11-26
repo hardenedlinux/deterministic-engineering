@@ -29,7 +29,7 @@ package DeterministicEngineeringRepository {
         part library : SchemeModule {
             attribute redefines pathPattern = "library/<module>/";
             attribute redefines ecosystem = "gerbil yuanxu";
-            attribute redefines roles = "definitions method-contracts selection";
+            attribute redefines roles = "definitions method-contracts selection reasoning";
             attribute redefines rejects = "execution typescript other-language-sources generated-output";
         }
         part languageAssets : LanguageAssets {
@@ -48,10 +48,10 @@ package DeterministicEngineeringRepository {
             attribute redefines mirror = "hardenedlinux/deterministic-engineering-render";
         }
         part quintModels : DistributionPackage {
-            attribute redefines pathPattern = "packages/quint-models/";
-            attribute redefines ecosystem = "bun";
-            attribute redefines roles = "quint-model-content";
-            attribute redefines rejects = "tool-code rendering other-language-models";
+            attribute redefines pathPattern = "packages/quint-models/<domain>/<subdomain>/<model>/";
+            attribute redefines ecosystem = "bun,gerbil-yuanxu";
+            attribute redefines roles = "quint-model-content,co-located-yuanxu-declarations,model-readmes";
+            attribute redefines rejects = "tool-code rendering json-sidecars relative-cross-module-imports orphan-qnt";
             attribute redefines packageName = "@deterministic-engineering/quint-models";
             attribute redefines family = "quint-model-content";
             attribute redefines mirror = "hardenedlinux/deterministic-engineering-quint-models";
@@ -74,7 +74,7 @@ package DeterministicEngineeringRepository {
             attribute redefines roles = "user-settings";
         }
         part tests : DevelopmentVerification {
-            attribute redefines pathPattern = "t/";
+            attribute redefines pathPattern = "t/ t/yanxu/<Mount>/<owner>/";
             attribute redefines roles = "tool-execution independent-gold evidence-registration";
         }
         part documents : DocumentItem {
@@ -87,7 +87,7 @@ package DeterministicEngineeringRepository {
         }
         part infrastructure : PackageInfrastructure {
             attribute redefines pathPattern = "gerbil.pkg init.ss build.ss types.ss config.ss Justfile package.json";
-            attribute redefines roles = "selection build-entry shared-vocabulary";
+            attribute redefines roles = "multi-window-selection build-entry shared-vocabulary";
         }
     }
 
@@ -95,6 +95,7 @@ package DeterministicEngineeringRepository {
     dependency from repository.quintModulesResolver to repository.quintModels;
     dependency from repository.views to repository.render;
     dependency from repository.tests to repository.library;
+    dependency from repository.tests to repository.quintModels;
     dependency from repository.projects to repository.library;
 
     // Organization declaration only. It establishes no package publication,

@@ -10,15 +10,15 @@
 * Decision
 :PROPERTIES:
 :CUSTOM_ID: org150-decision
-:STATUS: design-only-not-implemented
+:STATUS: implemented-verified
 :END:
 
 The repository organization is a maintained Scheme declaration, not a convention
-recorded only in prose. The existing =project-organization= Library already owns
-nine responsibility roles and =project-formation= already renders =project.sysml=
-from an ASCENT result. Neither reaches the physical tree: no directory, distribution
-package or language asset appears in the rendered SysML model. This item adds that
-physical layer and makes the actual tree an input checked by finite rules.
+recorded only in prose. The =project-organization= Library owns nine
+responsibility roles plus nine physical placements and three distribution
+package families, and =project-formation= renders =project.sysml= and evaluates
+finite ASCENT rules (=OR01=–=OR06=) directly over captured facts of the live
+repository tree.
 
 #+BEGIN_QUOTE
 Directories and packages are checked placements of declared responsibilities.
@@ -27,37 +27,38 @@ They are not chosen by hand and then described afterwards.
 
 The paired view is [[file:../../90-99-views/90-architecture-views/90.141-repository-organization-and-packages.d2][90.141 D2]]. The organization is declared in
 [[file:10.150-repository-organization-and-package-taxonomy.sysml][the companion SysML model]]. Quint model content and tooling are a consumer of
-this taxonomy, specified in [[file:10.151-quint-models-library-and-packages.org][10.151]]. Landing gates are in
-[[file:10.152-organization-and-quint-landing.org][10.152]]. This item changes no source, build input or dependency.
+this taxonomy, specified in [[file:10.151-quint-models-library-and-packages.org][10.151]]. Landing gates and verified outcomes are in
+[[file:10.152-organization-and-quint-landing.org][10.152]].
 
-* Current organization and its gap
+* Organization model and historical debt
 :PROPERTIES:
 :CUSTOM_ID: org150-current
 :END:
 
-| Existing owner | Current content | Gap |
-|----------------+-----------------+-----|
-| [[file:../../../library/project-organization/objects.ss][project-organization objects]] | Nine roles, owner kinds, protected roles, products and duties | No physical placement for roles |
-| [[file:../../../library/project-organization/organization.sysml][organization.sysml]] | Nine abstract =part def= declarations | No directory, package or asset definitions |
-| [[file:../../../library/library-formation-profiles/objects.ss][library-formation-profiles]] | Candidates LIB-C01..C03, layout rows and authored edges | Layout rows map to abstract slots only |
-| [[file:../../../library/project-formation/func.ss][project-formation]] | ASCENT reasoning and =render= of [[file:../../../project.sysml][project.sysml]] | Rendered model cannot answer which directory or package owns what |
+| Owner | Maintained content | Physical enforcement |
+|-------+--------------------+----------------------|
+| [[file:../../../library/project-organization/objects.ss][project-organization objects]] | Nine roles, nine physical placements, =placement-roles=, and three package responsibility families | Checked by =OrganizationModelContract= |
+| [[file:../../../library/project-organization/organization.sysml][organization.sysml]] | Abstract role and physical placement =part def= declarations | Catalog reference |
+| [[file:../../../library/library-formation-profiles/objects.ss][library-formation-profiles]] | Candidates LIB-C01..C03, layout rows, authored edges, and placement instances | Input to formation & SysML render |
+| [[file:../../../library/project-formation/func.ss][project-formation]] | ASCENT reasoning (=OR01=–=OR06=) and =render-formation-model-with-placements= emitting [[file:../../../project.sysml][project.sysml]] | Live repository gate via =repository-organization-test.ss= |
 
-** Observed organization debt
+** Historical organization debt (resolved in L1–L2)
 :PROPERTIES:
 :CUSTOM_ID: org150-debt
 :END:
 
-Observed on =origin/main= =6f588d7=. Each row must become a rule finding in L1
-before it is repaired in L2; a repair that the rules cannot detect is not accepted.
+Observed on =origin/main= =6f588d7=; every row was first reproduced as an
+=OR01=–=OR06= finding in L1 and then repaired in L2 so the live repository
+evaluates to zero findings while all six remain locked as negative controls:
 
-| ID | Finding | Evidence |
-|----+---------+----------|
-| D1 | The repository root is the render package | Root =package.json= has =name= =@deterministic-engineering/render= and exports only =packages/render/src= |
-| D2 | Published file list names absent directories (historical on =6f3113e=; already cleaned on =6f588d7=) | Retained as an OR05 negative control so absent =files= entries cannot recur |
-| D3 | A Scheme Module directory holds other-language assets | =library/backpressure-memory/model.qnt= and =budget.lean= |
-| D4 | Root =observation/= has no declared owner | Contains a Quint model whose bytes differ from the Library model, Apalache output and TLC logs |
-| D5 | A Project entry selects a retired Module | =projects/library-formation/init.ss= selects =project-intake=, retired by [[file:10.148-flat-declarative-library-boundary.org][10.148]] |
-| D6 | The rendered organization model omits physical placement | =project.sysml= contains only abstract parts |
+| ID | Finding | Resolution |
+|----+---------+------------|
+| D1 | Repository root was the render package | Root =package.json= converted to private bun workspace; =@deterministic-engineering/render= moved to =packages/render/package.json= |
+| D2 | Published =files= list named absent directories | Retained as =OR05= negative control so absent =files= entries cannot recur |
+| D3 | Scheme Module directory held other-language assets | =model.qnt= and =budget.lean= relocated under =languages-engineering/=; checked by =OR02= |
+| D4 | Root =observation/= had no declared owner | Relocated historical evidence to =t/fixtures/historical-backpressure-observation/=; checked by =OR01= |
+| D5 | Project entry selected retired =project-intake= | Removed from =projects/library-formation/init.ss=; checked by =OR05= |
+| D6 | Rendered =project.sysml= omitted physical placement | Regenerated with =part 'placements'= covering all placements; checked by =OR06= |
 
 * Placement definitions
 :PROPERTIES:
@@ -69,19 +70,24 @@ carries and content it must not contain. Roles keep their current identities.
 
 | Placement | Path pattern | Ecosystem | Roles carried | Must not contain |
 |-----------+--------------+-----------+---------------+------------------|
-| =SchemeModule= | =library/<module>/= | Gerbil, Yuanxu | definitions, method-contracts, selection; refined by =tags:= | Process execution, TypeScript, other-language sources, generated output |
+| =SchemeModule= | =library/<module>/= | Gerbil, Yuanxu | definitions, method-contracts, selection, reasoning; refined by =tags:= | Process execution, TypeScript, other-language sources, generated output |
 | =LanguageAssets= | =languages-engineering/<lang>/<domain>/<subject>/= | Native language toolchain | Maintained subjects checked by method plans | Scheme declarations, execution results |
-| =DistributionPackage= | =packages/<pkg>/= with its own =package.json= | bun | Consumer-installable tools and artifacts | Source-of-truth declarations; another package's responsibility family; references outside its directory |
+| =DistributionPackage= | =packages/<pkg>/= with its own =package.json= | bun, Gerbil/Yuanxu (for co-located formal model packages) | Consumer-installable tools, artifacts, and co-located Yuanxu model declarations | Foreign responsibility family; references outside its directory; tool code or JSON sidecars inside model packages |
 | =ProjectEntry= | =projects/<project>/= | Yuanxu selection | project-entry | Definitions |
 | =UserExample= | =examples/= | Yuanxu Config | User Settings | Operations |
-| =DevelopmentVerification= | =t/=, =t/support/= | gerbil test | Actual tool execution, independent gold, evidence registration | Product declarations |
+| =DevelopmentVerification= | =t/=, =t/yanxu/<Mount>/<owner>/=, =t/support/= | gerbil test | Actual tool execution, independent gold, evidence registration | Product declarations |
 | =DocumentItem= | =docs/<area>/<category>/<JD>-*.org= | Org | documentation | — |
 | =ArchitectureView= | =docs/90-99-views/90-architecture-views/90.<n>-*= | render package | Projection of documentation | Authoritative claims |
-| =PackageInfrastructure= | Root =gerbil.pkg=, =init.ss=, =build.ss=, =types.ss=, =config.ss=, =Justfile=, workspace =package.json= | — | Selection, build entry, shared vocabulary | Business declarations, package implementation |
+| =PackageInfrastructure= | Root =gerbil.pkg=, =init.ss=, =build.ss=, =types.ss=, =config.ss=, =Justfile=, workspace =package.json= | — | Multi-window selection, build entry, shared vocabulary | Business declarations, package implementation |
 
-=SchemeModule= keeps the flat tree of 10.148. Its =tags:= classify a leaf as
-domain, specialization, method, rule, organization or profile; classification
-never adds a directory level.
+=SchemeModule= under =library/= keeps the flat tree of 10.148 for core
+cross-cutting methods, profiles, contracts, and organization modules. Formal
+Quint models are mounted via Yuanxu's multi-window =init.ss= directly at their
+symmetric 3-level distribution location
+=packages/quint-models/<domain>/<subdomain>/<model>/= so Scheme POO AST
+declarations (=types.ss=, =objects.ss=, =interface.ss=), projected pure =.qnt=
+specs, and auto-projected =README.org= co-locate in one self-contained unit with
+zero duplicate mapping layer.
 
 ** Package responsibility families
 :PROPERTIES:
@@ -94,32 +100,32 @@ cross families.
 | Package | Family | Allowed | Rejected |
 |---------+--------+---------+----------|
 | =@deterministic-engineering/render= | presentation | D2/SysML figure compilation, composition, export, compression | Verification models, Quint content, check plans |
-| =@deterministic-engineering/quint-models= | quint model content | Quint models by domain, check plans, projection receipts | Tool code, rendering, other-language models |
-| =@deterministic-engineering/quint-modules-resolver= | verification tooling | Package-aware source resolution for official Quint | Model content; modification or redistribution of Quint |
+| =@deterministic-engineering/quint-models= | quint-model-content | Co-located Yuanxu Scheme POO AST declarations, projected pure =.qnt= models (embedded =// @quint-*= headers), and auto-projected =README.org= across 10 subdomains | Tool code (=.ts=/=.js=), rendering, JSON sidecars (=plan.json=/=receipt.json=), cross-module relative =../= Scheme imports, orphan =.qnt= units |
+| =@deterministic-engineering/quint-modules-resolver= | verification-tooling | Package-aware source resolution, AST composition, plan execution & ITF verification for official Quint | Model content; modification or redistribution of Quint |
 
 * Declaration, rules and projection
 :PROPERTIES:
 :CUSTOM_ID: org150-rules
 :END:
 
-=project-organization= adds placement definitions and package families to its
-catalog. =library-formation-profiles= declares this repository's placement
-instances. =project-formation= receives the actual tree and each =package.json=
-as input facts and adds the following finite rules.
+=project-organization= declares placements and package families.
+=library-formation-profiles= declares this repository's placement instances.
+=project-formation= receives captured tree, manifest, import, and co-location
+facts from [[file:../../../t/support/repository-organization-facts.ss][repository-organization-facts.ss]] and evaluates =OR01=–=OR06=:
 
 | Rule | Rejection |
 |------+-----------|
-| OR01 single owner | A managed path matches zero or several placements |
-| OR02 forbidden content | A placement contains its rejected content, for example =.qnt= or =.lean= under =library/*/= |
+| OR01 single owner | A managed top-level path matches zero or several placements |
+| OR02 forbidden content | =library/*/= holds =.qnt=/=.lean=/=.ts=/=.js=; root =package.json= is not a workspace; =packages/quint-models/= holds =.ts=/=.js=/JSON sidecars, cross-module relative =../= Scheme imports, or incomplete co-located model units missing =types.ss=/=objects.ss=/=interface.ss=/=*.qnt=/=README.org= |
 | OR03 package family | A =DistributionPackage= exports cross families |
 | OR04 package closure | A package references a file outside its directory |
 | OR05 reference closure | A Project selects an absent Module; =files= names an absent path |
-| OR06 coverage | A responsibility role has no carrying placement |
+| OR06 coverage | A responsibility role has no carrying placement or =project.sysml= omits a declared placement |
 
-The existing =render= method extends =project.sysml= with one part per placement
-and package, their roles and dependency edges. =organization.sysml= gains the
-placement =part def= declarations. Findings are design findings: they establish
-neither capability, authorization nor acceptance of a candidate.
+=render-formation-model-with-placements= emits =project.sysml= with one part per
+placement and package, their roles, and dependency edges. Findings are design
+assertions over captured repository facts: they establish neither runtime
+capability nor external authorization.
 
 * Distribution by subtree
 :PROPERTIES:
@@ -128,28 +134,28 @@ neither capability, authorization nor acceptance of a candidate.
 
 bun installs a git dependency from its repository root and cannot select a
 subdirectory. Deterministic Engineering remains the only development repository.
-Each =packages/<pkg>/= prefix is split by CI and published to a read-only mirror
-whose root is that package.
+Each =packages/<pkg>/= prefix is split via =git subtree split= and published to
+a read-only mirror whose root is that package.
 
-| DE prefix | Mirror (created, empty) | Tag |
-|-----------+----------------------+-----|
+| DE prefix | Mirror | Tag |
+|-----------+--------+-----|
 | =packages/render/= | =hardenedlinux/deterministic-engineering-render= | =render-vX.Y.Z= |
 | =packages/quint-models/= | =hardenedlinux/deterministic-engineering-quint-models= | =quint-models-vX.Y.Z= |
 | =packages/quint-modules-resolver/= | =hardenedlinux/deterministic-engineering-quint-modules-resolver= | =quint-modules-resolver-vX.Y.Z= |
 
-- The root =package.json= becomes a private workspace over =packages/*=.
-- Mirror commits record =DE-Source-Commit=; mirrors accept pushes only from CI.
-- One DE commit can change Scheme sources, projected package content, documents
-  and views together. Consistency is checked inside that commit.
-- Render source already lives under =packages/render/=; its manifest and license
-  files move into that directory and the first split retains history.
+- The root =package.json= is a private workspace over =packages/*=.
+- One DE commit updates co-located Scheme POO sources, projected pure =.qnt=
+  models, =README.org=, design documents, and architecture views together;
+  same-commit qualification tests refuse any drift.
+- =packages/quint-models/= carries pure =.qnt= specs alongside their co-located
+  Scheme declarations and docs; downstream consumers pin the exact mirror commit
+  SHA and verify installed specs via =quint-modules-resolver verify-deps=.
 
 * Limits
 :PROPERTIES:
 :CUSTOM_ID: org150-limits
 :END:
 
-This is a design item. It does not add placement code, rules, packages, mirrors
-or CI. It does not change the Module tree, the =programs= Config interface or any
-dependency revision. Rule findings will be design assertions over captured tree
-facts; they do not replace native build, test or remote CI acceptance.
+=OR01=–=OR06= rule findings are finite design assertions over captured tree,
+manifest, and import facts; they complement and do not replace native Gerbil
+builds, Yuanxu layout qualification, Quint/Apalache verification, or CI checks.

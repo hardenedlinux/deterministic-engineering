@@ -108,14 +108,21 @@
                                  (rows (reason-repository-organization dup-owner) 'finding))
                          #t)
                     #t)
-      ;; D1 + D3 / OR02 forbidden content (root package or other-language source in SchemeModule)
+      ;; D1 + D3 / OR02 forbidden content (root package, other-language source in SchemeModule,
+      ;; JSON sidecar / relative cross-module import / incomplete co-located Quint unit)
       (def forbidden
         (replace-fact base 'forbidden_item
                       '(("package.json" "PackageInfrastructure" "package-implementation" "root-is-package:@deterministic-engineering/render")
-                        ("library/backpressure-memory/model.qnt" "SchemeModule" "other-language-sources" "other-language-source-in-scheme-module:model.qnt"))))
+                        ("library/backpressure-memory/model.qnt" "SchemeModule" "other-language-sources" "other-language-source-in-scheme-module:model.qnt")
+                        ("packages/quint-models/threat/execution/effect-handoff/plan.json" "DistributionPackage" "tool-code-or-sidecar" "forbidden-in-quint-models:plan.json")
+                        ("packages/quint-models/threat/execution/effect-handoff/types.ss" "DistributionPackage" "relative-cross-module-import" "cross-module-relative-import:../../../../../library/quint-methods/types.ss")
+                        ("packages/quint-models/engineering/concurrency/orphan-model" "DistributionPackage" "incomplete-co-located-quint-unit" "missing:interface.ss"))))
       (def f-rows (rows (reason-repository-organization forbidden) 'finding))
       (check-equal? (has-finding? f-rows "OR02" "package.json") #t)
       (check-equal? (has-finding? f-rows "OR02" "library/backpressure-memory/model.qnt") #t)
+      (check-equal? (has-finding? f-rows "OR02" "plan.json") #t)
+      (check-equal? (has-finding? f-rows "OR02" "effect-handoff/types.ss") #t)
+      (check-equal? (has-finding? f-rows "OR02" "orphan-model") #t)
       ;; OR03 cross-family export (quint inside render)
       (def cross-fam
         (replace-fact base 'package_export_family

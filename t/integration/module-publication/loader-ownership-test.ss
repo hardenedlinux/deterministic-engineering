@@ -54,8 +54,8 @@
     (test-case "full admit-module-test-layout! enforces every Loader owner across all 11 mounts and rejects flat t/ suites"
       (def published (admit-de-test-layout!))
       (check (pair? published) => #t)
-      ;; 10 core Library modules + 33 co-located Quint models = 43 owners (48+ suites).
-      (check (>= (length published) 43) => #t)
+      ;; 10 core Library modules + 34 co-located Quint models = 44 owners (49+ suites).
+      (check (>= (length published) 44) => #t)
       ;; Zero stray *-test.ss files directly under t/.
       (check-equal?
         (filter (cut string-suffix? "-test.ss" <>) (directory-files tests-root))

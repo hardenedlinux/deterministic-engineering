@@ -9,26 +9,8 @@
 ;;; selected-graph epoch so prototype identity is 100% coherent.
 ;;; All filesystem I/O lives here; library/quint-methods/ remains pure.
 (import :clan/poo/object
-        :std/misc/ports
         (only-in :tao3k/yuanxu/module-system/interface yuanxu-load-modules))
 (export project-all-quint-models!)
-
-(def (ensure-qnt-header text identity)
-  (if (string-contains text "// @quint-model ")
-    text
-    (let ((lines (string-split text #\newline)))
-      (let loop ((rest lines) (acc '()) (inserted? #f))
-        (cond
-          ((null? rest) (string-join (reverse acc) "\n"))
-          ((and (not inserted?)
-                (not (string-prefix? "//" (car rest))))
-           (loop rest
-                 (append (list "// @quint-version 0.33.0"
-                               (string-append "// @quint-model " identity))
-                         acc)
-                 #t))
-          (else
-           (loop (cdr rest) (cons (car rest) acc) inserted?)))))))
 
 (def (find-module-exports graph mod-identity)
   (def node
@@ -89,16 +71,4 @@
               (readme-path (path-expand "README.org" out-dir)))
           (call-with-output-file readme-path (lambda (p) (display readme-text p))))))
     model-nodes)
-  ;; Also publish the maintained engineering/concurrency/backpressure-memory Quint model (D3).
-  (def bp-src
-    (path-expand "languages-engineering/quint/concurrency/backpressure-memory/model.qnt" repo-root))
-  (when (file-exists? bp-src)
-    (let ()
-      (def bp-dir (path-expand "engineering/concurrency/backpressure-memory" pkg-root))
-      (create-directory* bp-dir)
-      (def bp-text
-        (ensure-qnt-header (read-file-string bp-src)
-                           "engineering.concurrency.backpressure-memory"))
-      (def bp-qnt (path-expand "BackpressureOwners.qnt" bp-dir))
-      (call-with-output-file bp-qnt (lambda (p) (display bp-text p)))))
   (length model-nodes))
