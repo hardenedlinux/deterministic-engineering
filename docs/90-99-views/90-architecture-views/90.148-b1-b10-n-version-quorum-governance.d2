@@ -1,0 +1,62 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+direction: right
+
+title: {
+  label: "90.148 Full B1-B10 Stratified OP & N-Version Cross-Runtime Quorum Governance Architecture (10.170)"
+  near: top-center
+  shape: text
+  style.font-size: 20
+  style.bold: true
+}
+
+pillars: "Imperative TypeScript Governance Runtimes (B1-B10)" {
+  style.fill: "#eef2ff"
+  style.stroke: "#4f46e5"
+
+  b1_b5: "Execution & Custody (B1-B5)\n• B1 SoD Release & Canary Rollback\n• B2 Multi-Tenant AEAD Replay (R5)\n• B3 Macaroon Attenuation & Cascade\n• B4 AST Symbol-Level SSI (TS + .ss)\n• B5 Cold HITL Pause/Resume & Veto"
+  b6_b8: "Effects, Confidentiality & Memory (B6-B8)\n• B6 Compensable Sagas & Linear Budget\n• B7 DIFC Taint + CaMeL Control-Flow\n• B8 ATMS/TMS Causal Retraction & Quarantine"
+  b9_b10: "Cryptographic Finality (B9-B10)\n• B9 RFC 6962 Log + Ed25519 STH\n• B10 2f+1/3f+1 Witness Quorum Finality\n• Offline Eclipse-Resistant QC Verifier"
+}
+
+m1_core: "Stratified Orthogonal Persistence Core (10.156)\nM1 Immutable Merkle DAG (Pinned Cuts & Receipts)\nM2 Recomputable Drift & Quarantine Manifests (R1/R4)\nM3 7 Non-Serializable Live Capability Classes (R3)" {
+  style.fill: "#f8fafc"
+  style.stroke: "#334155"
+}
+
+bridge: "M1 Proof-Carrying Projection Bridge\n(ascent-meta-audit-bridge.ts)" {
+  style.fill: "#fff7ed"
+  style.stroke: "#ea580c"
+
+  proj: "Zero-Handcrafted S-Expr Projection\n• 20 Canonical Source Relations\n• Injection-Safe Escaped Scheme Alist\n• Content-Addressed Fact Bundle Hash"
+}
+
+oracle: "Heterogeneous Declarative Verifier\n(Gerbil Scheme ASCENT Datalog / gxi)" {
+  style.fill: "#ecfdf5"
+  style.stroke: "#059669"
+
+  datalog: "DurableGovernanceMetaAuditProgram (B1-B10)\n• 4-Hop B3 Revocation -> B8 TMS Poisoning\n• Multi-Hop B7 DIFC Exfiltration Closure\n• B9 Split-View & B10 Byzantine Double-Sign\n• Pure Relational 2f+1 Quorum & Cross-Log Fence\n• Catastrophic Split-World Finality Detection"
+}
+
+gate: "N-Version Fail-Closed Agreement Gate\n(Avizienis 1985 x Necula POPL 1997)" {
+  style.fill: "#fef9c3"
+  style.stroke: "#ca8a04"
+
+  verdict: "Dual-Language Consensus\n• TS ADMIT + Scheme ADMIT -> Proven M1 Receipt\n• TS ADMIT + Scheme REFUSE -> oracle-disagreement-fail-closed\n• Missing Runtime -> PendingMethod (Never ok:true)"
+}
+
+pillars.b1_b5 -> pillars.b6_b8: "Attenuated & Approved"
+pillars.b6_b8 -> pillars.b9_b10: "Log Entry & STH"
+pillars -> m1_core: "M1 Cuts / R3 Guard Blocks 7 Key Types"
+pillars -> bridge.proj: "Live B1-B10 Objects"
+bridge.proj -> oracle.datalog: "Cold M1 Scheme Alist (stdin)"
+oracle.datalog -> gate.verdict: "12 Stratified Datalog Relations (JSON)"
+pillars -> gate.verdict: "Imperative Verdict"
+gate.verdict -> m1_core: "Pinned Dual-Oracle / Forensic Receipt" {
+  style.stroke: "#059669"
+}
+gate.verdict -> pillars: "Disagreement -> Fail-Closed Block" {
+  style.stroke: "#dc2626"
+  style.stroke-dash: 4
+}

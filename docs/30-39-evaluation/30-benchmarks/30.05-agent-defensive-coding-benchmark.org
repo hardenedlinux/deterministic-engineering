@@ -171,6 +171,11 @@ generating false positives on clean deterministic-boundary code.
 | =AG113= | Witness Quorum (=B10=) | Duplicate signer, rogue witness & forged cosig | Refuse all 3 spoofing vectors | Blocks duplicate =witness-1=, unregistered rogue key, and mismatched witness signature bytes |
 | =AG114= | Witness Quorum (=B10=) | Retroactive history rewrite refused pre-cosign | =RefusedEquivocation= + fraud proof | Honest witness detects failed RFC 6962 consistency proof BEFORE issuing any cosignature |
 | =AG115= | Witness Quorum (=B10 × R3=) | =WitnessCosigningKey= non-leakage & unsafe =t= check | Refuse (=R3= leak & =unsafe-non-intersecting-quorum=) | Blocks witness private Ed25519 key entering =M1= store & rejects unsafe =t=2= of =N=4, f=1= |
+| =AG116= | =B10= × ASCENT Oracle | Live Ed25519 QC verified by =gxi= under =f=1= Byzantine fault | =Proven= + =byzantine_witness_equivocation= exposed | Derives =quorum_3_verified= on clean 3-of-4 QC while surfacing double-signing =w4-byz= & surviving GC |
+| =AG117= | =B10= × N-Version Gate | Buggy TS admits sub-quorum (2-of-4) or cross-log replay | Refuse (=oracle-disagreement-fail-closed=) | Independent Scheme ASCENT catches 2-of-4 checkpoint & cross-log checkpoint replay & pins forensic receipt |
+| =AG118= | =B10= × ASCENT Oracle | Unregistered rogue witness & unverified consistency cosign | Derive =invalid_witness_cosign= (both reasons) | Declarative Datalog rejects rogue cosigner (=unregistered-witness=) & unchecked STH (=missing-consistency-proof=) |
+| =AG119= | =B10= × N-Version Gate | Catastrophic => f= witness collusion split-world breach | Refuse (=split-world-finality-breach=) | Detects two distinct roots claimed finalized at same =(logId, treeSize)= & blocks release via fail-closed gate |
+| =AG120= | Full =B1=–=B10= Milestone | 120-Case Milestone: all 10 pillars + 7/7 =R3= + live =gxi= | Refuse 7/7 =R3= leaks; =Proven= dual-oracle + GC | Unifies =B1=–=B10= over one =M1= Merkle store with live Scheme ASCENT consensus & intact post-GC replay |
 
 * Observed Verification Receipts
 :PROPERTIES:
@@ -197,14 +202,15 @@ generating false positives on clean deterministic-boundary code.
 | Verifiable Transparency Log (RFC 6962), Ed25519 STH & Split-View Equivocation (=AG101=–=AG105=) | =bun test languages-engineering/ts/defense/agent-audit/transparency-log-equivocation.test.ts= | **5/5 cases matched gold** (RFC 6962 inclusion & append-only consistency proofs, Ed25519 public-key-only verification, split-view & rewrite/rollback fraud proofs, =R3= signing key non-leakage) |
 | Cross-Runtime N-Version Proof-Carrying Bridge (TS <-> Live Gerbil Scheme ASCENT, =AG106=–=AG110=) | =bun test languages-engineering/ts/defense/agent-audit/ascent-meta-audit-bridge.test.ts= | **5/5 cases matched gold** (live =M1= S-expr projection, live =gxi= ASCENT fixed-point verification, buggy TS coordinator catch via =oracle-disagreement-fail-closed=, dual-oracle GC survival, =PendingMethod=/=SetupDefect= fail-closed) |
 | Proactive Threshold Witness Cosigning (=2f+1= of =3f+1=) & Quorum Finality (=AG111=–=AG115=) | =bun test languages-engineering/ts/defense/agent-audit/witness-quorum-finality.test.ts= | **5/5 cases matched gold** (offline 3-of-4 Ed25519 QC finality, Byzantine double-signer eclipse block, duplicate/rogue/forged cosig refusal, pre-cosign rewrite refusal, =R3= key non-leakage & BFT parameter gate) |
-| Combined 115-case 5-language, anti-evasion, Full =B1=–=B10= & N-Version Cross-Runtime benchmark | =just check-defense= | **115/115 exact gold match** (=tp=80, tn=35, fp=0, fn=0=) |
+| Full =B1=–=B10= Declarative ASCENT Quorum Closure & 120-Case Milestone (=AG116=–=AG120=) | =bun test languages-engineering/ts/defense/agent-audit/b10-ascent-quorum-closure.test.ts= | **5/5 cases matched gold** (live =gxi= =B10= quorum finality under =f=1= fault + Byzantine witness exposure, sub-quorum & cross-log replay catch, rogue/unverified cosig rejection, split-world finality breach, full 10-pillar + 7/7 =R3= =AG120= milestone) |
+| Combined 120-case 5-language, anti-evasion, Full =B1=–=B10= & N-Version Cross-Runtime benchmark | =just check-defense= | **120/120 exact gold match** (=tp=83, tn=37, fp=0, fn=0=) |
 
 * Limits
 :PROPERTIES:
 :CUSTOM_ID: bench3005-limits
 :END:
 
-This 115-case benchmark establishes deterministic AST-level, diff-delta,
+This 120-case benchmark establishes deterministic AST-level, diff-delta,
 scope-fencing, bounded closed-loop, hot-policy co-evolution, async-cut,
 semantic-drift memoization, AEAD-isolated Merkle storage, role-projected
 context, multi-agent SSI concurrency, and business SoD/replay precision and

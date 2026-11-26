@@ -660,13 +660,16 @@
       output-bindings: (lambda () (map (lambda (e) (cons (car e) (cdr e))) pout-bindings))
       rows-of: (lambda (name) (copy-fact (native-rows name)))))
 
-;; Phase 19 (10.167): Cross-Pillar B1-B9 Declarative ASCENT Datalog Meta-Governance Auditor.
+;; Phase 19/22 (10.167 / 10.170): Cross-Pillar B1-B10 Declarative ASCENT Datalog Meta-Governance Auditor.
 ;; Independent heterogeneous verifier in pure stratified Datalog over cold M1 evidence graphs:
 ;;   - B3: Transitive multi-hop delegation revocation closure
 ;;   - B3 -> B8: Causal belief poisoning from revoked proposers + sole-support TMS cascade
 ;;   - B7: Transitive multi-hop DIFC confidentiality taint propagation & exfiltration detection
 ;;   - B9: Witness gossip split-view equivocation detection (pure relational inequality)
-;;   - B1/B5/B6/B8/B9: Cross-pillar release disqualification vs. clean admission
+;;   - B10: Proactive threshold witness cosigning (2f+1 >= 3 distinct roster witnesses),
+;;          Byzantine witness double-sign detection, unregistered/unverified cosign rejection,
+;;          sub-quorum finality detection, split-world finality breach, and cross-log replay refusal
+;;   - B1/B5/B6/B8/B9/B10: Cross-pillar release disqualification vs. clean admission
 (define-program
   (make-durable-governance-meta-audit-program)
   (sources
@@ -685,13 +688,22 @@
     release_proposal
     release_uses_belief
     saga_pivot_crossed
-    saga_rollback_attempted)
+    saga_rollback_attempted
+    witness_roster
+    witness_cosign
+    claimed_finalized
+    release_requires_finality)
   (outputs
     effectively_revoked
     belief_poisoned
     tainted_value
     exfiltration_violation
     equivocation_violation
+    byzantine_witness_equivocation
+    invalid_witness_cosign
+    quorum_3_verified
+    sub_quorum_finality_violation
+    split_world_finality_breach
     release_disqualified
     release_admitted)
   (relation delegation_edge ((parent string?) (child string?)))
@@ -710,12 +722,27 @@
   (relation release_uses_belief ((rel_id string?) (belief_id string?)))
   (relation saga_pivot_crossed ((rel_id string?)))
   (relation saga_rollback_attempted ((rel_id string?)))
+  (relation witness_roster ((log_id string?) (witness string?)))
+  (relation witness_cosign ((witness string?) (log_id string?) (size string?) (root string?) (consistency_ok string?)))
+  (relation claimed_finalized ((ckpt_id string?) (log_id string?) (size string?) (root string?)))
+  (relation release_requires_finality ((rel_id string?) (ckpt_id string?)))
+
+  ;; Internal stratified helper relations for pure relational identity & cross-log finality:
+  (relation same_root ((r1 string?) (r2 string?)))
+  (relation same_witness ((w1 string?) (w2 string?)))
+  (relation valid_witness_cosign ((witness string?) (log_id string?) (size string?) (root string?)))
+  (relation release_finality_satisfied ((rel_id string?) (ckpt_id string?)))
 
   (relation effectively_revoked ((principal string?)))
   (relation belief_poisoned ((belief_id string?)))
   (relation tainted_value ((val_id string?) (tag string?)))
   (relation exfiltration_violation ((sink_id string?) (val_id string?) (tag string?)))
   (relation equivocation_violation ((log_id string?) (size string?) (r1 string?) (r2 string?)))
+  (relation byzantine_witness_equivocation ((witness string?) (log_id string?) (size string?) (r1 string?) (r2 string?)))
+  (relation invalid_witness_cosign ((witness string?) (log_id string?) (size string?) (root string?) (reason string?)))
+  (relation quorum_3_verified ((ckpt_id string?) (log_id string?) (size string?) (root string?)))
+  (relation sub_quorum_finality_violation ((ckpt_id string?) (log_id string?) (size string?) (root string?)))
+  (relation split_world_finality_breach ((log_id string?) (size string?) (r1 string?) (r2 string?)))
   (relation release_disqualified ((rel_id string?) (reason string?)))
   (relation release_admitted ((rel_id string?)))
 
@@ -765,7 +792,57 @@
    (witness_sth W2 L Sz R2)
    (not (witness_sth W1 L Sz R2)))
 
-  ;; 5. Cross-pillar B1/B3/B5/B6/B8/B9 release disqualification & clean admission:
+  ;; 5. B10 Proactive threshold witness cosigning (2f+1 >= 3 distinct roster witnesses) & finality:
+  ((same_root R R)
+   <--
+   (witness_cosign _ _ _ R _))
+  ((same_root R R)
+   <--
+   (claimed_finalized _ _ _ R))
+  ((same_witness W W)
+   <--
+   (witness_roster _ W))
+  ((valid_witness_cosign W L Sz R)
+   <--
+   (witness_roster L W)
+   (witness_cosign W L Sz R (lit "yes")))
+  ((byzantine_witness_equivocation W L Sz R1 R2)
+   <--
+   (witness_cosign W L Sz R1 _)
+   (witness_cosign W L Sz R2 _)
+   (not (same_root R1 R2)))
+  ((invalid_witness_cosign W L Sz R (lit "unregistered-witness"))
+   <--
+   (witness_cosign W L Sz R _)
+   (not (witness_roster L W)))
+  ((invalid_witness_cosign W L Sz R (lit "missing-consistency-proof"))
+   <--
+   (witness_cosign W L Sz R (lit "no")))
+  ((quorum_3_verified Ckpt L Sz R)
+   <--
+   (claimed_finalized Ckpt L Sz R)
+   (valid_witness_cosign W1 L Sz R)
+   (valid_witness_cosign W2 L Sz R)
+   (valid_witness_cosign W3 L Sz R)
+   (not (same_witness W1 W2))
+   (not (same_witness W2 W3))
+   (not (same_witness W1 W3)))
+  ((sub_quorum_finality_violation Ckpt L Sz R)
+   <--
+   (claimed_finalized Ckpt L Sz R)
+   (not (quorum_3_verified Ckpt L Sz R)))
+  ((split_world_finality_breach L Sz R1 R2)
+   <--
+   (quorum_3_verified _ L Sz R1)
+   (quorum_3_verified _ L Sz R2)
+   (not (same_root R1 R2)))
+
+  ;; 6. Cross-pillar B1/B3/B5/B6/B8/B9/B10 release disqualification & clean admission:
+  ((release_finality_satisfied Rel Ckpt)
+   <--
+   (release_proposal Rel _ _ Log)
+   (release_requires_finality Rel Ckpt)
+   (quorum_3_verified Ckpt Log _ _))
   ((release_disqualified Rel (lit "sod-self-approval"))
    <--
    (release_proposal Rel Same Same _))
@@ -787,6 +864,15 @@
    (release_proposal Rel _ _ _)
    (saga_pivot_crossed Rel)
    (saga_rollback_attempted Rel))
+  ((release_disqualified Rel (lit "unfinalized-quorum-checkpoint"))
+   <--
+   (release_proposal Rel _ _ _)
+   (release_requires_finality Rel Ckpt)
+   (not (release_finality_satisfied Rel Ckpt)))
+  ((release_disqualified Rel (lit "split-world-finality-breach"))
+   <--
+   (release_proposal Rel _ _ Log)
+   (split_world_finality_breach Log _ _ _))
   ((release_admitted Rel)
    <--
    (release_proposal Rel _ _ _)

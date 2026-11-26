@@ -31,6 +31,10 @@ import type {DelegationCertificate} from './capability-attenuation.ts';
 import type {MemoryBeliefNode} from './durable-memory-tms.ts';
 import type {TaintedValue, ToolSinkPolicy} from './difc-exfiltration-fence.ts';
 import type {SignedTreeHead} from './transparency-log-equivocation.ts';
+import type {
+  ThresholdCosignedCheckpoint,
+  WitnessCosignature,
+} from './witness-quorum-finality.ts';
 
 export interface MetaAuditFactBundle {
   delegation_edge: Array<[string, string]>;
@@ -49,6 +53,10 @@ export interface MetaAuditFactBundle {
   release_uses_belief: Array<[string, string]>;
   saga_pivot_crossed: Array<[string]>;
   saga_rollback_attempted: Array<[string]>;
+  witness_roster: Array<[string, string]>;
+  witness_cosign: Array<[string, string, string, string, string]>;
+  claimed_finalized: Array<[string, string, string, string]>;
+  release_requires_finality: Array<[string, string]>;
 }
 
 export interface AscentMetaAuditOutput {
@@ -57,6 +65,11 @@ export interface AscentMetaAuditOutput {
   tainted_value: string[][];
   exfiltration_violation: string[][];
   equivocation_violation: string[][];
+  byzantine_witness_equivocation: string[][];
+  invalid_witness_cosign: string[][];
+  quorum_3_verified: string[][];
+  sub_quorum_finality_violation: string[][];
+  split_world_finality_breach: string[][];
   release_disqualified: string[][];
   release_admitted: string[][];
 }
@@ -113,7 +126,7 @@ function dedupeTuples<T extends string[]>(rows: T[]): T[] {
 
 /**
  * Extracts a canonical, M1-pinned `MetaAuditFactBundle` directly from live TypeScript
- * B1-B9 governance objects with zero hand-crafted Scheme tuples.
+ * B1-B10 governance objects with zero hand-crafted Scheme tuples.
  */
 export function extractMetaAuditBundleFromLiveObjects(params: {
   kv: ContentAddressedKvStore;
@@ -124,6 +137,16 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
   declassifiedTags?: ReadonlyArray<{valueId: string; tag: string}>;
   sinkEmissions: ReadonlyArray<{sink: ToolSinkPolicy; valueId: string}>;
   witnessObservations: ReadonlyArray<{witnessId: string; sth: SignedTreeHead}>;
+  witnessRosters?: ReadonlyArray<{logId: string; witnessIds: readonly string[]}>;
+  witnessCosignatures?: ReadonlyArray<{
+    cosig: WitnessCosignature;
+    consistencyVerified: boolean;
+  }>;
+  claimedFinalizedCheckpoints?: ReadonlyArray<{
+    checkpointId: string;
+    checkpoint: ThresholdCosignedCheckpoint;
+    consistencyVerifiedByWitness?: Readonly<Record<string, boolean>>;
+  }>;
   releaseProposals: ReadonlyArray<{
     releaseId: string;
     authorId: string;
@@ -132,6 +155,7 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
     supportingBeliefIds: readonly string[];
     sagaPivotCrossed?: boolean;
     sagaRollbackAttempted?: boolean;
+    requiredCheckpointId?: string;
   }>;
 }): {bundle: MetaAuditFactBundle; factBundleMerkleHash: string} {
   const delegation_edge: Array<[string, string]> = [];
@@ -203,6 +227,7 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
   const release_uses_belief: Array<[string, string]> = [];
   const saga_pivot_crossed: Array<[string]> = [];
   const saga_rollback_attempted: Array<[string]> = [];
+  const release_requires_finality: Array<[string, string]> = [];
 
   for (const rel of params.releaseProposals) {
     release_proposal.push([rel.releaseId, rel.authorId, rel.approverId, rel.logId]);
@@ -211,6 +236,45 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
     }
     if (rel.sagaPivotCrossed) saga_pivot_crossed.push([rel.releaseId]);
     if (rel.sagaRollbackAttempted) saga_rollback_attempted.push([rel.releaseId]);
+    if (rel.requiredCheckpointId) {
+      release_requires_finality.push([rel.releaseId, rel.requiredCheckpointId]);
+    }
+  }
+
+  const witness_roster: Array<[string, string]> = [];
+  for (const r of params.witnessRosters ?? []) {
+    for (const wid of r.witnessIds) {
+      witness_roster.push([r.logId, wid]);
+    }
+  }
+
+  const witness_cosign: Array<[string, string, string, string, string]> = [];
+  for (const wc of params.witnessCosignatures ?? []) {
+    witness_cosign.push([
+      wc.cosig.witnessId,
+      wc.cosig.logId,
+      String(wc.cosig.treeSize),
+      wc.cosig.rootHashHex,
+      wc.consistencyVerified ? 'yes' : 'no',
+    ]);
+  }
+
+  const claimed_finalized: Array<[string, string, string, string]> = [];
+  for (const cf of params.claimedFinalizedCheckpoints ?? []) {
+    const sth = cf.checkpoint.sth;
+    claimed_finalized.push([cf.checkpointId, sth.logId, String(sth.treeSize), sth.rootHashHex]);
+    for (const cosig of cf.checkpoint.cosignatures) {
+      const ok = cf.consistencyVerifiedByWitness
+        ? Boolean(cf.consistencyVerifiedByWitness[cosig.witnessId])
+        : true;
+      witness_cosign.push([
+        cosig.witnessId,
+        cosig.logId,
+        String(cosig.treeSize),
+        cosig.rootHashHex,
+        ok ? 'yes' : 'no',
+      ]);
+    }
   }
 
   const bundle: MetaAuditFactBundle = {
@@ -230,6 +294,10 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
     release_uses_belief: dedupeTuples(release_uses_belief),
     saga_pivot_crossed: dedupeTuples(saga_pivot_crossed),
     saga_rollback_attempted: dedupeTuples(saga_rollback_attempted),
+    witness_roster: dedupeTuples(witness_roster),
+    witness_cosign: dedupeTuples(witness_cosign),
+    claimed_finalized: dedupeTuples(claimed_finalized),
+    release_requires_finality: dedupeTuples(release_requires_finality),
   };
 
   const factBundleMerkleHash = params.kv.putBlob('ascent-meta-audit-fact-bundle', bundle, []);
@@ -274,6 +342,11 @@ export function parseFramedAscentOutput(rawStdout: string): AscentOracleRunVerdi
     'tainted_value',
     'exfiltration_violation',
     'equivocation_violation',
+    'byzantine_witness_equivocation',
+    'invalid_witness_cosign',
+    'quorum_3_verified',
+    'sub_quorum_finality_violation',
+    'split_world_finality_breach',
     'release_disqualified',
     'release_admitted',
   ];
@@ -338,7 +411,9 @@ export function runLiveGerbilAscentMetaAudit(
                     (display "]")))
        (emit-rows (lambda (rows) (emit-list rows (lambda (r) (emit-list r emit-str)))))
        (keys '(effectively_revoked belief_poisoned tainted_value exfiltration_violation
-               equivocation_violation release_disqualified release_admitted)))
+               equivocation_violation byzantine_witness_equivocation invalid_witness_cosign
+               quorum_3_verified sub_quorum_finality_violation split_world_finality_breach
+               release_disqualified release_admitted)))
   (display "${BEGIN_MARKER}\\n{")
   (let loop ((ks keys) (first #t))
     (when (pair? ks)
