@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Generation-Fenced Coalescing Async Mailbox
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.concurrency.fenced-coalescing-mailbox=
+- *Subdomain*: =quint.engineering.concurrency=
+- *Quint Module*: =concurrency_fenced_mailbox= (=[[file:FencedCoalescingMailbox.qnt][FencedCoalescingMailbox.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/concurrency/fenced-coalescing-mailbox/FencedCoalescingMailbox=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Pending mailbox depth never exceeds 1 via latest-wins coalescing, in-flight workers stay bounded, and committed UI state epoch never regresses behind the highest committed epoch (appliedEpoch == maxAppliedEpoch <= activeEpoch).
+
+#+begin_src quint
+val safety = (h.pendingSlots <= 1 and h.inflight <= 2 and h.appliedEpoch == h.maxAppliedEpoch and h.maxAppliedEpoch <= h.activeEpoch)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =coalesce-single-slot= | =stepMailboxFlood= | =h.pendingSlots > 1= |
+| =epoch-fence-commit= | =stepStaleOverwrite= | =h.appliedEpoch < h.maxAppliedEpoch= |
+
+* Grounded Papers & Specifications
+
+- *M. Kleppmann (2016)*: How to do distributed locking — monotonic fencing tokens rejecting stale in-flight completions.
+- *Reactive Streams Specification (2015)*: Bounded non-blocking backpressure and single-slot latest-value coalescing across async boundaries.
+- *C. Hewitt, P. Bishop & R. Steiger (IJCAI 1973)*: Universal Modular ACTOR Formalism — bounded mailbox isolation for concurrent message dispatch.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/concurrency/fenced-coalescing-mailbox/FencedCoalescingMailbox.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/concurrency/fenced-coalescing-mailbox/FencedCoalescingMailbox.qnt --main=concurrency_fenced_mailbox --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite 4-epoch single-slot coalescing mailbox abstraction; does not model OS timer jitter, multi-lane priority preemption, or payload serialization sizes.

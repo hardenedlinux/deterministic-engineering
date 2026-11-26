@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Lock-Free Main-Thread RCU UI Snapshot Publication
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.concurrency.ui-mainthread-rcu-snapshot=
+- *Subdomain*: =quint.engineering.concurrency=
+- *Quint Module*: =concurrency_ui_rcu_snapshot= (=[[file:UiMainThreadRcuSnapshot.qnt][UiMainThreadRcuSnapshot.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/concurrency/ui-mainthread-rcu-snapshot/UiMainThreadRcuSnapshot=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+The UI render main thread never blocks on a background I/O lock, observes only monotonically published complete snapshot generations (renderGen <= publishedGen), and background staging completes off-lock before atomic swap.
+
+#+begin_src quint
+val safety = (not(h.mainStalled) and not(h.writerHoldsLock) and h.renderGen <= h.publishedGen and (not(h.stagingActive) or h.stagingGen > h.publishedGen))
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =off-thread-io-lock-free= | =stepBlockingIOReload= | =h.mainStalled == true or h.writerHoldsLock == true= |
+| =atomic-publish-after-stage= | =stepTornPublish= | =h.renderGen > h.publishedGen or (h.stagingActive == true and h.stagingGen <= h.publishedGen)= |
+
+* Grounded Papers & Specifications
+
+- *P. E. McKenney & J. D. Slingwine (PDCS 1998)*: Read-Copy Update: Using Execution History to Solve Concurrency Problems — zero-lock reader access to immutable snapshots.
+- *L. Lamport (CACM 1977)*: Concurrent Reading and Writing — wait-free snapshot reads without reader-writer mutex contention.
+- *M. P. Herlihy & J. M. Wing (ACM TOPLAS 1990)*: Linearizability: A Correctness Condition for Concurrent Objects.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/concurrency/ui-mainthread-rcu-snapshot/UiMainThreadRcuSnapshot.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/concurrency/ui-mainthread-rcu-snapshot/UiMainThreadRcuSnapshot.qnt --main=concurrency_ui_rcu_snapshot --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite 4-generation single-writer RCU UI snapshot abstraction; does not model OS page faults, GPU command-buffer stalls, or multi-writer CAS contention.

@@ -8,11 +8,21 @@
 
 * Ownership
 
-This area owns Go-specific engineering knowledge and future bindings: goroutine
-and channel lifecycles, scheduling, memory behavior, implementation cases and
-language-specific verification correspondences. No Go implementation or SDK
-execution is currently admitted by this directory.
+This area owns Go-specific engineering knowledge and formal-model-backed Go
+reference subjects: goroutine and channel lifecycles, lock-free RCU snapshot
+publication, monotonic epoch-fenced coalescing mailboxes, bounded permit
+ownership, structured cancellation quiescence, and hybrid UI/WebView lifecycle
+state machines.
 
-Shared Scheme framework/design drivers remain in =library/drivers/=. A tool
-implemented in Go, including OpenSysML, can model other languages and does not
-turn every consuming design into Go engineering.
+* Concurrency Reference Kernel (=languages-engineering/go/concurrency/=)
+
+| Subject | Paired Quint Model | Invariant Refined |
+|---------+--------------------+-------------------|
+| =SnapshotStore[T]= | =engineering.concurrency.ui-mainthread-rcu-snapshot= | Lock-free =atomic.Pointer= render reads; off-lock background staging |
+| =FencedLane[Req, Res]= | =engineering.concurrency.fenced-coalescing-mailbox= | Single-slot latest-wins coalescing + monotonic epoch fencing |
+| =PermitPool= | =engineering.concurrency.backpressure-memory= | Disjoint =queued/running/returned/cleanup= permit conservation |
+| =StructuredScope= | =engineering.concurrency.structured-cancellation= | Lexical nursery lifetime with child-quiescence barrier |
+| =FramePacer= | =engineering.concurrency.fenced-coalescing-mailbox= | Demand-driven coalesced invalidation + P99 frame telemetry |
+| =WebViewLifecycle= | =engineering.concurrency.hybrid-webview-focus-lifecycle= | Async warmup + focus revocation on hide + Tier-0/Tier-2 isolation |
+
+Shared Scheme framework/design drivers remain in =library/drivers/=.
