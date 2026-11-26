@@ -236,20 +236,24 @@
                         (set! subj-obls (cons (list sid "source-api-ban-lint" "api-ban-lint") subj-obls))
                         (set! fsteps (cons (list cname sid "source-api-ban-lint" "de-source-contract" "api-ban-lint") fsteps)))
                        (crate-p
-                        (set! subj-obls (cons (list sid "os-sigkill-leak-oracle" "os-sigkill-oracle") subj-obls))
-                        (set! fsteps (cons (list cname sid "os-sigkill-leak-oracle" "de-native-oracle" "os-sigkill-oracle") fsteps))))
+                        (let ((ocl (or (part-attr cid "oracleClaimKind") "os-sigkill-oracle"))
+                              (oobl (or (part-attr cid "oracleObligation") "os-sigkill-leak-oracle")))
+                          (set! subj-obls (cons (list sid oobl ocl) subj-obls))
+                          (set! fsteps (cons (list cname sid oobl "de-native-oracle" ocl) fsteps)))))
                       (for-each (lambda (a) (set! sproduces (cons (list cname a) sproduces))) prods)
                       (for-each (lambda (a) (set! sconsumes (cons (list cname a) sconsumes))) conss)
                       (for-each (lambda (p) (set! sreq-prem (cons (list cname p) sreq-prem))) reqp)
                       (for-each (lambda (p) (set! ssup-prem (cons (list cname p) ssup-prem))) supp))))
                 elements)
-              ;; Map SysML v2 mbt-itf-edge Dependency (consumer -> producer) to Fun-Flow DAG edge (producer -> consumer).
+              ;; Map SysML v2 *mbt-itf-edge Dependency (consumer -> producer) to Fun-Flow DAG edge (producer -> consumer).
               (for-each
                 (lambda (dep)
                   (def dep-name (car dep))
                   (def cli-id (cadr dep))
                   (def sup-id (caddr dep))
-                  (when (equal? dep-name "mbt-itf-edge")
+                  (when (and (string? dep-name)
+                             (or (equal? dep-name "mbt-itf-edge")
+                                 (and (string-contains dep-name "mbt-itf-edge") #t)))
                     (let* ((cli-el (hash-get by-id cli-id))
                            (sup-el (hash-get by-id sup-id))
                            (cli-own (and cli-el (ref-id (hash-get cli-el "owner"))))

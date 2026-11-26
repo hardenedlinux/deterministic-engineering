@@ -406,6 +406,44 @@ package MultiMethodFunFlowArchitecture {
                 port premiseOut : PremiseHandoffPort;
             }
         }
+
+        // Second Engineering Subject proving horizontal reuse across domains with zero framework duplication
+        part backpressureMemory {
+            attribute identity : String = "engineering.concurrency.backpressure-memory";
+            attribute tags : String = "engineering,concurrency,memory,defense.mutability.mutable-root,hazard.memory-exhaustion";
+            attribute factors : String = "bounded-memory-backpressure";
+
+            part bpQuintTarget {
+                attribute modelId : String = "engineering.concurrency.backpressure-memory";
+                attribute countermodels : String = "early-release,over-admit,queue-overflow,duplicate-admit";
+                attribute producesArtifact : String = "itf-trace";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part bpLeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.Backpressure";
+                attribute refinesCore : String = "DeterministicEngineering.Core.Budget";
+                attribute platformSpecializations : String = "TokioRayonBoundedBackpressure";
+                attribute requiresPremise : String = "PayloadDropPrecedesPermitRelease";
+                attribute transportContract : String = "Patch.frame+Proof.reuse";
+                port premiseIn : PremiseConsumerPort;
+            }
+
+            part bpSourceContractTarget {
+                attribute subjectDir : String = "languages-engineering/rust/concurrency/resource-control/backpressure-memory";
+                attribute staticTool : String = "clippy";
+            }
+
+            part bpRustOracleTarget {
+                attribute cratePath : String = "languages-engineering/rust/concurrency/resource-control/backpressure-memory";
+                attribute oracleClaimKind : String = "zero-leak-assertion";
+                attribute oracleObligation : String = "rust-zero-leak-oracle";
+                attribute consumesArtifact : String = "itf-trace";
+                attribute supportsPremise : String = "PayloadDropPrecedesPermitRelease";
+                port traceIn : ArtifactConsumerPort;
+                port premiseOut : PremiseHandoffPort;
+            }
+        }
     }
 
     // ── 12. Architectural, Cross-Method, and Requirement Dependencies ──
@@ -420,9 +458,17 @@ package MultiMethodFunFlowArchitecture {
     dependency 'rust-contract-source' from system::processTreeReclamation::sourceContractTarget to system::rustSubjects;
     dependency 'rust-step-source' from system::processTreeReclamation::rustOracleTarget to system::rustSubjects;
 
+    dependency 'bp-quint-source' from system::backpressureMemory::bpQuintTarget to system::quintModels;
+    dependency 'bp-lean-source' from system::backpressureMemory::bpLeanPooTarget to system::leanModels;
+    dependency 'bp-lean-refines-core' from system::backpressureMemory::bpLeanPooTarget to system::leanModels::core::budget;
+    dependency 'bp-rust-contract-source' from system::backpressureMemory::bpSourceContractTarget to system::rustSubjects;
+    dependency 'bp-rust-oracle-source' from system::backpressureMemory::bpRustOracleTarget to system::rustSubjects;
+
     // Cross-method edges enforced by MR03 & MR04 (zero model duplication)
-    dependency 'mbt-itf-edge' from system::processTreeReclamation::rustOracleTarget::traceIn to system::processTreeReclamation::quintTarget::traceOut;
-    dependency 'premise-handoff-edge' from system::processTreeReclamation::leanPooTarget::premiseIn to system::processTreeReclamation::rustOracleTarget::premiseOut;
+    dependency 'pt-mbt-itf-edge' from system::processTreeReclamation::rustOracleTarget::traceIn to system::processTreeReclamation::quintTarget::traceOut;
+    dependency 'pt-premise-handoff-edge' from system::processTreeReclamation::leanPooTarget::premiseIn to system::processTreeReclamation::rustOracleTarget::premiseOut;
+    dependency 'bp-mbt-itf-edge' from system::backpressureMemory::bpRustOracleTarget::traceIn to system::backpressureMemory::bpQuintTarget::traceOut;
+    dependency 'bp-premise-handoff-edge' from system::backpressureMemory::bpLeanPooTarget::premiseIn to system::backpressureMemory::bpRustOracleTarget::premiseOut;
 
     // Verification obligation allocations (planned checks, no execution verdict)
     dependency 'alloc-mr-gate' from obligations::ascentMultiMethodGate to system::governance;

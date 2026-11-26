@@ -32,6 +32,7 @@
   copy-fact
   alist-ref
   alist-replace
+  filter-governance-sources-for-subject
   flow-of
   run-ascent-program
   adapter-result->raw-receipt
@@ -58,6 +59,39 @@
 (def (alist-replace alist key new-val)
   (map (lambda (entry) (if (equal? (car entry) key) (cons key new-val) entry))
        alist))
+
+;; Pure multi-subject slicer: restricts a repository-wide SysML v2 governance
+;; source alist to a single subject's obligations, steps, DAG edges, and premises.
+(def (filter-governance-sources-for-subject gov-sources subject-id)
+  (def sid (sym->str subject-id))
+  (def steps (filter (lambda (r) (equal? (cadr r) sid)) (alist-ref gov-sources 'flow_step '())))
+  (def step-names (map car steps))
+  (def (in-steps? s) (and (member s step-names) #t))
+  (list
+    (cons 'subject_obligation
+          (filter (lambda (r) (equal? (car r) sid)) (alist-ref gov-sources 'subject_obligation '())))
+    (cons 'subject_factor
+          (filter (lambda (r) (equal? (car r) sid)) (alist-ref gov-sources 'subject_factor '())))
+    (cons 'method_allows_claim (alist-ref gov-sources 'method_allows_claim '()))
+    (cons 'flow_step steps)
+    (cons 'flow_dag_edge
+          (filter (lambda (r) (and (in-steps? (car r)) (in-steps? (cadr r))))
+                  (alist-ref gov-sources 'flow_dag_edge '())))
+    (cons 'step_produces
+          (filter (lambda (r) (in-steps? (car r))) (alist-ref gov-sources 'step_produces '())))
+    (cons 'step_consumes
+          (filter (lambda (r) (in-steps? (car r))) (alist-ref gov-sources 'step_consumes '())))
+    (cons 'step_requires_premise
+          (filter (lambda (r) (in-steps? (car r))) (alist-ref gov-sources 'step_requires_premise '())))
+    (cons 'step_supports_premise
+          (filter (lambda (r) (in-steps? (car r))) (alist-ref gov-sources 'step_supports_premise '())))
+    (cons 'correspondence_bridge (alist-ref gov-sources 'correspondence_bridge '()))
+    (cons 'stateful_quint_step
+          (filter (lambda (r) (in-steps? (car r))) (alist-ref gov-sources 'stateful_quint_step '())))
+    (cons 'step_countermodel
+          (filter (lambda (r) (in-steps? (car r))) (alist-ref gov-sources 'step_countermodel '())))
+    (cons 'declared_os_containment
+          (filter (lambda (r) (equal? (car r) sid)) (alist-ref gov-sources 'declared_os_containment '())))))
 
 ;; Polymorphic unwrapper: extracts `.flow` from a VerificationStep or passes a Flow through.
 (def (flow-of step-or-flow)

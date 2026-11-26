@@ -210,9 +210,10 @@
       (check (= (length (.get projected workflow-edges)) 8) => #t)
       (check (>= (length (.get projected requirements)) 12) => #t)
       (check (= (length (.get projected verifications)) 5) => #t)
-      ;; Run ASCENT MR01-MR06 directly on SysML v2 projected facts!
+      ;; Run ASCENT MR01-MR06 directly on SysML v2 projected facts (admits all declared subjects!).
       (def gov-res (reason-multi-method-governance (.get projected governance-sources)))
       (check-equal? ((.ref gov-res 'rows-of) 'mr_finding) '())
       (check-equal? ((.ref gov-res 'rows-of) 'mr03_open_premise) '())
-      (check-equal? ((.ref gov-res 'rows-of) 'runnable_admitted)
-                    '(("engineering.lifecycle.process-tree-reclamation"))))))
+      (def admitted-subjs ((.ref gov-res 'rows-of) 'runnable_admitted))
+      (check (and (member '("engineering.lifecycle.process-tree-reclamation") admitted-subjs) #t) => #t)
+      (check (and (member '("engineering.concurrency.backpressure-memory") admitted-subjs) #t) => #t))))

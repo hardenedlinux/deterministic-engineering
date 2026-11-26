@@ -480,17 +480,18 @@ check-defense:
       just test-file "$f"
     done
 
-# M5 multi-method verification gate (SysML v2 -> Fun-Flow DAG -> Quint + LeanPoo + Clippy + Rust SIGKILL Oracle -> ASCENT MR01-MR06/ER01-ER04/IR01-IR04).
+# M5 multi-method verification gate (SysML v2 -> Fun-Flow DAG -> Quint + LeanPoo + Clippy + Native Oracles -> ASCENT MR01-MR06/ER01-ER04/IR01-IR04 across ProcessTreeReclamation & BackpressureMemory).
 check-multi-method:
     just test-file t/yanxu/Library/verification-flow/governance-and-sysml-linkage-test.ss
     just test-file t/yanxu/Library/verification-flow/end-to-end-ops-runner-test.ss ".*" 240s
     just test-file t/yanxu/Library/verification-flow/incremental-cache-reuse-test.ss ".*" 240s
+    just test-file t/yanxu/Library/verification-flow/multi-subject-backpressure-test.ss ".*" 240s
 
-# Run the M5 multi-method Fun-Flow Ops Runner (optional content-addressed cache_dir) and write a fresh JSON evidence report.
-investigate-multi-method output cache_dir="":
+# Run the M5 multi-method Fun-Flow Ops Runner (optional cache_dir & subject: process-tree-reclamation | backpressure-memory) and write a fresh JSON evidence report.
+investigate-multi-method output cache_dir="" subject="process-tree-reclamation":
     #!/usr/bin/env bash
     set -euo pipefail
     test ! -e "{{output}}"
     mkdir -p .data/test-logs
     log="$(mktemp .data/test-logs/multi-method-XXXXXX)"
-    timeout --foreground --signal=TERM --kill-after=5s 300s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/verification-flow-runner.ss "{{output}}" "{{cache_dir}}" 2>&1 | tee "$log"
+    timeout --foreground --signal=TERM --kill-after=5s 300s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/verification-flow-runner.ss "{{output}}" "{{cache_dir}}" "{{subject}}" 2>&1 | tee "$log"
