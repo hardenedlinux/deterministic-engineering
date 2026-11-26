@@ -20,7 +20,7 @@ This benchmark evaluates whether AST-level defensive-engineering auditors catch
 all four AI Agent defensive-hallucination classes (=G2= in [[file:../../10-19-design/10-architecture/10.153-defensive-engineering-taxonomy-and-modular-organization.org][10.153]]) without
 generating false positives on clean deterministic-boundary code.
 
-- *Independent Gold*: Every case (=AG01=–=AG65=) has a fixed independent
+- *Independent Gold*: Every case (=AG01=–=AG70=) has a fixed independent
   expected outcome (=pass= vs. =fail= + exact hallucination/anti-evasion/escalation/durable-resume class). Candidate
   auditor output never generates gold.
 - *Native AST, Diff-Delta, Scope-Fencing & Closed-Loop Governance Auditors Evaluated*:
@@ -49,7 +49,7 @@ generating false positives on clean deterministic-boundary code.
      [[file:../../../languages-engineering/ts/defense/agent-audit/governance-harness.test.ts][governance-harness.test.ts]],
      and =just audit-agent-patch=).
 
-* Sixty-Five-Case Cohort (=AG01=–=AG65=)
+* Seventy-Case Cohort (=AG01=–=AG70=)
 :PROPERTIES:
 :CUSTOM_ID: bench3005-cohort
 :END:
@@ -121,6 +121,11 @@ generating false positives on clean deterministic-boundary code.
 | =AG63= | HITL Durable Approval (=B5=) | TTL expiry, duplicate click & cross-proposal replay | Fail closed / =AlreadyConsumedNoop= | Blocks cross-proposal hash mismatch & expired receipt; duplicate wake-up is single-use idempotent |
 | =AG64= | HITL Durable Approval (=B5=) | 2-of-N human quorum SoD & monotonic =M3= lease | Refuse self/dup signer; =Admit= at 2 distinct | Blocks requester self-approval & duplicate signer spoofing; mints fresh monotonic =M3= execution lease |
 | =AG65= | HITL Durable Approval (=B5=) | Anti-nagging veto persistence & finite retry budget | Refuse nagging retry; enforce finite budget | Immutable =M1= veto blocks identical retries; allows 1 revised proposal with =M1= evidence, then stops |
+| =AG66= | Capability Attenuation (=B3=) | Multi-hop monotonic delegation & =M1= custody receipt | =Authorized= in narrow scope; =Refuted= outside | =Coordinator -> Contractor -> ToolWorker= succeeds within segment-safe path/read scope, logs full lineage |
+| =AG67= | Capability Attenuation (=B3=) | Privilege amplification & non-delegable re-delegation | Refuse (=scope-escalation-*= / =parent-not-delegatable=) | Blocks =read->write=, =/parser->/parser-evil=, TTL widening, hop overflow, and =delegatable:false= re-delegation |
+| =AG68= | Capability Attenuation (=B3=) | Macaroon HMAC caveat tampering & bearer theft | Refuse (=chain-mac-tampered= / =bearer-identity-mismatch=) | Detects mutated child caveats without root key, cross-agent certificate hijacking, and TTL expiry |
+| =AG69= | Capability Attenuation (=B3=) | Cascading ancestor revocation (=M3= caretaker) | Refuse (=ancestor-revoked-cascade=); sibling stays alive | Revoking =Contractor-A= immediately invalidates =ToolWorker-C= while leaving sibling =Contractor-B= authorized |
+| =AG70= | Capability Attenuation (=B3 × R3=) | Root HMAC key non-leakage into =M1= Merkle store | Refuse (=R3 ReachabilityLeakError=) | =DelegationRootKey= cannot enter =M1= blob graph or =JSON.stringify= via accidental reachability |
 
 * Observed Verification Receipts
 :PROPERTIES:
@@ -138,14 +143,15 @@ generating false positives on clean deterministic-boundary code.
 | Durable AI Context Projection, Anti-Overthinking & Multi-Agent SSI (=AG51=–=AG55=) | =bun test languages-engineering/ts/defense/agent-audit/durable-ai-context.test.ts= | **5/5 cases matched gold** (compaction-loss-free digest parity, >80% anti-overthinking reduction, Reviewer injection firewall, disjoint-file =rw= semantic write-skew detection, stale lease fencing) |
 | Production Business Extensions: SoD Release & Regulated Multi-Tenant Replay (=AG56=–=AG60=) | =bun test languages-engineering/ts/defense/agent-audit/durable-business-orchestrator.test.ts= | **5/5 cases matched gold** (SoD refusal, freeze/unpinned fail-closed, canary rollback with forensic preservation & lease fencing, cross-tenant AEAD isolation, deterministic regulatory replay after GC) |
 | Long-Horizon HITL Durable Pause/Resume & Policy-Drift Re-Approval (=AG61=–=AG65=) | =bun test languages-engineering/ts/defense/agent-audit/durable-hitl-approval.test.ts= | **5/5 cases matched gold** (cold hibernation =R3= leak block & prose firewall, baseline/policy drift invalidation vs. =R1= disjoint upgrade, TTL/replay fencing, 2-of-N quorum SoD, anti-nagging veto persistence) |
-| Combined 65-case 5-language, anti-evasion, Durable AI & Business Extension benchmark | =just check-defense= | **65/65 exact gold match** (=tp=44, tn=21, fp=0, fn=0=) |
+| Cross-Trust-Boundary Delegation & Macaroon Capability Attenuation (=AG66=–=AG70=) | =bun test languages-engineering/ts/defense/agent-audit/capability-attenuation.test.ts= | **5/5 cases matched gold** (multi-hop monotonic narrowing + custody receipt, amplification refusal, Macaroon HMAC tamper & bearer theft, cascading ancestor revocation, =R3= root key non-leakage) |
+| Combined 70-case 5-language, anti-evasion, Durable AI & Business Extension benchmark | =just check-defense= | **70/70 exact gold match** (=tp=48, tn=22, fp=0, fn=0=) |
 
 * Limits
 :PROPERTIES:
 :CUSTOM_ID: bench3005-limits
 :END:
 
-This 65-case benchmark establishes deterministic AST-level, diff-delta,
+This 70-case benchmark establishes deterministic AST-level, diff-delta,
 scope-fencing, bounded closed-loop, hot-policy co-evolution, async-cut,
 semantic-drift memoization, AEAD-isolated Merkle storage, role-projected
 context, multi-agent SSI concurrency, and business SoD/replay precision and

@@ -1026,6 +1026,112 @@ class BadStaleApprovalResumeSUT extends HitlDurableApprovalSUT {
   }
 }
 
+class CapabilityAttenuationSUT {
+  rootScope = 3;
+  parentScope = 0;
+  childScope = 0;
+  delegationDepth = 0;
+  maxDepth = 2;
+  parentDelegatable = true;
+  chainMacValid = false;
+  ancestorRevoked = false;
+  escalationViolations = 0;
+  revokedSubtreeExecutions = 0;
+  forgedOrDepthViolations = 0;
+  validExecutions = 0;
+
+  apply(action: string): void {
+    switch (action) {
+      case 'mintParentDelegation':
+        if (this.parentScope === 0) {
+          this.parentScope = 2;
+          this.delegationDepth = 1;
+          this.chainMacValid = true;
+        }
+        break;
+      case 'attenuateChildSafe':
+        if (this.parentScope > 0 && this.childScope === 0) {
+          this.childScope = 1;
+          this.delegationDepth = 2;
+          this.chainMacValid = true;
+        }
+        break;
+      case 'attemptScopeEscalation':
+        if (this.parentScope > 0 && this.childScope === 0) {
+          this.childScope = 3;
+          this.delegationDepth = 2;
+          this.chainMacValid = true;
+        }
+        break;
+      case 'attemptTamperMacOrDepth':
+        if (this.parentScope > 0 && this.chainMacValid) {
+          this.chainMacValid = false;
+          this.delegationDepth = 3;
+        }
+        break;
+      case 'freezeParentDelegation':
+        if (this.parentDelegatable) {
+          this.parentDelegatable = false;
+        }
+        break;
+      case 'revokeAncestorInM3':
+        if (!this.ancestorRevoked) {
+          this.ancestorRevoked = true;
+        }
+        break;
+      case 'executeDelegatedAction': {
+        const monotonic =
+          this.childScope > 0 &&
+          this.childScope <= this.parentScope &&
+          this.parentScope <= this.rootScope;
+        const notRevoked = !this.ancestorRevoked;
+        const macAndDepthOk =
+          this.chainMacValid && this.parentDelegatable && this.delegationDepth <= this.maxDepth;
+        if (monotonic && notRevoked && macAndDepthOk) {
+          this.validExecutions += 1;
+          if (!monotonic) this.escalationViolations += 1;
+          if (!notRevoked) this.revokedSubtreeExecutions += 1;
+          if (!macAndDepthOk) this.forgedOrDepthViolations += 1;
+        }
+        break;
+      }
+      default:
+        throw new Error(`Unknown CapabilityAttenuationSUT action: ${action}`);
+    }
+  }
+
+  snapshot() {
+    return {
+      rootScope: this.rootScope,
+      parentScope: this.parentScope,
+      childScope: this.childScope,
+      delegationDepth: this.delegationDepth,
+      maxDepth: this.maxDepth,
+      parentDelegatable: this.parentDelegatable,
+      chainMacValid: this.chainMacValid,
+      ancestorRevoked: this.ancestorRevoked,
+      escalationViolations: this.escalationViolations,
+      revokedSubtreeExecutions: this.revokedSubtreeExecutions,
+      forgedOrDepthViolations: this.forgedOrDepthViolations,
+      validExecutions: this.validExecutions,
+    };
+  }
+}
+
+class BadScopeEscalatingDelegateSUT extends CapabilityAttenuationSUT {
+  override apply(action: string): void {
+    if (action === 'attemptScopeEscalation' && this.parentScope > 0 && this.childScope === 0) {
+      // Anti-pattern: allows escalated child scope to execute immediately without attenuation check!
+      this.childScope = 3;
+      this.delegationDepth = 2;
+      this.validExecutions += 1;
+      this.escalationViolations += 1;
+      return;
+    }
+    super.apply(action);
+  }
+}
+
 const repoRoot = resolve(import.meta.dir, '../../../..');
 
 function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(): Record<string, unknown>}>(
@@ -1078,7 +1184,7 @@ function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(
   }
 }
 
-describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (12 Defense Models)', () => {
+describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (13 Defense Models)', () => {
   test('EpistemicStateLattice ITF actions drive EpistemicLatticeSUT with exact step-by-step state isomorphism', () => {
     const stats = replayModelAgainstSut(
       'packages/quint-models/engineering/defense/epistemic-state-lattice/EpistemicStateLattice.qnt',
@@ -1328,6 +1434,31 @@ describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (12 Defense Models
       () => new HitlDurableApprovalSUT(),
       projectH,
       () => new BadStaleApprovalResumeSUT(),
+    );
+    expect(stats.transitions).toBeGreaterThan(50);
+    expect(stats.brokenDiverged).toBe(true);
+  }, 30_000);
+
+  test('CapabilityAttenuation ITF actions drive CapabilityAttenuationSUT with exact state isomorphism and reject BadScopeEscalatingDelegateSUT', () => {
+    const projectH = (h: Record<string, unknown>) => ({
+      rootScope: asInt(h.rootScope),
+      parentScope: asInt(h.parentScope),
+      childScope: asInt(h.childScope),
+      delegationDepth: asInt(h.delegationDepth),
+      maxDepth: asInt(h.maxDepth),
+      parentDelegatable: Boolean(h.parentDelegatable),
+      chainMacValid: Boolean(h.chainMacValid),
+      ancestorRevoked: Boolean(h.ancestorRevoked),
+      escalationViolations: asInt(h.escalationViolations),
+      revokedSubtreeExecutions: asInt(h.revokedSubtreeExecutions),
+      forgedOrDepthViolations: asInt(h.forgedOrDepthViolations),
+      validExecutions: asInt(h.validExecutions),
+    });
+    const stats = replayModelAgainstSut(
+      'packages/quint-models/engineering/defense/capability-attenuation/CapabilityAttenuation.qnt',
+      () => new CapabilityAttenuationSUT(),
+      projectH,
+      () => new BadScopeEscalatingDelegateSUT(),
     );
     expect(stats.transitions).toBeGreaterThan(50);
     expect(stats.brokenDiverged).toBe(true);

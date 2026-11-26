@@ -1,0 +1,74 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 10.160 Cross-Trust-Boundary Multi-Agent Delegation: Monotonic Capability Attenuation & Cascading Revocation
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.160
+#+STARTUP: overview
+#+OPTIONS: toc:3 num:nil
+#+FILETAGS: :architecture:capability-attenuation:macaroons:delegation:supply-chain:governance:
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.156-orthogonal-persistence-durable-multi-agent-governance.org][10.156 Stratified orthogonal persistence]] | [[file:10.158-durable-ai-business-extensions-sod-release-and-regulated-replay.org][10.158 Business extensions B1/B2]] | [[file:10.159-human-in-the-loop-durable-pause-resume-and-policy-drift-reapproval.org][10.159 HITL durable approval B5]] | [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05 70-case benchmark]]
+
+* Problem: Confused Deputy & Privilege Laundering in Multi-Hop Agent Supply Chains
+:PROPERTIES:
+:CUSTOM_ID: cap160-problem
+:STATUS: implemented-verified
+:END:
+
+When a Coordinator AI Agent delegates subtasks across organizational or tool
+boundaries (Coordinator -> Contractor Agent -> Third-Party MCP/Tool Worker),
+ambient-authority or stateless-JWT authorization fails along five classic
+capability-security axes (Hardy 1988; Miller/Yee/Shapiro 2003; Birgisson et al.
+NDSS 2014):
+
+1. *Blank-Check Forwarding (Confused Deputy)*: Forwarding a parent's broad =M3=
+   token to a narrow leaf tool lets a prompt-injected sub-agent wield root
+   ambient authority.
+2. *Caveat Stripping & Scope Escalation*: A compromised intermediate agent tries
+   to widen =read -> write=, escape path prefixes (=/src/parser -> /src/parser-evil=),
+   extend TTL, or re-delegate past =remainingHops == 0= / =delegatable == false=.
+3. *Bearer Theft*: A sibling agent steals and presents a peer's certificate
+   under a different caller identity.
+4. *Orphaned Zombie Subtree After Ancestor Revocation*: Stateless leaf tokens
+   keep executing even after an intermediate contractor is revoked.
+5. *Delegation Chain Wash & Root Key Leak (=R3=)*: Multi-hop logs lose upstream
+   custody attribution, or a root HMAC signing key leaks into =M1= storage.
+
+* Stratified OP × Macaroon Capability Architecture (Scenario B3)
+:PROPERTIES:
+:CUSTOM_ID: cap160-architecture
+:STATUS: implemented-verified
+:END:
+
+| Governance Primitive | Stratification & Cryptographic Mechanism | Security Invariant |
+|----------------------+------------------------------------------+--------------------|
+| Non-Serializable =DelegationRootKey= | Branded with =M3_NON_SERIALIZABLE_CAPABILITY= (=R3=); =toJSON()= throws | Root HMAC key can never enter =M1= Merkle persistence |
+| Macaroon HMAC-SHA256 Caveat Chaining | =childMac = HMAC(parentMac, canonicalChildCaveats)= stored in immutable =M1= Merkle DAG; verified in constant time (=timingSafeEqual=) from live =M3= root key | Any holder can narrow offline without the root key; any caveat stripping/tampering fails verification |
+| Monotonic Attenuation Meet | Segment-boundary-safe =isPathWithinPrefix=, action subset, non-increasing TTL, strictly decreasing =remainingHops=, =delegatable= lock | Zero privilege amplification across hops (=escalationViolations == 0=) |
+| KeyKOS/EROS Cascading Revocation | Live =M3= caretaker registry checked against *every* ancestor certificate & principal along root -> leaf at consumption time | Revoking =Contractor-A= instantaneously invalidates downstream =ToolWorker-C= while leaving sibling =Contractor-B= intact |
+| Immutable =M1= Chain-of-Custody Receipt | Every authorized execution pins =custodyLineage= (=[root, ..., leaf]=) into =M1= Merkle store | Zero-wash cross-organization forensic attribution |
+
+* Executable Artifacts & Verification Receipts
+:PROPERTIES:
+:CUSTOM_ID: cap160-artifacts
+:STATUS: executed-verified
+:END:
+
+| Artifact | Path | Verification Evidence |
+|----------+------+-----------------------|
+| 13th Formal Model (=capability-attenuation=) | [[file:../../../packages/quint-models/engineering/defense/capability-attenuation/CapabilityAttenuation.qnt][CapabilityAttenuation.qnt]] | Apalache 6/6 PASS (safety + 3 countermodels: =scope-escalation=, =revoked-subtree=, =forged-or-depth=), =guard-probe= =essential=, 100% MBT coverage |
+| MBT SUT State-Machine Refinement | [[file:../../../languages-engineering/ts/defense/boundary-contrast/mbt-replay.test.ts][mbt-replay.test.ts]] | =CapabilityAttenuationSUT= isomorphic to ITF traces; rejects =BadScopeEscalatingDelegateSUT= |
+| Executable Macaroon Authority & Benchmark (=AG66=–=AG70=) | [[file:../../../languages-engineering/ts/defense/agent-audit/capability-attenuation.ts][capability-attenuation.ts]] / [[file:../../../languages-engineering/ts/defense/agent-audit/capability-attenuation.test.ts][capability-attenuation.test.ts]] | 5/5 benchmark cases (=AG66=–=AG70=) exact gold match; dogfood =just audit-agent-patch= 0 findings |
+
+* Limits
+:PROPERTIES:
+:CUSTOM_ID: cap160-limits
+:STATUS: implemented-verified
+:END:
+
+Macaroon HMAC chaining proves cryptographic integrity against any external party
+lacking the =M3= root key; for fully decentralized cross-organization verification
+where the verifier cannot share a symmetric root key with the issuer, production
+deployments should substitute asymmetric signature chains (Ed25519/UCAN/Biscuit)
+preserving the exact same =M1= Merkle custody and live =M3= cascading revocation model.
