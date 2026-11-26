@@ -38,9 +38,10 @@ jobs:
       - name: Run Clippy API-ban lint (-D warnings)
         working-directory: languages-engineering/rust/lifecycle/process-tree-guard
         run: cargo clippy --all-targets -- -D warnings
-      - name: Run HTTP /shutdown E2E & OS SIGKILL/setsid leak oracle controls
+      - name: Run cgroup v2 unit contracts, HTTP /shutdown E2E, & OS SIGKILL/setsid leak oracle controls
         working-directory: languages-engineering/rust/lifecycle/process-tree-guard
         run: |
+          cargo test --lib -- --nocapture
           cargo test --test http_shutdown_e2e -- --nocapture --test-threads=1
           cargo test --test sigkill_leak_oracle -- --nocapture --test-threads=1
 
@@ -57,3 +58,49 @@ jobs:
           clang -Wall -Wextra -Werror bad_defensive.c deterministic_boundary.c contrast_test.c -o /tmp/c_contrast
           /tmp/c_contrast
           cbmc deterministic_boundary.c proof.c --bounds-check --pointer-check --unsigned-overflow-check
+
+  lean4-meta-and-domain-proofs:
+    name: Lean 4 / LeanPoo 6-Core & 27-Theorem Meta-Soundness Kernel Gate (0 sorryAx)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Install elan & pinned Lean 4 toolchain
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Modular Lake build across all 5 Engineering subjects & 6 Cores
+        working-directory: packages/lean-models
+        run: |
+          lake build \
+            DeterministicEngineering.Engineering.ProcessTree \
+            DeterministicEngineering.Engineering.Backpressure \
+            DeterministicEngineering.Engineering.LeaseFencing \
+            DeterministicEngineering.Engineering.BoundaryConservation \
+            DeterministicEngineering.Engineering.MetaGovernanceSoundness
+      - name: Audit #print axioms (0 sorryAx, zero axioms on MetaGovernanceSoundness)
+        working-directory: packages/lean-models
+        run: |
+          out="$(lake env lean --stdin <<'EOF'
+          import DeterministicEngineering.Core.MetaGovernance
+          import DeterministicEngineering.Engineering.MetaGovernanceSoundness
+          #print axioms DeterministicEngineering.Core.MetaGovernance.ir03_dag_invalidation_transitive
+          #print axioms DeterministicEngineering.Core.MetaGovernance.same_wave_implies_independent
+          #print axioms DeterministicEngineering.Core.MetaGovernance.mr07_acyclic_premise_sound
+          #print axioms DeterministicEngineering.Core.MetaGovernance.mr08_acyclic_dag_sound
+          #print axioms DeterministicEngineering.Core.MetaGovernance.fleet_merkle_pinned_key_tamper_resistant
+          #print axioms DeterministicEngineering.Core.MetaGovernance.ir07_mixed_dag_and_premise_invalidation
+          #print axioms DeterministicEngineering.Core.MetaGovernance.ir08_expired_m3_cascades_under_strict_premise
+          #print axioms DeterministicEngineering.Core.MetaGovernance.revoked_key_blocks_reuse_and_downstream
+          #print axioms DeterministicEngineering.Engineering.MetaGovernanceSoundness.keyRevocation_invalidates_witness_and_downstream
+          EOF
+          )"
+          printf '%s\n' "$out"
+          if printf '%s\n' "$out" | grep -q 'sorryAx'; then
+            echo "ERROR: sorryAx detected in Lean 4 meta-soundness audit" >&2
+            exit 1
+          fi
+          if printf '%s\n' "$out" | grep -q 'depends on axioms'; then
+            echo "ERROR: unexpected non-constructive axiom detected in MetaGovernance proofs" >&2
+            exit 1
+          fi

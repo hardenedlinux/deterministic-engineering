@@ -19,11 +19,14 @@
 
 #+BEGIN_QUOTE
 Status: *implemented and end-to-end verified (M0–M5 + Zero-Glue SysML v2 Compiler +
-Ed25519 Signed Cache/Fleet + 4-Subject / 12-Engine Fleet)*. The companion
+Parallel Conflict-Free Waves + Multi-Key Ed25519 Trust Store/Rotation/Revocation +
+ASCENT MR01–MR08 / ER01–ER04 / IR01–IR08 + 27 Zero-Axiom Lean 4 Meta-Theorems +
+Linux cgroup v2 Backend + 5-Subject / 13-Engine Fleet)*. The companion
 [[file:10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml][10.154 SysML v2 specification]]
 is the live single source of truth compiled directly into Fun-Flow DAGs by
 [[file:../../../library/verification-flow/sysml-compiler.ss][sysml-compiler.ss]] and
-gated by =just check-multi-method= and =just fleet-multi-method=.
+gated by =just check-multi-method=, =just fleet-multi-method=,
+=just plan-multi-method-fleet=, and =just impact-multi-method=.
 #+END_QUOTE
 
 This item defines the macro multi-method verification architecture that complements
@@ -118,11 +121,11 @@ method family is authorized to discharge only its own =claim-kind= set:
 #+NAME: zero-duplication-examples
 | Engineering subject | Quint owns (finite races & MBT) | LeanPoo owns (unbounded laws & 6/6 cores) | Source / OS Oracle owns (physical grounding) | Premise handoff (=MR03=/=ER03=) |
 |---------------------+---------------------------------+-------------------------------------------+----------------------------------------------+---------------------------------|
-| =process-tree-reclamation= (pilot vertical slice) | 3-tier finite transitions, 5 guard-pruning countermodels, 20 =--mbt= ITF traces | =Core.Containment= + =Engineering.ProcessTree= ($\forall d,k$ tree closure, =LinuxCgroupV2= / =DarwinPgidPipe= refinement, =Patch.frame= reuse) | Rust =ProcessTreeGuard= + Clippy ban + 3 HTTP =/shutdown= E2E + 4 live Quint/online-OS MBT + 6 OS =SIGKILL=/Darwin =setsid()= controls | =SpawnPreservesContainer= (Rust Oracle -> LeanPoo) |
+| =process-tree-reclamation= (pilot vertical slice) | 3-tier finite transitions, 5 guard-pruning countermodels, 20 =--mbt= ITF traces | =Core.Containment= + =Engineering.ProcessTree= ($\forall d,k$ tree closure, =LinuxCgroupV2= / =DarwinPgidPipe= refinement, =Patch.frame= reuse) | Rust =ProcessTreeGuard= (Linux =cgroup v2= zero-TOCTOU =pre_exec= + =cgroup.kill=, Darwin =setpgid=+Pipe-EOF) + Clippy ban + 3 HTTP =/shutdown= E2E + 4 live Quint/online-OS MBT + 7 OS =SIGKILL=/=setsid()=/=cgroup v2= controls | =SpawnPreservesContainer= (Rust Oracle -> LeanPoo) |
 | =backpressure-memory= (horizontal reuse) | Disjoint holder-set transitions, 4 countermodels, 10 =--mbt= ITF traces | =Core.Budget= + =Engineering.Backpressure= (monotonic additive memory bound, shrink safety, =Patch.frame= reuse) | Rust Clippy (=--offline=) + Tokio/Rayon 6-case lifecycle oracle (=RL-M01..RL-M06=, =live=0, available=1=) | =PayloadDropPrecedesPermitRelease= (Rust Oracle -> LeanPoo) |
 | =lease-fencing-token= (zero-glue 3rd subject) | 2-client GC-pause lease race, =monotonic-fencing-token= countermodel, Apalache verify + 10 =--mbt= ITF traces | =Core.Order= + =Core.Transport= + =Engineering.LeaseFencing= (unbounded =Nat= zombie-write rejection, 2-step =ObjectContract.refine=, 1-line =Proof.reuse=) | (Pure formal 2-engine subject; no OS premise required) | None (closed) |
 | =c-boundary-conservation= (zero-glue 4th subject) | (Pure C + LeanPoo 2-engine subject; zero Quint duplication) | =Core.Conservation= + =Core.Transport= + =Engineering.BoundaryConservation= (unbounded single-ownership cap & idempotent release, 2-step refinement, 1-line =Proof.reuse=) | *CBMC 6.11* (=source-memory-ub= on =deterministic_boundary.c= + =proof.c=: bounds, pointer, unsigned-overflow proof) | =NoCSourceOverflowOrPointerUB= (CBMC -> LeanPoo) |
-| =meta-governance-soundness= (self-verifying 5th subject) | (Self-verifies ASCENT Datalog governance & parallel wave soundness) | =Core.MetaGovernance= + =Core.Transport= + =Engineering.MetaGovernanceSoundness= (constructive =IR01=–=IR06= partition & arbitrary-depth =IR03= DAG transitivity, =MR01=–=MR06=/=ER01=–=ER04= soundness, zero-race =ValidWaveSchedule= confluence) | Hashes live =library/verification-flow/ascent-rules.ss= so rule edits automatically trigger =IR02= meta-reverification | None (closed) |
+| =meta-governance-soundness= (self-verifying 5th subject) | (Self-verifies ASCENT Datalog governance, parallel waves, Fleet Merkle attestation, & key revocation) | =Core.MetaGovernance= + =Core.Transport= + =Engineering.MetaGovernanceSoundness= (*27 constructive zero-axiom theorems*: =IR01=–=IR08= partition/transitivity/strict-premise/TTL, =MR01=–=MR08=/=ER01=–=ER04=, zero-race =ValidWaveSchedule=, Fleet Merkle tamper resistance, Multi-Key rotation & revocation) | Hashes live =library/verification-flow/ascent-rules.ss= so rule edits automatically trigger =IR02= meta-reverification | None (closed) |
 
 * LeanPoo distribution package family (=packages/lean-models/=)
 :PROPERTIES:
@@ -363,7 +366,7 @@ couple in a closed two-phase loop:
    =witness=, =witness_input=, =checked=, and =premise_support= rows back into
    the existing [[file:../../../library/evidence/func.ss][make-resource-evidence]] ASCENT session.
 
-** Finite Multi-Method Rules (=MR01=–=MR06=)
+** Finite Multi-Method Rules (=MR01=–=MR08=), Admission (=ER01=–=ER04=), & Incremental Reuse (=IR01=–=IR08=)
 
 #+NAME: multi-method-ascent-rules
 | Rule | Rejection / Finding condition | Purpose |
@@ -374,6 +377,13 @@ couple in a closed two-phase loop:
 | =MR04= DAG artifact closure | A step declares =consumes_artifact(S, A)= with no upstream Fun-Flow edge =dag_edge(U, S)= producing =A= | Catches broken MBT/receipt pipelines (e.g., Rust oracle missing Quint ITF producer) |
 | =MR05= Mandatory countermodel floor | A stateful Quint target (=quint.property.stateful=) has zero declared countermodels under Band-5 =governance.mandatory-countermodels= | Preserves non-negotiable countermodel discipline from [[file:10.151-quint-models-library-and-packages.org][10.151]] and =F3= in [[file:10.153-defensive-engineering-taxonomy-and-modular-organization.org][10.153]] |
 | =MR06= Subprocess containment obligation | Any subject (or runtime runner itself) tagged =owns-subprocess-tree= lacks either a declared OS containment strategy or an =os-sigkill-oracle= negative control | Prevents recurrence of the =GatewayGuard::drop= orphan-process leak class |
+| =MR07= Acyclic premise dependency | Transitive closure of =step_requires_premise= / =step_supports_premise= forms a cycle (=step_premise_dep(S, S)=) | Blocks circular self-justifying proof premises across engines |
+| =MR08= Acyclic Fun-Flow DAG | Transitive closure of =flow_dag_edge= forms a cycle (=flow_dag_reach(S, S)=) | Guarantees finite topological wave scheduling (=ValidWaveSchedule=) |
+| =IR01=–=IR04= Cache & DAG reuse | Missing/non-passing cache (=IR01=), input digest drift (=IR02=), transitive upstream DAG invalidation (=IR03=), or =M3-mutable-root= policy revalidation (=IR04=) | Sound selective proof reuse (unchanged =M1= Quint/Lean proofs skipped cleanly) |
+| =IR05= Toolchain drift | Cached verifier version fingerprint differs from live host toolchain (=quint=, =lean=, =rustc=, =cbmc=, =openssl=) | Prevents silent reuse across compiler/solver upgrades |
+| =IR06= Ed25519 attestation & key trust | Unsigned, tampered, unknown-key, or *revoked-key* cache witness rejected against the Multi-Key Ed25519 Trust Store | Supports zero-downtime key rotation (=K1 -> K2=) and instant compromise revocation |
+| =IR07= Strict premise revalidation | Policy-gated (=strict-premise-recheck=): invalidates any step whose premise supporter is invalidated, cascading across mixed DAG + premise chains | Ensures downstream LeanPoo proofs re-verify whenever an upstream OS/CBMC premise re-runs |
+| =IR08= Bounded =M3= witness TTL | Policy-gated (=m3-max-witness-age-secs=): expires stale =M3-mutable-root= OS witnesses using Ed25519-signed =issuedAtEpoch= while =M1-immutable-proof= remains timeless | Defeats replay of arbitrarily old empirical OS receipts and timestamp forgery |
 
 ** ASCENT =define-program= design sketch
 
@@ -529,10 +539,10 @@ testing):
 | Stage | Deliverables (landed) | Passing gate (verified) | Refusal gate |
 |-------+-----------------------+-------------------------+--------------|
 | M0 Architecture & SysML v2 | =10.154-*.org=, companion =10.154-*.sysml=, =90.143= D2/SVG | =sysml -validate -strict= exits 0 with 0 warnings | Claiming execution before landing; breaking existing =OR01=–=OR07= |
-| M1 + M2 Pure Control Plane, Compiler & ASCENT =MR01=–=MR06= / =ER01=–=ER04= / =IR01=–=IR06= | =library/verification-flow/{types,objects,config,func,ascent-rules,sysml-projection,sysml-compiler,rules,methods,syntax,interface}.ss= | Zero-I/O pure library; zero-glue SysML v2 -> Fun-Flow DAG compiler; all 6 MR + 4 ER + 6 IR (incl. =IR05= toolchain drift & =IR06= Ed25519 attestation) positive & negative controls pass | Duplicating SysML v2 into Scheme glue; spawning subprocesses inside =library/= |
-| M3 Complete 6-Core LeanPoo Package | =packages/lean-models/DeterministicEngineering/Core/{Conservation,Budget,Containment,Order,Transport,MetaGovernance}.lean= + =Engineering/{ProcessTree,Backpressure,LeaseFencing,BoundaryConservation,MetaGovernanceSoundness}.lean= | Modular per-subject =lake build <target-mods>= passes with 0 =sorryAx=, standard axioms only (constructive zero-axiom DAG/wave proofs); all 6 cores actively refined | Mirroring Quint finite state machine in Lean; ungrounded =axiom= without ASCENT =open_premise= |
-| M4 Pilot & Multi-Domain Subjects | Quint =ProcessTreeReclamation= (5 countermodels) + Rust =ProcessTreeGuard= (Clippy ban, 3 HTTP =/shutdown= E2E, 4 live Quint/online-OS MBT, 6 OS =SIGKILL=/Darwin =setsid()= controls) + =BackpressureMemory= + =LeaseFencingToken= + C =CBMC= (=c-boundary-conservation=) + =MetaGovernanceSoundness= | Apalache + 100% MBT + 13/13 Rust tests + Clippy =-D warnings= + CBMC 6.11 =VERIFICATION SUCCESSFUL= + 13 Lean meta-soundness theorems | Skipping =SIGKILL=/=setsid()= negative controls; silent UB fallback |
-| M5 Parallel Signed Cache & 5-Subject Fleet | [[file:../../../t/support/verification-flow-runner.ss][verification-flow-runner.ss]] + 8 qualification suites under =t/yanxu/Library/verification-flow/= + =just check-multi-method= / =just fleet-multi-method= / =just plan-multi-method-fleet= | Conflict-free parallel waves (=Quint \|\| LeanPoo \|\| Clippy=); Cold 13/0 -> Warm 0/13 Ed25519-verified cache reuse; =<1s= dry-run impact predictor; 2-level Merkle pinned-key attestation rejects rogue keys & child tampering; =replayValid = true= | Silent admission with missing/failed evidence, unsigned/tampered cache, toolchain drift, or replay drift |
+| M1 + M2 Pure Control Plane, Compiler & ASCENT =MR01=–=MR08= / =ER01=–=ER04= / =IR01=–=IR08= | =library/verification-flow/{types,objects,config,func,ascent-rules,sysml-projection,sysml-compiler,rules,methods,syntax,interface}.ss= | Zero-I/O pure library; zero-glue SysML v2 -> Fun-Flow DAG compiler; all 8 MR + 4 ER + 8 IR (incl. cyclic DAG/premise, =IR05= toolchain drift, =IR06= Multi-Key Ed25519 trust/revocation, =IR07= strict premise cascade, =IR08= bounded =M3= TTL) + pure static =changed-files->affected-frontier= pass | Duplicating SysML v2 into Scheme glue; spawning subprocesses inside =library/= |
+| M3 Complete 6-Core LeanPoo Package | =packages/lean-models/DeterministicEngineering/Core/{Conservation,Budget,Containment,Order,Transport,MetaGovernance}.lean= + =Engineering/{ProcessTree,Backpressure,LeaseFencing,BoundaryConservation,MetaGovernanceSoundness}.lean= | Modular per-subject =lake build <target-mods>= passes with 0 =sorryAx=, *27 constructive zero-axiom meta-soundness theorems*; all 6 cores actively refined; gated in GitHub Actions =lean4-meta-and-domain-proofs= | Mirroring Quint finite state machine in Lean; ungrounded =axiom= without ASCENT =open_premise= |
+| M4 Pilot & Multi-Domain Subjects | Quint =ProcessTreeReclamation= (5 countermodels) + Rust =ProcessTreeGuard= (Linux =cgroup v2= zero-TOCTOU =pre_exec= + =cgroup.kill=, Darwin =setpgid=+Pipe-EOF, Clippy ban, 3 HTTP =/shutdown= E2E, 4 live Quint/online-OS MBT, 7 OS =SIGKILL=/=setsid()=/=cgroup v2= controls) + =BackpressureMemory= + =LeaseFencingToken= + C =CBMC= (=c-boundary-conservation=) + =MetaGovernanceSoundness= | Apalache + 100% MBT + Rust unit/E2E/MBT/oracle suites + Clippy =-D warnings= + CBMC 6.11 =VERIFICATION SUCCESSFUL= + 27 Lean meta-soundness theorems | Skipping =SIGKILL=/=setsid()= negative controls; silent UB fallback |
+| M5 Parallel Signed Cache, Key Rotation & 5-Subject Fleet | [[file:../../../t/support/verification-flow-runner.ss][verification-flow-runner.ss]] + 9 qualification suites under =t/yanxu/Library/verification-flow/= + =just check-multi-method= / =just fleet-multi-method= / =just plan-multi-method-fleet= / =just impact-multi-method= | Conflict-free parallel waves (=Quint \|\| LeanPoo \|\| Clippy=); Cold 13/0 -> Warm 0/13 Ed25519-verified cache reuse; Multi-Key Trust Store zero-downtime =K1->K2= rotation & instant =K1= revocation; =<1s= dry-run impact predictor & selective impacted Fleet runner; 2-level Merkle pinned-key attestation; =replayValid = true= | Silent admission with missing/failed evidence, unsigned/tampered/revoked cache, toolchain drift, expired =M3= TTL, or replay drift |
 
 * Limits
 :PROPERTIES:
@@ -541,15 +551,19 @@ testing):
 :END:
 
 - Bounded Quint verification, unbounded LeanPoo algebraic/containment proofs,
-  CBMC bit-precise C UB proofs, and native =SIGKILL= / =setsid()= oracles still
-  depend on trusted kernel and verifier semantics (Linux cgroup v2 / Darwin
-  =killpg=+Pipe-EOF, Lean 4 kernel, Apalache/CBMC SMT solvers, OpenSSL Ed25519).
-- As empirically witnessed by =control_6= in
+  CBMC bit-precise C UB proofs, and native =SIGKILL= / =setsid()= / =cgroup v2=
+  oracles still depend on trusted kernel and verifier semantics (Linux cgroup v2
+  / Darwin =killpg=+Pipe-EOF, Lean 4 kernel, Apalache/CBMC SMT solvers, OpenSSL
+  Ed25519).
+- As empirically witnessed by =control_6= and =control_7= in
   [[file:../../../languages-engineering/rust/lifecycle/process-tree-guard/tests/sigkill_leak_oracle.rs][sigkill_leak_oracle.rs]],
   Darwin userspace containment (=setpgid= + Pipe-EOF) closes =setsid()= escapes
   only for cooperating processes that retain =PTREE_WATCHDOG_FD=; untrusted
-  adversarial binaries require kernel-enforced Linux =cgroup v2= (=cgroup.kill=)
-  or PID namespaces to uphold =SpawnPreservesContainer= unconditionally.
-- Pinned-key offline verification (=verify-fleet-report-with-pinned-key=)
-  protects report and cache integrity against tampering and key substitution,
-  assuming the verifier pins the producer's public key out of band.
+  adversarial binaries require kernel-enforced Linux =cgroup v2= (=cgroup.kill=
+  with zero-TOCTOU =pre_exec= attachment in =src/cgroup_v2.rs=) or PID
+  namespaces to uphold =SpawnPreservesContainer= unconditionally.
+- Multi-Key Ed25519 Trust Store verification
+  (=verify-report-with-trust-store=, =verify-fleet-report-with-trust-store=)
+  enables zero-downtime key rotation and instant compromise revocation while
+  assuming trust-store distribution and revocation list freshness are managed
+  out of band.

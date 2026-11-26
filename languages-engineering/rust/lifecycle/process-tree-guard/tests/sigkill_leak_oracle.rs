@@ -16,7 +16,8 @@ use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use process_tree_guard::{
-    assert_pgid_reaped, inject_sigkill, process_pgid, target_exists, ProcessTreeGuard,
+    assert_pgid_reaped, inject_sigkill, process_pgid, target_exists, CgroupV2Scope,
+    ContainmentMode, ProcessTreeGuard,
 };
 
 fn unique_temp_dir(label: &str) -> PathBuf {
@@ -230,16 +231,16 @@ fn control_5_darwin_setsid_pgid_escape_caught_by_pipe_eof_fate_sharing() {
     let _ = fs::remove_dir_all(&dir);
 }
 
-/// Control 6 (Negative Control — Falsifying `SpawnPreservesContainer` on Darwin):
+/// Control 6 (Negative Control — Falsifying `SpawnPreservesContainer` under PGID-only):
 /// An adversarial untrusted binary calls `setsid()` AND deliberately closes `PTREE_WATCHDOG_FD`.
-/// Proves empirically that PGID-only containment on Darwin CANNOT catch an untrusted `setsid()`
+/// Proves empirically that PGID-only containment CANNOT catch an untrusted `setsid()`
 /// escape (justifying Linux `cgroup v2` `cgroup.kill` for untrusted multi-tenant workloads).
 #[test]
 fn control_6_negative_control_untrusted_setsid_without_watchdog_falsifies_pgid_only_containment() {
     let dir = unique_temp_dir("setsid-rogue-escape");
     let gc_pid_file = dir.join("gc.pid");
 
-    let guard = ProcessTreeGuard::spawn_contained(
+    let guard = ProcessTreeGuard::spawn_contained_pgid_only(
         mock_tree_cmd(&[
             "supervisor-setsid-rogue-no-watchdog",
             gc_pid_file.to_str().unwrap(),
@@ -247,6 +248,7 @@ fn control_6_negative_control_untrusted_setsid_without_watchdog_falsifies_pgid_o
         Duration::from_millis(180),
     )
     .expect("spawn rogue setsid supervisor");
+    assert_eq!(guard.containment_mode(), ContainmentMode::PgidAndPipeEof);
 
     let pgid = guard.pgid();
     let rogue_pid = wait_for_pid_file(&gc_pid_file, Duration::from_secs(5));
@@ -278,5 +280,68 @@ fn control_6_negative_control_untrusted_setsid_without_watchdog_falsifies_pgid_o
         thread::sleep(Duration::from_millis(15));
     }
     assert!(!target_exists(rogue_pid as i32));
+    let _ = fs::remove_dir_all(&dir);
+}
+
+/// Control 7 (Linux `cgroup v2` Positive Upgrade):
+/// When running on Linux with a delegated writable `cgroup v2` root, `ProcessTreeGuard::spawn_contained`
+/// attaches the supervisor in `pre_exec` with zero TOCTOU and terminates EVEN an adversarial
+/// `setsid()` + closed-watchdog grandchild via kernel-atomic `cgroup.kill` (0 survivors).
+/// On macOS or unprivileged Linux without delegated cgroupfs, asserts graceful fallback to `PgidAndPipeEof`.
+#[test]
+fn control_7_cgroup_v2_containment_kills_rogue_setsid_or_reports_pgid_fallback() {
+    let dir = unique_temp_dir("cgroup-v2-upgrade");
+    let gc_pid_file = dir.join("gc.pid");
+
+    if CgroupV2Scope::probe_writable_root().is_none() {
+        let guard = ProcessTreeGuard::spawn_contained(
+            mock_tree_cmd(&["supervisor-hung", gc_pid_file.to_str().unwrap()]),
+            Duration::from_millis(150),
+        )
+        .expect("spawn fallback supervisor");
+        assert_eq!(guard.containment_mode(), ContainmentMode::PgidAndPipeEof);
+        let pgid = guard.pgid();
+        let _ = wait_for_pid_file(&gc_pid_file, Duration::from_secs(5));
+        let report = guard.shutdown_graceful().expect("escalated fallback shutdown");
+        assert!(report.escalated_to_pgid_sigkill);
+        assert_pgid_reaped(pgid, Duration::from_secs(5));
+        let _ = fs::remove_dir_all(&dir);
+        return;
+    }
+
+    let guard = ProcessTreeGuard::spawn_contained(
+        mock_tree_cmd(&[
+            "supervisor-setsid-rogue-no-watchdog",
+            gc_pid_file.to_str().unwrap(),
+        ]),
+        Duration::from_millis(180),
+    )
+    .expect("spawn cgroup v2 contained supervisor");
+    assert!(
+        matches!(guard.containment_mode(), ContainmentMode::CgroupV2Atomic { .. }),
+        "expected CgroupV2Atomic mode when writable cgroup v2 root is present"
+    );
+
+    let pgid = guard.pgid();
+    let rogue_pid = wait_for_pid_file(&gc_pid_file, Duration::from_secs(5));
+    let _cleanup = PidCleanupGuard(rogue_pid);
+    assert_ne!(
+        process_pgid(rogue_pid).expect("query rogue pgid"),
+        pgid,
+        "rogue grandchild must have escaped PGID via setsid()"
+    );
+
+    let report = guard.shutdown_graceful().expect("cgroup v2 escalated shutdown");
+    assert!(report.escalated_to_pgid_sigkill);
+    assert_pgid_reaped(pgid, Duration::from_secs(5));
+
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while Instant::now() < deadline && target_exists(rogue_pid as i32) {
+        thread::sleep(Duration::from_millis(15));
+    }
+    assert!(
+        !target_exists(rogue_pid as i32),
+        "Linux cgroup v2 atomic kill MUST terminate adversarial setsid()+close(watchdog) grandchild"
+    );
     let _ = fs::remove_dir_all(&dir);
 }

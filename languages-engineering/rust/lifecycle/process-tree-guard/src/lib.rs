@@ -13,12 +13,17 @@
 //!    both in explicit `shutdown_graceful(self)` and in `Drop::drop` during panic unwinding.
 //! 4. Prevents post-reap PID-reuse signaling via explicit `reaped` state tracking.
 
+pub mod cgroup_v2;
+
+pub use cgroup_v2::{CgroupKillMethod, CgroupV2Scope, ContainmentMode, CGROUP_ROOT_ENV};
+
 use std::io::{self, Read, Write};
 use std::net::{SocketAddr, TcpStream};
 use std::os::unix::process::CommandExt;
+use std::path::Path;
 use std::process::{Child, Command, ExitStatus};
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 pub const WATCHDOG_FD_ENV: &str = "PTREE_WATCHDOG_FD";
 
@@ -36,6 +41,7 @@ unsafe extern "C" {
     fn pipe(fds: *mut i32) -> i32;
     fn close(fd: i32) -> i32;
     fn read(fd: i32, buf: *mut u8, count: usize) -> isize;
+    fn write(fd: i32, buf: *const u8, count: usize) -> isize;
     fn fcntl(fd: i32, cmd: i32, ...) -> i32;
     fn setpgid(pid: i32, pgid: i32) -> i32;
     fn getpgid(pid: i32) -> i32;
@@ -61,8 +67,8 @@ pub struct HttpShutdownOutcome {
     pub report: ShutdownReport,
 }
 
-/// Owned supervisor handle enforcing process-group containment, Pipe-EOF fate-sharing,
-/// bounded grace escalation, and single-reap PID-reuse protection.
+/// Owned supervisor handle enforcing Linux `cgroup v2` (when available) + process-group
+/// containment, Pipe-EOF fate-sharing, bounded grace escalation, and single-reap PID-reuse protection.
 pub struct ProcessTreeGuard {
     child: Child,
     pgid: i32,
@@ -70,13 +76,33 @@ pub struct ProcessTreeGuard {
     /// Write end of the fate-sharing pipe. Closed when the guard finishes or crashes;
     /// kernel closure delivers immediate EOF to all descendants holding the read end.
     watchdog_write_fd: Option<i32>,
+    /// Optional owned Linux `cgroup v2` leaf directory for kernel-atomic `cgroup.kill`.
+    cgroup: Option<CgroupV2Scope>,
     reaped: bool,
 }
 
 impl ProcessTreeGuard {
-    /// Spawn a contained supervisor process in its own process group with a Pipe-EOF watchdog.
+    /// Spawn a contained supervisor process using the strongest kernel containment
+    /// available on this host: Linux `cgroup v2` (zero-TOCTOU `pre_exec` attach + `cgroup.kill`)
+    /// when a delegated writable cgroup v2 root exists, otherwise portable `setpgid` + Pipe-EOF.
+    pub fn spawn_contained(cmd: Command, grace_period: Duration) -> io::Result<Self> {
+        let cgroup_root = CgroupV2Scope::probe_writable_root();
+        Self::spawn_contained_with_cgroup_root(cmd, grace_period, cgroup_root.as_deref())
+    }
+
+    /// Spawn using strictly POSIX `setpgid` + Pipe-EOF containment without attaching a Linux
+    /// `cgroup v2` scope (used by negative controls that isolate PGID-only boundaries).
+    pub fn spawn_contained_pgid_only(cmd: Command, grace_period: Duration) -> io::Result<Self> {
+        Self::spawn_contained_with_cgroup_root(cmd, grace_period, None)
+    }
+
+    /// Spawn a contained supervisor process with an optional explicit `cgroup v2` parent root.
     #[allow(clippy::disallowed_methods)]
-    pub fn spawn_contained(mut cmd: Command, grace_period: Duration) -> io::Result<Self> {
+    pub fn spawn_contained_with_cgroup_root(
+        mut cmd: Command,
+        grace_period: Duration,
+        cgroup_root: Option<&Path>,
+    ) -> io::Result<Self> {
         if grace_period.is_zero() {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
@@ -113,11 +139,51 @@ impl ProcessTreeGuard {
             return Err(err);
         }
 
+        // If a writable Linux cgroup v2 parent is provided, create the leaf cgroup and open
+        // `cgroup.procs` (`O_CLOEXEC`) BEFORE `fork()` so `pre_exec` attaches with zero TOCTOU.
+        let (cgroup_scope, cgroup_procs_fd) = match cgroup_root {
+            Some(parent) => {
+                let nanos = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .map(|d| d.as_nanos())
+                    .unwrap_or(0);
+                let leaf_name = format!("ptree-{}-{nanos}", std::process::id());
+                let scope = match CgroupV2Scope::create_under(parent, &leaf_name) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        unsafe {
+                            close(read_fd);
+                            close(write_fd);
+                        }
+                        return Err(e);
+                    }
+                };
+                match scope.open_procs_fd_for_pre_exec() {
+                    Ok(fd) => (Some(scope), Some(fd)),
+                    Err(e) => {
+                        let _ = scope.cleanup();
+                        unsafe {
+                            close(read_fd);
+                            close(write_fd);
+                        }
+                        return Err(e);
+                    }
+                }
+            }
+            None => (None, None),
+        };
+
         cmd.env(WATCHDOG_FD_ENV, read_fd.to_string());
 
-        // SAFETY: `setpgid(0, 0)` is async-signal-safe per POSIX.1-2017.
+        // SAFETY: `setpgid(0, 0)` and `write(fd, "0\n", 2)` are async-signal-safe per POSIX.1-2017.
         unsafe {
-            cmd.pre_exec(|| {
+            cmd.pre_exec(move || {
+                if let Some(cg_fd) = cgroup_procs_fd {
+                    let payload = b"0\n";
+                    if write(cg_fd, payload.as_ptr(), payload.len()) != payload.len() as isize {
+                        return Err(io::Error::last_os_error());
+                    }
+                }
                 if setpgid(0, 0) != 0 {
                     return Err(io::Error::last_os_error());
                 }
@@ -128,6 +194,14 @@ impl ProcessTreeGuard {
         let child = match cmd.spawn() {
             Ok(c) => c,
             Err(e) => {
+                if let Some(cg_fd) = cgroup_procs_fd {
+                    unsafe {
+                        close(cg_fd);
+                    }
+                }
+                if let Some(scope) = cgroup_scope {
+                    let _ = scope.cleanup();
+                }
                 unsafe {
                     close(read_fd);
                     close(write_fd);
@@ -135,6 +209,13 @@ impl ProcessTreeGuard {
                 return Err(e);
             }
         };
+
+        if let Some(cg_fd) = cgroup_procs_fd {
+            // SAFETY: parent closes its copy of the `cgroup.procs` fd immediately after spawn.
+            unsafe {
+                close(cg_fd);
+            }
+        }
 
         // Parent closes its copy of read_fd; descendants retain the inherited read_fd.
         // SAFETY: `read_fd` is owned by the parent process here.
@@ -148,6 +229,7 @@ impl ProcessTreeGuard {
             pgid,
             grace_period,
             watchdog_write_fd: Some(write_fd),
+            cgroup: cgroup_scope,
             reaped: false,
         })
     }
@@ -158,6 +240,33 @@ impl ProcessTreeGuard {
 
     pub fn pgid(&self) -> i32 {
         self.pgid
+    }
+
+    /// Report the active OS containment strategy enforced by this guard.
+    pub fn containment_mode(&self) -> ContainmentMode {
+        match &self.cgroup {
+            Some(scope) => ContainmentMode::CgroupV2Atomic {
+                cgroup_path: scope.path().to_path_buf(),
+            },
+            None => ContainmentMode::PgidAndPipeEof,
+        }
+    }
+
+    fn kill_containment_tree(&mut self) {
+        self.close_watchdog_pipe();
+        if let Some(scope) = &self.cgroup {
+            let _ = scope.kill_atomic();
+        }
+        // SAFETY: `pgid` is the isolated process group owned by this guard.
+        unsafe {
+            kill(-self.pgid, SIGKILL);
+        }
+    }
+
+    fn cleanup_cgroup_if_any(&mut self) {
+        if let Some(scope) = self.cgroup.take() {
+            let _ = scope.cleanup();
+        }
     }
 
     /// Observe the guard's discrete phase matching `ProcessTreeReclamation.qnt`:
@@ -205,12 +314,10 @@ impl ProcessTreeGuard {
             });
         }
 
-        // If supervisor already died before HTTP shutdown, reap and close process group cleanly.
+        // If supervisor already died before HTTP shutdown, reap and close containment tree cleanly.
         if let Some(status) = self.child.try_wait()? {
-            self.close_watchdog_pipe();
-            unsafe {
-                kill(-pgid, SIGKILL);
-            }
+            self.kill_containment_tree();
+            self.cleanup_cgroup_if_any();
             self.reaped = true;
             return Ok(HttpShutdownOutcome {
                 http_status_code: None,
@@ -246,6 +353,7 @@ impl ProcessTreeGuard {
         while Instant::now() < deadline {
             if let Some(status) = self.child.try_wait()? {
                 self.close_watchdog_pipe();
+                self.cleanup_cgroup_if_any();
                 self.reaped = true;
                 return Ok(ShutdownReport {
                     pid,
@@ -257,13 +365,10 @@ impl ProcessTreeGuard {
             thread::sleep(Duration::from_millis(15));
         }
 
-        // Grace period expired -> atomic process-group SIGKILL + close Pipe-EOF + reap.
-        self.close_watchdog_pipe();
-        // SAFETY: `pgid` is the isolated process group owned by this guard.
-        unsafe {
-            kill(-pgid, SIGKILL);
-        }
+        // Grace period expired -> atomic cgroup.kill (when present) + kill(-pgid, SIGKILL) + Pipe-EOF + reap.
+        self.kill_containment_tree();
         let status = self.child.wait()?;
+        self.cleanup_cgroup_if_any();
         self.reaped = true;
         Ok(ShutdownReport {
             pid,
@@ -287,11 +392,8 @@ impl ProcessTreeGuard {
 
         // Check if supervisor already exited before sending any signal (prevents PID-reuse kill).
         if let Some(status) = self.child.try_wait()? {
-            self.close_watchdog_pipe();
-            // Ensure no straggler in the process group survives an unexpected supervisor crash.
-            unsafe {
-                kill(-pgid, SIGKILL);
-            }
+            self.kill_containment_tree();
+            self.cleanup_cgroup_if_any();
             self.reaped = true;
             return Ok(ShutdownReport {
                 pid,
