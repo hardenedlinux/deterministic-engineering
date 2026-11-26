@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Durable Compensable Agent Sagas, Pivot Boundaries & Linear Budget Conservation
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.defense.durable-saga-budget=
+- *Subdomain*: =quint.engineering.defense=
+- *Quint Module*: =durable_saga_budget= (=[[file:DurableSagaBudget.qnt][DurableSagaBudget.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/defense/durable-saga-budget/DurableSagaBudget=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Linear budget conservation holds (spentBudget + remainingBudget == rootBudget and remainingBudget >= 0), no step executes over budget (budgetViolations == 0) or without a write-ahead compensator (unregisteredCompViolations == 0), and no backward rollback executes past an irreversible pivot or unresolved PendingUnknownEffect (pivotOrUnknownRollbackViolations == 0).
+
+#+begin_src quint
+val safety = ((h.spentBudget + h.remainingBudget) == h.rootBudget and h.remainingBudget >= 0 and h.budgetViolations == 0 and h.unregisteredCompViolations == 0 and h.pivotOrUnknownRollbackViolations == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =enforce-budget-conservation= | =stepBudgetOverrun= | =h.budgetViolations > 0= |
+| =require-write-ahead-compensator= | =stepUnregisteredComp= | =h.unregisteredCompViolations > 0= |
+| =forbid-rollback-past-pivot-or-unknown= | =stepPivotRollback= | =h.pivotOrUnknownRollbackViolations > 0= |
+
+* Grounded Papers & Specifications
+
+- *H. Garcia-Molina & K. Salem (ACM SIGMOD 1987)*: Sagas: Long-lived transactions with compensating actions and pivot boundaries.
+- *P. Helland (CIDR 2007)*: Life Beyond Distributed Transactions: an Apostate's Opinion (idempotent forward & compensating effects).
+- *Deterministic Engineering (10.156 / 10.163)*: Write-ahead M1 compensation logging, PendingUnknownEffect fencing, and linear M3 compute-budget conservation.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/defense/durable-saga-budget/DurableSagaBudget.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/defense/durable-saga-budget/DurableSagaBudget.qnt --main=durable_saga_budget --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite single-compensable-step + single-pivot Saga and integer compute-budget abstraction; does not model arbitrary multi-currency exchange fluctuation, external vendor compensation outage retries beyond idempotency keys, or continuous real-time GPU metering.

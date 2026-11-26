@@ -1,0 +1,69 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 10.163 Durable Compensable Multi-Agent Sagas, Pivot Boundaries & Linear Resource Budget Conservation
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.163
+#+STARTUP: overview
+#+OPTIONS: toc:3 num:nil
+#+FILETAGS: :architecture:sagas:compensation:pivot:linear-budget:durable-ai:governance:
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.156-orthogonal-persistence-durable-multi-agent-governance.org][10.156 Stratified OP]] | [[file:10.160-cross-trust-boundary-capability-attenuation-and-cascading-revocation.org][10.160 B3 Delegation]] | [[file:10.162-unified-durable-ai-governance-pipeline-and-architecture-synthesis.org][10.162 Unified Pipeline]] | [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05 85-Case Benchmark]]
+
+* Problem: External Non-Reversible Effects & Economic Denial-of-Wallet in Agent Swarms
+:PROPERTIES:
+:CUSTOM_ID: saga163-problem
+:STATUS: implemented-verified
+:END:
+
+Pure Merkle rollback (=B1=) suffices for internal repository/artifact state,
+but autonomous multi-agent workflows routinely invoke *external, heterogeneous
+side effects* (cloud IAM/GPU provisioning, payment pre-auths, wire transfers,
+external webhooks, paid LLM/API calls). Two failure modes dominate production:
+
+1. *Uncompensated Partial External Side Effects & Illegal Post-Pivot Rollback*:
+   When Step 3 fails after Steps 1–2 mutated external APIs, naive retry loops
+   either leak cloud/financial resources (missing write-ahead compensators),
+   blindly retry/cancel an unresolved =PendingUnknownEffect= timeout, or attempt
+   impossible backward rollback after crossing an irreversible *Pivot*
+   (Garcia-Molina & Salem, SIGMOD 1987; Helland, CIDR 2007).
+2. *Autonomous Budget Runaway (Economic Denial-of-Wallet)*:
+   A looping or delegated multi-agent subtree can burn unbounded LLM tokens or
+   external API spend unless resource budgets obey a *linear conservation law*
+   across delegation hops (inspired by KeyKOS/seL4 capability accounting).
+
+* Architecture (Scenario B6): Write-Ahead Sagas × Linear M3 Budget Trees
+:PROPERTIES:
+:CUSTOM_ID: saga163-architecture
+:STATUS: implemented-verified
+:END:
+
+| Governance Mechanism | Stratification & Invariant | Guarantee |
+|----------------------+----------------------------+-----------|
+| Effect Reversibility Typing | Every Saga step declares =ReadOnlyIdempotent=, =Compensable= (requires write-ahead =M1= compensator spec + callback), or =PivotIrreversible= (at most one pivot; zero compensable steps after pivot) | Prevents unregistered side effects and multi-pivot deadlocks at registration time |
+| Deterministic Reverse Compensation & Pivot Fence | Pre-pivot failure triggers reverse-order idempotent compensation; post-pivot failure returns =RollForwardRequired= and refutes =attemptBackwardRollback= (=rollback-forbidden-past-pivot=); timeout fences to =PendingUnknownEffect= until reconciled | Zero leaked cloud resources, zero duplicate timeouts, zero illegal post-pivot undo |
+| Linear =M3= Resource Budget Tree (=LinearBudgetTree=) | Branded with =M3_NON_SERIALIZABLE_CAPABILITY= (=R3=); =splitSubBudget= atomically transfers units parent -> child so =\Sigma remaining + \Sigma spent === rootBudget=; exhaustion triggers =BudgetExhaustedHalt= while keeping committed =M1= work pinned | Eliminates budget amplification across sub-agents and runaway cost loops |
+
+* Executable Artifacts & Verification Receipts
+:PROPERTIES:
+:CUSTOM_ID: saga163-artifacts
+:STATUS: executed-verified
+:END:
+
+| Artifact | Path | Verification Evidence |
+|----------+------+-----------------------|
+| 14th Formal Model (=durable-saga-budget=) | [[file:../../../packages/quint-models/engineering/defense/durable-saga-budget/DurableSagaBudget.qnt][DurableSagaBudget.qnt]] | Apalache 6/6 PASS (safety + 3 countermodels: =budget-overrun=, =unregistered-compensator=, =pivot-rollback=), =guard-probe= =essential=, 100% MBT coverage |
+| MBT SUT State-Machine Refinement | [[file:../../../languages-engineering/ts/defense/boundary-contrast/mbt-replay.test.ts][mbt-replay.test.ts]] | =DurableSagaBudgetSUT= isomorphic to ITF traces; rejects =BadPivotRollbackSagaSUT= |
+| Executable Saga & Linear Budget Engine (=AG81=–=AG85=) | [[file:../../../languages-engineering/ts/defense/agent-audit/durable-saga-budget.ts][durable-saga-budget.ts]] / [[file:../../../languages-engineering/ts/defense/agent-audit/durable-saga-budget.test.ts][durable-saga-budget.test.ts]] | 5/5 benchmark cases (=AG81=–=AG85=) exact gold match; dogfood =just audit-agent-patch= 0 findings |
+
+* Limits
+:PROPERTIES:
+:CUSTOM_ID: saga163-limits
+:STATUS: implemented-verified
+:END:
+
+External vendor idempotency depends on the target API honoring the deterministic
+=idempotencyKey= / =compensationIdempotencyKey= emitted by the Saga engine.
+Production deployments should pair =PendingUnknownEffect= reconciliation with
+vendor query APIs or webhook status poller loops, and meter LLM token costs via
+provider billing receipts before crediting unused reserved budget back to parent.

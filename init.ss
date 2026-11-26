@@ -81,6 +81,7 @@
   (release-sod-rollback profiles: (bound.compact))
   (hitl-durable-approval profiles: (bound.compact))
   (capability-attenuation profiles: (bound.compact))
+  (durable-saga-budget profiles: (bound.compact))
 
   ;; ── Threat-First Formal Security Models (5 subdomains) ──
   :load-modules "./packages/quint-models/threat/zero-trust"

@@ -1132,6 +1132,109 @@ class BadScopeEscalatingDelegateSUT extends CapabilityAttenuationSUT {
   }
 }
 
+class DurableSagaBudgetSUT {
+  rootBudget = 2;
+  remainingBudget = 2;
+  spentBudget = 0;
+  compensatorRegistered = false;
+  step1Done = false;
+  step1Unknown = false;
+  pivotCrossed = false;
+  compensated = false;
+  budgetViolations = 0;
+  unregisteredCompViolations = 0;
+  pivotOrUnknownRollbackViolations = 0;
+
+  apply(action: string): void {
+    switch (action) {
+      case 'registerCompensator':
+        if (!this.compensatorRegistered) {
+          this.compensatorRegistered = true;
+        }
+        break;
+      case 'executeCompensableStep1': {
+        const compReg = this.compensatorRegistered;
+        const budgetOk = this.remainingBudget > 0;
+        if (!this.step1Done && !this.step1Unknown && compReg && budgetOk) {
+          this.step1Done = true;
+          this.remainingBudget -= 1;
+          this.spentBudget += 1;
+          if (!compReg) this.unregisteredCompViolations += 1;
+          if (!budgetOk) this.budgetViolations += 1;
+        }
+        break;
+      }
+      case 'crashStep1Unknown':
+        if (!this.step1Done && !this.step1Unknown && this.compensatorRegistered && this.remainingBudget > 0) {
+          this.step1Unknown = true;
+          this.remainingBudget -= 1;
+          this.spentBudget += 1;
+        }
+        break;
+      case 'reconcileStep1Committed':
+        if (this.step1Unknown) {
+          this.step1Unknown = false;
+          this.step1Done = true;
+        }
+        break;
+      case 'crossIrreversiblePivot':
+        if (this.step1Done && !this.pivotCrossed && !this.compensated && this.remainingBudget > 0) {
+          this.pivotCrossed = true;
+          this.remainingBudget -= 1;
+          this.spentBudget += 1;
+        }
+        break;
+      case 'spendExtraCompute':
+        if (this.remainingBudget > 0) {
+          this.remainingBudget -= 1;
+          this.spentBudget += 1;
+        }
+        break;
+      case 'compensateStep1': {
+        const rollbackAllowed = this.step1Done && !this.pivotCrossed && !this.step1Unknown;
+        if (!this.compensated && rollbackAllowed) {
+          this.compensated = true;
+          this.step1Done = false;
+          if (!rollbackAllowed) this.pivotOrUnknownRollbackViolations += 1;
+        }
+        break;
+      }
+      default:
+        throw new Error(`Unknown DurableSagaBudgetSUT action: ${action}`);
+    }
+  }
+
+  snapshot() {
+    return {
+      rootBudget: this.rootBudget,
+      remainingBudget: this.remainingBudget,
+      spentBudget: this.spentBudget,
+      compensatorRegistered: this.compensatorRegistered,
+      step1Done: this.step1Done,
+      step1Unknown: this.step1Unknown,
+      pivotCrossed: this.pivotCrossed,
+      compensated: this.compensated,
+      budgetViolations: this.budgetViolations,
+      unregisteredCompViolations: this.unregisteredCompViolations,
+      pivotOrUnknownRollbackViolations: this.pivotOrUnknownRollbackViolations,
+    };
+  }
+}
+
+class BadPivotRollbackSagaSUT extends DurableSagaBudgetSUT {
+  override apply(action: string): void {
+    if (action === 'compensateStep1' && !this.compensated) {
+      // Anti-pattern: drops `forbid-rollback-past-pivot-or-unknown` guard on compensation!
+      const rollbackAllowed = this.step1Done && !this.pivotCrossed && !this.step1Unknown;
+      this.compensated = true;
+      this.step1Done = false;
+      if (!rollbackAllowed) this.pivotOrUnknownRollbackViolations += 1;
+      return;
+    }
+    super.apply(action);
+  }
+}
+
 const repoRoot = resolve(import.meta.dir, '../../../..');
 
 function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(): Record<string, unknown>}>(
@@ -1184,7 +1287,7 @@ function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(
   }
 }
 
-describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (13 Defense Models)', () => {
+describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (14 Defense Models)', () => {
   test('EpistemicStateLattice ITF actions drive EpistemicLatticeSUT with exact step-by-step state isomorphism', () => {
     const stats = replayModelAgainstSut(
       'packages/quint-models/engineering/defense/epistemic-state-lattice/EpistemicStateLattice.qnt',
@@ -1459,6 +1562,30 @@ describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (13 Defense Models
       () => new CapabilityAttenuationSUT(),
       projectH,
       () => new BadScopeEscalatingDelegateSUT(),
+    );
+    expect(stats.transitions).toBeGreaterThan(50);
+    expect(stats.brokenDiverged).toBe(true);
+  }, 30_000);
+
+  test('DurableSagaBudget ITF actions drive DurableSagaBudgetSUT with exact state isomorphism and reject BadPivotRollbackSagaSUT', () => {
+    const projectH = (h: Record<string, unknown>) => ({
+      rootBudget: asInt(h.rootBudget),
+      remainingBudget: asInt(h.remainingBudget),
+      spentBudget: asInt(h.spentBudget),
+      compensatorRegistered: Boolean(h.compensatorRegistered),
+      step1Done: Boolean(h.step1Done),
+      step1Unknown: Boolean(h.step1Unknown),
+      pivotCrossed: Boolean(h.pivotCrossed),
+      compensated: Boolean(h.compensated),
+      budgetViolations: asInt(h.budgetViolations),
+      unregisteredCompViolations: asInt(h.unregisteredCompViolations),
+      pivotOrUnknownRollbackViolations: asInt(h.pivotOrUnknownRollbackViolations),
+    });
+    const stats = replayModelAgainstSut(
+      'packages/quint-models/engineering/defense/durable-saga-budget/DurableSagaBudget.qnt',
+      () => new DurableSagaBudgetSUT(),
+      projectH,
+      () => new BadPivotRollbackSagaSUT(),
     );
     expect(stats.transitions).toBeGreaterThan(50);
     expect(stats.brokenDiverged).toBe(true);
