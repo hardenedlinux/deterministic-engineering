@@ -35,7 +35,7 @@ jobs:
         with:
           bun-version: 1.3.11
       - run: bun install --frozen-lockfile
-      - name: TypeScript contrast, 17-model MBT SUT refinement, 110-case 5-language Agent AST benchmark & N-Version ASCENT bridge
+      - name: TypeScript contrast, 18-model MBT SUT refinement, 115-case 5-language Agent AST benchmark & BFT Witness Finality
         run: |
           bun test \
             languages-engineering/ts/defense/boundary-contrast/contrast.test.ts \
@@ -54,7 +54,8 @@ jobs:
             languages-engineering/ts/defense/agent-audit/difc-exfiltration-fence.test.ts \
             languages-engineering/ts/defense/agent-audit/durable-memory-tms.test.ts \
             languages-engineering/ts/defense/agent-audit/transparency-log-equivocation.test.ts \
-            languages-engineering/ts/defense/agent-audit/ascent-meta-audit-bridge.test.ts
+            languages-engineering/ts/defense/agent-audit/ascent-meta-audit-bridge.test.ts \
+            languages-engineering/ts/defense/agent-audit/witness-quorum-finality.test.ts
       - name: C, C++20, and Rust paired defensive-boundary contrast harnesses
         run: |
           mkdir -p /tmp/defense-ci

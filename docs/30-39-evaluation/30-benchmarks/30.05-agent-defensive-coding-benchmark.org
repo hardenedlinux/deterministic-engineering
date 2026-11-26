@@ -20,7 +20,7 @@ This benchmark evaluates whether AST-level defensive-engineering auditors catch
 all four AI Agent defensive-hallucination classes (=G2= in [[file:../../10-19-design/10-architecture/10.153-defensive-engineering-taxonomy-and-modular-organization.org][10.153]]) without
 generating false positives on clean deterministic-boundary code.
 
-- *Independent Gold*: Every case (=AG01=–=AG110=) has a fixed independent
+- *Independent Gold*: Every case (=AG01=–=AG115=) has a fixed independent
   expected outcome (=pass= vs. =fail= + exact hallucination/anti-evasion/escalation/durable-resume class). Candidate
   auditor output never generates gold.
 - *Native AST, Diff-Delta, Scope-Fencing & Closed-Loop Governance Auditors Evaluated*:
@@ -49,7 +49,7 @@ generating false positives on clean deterministic-boundary code.
      [[file:../../../languages-engineering/ts/defense/agent-audit/governance-harness.test.ts][governance-harness.test.ts]],
      and =just audit-agent-patch=).
 
-* One-Hundred-Ten-Case Cohort (=AG01=–=AG110=)
+* One-Hundred-Fifteen-Case Cohort (=AG01=–=AG115=)
 :PROPERTIES:
 :CUSTOM_ID: bench3005-cohort
 :END:
@@ -166,6 +166,11 @@ generating false positives on clean deterministic-boundary code.
 | =AG108= | N-Version Oracle Gate | Buggy/compromised TS coordinator falsely claiming =ADMIT= | Refuse (=oracle-disagreement-fail-closed=) | Independent Scheme ASCENT oracle overrides buggy TS =ADMIT= on poisoned/split-log releases & pins forensics |
 | =AG109= | N-Version Oracle Gate | Dual-language consensus receipt survival across GC | =Proven= + pinned =DualOracleAdmissionReceipt= | Both TS & Scheme ASCENT agree =ADMIT= on =rel-clean=; dual-oracle receipt survives =gcUnreferenced()= |
 | =AG110= | Cross-Runtime Bridge | Missing Gerbil binary & malformed stdout fail-closed | =PendingMethod= / =SetupDefect= (never =ok:true=) | Refuses silent admission when external Scheme runtime is absent or output markers are missing |
+| =AG111= | Witness Quorum (=B10=) | 3-of-4 Ed25519 QC over RFC 6962 growth (=2 -> 5=) | =Finalized= completely offline (zero gossip) | Honest witnesses verify consistency & cosign; air-gapped verifier confirms finality offline |
+| =AG112= | Witness Quorum (=B10=) | =f=1= Byzantine double-signer under total eclipse | Clean =Finalized=; Backdoor =Refuted= (=2 < 3=) | Quorum intersection proactively blocks split-view backdoor even when coordinator + =w4= collude |
+| =AG113= | Witness Quorum (=B10=) | Duplicate signer, rogue witness & forged cosig | Refuse all 3 spoofing vectors | Blocks duplicate =witness-1=, unregistered rogue key, and mismatched witness signature bytes |
+| =AG114= | Witness Quorum (=B10=) | Retroactive history rewrite refused pre-cosign | =RefusedEquivocation= + fraud proof | Honest witness detects failed RFC 6962 consistency proof BEFORE issuing any cosignature |
+| =AG115= | Witness Quorum (=B10 × R3=) | =WitnessCosigningKey= non-leakage & unsafe =t= check | Refuse (=R3= leak & =unsafe-non-intersecting-quorum=) | Blocks witness private Ed25519 key entering =M1= store & rejects unsafe =t=2= of =N=4, f=1= |
 
 * Observed Verification Receipts
 :PROPERTIES:
@@ -191,14 +196,15 @@ generating false positives on clean deterministic-boundary code.
 | Durable Memory-Poisoning Defense, ATMS Causal Retraction & Full =B1=–=B8= Synthesis (=AG91=–=AG100=) | =bun test languages-engineering/ts/defense/agent-audit/durable-memory-tms.test.ts= | **10/10 cases matched gold** (=M2= quarantine, =k=-of-=N= SoD quorum, Doyle causal retraction, de Kleer ATMS multi-justification survival, immunization tombstone, =B3/B5/B6/B7 × B8= cross-layer closure, full 8-pillar =AG100=) |
 | Verifiable Transparency Log (RFC 6962), Ed25519 STH & Split-View Equivocation (=AG101=–=AG105=) | =bun test languages-engineering/ts/defense/agent-audit/transparency-log-equivocation.test.ts= | **5/5 cases matched gold** (RFC 6962 inclusion & append-only consistency proofs, Ed25519 public-key-only verification, split-view & rewrite/rollback fraud proofs, =R3= signing key non-leakage) |
 | Cross-Runtime N-Version Proof-Carrying Bridge (TS <-> Live Gerbil Scheme ASCENT, =AG106=–=AG110=) | =bun test languages-engineering/ts/defense/agent-audit/ascent-meta-audit-bridge.test.ts= | **5/5 cases matched gold** (live =M1= S-expr projection, live =gxi= ASCENT fixed-point verification, buggy TS coordinator catch via =oracle-disagreement-fail-closed=, dual-oracle GC survival, =PendingMethod=/=SetupDefect= fail-closed) |
-| Combined 110-case 5-language, anti-evasion, Full =B1=–=B9= & N-Version Cross-Runtime benchmark | =just check-defense= | **110/110 exact gold match** (=tp=76, tn=34, fp=0, fn=0=) |
+| Proactive Threshold Witness Cosigning (=2f+1= of =3f+1=) & Quorum Finality (=AG111=–=AG115=) | =bun test languages-engineering/ts/defense/agent-audit/witness-quorum-finality.test.ts= | **5/5 cases matched gold** (offline 3-of-4 Ed25519 QC finality, Byzantine double-signer eclipse block, duplicate/rogue/forged cosig refusal, pre-cosign rewrite refusal, =R3= key non-leakage & BFT parameter gate) |
+| Combined 115-case 5-language, anti-evasion, Full =B1=–=B10= & N-Version Cross-Runtime benchmark | =just check-defense= | **115/115 exact gold match** (=tp=80, tn=35, fp=0, fn=0=) |
 
 * Limits
 :PROPERTIES:
 :CUSTOM_ID: bench3005-limits
 :END:
 
-This 110-case benchmark establishes deterministic AST-level, diff-delta,
+This 115-case benchmark establishes deterministic AST-level, diff-delta,
 scope-fencing, bounded closed-loop, hot-policy co-evolution, async-cut,
 semantic-drift memoization, AEAD-isolated Merkle storage, role-projected
 context, multi-agent SSI concurrency, and business SoD/replay precision and

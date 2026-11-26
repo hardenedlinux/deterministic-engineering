@@ -1504,6 +1504,112 @@ class BadSplitViewAcceptingSUT extends TransparencyLogEquivocationSUT {
   }
 }
 
+class WitnessQuorumFinalitySUT {
+  w1Branch = 0;
+  w2Branch = 0;
+  w3Branch = 0;
+  byzClean = false;
+  byzBackdoor = false;
+  consistencyOk = false;
+  cleanVotes = 0;
+  backdoorVotes = 0;
+  cleanFinalized = false;
+  backdoorFinalized = false;
+  unverifiedCosignViolations = 0;
+  honestEquivocationViolations = 0;
+  subQuorumViolations = 0;
+
+  apply(action: string): void {
+    switch (action) {
+      case 'verifyConsistencyProof':
+        if (!this.consistencyOk) this.consistencyOk = true;
+        break;
+      case 'w1CosignClean': {
+        const cons = this.consistencyOk;
+        const fresh = this.w1Branch === 0;
+        if (this.w1Branch !== 1 && cons && fresh) {
+          this.w1Branch = 1;
+          this.cleanVotes += 1;
+          if (!cons) this.unverifiedCosignViolations += 1;
+          if (!fresh) this.honestEquivocationViolations += 1;
+        }
+        break;
+      }
+      case 'w1CosignBackdoor':
+        if (this.consistencyOk && this.w1Branch === 0) {
+          this.w1Branch = 2;
+          this.backdoorVotes += 1;
+        }
+        break;
+      case 'w2CosignClean':
+        if (this.w2Branch === 0) {
+          this.w2Branch = 1;
+          this.cleanVotes += 1;
+        }
+        break;
+      case 'w3CosignBackdoor':
+        if (this.w3Branch === 0) {
+          this.w3Branch = 2;
+          this.backdoorVotes += 1;
+        }
+        break;
+      case 'byzW4DoubleSignBoth':
+        if (!this.byzClean || !this.byzBackdoor) {
+          if (!this.byzClean) this.cleanVotes += 1;
+          if (!this.byzBackdoor) this.backdoorVotes += 1;
+          this.byzClean = true;
+          this.byzBackdoor = true;
+        }
+        break;
+      case 'finalizeClean': {
+        const qOk = this.cleanVotes >= 3;
+        if (!this.cleanFinalized && qOk) {
+          this.cleanFinalized = true;
+          if (!qOk) this.subQuorumViolations += 1;
+        }
+        break;
+      }
+      case 'finalizeBackdoor':
+        if (!this.backdoorFinalized && this.backdoorVotes >= 3) {
+          this.backdoorFinalized = true;
+        }
+        break;
+      default:
+        throw new Error(`Unknown WitnessQuorumFinalitySUT action: ${action}`);
+    }
+  }
+
+  snapshot() {
+    return {
+      w1Branch: this.w1Branch,
+      w2Branch: this.w2Branch,
+      w3Branch: this.w3Branch,
+      byzClean: this.byzClean,
+      byzBackdoor: this.byzBackdoor,
+      consistencyOk: this.consistencyOk,
+      cleanVotes: this.cleanVotes,
+      backdoorVotes: this.backdoorVotes,
+      cleanFinalized: this.cleanFinalized,
+      backdoorFinalized: this.backdoorFinalized,
+      unverifiedCosignViolations: this.unverifiedCosignViolations,
+      honestEquivocationViolations: this.honestEquivocationViolations,
+      subQuorumViolations: this.subQuorumViolations,
+    };
+  }
+}
+
+class BadSubQuorumFinalitySUT extends WitnessQuorumFinalitySUT {
+  override apply(action: string): void {
+    if (action === 'finalizeClean' && !this.cleanFinalized) {
+      // Anti-pattern: drops `enforce-quorum-2f1` guard and finalizes below threshold 3!
+      this.cleanFinalized = true;
+      if (this.cleanVotes < 3) this.subQuorumViolations += 1;
+      return;
+    }
+    super.apply(action);
+  }
+}
+
 const repoRoot = resolve(import.meta.dir, '../../../..');
 
 function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(): Record<string, unknown>}>(
@@ -1556,7 +1662,7 @@ function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(
   }
 }
 
-describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (17 Defense Models)', () => {
+describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (18 Defense Models)', () => {
   test('EpistemicStateLattice ITF actions drive EpistemicLatticeSUT with exact step-by-step state isomorphism', () => {
     const stats = replayModelAgainstSut(
       'packages/quint-models/engineering/defense/epistemic-state-lattice/EpistemicStateLattice.qnt',
@@ -1925,6 +2031,32 @@ describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (17 Defense Models
       () => new TransparencyLogEquivocationSUT(),
       projectH,
       () => new BadSplitViewAcceptingSUT(),
+    );
+    expect(stats.transitions).toBeGreaterThan(50);
+    expect(stats.brokenDiverged).toBe(true);
+  }, 30_000);
+
+  test('WitnessQuorumFinality ITF actions drive WitnessQuorumFinalitySUT with exact state isomorphism and reject BadSubQuorumFinalitySUT', () => {
+    const projectH = (h: Record<string, unknown>) => ({
+      w1Branch: asInt(h.w1Branch),
+      w2Branch: asInt(h.w2Branch),
+      w3Branch: asInt(h.w3Branch),
+      byzClean: Boolean(h.byzClean),
+      byzBackdoor: Boolean(h.byzBackdoor),
+      consistencyOk: Boolean(h.consistencyOk),
+      cleanVotes: asInt(h.cleanVotes),
+      backdoorVotes: asInt(h.backdoorVotes),
+      cleanFinalized: Boolean(h.cleanFinalized),
+      backdoorFinalized: Boolean(h.backdoorFinalized),
+      unverifiedCosignViolations: asInt(h.unverifiedCosignViolations),
+      honestEquivocationViolations: asInt(h.honestEquivocationViolations),
+      subQuorumViolations: asInt(h.subQuorumViolations),
+    });
+    const stats = replayModelAgainstSut(
+      'packages/quint-models/engineering/defense/witness-quorum-finality/WitnessQuorumFinality.qnt',
+      () => new WitnessQuorumFinalitySUT(),
+      projectH,
+      () => new BadSubQuorumFinalitySUT(),
     );
     expect(stats.transitions).toBeGreaterThan(50);
     expect(stats.brokenDiverged).toBe(true);

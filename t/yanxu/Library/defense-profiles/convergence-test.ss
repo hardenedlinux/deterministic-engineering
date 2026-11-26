@@ -169,9 +169,9 @@
           (list (cons 'leaf/mutable-effect (.o require-use-time-witness?: #f)))))
       (check-equal? (.ref rt-bad 'status) 'rejected))
 
-    (test-case "E1 live Quint fleet (54 canonical models) converges by-tag across M1/M2/M3 with zero over-blocking"
+    (test-case "E1 live Quint fleet (55 canonical models) converges by-tag across M1/M2/M3 with zero over-blocking"
       (def fleet-meta (collect-live-quint-fleet-meta))
-      (check-equal? (>= (length fleet-meta) 54) #t)
+      (check-equal? (>= (length fleet-meta) 55) #t)
       (def m1-count 0)
       (def m2-count 0)
       (def m3-count 0)

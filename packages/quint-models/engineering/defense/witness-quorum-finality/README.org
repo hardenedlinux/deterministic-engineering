@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Proactive Threshold Witness Cosigning (2f+1 of 3f+1) & Quorum Intersection Finality
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.defense.witness-quorum-finality=
+- *Subdomain*: =quint.engineering.defense=
+- *Quint Module*: =witness_quorum_finality= (=[[file:WitnessQuorumFinality.qnt][WitnessQuorumFinality.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/defense/witness-quorum-finality/WitnessQuorumFinality=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+With N=4 witnesses (3 honest + 1 Byzantine double-signer) and threshold t=3 (2f+1), conflicting clean and backdoor branches can never both finalize (not(cleanFinalized and backdoorFinalized)), no honest witness cosigns without RFC 6962 consistency (unverifiedCosignViolations == 0) or double-signs (honestEquivocationViolations == 0), and no checkpoint finalizes below quorum (subQuorumViolations == 0).
+
+#+begin_src quint
+val safety = (not((h.cleanFinalized and h.backdoorFinalized)) and h.unverifiedCosignViolations == 0 and h.honestEquivocationViolations == 0 and h.subQuorumViolations == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =require-consistency-before-cosign= | =stepUnverifiedCosign= | =h.unverifiedCosignViolations > 0= |
+| =forbid-honest-double-sign= | =stepHonestEquivocation= | =h.honestEquivocationViolations > 0= |
+| =enforce-quorum-2f1= | =stepSubQuorum= | =h.subQuorumViolations > 0= |
+
+* Grounded Papers & Specifications
+
+- *M. Castro & B. Liskov (USENIX OSDI 1999) / M. Yin et al. (ACM PODC 2019)*: PBFT & HotStuff: 2f+1 Quorum Certificates guaranteeing intersection of at least one honest replica.
+- *E. Syta et al. (IEEE S&P 2016)*: Keeping Authorities 'Honest or Bust' with Decentralized Witness Cosigning (CoSi).
+- *Deterministic Engineering (10.166 / 10.169)*: Proactive offline-verifiable Ed25519 witness cosigning blocking split-view even under total network eclipse.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/defense/witness-quorum-finality/WitnessQuorumFinality.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/defense/witness-quorum-finality/WitnessQuorumFinality.qnt --main=witness_quorum_finality --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite N=4 (f=1, t=3) Byzantine witness cosigning quorum-intersection abstraction; assumes static witness roster and <= f compromised witnesses (safety breaks if > f witnesses collude).

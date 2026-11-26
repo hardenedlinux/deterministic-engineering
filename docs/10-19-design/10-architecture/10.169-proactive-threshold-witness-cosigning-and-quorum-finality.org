@@ -1,0 +1,68 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 10.169 Proactive Threshold Witness Cosigning (2f+1 of 3f+1) & Eclipse-Resistant Quorum Finality
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.169
+#+STARTUP: overview
+#+OPTIONS: toc:3 num:nil
+#+FILETAGS: :architecture:witness-cosigning:bft:quorum-intersection:finality:ed25519:governance:
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.166-verifiable-transparency-log-and-split-view-equivocation-defense.org][10.166 B9 Transparency Log]] | [[file:10.167-durable-ai-governance-research-synthesis-and-declarative-datalog-meta-audit.org][10.167 ASCENT Meta-Audit]] | [[file:10.168-cross-runtime-proof-carrying-datalog-meta-audit-bridge.org][10.168 N-Version Bridge]] | [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05 115-Case Benchmark]]
+
+* Problem: Closing the Total Network Eclipse Gap of Reactive Gossip
+:PROPERTIES:
+:CUSTOM_ID: wqc169-problem
+:STATUS: implemented-verified
+:END:
+
+Reactive witness gossip ([[file:10.166-verifiable-transparency-log-and-split-view-equivocation-defense.org][10.166 / B9]]) guarantees cryptographic accountability
+*after* witnesses exchange Signed Tree Heads, yet an attacker who temporarily
+eclipses a production release node from external witnesses could attempt to
+deploy a backdoored branch before gossip reconnects.
+
+Proactive *Threshold Witness Cosigning* (Castro & Liskov OSDI 1999 PBFT;
+Syta et al. IEEE S&P 2016 CoSi; Yin et al. PODC 2019 HotStuff) closes this gap
+before execution via the *Byzantine Quorum Intersection Theorem*: for =N=
+registered witnesses tolerating =f= Byzantine double-signers, requiring a
+threshold =t= with =2t - N >= f + 1= (e.g. =t = 3= of =N = 4= for =f = 1=)
+guarantees that any two valid Quorum Certificates intersect in at least one
+honest witness. Because honest witnesses verify RFC 6962 consistency and refuse
+conflicting roots at the same tree size, conflicting finalized checkpoints
+become mathematically impossible even under total network eclipse.
+
+* Architecture (Scenario B10): Offline-Verifiable Ed25519 Quorum Certificates
+:PROPERTIES:
+:CUSTOM_ID: wqc169-architecture
+:STATUS: implemented-verified
+:END:
+
+| Governance Mechanism | Cryptographic / Formal Law | Security Guarantee |
+|----------------------+----------------------------+--------------------|
+| =validateBftQuorumParameters= | Enforces =(2t - N) - f >= 1= strictly | Mechanically rejects non-intersecting thresholds (e.g. =t=2= of =N=4, f=1=) |
+| =IndependentTransparencyWitness= + =WitnessCosigningKey= (=R3=) | Real Ed25519 per-witness key (branded non-serializable); verifies Coordinator STH + exact RFC 6962 consistency proof before cosigning; emits =EquivocationFraudProof= on rewrite/split | Zero cosignatures on rewritten histories; witness private keys cannot enter =M1= storage |
+| =verifyThresholdCosignedCheckpoint= | Offline air-gap-safe verifier checking Coordinator Ed25519 STH + =>= t= distinct registered Witness Ed25519 cosignatures | Proactively blocks split-view backdoors under total network eclipse; rejects duplicate or rogue witness spoofing |
+
+* Executable Artifacts & Verification Receipts
+:PROPERTIES:
+:CUSTOM_ID: wqc169-artifacts
+:STATUS: executed-verified
+:END:
+
+| Artifact | Path | Verification Evidence |
+|----------+------+-----------------------|
+| 18th Formal Model (=witness-quorum-finality=) | [[file:../../../packages/quint-models/engineering/defense/witness-quorum-finality/WitnessQuorumFinality.qnt][WitnessQuorumFinality.qnt]] | Apalache 6/6 PASS proving emergent =not(cleanFinalized and backdoorFinalized)= under =f=1= Byzantine double-signer + 3 countermodels, =guard-probe= =essential=, 100% MBT |
+| MBT SUT State-Machine Refinement | [[file:../../../languages-engineering/ts/defense/boundary-contrast/mbt-replay.test.ts][mbt-replay.test.ts]] | =WitnessQuorumFinalitySUT= isomorphic to ITF traces; rejects =BadSubQuorumFinalitySUT= |
+| Executable Ed25519 Threshold Cosigning (=AG111=–=AG115=) | [[file:../../../languages-engineering/ts/defense/agent-audit/witness-quorum-finality.ts][witness-quorum-finality.ts]] / [[file:../../../languages-engineering/ts/defense/agent-audit/witness-quorum-finality.test.ts][witness-quorum-finality.test.ts]] | 5/5 cases (=AG111=–=AG115=) exact gold match; dogfood =just audit-agent-patch= 0 findings |
+
+* Limits
+:PROPERTIES:
+:CUSTOM_ID: wqc169-limits
+:STATUS: implemented-verified
+:END:
+
+Quorum intersection finality holds provided strictly fewer than =f + 1=
+registered witnesses are compromised simultaneously and the offline verifier
+holds an authentic, out-of-band pinned witness roster. Production deployments
+should distribute witness keys across independent administrative domains and
+rotate rosters via threshold-signed governance transitions.
