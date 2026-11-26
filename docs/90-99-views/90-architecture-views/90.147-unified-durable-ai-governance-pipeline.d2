@@ -1,0 +1,63 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+direction: right
+
+title: {
+  label: "90.147 Unified Durable AI Governance Pipeline: Stratified OP (M1/M2/M3) x B1-B5 Composition (10.162)"
+  near: top-center
+  shape: text
+  style.font-size: 20
+  style.bold: true
+}
+
+stage1: "1. Delegation & AST Gate\n(B3 + G2/E1/E2)" {
+  style.fill: "#eef2ff"
+  style.stroke: "#4f46e5"
+
+  b3: "B3 Macaroon Attenuation\n• Monotonic Path/Action/TTL\n• Cascading M3 Revocation\n• Non-Serializable Root Key (R3)"
+  g2: "G2/E1/E2 AST Anti-Evasion\n• Blocks Silent Fallback\n• Blocks Floor Weakening\n• Zero Approval Fatigue"
+}
+
+stage2: "2. Concurrent SSI Arbitrator\n(B4 + DE01)" {
+  style.fill: "#fff7ed"
+  style.stroke: "#ea580c"
+
+  ssi: "AST Symbol ReadSet x WriteSet\n• TS + Gerbil Scheme Extractors\n• Detects Disjoint rw Write-Skew\n• Detects Cyclic A <-> B Skew\n• Bounded DE01 Partial Admit"
+}
+
+stage3: "3. Cold Context & HITL Pause\n(Phase 9 + B5)" {
+  style.fill: "#fef9c3"
+  style.stroke: "#ca8a04"
+
+  p9: "Role-Projected Cold Context\n• Strips Untrusted M2 Prose\n• Anti-Overthinking M1 Anchors"
+  b5: "B5 Cold HITL Hibernation\n• Drops M3 Lease Before Pause\n• Drift & R1 Disjoint Re-Eval\n• Quorum SoD + Anti-Nagging Veto"
+}
+
+stage4: "4. Release & Regulated Replay\n(B1 + B2 + R5)" {
+  style.fill: "#ecfdf5"
+  style.stroke: "#059669"
+
+  b1: "B1 SoD Release & Canary\n• Pinned M1 Rollback Cut\n• Auto-Rollback + Epoch Fence\n• Auto-Veto on Canary Breach"
+  b2: "B2 Multi-Tenant AEAD Replay\n• AES-256-GCM Per-Tenant Keys\n• Survives GC & Chat Compaction\n• Full M1 Custody Lineage"
+}
+
+m1_store: "Stratified Orthogonal Persistence Core (10.156)\nM1 Immutable Merkle DAG  |  M2 Drift Manifests (R1/R4)  |  M3 Live Non-Serializable Capabilities (R3)" {
+  style.fill: "#f8fafc"
+  style.stroke: "#334155"
+}
+
+stage1.b3 -> stage1.g2: "Authorized Custody"
+stage1.g2 -> stage2.ssi: "0 AST Findings"
+stage2.ssi -> stage3.p9: "Clean / DE01 Admitted"
+stage3.p9 -> stage3.b5: "Cold HumanDecisionBrief"
+stage3.b5 -> stage4.b1: "Re-Attested B3 + Fresh M3 Lease"
+stage4.b1 -> stage4.b2: "Pinned Release Root"
+stage4.b1 -> stage3.b5: "Canary Breach -> Auto-Veto" {
+  style.stroke: "#dc2626"
+  style.stroke-dash: 4
+}
+stage1 -> m1_store: "Certs"
+stage2 -> m1_store: "Reval Packets"
+stage3 -> m1_store: "Anchors & Vetoes"
+stage4 -> m1_store: "Cuts & AEAD Proofs"
