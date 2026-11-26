@@ -82,6 +82,7 @@ export const EXPECTED_QUINT_DEFENSE_MODELS = [
   'partial-order-delivery',
   'policy-admission-sufficiency',
   'release-sod-rollback',
+  'supply-chain-provenance',
   'tool-sandbox-rpc-boundary',
   'transparency-log-equivocation',
   'unknown-effect-retry',
@@ -148,7 +149,9 @@ export function auditFourParadigmCrossConsistency(params?: {
       ascentSrc.includes('slashed_witness_reentry_violation') &&
       ascentSrc.includes('mcp_tool_violation') &&
       ascentSrc.includes('distillation_amnesia_violation') &&
-      ascentSrc.includes('swarm_deadlock_cycle');
+      ascentSrc.includes('swarm_deadlock_cycle') &&
+      ascentSrc.includes('supply_chain_dep_violation') &&
+      ascentSrc.includes('reproducible_build_violation');
   }
   const ascentVerdict: EpistemicVerdict = ascentRulesPresent ? 'Proven' : 'Refuted';
 

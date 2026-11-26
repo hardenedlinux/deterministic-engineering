@@ -700,7 +700,11 @@
     context_pinned_constraint
     distillation_retained
     swarm_wait_edge
-    swarm_session_release)
+    swarm_session_release
+    lockfile_pinned_dep
+    cve_tombstone
+    release_sbom_dep
+    build_attestation)
   (outputs
     effectively_revoked
     belief_poisoned
@@ -716,6 +720,8 @@
     mcp_tool_violation
     distillation_amnesia_violation
     swarm_deadlock_cycle
+    supply_chain_dep_violation
+    reproducible_build_violation
     release_disqualified
     release_admitted)
   (relation delegation_edge ((parent string?) (child string?)))
@@ -746,8 +752,12 @@
   (relation distillation_retained ((rel_id string?) (constraint_hash string?)))
   (relation swarm_wait_edge ((session_id string?) (waiter string?) (blocker string?)))
   (relation swarm_session_release ((rel_id string?) (session_id string?)))
+  (relation lockfile_pinned_dep ((dep_digest string?)))
+  (relation cve_tombstone ((dep_digest string?)))
+  (relation release_sbom_dep ((rel_id string?) (dep_digest string?)))
+  (relation build_attestation ((rel_id string?) (builder_id string?) (artifact_digest string?) (hermetic string?)))
 
-  ;; Internal stratified helper relations for pure relational identity, cross-log finality, slashing, B11 MCP pinning & B13 wait-graph reachability:
+  ;; Internal stratified helper relations for pure relational identity, cross-log finality, slashing, B11 MCP pinning, B13 wait-graph reachability & B14 artifact equality:
   (relation same_root ((r1 string?) (r2 string?)))
   (relation same_witness ((w1 string?) (w2 string?)))
   (relation valid_witness_cosign ((witness string?) (log_id string?) (size string?) (root string?)))
@@ -755,6 +765,7 @@
   (relation effectively_slashed ((log_id string?) (witness string?)))
   (relation mcp_tool_pinned ((tool_id string?)))
   (relation wait_reaches ((session_id string?) (a string?) (b string?)))
+  (relation same_artifact ((a1 string?) (a2 string?)))
 
   (relation effectively_revoked ((principal string?)))
   (relation belief_poisoned ((belief_id string?)))
@@ -770,6 +781,8 @@
   (relation mcp_tool_violation ((rel_id string?) (tool_id string?) (reason string?)))
   (relation distillation_amnesia_violation ((rel_id string?) (constraint_hash string?)))
   (relation swarm_deadlock_cycle ((session_id string?) (agent string?)))
+  (relation supply_chain_dep_violation ((rel_id string?) (dep_digest string?) (reason string?)))
+  (relation reproducible_build_violation ((rel_id string?) (reason string?)))
   (relation release_disqualified ((rel_id string?) (reason string?)))
   (relation release_admitted ((rel_id string?)))
 
@@ -911,7 +924,28 @@
    <--
    (wait_reaches Sess A A))
 
-  ;; 6. Cross-pillar B1/B3/B5/B6/B8/B9/B10/B10c/B11/B12/B13 release disqualification & clean admission:
+  ;; 5f. B14 Hermetic Supply-Chain & Reproducible Build Provenance Datalog verification:
+  ((same_artifact A A)
+   <--
+   (build_attestation _ _ A _))
+  ((supply_chain_dep_violation Rel Dep (lit "unpinned-slopsquatting-dep"))
+   <--
+   (release_sbom_dep Rel Dep)
+   (not (lockfile_pinned_dep Dep)))
+  ((supply_chain_dep_violation Rel Dep (lit "tombstoned-cve-dep"))
+   <--
+   (release_sbom_dep Rel Dep)
+   (cve_tombstone Dep))
+  ((reproducible_build_violation Rel (lit "non-hermetic-build"))
+   <--
+   (build_attestation Rel _ _ (lit "no")))
+  ((reproducible_build_violation Rel (lit "builder-artifact-divergence"))
+   <--
+   (build_attestation Rel _ A1 _)
+   (build_attestation Rel _ A2 _)
+   (not (same_artifact A1 A2)))
+
+  ;; 6. Cross-pillar B1/B3/B5/B6/B8/B9/B10/B10c/B11/B12/B13/B14 release disqualification & clean admission:
   ((release_finality_satisfied Rel Ckpt)
    <--
    (release_proposal Rel _ _ Log)
@@ -964,6 +998,14 @@
    (release_proposal Rel _ _ _)
    (swarm_session_release Rel Sess)
    (swarm_deadlock_cycle Sess _))
+  ((release_disqualified Rel (lit "supply-chain-dep-violation"))
+   <--
+   (release_proposal Rel _ _ _)
+   (supply_chain_dep_violation Rel _ _))
+  ((release_disqualified Rel (lit "reproducible-build-violation"))
+   <--
+   (release_proposal Rel _ _ _)
+   (reproducible_build_violation Rel _))
   ((release_admitted Rel)
    <--
    (release_proposal Rel _ _ _)

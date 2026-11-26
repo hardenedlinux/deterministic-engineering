@@ -1923,6 +1923,77 @@ class BadUnboundedRetrySUT extends FederatedArbitrationLivenessSUT {
   }
 }
 
+class SupplyChainProvenanceSUT {
+  lockfilePinned = false;
+  cveTombstoned = false;
+  hermeticSandbox = false;
+  twoBuilderMatch = false;
+  admittedBuilds = 0;
+  slopsquatViolations = 0;
+  cveViolations = 0;
+  reproViolations = 0;
+
+  apply(action: string): void {
+    switch (action) {
+      case 'pinLockfileDeps':
+        if (!this.lockfilePinned) this.lockfilePinned = true;
+        break;
+      case 'flagCveTombstone':
+        if (!this.cveTombstoned) this.cveTombstoned = true;
+        break;
+      case 'enableHermeticSandbox':
+        if (!this.hermeticSandbox) this.hermeticSandbox = true;
+        break;
+      case 'verifySecondBuilderParity':
+        if (!this.twoBuilderMatch) this.twoBuilderMatch = true;
+        break;
+      case 'admitArtifactBuild':
+        if (
+          this.admittedBuilds < 2 &&
+          this.lockfilePinned &&
+          !this.cveTombstoned &&
+          this.hermeticSandbox &&
+          this.twoBuilderMatch
+        ) {
+          this.admittedBuilds += 1;
+        }
+        break;
+      default:
+        throw new Error(`Unknown SupplyChainProvenance action: ${action}`);
+    }
+  }
+
+  snapshot() {
+    return {
+      lockfilePinned: this.lockfilePinned,
+      cveTombstoned: this.cveTombstoned,
+      hermeticSandbox: this.hermeticSandbox,
+      twoBuilderMatch: this.twoBuilderMatch,
+      admittedBuilds: this.admittedBuilds,
+      slopsquatViolations: this.slopsquatViolations,
+      cveViolations: this.cveViolations,
+      reproViolations: this.reproViolations,
+    };
+  }
+}
+
+class BadUnpinnedSupplyChainSUT extends SupplyChainProvenanceSUT {
+  override apply(action: string): void {
+    if (action === 'admitArtifactBuild' && this.admittedBuilds < 2) {
+      // Anti-pattern: drops lockfile, CVE, and reproducibility guards!
+      const lockOk = this.lockfilePinned;
+      const cveOk = !this.cveTombstoned;
+      const reproOk = this.hermeticSandbox && this.twoBuilderMatch;
+      this.admittedBuilds += 1;
+      if (!lockOk) this.slopsquatViolations += 1;
+      if (!cveOk) this.cveViolations += 1;
+      if (!reproOk) this.reproViolations += 1;
+      return;
+    }
+    super.apply(action);
+  }
+}
+
 const repoRoot = resolve(import.meta.dir, '../../../..');
 
 function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(): Record<string, unknown>}>(
@@ -1975,7 +2046,7 @@ function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(
   }
 }
 
-describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (22 Defense Models)', () => {
+describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (23 Defense Models)', () => {
   test('EpistemicStateLattice ITF actions drive EpistemicLatticeSUT with exact step-by-step state isomorphism', () => {
     const stats = replayModelAgainstSut(
       'packages/quint-models/engineering/defense/epistemic-state-lattice/EpistemicStateLattice.qnt',
@@ -2461,6 +2532,27 @@ describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (22 Defense Models
       () => new FederatedArbitrationLivenessSUT(),
       projectH,
       () => new BadUnboundedRetrySUT(),
+    );
+    expect(stats.transitions).toBeGreaterThan(50);
+    expect(stats.brokenDiverged).toBe(true);
+  }, 30_000);
+
+  test('SupplyChainProvenance ITF actions drive SupplyChainProvenanceSUT with exact state isomorphism and reject BadUnpinnedSupplyChainSUT', () => {
+    const projectH = (h: Record<string, unknown>) => ({
+      lockfilePinned: Boolean(h.lockfilePinned),
+      cveTombstoned: Boolean(h.cveTombstoned),
+      hermeticSandbox: Boolean(h.hermeticSandbox),
+      twoBuilderMatch: Boolean(h.twoBuilderMatch),
+      admittedBuilds: asInt(h.admittedBuilds),
+      slopsquatViolations: asInt(h.slopsquatViolations),
+      cveViolations: asInt(h.cveViolations),
+      reproViolations: asInt(h.reproViolations),
+    });
+    const stats = replayModelAgainstSut(
+      'packages/quint-models/engineering/defense/supply-chain-provenance/SupplyChainProvenance.qnt',
+      () => new SupplyChainProvenanceSUT(),
+      projectH,
+      () => new BadUnpinnedSupplyChainSUT(),
     );
     expect(stats.transitions).toBeGreaterThan(50);
     expect(stats.brokenDiverged).toBe(true);

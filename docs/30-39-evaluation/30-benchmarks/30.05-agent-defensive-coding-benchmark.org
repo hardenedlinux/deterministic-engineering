@@ -20,7 +20,7 @@ This benchmark evaluates whether AST-level defensive-engineering auditors catch
 all four AI Agent defensive-hallucination classes (=G2= in [[file:../../10-19-design/10-architecture/10.153-defensive-engineering-taxonomy-and-modular-organization.org][10.153]]) without
 generating false positives on clean deterministic-boundary code.
 
-- *Independent Gold*: Every case (=AG01=–=AG210=) has a fixed independent
+- *Independent Gold*: Every case (=AG01=–=AG215=) has a fixed independent
   expected outcome (=pass= vs. =fail= + exact hallucination/anti-evasion/escalation/durable-resume class). Candidate
   auditor output never generates gold.
 - *Native AST, Diff-Delta, Scope-Fencing & Closed-Loop Governance Auditors Evaluated*:
@@ -266,6 +266,11 @@ generating false positives on clean deterministic-boundary code.
 | =AG208= | =B14= 2-Builder Parity & Crypto | Self-repro, diverging 2nd builder, forged sig, tampered payload, rogue/revoked | Refuse all 6 cryptographic/reproducibility faults | Enforces Ken Thompson 2-builder bit-for-bit parity & Ed25519 builder identity |
 | =AG209= | =B14= Clean + 11/11 =R3= Caps | 2-builder clean SLSA build + all 11 =R3= non-leakable =M3= cap classes | =Proven= + GC; refuse 11/11 =R3= =M1= leaks | Confirms =BuilderAttestationSigningKey= non-leakage & reproducible =M1= receipt |
 | =AG210= | 210-Case & 146-Thm Milestone | 22 Quint × 13 Modules / 146 Theorems CLI JSON -> Ed25519 cert -> =cedar-poo-spec= | **210/210 =Proven=** + all =M1= receipts survive GC | Closes 210-case benchmark & 13-module 146-theorem zero-Mathlib/zero-Cedar =LeanPoo= Library |
+| =AG211= | =B14= × 32×18 ASCENT Deps | Live =gxi= ASCENT derives =supply_chain_dep_violation= for slopsquatting & CVE | Derive both violations & disqualify; admit clean dep | Projects live SBOM & lockfile facts into 32×18 Scheme Datalog fixed-point |
+| =AG212= | =B14= × 32×18 ASCENT Repro | Live =gxi= ASCENT derives =reproducible_build_violation= for network & divergence | Derive both violations & disqualify; admit 2-builder | Pure relational inequality catches diverging builder artifacts & non-hermetic builds |
+| =AG213= | =B14= × N-Version Gate | Buggy TS coordinator claims =ADMIT= on slopsquatted & diverged-builder releases | Refuse both (=oracle-disagreement-fail-closed=) + GC | Live Scheme ASCENT overrides imperative TS coordinator & pins forensic receipts |
+| =AG214= | 23-Quint × 146-Thm CLI | =leanpoo-fleet-audit --json= verifies 23 Quint × 32×18 ASCENT × 13/146 =LeanPoo= | =quint: 23, ascent: true, modules: 13, thms: 146= | Confirms 23rd Quint model (=supply-chain-provenance=) + 32×18 ASCENT + 146-theorem convergence |
+| =AG215= | 215-Case =B1=–=B14= Closure | 2-builder SLSA + =B10= QC -> dual ASCENT -> 23-Quint offline Ed25519 -> =cedar-poo-spec= | **215/215 =Proven=** + all =M1= receipts survive GC | Seals complete four-paradigm symmetry across all 14 business pillars (=B1=–=B14=) |
 
 * Observed Verification Receipts
 :PROPERTIES:
@@ -310,14 +315,15 @@ generating false positives on clean deterministic-boundary code.
 | =B13= Federated Arbitration Liveness & **200-Case / 136-Theorem Grand Milestone** (=AG191=–=AG200=, =90.151=) | =bun test languages-engineering/ts/defense/agent-audit/federated-arbitration-200-milestone.test.ts= + =just audit-leanpoo-fleet --json= | **10/10 cases matched gold** (live **136/136** 12-module =LeanPoo= sweep, retry termination, safe abort, 3-agent deadlock preemption, absorbing terminals, =B12 × B13=, =B11 × B13=, 10/10 =R3= caps & air-gapped =cedar-poo-spec= 200-case seal) |
 | =B12= & =B13= Four-Paradigm Symmetry Closure: 22 Quint/Apalache Models + 22/22 MBT SUT + 28×16 =B1=–=B13= ASCENT (=AG201=–=AG205=, =10.186=) | =bun test languages-engineering/ts/defense/agent-audit/b12-b13-four-paradigm-symmetry.test.ts= + =mbt-replay.test.ts= + =governance-ascent-test.ss= | **5/5 cases matched gold** (models #21 & #22 Apalache 6/6 =PLAN-OK= & 6/6 =F3= essential, 22/22 MBT SUT isomorphism, live 28×16 =gxi= ASCENT =B12= amnesia & =B13= 3-agent deadlock catch, 22-Quint × 136-Thm CLI + air-gapped =cedar-poo-spec= closure) |
 | =B14= Hermetic Supply-Chain & Reproducible Build Provenance + 13-Module / **146-Theorem =LeanPoo=** Library (=AG206=–=AG210=, =10.187=) | =bun test languages-engineering/ts/defense/agent-audit/supply-chain-provenance.test.ts= + =just audit-leanpoo-fleet --json= | **5/5 cases matched gold** (live **146/146** 13-module =LeanPoo= sweep, anti-slopsquatting/CVE/hermeticity blocks, 2-builder reproducible parity & Ed25519 crypto, 11/11 =R3= non-leakable caps & =cedar-poo-spec= 210-case milestone) |
-| Combined **210-case** 5-language, 22-Quint MBT, Full =B1=–=B13= 28×16 ASCENT & **146-Theorem =LeanPoo=** benchmark | =just check-defense= | **210/210 exact gold match** (=tp=137, tn=73, fp=0, fn=0=) |
+| =B14= Four-Paradigm Symmetry Closure: 23rd Quint/Apalache Model + 23/23 MBT SUT + 32×18 =B1=–=B14= ASCENT (=AG211=–=AG215=, =10.188=) | =bun test languages-engineering/ts/defense/agent-audit/b14-four-paradigm-symmetry.test.ts= + =mbt-replay.test.ts= + =governance-ascent-test.ss= | **5/5 cases matched gold** (model #23 Apalache 6/6 =PLAN-OK= & 3/3 =F3= essential, 23/23 MBT SUT isomorphism, live 32×18 =gxi= ASCENT slopsquat/CVE/repro catch, 23-Quint × 146-Thm CLI + air-gapped =cedar-poo-spec= closure) |
+| Combined **215-case** 5-language, 23-Quint MBT, Full =B1=–=B14= 32×18 ASCENT & **146-Theorem =LeanPoo=** benchmark | =just check-defense= | **215/215 exact gold match** (=tp=140, tn=75, fp=0, fn=0=) |
 
 * Limits
 :PROPERTIES:
 :CUSTOM_ID: bench3005-limits
 :END:
 
-This 210-case benchmark establishes deterministic AST-level, diff-delta,
+This 215-case benchmark establishes deterministic AST-level, diff-delta,
 scope-fencing, bounded closed-loop, hot-policy co-evolution, async-cut,
 semantic-drift memoization, AEAD-isolated Merkle storage, role-projected
 context, multi-agent SSI concurrency, and business SoD/replay precision and

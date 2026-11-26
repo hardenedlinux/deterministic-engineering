@@ -225,8 +225,8 @@ describe('Phase 38 — Full B12 & B13 Four-Paradigm Symmetry: 22 Quint/MBT Model
     expect(kv.hasBlob(gateDeadlock.disagreementReceiptHash)).toBe(true);
   }, 60_000);
 
-  test('AG204: Standalone 22-Quint x 28x16 ASCENT x 12-Module / 136-Theorem LeanPoo CLI JSON Gate exits 0', () => {
-    expect(EXPECTED_QUINT_DEFENSE_MODELS.length).toBe(22);
+  test('AG204: Standalone 22+-Quint x ASCENT x LeanPoo CLI JSON Gate exits 0', () => {
+    expect(EXPECTED_QUINT_DEFENSE_MODELS.length).toBeGreaterThanOrEqual(22);
     expect(EXPECTED_QUINT_DEFENSE_MODELS).toContain('context-distillation-provenance');
     expect(EXPECTED_QUINT_DEFENSE_MODELS).toContain('federated-arbitration-liveness');
     if (!isLeanToolchainAvailable()) return;
@@ -250,7 +250,7 @@ describe('Phase 38 — Full B12 & B13 Four-Paradigm Symmetry: 22 Quint/MBT Model
     };
     expect(out.verdict).toBe('Proven');
     expect(out.facadeModule).toBe(LEANPOO_TOP_FACADE_MODULE);
-    expect(out.quintModelCount).toBe(22);
+    expect(out.quintModelCount).toBe(EXPECTED_QUINT_DEFENSE_MODELS.length);
     expect(out.ascentRulesPresent).toBe(true);
     expect(out.multiLangHarnessCount).toBe(8);
     expect(out.moduleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);
@@ -357,7 +357,7 @@ describe('Phase 38 — Full B12 & B13 Four-Paradigm Symmetry: 22 Quint/MBT Model
       ? (() => {
           const rep = auditFourParadigmCrossConsistency({kv});
           expect(rep.verdict).toBe('Proven');
-          expect(rep.quintModelCount).toBe(22);
+          expect(rep.quintModelCount).toBe(EXPECTED_QUINT_DEFENSE_MODELS.length);
           expect(rep.leanPooModuleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);
           expect(rep.leanPooTheoremCount).toBe(LEANPOO_EXPECTED_THEOREM_COUNT);
           return rep.releaseAttestationDigest;
