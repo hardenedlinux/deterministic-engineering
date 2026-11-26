@@ -70,12 +70,14 @@ export const EXPECTED_QUINT_DEFENSE_MODELS = [
   'bounded-negative-revalidation',
   'byzantine-encrypted-store',
   'capability-attenuation',
+  'context-distillation-provenance',
   'difc-exfiltration-fence',
   'durable-agent-persistence',
   'durable-ai-context-ssi',
   'durable-memory-tms',
   'durable-saga-budget',
   'epistemic-state-lattice',
+  'federated-arbitration-liveness',
   'hitl-durable-approval',
   'partial-order-delivery',
   'policy-admission-sufficiency',
@@ -144,7 +146,9 @@ export function auditFourParadigmCrossConsistency(params?: {
       ascentSrc.includes('quorum_3_verified') &&
       ascentSrc.includes('split_world_finality_breach') &&
       ascentSrc.includes('slashed_witness_reentry_violation') &&
-      ascentSrc.includes('mcp_tool_violation');
+      ascentSrc.includes('mcp_tool_violation') &&
+      ascentSrc.includes('distillation_amnesia_violation') &&
+      ascentSrc.includes('swarm_deadlock_cycle');
   }
   const ascentVerdict: EpistemicVerdict = ascentRulesPresent ? 'Proven' : 'Refuted';
 

@@ -358,7 +358,7 @@ describe('Phase 37 — 200-Case Grand Milestone & 12-Module / 136-Theorem LeanPo
     };
     expect(out.verdict).toBe('Proven');
     expect(out.facadeModule).toBe(LEANPOO_TOP_FACADE_MODULE);
-    expect(out.quintModelCount).toBe(20);
+    expect(out.quintModelCount).toBe(EXPECTED_QUINT_DEFENSE_MODELS.length);
     expect(out.ascentRulesPresent).toBe(true);
     expect(out.multiLangHarnessCount).toBe(8);
     expect(out.moduleCount).toBe(12);

@@ -61,6 +61,10 @@ export interface MetaAuditFactBundle {
   next_epoch_roster: Array<[string, string, string]>;
   mcp_tool_pinned_schema: Array<[string, string]>;
   mcp_tool_invoked: Array<[string, string, string, string]>;
+  context_pinned_constraint: Array<[string, string]>;
+  distillation_retained: Array<[string, string]>;
+  swarm_wait_edge: Array<[string, string, string]>;
+  swarm_session_release: Array<[string, string]>;
 }
 
 export interface AscentMetaAuditOutput {
@@ -76,6 +80,8 @@ export interface AscentMetaAuditOutput {
   split_world_finality_breach: string[][];
   slashed_witness_reentry_violation: string[][];
   mcp_tool_violation: string[][];
+  distillation_amnesia_violation: string[][];
+  swarm_deadlock_cycle: string[][];
   release_disqualified: string[][];
   release_admitted: string[][];
 }
@@ -162,6 +168,10 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
     observedSchemaHash: string;
     scopeOk: boolean;
   }>;
+  contextPinnedConstraints?: ReadonlyArray<{releaseId: string; constraintHash: string}>;
+  distillationRetainedConstraints?: ReadonlyArray<{releaseId: string; constraintHash: string}>;
+  swarmWaitEdges?: ReadonlyArray<{sessionId: string; waitingAgent: string; blockingAgent: string}>;
+  swarmSessionReleases?: ReadonlyArray<{releaseId: string; sessionId: string}>;
   releaseProposals: ReadonlyArray<{
     releaseId: string;
     authorId: string;
@@ -316,6 +326,21 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
     inv.scopeOk ? 'yes' : 'no',
   ]);
 
+  const context_pinned_constraint: Array<[string, string]> = (
+    params.contextPinnedConstraints ?? []
+  ).map(c => [c.releaseId, c.constraintHash]);
+  const distillation_retained: Array<[string, string]> = (
+    params.distillationRetainedConstraints ?? []
+  ).map(c => [c.releaseId, c.constraintHash]);
+  const swarm_wait_edge: Array<[string, string, string]> = (params.swarmWaitEdges ?? []).map(e => [
+    e.sessionId,
+    e.waitingAgent,
+    e.blockingAgent,
+  ]);
+  const swarm_session_release: Array<[string, string]> = (params.swarmSessionReleases ?? []).map(
+    sr => [sr.releaseId, sr.sessionId],
+  );
+
   const bundle: MetaAuditFactBundle = {
     delegation_edge: dedupeTuples(delegation_edge),
     revoked_principal: dedupeTuples(revoked_principal),
@@ -341,6 +366,10 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
     next_epoch_roster: dedupeTuples(next_epoch_roster),
     mcp_tool_pinned_schema: dedupeTuples(mcp_tool_pinned_schema),
     mcp_tool_invoked: dedupeTuples(mcp_tool_invoked),
+    context_pinned_constraint: dedupeTuples(context_pinned_constraint),
+    distillation_retained: dedupeTuples(distillation_retained),
+    swarm_wait_edge: dedupeTuples(swarm_wait_edge),
+    swarm_session_release: dedupeTuples(swarm_session_release),
   };
 
   const factBundleMerkleHash = params.kv.putBlob('ascent-meta-audit-fact-bundle', bundle, []);
@@ -392,6 +421,8 @@ export function parseFramedAscentOutput(rawStdout: string): AscentOracleRunVerdi
     'split_world_finality_breach',
     'slashed_witness_reentry_violation',
     'mcp_tool_violation',
+    'distillation_amnesia_violation',
+    'swarm_deadlock_cycle',
     'release_disqualified',
     'release_admitted',
   ];
@@ -465,7 +496,9 @@ export function runLiveGerbilAscentMetaAudit(
        (keys '(effectively_revoked belief_poisoned tainted_value exfiltration_violation
                equivocation_violation byzantine_witness_equivocation invalid_witness_cosign
                quorum_3_verified sub_quorum_finality_violation split_world_finality_breach
-               slashed_witness_reentry_violation mcp_tool_violation release_disqualified release_admitted)))
+               slashed_witness_reentry_violation mcp_tool_violation
+               distillation_amnesia_violation swarm_deadlock_cycle
+               release_disqualified release_admitted)))
   (display "${BEGIN_MARKER}\\n{")
   (let loop ((ks keys) (first #t))
     (when (pair? ks)

@@ -1774,6 +1774,155 @@ class BadSchemaRugPullSUT extends ToolSandboxRpcBoundarySUT {
   }
 }
 
+class ContextDistillationProvenanceSUT {
+  hasPinnedConstraint = false;
+  hasUntrustedInput = false;
+  hasSecretTag = false;
+  pinnedRetained = false;
+  outputMarkedUntrusted = false;
+  secretPreserved = false;
+  safeDistillations = 0;
+  amnesiaViolations = 0;
+  launderingViolations = 0;
+  secrecyStripViolations = 0;
+
+  apply(action: string): void {
+    switch (action) {
+      case 'ingestPinnedConstraint':
+        if (!this.hasPinnedConstraint) this.hasPinnedConstraint = true;
+        break;
+      case 'ingestUntrustedSnippet':
+        if (!this.hasUntrustedInput) this.hasUntrustedInput = true;
+        break;
+      case 'ingestSecretFact':
+        if (!this.hasSecretTag) this.hasSecretTag = true;
+        break;
+      case 'copyPinnedIntoSummary':
+        if (this.hasPinnedConstraint && !this.pinnedRetained) this.pinnedRetained = true;
+        break;
+      case 'tagSummaryUntrusted':
+        if (this.hasUntrustedInput && !this.outputMarkedUntrusted) this.outputMarkedUntrusted = true;
+        break;
+      case 'propagateSecretTag':
+        if (this.hasSecretTag && !this.secretPreserved) this.secretPreserved = true;
+        break;
+      case 'commitDistillation':
+        if (
+          this.safeDistillations < 2 &&
+          (!this.hasPinnedConstraint || this.pinnedRetained) &&
+          (!this.hasUntrustedInput || this.outputMarkedUntrusted) &&
+          (!this.hasSecretTag || this.secretPreserved)
+        ) {
+          this.safeDistillations += 1;
+        }
+        break;
+      default:
+        throw new Error(`Unknown ContextDistillationProvenance action: ${action}`);
+    }
+  }
+
+  snapshot() {
+    return {
+      hasPinnedConstraint: this.hasPinnedConstraint,
+      hasUntrustedInput: this.hasUntrustedInput,
+      hasSecretTag: this.hasSecretTag,
+      pinnedRetained: this.pinnedRetained,
+      outputMarkedUntrusted: this.outputMarkedUntrusted,
+      secretPreserved: this.secretPreserved,
+      safeDistillations: this.safeDistillations,
+      amnesiaViolations: this.amnesiaViolations,
+      launderingViolations: this.launderingViolations,
+      secrecyStripViolations: this.secrecyStripViolations,
+    };
+  }
+}
+
+class BadPinnedAmnesiaSUT extends ContextDistillationProvenanceSUT {
+  override apply(action: string): void {
+    if (
+      action === 'commitDistillation' &&
+      this.safeDistillations < 2 &&
+      (!this.hasUntrustedInput || this.outputMarkedUntrusted) &&
+      (!this.hasSecretTag || this.secretPreserved)
+    ) {
+      // Anti-pattern: drops `require-pinned-retained` guard and forgets pinned M1 constraints!
+      const pinnedOk = !this.hasPinnedConstraint || this.pinnedRetained;
+      this.safeDistillations += 1;
+      if (!pinnedOk) this.amnesiaViolations += 1;
+      return;
+    }
+    super.apply(action);
+  }
+}
+
+class FederatedArbitrationLivenessSUT {
+  attempts = 0;
+  deadlockDetected = false;
+  terminated = false;
+  escalated = false;
+  admitted = false;
+  unboundedRetryViolations = 0;
+  deadlockRetryViolations = 0;
+  terminalReentryViolations = 0;
+
+  apply(action: string): void {
+    switch (action) {
+      case 'detectDeadlockCycle':
+        if (!this.terminated && !this.deadlockDetected) this.deadlockDetected = true;
+        break;
+      case 'attemptAutoRetry':
+        if (this.attempts < 3 && this.attempts < 2 && !this.deadlockDetected && !this.terminated) {
+          this.attempts += 1;
+        }
+        break;
+      case 'escalateOrAbort':
+        if (!this.terminated && (this.deadlockDetected || this.attempts >= 2)) {
+          this.terminated = true;
+          this.escalated = true;
+        }
+        break;
+      case 'admitClean':
+        if (!this.terminated && !this.deadlockDetected && this.attempts < 2) {
+          this.terminated = true;
+          this.admitted = true;
+        }
+        break;
+      default:
+        throw new Error(`Unknown FederatedArbitrationLiveness action: ${action}`);
+    }
+  }
+
+  snapshot() {
+    return {
+      attempts: this.attempts,
+      deadlockDetected: this.deadlockDetected,
+      terminated: this.terminated,
+      escalated: this.escalated,
+      admitted: this.admitted,
+      unboundedRetryViolations: this.unboundedRetryViolations,
+      deadlockRetryViolations: this.deadlockRetryViolations,
+      terminalReentryViolations: this.terminalReentryViolations,
+    };
+  }
+}
+
+class BadUnboundedRetrySUT extends FederatedArbitrationLivenessSUT {
+  override apply(action: string): void {
+    if (action === 'attemptAutoRetry' && this.attempts < 3) {
+      // Anti-pattern: drops retry-budget, deadlock-preemption, and non-terminal guards!
+      const withinCap = this.attempts < 2;
+      const noDeadlock = !this.deadlockDetected;
+      const active = !this.terminated;
+      this.attempts += 1;
+      if (!withinCap) this.unboundedRetryViolations += 1;
+      if (!noDeadlock) this.deadlockRetryViolations += 1;
+      if (!active) this.terminalReentryViolations += 1;
+      return;
+    }
+    super.apply(action);
+  }
+}
+
 const repoRoot = resolve(import.meta.dir, '../../../..');
 
 function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(): Record<string, unknown>}>(
@@ -1826,7 +1975,7 @@ function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(
   }
 }
 
-describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (20 Defense Models)', () => {
+describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (22 Defense Models)', () => {
   test('EpistemicStateLattice ITF actions drive EpistemicLatticeSUT with exact step-by-step state isomorphism', () => {
     const stats = replayModelAgainstSut(
       'packages/quint-models/engineering/defense/epistemic-state-lattice/EpistemicStateLattice.qnt',
@@ -2268,6 +2417,50 @@ describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (20 Defense Models
       () => new ToolSandboxRpcBoundarySUT(),
       projectH,
       () => new BadSchemaRugPullSUT(),
+    );
+    expect(stats.transitions).toBeGreaterThan(50);
+    expect(stats.brokenDiverged).toBe(true);
+  }, 30_000);
+
+  test('ContextDistillationProvenance ITF actions drive ContextDistillationProvenanceSUT with exact state isomorphism and reject BadPinnedAmnesiaSUT', () => {
+    const projectH = (h: Record<string, unknown>) => ({
+      hasPinnedConstraint: Boolean(h.hasPinnedConstraint),
+      hasUntrustedInput: Boolean(h.hasUntrustedInput),
+      hasSecretTag: Boolean(h.hasSecretTag),
+      pinnedRetained: Boolean(h.pinnedRetained),
+      outputMarkedUntrusted: Boolean(h.outputMarkedUntrusted),
+      secretPreserved: Boolean(h.secretPreserved),
+      safeDistillations: asInt(h.safeDistillations),
+      amnesiaViolations: asInt(h.amnesiaViolations),
+      launderingViolations: asInt(h.launderingViolations),
+      secrecyStripViolations: asInt(h.secrecyStripViolations),
+    });
+    const stats = replayModelAgainstSut(
+      'packages/quint-models/engineering/defense/context-distillation-provenance/ContextDistillationProvenance.qnt',
+      () => new ContextDistillationProvenanceSUT(),
+      projectH,
+      () => new BadPinnedAmnesiaSUT(),
+    );
+    expect(stats.transitions).toBeGreaterThan(50);
+    expect(stats.brokenDiverged).toBe(true);
+  }, 30_000);
+
+  test('FederatedArbitrationLiveness ITF actions drive FederatedArbitrationLivenessSUT with exact state isomorphism and reject BadUnboundedRetrySUT', () => {
+    const projectH = (h: Record<string, unknown>) => ({
+      attempts: asInt(h.attempts),
+      deadlockDetected: Boolean(h.deadlockDetected),
+      terminated: Boolean(h.terminated),
+      escalated: Boolean(h.escalated),
+      admitted: Boolean(h.admitted),
+      unboundedRetryViolations: asInt(h.unboundedRetryViolations),
+      deadlockRetryViolations: asInt(h.deadlockRetryViolations),
+      terminalReentryViolations: asInt(h.terminalReentryViolations),
+    });
+    const stats = replayModelAgainstSut(
+      'packages/quint-models/engineering/defense/federated-arbitration-liveness/FederatedArbitrationLiveness.qnt',
+      () => new FederatedArbitrationLivenessSUT(),
+      projectH,
+      () => new BadUnboundedRetrySUT(),
     );
     expect(stats.transitions).toBeGreaterThan(50);
     expect(stats.brokenDiverged).toBe(true);

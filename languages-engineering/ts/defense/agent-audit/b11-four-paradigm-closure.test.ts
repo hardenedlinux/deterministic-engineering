@@ -270,8 +270,8 @@ describe('Phase 35 — B11 Four-Paradigm Symmetry Closure: 20 Quint Models + B1-
     expect(kv.hasBlob(gate.dualAdmissionReceiptHash)).toBe(true);
   }, 60_000);
 
-  test('AG184: 20-Model Quint Inventory & 116-Theorem 10-Module LeanPoo CLI JSON confirms full four-paradigm convergence', () => {
-    expect(EXPECTED_QUINT_DEFENSE_MODELS.length).toBe(20);
+  test('AG184: 20+-Model Quint Inventory & 116+-Theorem LeanPoo CLI JSON confirms full four-paradigm convergence', () => {
+    expect(EXPECTED_QUINT_DEFENSE_MODELS.length).toBeGreaterThanOrEqual(20);
     expect(EXPECTED_QUINT_DEFENSE_MODELS).toContain('tool-sandbox-rpc-boundary');
     if (!isLeanToolchainAvailable()) return;
 
@@ -294,7 +294,7 @@ describe('Phase 35 — B11 Four-Paradigm Symmetry Closure: 20 Quint Models + B1-
     };
     expect(out.verdict).toBe('Proven');
     expect(out.facadeModule).toBe(LEANPOO_TOP_FACADE_MODULE);
-    expect(out.quintModelCount).toBe(20);
+    expect(out.quintModelCount).toBe(EXPECTED_QUINT_DEFENSE_MODELS.length);
     expect(out.ascentRulesPresent).toBe(true);
     expect(out.multiLangHarnessCount).toBe(8);
     expect(out.moduleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);
@@ -303,7 +303,7 @@ describe('Phase 35 — B11 Four-Paradigm Symmetry Closure: 20 Quint Models + B1-
     expect(out.zeroCedar).toBe(true);
   }, 45_000);
 
-  test('AG185: 185-Case B1-B11 Four-Paradigm Symmetry Closure — 20 Quint x ASCENT x 116-Thm LeanPoo Offline Cert -> cedar-poo-spec', () => {
+  test('AG185: 185-Case B1-B11 Four-Paradigm Symmetry Closure — Quint x ASCENT x LeanPoo Offline Cert -> cedar-poo-spec', () => {
     const kv = new ContentAddressedKvStore();
     const publisher = new LibraryReleaseSigningKey('pub-185');
     const witnesses = ['w1', 'w2', 'w3', 'w4'].map(id => new LibraryReleaseSigningKey(id));
@@ -312,11 +312,11 @@ describe('Phase 35 — B11 Four-Paradigm Symmetry Closure: 20 Quint Models + B1-
       ? (() => {
           const rep = auditFourParadigmCrossConsistency({kv});
           expect(rep.verdict).toBe('Proven');
-          expect(rep.quintModelCount).toBe(20);
+          expect(rep.quintModelCount).toBe(EXPECTED_QUINT_DEFENSE_MODELS.length);
           expect(rep.leanPooTheoremCount).toBe(LEANPOO_EXPECTED_THEOREM_COUNT);
           return rep.releaseAttestationDigest;
         })()
-      : sha256Digest({milestone: 185, quint: 20, theorems: 116});
+      : sha256Digest({milestone: 185, quint: EXPECTED_QUINT_DEFENSE_MODELS.length, theorems: 116});
 
     const cert = issueSignedLibraryReleaseCertificate({
       payload: {

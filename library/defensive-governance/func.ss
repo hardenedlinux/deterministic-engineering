@@ -696,7 +696,11 @@
     slashed_witness
     next_epoch_roster
     mcp_tool_pinned_schema
-    mcp_tool_invoked)
+    mcp_tool_invoked
+    context_pinned_constraint
+    distillation_retained
+    swarm_wait_edge
+    swarm_session_release)
   (outputs
     effectively_revoked
     belief_poisoned
@@ -710,6 +714,8 @@
     split_world_finality_breach
     slashed_witness_reentry_violation
     mcp_tool_violation
+    distillation_amnesia_violation
+    swarm_deadlock_cycle
     release_disqualified
     release_admitted)
   (relation delegation_edge ((parent string?) (child string?)))
@@ -736,14 +742,19 @@
   (relation next_epoch_roster ((log_id string?) (epoch string?) (witness string?)))
   (relation mcp_tool_pinned_schema ((tool_id string?) (schema_hash string?)))
   (relation mcp_tool_invoked ((rel_id string?) (tool_id string?) (observed_schema_hash string?) (scope_ok string?)))
+  (relation context_pinned_constraint ((rel_id string?) (constraint_hash string?)))
+  (relation distillation_retained ((rel_id string?) (constraint_hash string?)))
+  (relation swarm_wait_edge ((session_id string?) (waiter string?) (blocker string?)))
+  (relation swarm_session_release ((rel_id string?) (session_id string?)))
 
-  ;; Internal stratified helper relations for pure relational identity, cross-log finality, slashing & B11 MCP pinning:
+  ;; Internal stratified helper relations for pure relational identity, cross-log finality, slashing, B11 MCP pinning & B13 wait-graph reachability:
   (relation same_root ((r1 string?) (r2 string?)))
   (relation same_witness ((w1 string?) (w2 string?)))
   (relation valid_witness_cosign ((witness string?) (log_id string?) (size string?) (root string?)))
   (relation release_finality_satisfied ((rel_id string?) (ckpt_id string?)))
   (relation effectively_slashed ((log_id string?) (witness string?)))
   (relation mcp_tool_pinned ((tool_id string?)))
+  (relation wait_reaches ((session_id string?) (a string?) (b string?)))
 
   (relation effectively_revoked ((principal string?)))
   (relation belief_poisoned ((belief_id string?)))
@@ -757,6 +768,8 @@
   (relation split_world_finality_breach ((log_id string?) (size string?) (r1 string?) (r2 string?)))
   (relation slashed_witness_reentry_violation ((log_id string?) (epoch string?) (witness string?)))
   (relation mcp_tool_violation ((rel_id string?) (tool_id string?) (reason string?)))
+  (relation distillation_amnesia_violation ((rel_id string?) (constraint_hash string?)))
+  (relation swarm_deadlock_cycle ((session_id string?) (agent string?)))
   (relation release_disqualified ((rel_id string?) (reason string?)))
   (relation release_admitted ((rel_id string?)))
 
@@ -880,7 +893,25 @@
    <--
    (mcp_tool_invoked Rel Tool _ (lit "no")))
 
-  ;; 6. Cross-pillar B1/B3/B5/B6/B8/B9/B10/B10c/B11 release disqualification & clean admission:
+  ;; 5d. B12 Controlled Context Distillation anti-amnesia verification:
+  ((distillation_amnesia_violation Rel Hash)
+   <--
+   (context_pinned_constraint Rel Hash)
+   (not (distillation_retained Rel Hash)))
+
+  ;; 5e. B13 Federated Multi-Agent Arbitration transitive wait-graph deadlock cycle detection:
+  ((wait_reaches Sess A B)
+   <--
+   (swarm_wait_edge Sess A B))
+  ((wait_reaches Sess A C)
+   <--
+   (wait_reaches Sess A B)
+   (swarm_wait_edge Sess B C))
+  ((swarm_deadlock_cycle Sess A)
+   <--
+   (wait_reaches Sess A A))
+
+  ;; 6. Cross-pillar B1/B3/B5/B6/B8/B9/B10/B10c/B11/B12/B13 release disqualification & clean admission:
   ((release_finality_satisfied Rel Ckpt)
    <--
    (release_proposal Rel _ _ Log)
@@ -924,6 +955,15 @@
    <--
    (release_proposal Rel _ _ _)
    (mcp_tool_violation Rel _ _))
+  ((release_disqualified Rel (lit "distillation-pinned-amnesia"))
+   <--
+   (release_proposal Rel _ _ _)
+   (distillation_amnesia_violation Rel _))
+  ((release_disqualified Rel (lit "swarm-deadlock-cycle"))
+   <--
+   (release_proposal Rel _ _ _)
+   (swarm_session_release Rel Sess)
+   (swarm_deadlock_cycle Sess _))
   ((release_admitted Rel)
    <--
    (release_proposal Rel _ _ _)
