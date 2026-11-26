@@ -20,7 +20,7 @@ import {ContentAddressedKvStore, sha256Digest} from './durable-merkle-store.ts';
 import {
   auditLeanPooLibraryBoundaries,
   LEANPOO_LIBRARY_EXPORT_MANIFEST,
-  LEANPOO_RELEASE_CERT_FACADE_MODULE,
+  LEANPOO_TOP_FACADE_MODULE,
   verifyLeanPooLibraryFleet,
   type LeanPooFleetAttestationVerdict,
 } from './leanpoo-export-manifest.ts';
@@ -185,7 +185,7 @@ export function auditFourParadigmCrossConsistency(params?: {
 
   const releaseAttestationDigest = sha256Digest({
     verdict,
-    facadeModule: LEANPOO_RELEASE_CERT_FACADE_MODULE,
+    facadeModule: LEANPOO_TOP_FACADE_MODULE,
     quintModelCount: EXPECTED_QUINT_DEFENSE_MODELS.length - missingQuintModels.length,
     ascentRulesPresent,
     multiLangHarnessCount: EXPECTED_MULTILANG_HARNESSES.length - missingHarnesses.length,
@@ -202,7 +202,7 @@ export function auditFourParadigmCrossConsistency(params?: {
     pinnedReceiptHash = params.kv.putBlob(
       'four-paradigm-release-attestation',
       {
-        facadeModule: LEANPOO_RELEASE_CERT_FACADE_MODULE,
+        facadeModule: LEANPOO_TOP_FACADE_MODULE,
         quintModelCount: EXPECTED_QUINT_DEFENSE_MODELS.length,
         ascentRulesPresent: true,
         multiLangHarnessCount: EXPECTED_MULTILANG_HARNESSES.length,
@@ -221,7 +221,7 @@ export function auditFourParadigmCrossConsistency(params?: {
 
   return {
     verdict,
-    facadeModule: LEANPOO_RELEASE_CERT_FACADE_MODULE,
+    facadeModule: LEANPOO_TOP_FACADE_MODULE,
     quintModelCount: EXPECTED_QUINT_DEFENSE_MODELS.length - missingQuintModels.length,
     missingQuintModels,
     ascentRulesPresent,

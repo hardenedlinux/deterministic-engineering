@@ -25,6 +25,8 @@ import {
   verifyLeanModuleAxiomsLive,
 } from './lean-proof-oracle.ts';
 import {
+  LEANPOO_EXPECTED_MODULE_COUNT,
+  LEANPOO_EXPECTED_THEOREM_COUNT,
   LEANPOO_LIBRARY_EXPORT_MANIFEST,
   LEANPOO_RELEASE_CERT_FACADE_MODULE,
   verifyLeanPooLibraryFleet,
@@ -71,8 +73,8 @@ describe('Phase 32 — Air-Gapped Ed25519 Release Certificate Replay & 96-Theore
     const fleet = verifyLeanPooLibraryFleet({kv});
     expect(fleet.kind).toBe('Proven');
     if (fleet.kind !== 'Proven') throw new Error('expected Proven');
-    expect(fleet.moduleCount).toBe(8);
-    expect(fleet.verifiedTheoremCount).toBe(96);
+    expect(fleet.moduleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);
+    expect(fleet.verifiedTheoremCount).toBe(LEANPOO_EXPECTED_THEOREM_COUNT);
 
     kv.gcUnreferenced();
     expect(kv.hasBlob(modRes.pinnedCertificateHash!)).toBe(true);
@@ -362,8 +364,8 @@ describe('Phase 32 — Air-Gapped Ed25519 Release Certificate Replay & 96-Theore
       zeroCedar: boolean;
     };
     expect(out.verdict).toBe('Proven');
-    expect(out.moduleCount).toBe(8);
-    expect(out.verifiedTheoremCount).toBe(96);
+    expect(out.moduleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);
+    expect(out.verifiedTheoremCount).toBe(LEANPOO_EXPECTED_THEOREM_COUNT);
     expect(out.quintModelCount).toBe(19);
     expect(out.zeroMathlib).toBe(true);
     expect(out.zeroCedar).toBe(true);

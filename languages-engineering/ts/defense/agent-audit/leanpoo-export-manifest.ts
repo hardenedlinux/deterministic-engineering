@@ -42,6 +42,11 @@ export const LEANPOO_FOUR_PARADIGM_FACADE_MODULE =
 export const LEANPOO_RELEASE_CERT_FACADE_MODULE =
   'DeterministicEngineering.Engineering.ReleaseCertificateReplay';
 
+export const LEANPOO_MERKLE_ASYNC_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.MerkleConsistencyAndAsyncCut';
+
+export const LEANPOO_TOP_FACADE_MODULE = LEANPOO_MERKLE_ASYNC_FACADE_MODULE;
+
 export const LEANPOO_LIBRARY_EXPORT_MANIFEST: readonly LeanPooExportModuleSpec[] = [
   {
     moduleName: 'DeterministicEngineering.Engineering.DurableGovernanceQuorum',
@@ -195,7 +200,30 @@ export const LEANPOO_LIBRARY_EXPORT_MANIFEST: readonly LeanPooExportModuleSpec[]
       'disablingAntiDowngrade_invalidates_reuse',
     ],
   },
+  {
+    moduleName: LEANPOO_MERKLE_ASYNC_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/MerkleConsistencyAndAsyncCut.lean',
+    pillars: ['B9', 'R2', 'R4'],
+    theorems: [
+      'append_only_prefix_preserved',
+      'retroactive_leaf_mutation_breaks_prefix',
+      'size_rollback_breaks_append_only',
+      'split_view_same_size_different_root_is_equivocation',
+      'r2_disjoint_branch_merge_preserves_both_agents',
+      'r2_divergent_concurrent_edit_always_surfaces_conflict',
+      'r4_any_upstream_axis_drift_invalidates_llm_memo',
+      'merkleAsyncMemoContract_preserves_rejection',
+      'merkleCacheDepthTuning_preserves_certificate',
+      'disablingSplitViewCheck_invalidates_reuse',
+    ],
+  },
 ];
+
+export const LEANPOO_EXPECTED_MODULE_COUNT = LEANPOO_LIBRARY_EXPORT_MANIFEST.length;
+export const LEANPOO_EXPECTED_THEOREM_COUNT = LEANPOO_LIBRARY_EXPORT_MANIFEST.reduce(
+  (acc, m) => acc + m.theorems.length,
+  0,
+);
 
 export interface LibraryBoundaryAuditResult {
   passed: boolean;
@@ -332,12 +360,14 @@ export function verifyLeanPooLibraryFleet(params?: {
   }
 
   const facadeToImport = manifest.some(
-    m => m.moduleName === LEANPOO_RELEASE_CERT_FACADE_MODULE,
+    m => m.moduleName === LEANPOO_MERKLE_ASYNC_FACADE_MODULE,
   )
-    ? LEANPOO_RELEASE_CERT_FACADE_MODULE
-    : manifest.some(m => m.moduleName === LEANPOO_FOUR_PARADIGM_FACADE_MODULE)
-      ? LEANPOO_FOUR_PARADIGM_FACADE_MODULE
-      : LEANPOO_EXPORT_FACADE_MODULE;
+    ? LEANPOO_MERKLE_ASYNC_FACADE_MODULE
+    : manifest.some(m => m.moduleName === LEANPOO_RELEASE_CERT_FACADE_MODULE)
+      ? LEANPOO_RELEASE_CERT_FACADE_MODULE
+      : manifest.some(m => m.moduleName === LEANPOO_FOUR_PARADIGM_FACADE_MODULE)
+        ? LEANPOO_FOUR_PARADIGM_FACADE_MODULE
+        : LEANPOO_EXPORT_FACADE_MODULE;
 
   const stdinScript = [
     `import ${facadeToImport}`,
