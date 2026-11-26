@@ -1330,6 +1330,100 @@ class BadExfiltratingAgentSUT extends DifcExfiltrationFenceSUT {
   }
 }
 
+class DurableMemoryTmsSUT {
+  sourceTrusted = false;
+  quorumMet = false;
+  rootPromoted = false;
+  derivedCreated = false;
+  derivedActive = false;
+  hasAltJustification = false;
+  rootRetracted = false;
+  poisonedPromotionViolations = 0;
+  repoisoningViolations = 0;
+  zombieDerivedViolations = 0;
+  validReads = 0;
+
+  apply(action: string): void {
+    switch (action) {
+      case 'markSourceTrusted':
+        if (!this.sourceTrusted) this.sourceTrusted = true;
+        break;
+      case 'achieveIndependentQuorum':
+        if (!this.quorumMet) this.quorumMet = true;
+        break;
+      case 'promoteRootBelief': {
+        const trustedQuorum = this.sourceTrusted && this.quorumMet;
+        const notRetracted = !this.rootRetracted;
+        if (!this.rootPromoted && trustedQuorum && notRetracted) {
+          this.rootPromoted = true;
+          if (!trustedQuorum) this.poisonedPromotionViolations += 1;
+          if (!notRetracted) this.repoisoningViolations += 1;
+        }
+        break;
+      }
+      case 'deriveDependentBelief':
+        if (this.rootPromoted && !this.derivedCreated) {
+          this.derivedCreated = true;
+          this.derivedActive = true;
+        }
+        break;
+      case 'attachAltCleanJustification':
+        if (this.derivedCreated && !this.hasAltJustification) {
+          this.hasAltJustification = true;
+          this.derivedActive = true;
+        }
+        break;
+      case 'retractPoisonedRoot':
+        if (this.rootPromoted && !this.rootRetracted) {
+          this.rootRetracted = true;
+          this.rootPromoted = false;
+          this.derivedActive = this.hasAltJustification ? this.derivedActive : false;
+        }
+        break;
+      case 'readDerivedBelief': {
+        const validSupport = this.derivedActive && (!this.rootRetracted || this.hasAltJustification);
+        if (this.derivedCreated && validSupport) {
+          this.validReads += 1;
+          if (!validSupport) this.zombieDerivedViolations += 1;
+        }
+        break;
+      }
+      default:
+        throw new Error(`Unknown DurableMemoryTmsSUT action: ${action}`);
+    }
+  }
+
+  snapshot() {
+    return {
+      sourceTrusted: this.sourceTrusted,
+      quorumMet: this.quorumMet,
+      rootPromoted: this.rootPromoted,
+      derivedCreated: this.derivedCreated,
+      derivedActive: this.derivedActive,
+      hasAltJustification: this.hasAltJustification,
+      rootRetracted: this.rootRetracted,
+      poisonedPromotionViolations: this.poisonedPromotionViolations,
+      repoisoningViolations: this.repoisoningViolations,
+      zombieDerivedViolations: this.zombieDerivedViolations,
+      validReads: this.validReads,
+    };
+  }
+}
+
+class BadUnverifiedPromotionSUT extends DurableMemoryTmsSUT {
+  override apply(action: string): void {
+    if (action === 'promoteRootBelief' && !this.rootPromoted && !this.rootRetracted) {
+      // Anti-pattern: drops `require-quorum-and-trusted-source` guard and promotes poisoned claims!
+      this.rootPromoted = true;
+      if (!(this.sourceTrusted && this.quorumMet)) {
+        this.poisonedPromotionViolations += 1;
+      }
+      return;
+    }
+    super.apply(action);
+  }
+}
+
 const repoRoot = resolve(import.meta.dir, '../../../..');
 
 function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(): Record<string, unknown>}>(
@@ -1382,7 +1476,7 @@ function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(
   }
 }
 
-describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (15 Defense Models)', () => {
+describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (16 Defense Models)', () => {
   test('EpistemicStateLattice ITF actions drive EpistemicLatticeSUT with exact step-by-step state isomorphism', () => {
     const stats = replayModelAgainstSut(
       'packages/quint-models/engineering/defense/epistemic-state-lattice/EpistemicStateLattice.qnt',
@@ -1705,6 +1799,30 @@ describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (15 Defense Models
       () => new DifcExfiltrationFenceSUT(),
       projectH,
       () => new BadExfiltratingAgentSUT(),
+    );
+    expect(stats.transitions).toBeGreaterThan(50);
+    expect(stats.brokenDiverged).toBe(true);
+  }, 30_000);
+
+  test('DurableMemoryTms ITF actions drive DurableMemoryTmsSUT with exact state isomorphism and reject BadUnverifiedPromotionSUT', () => {
+    const projectH = (h: Record<string, unknown>) => ({
+      sourceTrusted: Boolean(h.sourceTrusted),
+      quorumMet: Boolean(h.quorumMet),
+      rootPromoted: Boolean(h.rootPromoted),
+      derivedCreated: Boolean(h.derivedCreated),
+      derivedActive: Boolean(h.derivedActive),
+      hasAltJustification: Boolean(h.hasAltJustification),
+      rootRetracted: Boolean(h.rootRetracted),
+      poisonedPromotionViolations: asInt(h.poisonedPromotionViolations),
+      repoisoningViolations: asInt(h.repoisoningViolations),
+      zombieDerivedViolations: asInt(h.zombieDerivedViolations),
+      validReads: asInt(h.validReads),
+    });
+    const stats = replayModelAgainstSut(
+      'packages/quint-models/engineering/defense/durable-memory-tms/DurableMemoryTms.qnt',
+      () => new DurableMemoryTmsSUT(),
+      projectH,
+      () => new BadUnverifiedPromotionSUT(),
     );
     expect(stats.transitions).toBeGreaterThan(50);
     expect(stats.brokenDiverged).toBe(true);
