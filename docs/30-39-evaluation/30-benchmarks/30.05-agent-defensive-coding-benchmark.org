@@ -20,7 +20,7 @@ This benchmark evaluates whether AST-level defensive-engineering auditors catch
 all four AI Agent defensive-hallucination classes (=G2= in [[file:../../10-19-design/10-architecture/10.153-defensive-engineering-taxonomy-and-modular-organization.org][10.153]]) without
 generating false positives on clean deterministic-boundary code.
 
-- *Independent Gold*: Every case (=AG01=–=AG105=) has a fixed independent
+- *Independent Gold*: Every case (=AG01=–=AG110=) has a fixed independent
   expected outcome (=pass= vs. =fail= + exact hallucination/anti-evasion/escalation/durable-resume class). Candidate
   auditor output never generates gold.
 - *Native AST, Diff-Delta, Scope-Fencing & Closed-Loop Governance Auditors Evaluated*:
@@ -49,7 +49,7 @@ generating false positives on clean deterministic-boundary code.
      [[file:../../../languages-engineering/ts/defense/agent-audit/governance-harness.test.ts][governance-harness.test.ts]],
      and =just audit-agent-patch=).
 
-* One-Hundred-Five-Case Cohort (=AG01=–=AG105=)
+* One-Hundred-Ten-Case Cohort (=AG01=–=AG110=)
 :PROPERTIES:
 :CUSTOM_ID: bench3005-cohort
 :END:
@@ -161,6 +161,11 @@ generating false positives on clean deterministic-boundary code.
 | =AG103= | Transparency Log (=B9=) | Split-view equivocation fraud proof (Regulator vs Prod) | =EquivocationDetected= (both STHs signed!) | Catches compromised coordinator signing divergent size-4 roots & emits cryptographic fraud proof |
 | =AG104= | Transparency Log (=B9=) | Retroactive leaf rewrite & silent size rollback | =EquivocationDetected= (inconsistent / rollback) | Detects mutated leaf #1 in size-6 tree & size =4 -> 2= rollback via RFC 6962 consistency check |
 | =AG105= | Transparency Log (=B9 × R3=) | Ed25519 =CoordinatorSigningKey= non-leakage & forged STH | Refuse (=R3= leak & =invalid-ed25519-signature=) | Blocks private Ed25519 signing key from entering =M1= store/JSON & rejects wrong-key STH signatures |
+| =AG106= | Cross-Runtime Bridge | Live TS =B1=–=B9= object projection to =M1= Scheme alist | Pinned =M1= fact bundle + escaped S-expr | Extracts real =B3/B7/B8/B9= TS objects into canonical S-expression alist with zero hand-authored tuples |
+| =AG107= | TS <-> Gerbil ASCENT | Live =gxi= ASCENT Datalog verification over TS facts | Independent fixed-point =Verified= | Real Scheme =gxi= derives 4-hop =B3->B8= poisoning, =B7= exfiltration, =B9= split-view & admits =rel-clean= |
+| =AG108= | N-Version Oracle Gate | Buggy/compromised TS coordinator falsely claiming =ADMIT= | Refuse (=oracle-disagreement-fail-closed=) | Independent Scheme ASCENT oracle overrides buggy TS =ADMIT= on poisoned/split-log releases & pins forensics |
+| =AG109= | N-Version Oracle Gate | Dual-language consensus receipt survival across GC | =Proven= + pinned =DualOracleAdmissionReceipt= | Both TS & Scheme ASCENT agree =ADMIT= on =rel-clean=; dual-oracle receipt survives =gcUnreferenced()= |
+| =AG110= | Cross-Runtime Bridge | Missing Gerbil binary & malformed stdout fail-closed | =PendingMethod= / =SetupDefect= (never =ok:true=) | Refuses silent admission when external Scheme runtime is absent or output markers are missing |
 
 * Observed Verification Receipts
 :PROPERTIES:
@@ -185,14 +190,15 @@ generating false positives on clean deterministic-boundary code.
 | DIFC Taint Confinement, CaMeL Control-Flow Integrity & Audited Declassification (=AG86=–=AG90=) | =bun test languages-engineering/ts/defense/agent-audit/difc-exfiltration-fence.test.ts= | **5/5 cases matched gold** (Lethal Trifecta exfiltration block, CaMeL control-flow hijack block, cross-tenant flow confinement, sanitized =M3= declassification + =M1= receipt, =R3= cap non-leakage & narrow scope) |
 | Durable Memory-Poisoning Defense, ATMS Causal Retraction & Full =B1=–=B8= Synthesis (=AG91=–=AG100=) | =bun test languages-engineering/ts/defense/agent-audit/durable-memory-tms.test.ts= | **10/10 cases matched gold** (=M2= quarantine, =k=-of-=N= SoD quorum, Doyle causal retraction, de Kleer ATMS multi-justification survival, immunization tombstone, =B3/B5/B6/B7 × B8= cross-layer closure, full 8-pillar =AG100=) |
 | Verifiable Transparency Log (RFC 6962), Ed25519 STH & Split-View Equivocation (=AG101=–=AG105=) | =bun test languages-engineering/ts/defense/agent-audit/transparency-log-equivocation.test.ts= | **5/5 cases matched gold** (RFC 6962 inclusion & append-only consistency proofs, Ed25519 public-key-only verification, split-view & rewrite/rollback fraud proofs, =R3= signing key non-leakage) |
-| Combined 105-case 5-language, anti-evasion & Full =B1=–=B9= Durable AI Governance benchmark | =just check-defense= | **105/105 exact gold match** (=tp=73, tn=32, fp=0, fn=0=) |
+| Cross-Runtime N-Version Proof-Carrying Bridge (TS <-> Live Gerbil Scheme ASCENT, =AG106=–=AG110=) | =bun test languages-engineering/ts/defense/agent-audit/ascent-meta-audit-bridge.test.ts= | **5/5 cases matched gold** (live =M1= S-expr projection, live =gxi= ASCENT fixed-point verification, buggy TS coordinator catch via =oracle-disagreement-fail-closed=, dual-oracle GC survival, =PendingMethod=/=SetupDefect= fail-closed) |
+| Combined 110-case 5-language, anti-evasion, Full =B1=–=B9= & N-Version Cross-Runtime benchmark | =just check-defense= | **110/110 exact gold match** (=tp=76, tn=34, fp=0, fn=0=) |
 
 * Limits
 :PROPERTIES:
 :CUSTOM_ID: bench3005-limits
 :END:
 
-This 105-case benchmark establishes deterministic AST-level, diff-delta,
+This 110-case benchmark establishes deterministic AST-level, diff-delta,
 scope-fencing, bounded closed-loop, hot-policy co-evolution, async-cut,
 semantic-drift memoization, AEAD-isolated Merkle storage, role-projected
 context, multi-agent SSI concurrency, and business SoD/replay precision and
