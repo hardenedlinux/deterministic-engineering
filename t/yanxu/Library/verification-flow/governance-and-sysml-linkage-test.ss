@@ -216,4 +216,6 @@
       (check-equal? ((.ref gov-res 'rows-of) 'mr03_open_premise) '())
       (def admitted-subjs ((.ref gov-res 'rows-of) 'runnable_admitted))
       (check (and (member '("engineering.lifecycle.process-tree-reclamation") admitted-subjs) #t) => #t)
-      (check (and (member '("engineering.concurrency.backpressure-memory") admitted-subjs) #t) => #t))))
+      (check (and (member '("engineering.concurrency.backpressure-memory") admitted-subjs) #t) => #t)
+      (check (and (member '("engineering.concurrency.lease-fencing-token") admitted-subjs) #t) => #t)
+      (check-equal? (length (.get projected subject-specs)) 3))))

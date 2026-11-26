@@ -143,6 +143,8 @@
             reuse-sources: [Any]
             reuse-plan: [(Function (list Object) (list Object))]
             project-sysml-json: [(Function (list Any) (list Object))]
+            compile-sysml-subject: [(Function (list Object) (list Object))]
+            compile-sysml-subjects: [(Function (list Object) (list Any))]
             inputs: [Any]
             flow: [Any]
             admit: [Any]

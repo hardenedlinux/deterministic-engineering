@@ -370,14 +370,23 @@ package MultiMethodFunFlowArchitecture {
 
         // Concrete Pilot Engineering Subject (Anti-Leak Vertical Slice)
         part processTreeReclamation {
+            attribute subjectKey : String = "process-tree-reclamation";
             attribute identity : String = "engineering.lifecycle.process-tree-reclamation";
             attribute tags : String = "engineering,lifecycle,concurrency,defense.mutability.mutable-root,hazard.process-orphan";
             attribute factors : String = "owns-subprocess-tree";
 
             part quintTarget {
                 attribute modelId : String = "engineering.concurrency.process-tree-reclamation";
+                attribute quintFile : String = "packages/quint-models/engineering/concurrency/process-tree-reclamation/ProcessTreeReclamation.qnt";
+                attribute quintMain : String = "concurrency_process_tree_reclamation";
+                attribute itfSubdir : String = "process-tree-reclamation";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "20";
+                attribute maxSamples : String = "60";
+                attribute maxSteps : String = "24";
                 attribute countermodels : String = "premature-sigkill,http-ack-not-quiescence,single-pid-kill-no-containment,pgid-spawn-toctou,pid-reuse-double-kill";
                 attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/engineering/concurrency/process-tree-reclamation/ProcessTreeReclamation.qnt,packages/quint-models/engineering/concurrency/process-tree-reclamation/types.ss,packages/quint-models/engineering/concurrency/process-tree-reclamation/objects.ss,packages/quint-models/engineering/concurrency/process-tree-reclamation/interface.ss";
                 port traceOut : ArtifactHandoffPort;
             }
 
@@ -387,21 +396,28 @@ package MultiMethodFunFlowArchitecture {
                 attribute platformSpecializations : String = "LinuxCgroupV2Supervisor,DarwinPgidPipeSupervisor";
                 attribute requiresPremise : String = "SpawnPreservesContainer";
                 attribute transportContract : String = "Patch.frame+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Core.Conservation.admit_preserves_withinCap,DeterministicEngineering.Core.Conservation.release_idempotent,DeterministicEngineering.Core.Order.staleEpoch_rejected,DeterministicEngineering.Core.Order.join_never_weakens_left,DeterministicEngineering.Core.Transport.close_single_set_untouched,DeterministicEngineering.Core.Containment.killContainer_allDead_of_closed,DeterministicEngineering.Core.Containment.crashSafe_killContainer_after_root_sigkill,DeterministicEngineering.Core.Containment.singlePidKill_strands_live_child,DeterministicEngineering.Engineering.ProcessTree.linuxCgroupV2_preserves_rejection,DeterministicEngineering.Engineering.ProcessTree.darwinPgidPipe_preserves_rejection,DeterministicEngineering.Engineering.ProcessTree.containment_transported_across_grace_tuning,DeterministicEngineering.Engineering.ProcessTree.graceTunedCertified,DeterministicEngineering.Engineering.ProcessTree.singlePidRegression_invalidates_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Conservation.lean,packages/lean-models/DeterministicEngineering/Core/Order.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Core/Containment.lean,packages/lean-models/DeterministicEngineering/Engineering/ProcessTree.lean";
                 port premiseIn : PremiseConsumerPort;
             }
 
             part sourceContractTarget {
                 attribute subjectDir : String = "languages-engineering/rust/lifecycle/process-tree-guard";
                 attribute staticTool : String = "clippy";
+                attribute offlineMode : String = "false";
                 attribute staticBans : String = "raw-Command::spawn,tokio-kill_on_drop";
+                attribute inputFiles : String = "languages-engineering/rust/lifecycle/process-tree-guard/Cargo.toml,languages-engineering/rust/lifecycle/process-tree-guard/clippy.toml,languages-engineering/rust/lifecycle/process-tree-guard/src/lib.rs,languages-engineering/rust/lifecycle/process-tree-guard/src/bin/mock_tree.rs";
             }
 
             part rustOracleTarget {
                 attribute cratePath : String = "languages-engineering/rust/lifecycle/process-tree-guard";
+                attribute itfSubdir : String = "process-tree-reclamation";
+                attribute oracleMode : String = "cargo-test-itf";
                 attribute staticBans : String = "raw-Command::spawn,tokio-kill_on_drop";
                 attribute consumesArtifact : String = "itf-trace";
                 attribute supportsPremise : String = "SpawnPreservesContainer";
                 attribute faultControls : String = "normal-shutdown,panic-drop-grace,external-sigkill-137,hung-child-sigterm-ignore";
+                attribute inputFiles : String = "languages-engineering/rust/lifecycle/process-tree-guard/Cargo.toml,languages-engineering/rust/lifecycle/process-tree-guard/clippy.toml,languages-engineering/rust/lifecycle/process-tree-guard/src/lib.rs,languages-engineering/rust/lifecycle/process-tree-guard/src/bin/mock_tree.rs,languages-engineering/rust/lifecycle/process-tree-guard/tests/sigkill_leak_oracle.rs,languages-engineering/rust/lifecycle/process-tree-guard/tests/itf_mbt_replay.rs,languages-engineering/rust/lifecycle/process-tree-guard/tests/http_shutdown_e2e.rs";
                 port traceIn : ArtifactConsumerPort;
                 port premiseOut : PremiseHandoffPort;
             }
@@ -409,14 +425,23 @@ package MultiMethodFunFlowArchitecture {
 
         // Second Engineering Subject proving horizontal reuse across domains with zero framework duplication
         part backpressureMemory {
+            attribute subjectKey : String = "backpressure-memory";
             attribute identity : String = "engineering.concurrency.backpressure-memory";
             attribute tags : String = "engineering,concurrency,memory,defense.mutability.mutable-root,hazard.memory-exhaustion";
             attribute factors : String = "bounded-memory-backpressure";
 
             part bpQuintTarget {
                 attribute modelId : String = "engineering.concurrency.backpressure-memory";
+                attribute quintFile : String = "packages/quint-models/engineering/concurrency/backpressure-memory/BackpressureOwners.qnt";
+                attribute quintMain : String = "BackpressureOwners";
+                attribute itfSubdir : String = "backpressure-memory";
+                attribute verifyMode : String = "plan";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
                 attribute countermodels : String = "early-release,over-admit,queue-overflow,duplicate-admit";
                 attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/engineering/concurrency/backpressure-memory/BackpressureOwners.qnt,packages/quint-models/engineering/concurrency/backpressure-memory/types.ss,packages/quint-models/engineering/concurrency/backpressure-memory/objects.ss,packages/quint-models/engineering/concurrency/backpressure-memory/interface.ss";
                 port traceOut : ArtifactHandoffPort;
             }
 
@@ -426,22 +451,60 @@ package MultiMethodFunFlowArchitecture {
                 attribute platformSpecializations : String = "TokioRayonBoundedBackpressure";
                 attribute requiresPremise : String = "PayloadDropPrecedesPermitRelease";
                 attribute transportContract : String = "Patch.frame+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Core.Budget.conservation_bounds_peak,DeterministicEngineering.Core.Budget.budget_preserved_under_shrink,DeterministicEngineering.Core.Budget.earlyPermitRelease_can_exceed_budget,DeterministicEngineering.Engineering.Backpressure.backpressure_within_budget,DeterministicEngineering.Engineering.Backpressure.tokioRayon_preserves_rejection,DeterministicEngineering.Engineering.Backpressure.budget_transported_across_poll_tuning,DeterministicEngineering.Engineering.Backpressure.pollTunedCertified,DeterministicEngineering.Engineering.Backpressure.limitDoubling_invalidates_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Budget.lean,packages/lean-models/DeterministicEngineering/Engineering/Backpressure.lean";
                 port premiseIn : PremiseConsumerPort;
             }
 
             part bpSourceContractTarget {
                 attribute subjectDir : String = "languages-engineering/rust/concurrency/resource-control/backpressure-memory";
                 attribute staticTool : String = "clippy";
+                attribute offlineMode : String = "true";
+                attribute inputFiles : String = "languages-engineering/rust/concurrency/resource-control/backpressure-memory/Cargo.toml,languages-engineering/rust/concurrency/resource-control/backpressure-memory/src/main.rs";
             }
 
             part bpRustOracleTarget {
                 attribute cratePath : String = "languages-engineering/rust/concurrency/resource-control/backpressure-memory";
+                attribute itfSubdir : String = "backpressure-memory";
+                attribute oracleMode : String = "cargo-run-lifecycle-json";
                 attribute oracleClaimKind : String = "zero-leak-assertion";
                 attribute oracleObligation : String = "rust-zero-leak-oracle";
                 attribute consumesArtifact : String = "itf-trace";
                 attribute supportsPremise : String = "PayloadDropPrecedesPermitRelease";
+                attribute inputFiles : String = "languages-engineering/rust/concurrency/resource-control/backpressure-memory/Cargo.toml,languages-engineering/rust/concurrency/resource-control/backpressure-memory/src/main.rs";
                 port traceIn : ArtifactConsumerPort;
                 port premiseOut : PremiseHandoffPort;
+            }
+        }
+
+        // Third Engineering Subject compiled with ZERO per-subject Scheme glue (refines Core.Order + Core.Transport)
+        part leaseFencingToken {
+            attribute subjectKey : String = "lease-fencing-token";
+            attribute identity : String = "engineering.concurrency.lease-fencing-token";
+            attribute tags : String = "engineering,concurrency,distributed,defense.mutability.immutable-proof,hazard.stale-zombie-write";
+            attribute factors : String = "monotonic-fencing-token";
+
+            part lfQuintTarget {
+                attribute modelId : String = "engineering.concurrency.lease-fencing-token";
+                attribute quintFile : String = "packages/quint-models/engineering/concurrency/lease-fencing-token/LeaseFencingToken.qnt";
+                attribute quintMain : String = "lease_fencing_token";
+                attribute itfSubdir : String = "lease-fencing-token";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "monotonic-fencing-token";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/engineering/concurrency/lease-fencing-token/LeaseFencingToken.qnt,packages/quint-models/engineering/concurrency/lease-fencing-token/types.ss,packages/quint-models/engineering/concurrency/lease-fencing-token/objects.ss,packages/quint-models/engineering/concurrency/lease-fencing-token/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part lfLeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.LeaseFencing";
+                attribute refinesCore : String = "DeterministicEngineering.Core.Order,DeterministicEngineering.Core.Transport";
+                attribute transportContract : String = "ObjectContract.refine+Patch.frame+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Core.Order.staleEpoch_rejected,DeterministicEngineering.Core.Order.advanceEpoch_rejects_strictly_older,DeterministicEngineering.Engineering.LeaseFencing.zombieWrite_always_rejected,DeterministicEngineering.Engineering.LeaseFencing.durableFencedStorage_preserves_rejection,DeterministicEngineering.Engineering.LeaseFencing.heartbeatTunedCertified,DeterministicEngineering.Engineering.LeaseFencing.disableFencing_invalidates_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Order.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Engineering/LeaseFencing.lean";
             }
         }
     }
@@ -463,6 +526,11 @@ package MultiMethodFunFlowArchitecture {
     dependency 'bp-lean-refines-core' from system::backpressureMemory::bpLeanPooTarget to system::leanModels::core::budget;
     dependency 'bp-rust-contract-source' from system::backpressureMemory::bpSourceContractTarget to system::rustSubjects;
     dependency 'bp-rust-oracle-source' from system::backpressureMemory::bpRustOracleTarget to system::rustSubjects;
+
+    dependency 'lf-quint-source' from system::leaseFencingToken::lfQuintTarget to system::quintModels;
+    dependency 'lf-lean-source' from system::leaseFencingToken::lfLeanPooTarget to system::leanModels;
+    dependency 'lf-lean-refines-order' from system::leaseFencingToken::lfLeanPooTarget to system::leanModels::core::order;
+    dependency 'lf-lean-refines-transport' from system::leaseFencingToken::lfLeanPooTarget to system::leanModels::core::transport;
 
     // Cross-method edges enforced by MR03 & MR04 (zero model duplication)
     dependency 'pt-mbt-itf-edge' from system::processTreeReclamation::rustOracleTarget::traceIn to system::processTreeReclamation::quintTarget::traceOut;

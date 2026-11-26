@@ -38,12 +38,14 @@
   :deterministic-engineering/library/verification-flow/types
   :deterministic-engineering/library/verification-flow/objects
   :deterministic-engineering/library/verification-flow/func
-  :deterministic-engineering/library/verification-flow/syntax
   :deterministic-engineering/library/verification-flow/rules
+  :deterministic-engineering/library/verification-flow/sysml-compiler
   :deterministic-engineering/library/verification-flow/methods)
 (export
+  load-compiled-sysml-subjects
   make-process-tree-verification-subject
   make-backpressure-memory-verification-subject
+  make-lease-fencing-verification-subject
   default-process-tree-step-mutability
   default-backpressure-step-mutability
   compute-step-input-digests
@@ -53,223 +55,42 @@
   run-multi-method-verification-pipeline
   main)
 
-;; Step names match SysML v2 `10.154-*.sysml` PartUsage declaredNames so live
-;; SysML v2 `api-json` facts join directly with Fun-Flow receipts in ASCENT.
-(defde-verification-step pt-quint-target quintTarget DeQuintTaskFamily
-  obligation: quint-bounded-safety
-  claim-kind: bounded-interleaving
-  operation: run-quint-plan
-  payload: '((quint-file . "packages/quint-models/engineering/concurrency/process-tree-reclamation/ProcessTreeReclamation.qnt")
-             (model . "engineering.concurrency.process-tree-reclamation"))
-  input: VerificationInputEnvelopeType
-  output: VerificationEvidenceRecordType
-  produces: (itf-trace)
-  consumes: ()
-  requires-premises: ()
-  supports-premises: ()
-  stateful-quint?: #t
-  countermodels: (premature-sigkill http-ack-not-quiescence single-pid-kill-no-containment
-                  pgid-spawn-toctou pid-reuse-double-kill)
-  admit: (make-step-admitter 'quint-bounded-safety 'de-quint 'bounded-interleaving))
+;; ── Zero-Glue SysML v2 -> Fun-Flow DAG Compilation (Single Source of Truth) ──
+;; All engineering subjects (process-tree-reclamation, backpressure-memory,
+;; lease-fencing-token, and any future subject declared in 10.154-*.sysml) are
+;; compiled directly from live OpenSysML api-json via `sysml-projected->compiled-subjects`.
 
-(defde-verification-step pt-oracle-target rustOracleTarget DeNativeOracleTaskFamily
-  obligation: os-sigkill-leak-oracle
-  claim-kind: os-sigkill-oracle
-  operation: run-contained-oracle
-  payload: '((crate-dir . "languages-engineering/rust/lifecycle/process-tree-guard")
-             (fault-controls . (normal-shutdown panic-drop-grace external-sigkill-137 hung-child-sigterm-ignore)))
-  input: VerificationEvidenceRecordType
-  output: VerificationEvidenceRecordType
-  produces: ()
-  consumes: (itf-trace)
-  requires-premises: ()
-  supports-premises: (SpawnPreservesContainer)
-  stateful-quint?: #f
-  countermodels: ()
-  admit: (make-step-admitter 'os-sigkill-leak-oracle 'de-native-oracle 'os-sigkill-oracle))
+(def runner-repo-root
+  (path-normalize (path-expand "../.." (path-directory (this-source-file)))))
 
-(defde-verification-step pt-lean-target leanPooTarget DeLeanPooTaskFamily
-  obligation: lean-unbounded-closure
-  claim-kind: unbounded-invariant
-  operation: run-lean-lake-check
-  payload: '((lake-root . "packages/lean-models")
-             (lean-module . "DeterministicEngineering.Engineering.ProcessTree")
-             (theorems . ("DeterministicEngineering.Core.Conservation.admit_preserves_withinCap"
-                          "DeterministicEngineering.Core.Conservation.release_idempotent"
-                          "DeterministicEngineering.Core.Order.staleEpoch_rejected"
-                          "DeterministicEngineering.Core.Order.join_never_weakens_left"
-                          "DeterministicEngineering.Core.Transport.close_single_set_untouched"
-                          "DeterministicEngineering.Core.Containment.killContainer_allDead_of_closed"
-                          "DeterministicEngineering.Core.Containment.crashSafe_killContainer_after_root_sigkill"
-                          "DeterministicEngineering.Core.Containment.singlePidKill_strands_live_child"
-                          "DeterministicEngineering.Engineering.ProcessTree.linuxCgroupV2_preserves_rejection"
-                          "DeterministicEngineering.Engineering.ProcessTree.darwinPgidPipe_preserves_rejection"
-                          "DeterministicEngineering.Engineering.ProcessTree.containment_transported_across_grace_tuning"
-                          "DeterministicEngineering.Engineering.ProcessTree.graceTunedCertified"
-                          "DeterministicEngineering.Engineering.ProcessTree.singlePidRegression_invalidates_reuse")))
-  input: VerificationInputEnvelopeType
-  output: VerificationEvidenceRecordType
-  produces: ()
-  consumes: ()
-  requires-premises: (SpawnPreservesContainer)
-  supports-premises: ()
-  stateful-quint?: #f
-  countermodels: ()
-  admit: (make-step-admitter 'lean-unbounded-closure 'de-lean-poo 'unbounded-invariant))
+(def (project-sysml-model (repo-root runner-repo-root))
+  (def sysml-path
+    (path-expand
+      "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml"
+      repo-root))
+  (let* ((json-text (run-process (list "sysml" "-convert" "api-json" sysml-path)))
+         (parsed (call-with-input-string json-text (cut read-json <> object-as-hash: #t))))
+    (sysml-api-json->governance-facts parsed)))
 
-(defde-verification-step pt-source-target sourceContractTarget DeSourceContractTaskFamily
-  obligation: source-api-ban-lint
-  claim-kind: api-ban-lint
-  operation: run-source-contract
-  payload: '((subject-dir . "languages-engineering/rust/lifecycle/process-tree-guard")
-             (tool . clippy))
-  input: VerificationEvidenceRecordType
-  output: VerificationEvidenceRecordType
-  produces: ()
-  consumes: ()
-  requires-premises: ()
-  supports-premises: ()
-  stateful-quint?: #f
-  countermodels: ()
-  admit: (make-step-admitter 'source-api-ban-lint 'de-source-contract 'api-ban-lint))
+;; Cache only lightweight SysML projection metadata (no heavyweight FlowContract DAGs pinned globally).
+(def *cached-sysml-projected* #f)
 
-;; Compose the 4 orthogonal steps into a flat depth-1 fanout Fun-Flow DAG
-;; (avoids nested BranchContract exponential re-validation):
-;;   (quintTarget >>> rustOracleTarget) || (leanPooTarget >>> sourceContractTarget)
-(defde-verification-dag pt-quint-then-oracle pt-quint-then-oracle
-  then: (pt-quint-target pt-oracle-target))
+(def (load-sysml-projected (repo-root runner-repo-root))
+  (unless *cached-sysml-projected*
+    (set! *cached-sysml-projected* (project-sysml-model repo-root)))
+  *cached-sysml-projected*)
 
-(defde-verification-dag pt-lean-then-source pt-lean-then-source
-  then: (pt-lean-target pt-source-target))
-
-(defde-verification-dag pt-four-engine-dag process-tree-four-engine-dag
-  fanout: (pt-quint-then-oracle pt-lean-then-source)
-  converge-output: VerificationEvidenceRecordType
-  (lambda (pair-out) (car pair-out)))
-
-(defde-verification-subject ProcessTreeReclamationSubject engineering.lifecycle.process-tree-reclamation
-  factors: (owns-subprocess-tree)
-  obligations: '((quint-bounded-safety bounded-interleaving)
-                 (lean-unbounded-closure unbounded-invariant)
-                 (source-api-ban-lint api-ban-lint)
-                 (os-sigkill-leak-oracle os-sigkill-oracle))
-  os-containment: '((linux cgroup-v2-kill) (darwin pgid-and-pipe-eof))
-  steps: (list pt-quint-target pt-oracle-target pt-lean-target pt-source-target)
-  dag-edges: '((quintTarget rustOracleTarget))
-  correspondence-bridges: '()
-  dag-flow: pt-four-engine-dag)
+(def (load-compiled-sysml-subjects (repo-root runner-repo-root))
+  (sysml-projected->compiled-subjects (load-sysml-projected repo-root)))
 
 (def (make-process-tree-verification-subject)
-  ProcessTreeReclamationSubject)
-
-;; ── Second Engineering Subject: BackpressureMemory (Horizontal Reuse Proof) ──
-;; Authored with the EXACT same hygienic defrules macros and func.ss combinators!
-(defde-verification-step bp-quint-target bpQuintTarget DeQuintTaskFamily
-  obligation: quint-bounded-safety
-  claim-kind: bounded-interleaving
-  operation: run-quint-plan
-  payload: '((quint-file . "packages/quint-models/engineering/concurrency/backpressure-memory/BackpressureOwners.qnt")
-             (quint-main . "BackpressureOwners")
-             (itf-subdir . "backpressure-memory")
-             (verify? . #f)
-             (n-traces . 10)
-             (max-samples . 30)
-             (max-steps . 12)
-             (model . "engineering.concurrency.backpressure-memory"))
-  input: VerificationInputEnvelopeType
-  output: VerificationEvidenceRecordType
-  produces: (itf-trace)
-  consumes: ()
-  requires-premises: ()
-  supports-premises: ()
-  stateful-quint?: #t
-  countermodels: (early-release over-admit queue-overflow duplicate-admit)
-  admit: (make-step-admitter 'quint-bounded-safety 'de-quint 'bounded-interleaving))
-
-(defde-verification-step bp-oracle-target bpRustOracleTarget DeNativeOracleTaskFamily
-  obligation: rust-zero-leak-oracle
-  claim-kind: zero-leak-assertion
-  operation: run-contained-oracle
-  payload: '((crate-dir . "languages-engineering/rust/concurrency/resource-control/backpressure-memory")
-             (itf-subdir . "backpressure-memory")
-             (oracle-mode . cargo-run-lifecycle-json)
-             (premise . PayloadDropPrecedesPermitRelease))
-  input: VerificationEvidenceRecordType
-  output: VerificationEvidenceRecordType
-  produces: ()
-  consumes: (itf-trace)
-  requires-premises: ()
-  supports-premises: (PayloadDropPrecedesPermitRelease)
-  stateful-quint?: #f
-  countermodels: ()
-  admit: (make-step-admitter 'rust-zero-leak-oracle 'de-native-oracle 'zero-leak-assertion))
-
-(defde-verification-step bp-lean-target bpLeanPooTarget DeLeanPooTaskFamily
-  obligation: lean-unbounded-closure
-  claim-kind: unbounded-invariant
-  operation: run-lean-lake-check
-  payload: '((lake-root . "packages/lean-models")
-             (lean-module . "DeterministicEngineering.Engineering.Backpressure")
-             (theorems . ("DeterministicEngineering.Core.Budget.conservation_bounds_peak"
-                          "DeterministicEngineering.Core.Budget.budget_preserved_under_shrink"
-                          "DeterministicEngineering.Core.Budget.earlyPermitRelease_can_exceed_budget"
-                          "DeterministicEngineering.Engineering.Backpressure.backpressure_within_budget"
-                          "DeterministicEngineering.Engineering.Backpressure.tokioRayon_preserves_rejection"
-                          "DeterministicEngineering.Engineering.Backpressure.budget_transported_across_poll_tuning"
-                          "DeterministicEngineering.Engineering.Backpressure.pollTunedCertified"
-                          "DeterministicEngineering.Engineering.Backpressure.limitDoubling_invalidates_reuse")))
-  input: VerificationInputEnvelopeType
-  output: VerificationEvidenceRecordType
-  produces: ()
-  consumes: ()
-  requires-premises: (PayloadDropPrecedesPermitRelease)
-  supports-premises: ()
-  stateful-quint?: #f
-  countermodels: ()
-  admit: (make-step-admitter 'lean-unbounded-closure 'de-lean-poo 'unbounded-invariant))
-
-(defde-verification-step bp-source-target bpSourceContractTarget DeSourceContractTaskFamily
-  obligation: source-api-ban-lint
-  claim-kind: api-ban-lint
-  operation: run-source-contract
-  payload: '((subject-dir . "languages-engineering/rust/concurrency/resource-control/backpressure-memory")
-             (offline? . #t)
-             (tool . clippy))
-  input: VerificationEvidenceRecordType
-  output: VerificationEvidenceRecordType
-  produces: ()
-  consumes: ()
-  requires-premises: ()
-  supports-premises: ()
-  stateful-quint?: #f
-  countermodels: ()
-  admit: (make-step-admitter 'source-api-ban-lint 'de-source-contract 'api-ban-lint))
-
-(defde-verification-dag bp-quint-then-oracle bp-quint-then-oracle
-  then: (bp-quint-target bp-oracle-target))
-
-(defde-verification-dag bp-lean-then-source bp-lean-then-source
-  then: (bp-lean-target bp-source-target))
-
-(defde-verification-dag bp-four-engine-dag backpressure-four-engine-dag
-  fanout: (bp-quint-then-oracle bp-lean-then-source)
-  converge-output: VerificationEvidenceRecordType
-  (lambda (pair-out) (car pair-out)))
-
-(defde-verification-subject BackpressureMemorySubject engineering.concurrency.backpressure-memory
-  factors: (bounded-memory-backpressure)
-  obligations: '((quint-bounded-safety bounded-interleaving)
-                 (lean-unbounded-closure unbounded-invariant)
-                 (source-api-ban-lint api-ban-lint)
-                 (rust-zero-leak-oracle zero-leak-assertion))
-  os-containment: '((tokio-rayon owned-semaphore-permit))
-  steps: (list bp-quint-target bp-oracle-target bp-lean-target bp-source-target)
-  dag-edges: '((bpQuintTarget bpRustOracleTarget))
-  correspondence-bridges: '()
-  dag-flow: bp-four-engine-dag)
+  (.get (compile-sysml-subject-by-key (load-sysml-projected) 'process-tree-reclamation) subject))
 
 (def (make-backpressure-memory-verification-subject)
-  BackpressureMemorySubject)
+  (.get (compile-sysml-subject-by-key (load-sysml-projected) 'backpressure-memory) subject))
+
+(def (make-lease-fencing-verification-subject)
+  (.get (compile-sysml-subject-by-key (load-sysml-projected) 'lease-fencing-token) subject))
 
 ;; ── Subprocess execution with POSIX waitpid decoding ──
 
@@ -487,64 +308,12 @@
 ;; ── Content-Addressed Input Closure & Persistent JSON Cache Store ──
 
 (def default-process-tree-step-mutability
-  '(("quintTarget" "M1-immutable-proof")
-    ("leanPooTarget" "M1-immutable-proof")
-    ("sourceContractTarget" "M1-immutable-proof")
-    ("rustOracleTarget" "M3-mutable-root")))
+  (subject-spec->mutability
+    (find-sysml-subject-spec (load-sysml-projected) 'process-tree-reclamation)))
 
 (def default-backpressure-step-mutability
-  '(("bpQuintTarget" "M1-immutable-proof")
-    ("bpLeanPooTarget" "M1-immutable-proof")
-    ("bpSourceContractTarget" "M1-immutable-proof")
-    ("bpRustOracleTarget" "M3-mutable-root")))
-
-(def process-tree-step-input-files
-  '(("quintTarget"
-     "packages/quint-models/engineering/concurrency/process-tree-reclamation/ProcessTreeReclamation.qnt"
-     "packages/quint-models/engineering/concurrency/process-tree-reclamation/types.ss"
-     "packages/quint-models/engineering/concurrency/process-tree-reclamation/objects.ss"
-     "packages/quint-models/engineering/concurrency/process-tree-reclamation/interface.ss")
-    ("leanPooTarget"
-     "packages/lean-models/lean-toolchain"
-     "packages/lean-models/lakefile.toml"
-     "packages/lean-models/DeterministicEngineering.lean"
-     "packages/lean-models/DeterministicEngineering/Core/Conservation.lean"
-     "packages/lean-models/DeterministicEngineering/Core/Order.lean"
-     "packages/lean-models/DeterministicEngineering/Core/Transport.lean"
-     "packages/lean-models/DeterministicEngineering/Core/Containment.lean"
-     "packages/lean-models/DeterministicEngineering/Engineering/ProcessTree.lean")
-    ("sourceContractTarget"
-     "languages-engineering/rust/lifecycle/process-tree-guard/Cargo.toml"
-     "languages-engineering/rust/lifecycle/process-tree-guard/clippy.toml"
-     "languages-engineering/rust/lifecycle/process-tree-guard/src/lib.rs"
-     "languages-engineering/rust/lifecycle/process-tree-guard/src/bin/mock_tree.rs")
-    ("rustOracleTarget"
-     "languages-engineering/rust/lifecycle/process-tree-guard/Cargo.toml"
-     "languages-engineering/rust/lifecycle/process-tree-guard/clippy.toml"
-     "languages-engineering/rust/lifecycle/process-tree-guard/src/lib.rs"
-     "languages-engineering/rust/lifecycle/process-tree-guard/src/bin/mock_tree.rs"
-     "languages-engineering/rust/lifecycle/process-tree-guard/tests/sigkill_leak_oracle.rs"
-     "languages-engineering/rust/lifecycle/process-tree-guard/tests/itf_mbt_replay.rs"
-     "languages-engineering/rust/lifecycle/process-tree-guard/tests/http_shutdown_e2e.rs")))
-
-(def backpressure-step-input-files
-  '(("bpQuintTarget"
-     "packages/quint-models/engineering/concurrency/backpressure-memory/BackpressureOwners.qnt"
-     "packages/quint-models/engineering/concurrency/backpressure-memory/types.ss"
-     "packages/quint-models/engineering/concurrency/backpressure-memory/objects.ss"
-     "packages/quint-models/engineering/concurrency/backpressure-memory/interface.ss")
-    ("bpLeanPooTarget"
-     "packages/lean-models/lean-toolchain"
-     "packages/lean-models/lakefile.toml"
-     "packages/lean-models/DeterministicEngineering.lean"
-     "packages/lean-models/DeterministicEngineering/Core/Budget.lean"
-     "packages/lean-models/DeterministicEngineering/Engineering/Backpressure.lean")
-    ("bpSourceContractTarget"
-     "languages-engineering/rust/concurrency/resource-control/backpressure-memory/Cargo.toml"
-     "languages-engineering/rust/concurrency/resource-control/backpressure-memory/src/main.rs")
-    ("bpRustOracleTarget"
-     "languages-engineering/rust/concurrency/resource-control/backpressure-memory/Cargo.toml"
-     "languages-engineering/rust/concurrency/resource-control/backpressure-memory/src/main.rs")))
+  (subject-spec->mutability
+    (find-sysml-subject-spec (load-sysml-projected) 'backpressure-memory)))
 
 (def (sha256-files-table repo-root rel-paths)
   ;; Single batched shasum -a 256 invocation across all unique paths.
@@ -565,7 +334,10 @@
     (string-split out #\newline))
   tbl)
 
-(def (compute-step-input-digests repo-root (step-files process-tree-step-input-files))
+(def (compute-step-input-digests repo-root
+       (step-files (subject-spec->input-files
+                     (find-sysml-subject-spec (load-sysml-projected repo-root)
+                                              'process-tree-reclamation))))
   (def all-files (apply append (map cdr step-files)))
   (def tbl (sha256-files-table repo-root all-files))
   (apply append
@@ -717,19 +489,6 @@
         ("outcome" (symbol->string (.get ev outcome)))
         ("detail" (.get ev detail))))
 
-(def (resolve-subject-bundle subject-key)
-  (cond
-   ((eq? subject-key 'process-tree-reclamation)
-    (values ProcessTreeReclamationSubject
-            default-process-tree-step-mutability
-            process-tree-step-input-files))
-   ((eq? subject-key 'backpressure-memory)
-    (values BackpressureMemorySubject
-            default-backpressure-step-mutability
-            backpressure-step-input-files))
-   (else
-    (error "unknown verification subject key" subject-key))))
-
 ;; Full closed-loop M5 verification pipeline (multi-subject + content-addressed cache):
 ;; SysML v2 -> ASCENT MR01-MR06 (all subjects) -> ASCENT IR01-IR04 Selective Reuse Frontier
 ;; -> Fun-Flow DAG Manifest & Real/Cached Runner -> Fun-Flow Replay Validation
@@ -746,12 +505,11 @@
       "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml"
       repo-root))
   ;; 1. Live OpenSysML strict validation & api-json projection (single source of truth).
+  ;;    Release the raw JSON string & parsed AST immediately after projection so GC reclaims them.
   (def strict-out (run-process (list "sysml" "-validate" "-strict" sysml-path)))
   (unless (string-contains strict-out "no errors")
     (error "OpenSysML strict validation failed" strict-out))
-  (def json-text (run-process (list "sysml" "-convert" "api-json" sysml-path)))
-  (def parsed (call-with-input-string json-text (cut read-json <> object-as-hash: #t)))
-  (def sysml-projected (sysml-api-json->governance-facts parsed))
+  (def sysml-projected (project-sysml-model repo-root))
   (def sysml-gov-sources (.get sysml-projected governance-sources))
 
   ;; 2. Pre-flight ASCENT MR01-MR06 governance gate directly on ALL SysML v2 subjects.
@@ -762,9 +520,12 @@
     (error "ASCENT MR01-MR06 pre-flight refused SysML v2 specification"
            (list mr-findings mr-open-premises)))
 
-  ;; 3. Select target subject bundle and slice SysML v2 facts to that subject.
-  (let-values (((subject-obj step-mutability step-input-files)
-                (resolve-subject-bundle subject-key)))
+  ;; 3. Compile ONLY the requested target subject directly from live SysML v2 (zero Scheme glue)
+  ;;    and slice SysML v2 governance facts to that subject.
+  (let* ((bundle (compile-sysml-subject-by-key sysml-projected subject-key))
+         (subject-obj (.get bundle subject))
+         (step-mutability (.get bundle mutability))
+         (step-input-files (.get bundle input-files)))
     (def subject-id (.get subject-obj identity))
     (def subject-gov-sources (filter-governance-sources-for-subject sysml-gov-sources subject-id))
     (def dag-receipt (subject->dag-receipt subject-obj))

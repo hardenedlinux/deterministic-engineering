@@ -181,7 +181,8 @@
       elements))
 
   ;; 6. Project any Engineering Subject part (carries `identity` + `factors` attributes)
-  ;;    and its child target parts directly into ASCENT MR01-MR06 source relations.
+  ;;    and its child target parts directly into ASCENT MR01-MR06 source relations
+  ;;    AND structured subject-specs for zero-glue SysML v2 -> Fun-Flow DAG compilation.
   (def subj-obls '())
   (def subj-factors '())
   (def fsteps '())
@@ -193,17 +194,24 @@
   (def sq-steps '())
   (def scm-rows '())
   (def os-rows '())
+  (def subject-specs '())
 
   (for-each
     (lambda (el)
       (when (and (hash-table? el) (equal? (hash-get el "@type") "PartUsage"))
         (let* ((pid (hash-get el "@id"))
+               (pname (or (hash-get el "declaredName") pid))
                (sid (part-attr pid "identity"))
                (facs (part-attr pid "factors")))
           (when (and sid facs)
-            (for-each (lambda (f) (set! subj-factors (cons (list sid f) subj-factors)))
-                      (split-csv facs))
-            (let ((child-ids '()))
+            (let ((skey (or (part-attr pid "subjectKey") pname))
+                  (fac-list (split-csv facs))
+                  (child-ids '())
+                  (target-specs '())
+                  (subj-edges '())
+                  (subj-os '()))
+              (for-each (lambda (f) (set! subj-factors (cons (list sid f) subj-factors)))
+                        fac-list)
               (for-each
                 (lambda (child)
                   (when (and (hash-table? child)
@@ -211,6 +219,7 @@
                              (equal? (ref-id (hash-get child "owner")) pid))
                     (let* ((cid (hash-get child "@id"))
                            (cname (or (hash-get child "declaredName") cid))
+                           (cattrs (or (hash-get attrs-by-owner cid) '()))
                            (model-id (part-attr cid "modelId"))
                            (lean-mod (part-attr cid "module"))
                            (subj-dir (part-attr cid "subjectDir"))
@@ -220,26 +229,99 @@
                            (conss (split-csv (part-attr cid "consumesArtifact")))
                            (reqp (split-csv (part-attr cid "requiresPremise")))
                            (supp (split-csv (part-attr cid "supportsPremise")))
-                           (plats (split-csv (part-attr cid "platformSpecializations"))))
+                           (plats (split-csv (part-attr cid "platformSpecializations")))
+                           (in-files (split-csv (part-attr cid "inputFiles")))
+                           (mut-override (part-attr cid "mutability")))
                       (set! child-ids (cons (cons cid cname) child-ids))
                       (cond
                        (model-id
                         (set! subj-obls (cons (list sid "quint-bounded-safety" "bounded-interleaving") subj-obls))
                         (set! fsteps (cons (list cname sid "quint-bounded-safety" "de-quint" "bounded-interleaving") fsteps))
                         (set! sq-steps (cons (list cname) sq-steps))
-                        (for-each (lambda (cm) (set! scm-rows (cons (list cname cm) scm-rows))) cms))
+                        (for-each (lambda (cm) (set! scm-rows (cons (list cname cm) scm-rows))) cms)
+                        (set! target-specs
+                          (cons (.o bind-these: #f
+                                    name: cname
+                                    family: 'de-quint
+                                    obligation: 'quint-bounded-safety
+                                    claim-kind: 'bounded-interleaving
+                                    operation: 'run-quint-plan
+                                    stateful-quint?: #t
+                                    mutability: (or mut-override "M1-immutable-proof")
+                                    produces: prods
+                                    consumes: conss
+                                    requires-premises: reqp
+                                    supports-premises: supp
+                                    countermodels: cms
+                                    input-files: in-files
+                                    attrs: cattrs)
+                                target-specs)))
                        (lean-mod
                         (set! subj-obls (cons (list sid "lean-unbounded-closure" "unbounded-invariant") subj-obls))
                         (set! fsteps (cons (list cname sid "lean-unbounded-closure" "de-lean-poo" "unbounded-invariant") fsteps))
-                        (for-each (lambda (pl) (set! os-rows (cons (list sid pl pl) os-rows))) plats))
+                        (for-each (lambda (pl)
+                                    (set! os-rows (cons (list sid pl pl) os-rows))
+                                    (set! subj-os (cons (list pl pl) subj-os)))
+                                  plats)
+                        (set! target-specs
+                          (cons (.o bind-these: #f
+                                    name: cname
+                                    family: 'de-lean-poo
+                                    obligation: 'lean-unbounded-closure
+                                    claim-kind: 'unbounded-invariant
+                                    operation: 'run-lean-lake-check
+                                    stateful-quint?: #f
+                                    mutability: (or mut-override "M1-immutable-proof")
+                                    produces: prods
+                                    consumes: conss
+                                    requires-premises: reqp
+                                    supports-premises: supp
+                                    countermodels: '()
+                                    input-files: in-files
+                                    attrs: cattrs)
+                                target-specs)))
                        (subj-dir
                         (set! subj-obls (cons (list sid "source-api-ban-lint" "api-ban-lint") subj-obls))
-                        (set! fsteps (cons (list cname sid "source-api-ban-lint" "de-source-contract" "api-ban-lint") fsteps)))
+                        (set! fsteps (cons (list cname sid "source-api-ban-lint" "de-source-contract" "api-ban-lint") fsteps))
+                        (set! target-specs
+                          (cons (.o bind-these: #f
+                                    name: cname
+                                    family: 'de-source-contract
+                                    obligation: 'source-api-ban-lint
+                                    claim-kind: 'api-ban-lint
+                                    operation: 'run-source-contract
+                                    stateful-quint?: #f
+                                    mutability: (or mut-override "M1-immutable-proof")
+                                    produces: prods
+                                    consumes: conss
+                                    requires-premises: reqp
+                                    supports-premises: supp
+                                    countermodels: '()
+                                    input-files: in-files
+                                    attrs: cattrs)
+                                target-specs)))
                        (crate-p
                         (let ((ocl (or (part-attr cid "oracleClaimKind") "os-sigkill-oracle"))
                               (oobl (or (part-attr cid "oracleObligation") "os-sigkill-leak-oracle")))
                           (set! subj-obls (cons (list sid oobl ocl) subj-obls))
-                          (set! fsteps (cons (list cname sid oobl "de-native-oracle" ocl) fsteps)))))
+                          (set! fsteps (cons (list cname sid oobl "de-native-oracle" ocl) fsteps))
+                          (set! target-specs
+                            (cons (.o bind-these: #f
+                                      name: cname
+                                      family: 'de-native-oracle
+                                      obligation: (string->symbol oobl)
+                                      claim-kind: (string->symbol ocl)
+                                      operation: 'run-contained-oracle
+                                      stateful-quint?: #f
+                                      mutability: (or mut-override "M3-mutable-root")
+                                      produces: prods
+                                      consumes: conss
+                                      requires-premises: reqp
+                                      supports-premises: supp
+                                      countermodels: '()
+                                      input-files: in-files
+                                      attrs: cattrs)
+                                  target-specs)))))
                       (for-each (lambda (a) (set! sproduces (cons (list cname a) sproduces))) prods)
                       (for-each (lambda (a) (set! sconsumes (cons (list cname a) sconsumes))) conss)
                       (for-each (lambda (p) (set! sreq-prem (cons (list cname p) sreq-prem))) reqp)
@@ -261,15 +343,29 @@
                            (to-pair (or (assoc cli-id child-ids) (and cli-own (assoc cli-own child-ids))))
                            (from-pair (or (assoc sup-id child-ids) (and sup-own (assoc sup-own child-ids)))))
                       (when (and from-pair to-pair)
-                        (set! fedges (cons (list (cdr from-pair) (cdr to-pair)) fedges))))))
-                dep-rows))))))
+                        (let ((edge (list (cdr from-pair) (cdr to-pair))))
+                          (set! fedges (cons edge fedges))
+                          (set! subj-edges (cons edge subj-edges)))))))
+                dep-rows)
+              (set! subject-specs
+                (cons (.o bind-these: #f
+                          part-name: pname
+                          subject-key: skey
+                          identity: sid
+                          factors: fac-list
+                          os-containment: (reverse subj-os)
+                          dag-edges: (reverse subj-edges)
+                          targets: (reverse target-specs))
+                      subject-specs)))))))
     elements)
 
-  (.o packages: (reverse pkg-rows)
+  (.o bind-these: #f
+      packages: (reverse pkg-rows)
       workflow-edges: (reverse wf-edges)
       dependencies: (reverse dep-rows)
       requirements: (reverse req-rows)
       verifications: (reverse ver-rows)
+      subject-specs: (reverse subject-specs)
       governance-sources:
       (list
         (cons 'subject_obligation (reverse subj-obls))

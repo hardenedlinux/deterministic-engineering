@@ -10,3 +10,4 @@ import DeterministicEngineering.Core.Order
 import DeterministicEngineering.Core.Transport
 import DeterministicEngineering.Engineering.ProcessTree
 import DeterministicEngineering.Engineering.Backpressure
+import DeterministicEngineering.Engineering.LeaseFencing

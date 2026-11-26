@@ -480,14 +480,15 @@ check-defense:
       just test-file "$f"
     done
 
-# M5 multi-method verification gate (SysML v2 -> Fun-Flow DAG -> Quint + LeanPoo + Clippy + Native Oracles -> ASCENT MR01-MR06/ER01-ER04/IR01-IR04 across ProcessTreeReclamation & BackpressureMemory).
+# M5 multi-method verification gate (SysML v2 -> Zero-Glue Fun-Flow DAG Compiler -> Quint + LeanPoo + Clippy + Native Oracles -> ASCENT MR01-MR06/ER01-ER04/IR01-IR04 across ProcessTreeReclamation, BackpressureMemory, & LeaseFencingToken).
 check-multi-method:
     just test-file t/yanxu/Library/verification-flow/governance-and-sysml-linkage-test.ss
+    just test-file t/yanxu/Library/verification-flow/sysml-compiler-and-lease-fencing-test.ss ".*" 240s
     just test-file t/yanxu/Library/verification-flow/end-to-end-ops-runner-test.ss ".*" 240s
     just test-file t/yanxu/Library/verification-flow/incremental-cache-reuse-test.ss ".*" 240s
     just test-file t/yanxu/Library/verification-flow/multi-subject-backpressure-test.ss ".*" 240s
 
-# Run the M5 multi-method Fun-Flow Ops Runner (optional cache_dir & subject: process-tree-reclamation | backpressure-memory) and write a fresh JSON evidence report.
+# Run the M5 multi-method Fun-Flow Ops Runner (optional cache_dir & subject: process-tree-reclamation | backpressure-memory | lease-fencing-token) and write a fresh JSON evidence report.
 investigate-multi-method output cache_dir="" subject="process-tree-reclamation":
     #!/usr/bin/env bash
     set -euo pipefail

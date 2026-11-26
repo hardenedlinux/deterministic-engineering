@@ -34,41 +34,41 @@
       ;;   bpLeanPooTarget (Core.Budget + Engineering.Backpressure 8 theorems, 0 sorryAx)
       ;;   bpSourceContractTarget (Rust Clippy --offline -D warnings)
       ;;   bpRustOracleTarget (Tokio+Rayon M01-M06 live=0, available=1 -> PayloadDropPrecedesPermitRelease)
-      (def r1
-        (run-multi-method-verification-pipeline repo-root
-          subject-key: 'backpressure-memory
-          cache-dir: cache-dir
-          request-id: "req-bp-1-cold"))
-      ;; Single SysML v2 file simultaneously admits BOTH engineering subjects!
-      (def mr-admitted ((.ref (.get r1 mr-result) 'rows-of) 'runnable_admitted))
-      (check (and (member '("engineering.lifecycle.process-tree-reclamation") mr-admitted) #t) => #t)
-      (check (and (member '("engineering.concurrency.backpressure-memory") mr-admitted) #t) => #t)
+      (let ((r1 (run-multi-method-verification-pipeline repo-root
+                  subject-key: 'backpressure-memory
+                  cache-dir: cache-dir
+                  request-id: "req-bp-1-cold")))
+        ;; Single SysML v2 file simultaneously admits ALL engineering subjects!
+        (def mr-admitted ((.ref (.get r1 mr-result) 'rows-of) 'runnable_admitted))
+        (check (and (member '("engineering.lifecycle.process-tree-reclamation") mr-admitted) #t) => #t)
+        (check (and (member '("engineering.concurrency.backpressure-memory") mr-admitted) #t) => #t)
+        (check (and (member '("engineering.concurrency.lease-fencing-token") mr-admitted) #t) => #t)
 
-      (check-equal? (cdr (assoc 'schema (.get r1 dag-manifest)))
-                    +flow-dag-runtime-manifest-schema+)
-      (check-equal? (replay-report-valid? (.get r1 replay-report)) #t)
-      (check-equal? (replay-report-reasons (.get r1 replay-report)) '())
-      (check-equal? (length (.get r1 evidence-records)) 4)
-      (for-each (lambda (ev) (check-equal? (.get ev outcome) 'pass)) (.get r1 evidence-records))
+        (check-equal? (cdr (assoc 'schema (.get r1 dag-manifest)))
+                      +flow-dag-runtime-manifest-schema+)
+        (check-equal? (replay-report-valid? (.get r1 replay-report)) #t)
+        (check-equal? (replay-report-reasons (.get r1 replay-report)) '())
+        (check-equal? (length (.get r1 evidence-records)) 4)
+        (for-each (lambda (ev) (check-equal? (.get ev outcome) 'pass)) (.get r1 evidence-records))
 
-      (def er1 (.get r1 er-result))
-      (check-equal? ((.ref er1 'rows-of) 'er_finding) '())
-      (check-equal? (length ((.ref er1 'rows-of) 'obligation_passed)) 4)
-      (check-equal? ((.ref er1 'rows-of) 'premise_verified) '(("PayloadDropPrecedesPermitRelease")))
-      (check-equal? ((.ref er1 'rows-of) 'verification_admitted)
-                    '(("engineering.concurrency.backpressure-memory")))
-      (check-equal? (length (.get (.get r1 cache-summary) executed)) 4)
-      (check-equal? (.get (.get r1 cache-summary) reused) '())
+        (def er1 (.get r1 er-result))
+        (check-equal? ((.ref er1 'rows-of) 'er_finding) '())
+        (check-equal? (length ((.ref er1 'rows-of) 'obligation_passed)) 4)
+        (check-equal? ((.ref er1 'rows-of) 'premise_verified) '(("PayloadDropPrecedesPermitRelease")))
+        (check-equal? ((.ref er1 'rows-of) 'verification_admitted)
+                      '(("engineering.concurrency.backpressure-memory")))
+        (check-equal? (length (.get (.get r1 cache-summary) executed)) 4)
+        (check-equal? (.get (.get r1 cache-summary) reused) '()))
+      (##gc)
 
       ;; Phase 2 — Warm run: 0 engines spawned, 4/4 reused from SHA-256 cache!
-      (def r2
-        (run-multi-method-verification-pipeline repo-root
-          subject-key: 'backpressure-memory
-          cache-dir: cache-dir
-          request-id: "req-bp-2-warm"))
-      (check-equal? (replay-report-valid? (.get r2 replay-report)) #t)
-      (check-equal? ((.ref (.get r2 er-result) 'rows-of) 'er_finding) '())
-      (check-equal? ((.ref (.get r2 er-result) 'rows-of) 'verification_admitted)
-                    '(("engineering.concurrency.backpressure-memory")))
-      (check-equal? (.get (.get r2 cache-summary) executed) '())
-      (check-equal? (length (.get (.get r2 cache-summary) reused)) 4))))
+      (let ((r2 (run-multi-method-verification-pipeline repo-root
+                  subject-key: 'backpressure-memory
+                  cache-dir: cache-dir
+                  request-id: "req-bp-2-warm")))
+        (check-equal? (replay-report-valid? (.get r2 replay-report)) #t)
+        (check-equal? ((.ref (.get r2 er-result) 'rows-of) 'er_finding) '())
+        (check-equal? ((.ref (.get r2 er-result) 'rows-of) 'verification_admitted)
+                      '(("engineering.concurrency.backpressure-memory")))
+        (check-equal? (.get (.get r2 cache-summary) executed) '())
+        (check-equal? (length (.get (.get r2 cache-summary) reused)) 4)))))

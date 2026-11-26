@@ -8,6 +8,7 @@
         "func.ss"
         "ascent-rules.ss"
         "sysml-projection.ss"
+        "sysml-compiler.ss"
         "rules.ss"
         "methods.ss"
         "syntax.ss")
@@ -41,6 +42,8 @@
         reuse-sources: build-incremental-reuse-sources
         reuse-plan: reuse-result->plan
         project-sysml-json: sysml-api-json->governance-facts
+        compile-sysml-subject: compile-sysml-subject-spec
+        compile-sysml-subjects: sysml-projected->compiled-subjects
         inputs: runnable-inputs
         flow: runnable-flow
         admit: runnable-admit
