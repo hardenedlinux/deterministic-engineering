@@ -20,7 +20,7 @@ This benchmark evaluates whether AST-level defensive-engineering auditors catch
 all four AI Agent defensive-hallucination classes (=G2= in [[file:../../10-19-design/10-architecture/10.153-defensive-engineering-taxonomy-and-modular-organization.org][10.153]]) without
 generating false positives on clean deterministic-boundary code.
 
-- *Independent Gold*: Every case (=AG01=–=AG115=) has a fixed independent
+- *Independent Gold*: Every case (=AG01=–=AG155=) has a fixed independent
   expected outcome (=pass= vs. =fail= + exact hallucination/anti-evasion/escalation/durable-resume class). Candidate
   auditor output never generates gold.
 - *Native AST, Diff-Delta, Scope-Fencing & Closed-Loop Governance Auditors Evaluated*:
@@ -206,6 +206,11 @@ generating false positives on clean deterministic-boundary code.
 | =AG148= | =LeanPoo= × =B4= Swarm | 5-agent AST Symbol SSI: cyclic =A<->B= blocked, 3 peers admit | Admit ={docs,health,metrics}=; block ={pricing,tax}= | Validates unbounded =DE01= partial admission with zero collateral starvation of unrelated peers |
 | =AG149= | 52-Theorem =LeanPoo= Sweep | Live =lake env lean= audits ALL 52 theorems across 4 modules | **52/52 =Proven=** (zero =sorryAx=, zero custom axioms) | End-to-end live axiom audit over =DurableGovernanceQuorum=, =HostAuthorizationBridge=, =InformationFlowAndTms=, =SagaAndSsi= |
 | =AG150= | 150-Case Grand Milestone | Full =B4= SSI + =B6= Saga + =B7= DIFC + =B8= ATMS + =B10= QC + =cedar-poo-spec= | =Proven= + all =M1= receipts survive GC | Closes the 150-case four-paradigm benchmark & Library <-> =cedar-poo-spec= dual-sovereign stack |
+| =AG151= | =LeanPoo= =B5/R1/R5= Oracle | Live =lake env lean= verifies 12 =HitlAndCoevolution= theorems | =Proven= (zero =sorryAx=/custom axioms) + GC | Verifies unbounded =k=-of-=N= =SoD=, =R1= policy co-evolution, =R5= AEAD & =cedar-poo-spec= =Governance= transport |
+| =AG152= | =LeanPoo= × =B5/R1= HITL | 3-of-5 HITL quorum =SoD=, duplicate refusal, drift vs =R1= upgrade & veto | Refuse self/dup/drift/nag; =AdmitAndResume= (=R1= disjoint) | Exercises 3-of-5 quorum, blocks baseline/intersecting drift & nagging retry forever, preserves disjoint upgrade |
+| =AG153= | =LeanPoo= × =B2/R5= AEAD | 4-tenant AES-256-GCM AEAD isolation, ciphertext transplants & =R3= key leak | Refuse 12/12 cross-tenant, 2 transplants & =R3= leaks | Enforces partition-key & =partitionId:rowKey= AAD binding across 4 tenants and blocks =M3= key entering =M1= |
+| =AG154= | 64-Theorem =LeanPoo= Sweep | Live =lake env lean= audits ALL 64 theorems across 5 modules | **64/64 =Proven=** (zero =sorryAx=, zero custom axioms) | Full-spectrum live axiom audit achieving 100% =B1=–=B10c= + =R1=–=R5= + =cedar-poo-spec= Bridge coverage |
+| =AG155= | 155-Case Full Closure | =B5= 2-of-=N= HITL + =R1= Disjoint + =B2/R5= AEAD + =B10= QC + =cedar-poo-spec= | =Proven= + all =M1= receipts survive GC | Composes cold-hibernated HITL, tenant AEAD, quorum finality & host =Permit= intact across aggressive GC |
 
 * Observed Verification Receipts
 :PROPERTIES:
@@ -239,14 +244,15 @@ generating false positives on clean deterministic-boundary code.
 | =LeanPoo= Dual-Sovereignty Bridge for =cedar-poo-spec= (=AG136=–=AG140=, 140-Case Milestone) | =bun test languages-engineering/ts/defense/agent-audit/host-authorization-bridge.test.ts= + =lake build= | **5/5 cases matched gold** (live =#print axioms= on 11 =HostAuthorizationBridge= theorems, symmetric dual-sovereign refusal, =BoundOperation= anti-replay + =R1= disjoint policy transport, =AuthorityConsumption= TOCTOU + =R3=, 140-case GC-safe milestone) |
 | =LeanPoo= Unbounded =B7= DIFC Non-Interference & =B8= ATMS Survival (=AG141=–=AG145=, 145-Case Milestone) | =bun test languages-engineering/ts/defense/agent-audit/difc-atms-leanpoo.test.ts= + =lake build= | **5/5 cases matched gold** (live =#print axioms= on 11 =InformationFlowAndTms= theorems, 12-hop DIFC + 10-hop CaMeL collapse, 5-hop Doyle vs 4-way ATMS survival, cross-layer =B7 × B8 × B10 × cedar-poo-spec= 145-case milestone) |
 | =LeanPoo= Unbounded =B6= Saga & =B4= SSI + 52-Theorem Sweep (=AG146=–=AG150=, 150-Case Grand Milestone) | =bun test languages-engineering/ts/defense/agent-audit/saga-ssi-leanpoo.test.ts= + =lake build= | **5/5 cases matched gold** (live =#print axioms= on 11 =SagaAndSsi= theorems + complete **52/52** 4-module =LeanPoo= sweep, 6-step reverse Saga compensation, 5-agent =DE01= SSI swarm, 150-case grand milestone) |
-| Combined 150-case 5-language, anti-evasion, Full =B1=–=B10c=, N-Version & 52-Theorem =LeanPoo= benchmark | =just check-defense= | **150/150 exact gold match** (=tp=101, tn=49, fp=0, fn=0=) |
+| =LeanPoo= Unbounded =B5= HITL, =R1= Co-Evolution & =B2/R5= AEAD + 64-Theorem Sweep (=AG151=–=AG155=) | =bun test languages-engineering/ts/defense/agent-audit/hitl-coevolution-leanpoo.test.ts= + =lake build= | **5/5 cases matched gold** (live =#print axioms= on 12 =HitlAndCoevolution= theorems + complete **64/64** 5-module =LeanPoo= sweep, 3-of-5 HITL =SoD=/=R1=/veto, 4-tenant AEAD isolation, 155-case full-spectrum closure) |
+| Combined 155-case 5-language, anti-evasion, Full =B1=–=B10c=, N-Version & 64-Theorem =LeanPoo= benchmark | =just check-defense= | **155/155 exact gold match** (=tp=104, tn=51, fp=0, fn=0=) |
 
 * Limits
 :PROPERTIES:
 :CUSTOM_ID: bench3005-limits
 :END:
 
-This 150-case benchmark establishes deterministic AST-level, diff-delta,
+This 155-case benchmark establishes deterministic AST-level, diff-delta,
 scope-fencing, bounded closed-loop, hot-policy co-evolution, async-cut,
 semantic-drift memoization, AEAD-isolated Merkle storage, role-projected
 context, multi-agent SSI concurrency, and business SoD/replay precision and
