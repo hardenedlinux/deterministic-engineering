@@ -63,6 +63,13 @@ informs.
   al. (2022)*, /Sigstore: Software Signing for Everybody/, ACM CCS 2022.
   - Rollback, indefinite freeze, and mix-and-match metadata defenses modeled
     with emergent invariants in =threat/supply-chain/supply-chain-tuf=.
+- *OpenSSF SLSA Specification v1.0 / v1.1 (2023–2025)*, /Supply-chain Levels for
+  Software Artifacts/; and *Chris Lamb & Stefano Zacchiroli (2022)*,
+  /Reproducible Builds: Increasing the Integrity of Software Supply Chains/,
+  IEEE Software 39(2).
+  - Non-falsifiable builder-signed provenance, reviewed source-digest binding,
+    and independent reproducible rebuild attestation defeating compromised L3
+    builder injection modeled in =threat/supply-chain/slsa-hermetic-provenance=.
 - *Arnar Birgisson, Joe Gibbs Politz, Úlfar Erlingsson, Ankur Taly, Michael
   Vrable, Mark Lentczner (2014)*, /Macaroons: Cookies with Contextual Caveats
   for Decentralized Authorization in the Cloud/, NDSS 2014.
@@ -116,6 +123,16 @@ informs.
     replication against replay, and ephemeral (EC)DHE forward secrecy against
     retroactive long-term PSK/STEK compromise directly modeled in
     =threat/protocol/tls13-0rtt-forward-secrecy=.
+- *Richard Barnes, Benjamin Beurdouche, Raphael Robert, Jon Millican, Emad
+  Omara, Katriel Cohn-Gordon (IETF RFC 9420, 2023)*, /The Messaging Layer
+  Security (MLS) Protocol/; *Joël Alwen, Sandro Coretti, Yevgeniy Dodis, Yiannis
+  Tselekounis (2020)*, /Security Analysis and Improvements for the IETF MLS
+  Standard for Group Messaging/, CRYPTO 2020; and *Katriel Cohn-Gordon, Cas
+  Cremers, Benjamin Dowling, Luke Garratt, Douglas Stebila (2017 / 2020)*, /A
+  Formal Security Analysis of the Signal Messaging Protocol/, IEEE EuroS&P / JoC.
+  - Epoch-key zeroization (Forward Secrecy), fresh-entropy TreeKEM commit
+    healing (Post-Compromise Security), and mandatory epoch rotation on member
+    removal modeled in =threat/protocol/mls-ratchet-pcs=.
 
 * 3. Exact-Effect Handoff, Durability & Rollback Resistance
 
@@ -162,6 +179,15 @@ informs.
     current-term commitment rule (automatically synthesizing the classic 8-step
     Figure 8 commit-overwrite counterexample when omitted) directly modeled in
     =engineering/consensus/raft-leader-commitment=.
+- *Miguel Castro & Barbara Liskov (1999)*, /Practical Byzantine Fault
+  Tolerance/ (PBFT), USENIX OSDI 1999; *Ethan Buchman, Jae Kwon, Zarko
+  Milosevic (2018)*, /The latest gossip on BFT consensus/ (Tendermint /
+  CometBFT); and *Maofan Yin, Dahlia Malkhi, Michael K. Reiter, Guy Golan
+  Gueta, Ittai Abraham (2019)*, /HotStuff: BFT Consensus with Linearity and
+  Responsiveness/, ACM PODC 2019.
+  - Byzantine =2f+1= quorum intersection under equivocating replicas, precommit
+    lock recording, and view-change lock respect modeled in
+    =engineering/consensus/bft-quorum-lock=.
   - Saga compensating transactions, idempotency key deduplication under reply
     loss, and durable cancellation tombstones blocking late in-flight retries
     modeled in =engineering/concurrency/saga-compensation-idempotency=.

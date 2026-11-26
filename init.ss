@@ -31,6 +31,7 @@
     :profiles (assurance.bounded-proof bound.standard governance.mandatory-countermodels)
     :test-dir "./t"
   (raft-leader-commitment profiles: (bound.extended-counterexample))
+  (bft-quorum-lock profiles: (bound.extended-counterexample))
 
   :load-modules "./packages/quint-models/engineering/concurrency"
     mode: auto

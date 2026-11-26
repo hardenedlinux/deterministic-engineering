@@ -16,6 +16,7 @@ import {
 import {packageSourceResolver} from './resolver.ts';
 import {executePlan} from './plan.ts';
 import {composeQuintFiles} from './compose.ts';
+import {auditMbtCoverage, runFleetPlans} from './mbt.ts';
 import {discoverInstalledQuintModels, verifyInstalledQuintPackages} from './pkg.ts';
 
 const req = createRequire(import.meta.url);
@@ -63,7 +64,7 @@ function parseCliArgs(argv: string[]): ParsedArgs {
   }
   const [command, input, ...rest] = argv;
   if (!command || !input) {
-    console.error('Usage: quint-modules-resolver <parse|typecheck|test|run|verify|run-plan|compose|list|verify-deps> <input> [options]');
+    console.error('Usage: quint-modules-resolver <parse|typecheck|test|run|verify|run-plan|run-fleet|mbt-audit|compose|list|verify-deps> <input> [options]');
     process.exit(2);
   }
   const args: ParsedArgs = {command, input, verbosity: 2};
@@ -229,6 +230,106 @@ export async function runCli(argv: string[]) {
     const verify = argv.includes('--verify');
     const summary = executePlan(targetPath, {verify});
     console.log(`PLAN-OK ${targetPath} (passed=${summary.passed}, skipped=${summary.skipped}, verify=${verify})`);
+    return;
+  }
+  if (argv[0] === 'mbt-audit') {
+    const targetPath = argv[1];
+    if (!targetPath) {
+      console.error('Usage: quint-modules-resolver mbt-audit <Model.qnt> [--main=<mod>] [--n-traces=10] [--max-steps=12] [--seed=7] [--min-coverage=0.5] [--json]');
+      process.exit(2);
+    }
+    let main: string | undefined;
+    let invariant: string | undefined;
+    let nTraces: number | undefined;
+    let maxSteps: number | undefined;
+    let seed: string | undefined;
+    let minCoverage: number | undefined;
+    let jsonOut = false;
+    for (let i = 2; i < argv.length; i++) {
+      const tok = argv[i]!;
+      if (tok === '--json') {
+        jsonOut = true;
+        continue;
+      }
+      const eq = tok.indexOf('=');
+      const key = eq >= 0 ? tok.slice(0, eq) : tok;
+      const val = eq >= 0 ? tok.slice(eq + 1) : argv[++i];
+      if (key === '--main') main = val;
+      else if (key === '--invariant') invariant = val;
+      else if (key === '--n-traces') nTraces = Number(val);
+      else if (key === '--max-steps') maxSteps = Number(val);
+      else if (key === '--seed') seed = val;
+      else if (key === '--min-coverage') minCoverage = Number(val);
+      else {
+        console.error(`Unknown mbt-audit option: ${tok}`);
+        process.exit(2);
+      }
+    }
+    const report = auditMbtCoverage(targetPath, {main, invariant, nTraces, maxSteps, seed, minCoverage});
+    if (jsonOut) {
+      console.log(JSON.stringify(report, null, 2));
+    } else {
+      const pct = (report.actionCoverage * 100).toFixed(1);
+      console.log(
+        `MBT-AUDIT-${report.passed ? 'OK' : 'FAIL'} ${report.module} coverage=${report.coveredActions.length}/${report.declaredStepActions.length} (${pct}%) traces=${report.tracesGenerated} transitions=${report.totalTransitions} uniqueStates=${report.uniqueStates}`,
+      );
+      if (report.uncoveredActions.length > 0) {
+        console.log(`  uncovered: ${report.uncoveredActions.join(', ')}`);
+      }
+    }
+    if (!report.passed) {
+      process.exit(1);
+    }
+    return;
+  }
+  if (argv[0] === 'run-fleet') {
+    const rootDir = argv[1];
+    if (!rootDir) {
+      console.error('Usage: quint-modules-resolver run-fleet <dir> [--domain=engineering|threat] [--subdomain=<name>] [--verify] [--concurrency=4] [--json]');
+      process.exit(2);
+    }
+    let domain: string | undefined;
+    let subdomain: string | undefined;
+    let concurrency: number | undefined;
+    let verify = false;
+    let jsonOut = false;
+    for (let i = 2; i < argv.length; i++) {
+      const tok = argv[i]!;
+      if (tok === '--verify') {
+        verify = true;
+        continue;
+      }
+      if (tok === '--json') {
+        jsonOut = true;
+        continue;
+      }
+      const eq = tok.indexOf('=');
+      const key = eq >= 0 ? tok.slice(0, eq) : tok;
+      const val = eq >= 0 ? tok.slice(eq + 1) : argv[++i];
+      if (key === '--domain') domain = val;
+      else if (key === '--subdomain') subdomain = val;
+      else if (key === '--concurrency') concurrency = Number(val);
+      else {
+        console.error(`Unknown run-fleet option: ${tok}`);
+        process.exit(2);
+      }
+    }
+    const report = await runFleetPlans(rootDir, {domain, subdomain, verify, concurrency});
+    if (jsonOut) {
+      console.log(JSON.stringify(report, null, 2));
+    } else {
+      console.log(
+        `FLEET-${report.failed === 0 ? 'OK' : 'FAIL'} passed=${report.passed}/${report.total} failed=${report.failed} verify=${report.verify} concurrency=${report.concurrency} (${report.durationMs}ms)`,
+      );
+      for (const r of report.results) {
+        if (!r.passed) {
+          console.error(`  FAIL ${r.file}:\n${r.output}`);
+        }
+      }
+    }
+    if (report.failed > 0) {
+      process.exit(1);
+    }
     return;
   }
   const args = parseCliArgs(argv);

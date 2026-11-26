@@ -32,3 +32,4 @@ Downstream Gerbil/Yuanxu packages can mount only this consensus subdomain:
 | Model | Failure Class | Core Papers | Emergent Invariant | Countermodels |
 |-------+---------------+-------------+--------------------+---------------|
 | [[file:raft-leader-commitment/README.org][raft-leader-commitment]] | =quint.failure.split-brain= | Ongaro & Ousterhout (USENIX ATC 2014), Howard et al. (OPODIS 2016) | Leader Completeness: every elected leader holds every committed entry | Figure 8 old-term commit overwrite; Stale-log election |
+| [[file:bft-quorum-lock/README.org][bft-quorum-lock]] | =quint.failure.safety-fork= | Castro & Liskov PBFT (OSDI 1999), Buchman et al. Tendermint (2018), Yin et al. HotStuff (PODC 2019) | Byzantine Agreement across view changes under =f= equivocating replicas (=n=3f+1=) | Sub-quorum (=f+1=) commit; View-change lock bypass; Missing lock on precommit; Stale-view precommit |

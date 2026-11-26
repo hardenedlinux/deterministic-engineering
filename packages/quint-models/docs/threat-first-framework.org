@@ -103,7 +103,7 @@ header directives (=// @quint-model=, =// @quint-version=, =// @apalache-version
 - DE CI re-projects all 34 co-located models dynamically from =init.ss= and
   refuses any drift between Scheme POO sources, =*.qnt=, and =README.org=.
 
-* Threat-First Model Catalog (22 Models across 5 Subdomains)
+* Threat-First Model Catalog (24 Models across 5 Subdomains)
 
 ** Identity (=threat/identity/=)
 
@@ -133,6 +133,7 @@ header directives (=// @quint-model=, =// @quint-version=, =// @apalache-version
 | =dpop_sender_constrain= | =.../threat/protocol/dpop-sender-constrain/DpopSenderConstrain= | RFC 9449 DPoP sender-constrained tokens & single-use =jti= anti-replay | =stepBearerFallback=, =stepJtiReplay= |
 | =macaroon_delegation_chain= | =.../threat/protocol/macaroon-delegation-chain/MacaroonDelegationChain= | Multi-hop caveat monotonic attenuation & chained HMAC integrity | =stepCaveatWidening=, =stepForgedChain= |
 | =tls13_0rtt_forward_secrecy= | =.../threat/protocol/tls13-0rtt-forward-secrecy/Tls13ZeroRttForwardSecrecy= | TLS 1.3 0-RTT non-idempotent exclusion, strike-register sync & ECDHE PFS | =stepNonIdempotent0Rtt=, =stepUnsyncedStrikeReplay=, =stepStaticPskNoPfs= |
+| =mls_ratchet_pcs= | =.../threat/protocol/mls-ratchet-pcs/MlsRatchetPcs= | MLS (RFC 9420) / Double Ratchet FS zeroization, PCS fresh-entropy healing & removal rotation | =stepRetainOldKey=, =stepNoFreshEntropyPcs=, =stepRemoveWithoutRotate= |
 
 ** Supply Chain (=threat/supply-chain/=)
 
@@ -140,6 +141,7 @@ header directives (=// @quint-model=, =// @quint-version=, =// @apalache-version
 |--------+----------------+---------------+------------------------|
 | =supply_chain_tuf= | =.../threat/supply-chain/supply-chain-tuf/SupplyChainTuf= | TUF / Sigstore / in-toto rollback, freeze & mix-and-match defense | =stepVersionRollback=, =stepFrozenMetadata=, =stepMixAndMatch= |
 | =transparency_log_gossip= | =.../threat/supply-chain/transparency-log-gossip/TransparencyLogGossip= | RFC 9162 / Rekor inclusion & STH consistency gossip against split-view | =stepInclusionOnlySplitView=, =stepUnverifiedStaleSth= |
+| =slsa_hermetic_provenance= | =.../threat/supply-chain/slsa-hermetic-provenance/SlsaHermeticProvenance= | SLSA L3/L4 signed provenance, reviewed source match & independent reproducible rebuild | =stepUnsignedProvenance=, =stepUnreviewedSource=, =stepCompromisedBuilderInjection= |
 
 ** Execution (=threat/execution/=)
 

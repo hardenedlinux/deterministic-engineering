@@ -13,14 +13,14 @@ Beyond security and Zero Trust threat boundaries, Quint is equally effective for
 reordering, distributed elections, concurrency interleavings, weak-memory
 parallel scheduling, or collector barriers can violate safety invariants.
 
-All 12 engineering models live as co-located Scheme POO AST + Quint Yuanxu units
+All 13 engineering models live as co-located Scheme POO AST + Quint Yuanxu units
 under =packages/quint-models/engineering/<subdomain>/<model>/=, partitioned into
 five formal subdomains corresponding to distinct runtime failure classes:
 
 | Subdomain | Yuanxu Mount | Path | Failure Classes Addressed |
 |-----------+--------------+------+---------------------------|
 | *Storage* | =Quint.Engineering.Storage= | =engineering/storage/= | WAL/ARIES page-cache write reordering, crash data loss, MVCC/SSI write skew (A5B) & lost =SIREAD= locks |
-| *Consensus* | =Quint.Engineering.Consensus= | =engineering/consensus/= | Raft §5.4.1 stale-log leader election & §5.4.2 Figure 8 indirect previous-term commit overwrite |
+| *Consensus* | =Quint.Engineering.Consensus= | =engineering/consensus/= | Raft §5.4.1 stale-log leader election & §5.4.2 Figure 8 overwrite; BFT =2f+1= quorum intersection & locked-block view-change safety |
 | *Concurrency* | =Quint.Engineering.Concurrency= | =engineering/concurrency/= | Backpressure permit leak / overflow, structured-cancellation orphan tasks, stale lease zombie writes, duplicate saga effects |
 | *Parallel* | =Quint.Engineering.Parallel= | =engineering/parallel/= | Lock-free EBR premature reclamation, Chase-Lev work-stealing deque lost/duplicate pop, x86-TSO hazard-pointer store-buffer UAF |
 | *GC* | =Quint.Engineering.GC= | =engineering/gc/= | Concurrent tri-color missing write barrier (lost live object), mutator/collector safepoint handshake races |
@@ -42,6 +42,11 @@ five formal subdomains corresponding to distinct runtime failure classes:
   commitment rule; dropping the current-term guard automatically synthesizes the
   classic 8-step Figure 8 commit-overwrite counterexample
   (=bound.extended-counterexample=).
+- *=bft-quorum-lock=* (=BftQuorumLock.qnt=): models PBFT / Tendermint / HotStuff
+  Byzantine Fault Tolerant consensus (=n=3f+1=, 3 honest replicas + 1
+  equivocating Byzantine replica voting for conflicting values in every round);
+  auto-derived countermodels drop =2f+1= quorum intersection, view-change lock
+  respect, or lock recording on precommit (=bound.extended-counterexample=).
 
 * 3. Concurrency (=engineering/concurrency/=)
 
