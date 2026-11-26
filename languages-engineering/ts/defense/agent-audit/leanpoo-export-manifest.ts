@@ -36,6 +36,9 @@ export interface LeanPooExportModuleSpec {
 export const LEANPOO_EXPORT_FACADE_MODULE =
   'DeterministicEngineering.Engineering.LibraryExportContract';
 
+export const LEANPOO_FOUR_PARADIGM_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.FourParadigmConsistency';
+
 export const LEANPOO_LIBRARY_EXPORT_MANIFEST: readonly LeanPooExportModuleSpec[] = [
   {
     moduleName: 'DeterministicEngineering.Engineering.DurableGovernanceQuorum',
@@ -153,6 +156,23 @@ export const LEANPOO_LIBRARY_EXPORT_MANIFEST: readonly LeanPooExportModuleSpec[]
       'unifiedLibrary_telemetryTuning_preserves_certificate',
       'unifiedLibrary_hostPolicyBundlePatch_preserves_certificate',
       'unifiedLibrary_disablingDualSovereignty_invalidates_reuse',
+    ],
+  },
+  {
+    moduleName: LEANPOO_FOUR_PARADIGM_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/FourParadigmConsistency.lean',
+    pillars: ['FourParadigmConsistency', 'NVersionGate'],
+    theorems: [
+      'any_paradigm_refuted_blocks_library_admit',
+      'any_paradigm_pending_blocks_library_admit',
+      'any_paradigm_setup_defect_blocks_library_admit',
+      'host_permit_cannot_override_four_paradigm_failure',
+      'four_paradigm_proven_cannot_override_host_refusal',
+      'four_paradigm_admit_iff_all_proven',
+      'paradigm_list_convergence_requires_every_entry_proven',
+      'fourParadigmContract_preserves_rejection',
+      'reportFormatTuning_preserves_fourParadigm_certificate',
+      'disablingLeanPooGate_invalidates_reuse',
     ],
   },
 ];
@@ -291,8 +311,14 @@ export function verifyLeanPooLibraryFleet(params?: {
     }
   }
 
+  const facadeToImport = manifest.some(
+    m => m.moduleName === LEANPOO_FOUR_PARADIGM_FACADE_MODULE,
+  )
+    ? LEANPOO_FOUR_PARADIGM_FACADE_MODULE
+    : LEANPOO_EXPORT_FACADE_MODULE;
+
   const stdinScript = [
-    `import ${LEANPOO_EXPORT_FACADE_MODULE}`,
+    `import ${facadeToImport}`,
     ...fullyQualifiedTheorems.map(fqn => `#print axioms ${fqn}`),
     '',
   ].join('\n');

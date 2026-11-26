@@ -20,7 +20,7 @@ This benchmark evaluates whether AST-level defensive-engineering auditors catch
 all four AI Agent defensive-hallucination classes (=G2= in [[file:../../10-19-design/10-architecture/10.153-defensive-engineering-taxonomy-and-modular-organization.org][10.153]]) without
 generating false positives on clean deterministic-boundary code.
 
-- *Independent Gold*: Every case (=AG01=–=AG160=) has a fixed independent
+- *Independent Gold*: Every case (=AG01=–=AG165=) has a fixed independent
   expected outcome (=pass= vs. =fail= + exact hallucination/anti-evasion/escalation/durable-resume class). Candidate
   auditor output never generates gold.
 - *Native AST, Diff-Delta, Scope-Fencing & Closed-Loop Governance Auditors Evaluated*:
@@ -216,6 +216,11 @@ generating false positives on clean deterministic-boundary code.
 | =AG158= | 76-Theorem Batched Fleet | Single-shot =verifyLeanPooLibraryFleet= via =LibraryExportContract= | **76/76 =Proven=** + deterministic =M1= receipt | Audits all 76 theorems across 6 modules in 1 Lean process & pins reproducible =M1= attestation across GC |
 | =AG159= | =cedar-poo-spec= 3-Layer | =Authorization -> Governance -> Admission= over =unifiedLibraryContract= | Symmetric refusal; =Proven= on disjoint bundle | Confirms 3-layer host =Permit= cannot override Library refusal & host =Veto= blocks Library =Finalized= |
 | =AG160= | 160-Case Release Gate | Missing =lake= & forged theorem fail-closed negative controls | =PendingMethod= / =Refuted=/=SetupDefect= | Guarantees library release attestation never silently passes when toolchain missing or theorem forged |
+| =AG161= | =LeanPoo= 4-Paradigm Gate | Live =lake env lean= verifies all 10 =FourParadigmConsistency= theorems | =Proven= (zero =sorryAx=/custom axioms) + GC | Verifies four-paradigm fail-closed lattice, =∀ N= oracle convergence & =cedar-poo-spec= release transport |
+| =AG162= | 4-Paradigm Cross-Audit | Live 19 Quint × ASCENT × 5-Lang/CBMC × **86/86** =LeanPoo= fleet | =Proven= + 0 Mathlib / 0 Cedar + GC =M1= receipt | Confirms all 4 verification paradigms converge cleanly & pins =four-paradigm-release-attestation= in =M1= |
+| =AG163= | Standalone CLI Gate | Execute =bun leanpoo-fleet-audit.ts --json= end-to-end | Exit =0= + valid JSON (=verifiedTheoremCount: 86=) | Produces machine-verifiable JSON release attestation ready for downstream =cedar-poo-spec= CI consumption |
+| =AG164= | N-Version Fail-Closed | All 12 single-paradigm failure cases + 3 host failure cases | Block admission on every non-=Proven= state | Confirms =Refuted=/=PendingMethod=/=SetupDefect= in ANY paradigm or host blocks release symmetrically |
+| =AG165= | 165-Case Custody Gate | 4-Paradigm 86-theorem attestation digest verified by =cedar-poo-spec= | =Proven= + dual-sovereign =M1= receipt survives GC | Binds cryptographic four-paradigm release digest directly into consuming-host dual-sovereign admission |
 
 * Observed Verification Receipts
 :PROPERTIES:
@@ -250,15 +255,16 @@ generating false positives on clean deterministic-boundary code.
 | =LeanPoo= Unbounded =B7= DIFC Non-Interference & =B8= ATMS Survival (=AG141=–=AG145=, 145-Case Milestone) | =bun test languages-engineering/ts/defense/agent-audit/difc-atms-leanpoo.test.ts= + =lake build= | **5/5 cases matched gold** (live =#print axioms= on 11 =InformationFlowAndTms= theorems, 12-hop DIFC + 10-hop CaMeL collapse, 5-hop Doyle vs 4-way ATMS survival, cross-layer =B7 × B8 × B10 × cedar-poo-spec= 145-case milestone) |
 | =LeanPoo= Unbounded =B6= Saga & =B4= SSI + 52-Theorem Sweep (=AG146=–=AG150=, 150-Case Grand Milestone) | =bun test languages-engineering/ts/defense/agent-audit/saga-ssi-leanpoo.test.ts= + =lake build= | **5/5 cases matched gold** (live =#print axioms= on 11 =SagaAndSsi= theorems + complete **52/52** 4-module =LeanPoo= sweep, 6-step reverse Saga compensation, 5-agent =DE01= SSI swarm, 150-case grand milestone) |
 | =LeanPoo= Unbounded =B5= HITL, =R1= Co-Evolution & =B2/R5= AEAD + 64-Theorem Sweep (=AG151=–=AG155=) | =bun test languages-engineering/ts/defense/agent-audit/hitl-coevolution-leanpoo.test.ts= + =lake build= | **5/5 cases matched gold** (live =#print axioms= on 12 =HitlAndCoevolution= theorems + complete **64/64** 5-module =LeanPoo= sweep, 3-of-5 HITL =SoD=/=R1=/veto, 4-tenant AEAD isolation, 155-case full-spectrum closure) |
-| =LeanPoo= Unified Library Export Contract & 76-Theorem Fleet Manifest (=AG156=–=AG160=, 160-Case Milestone) | =bun test languages-engineering/ts/defense/agent-audit/library-export-contract.test.ts= + =lake build= | **5/5 cases matched gold** (live =#print axioms= on 12 =LibraryExportContract= theorems, 0-Mathlib/0-Cedar boundary hygiene, single-shot **76/76** 6-module fleet attestation, 3-layer =cedar-poo-spec= refinement & fail-closed release gate) |
-| Combined 160-case 5-language, anti-evasion, Full =B1=–=B10c=, N-Version & 76-Theorem =LeanPoo= benchmark | =just check-defense= | **160/160 exact gold match** (=tp=107, tn=53, fp=0, fn=0=) |
+| =LeanPoo= Unified Library Export Contract & 76-Theorem Fleet Manifest (=AG156=–=AG160=, 160-Case Milestone) | =bun test languages-engineering/ts/defense/agent-audit/library-export-contract.test.ts= + =lake build= | **5/5 cases matched gold** (live =#print axioms= on 12 =LibraryExportContract= theorems, 0-Mathlib/0-Cedar boundary hygiene, single-shot fleet attestation, 3-layer =cedar-poo-spec= refinement & fail-closed release gate) |
+| Four-Paradigm Cross-Consistency & 86-Theorem =LeanPoo= CLI Release Gate (=AG161=–=AG165=) | =bun test languages-engineering/ts/defense/agent-audit/four-paradigm-consistency.test.ts= + =just audit-leanpoo-fleet= | **5/5 cases matched gold** (live =#print axioms= on 10 =FourParadigmConsistency= theorems, live 19-Quint × ASCENT × 5-Lang/CBMC × **86/86** =LeanPoo= cross-audit, standalone CLI JSON gate, 15-case fail-closed matrix & 165-case custody closure) |
+| Combined 165-case 5-language, anti-evasion, Full =B1=–=B10c=, N-Version & 86-Theorem =LeanPoo= benchmark | =just check-defense= | **165/165 exact gold match** (=tp=110, tn=55, fp=0, fn=0=) |
 
 * Limits
 :PROPERTIES:
 :CUSTOM_ID: bench3005-limits
 :END:
 
-This 160-case benchmark establishes deterministic AST-level, diff-delta,
+This 165-case benchmark establishes deterministic AST-level, diff-delta,
 scope-fencing, bounded closed-loop, hot-policy co-evolution, async-cut,
 semantic-drift memoization, AEAD-isolated Merkle storage, role-projected
 context, multi-agent SSI concurrency, and business SoD/replay precision and

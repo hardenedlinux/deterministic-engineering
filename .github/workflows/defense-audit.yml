@@ -35,7 +35,7 @@ jobs:
         with:
           bun-version: 1.3.11
       - run: bun install --frozen-lockfile
-      - name: TypeScript contrast, 19-model MBT SUT refinement, 160-case 5-language Agent AST benchmark & 76-Theorem LeanPoo Library
+      - name: TypeScript contrast, 19-model MBT SUT refinement, 165-case 5-language Agent AST benchmark & 86-Theorem LeanPoo Library
         run: |
           bun test \
             languages-engineering/ts/defense/boundary-contrast/contrast.test.ts \
@@ -64,7 +64,8 @@ jobs:
             languages-engineering/ts/defense/agent-audit/difc-atms-leanpoo.test.ts \
             languages-engineering/ts/defense/agent-audit/saga-ssi-leanpoo.test.ts \
             languages-engineering/ts/defense/agent-audit/hitl-coevolution-leanpoo.test.ts \
-            languages-engineering/ts/defense/agent-audit/library-export-contract.test.ts
+            languages-engineering/ts/defense/agent-audit/library-export-contract.test.ts \
+            languages-engineering/ts/defense/agent-audit/four-paradigm-consistency.test.ts
       - name: C, C++20, and Rust paired defensive-boundary contrast harnesses
         run: |
           mkdir -p /tmp/defense-ci
