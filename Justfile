@@ -55,28 +55,44 @@ test-file path pattern=".*":
     rg '^CASE-OK ' "$log" >/dev/null
     rg -x 'OK' "$log" >/dev/null
 
+# Yuanxu Loader test layout gate: enforces t/yanxu/Library/<owner>/*-test.ss ownership.
+test-de-layout:
+    just test-file t/integration/module-publication/loader-ownership-test.ss
+
+# Loader-owned Quint methods & domain model qualification suites.
+test-quint-models:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just test-file t/yanxu/Library/quint-methods/projection-contracts-test.ss
+    just test-file t/yanxu/Library/bounded-capacity/contract-test.ss
+    just test-file t/yanxu/Library/resource-lifetime/contract-test.ss
+    for f in t/yanxu/Library/*/qualification-test.ss; do
+      just test-file "$f"
+    done
+
 # Serial execution preserves bounded native test ownership.
 test:
-    just test-file t/user-configuration-test.ss
+    just test-de-layout
+    just test-file t/integration/runtime/user-configuration-test.ss
     just test-source-contracts
-    just test-file t/engineering-ownership-test.ss
-    just test-file t/repository-input-schema-test.ss
-    just test-file t/library-relation-types-test.ss
-    just test-file t/resource-evidence-contract-test.ss
-    just test-file t/evidence-catalog-test.ss
-    just test-file t/resource-scenario-contract-test.ss
-    just test-file t/library-owner-test.ss
-    just test-file t/library-selection-test.ss
-    just test-file t/native-context-test.ss
-    just test-file t/native-concurrency-test.ss
-    just test-file t/rust-project-native-test.ss
-    just test-file t/module-design-test.ss
+    just test-file t/integration/library/engineering-ownership-test.ss
+    just test-file t/integration/formation/repository-input-schema-test.ss
+    just test-file t/integration/library/relation-types-test.ss
+    just test-file t/yanxu/Library/evidence/resource-contract-test.ss
+    just test-file t/yanxu/Library/evidence/catalog-test.ss
+    just test-file t/yanxu/Library/resource-lifecycle-profiles/scenario-contract-test.ss
+    just test-file t/integration/library/owner-test.ss
+    just test-file t/integration/library/selection-test.ss
+    just test-file t/integration/runtime/native-context-test.ss
+    just test-file t/integration/runtime/native-concurrency-test.ss
+    just test-file t/integration/runtime/rust-project-native-test.ss
+    just test-file t/integration/library/module-design-test.ss
     just test-gateway
-    just test-file t/dependency-compatibility-test.ss
-    just test-file t/package-metadata-test.ss
+    just test-file t/integration/runtime/dependency-compatibility-test.ss
+    just test-file t/integration/runtime/package-metadata-test.ss
 
 # Real language subjects, current native tool paths and existing test harness.
-test-source-contracts pattern=".*" path="t/source-contracts-test.ss":
+test-source-contracts pattern=".*" path="t/yanxu/Library/source-contracts/contracts-test.ss":
     #!/usr/bin/env bash
     set -euo pipefail
     export SOURCE_CONTRACT_CBMC="$(realpath "$(command -v cbmc)")"
@@ -96,7 +112,7 @@ test-gateway:
     #!/usr/bin/env bash
     set -euo pipefail
     for suite in initial method capacity cache-retry source boundaries counter; do
-      just test-file t/gateway-library-test.ss "^gateway-$suite-test$"
+      just test-file t/yanxu/Library/gateway-profiles/gateway-library-test.ss "^gateway-$suite-test$"
     done
 
 # Actual tools and issued results; output must be a fresh directory.
@@ -111,7 +127,7 @@ investigate-resource output:
     mkdir -p .data/test-logs
     log="$(mktemp .data/test-logs/investigation-XXXXXX)"
     timeout --signal=TERM --kill-after=5s 600s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/resource-lifecycle-evidence.ss "{{output}}" "$cargo" "$rustc" "$quint" "$lean" 2>&1 | tee "$log"
-    RESOURCE_REAL_REPORT="{{output}}/report.json" just test-file t/resource-lifecycle-test.ss
+    RESOURCE_REAL_REPORT="{{output}}/report.json" just test-file t/yanxu/Library/resource-lifecycle-profiles/lifecycle-test.ss
 
 # Optional SysML/correspondence slice with the existing native result issuer.
 investigate-resource-integration output sysml:
@@ -171,9 +187,9 @@ test-backpressure-reassessment:
     fi
     : "${BACKPRESSURE_ACCEPTANCE:?Provide the actual acceptance artifact}"
     log="$(mktemp .data/test-logs/aitia-reassessment-XXXXXX)"
-    "${power_guard[@]}" timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxtest -:max-heap=2G,debug=q -v 5 t/backpressure-reassessment-test.ss 2>&1 | tee "$log"
+    "${power_guard[@]}" timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxtest -:max-heap=2G,debug=q -v 5 t/integration/backpressure/reassessment-test.ss 2>&1 | tee "$log"
     if rg 'ERROR (MODULE|CHECK|CASE|HARNESS)|Heap overflow|Stack overflow' "$log"; then exit 1; fi
-    rg -F -x 'MODULE-OK t/backpressure-reassessment-test.ss' "$log" >/dev/null
+    rg -F -x 'MODULE-OK t/integration/backpressure/reassessment-test.ss' "$log" >/dev/null
     rg -F 'HARNESS-OK' "$log" >/dev/null
     rg '^SUITE-OK ' "$log" >/dev/null
     rg '^CASE-OK ' "$log" >/dev/null
@@ -357,9 +373,9 @@ test-producer-source-custody:
     : "${BACKPRESSURE_ACCEPTANCE:?Provide the actual acceptance artifact}"
     export BACKPRESSURE_CUSTODY_OUTPUT="$(mktemp -d "$project_root/.data/test-runs/custody-XXXXXX")/results"
     log="$(mktemp "$project_root/.data/test-logs/custody-XXXXXX")"
-    "${power_guard[@]}" timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxtest -:max-heap=2G,debug=q -v 5 t/producer-source-custody-test.ss 2>&1 | tee "$log"
+    "${power_guard[@]}" timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxtest -:max-heap=2G,debug=q -v 5 t/integration/backpressure/producer-source-custody-test.ss 2>&1 | tee "$log"
     if rg 'ERROR (MODULE|CHECK|CASE|HARNESS)|Heap overflow|Stack overflow' "$log"; then exit 1; fi
-    rg -F -x 'MODULE-OK t/producer-source-custody-test.ss' "$log" >/dev/null
+    rg -F -x 'MODULE-OK t/integration/backpressure/producer-source-custody-test.ss' "$log" >/dev/null
     rg '^HARNESS-OK ' "$log" >/dev/null
     rg '^SUITE-OK ' "$log" >/dev/null
     rg '^CASE-OK ' "$log" >/dev/null
@@ -367,12 +383,12 @@ test-producer-source-custody:
 
 # Reuse Core's real compiler / TestingScript / Fixture / Ops path.
 test-library-declarations:
-    just formation-test-file t/library-declaration-test.ss 4
-    just formation-test-file t/library-model-chain-test.ss 4
+    just formation-test-file t/yanxu/Library/backpressure-memory/declaration-test.ss 4
+    just formation-test-file t/integration/library/model-chain-test.ss 4
 
 test-organization-declarations:
-    just formation-test-file t/organization-library-test.ss 3
-    just formation-test-file t/library-method-binding-test.ss 2
+    just formation-test-file t/yanxu/Library/project-organization/organization-library-test.ss 3
+    just formation-test-file t/integration/library/method-binding-test.ss 2
 
 test-codex-source:
     just formation-test-file t/codex-source-test.ss 2
@@ -381,22 +397,22 @@ test-codex-capture:
     just formation-test-file t/codex-capture-test.ss 1
 
 test-project-inputs:
-    just formation-test-file t/project-inputs-test.ss 3
+    just formation-test-file t/integration/formation/project-inputs-test.ss 3
 
 test-library-mapping fixture:
-    LIBRARY_TRACE_FIXTURE="{{fixture}}" just formation-test-file t/library-mapping-test.ss 3
+    LIBRARY_TRACE_FIXTURE="{{fixture}}" just formation-test-file t/integration/library/mapping-test.ss 3
 
 test-library-selection:
-    just formation-test-file t/library-selection-test.ss 2
+    just formation-test-file t/integration/library/selection-test.ss 2
 
 test-project-formation:
-    just formation-test-file t/project-formation-test.ss 14
+    just formation-test-file t/yanxu/Library/library-formation-profiles/project-formation-test.ss 14
 
 test-project-formation-entry:
-    just formation-test-file t/project-formation-entry-test.ss 3
+    just formation-test-file t/integration/formation/project-formation-entry-test.ss 3
 
 test-project-formation-build:
-    just formation-test-file t/project-formation-build-test.ss 2
+    just formation-test-file t/integration/formation/project-formation-build-test.ss 2
 
 # Core owns source/compiler preparation, Fixture, Ops and result admission.
 formation-test-file path cases:
