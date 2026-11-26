@@ -32,6 +32,8 @@
         reason-transcript: reason-agent-transcript
         policy-coevolution-program: HotPolicyCoEvolutionProgram
         reason-policy-coevolution: reason-hot-policy-coevolution
+        meta-audit-program: DurableGovernanceMetaAuditProgram
+        reason-meta-audit: reason-durable-governance-meta-audit
         contracts: (.o witness-kind: GuardWitnessKindType
                        guard-admission: GuardAdmissionFiveTupleType
                        hallucination-class: AgentHallucinationClassType

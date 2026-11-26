@@ -22,7 +22,10 @@
         reason-agent-transcript
         HotPolicyCoEvolutionProgram
         make-hot-policy-coevolution-program
-        reason-hot-policy-coevolution)
+        reason-hot-policy-coevolution
+        DurableGovernanceMetaAuditProgram
+        make-durable-governance-meta-audit-program
+        reason-durable-governance-meta-audit)
 
 ;; G1: Refuse any guard missing required 5-tuple evidence or claiming immutable reuse on an M3 mutable root.
 (def (admit-guard-five-tuple candidate)
@@ -655,4 +658,182 @@
       (rule-module-bindings HotPolicyCoEvolutionDeclaration)))
   (.o program: pprog-val
       output-bindings: (lambda () (map (lambda (e) (cons (car e) (cdr e))) pout-bindings))
+      rows-of: (lambda (name) (copy-fact (native-rows name)))))
+
+;; Phase 19 (10.167): Cross-Pillar B1-B9 Declarative ASCENT Datalog Meta-Governance Auditor.
+;; Independent heterogeneous verifier in pure stratified Datalog over cold M1 evidence graphs:
+;;   - B3: Transitive multi-hop delegation revocation closure
+;;   - B3 -> B8: Causal belief poisoning from revoked proposers + sole-support TMS cascade
+;;   - B7: Transitive multi-hop DIFC confidentiality taint propagation & exfiltration detection
+;;   - B9: Witness gossip split-view equivocation detection (pure relational inequality)
+;;   - B1/B5/B6/B8/B9: Cross-pillar release disqualification vs. clean admission
+(define-program
+  (make-durable-governance-meta-audit-program)
+  (sources
+    delegation_edge
+    revoked_principal
+    belief_proposer
+    belief_has_oracle
+    belief_sole_dep
+    retracted_belief
+    base_taint
+    derived_from
+    declassified_tag
+    sink_emits
+    sink_allows
+    witness_sth
+    release_proposal
+    release_uses_belief
+    saga_pivot_crossed
+    saga_rollback_attempted)
+  (outputs
+    effectively_revoked
+    belief_poisoned
+    tainted_value
+    exfiltration_violation
+    equivocation_violation
+    release_disqualified
+    release_admitted)
+  (relation delegation_edge ((parent string?) (child string?)))
+  (relation revoked_principal ((principal string?)))
+  (relation belief_proposer ((belief_id string?) (principal string?)))
+  (relation belief_has_oracle ((belief_id string?)))
+  (relation belief_sole_dep ((derived_id string?) (support_id string?)))
+  (relation retracted_belief ((belief_id string?)))
+  (relation base_taint ((val_id string?) (tag string?)))
+  (relation derived_from ((child_val string?) (parent_val string?)))
+  (relation declassified_tag ((val_id string?) (tag string?)))
+  (relation sink_emits ((sink_id string?) (val_id string?)))
+  (relation sink_allows ((sink_id string?) (tag string?)))
+  (relation witness_sth ((witness string?) (log_id string?) (size string?) (root string?)))
+  (relation release_proposal ((rel_id string?) (author string?) (approver string?) (log_id string?)))
+  (relation release_uses_belief ((rel_id string?) (belief_id string?)))
+  (relation saga_pivot_crossed ((rel_id string?)))
+  (relation saga_rollback_attempted ((rel_id string?)))
+
+  (relation effectively_revoked ((principal string?)))
+  (relation belief_poisoned ((belief_id string?)))
+  (relation tainted_value ((val_id string?) (tag string?)))
+  (relation exfiltration_violation ((sink_id string?) (val_id string?) (tag string?)))
+  (relation equivocation_violation ((log_id string?) (size string?) (r1 string?) (r2 string?)))
+  (relation release_disqualified ((rel_id string?) (reason string?)))
+  (relation release_admitted ((rel_id string?)))
+
+  ;; 1. B3 Transitive cascading revocation closure over arbitrary hop depth:
+  ((effectively_revoked P)
+   <--
+   (revoked_principal P))
+  ((effectively_revoked C)
+   <--
+   (effectively_revoked P)
+   (delegation_edge P C))
+
+  ;; 2. B3 -> B8 Transitive causal belief poisoning closure (preserving cold-oracle facts):
+  ((belief_poisoned B)
+   <--
+   (retracted_belief B))
+  ((belief_poisoned B)
+   <--
+   (belief_proposer B P)
+   (effectively_revoked P)
+   (not (belief_has_oracle B)))
+  ((belief_poisoned D)
+   <--
+   (belief_sole_dep D S)
+   (belief_poisoned S))
+
+  ;; 3. B7 Transitive DIFC confidentiality taint propagation & no-write-down violation:
+  ((tainted_value V T)
+   <--
+   (base_taint V T)
+   (not (declassified_tag V T)))
+  ((tainted_value C T)
+   <--
+   (derived_from C P)
+   (tainted_value P T)
+   (not (declassified_tag C T)))
+  ((exfiltration_violation S V T)
+   <--
+   (sink_emits S V)
+   (tainted_value V T)
+   (not (sink_allows S T)))
+
+  ;; 4. B9 Witness gossip split-view equivocation (pure relational inequality R1 != R2):
+  ((equivocation_violation L Sz R1 R2)
+   <--
+   (witness_sth W1 L Sz R1)
+   (witness_sth W2 L Sz R2)
+   (not (witness_sth W1 L Sz R2)))
+
+  ;; 5. Cross-pillar B1/B3/B5/B6/B8/B9 release disqualification & clean admission:
+  ((release_disqualified Rel (lit "sod-self-approval"))
+   <--
+   (release_proposal Rel Same Same _))
+  ((release_disqualified Rel (lit "revoked-delegation-chain"))
+   <--
+   (release_proposal Rel Author _ _)
+   (effectively_revoked Author))
+  ((release_disqualified Rel (lit "poisoned-supporting-belief"))
+   <--
+   (release_proposal Rel _ _ _)
+   (release_uses_belief Rel B)
+   (belief_poisoned B))
+  ((release_disqualified Rel (lit "coordinator-equivocated"))
+   <--
+   (release_proposal Rel _ _ Log)
+   (equivocation_violation Log _ _ _))
+  ((release_disqualified Rel (lit "post-pivot-rollback-violation"))
+   <--
+   (release_proposal Rel _ _ _)
+   (saga_pivot_crossed Rel)
+   (saga_rollback_attempted Rel))
+  ((release_admitted Rel)
+   <--
+   (release_proposal Rel _ _ _)
+   (not (release_disqualified Rel _)))
+
+  (bounds 4096 4096 4096))
+
+(def DurableGovernanceMetaAuditDeclaration (make-durable-governance-meta-audit-program))
+(def DurableGovernanceMetaAuditProgram (rule-module-program DurableGovernanceMetaAuditDeclaration))
+
+(def (reason-durable-governance-meta-audit replacements)
+  (def mprog-val DurableGovernanceMetaAuditProgram)
+  (def expected (.ref mprog-val 'source-handles))
+  (unless (and (list? replacements) (andmap pair? replacements))
+    (error "durable-governance-meta-audit replacements must be an alist"))
+  (for-each
+    (lambda (entry)
+      (unless (memq (car entry) expected)
+        (error "unknown durable-governance-meta-audit source" (car entry))))
+    replacements)
+  (for-each
+    (lambda (handle)
+      (unless (assq handle replacements)
+        (error "missing durable-governance-meta-audit source" handle)))
+    expected)
+  (def prepared (map (lambda (entry) (cons (car entry) (copy-fact (cdr entry)))) replacements))
+  (def session (gerbil-ascent-open-session mprog-val))
+  (def result
+    (gerbil-ascent-session-replace-sources!
+      session
+      prepared
+      (lambda (prospective)
+        (and (.ref prospective 'finished)
+             (andmap
+               (lambda (entry)
+                 (let ((actual ((.ref prospective 'rows-of) (car entry)))
+                       (wanted (cdr entry)))
+                   (and (andmap (cut member <> wanted) actual)
+                        (andmap (cut member <> actual) wanted))))
+               prepared)))))
+  (unless (.ref result 'finished)
+    (error "durable-governance-meta-audit evaluation incomplete"))
+  (def native-rows (.ref result 'rows-of))
+  (def mout-bindings
+    (filter
+      (lambda (binding) (not (memq (cdr binding) expected)))
+      (rule-module-bindings DurableGovernanceMetaAuditDeclaration)))
+  (.o program: mprog-val
+      output-bindings: (lambda () (map (lambda (e) (cons (car e) (cdr e))) mout-bindings))
       rows-of: (lambda (name) (copy-fact (native-rows name)))))

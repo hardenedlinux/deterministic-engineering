@@ -198,4 +198,68 @@
       (check-equal? (length m1-reuse) 2)
       (check-equal? (and (member '("llm-step-1" "sha-aaa") m1-reuse) #t) #t)
       (check-equal? (and (member '("apalache-proof-1" "sha-bbb") m1-reuse) #t) #t)
-      (check-equal? (rows pres 'historical_cut_preserved) '(("cut-v1" "root-111"))))))
+      (check-equal? (rows pres 'historical_cut_preserved) '(("cut-v1" "root-111"))))
+
+    (test-case "Phase 19 (10.167) live ASCENT DurableGovernanceMetaAuditProgram performs transitive cross-pillar B1-B9 Datalog verification"
+      (def m-facts
+        (list
+          ;; B3: 4-hop delegation chain admin -> c1 -> c2 -> c3 -> worker4; sibling admin -> clean-coder
+          (cons 'delegation_edge '(("admin" "c1") ("c1" "c2") ("c2" "c3") ("c3" "worker4")
+                                   ("admin" "clean-coder")))
+          (cons 'revoked_principal '(("c1")))
+          ;; B8: worker4 proposed b-root (no oracle) -> b-mid -> b-leaf; clean-coder proposed b-clean (with oracle)
+          (cons 'belief_proposer '(("b-root" "worker4") ("b-oracle-safe" "c2") ("b-clean" "clean-coder")))
+          (cons 'belief_has_oracle '(("b-oracle-safe") ("b-clean")))
+          (cons 'belief_sole_dep '(("b-mid" "b-root") ("b-leaf" "b-mid")))
+          (cons 'retracted_belief '())
+          ;; B7: Multi-hop DIFC taint v0 (tenant:alpha) -> v1 -> v2 (emitted to public-sink); v3 declassified
+          (cons 'base_taint '(("v0" "tenant:alpha")))
+          (cons 'derived_from '(("v1" "v0") ("v2" "v1") ("v3" "v1")))
+          (cons 'declassified_tag '(("v3" "tenant:alpha")))
+          (cons 'sink_emits '(("public-sink" "v2") ("public-sink" "v3") ("alpha-sink" "v2")))
+          (cons 'sink_allows '(("alpha-sink" "tenant:alpha")))
+          ;; B9: log-honest consistent across witnesses; log-split equivocates at size 4
+          (cons 'witness_sth '(("w-reg" "log-honest" "4" "root-h4")
+                               ("w-prod" "log-honest" "4" "root-h4")
+                               ("w-reg" "log-split" "4" "root-clean")
+                               ("w-prod" "log-split" "4" "root-backdoor")))
+          ;; B1/B5/B6/B8/B9 release proposals:
+          (cons 'release_proposal '(("rel-clean" "clean-coder" "human-approver" "log-honest")
+                                    ("rel-sod" "clean-coder" "clean-coder" "log-honest")
+                                    ("rel-poison-chain" "clean-coder" "human-approver" "log-honest")
+                                    ("rel-revoked-author" "worker4" "human-approver" "log-honest")
+                                    ("rel-equivocated" "clean-coder" "human-approver" "log-split")
+                                    ("rel-pivot-undo" "clean-coder" "human-approver" "log-honest")))
+          (cons 'release_uses_belief '(("rel-clean" "b-clean")
+                                       ("rel-clean" "b-oracle-safe")
+                                       ("rel-poison-chain" "b-leaf")))
+          (cons 'saga_pivot_crossed '(("rel-pivot-undo")))
+          (cons 'saga_rollback_attempted '(("rel-pivot-undo")))))
+
+      (def mres (reason-durable-governance-meta-audit m-facts))
+      (def revoked (rows mres 'effectively_revoked))
+      (def poisoned (rows mres 'belief_poisoned))
+      (def exfil (rows mres 'exfiltration_violation))
+      (def equiv (rows mres 'equivocation_violation))
+      (def disq (rows mres 'release_disqualified))
+      (def admitted (rows mres 'release_admitted))
+
+      ;; 1. 4-hop B3 transitive revocation catches worker4 while keeping clean-coder untouched:
+      (check-equal? (and (member '("worker4") revoked) #t) #t)
+      (check-equal? (member '("clean-coder") revoked) #f)
+      ;; 2. Cross-pillar B3 -> B8 transitive poisoning catches b-root -> b-mid -> b-leaf, preserves b-oracle-safe:
+      (check-equal? (and (member '("b-leaf") poisoned) #t) #t)
+      (check-equal? (member '("b-oracle-safe") poisoned) #f)
+      (check-equal? (member '("b-clean") poisoned) #f)
+      ;; 3. Multi-hop B7 DIFC catches v2 -> public-sink, clears declassified v3 & authorized alpha-sink:
+      (check-equal? exfil '(("public-sink" "v2" "tenant:alpha")))
+      ;; 4. B9 split-view caught strictly on log-split (never on log-honest):
+      (check-equal? (and (member '("log-split" "4" "root-clean" "root-backdoor") equiv) #t) #t)
+      (check-equal? (find (lambda (r) (equal? (car r) "log-honest")) equiv) #f)
+      ;; 5. Only rel-clean is admitted; all 5 cross-pillar violations are disqualified with exact reasons:
+      (check-equal? admitted '(("rel-clean")))
+      (check-equal? (and (member '("rel-sod" "sod-self-approval") disq) #t) #t)
+      (check-equal? (and (member '("rel-poison-chain" "poisoned-supporting-belief") disq) #t) #t)
+      (check-equal? (and (member '("rel-revoked-author" "revoked-delegation-chain") disq) #t) #t)
+      (check-equal? (and (member '("rel-equivocated" "coordinator-equivocated") disq) #t) #t)
+      (check-equal? (and (member '("rel-pivot-undo" "post-pivot-rollback-violation") disq) #t) #t))))

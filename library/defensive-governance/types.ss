@@ -84,5 +84,7 @@
             reason-transcript: [Any]
             policy-coevolution-program: [Any]
             reason-policy-coevolution: [Any]
+            meta-audit-program: [Any]
+            reason-meta-audit: [Any]
             contracts: [Object])
     'identity 'defensive-governance/scope))
