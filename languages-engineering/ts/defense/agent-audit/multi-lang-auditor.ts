@@ -240,8 +240,21 @@ export function auditCCppAgentSource(sourceText: string, fileName = 'input.cpp')
           ) {
             add('redundant-defensive-glue', 'cpp-noop-catch-rethrow', t, 'catch block only rethrows without transforming or logging');
           } else {
+            let hasThrow = false;
+            let hasReturn = false;
+            let hasLog = false;
             for (let k = 0; k < inner.length; k++) {
+              if (inner[k]!.value === 'throw') hasThrow = true;
+              if (
+                inner[k]!.value === 'cerr' ||
+                inner[k]!.value === 'clog' ||
+                inner[k]!.value === 'fprintf' ||
+                inner[k]!.value === 'printf'
+              ) {
+                hasLog = true;
+              }
               if (inner[k]!.value === 'return') {
+                hasReturn = true;
                 const next = inner[k + 1];
                 if (
                   next &&
@@ -252,12 +265,15 @@ export function auditCCppAgentSource(sourceText: string, fileName = 'input.cpp')
                 ) {
                   add(
                     'silent-fallback',
-                    'cpp-catch-constant-fallback',
+                    hasLog ? 'cpp-catch-log-and-swallow' : 'cpp-catch-constant-fallback',
                     inner[k]!,
                     `catch block masks exception by returning fallback constant '${next.value}'`,
                   );
                 }
               }
+            }
+            if (hasLog && !hasThrow && !hasReturn) {
+              add('silent-fallback', 'cpp-catch-log-and-swallow', t, 'catch block logs exception and swallows control flow without rethrow or error return');
             }
           }
         }
@@ -441,6 +457,28 @@ export function auditRustAgentSource(sourceText: string, fileName = 'input.rs'):
         const rhs = code[rhsIdx];
         if (rhs?.value === 'Ok' && code[rhsIdx + 1]?.value === '(') {
           add('silent-fallback', 'rust-err-arm-returns-ok', t, 'Match arm Err(_) silently converts error into Ok(...)');
+        } else if (rhs?.value === '{') {
+          const armClose = findMatching(code, rhsIdx, '{', '}');
+          if (armClose > rhsIdx) {
+            const armBody = code.slice(rhsIdx + 1, armClose);
+            const logsErr = armBody.some(
+              tk => tk.value === 'eprintln' || tk.value === 'println' || tk.value === 'error' || tk.value === 'warn',
+            );
+            const returnsOkOrDefault = armBody.some(
+              (tk, idx) =>
+                (tk.value === 'Ok' && armBody[idx + 1]?.value === '(') ||
+                tk.value === 'default',
+            );
+            const returnsErr = armBody.some(tk => tk.value === 'Err' || tk.value === 'panic');
+            if (logsErr && (returnsOkOrDefault || !returnsErr)) {
+              add(
+                'silent-fallback',
+                'rust-err-log-and-swallow',
+                t,
+                'Err match arm logs error and swallows failure via Ok/default/unit fallthrough',
+              );
+            }
+          }
         } else if (
           errVar &&
           errVar !== '_' &&
@@ -454,13 +492,25 @@ export function auditRustAgentSource(sourceText: string, fileName = 'input.rs'):
       }
     }
 
-    // 3. Floor weakening: #[ignore] on tests, assert!(true)
-    if (
-      t.value === '#' &&
-      code[i + 1]?.value === '[' &&
-      code[i + 2]?.value === 'ignore'
-    ) {
-      add('floor-weakening', 'rust-test-ignore', t, '#[ignore] disables verification test');
+    // 3. Floor weakening: #[ignore] on tests, #[allow(unused_must_use|unused_results)], assert!(true)
+    if (t.value === '#' && code[i + 1]?.value === '[') {
+      const attrClose = findMatching(code, i + 1, '[', ']');
+      if (attrClose > i + 1) {
+        const attrSlice = code.slice(i + 2, attrClose);
+        if (attrSlice[0]?.value === 'ignore') {
+          add('floor-weakening', 'rust-test-ignore', t, '#[ignore] disables verification test');
+        } else if (
+          attrSlice[0]?.value === 'allow' &&
+          attrSlice.some(tk => tk.value === 'unused_must_use' || tk.value === 'unused_results')
+        ) {
+          add(
+            'floor-weakening',
+            'rust-allow-unused-must-use',
+            t,
+            '#[allow(unused_must_use/unused_results)] suppresses Result/error boundary handling',
+          );
+        }
+      }
     }
     if (
       t.kind === 'ident' &&
@@ -830,19 +880,151 @@ export function parseUnifiedDiffAddedLines(diffText: string): Map<string, Set<nu
   return result;
 }
 
+export interface DiffHunkDelta {
+  filePath: string;
+  newStartLine: number;
+  removedLines: string[];
+  addedLines: string[];
+}
+
+export function parseUnifiedDiffHunks(diffText: string): DiffHunkDelta[] {
+  const hunks: DiffHunkDelta[] = [];
+  let currentFile: string | null = null;
+  let currentHunk: DiffHunkDelta | null = null;
+
+  const flush = () => {
+    if (currentHunk && (currentHunk.removedLines.length > 0 || currentHunk.addedLines.length > 0)) {
+      hunks.push(currentHunk);
+    }
+    currentHunk = null;
+  };
+
+  for (const rawLine of diffText.split('\n')) {
+    if (rawLine.startsWith('diff --git ')) {
+      flush();
+      currentFile = null;
+      continue;
+    }
+    if (rawLine.startsWith('+++ ')) {
+      flush();
+      const target = rawLine.slice(4).trim();
+      currentFile = target === '/dev/null' ? null : target.startsWith('b/') ? target.slice(2) : target;
+      continue;
+    }
+    const hunkMatch = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/.exec(rawLine);
+    if (hunkMatch && currentFile) {
+      flush();
+      currentHunk = {
+        filePath: currentFile,
+        newStartLine: Math.max(1, Number(hunkMatch[1])),
+        removedLines: [],
+        addedLines: [],
+      };
+      continue;
+    }
+    if (!currentHunk) continue;
+    if (rawLine.startsWith('-') && !rawLine.startsWith('---')) {
+      currentHunk.removedLines.push(rawLine.slice(1));
+    } else if (rawLine.startsWith('+') && !rawLine.startsWith('+++')) {
+      currentHunk.addedLines.push(rawLine.slice(1));
+    }
+  }
+  flush();
+  return hunks;
+}
+
+const ASSERTION_RE = /\b(?:expect|assert|assert_eq|assert_ne|static_assert|check-equal\?)\s*(?:!\s*)?\(|\(check-equal\?/;
+const FLOOR_OBLIGATION_RE =
+  /(?:require-countermodels\?:\s*#t|require-use-time-witness\?:\s*#t|require-guard-necessity-countermodel\?:\s*#t|require-admission-five-tuple\?:\s*#t|allow-global-purge\?:\s*#f|requireCountermodels:\s*true|requireUseTimeWitness:\s*true|allowGlobalPurge:\s*false|minCoverage:\s*1(?:\.0)?\b|--min-coverage=1\.0\b)/;
+const FORMAL_GUARD_OR_COUNTERMODEL_RE = /\(guard\s+[A-Za-z0-9_-]+|\/\/\s*@countermodel\b/;
+
+/**
+ * E3 Anti-Evasion: Detects net uncompensated deletion of assertions, Band-5 governance
+ * floors, or formal Quint guards/countermodels inside a unified diff.
+ */
+export function auditDiffObligationDeletions(diffText: string): MultiLangAuditReport[] {
+  const hunks = parseUnifiedDiffHunks(diffText);
+  const findingsByFile = new Map<string, AstAuditFinding[]>();
+
+  const pushFinding = (filePath: string, f: AstAuditFinding) => {
+    if (!findingsByFile.has(filePath)) findingsByFile.set(filePath, []);
+    findingsByFile.get(filePath)!.push(f);
+  };
+
+  for (const h of hunks) {
+    if (h.removedLines.length === 0) continue;
+    const removedAsserts = h.removedLines.filter(l => ASSERTION_RE.test(l)).length;
+    const addedAsserts = h.addedLines.filter(l => ASSERTION_RE.test(l)).length;
+    if (removedAsserts > addedAsserts) {
+      pushFinding(h.filePath, {
+        hallucinationClass: 'floor-weakening',
+        rule: 'diff-deleted-assertion',
+        line: h.newStartLine,
+        column: 1,
+        detail: `Diff deletes ${removedAsserts - addedAsserts} verification assertion(s) without replacement in hunk`,
+      });
+    }
+
+    const removedFloors = h.removedLines.filter(l => FLOOR_OBLIGATION_RE.test(l)).length;
+    const addedFloors = h.addedLines.filter(l => FLOOR_OBLIGATION_RE.test(l)).length;
+    if (removedFloors > addedFloors) {
+      pushFinding(h.filePath, {
+        hallucinationClass: 'floor-weakening',
+        rule: 'diff-deleted-governance-floor',
+        line: h.newStartLine,
+        column: 1,
+        detail: `Diff removes ${removedFloors - addedFloors} Band-5 governance floor requirement(s) without preserving them`,
+      });
+    }
+
+    const removedGuards = h.removedLines.filter(l => FORMAL_GUARD_OR_COUNTERMODEL_RE.test(l)).length;
+    const addedGuards = h.addedLines.filter(l => FORMAL_GUARD_OR_COUNTERMODEL_RE.test(l)).length;
+    if (removedGuards > addedGuards) {
+      pushFinding(h.filePath, {
+        hallucinationClass: 'floor-weakening',
+        rule: 'diff-deleted-formal-guard-or-countermodel',
+        line: h.newStartLine,
+        column: 1,
+        detail: `Diff deletes ${removedGuards - addedGuards} formal (guard ...) or @countermodel witness(es) without replacement`,
+      });
+    }
+  }
+
+  const reports: MultiLangAuditReport[] = [];
+  for (const [filePath, findings] of findingsByFile.entries()) {
+    const lang = detectAuditLanguage(filePath) ?? 'typescript';
+    reports.push(makeReport(filePath, lang, findings, true));
+  }
+  return reports;
+}
+
 export function auditUnifiedDiff(
   diffText: string,
   readFile: (repoRelPath: string) => string | null,
 ): MultiLangAuditReport[] {
   const addedByFile = parseUnifiedDiffAddedLines(diffText);
+  const deletionReports = auditDiffObligationDeletions(diffText);
+  const deletionsByFile = new Map(deletionReports.map(r => [r.fileName, r]));
   const reports: MultiLangAuditReport[] = [];
+  const seen = new Set<string>();
+
   for (const [filePath, addedLines] of addedByFile.entries()) {
-    if (addedLines.size === 0) continue;
-    if (!detectAuditLanguage(filePath)) continue;
-    const content = readFile(filePath);
-    if (content === null) continue;
-    const report = auditSourceByPath(content, filePath, addedLines);
-    if (report) reports.push(report);
+    const delRep = deletionsByFile.get(filePath);
+    const lang = detectAuditLanguage(filePath);
+    if (!lang && !delRep) continue;
+    const content = addedLines.size > 0 && lang ? readFile(filePath) : null;
+    const addedRep = content !== null ? auditSourceByPath(content, filePath, addedLines) : null;
+    const mergedFindings: AstAuditFinding[] = [
+      ...(addedRep?.findings ?? []),
+      ...(delRep?.findings ?? []),
+    ];
+    if (addedRep || delRep) {
+      reports.push(makeReport(filePath, addedRep?.language ?? delRep!.language, mergedFindings, true));
+      seen.add(filePath);
+    }
+  }
+  for (const [filePath, delRep] of deletionsByFile.entries()) {
+    if (!seen.has(filePath)) reports.push(delRep);
   }
   return reports;
 }

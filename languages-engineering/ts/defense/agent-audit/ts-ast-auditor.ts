@@ -299,8 +299,20 @@ export function auditTypeScriptSource(source: string, fileName = 'submission.ts'
               `Catch block only rethrows '${catchVar}' without adding context or cleanup`,
             );
           } else {
+            let hasThrow = false;
+            let hasReturn = false;
+            let hasLogCall = false;
             for (let k = braceIdx + 1; k < closeBrace; k++) {
+              if (toks[k]!.kind === 'ident' && toks[k]!.value === 'throw') hasThrow = true;
+              if (
+                toks[k]!.kind === 'ident' &&
+                (toks[k]!.value === 'console' || toks[k]!.value === 'logger') &&
+                toks[k + 1]?.value === '.'
+              ) {
+                hasLogCall = true;
+              }
               if (toks[k]!.kind === 'ident' && toks[k]!.value === 'return') {
+                hasReturn = true;
                 let exprEnd = k + 1;
                 let depth = 0;
                 while (exprEnd < closeBrace) {
@@ -312,9 +324,19 @@ export function auditTypeScriptSource(source: string, fileName = 'submission.ts'
                 }
                 const reason = classifyFallbackReturn(toks, k + 1, exprEnd - 1);
                 if (reason) {
-                  record(t, 'silent-fallback', `catch-${reason}`, `Catch block masks error (${reason})`);
+                  const ruleName = hasLogCall ? 'catch-log-and-swallow' : `catch-${reason}`;
+                  record(t, 'silent-fallback', ruleName, `Catch block masks error (${reason}${hasLogCall ? ' after logging' : ''})`);
                 }
               }
+            }
+            // E1 Anti-evasion: catch block logs error and silently falls through with no throw/return
+            if (hasLogCall && !hasThrow && !hasReturn) {
+              record(
+                t,
+                'silent-fallback',
+                'catch-log-and-swallow',
+                'Catch block logs exception but swallows control flow without throwing or returning typed error',
+              );
             }
           }
         }
@@ -326,17 +348,37 @@ export function auditTypeScriptSource(source: string, fileName = 'submission.ts'
       const closeParen = findMatchingDelim(toks, i + 1, '(', ')');
       if (closeParen > i + 1) {
         const condSlice = toks.slice(i + 2, closeParen);
+        const condText = condSlice.map(x => x.value).join('');
+        const bodyStart = closeParen + 1;
+        let bodyEnd = bodyStart;
+        if (toks[bodyStart]?.value === '{') {
+          bodyEnd = findMatchingDelim(toks, bodyStart, '{', '}');
+        } else {
+          while (bodyEnd < toks.length && toks[bodyEnd]!.value !== ';') bodyEnd++;
+        }
+
+        // E2 Anti-evasion: conditional assertion inside `if (res.ok)` / `if (!err)` with no `else` branch
+        const hasElse = toks[bodyEnd + 1]?.kind === 'ident' && toks[bodyEnd + 1]?.value === 'else';
+        const looksLikeStatusGuard =
+          /^(?:!?(?:err|error)|[A-Za-z_]\w*\.(?:ok|passed|verified))$/.test(condText);
+        if (!hasElse && looksLikeStatusGuard && bodyEnd > bodyStart) {
+          const containsExpect = toks
+            .slice(bodyStart, bodyEnd + 1)
+            .some((tk, idx, arr) => tk.kind === 'ident' && tk.value === 'expect' && arr[idx + 1]?.value === '(');
+          if (containsExpect) {
+            record(
+              t,
+              'floor-weakening',
+              'conditional-vacuous-assertion',
+              `Conditional expect() inside 'if (${condText})' without else passes vacuously when condition is false`,
+            );
+          }
+        }
+
         const looksLikeErrorCheck = condSlice.some(
           x => x.kind === 'punct' && (x.value === '!==' || x.value === '!=' || x.value === '!'),
         );
         if (looksLikeErrorCheck) {
-          const bodyStart = closeParen + 1;
-          let bodyEnd = bodyStart;
-          if (toks[bodyStart]?.value === '{') {
-            bodyEnd = findMatchingDelim(toks, bodyStart, '{', '}');
-          } else {
-            while (bodyEnd < toks.length && toks[bodyEnd]!.value !== ';') bodyEnd++;
-          }
           for (let k = bodyStart; k <= bodyEnd && k < toks.length; k++) {
             if (toks[k]!.kind === 'ident' && toks[k]!.value === 'return' && toks[k + 1]?.value === '{') {
               const objEnd = findMatchingDelim(toks, k + 1, '{', '}');
@@ -352,6 +394,16 @@ export function auditTypeScriptSource(source: string, fileName = 'submission.ts'
           }
         }
       }
+    }
+
+    // E2 Anti-evasion: `as any` type-boundary escape
+    if (
+      t.kind === 'ident' &&
+      t.value === 'as' &&
+      toks[i + 1]?.kind === 'ident' &&
+      toks[i + 1]?.value === 'any'
+    ) {
+      record(t, 'floor-weakening', 'ts-as-any-boundary-bypass', "'as any' bypasses static type boundary enforcement");
     }
 
     // 3. Floor weakening in object properties (G2 floor-weakening)
@@ -593,6 +645,18 @@ export function auditTypeScriptSource(source: string, fileName = 'submission.ts'
           }
         }
       }
+    }
+  }
+
+  // E2 Anti-evasion: leading `@ts-ignore` / `@ts-nocheck` compiler directives (matching TS compiler semantics, not prose mentions)
+  for (const c of comments) {
+    if (/^(?:\/\/\/?|\/\*)\s*@ts-(?:ignore|nocheck)\b/.test(c.value)) {
+      record(
+        c,
+        'floor-weakening',
+        'ts-ignore-boundary-bypass',
+        'TypeScript compiler directive (@ts-ignore/@ts-nocheck) suppresses type-boundary verification',
+      );
     }
   }
 

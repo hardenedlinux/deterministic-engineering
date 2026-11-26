@@ -5,10 +5,15 @@ import {describe, expect, test} from 'bun:test';
 import {readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {
+  auditDiffObligationDeletions,
   auditSourceByPath,
   auditUnifiedDiff,
   parseUnifiedDiffAddedLines,
 } from './multi-lang-auditor.ts';
+import {
+  formatAgentRepairPacket,
+  formatSarifReport,
+} from './remediation-catalog.ts';
 import type {HallucinationClass} from './ts-ast-auditor.ts';
 
 const repoRoot = resolve(import.meta.dir, '../../../..');
@@ -242,5 +247,128 @@ describe('E3.3 Multi-Language Agent Defense Audit & Diff Gate (30.05 AG17-AG24)'
     const badJson = JSON.parse(badProc.stdout.toString());
     expect(badJson.passed).toBe(false);
     expect(badJson.totalFindings).toBeGreaterThanOrEqual(4);
+  });
+
+  test('G2-v2 Anti-Evasion & Diff-Delta Benchmark (30.05 AG25-AG32): log-and-swallow, type/assertion bypass, diff deletion, SARIF 2.1.0 & repair packet', () => {
+    // AG25: TS E1 log-and-swallow (console.error before returning [])
+    const ag25 = auditSourceByPath(
+      `export function loadItems(): string[] { try { return []; } catch (e) { console.error(e); return []; } }`,
+      'evasion/log-swallow.ts',
+    )!;
+    expect(ag25.passed).toBe(false);
+    expect(ag25.findings.some(f => f.rule === 'catch-log-and-swallow')).toBe(true);
+
+    // AG26: TS E2 @ts-ignore + as any + conditional expect inside if (res.ok)
+    const ag26 = auditSourceByPath(
+      `
+// @ts-ignore bypass strict boundary
+export function castBypass(x: unknown): string { return x as any; }
+export function check(res: {ok: boolean; v: number}) {
+  if (res.ok) { expect(res.v).toBe(1); }
+}
+`,
+      'evasion/type-and-assert-bypass.ts',
+    )!;
+    expect(ag26.passed).toBe(false);
+    expect(ag26.findings.some(f => f.rule === 'ts-ignore-boundary-bypass')).toBe(true);
+    expect(ag26.findings.some(f => f.rule === 'ts-as-any-boundary-bypass')).toBe(true);
+    expect(ag26.findings.some(f => f.rule === 'conditional-vacuous-assertion')).toBe(true);
+
+    // AG27: Rust E1 log-and-swallow + E2 #[allow(unused_must_use)]
+    const ag27 = auditSourceByPath(
+      `
+#[allow(unused_must_use)]
+fn run_op(res: Result<u64, &'static str>) -> Result<u64, &'static str> {
+  match res {
+    Ok(v) => Ok(v),
+    Err(e) => { eprintln!("{}", e); Ok(0) }
+  }
+}
+`,
+      'evasion/rust_evasion.rs',
+    )!;
+    expect(ag27.passed).toBe(false);
+    expect(ag27.findings.some(f => f.rule === 'rust-allow-unused-must-use')).toBe(true);
+    expect(ag27.findings.some(f => f.rule === 'rust-err-log-and-swallow')).toBe(true);
+
+    // AG28: C++ E1 catch log-and-swallow without rethrow
+    const ag28 = auditSourceByPath(
+      `
+#include <iostream>
+void sync_state() {
+  try { throw 1; } catch (...) { std::cerr << "oops"; }
+}
+`,
+      'evasion/cpp_log_swallow.cpp',
+    )!;
+    expect(ag28.passed).toBe(false);
+    expect(ag28.findings.some(f => f.rule === 'cpp-catch-log-and-swallow')).toBe(true);
+
+    // AG29: E3 Diff-Delta silent deletion of assertions in a PR diff
+    const deleteAssertDiff = [
+      'diff --git a/test/sample.test.ts b/test/sample.test.ts',
+      '--- a/test/sample.test.ts',
+      '+++ b/test/sample.test.ts',
+      '@@ -10,2 +10,0 @@',
+      '-expect(verdict.kind).toBe("Refuted");',
+      '-expect(verdict.reason).toBe("revoked");',
+    ].join('\n');
+    const ag29 = auditDiffObligationDeletions(deleteAssertDiff);
+    expect(ag29.length).toBe(1);
+    expect(ag29[0]!.findings.some(f => f.rule === 'diff-deleted-assertion')).toBe(true);
+
+    // AG30: E3 Diff-Delta silent deletion of Band-5 floor and formal guard/countermodel
+    const deleteFloorAndGuardDiff = [
+      'diff --git a/packages/quint-models/example/objects.ss b/packages/quint-models/example/objects.ss',
+      '--- a/packages/quint-models/example/objects.ss',
+      '+++ b/packages/quint-models/example/objects.ss',
+      '@@ -40,2 +40,0 @@',
+      '-  allow-global-purge?: #f',
+      '-  (guard check-authority-at-use (not (. h revoked)))',
+    ].join('\n');
+    const ag30 = auditDiffObligationDeletions(deleteFloorAndGuardDiff);
+    expect(ag30.length).toBe(1);
+    expect(ag30[0]!.findings.some(f => f.rule === 'diff-deleted-governance-floor')).toBe(true);
+    expect(ag30[0]!.findings.some(f => f.rule === 'diff-deleted-formal-guard-or-countermodel')).toBe(true);
+
+    // AG31: Clean positive control — balanced assertion refactor (1 removed, 1 added => 0 deletion findings)
+    const balancedRefactorDiff = [
+      'diff --git a/test/sample.test.ts b/test/sample.test.ts',
+      '--- a/test/sample.test.ts',
+      '+++ b/test/sample.test.ts',
+      '@@ -10,1 +10,1 @@',
+      '-expect(verdict.kind).toBe("Refuted");',
+      '+expect(verdict).toEqual({kind: "Refuted", reason: "revoked"});',
+    ].join('\n');
+    expect(auditDiffObligationDeletions(balancedRefactorDiff)).toEqual([]);
+
+    // AG32: SARIF 2.1.0 + Agent Repair Packet CLI outputs bind C2 replacements & anti-evasion warnings
+    const sarif = formatSarifReport([ag25, ag26, ...ag29]);
+    expect(sarif.version).toBe('2.1.0');
+    expect(sarif.runs[0]!.results.length).toBeGreaterThanOrEqual(5);
+    expect(sarif.runs[0]!.results[0]!.properties.antiEvasionWarning.length).toBeGreaterThan(20);
+
+    const repair = formatAgentRepairPacket([ag25, ...ag30]);
+    expect(repair.decision).toBe('REFUSE');
+    expect(repair.boundedRetryPolicy.onBudgetExhausted).toBe('EscalateToHuman');
+    expect(repair.findings.some(f => f.remediation.antiPatternId === 'g2.silent-obligation-deletion')).toBe(true);
+
+    const sarifProc = Bun.spawnSync(
+      ['bun', cliPath, '--sarif', '--files', 'languages-engineering/ts/defense/boundary-contrast/bad-defensive.ts'],
+      {cwd: repoRoot, stdout: 'pipe', stderr: 'pipe'},
+    );
+    expect(sarifProc.exitCode).toBe(1);
+    const parsedSarif = JSON.parse(sarifProc.stdout.toString());
+    expect(parsedSarif.version).toBe('2.1.0');
+    expect(parsedSarif.runs[0].results.length).toBeGreaterThan(0);
+
+    const feedbackProc = Bun.spawnSync(
+      ['bun', cliPath, '--agent-feedback', '--files', 'languages-engineering/ts/defense/boundary-contrast/deterministic-boundary.ts'],
+      {cwd: repoRoot, stdout: 'pipe', stderr: 'pipe'},
+    );
+    expect(feedbackProc.exitCode).toBe(0);
+    const parsedFeedback = JSON.parse(feedbackProc.stdout.toString());
+    expect(parsedFeedback.decision).toBe('ADMIT');
+    expect(parsedFeedback.totalFindings).toBe(0);
   });
 });

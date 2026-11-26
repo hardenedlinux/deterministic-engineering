@@ -390,6 +390,105 @@ class BadOutOfOrderDeliverySUT extends PartialOrderDeliverySUT {
   }
 }
 
+// ── Concrete Stateful SUT 6: AgentPatchGovernance (G2 / G5 / 10.155) ──
+class AgentPatchGovernanceSUT {
+  patchProposed = false;
+  agentClaimsFixed = false;
+  independentAuditPassed = false;
+  obligationDeleted = false;
+  replacementAdmitted = false;
+  floorWeakened = false;
+  repairAttempts = 0;
+  decision = 0;
+
+  apply(action: string): void {
+    switch (action) {
+      case 'proposePatch':
+        if (!this.patchProposed) this.patchProposed = true;
+        break;
+      case 'agentClaimFixed':
+        if (this.patchProposed && !this.agentClaimsFixed) this.agentClaimsFixed = true;
+        break;
+      case 'passIndependentAudit':
+        if (this.patchProposed && this.decision === 0 && !this.independentAuditPassed && !this.floorWeakened) {
+          this.independentAuditPassed = true;
+        }
+        break;
+      case 'deleteObligationInDiff':
+        if (this.patchProposed && this.decision === 0 && !this.obligationDeleted) {
+          this.obligationDeleted = true;
+        }
+        break;
+      case 'admitReplacementWitness':
+        if (this.obligationDeleted && this.decision === 0 && !this.replacementAdmitted) {
+          this.replacementAdmitted = true;
+        }
+        break;
+      case 'attemptFloorWeakening':
+        if (this.patchProposed && this.decision === 0 && !this.floorWeakened) {
+          this.floorWeakened = true;
+        }
+        break;
+      case 'refuseAndRetry':
+        if (
+          this.patchProposed &&
+          this.decision === 0 &&
+          this.repairAttempts < 2 &&
+          (!this.independentAuditPassed ||
+            this.floorWeakened ||
+            (this.obligationDeleted && !this.replacementAdmitted))
+        ) {
+          this.repairAttempts += 1;
+          this.floorWeakened = false;
+        }
+        break;
+      case 'escalateBudgetExhausted':
+        if (this.patchProposed && this.decision === 0 && this.repairAttempts === 2) {
+          this.decision = 3;
+        }
+        break;
+      case 'admitPatch':
+        if (
+          this.patchProposed &&
+          this.decision === 0 &&
+          this.independentAuditPassed &&
+          (!this.obligationDeleted || this.replacementAdmitted) &&
+          !this.floorWeakened
+        ) {
+          this.decision = 1;
+        }
+        break;
+      default:
+        throw new Error(`Unknown AgentPatchGovernanceSUT action: ${action}`);
+    }
+  }
+
+  snapshot() {
+    return {
+      patchProposed: this.patchProposed,
+      agentClaimsFixed: this.agentClaimsFixed,
+      independentAuditPassed: this.independentAuditPassed,
+      obligationDeleted: this.obligationDeleted,
+      replacementAdmitted: this.replacementAdmitted,
+      floorWeakened: this.floorWeakened,
+      repairAttempts: this.repairAttempts,
+      decision: this.decision,
+    };
+  }
+}
+
+class BadSelfCertifyingAgentSUT extends AgentPatchGovernanceSUT {
+  override apply(action: string): void {
+    if (action === 'agentClaimFixed' && this.patchProposed && !this.agentClaimsFixed) {
+      // Anti-pattern: trusts LLM prose claim directly as Admitted without independent mechanical audit!
+      this.agentClaimsFixed = true;
+      this.decision = 1;
+      return;
+    }
+    super.apply(action);
+  }
+}
+
 const repoRoot = resolve(import.meta.dir, '../../../..');
 
 function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(): Record<string, unknown>}>(
@@ -426,7 +525,7 @@ function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(
   }
 }
 
-describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (5 Defense Models)', () => {
+describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (6 Defense Models)', () => {
   test('EpistemicStateLattice ITF actions drive EpistemicLatticeSUT with exact step-by-step state isomorphism', () => {
     const stats = replayModelAgainstSut(
       'packages/quint-models/engineering/defense/epistemic-state-lattice/EpistemicStateLattice.qnt',
@@ -538,6 +637,37 @@ describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (5 Defense Models)
       replayModelAgainstSut(
         'packages/quint-models/engineering/defense/partial-order-delivery/PartialOrderDelivery.qnt',
         () => new BadOutOfOrderDeliverySUT(),
+        projectH,
+      );
+    } catch {
+      diverged = true;
+    }
+    expect(diverged).toBe(true);
+  });
+
+  test('AgentPatchGovernance ITF actions drive AgentPatchGovernanceSUT with exact state isomorphism and reject BadSelfCertifyingAgentSUT', () => {
+    const projectH = (h: Record<string, unknown>) => ({
+      patchProposed: Boolean(h.patchProposed),
+      agentClaimsFixed: Boolean(h.agentClaimsFixed),
+      independentAuditPassed: Boolean(h.independentAuditPassed),
+      obligationDeleted: Boolean(h.obligationDeleted),
+      replacementAdmitted: Boolean(h.replacementAdmitted),
+      floorWeakened: Boolean(h.floorWeakened),
+      repairAttempts: asInt(h.repairAttempts),
+      decision: asInt(h.decision),
+    });
+    const stats = replayModelAgainstSut(
+      'packages/quint-models/engineering/defense/agent-patch-governance/AgentPatchGovernance.qnt',
+      () => new AgentPatchGovernanceSUT(),
+      projectH,
+    );
+    expect(stats.transitions).toBeGreaterThan(50);
+
+    let diverged = false;
+    try {
+      replayModelAgainstSut(
+        'packages/quint-models/engineering/defense/agent-patch-governance/AgentPatchGovernance.qnt',
+        () => new BadSelfCertifyingAgentSUT(),
         projectH,
       );
     } catch {

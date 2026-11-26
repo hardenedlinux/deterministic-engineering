@@ -24,6 +24,11 @@ import {
   auditUnifiedDiff,
   type MultiLangAuditReport,
 } from './multi-lang-auditor.ts';
+import {
+  formatAgentRepairPacket,
+  formatSarifReport,
+  getRemediationDirective,
+} from './remediation-catalog.ts';
 
 interface CliOptions {
   mode: 'files' | 'diff' | 'diff-file' | 'probe-quint';
@@ -34,15 +39,19 @@ interface CliOptions {
   quintAction?: string;
   quintGuard?: string;
   quintMaxSteps?: string;
-  json: boolean;
+  outputFormat: 'text' | 'json' | 'sarif' | 'agent-feedback';
 }
 
 function parseArgs(argv: string[]): CliOptions {
-  const opts: CliOptions = {mode: 'files', files: [], staged: false, json: false};
+  const opts: CliOptions = {mode: 'files', files: [], staged: false, outputFormat: 'text'};
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]!;
     if (a === '--json') {
-      opts.json = true;
+      opts.outputFormat = 'json';
+    } else if (a === '--sarif') {
+      opts.outputFormat = 'sarif';
+    } else if (a === '--agent-feedback') {
+      opts.outputFormat = 'agent-feedback';
     } else if (a === '--diff') {
       opts.mode = 'diff';
     } else if (a === '--staged') {
@@ -73,13 +82,15 @@ function formatTextReports(reports: MultiLangAuditReport[]): string {
   let totalFindings = 0;
   for (const r of reports) {
     totalFindings += r.findings.length;
-    const scope = r.scopedToAddedLines ? 'diff-added' : 'full-file';
+    const scope = r.scopedToAddedLines ? 'diff-scoped' : 'full-file';
     if (r.passed) {
       lines.push(`PASS [${r.language}/${scope}] ${r.fileName} (0 findings)`);
     } else {
       lines.push(`REFUSE [${r.language}/${scope}] ${r.fileName} (${r.findings.length} findings)`);
       for (const f of r.findings) {
+        const rem = getRemediationDirective(f);
         lines.push(`  ${r.fileName}:${f.line}:${f.column} [${f.hallucinationClass}/${f.rule}] ${f.detail}`);
+        lines.push(`    -> C2 (${rem.antiPatternId}): ${rem.c2Replacement}`);
       }
     }
   }
@@ -106,7 +117,7 @@ function main(): void {
       `--guard-expr=${opts.quintGuard}`,
     ];
     if (opts.quintMaxSteps) args.push(`--max-steps=${opts.quintMaxSteps}`);
-    if (opts.json) args.push('--json');
+    if (opts.outputFormat !== 'text') args.push('--json');
     const proc = Bun.spawnSync(args, {cwd: process.cwd(), stdout: 'pipe', stderr: 'pipe'});
     const out = proc.stdout.toString();
     const err = proc.stderr.toString();
@@ -159,7 +170,11 @@ function main(): void {
   }
 
   const totalFindings = reports.reduce((acc, r) => acc + r.findings.length, 0);
-  if (opts.json) {
+  if (opts.outputFormat === 'sarif') {
+    console.log(JSON.stringify(formatSarifReport(reports), null, 2));
+  } else if (opts.outputFormat === 'agent-feedback') {
+    console.log(JSON.stringify(formatAgentRepairPacket(reports), null, 2));
+  } else if (opts.outputFormat === 'json') {
     console.log(JSON.stringify({passed: totalFindings === 0, totalFindings, reports}, null, 2));
   } else {
     console.log(formatTextReports(reports));

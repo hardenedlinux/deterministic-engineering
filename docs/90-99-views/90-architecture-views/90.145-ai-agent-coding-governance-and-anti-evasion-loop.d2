@@ -1,0 +1,65 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+direction: right
+
+title: {
+  label: "90.145 AI Agent Coding Governance & Anti-Evasion Closed Loop (10.155)"
+  near: top-center
+  shape: text
+  style.font-size: 20
+  style.bold: true
+}
+
+agent: "AI Coding Agent\n(Patch + Prose Claim)" {
+  shape: person
+  style.fill: "#eef2ff"
+  style.stroke: "#4f46e5"
+}
+
+diff_gate: "Layer 1 & 2: Multi-Lang AST + Diff-Delta Gate\n(agent-defense-audit.ts / TS, C, C++, Rust, Scheme)" {
+  style.fill: "#fff7ed"
+  style.stroke: "#ea580c"
+
+  ast: "Added-Line AST Audit\nP1/P4/G2 + E1 Log-and-Swallow\n+ E2 @ts-ignore / as any / if(res.ok) expect()"
+  delta: "Removed-vs-Added Diff-Delta\nE3 Uncompensated Deletion of\nAssertions, Band-5 Floors, (guard ...)"
+}
+
+formal_gate: "Layer 3: Formal & MBT Oracles" {
+  style.fill: "#ecfdf5"
+  style.stroke: "#059669"
+
+  probe: "Apalache guard-probe\n(essential vs redundant)"
+  mbt: "6-Model Action-Driven\nMBT SUT Refinement"
+  ascent: "ASCENT + Yuanxu by-tag\n43-Model Band-5 Floors"
+}
+
+remediation: "Layer 4: Remediation & Diagnostics\n(remediation-catalog.ts)" {
+  style.fill: "#fef2f2"
+  style.stroke: "#dc2626"
+
+  packet: "--agent-feedback\nC1 ID + C2 Replacement\n+ G1 5-Tuple + Anti-Evasion"
+  sarif: "--sarif (SARIF 2.1.0)\nGitHub Code Scanning / IDE"
+}
+
+gov_fsm: "Layer 5: AgentPatchGovernance (Quint Verified)" {
+  style.fill: "#f0f9ff"
+  style.stroke: "#0284c7"
+
+  admit: "ADMIT\n(decision = 1)\nIndependent Audit +\nObligations Preserved" {
+    style.fill: "#dcfce7"
+    style.stroke: "#16a34a"
+  }
+  escalate: "ESCALATE TO HUMAN\n(decision = 3)\nRetry Budget Exhausted\n(repairAttempts == 2)" {
+    style.fill: "#fee2e2"
+    style.stroke: "#b91c1c"
+  }
+}
+
+agent -> diff_gate: "1. Propose unified diff\n(prose never suffices)"
+diff_gate -> formal_gate: "2. 0 AST & Diff-Delta findings"
+diff_gate -> remediation: "REFUSE (E1/E2/E3/G2)"
+formal_gate -> gov_fsm.admit: "3. All mechanical & formal\noracles PASS"
+formal_gate -> remediation: "REFUSE (redundant guard /\nMBT divergence / floor breach)"
+remediation.packet -> agent: "4. Bounded retry (< max)\nwith C2 contract"
+remediation -> gov_fsm.escalate: "5. Budget exhausted ->\nNever weaken floor"
