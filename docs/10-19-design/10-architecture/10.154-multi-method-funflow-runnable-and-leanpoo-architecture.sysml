@@ -211,11 +211,12 @@ package MultiMethodFunFlowArchitecture {
 
     part def LeanPooCoreLibrary {
         attribute rootNamespace : String = "DeterministicEngineering.Core";
-        part conservation { attribute role : String = "single-ownership-conservation-idempotent-release"; }
-        part budget       { attribute role : String = "additive-monotonic-capacity-memory-bounds"; }
-        part containment  { attribute role : String = "arbitrary-depth-tree-closure-fate-sharing"; }
-        part order        { attribute role : String = "fencing-token-version-governance-floor-lattice"; }
-        part transport    { attribute role : String = "ObjectContract.refine-Patch.frame-Proof.reuse"; }
+        part conservation   { attribute role : String = "single-ownership-conservation-idempotent-release"; }
+        part budget         { attribute role : String = "additive-monotonic-capacity-memory-bounds"; }
+        part containment    { attribute role : String = "arbitrary-depth-tree-closure-fate-sharing"; }
+        part order          { attribute role : String = "fencing-token-version-governance-floor-lattice"; }
+        part transport      { attribute role : String = "ObjectContract.refine-Patch.frame-Proof.reuse"; }
+        part metaGovernance { attribute role : String = "mechanized-ascent-MR-ER-IR-meta-soundness"; }
     }
 
     // ── 8. Formal Architecture & Anti-Leak Requirements ──
@@ -542,6 +543,22 @@ package MultiMethodFunFlowArchitecture {
                 port premiseIn : PremiseConsumerPort;
             }
         }
+
+        // Fifth Engineering Subject (Self-Verifying Meta-Governance Soundness: proves ASCENT MR/ER/IR soundness in Lean 4)
+        part metaGovernanceSoundness {
+            attribute subjectKey : String = "meta-governance-soundness";
+            attribute identity : String = "engineering.governance.meta-governance-soundness";
+            attribute tags : String = "engineering,governance,meta-verification,defense.mutability.immutable-proof";
+            attribute factors : String = "ascent-meta-soundness";
+
+            part mgLeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.MetaGovernanceSoundness";
+                attribute refinesCore : String = "DeterministicEngineering.Core.MetaGovernance,DeterministicEngineering.Core.Transport";
+                attribute transportContract : String = "ObjectContract.refine+Patch.frame+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Core.MetaGovernance.ir_partition_exclusive,DeterministicEngineering.Core.MetaGovernance.ir03_transitive_path_invalidation,DeterministicEngineering.Core.MetaGovernance.reusable_implies_all_ancestors_reusable,DeterministicEngineering.Core.MetaGovernance.reusable_sound,DeterministicEngineering.Core.MetaGovernance.er_admitted_sound,DeterministicEngineering.Core.MetaGovernance.mr_admitted_sound,DeterministicEngineering.Engineering.MetaGovernanceSoundness.fleetSignedCache_reusable_is_authentic,DeterministicEngineering.Engineering.MetaGovernanceSoundness.fullMetaGovContract_preserves_rejection,DeterministicEngineering.Engineering.MetaGovernanceSoundness.reportFormatTunedCertified,DeterministicEngineering.Engineering.MetaGovernanceSoundness.disableSignedCache_invalidates_reuse";
+                attribute inputFiles : String = "library/verification-flow/ascent-rules.ss,packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/MetaGovernance.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Engineering/MetaGovernanceSoundness.lean";
+            }
+        }
     }
 
     // ── 12. Architectural, Cross-Method, and Requirement Dependencies ──
@@ -571,6 +588,11 @@ package MultiMethodFunFlowArchitecture {
     dependency 'cb-lean-source' from system::cBoundaryConservation::cbLeanPooTarget to system::leanModels;
     dependency 'cb-lean-refines-conservation' from system::cBoundaryConservation::cbLeanPooTarget to system::leanModels::core::conservation;
     dependency 'cb-lean-refines-transport' from system::cBoundaryConservation::cbLeanPooTarget to system::leanModels::core::transport;
+
+    dependency 'mg-lean-source' from system::metaGovernanceSoundness::mgLeanPooTarget to system::leanModels;
+    dependency 'mg-lean-refines-meta' from system::metaGovernanceSoundness::mgLeanPooTarget to system::leanModels::core::metaGovernance;
+    dependency 'mg-lean-refines-transport' from system::metaGovernanceSoundness::mgLeanPooTarget to system::leanModels::core::transport;
+    dependency 'mg-verifies-governance' from system::metaGovernanceSoundness::mgLeanPooTarget to system::governance;
 
     // Cross-method edges enforced by MR03 & MR04 (zero model duplication)
     dependency 'pt-mbt-itf-edge' from system::processTreeReclamation::rustOracleTarget::traceIn to system::processTreeReclamation::quintTarget::traceOut;

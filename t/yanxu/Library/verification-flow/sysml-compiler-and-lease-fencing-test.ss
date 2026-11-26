@@ -42,7 +42,7 @@
       (def parsed (call-with-input-string json-text (cut read-json <> object-as-hash: #t)))
       (def projected (sysml-api-json->governance-facts parsed))
       (def compiled (sysml-projected->compiled-subjects projected))
-      (check-equal? (length compiled) 4)
+      (check-equal? (length compiled) 5)
       (for-each
         (lambda (spec-expect)
           (def skey (car spec-expect))
@@ -64,7 +64,8 @@
         '((process-tree-reclamation 4)
           (backpressure-memory 4)
           (lease-fencing-token 2)
-          (c-boundary-conservation 2))))
+          (c-boundary-conservation 2)
+          (meta-governance-soundness 1))))
 
     (test-case "live 2-engine Fun-Flow run on SysML-compiled lease-fencing-token passes Apalache+MBT, LeanPoo Core.Order+Transport, Replay, ER01-ER04, and Cold->Warm cache reuse"
       (def tmp-parent (path-expand ".data/test-runs" repo-root))

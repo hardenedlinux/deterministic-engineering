@@ -8,7 +8,9 @@ import DeterministicEngineering.Core.Budget
 import DeterministicEngineering.Core.Containment
 import DeterministicEngineering.Core.Order
 import DeterministicEngineering.Core.Transport
+import DeterministicEngineering.Core.MetaGovernance
 import DeterministicEngineering.Engineering.ProcessTree
 import DeterministicEngineering.Engineering.Backpressure
 import DeterministicEngineering.Engineering.LeaseFencing
 import DeterministicEngineering.Engineering.BoundaryConservation
+import DeterministicEngineering.Engineering.MetaGovernanceSoundness

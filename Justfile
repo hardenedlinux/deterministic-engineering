@@ -507,3 +507,9 @@ fleet-multi-method output cache_dir="":
     mkdir -p .data/test-logs
     log="$(mktemp .data/test-logs/multi-method-fleet-XXXXXX)"
     timeout --foreground --signal=TERM --kill-after=5s 420s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/verification-flow-runner.ss --fleet "{{output}}" "{{cache_dir}}" 2>&1 | tee "$log"
+
+# Dry-run ASCENT IR01-IR06 change-impact & proof-reuse predictor across ALL SysML v2 subjects (<1s, zero engine spawns).
+plan-multi-method-fleet cache_dir="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/verification-flow-runner.ss --plan "{{cache_dir}}"

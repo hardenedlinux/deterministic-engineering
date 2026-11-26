@@ -59,6 +59,7 @@
   make-real-verification-runtime-adapter
   run-multi-method-verification-pipeline
   run-multi-method-fleet
+  predict-fleet-reuse-plan
   main)
 
 ;; ── Zero-Glue SysML v2 -> Fun-Flow DAG Compilation (Single Source of Truth) ──
@@ -1107,9 +1108,76 @@
       total-executed: total-executed
       total-reused: total-reused))
 
+;; Zero-execution dry-run Change-Impact & Proof-Reuse Predictor across ALL SysML v2 subjects:
+;; Evaluates ASCENT IR01-IR06 against live SHA-256 input closures, live toolchains, and the
+;; Ed25519-signed cache WITHOUT spawning any formal engine (<1s).
+(def (predict-fleet-reuse-plan
+       repo-root
+       cache-dir: (cache-dir #f)
+       policy-flags: (policy-flags '()))
+  (def projected (project-sysml-model repo-root))
+  (def sysml-gov-sources (.get projected governance-sources))
+  (def resolved-cache-dir (and cache-dir (path-expand cache-dir repo-root)))
+  (def cache-file
+    (and resolved-cache-dir (path-expand "verification-cache.v1.json" resolved-cache-dir)))
+  (def pub-key
+    (and resolved-cache-dir
+         (let ((p (path-expand "attestation-ed25519.pub.pem" resolved-cache-dir)))
+           (and (file-exists? p) p))))
+  (def effective-flags
+    (if (and cache-file (not (member "require-signed-cache" policy-flags)))
+      (cons "require-signed-cache" policy-flags)
+      policy-flags))
+  (let-values (((cached-w-rows cached-i-rows cached-tc-rows attested-steps _by-step)
+                (load-verification-cache cache-file pub-key)))
+    (def total-pending 0)
+    (def total-reusable 0)
+    (def per-subject
+      (map (lambda (spec)
+             (def skey (string->symbol (.get spec subject-key)))
+             (def sid (string->symbol (.get spec identity)))
+             (def sub-gov (filter-governance-sources-for-subject sysml-gov-sources sid))
+             (def mut (subject-spec->mutability spec))
+             (def in-files (subject-spec->input-files spec))
+             (def cur-digests (compute-step-input-digests repo-root in-files))
+             (def cur-tc (compute-step-toolchain-fingerprints repo-root sub-gov))
+             (def plan
+               (reuse-result->plan
+                 (reason-incremental-reuse
+                   (build-incremental-reuse-sources
+                     sub-gov mut effective-flags
+                     cur-digests cached-w-rows cached-i-rows
+                     cur-tc cached-tc-rows attested-steps))))
+             (def p-steps (.get plan pending))
+             (def r-steps (.get plan reusable))
+             (set! total-pending (+ total-pending (length p-steps)))
+             (set! total-reusable (+ total-reusable (length r-steps)))
+             (.o bind-these: #f
+                 subject-key: skey
+                 identity: sid
+                 pending: p-steps
+                 reusable: r-steps
+                 invalidations: (.get plan invalidations)))
+           (.get projected subject-specs)))
+    (.o bind-these: #f
+        subjects: per-subject
+        total-pending: total-pending
+        total-reusable: total-reusable)))
+
 (def (main mode-or-output . rest)
   (def repo-root (path-normalize (path-expand "../.." (path-directory (this-source-file)))))
   (cond
+   ((equal? mode-or-output "--plan")
+    (let* ((cache-dir (and (pair? rest) (> (string-length (car rest)) 0) (car rest)))
+           (plan (predict-fleet-reuse-plan repo-root cache-dir: cache-dir)))
+      (for-each
+        (lambda (s)
+          (displayln "SUBJECT " (.get s subject-key)
+                     " pending=" (.get s pending)
+                     " reusable=" (.get s reusable)))
+        (.get plan subjects))
+      (displayln "MULTI-METHOD-PLAN-OK pending=" (.get plan total-pending)
+                 " reusable=" (.get plan total-reusable))))
    ((equal? mode-or-output "--fleet")
     (let* ((output-dir (car rest))
            (cache-dir (and (pair? (cdr rest)) (> (string-length (cadr rest)) 0) (cadr rest)))
