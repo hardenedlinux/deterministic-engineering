@@ -8,6 +8,12 @@
 (import :tao3k/yuanxu/module-system/selection/init-syntax)
 
 (yuanxu!
+  ;; Upstream Fun-Flow control plane selected on demand from agentic-ai-lab.
+  :load-modules (from: :tao3k/agentic-ai-lab/init ModulesSource)
+    mode: explicit
+    mount: LabModules
+    (funflow)
+
   ;; Core Gerbil/Yuanxu Scheme library (methods, contracts, profiles, organization).
   :load-modules "./library"
     mode: auto

@@ -1,0 +1,102 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+# Org authority: ../../10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.org
+# Companion SysML v2: ../../10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml
+# Design projection only; rendering is not verification, execution, or approval.
+vars: {d2-config: {data: {figure: |json
+{
+  "title": "Multi-method Fun-Flow Runnable, LeanPoo package family, and ASCENT MR01-MR06 governance",
+  "purpose": "architecture",
+  "kind": "library-architecture",
+  "language": "en",
+  "width": 1500,
+  "primary": "orchestration",
+  "questions": [
+    {
+      "ref": "orchestration",
+      "text": "How do physically isolated Quint, LeanPoo, and Rust/OS packages compose via Scheme Fun-Flow and ASCENT MR01-MR06 with zero duplicated modeling?",
+      "focusRefs": [
+        "authority",
+        "sysml"
+      ],
+      "subjectRefs": [
+        "funflow",
+        "ascentGate",
+        "quintModels",
+        "leanModels",
+        "rustSubjects",
+        "runtimeAdapter"
+      ]
+    }
+  ],
+  "references": {
+    "authority": "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.org",
+    "sysml": "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml",
+    "declaration": "docs/90-99-views/90-architecture-views/90.143-multi-method-funflow-and-leanpoo-architecture.d2",
+    "organization": "docs/10-19-design/10-architecture/10.150-repository-organization-and-package-taxonomy.org",
+    "quintLibrary": "docs/10-19-design/10-architecture/10.151-quint-models-library-and-packages.org",
+    "defensiveTaxonomy": "docs/10-19-design/10-architecture/10.153-defensive-engineering-taxonomy-and-modular-organization.org",
+    "config": "config.ss",
+    "evidenceRules": "library/evidence/func.ss"
+  },
+  "basis": {
+    "captureRef": "design-candidate:90.143-multi-method-funflow-and-leanpoo-architecture",
+    "modelRefs": [
+      "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.org",
+      "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml"
+    ],
+    "obligationRefs": [
+      "MR01",
+      "MR02",
+      "MR03",
+      "MR04",
+      "MR05",
+      "MR06"
+    ],
+    "evidenceRefs": []
+  },
+  "copy": {},
+  "themes": [
+    "sketchbook",
+    "compact"
+  ],
+  "presentation": {
+    "options": {
+      "elk.direction": "DOWN",
+      "elk.layered.spacing.nodeNodeBetweenLayers": "52"
+    },
+    "edgeLabels": false
+  }
+}
+|}}}
+direction: down
+
+config: "config.ss + Yuanxu Profiles\nlanguages.{c, cpp, quint, lean, rust}\n3-axis Profiles + Band-5 governance-floor"
+
+ascentGate: "ASCENT Governance (de.layer.governance)\nMR01 Claim-Kind Routing | MR02 Anti-Duplication\nMR03 Premise Handoff | MR04 DAG Closure\nMR05 Countermodels | MR06 OS Containment"
+
+funflow: "Fun-Flow Control Plane (library/verification-flow/)\nZero-I/O pure Category/Arrow DAG + defrules macros\nTaskFamilyRegistry: de-quint | de-lean-poo | de-source | de-oracle\nEmits yuanxu.core.flow-dag-runtime-manifest.v1"
+
+quintModels: "packages/quint-models (Bun / subtree)\nClaim: bounded-interleaving, fault-race, mbt-trace\nPilot: ProcessTreeReclamation.qnt (5 countermodels)"
+
+leanModels: "packages/lean-models (Lake / LeanPoo / subtree)\nClaim: unbounded-invariant, refinement, proof-transport\nCore/{Conservation,Budget,Containment,Order,Transport}\nRefines -> ProcessTree (LinuxCgroupV2 / DarwinPgidPipe)"
+
+rustSubjects: "languages-engineering/rust + Source Contracts\nClaim: source-memory-ub, api-ban-lint, os-sigkill-oracle\nProcessTreeGuard + Clippy ban + 4 SIGKILL Leak Controls"
+
+runtimeAdapter: "Contained Runtime Adapter (outside library/)\nExecutes inert DAG manifest inside process-tree guard\nquint-modules-resolver | lake build | cargo + SIGKILL(137)"
+
+evidenceSession: "Unified ASCENT Evidence Session\nlibrary/evidence/func.ss (make-resource-evidence)\nSelective M1 reuse | M3 use-time witness | open_premise"
+
+config -> ascentGate
+config -> funflow
+ascentGate -> funflow: "admitted pending frontier"
+quintModels -> funflow: "runnable-flow (de-quint)"
+leanModels -> funflow: "runnable-flow (de-lean-poo)"
+rustSubjects -> funflow: "runnable-flow (de-source / de-oracle)"
+quintModels -> rustSubjects: "MR04: itf-trace"
+rustSubjects -> leanModels: "MR03: SpawnPreservesContainer"
+funflow -> runtimeAdapter: "inert DAG runtime manifest"
+runtimeAdapter -> evidenceSession: "pure runnable-admit records"
+evidenceSession -> ascentGate: "revalidation & reuse loop"

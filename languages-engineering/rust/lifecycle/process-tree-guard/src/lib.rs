@@ -1,0 +1,304 @@
+// SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+//
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
+//! Cross-platform process-tree containment & bounded graceful escalation guard (10.154).
+//!
+//! Addresses the real `GatewayGuard::drop` incident where `POST /shutdown` was followed
+//! immediately by single-PID `SIGKILL`, stranding grandchildren as orphans:
+//! 1. Isolates every spawned supervisor in its own process group (`setpgid(0, 0)`).
+//! 2. Attaches a kernel-closed anonymous Pipe-EOF fate-sharing channel (`PTREE_WATCHDOG_FD`)
+//!    so even an out-of-band `SIGKILL (9)` to the supervisor or guardian terminates descendants.
+//! 3. Enforces bounded graceful escalation (`SIGTERM` -> bounded `grace_period` -> `kill(-pgid, SIGKILL)` -> `waitpid` reap)
+//!    both in explicit `shutdown_graceful(self)` and in `Drop::drop` during panic unwinding.
+//! 4. Prevents post-reap PID-reuse signaling via explicit `reaped` state tracking.
+
+use std::io;
+use std::os::unix::process::CommandExt;
+use std::process::{Child, Command, ExitStatus};
+use std::thread;
+use std::time::{Duration, Instant};
+
+pub const WATCHDOG_FD_ENV: &str = "PTREE_WATCHDOG_FD";
+
+const SIGTERM: i32 = 15;
+const SIGKILL: i32 = 9;
+const F_SETFD: i32 = 2;
+const FD_CLOEXEC: i32 = 1;
+
+#[cfg(target_os = "macos")]
+const ESRCH: i32 = 3;
+#[cfg(target_os = "linux")]
+const ESRCH: i32 = 3;
+
+unsafe extern "C" {
+    fn pipe(fds: *mut i32) -> i32;
+    fn close(fd: i32) -> i32;
+    fn read(fd: i32, buf: *mut u8, count: usize) -> isize;
+    fn fcntl(fd: i32, cmd: i32, ...) -> i32;
+    fn setpgid(pid: i32, pgid: i32) -> i32;
+    fn kill(pid: i32, sig: i32) -> i32;
+    fn _exit(status: i32) -> !;
+}
+
+/// Report returned by explicit graceful shutdown or bounded escalation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ShutdownReport {
+    pub pid: u32,
+    pub pgid: i32,
+    pub escalated_to_pgid_sigkill: bool,
+    pub status: Option<ExitStatus>,
+}
+
+/// Owned supervisor handle enforcing process-group containment, Pipe-EOF fate-sharing,
+/// bounded grace escalation, and single-reap PID-reuse protection.
+pub struct ProcessTreeGuard {
+    child: Child,
+    pgid: i32,
+    grace_period: Duration,
+    /// Write end of the fate-sharing pipe. Closed when the guard finishes or crashes;
+    /// kernel closure delivers immediate EOF to all descendants holding the read end.
+    watchdog_write_fd: Option<i32>,
+    reaped: bool,
+}
+
+impl ProcessTreeGuard {
+    /// Spawn a contained supervisor process in its own process group with a Pipe-EOF watchdog.
+    #[allow(clippy::disallowed_methods)]
+    pub fn spawn_contained(mut cmd: Command, grace_period: Duration) -> io::Result<Self> {
+        if grace_period.is_zero() {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "grace_period must be positive to avoid premature SIGKILL",
+            ));
+        }
+
+        let mut fds = [0i32; 2];
+        // SAFETY: `fds` is a valid 2-element i32 array for POSIX `pipe`.
+        if unsafe { pipe(fds.as_mut_ptr()) } != 0 {
+            return Err(io::Error::last_os_error());
+        }
+        let read_fd = fds[0];
+        let write_fd = fds[1];
+
+        // Keep write_fd closed in child processes so only the guardian holds it open.
+        // SAFETY: `write_fd` is a valid open file descriptor.
+        if unsafe { fcntl(write_fd, F_SETFD, FD_CLOEXEC) } != 0 {
+            let err = io::Error::last_os_error();
+            unsafe {
+                close(read_fd);
+                close(write_fd);
+            }
+            return Err(err);
+        }
+        // Explicitly allow read_fd to be inherited by supervisor and its descendants.
+        // SAFETY: `read_fd` is a valid open file descriptor.
+        if unsafe { fcntl(read_fd, F_SETFD, 0) } != 0 {
+            let err = io::Error::last_os_error();
+            unsafe {
+                close(read_fd);
+                close(write_fd);
+            }
+            return Err(err);
+        }
+
+        cmd.env(WATCHDOG_FD_ENV, read_fd.to_string());
+
+        // SAFETY: `setpgid(0, 0)` is async-signal-safe per POSIX.1-2017.
+        unsafe {
+            cmd.pre_exec(|| {
+                if setpgid(0, 0) != 0 {
+                    return Err(io::Error::last_os_error());
+                }
+                Ok(())
+            });
+        }
+
+        let child = match cmd.spawn() {
+            Ok(c) => c,
+            Err(e) => {
+                unsafe {
+                    close(read_fd);
+                    close(write_fd);
+                }
+                return Err(e);
+            }
+        };
+
+        // Parent closes its copy of read_fd; descendants retain the inherited read_fd.
+        // SAFETY: `read_fd` is owned by the parent process here.
+        unsafe {
+            close(read_fd);
+        }
+
+        let pgid = child.id() as i32;
+        Ok(Self {
+            child,
+            pgid,
+            grace_period,
+            watchdog_write_fd: Some(write_fd),
+            reaped: false,
+        })
+    }
+
+    pub fn pid(&self) -> u32 {
+        self.child.id()
+    }
+
+    pub fn pgid(&self) -> i32 {
+        self.pgid
+    }
+
+    /// Close the guardian's write end of the fate-sharing pipe, notifying all descendants.
+    pub fn close_watchdog_pipe(&mut self) {
+        if let Some(fd) = self.watchdog_write_fd.take() {
+            // SAFETY: `fd` is owned exclusively by this guard and closed at most once.
+            unsafe {
+                close(fd);
+            }
+        }
+    }
+
+    /// Explicit cooperative shutdown consuming `self`, waiting up to `grace_period`,
+    /// escalating to `kill(-pgid, SIGKILL)` only on expiry, and reaping via `wait()`.
+    pub fn shutdown_graceful(mut self) -> io::Result<ShutdownReport> {
+        self.teardown_bounded()
+    }
+
+    fn teardown_bounded(&mut self) -> io::Result<ShutdownReport> {
+        let pid = self.child.id();
+        let pgid = self.pgid;
+        if self.reaped {
+            return Ok(ShutdownReport {
+                pid,
+                pgid,
+                escalated_to_pgid_sigkill: false,
+                status: None,
+            });
+        }
+
+        // Check if supervisor already exited before sending any signal (prevents PID-reuse kill).
+        if let Some(status) = self.child.try_wait()? {
+            self.close_watchdog_pipe();
+            // Ensure no straggler in the process group survives an unexpected supervisor crash.
+            unsafe {
+                kill(-pgid, SIGKILL);
+            }
+            self.reaped = true;
+            return Ok(ShutdownReport {
+                pid,
+                pgid,
+                escalated_to_pgid_sigkill: false,
+                status: Some(status),
+            });
+        }
+
+        // Phase 1: Cooperative shutdown signal to supervisor (never immediate SIGKILL).
+        // SAFETY: supervisor has not been reaped yet (`try_wait` returned `None`).
+        unsafe {
+            kill(pid as i32, SIGTERM);
+        }
+
+        // Phase 2: Wait up to bounded `grace_period` for clean drain & exit.
+        let deadline = Instant::now() + self.grace_period;
+        while Instant::now() < deadline {
+            if let Some(status) = self.child.try_wait()? {
+                self.close_watchdog_pipe();
+                self.reaped = true;
+                return Ok(ShutdownReport {
+                    pid,
+                    pgid,
+                    escalated_to_pgid_sigkill: false,
+                    status: Some(status),
+                });
+            }
+            thread::sleep(Duration::from_millis(15));
+        }
+
+        // Phase 3: Grace period expired -> atomic process-group SIGKILL + close Pipe-EOF + reap.
+        self.close_watchdog_pipe();
+        // SAFETY: `pgid` is the isolated process group owned by this guard.
+        unsafe {
+            kill(-pgid, SIGKILL);
+        }
+        let status = self.child.wait()?;
+        self.reaped = true;
+        Ok(ShutdownReport {
+            pid,
+            pgid,
+            escalated_to_pgid_sigkill: true,
+            status: Some(status),
+        })
+    }
+}
+
+impl Drop for ProcessTreeGuard {
+    fn drop(&mut self) {
+        if !self.reaped {
+            let _ = self.teardown_bounded();
+        }
+    }
+}
+
+/// Send raw `SIGKILL` to a specific PID (intended strictly for `MR06` fault-injection tests).
+pub fn inject_sigkill(pid: u32) -> io::Result<()> {
+    // SAFETY: Caller supplies a live test target PID.
+    if unsafe { kill(pid as i32, SIGKILL) } == 0 {
+        Ok(())
+    } else {
+        Err(io::Error::last_os_error())
+    }
+}
+
+/// Check whether a process or process group (`-pgid`) is still alive via `kill(target, 0)`.
+pub fn target_exists(target_pid_or_neg_pgid: i32) -> bool {
+    // SAFETY: Signal 0 performs existence check only without delivering a signal.
+    let rc = unsafe { kill(target_pid_or_neg_pgid, 0) };
+    if rc == 0 {
+        true
+    } else {
+        io::Error::last_os_error().raw_os_error() != Some(ESRCH)
+    }
+}
+
+/// OS Leak Oracle assertion: wait until `kill(-pgid, 0)` returns `ESRCH` (zero surviving processes).
+pub fn assert_pgid_reaped(pgid: i32, timeout: Duration) {
+    let deadline = Instant::now() + timeout;
+    while Instant::now() < deadline {
+        if !target_exists(-pgid) {
+            return;
+        }
+        thread::sleep(Duration::from_millis(15));
+    }
+    panic!("OS LEAK ORACLE FAILED: process group -{pgid} still has surviving processes after {timeout:?}");
+}
+
+/// Install a background Pipe-EOF watchdog thread in any managed child or grandchild.
+/// When the guardian/parent dies (even via `SIGKILL`), the kernel closes the pipe write end,
+/// `read()` returns `0` (EOF), and this process exits immediately with status 137.
+pub fn install_pipe_eof_watchdog() {
+    if let Ok(fd_str) = std::env::var(WATCHDOG_FD_ENV) {
+        if let Ok(fd) = fd_str.parse::<i32>() {
+            let _ = thread::Builder::new()
+                .name("ptree-eof-watchdog".to_string())
+                .spawn(move || {
+                    let mut byte = [0u8; 1];
+                    loop {
+                        // SAFETY: `fd` is the inherited read end of the guardian's watchdog pipe.
+                        let n = unsafe { read(fd, byte.as_mut_ptr(), 1) };
+                        if n == 0 {
+                            // Guardian/parent closed pipe write end (exit or SIGKILL) -> self-terminate.
+                            unsafe { _exit(137) };
+                        }
+                        if n < 0 {
+                            let err = io::Error::last_os_error();
+                            if err.kind() == io::ErrorKind::Interrupted {
+                                continue;
+                            }
+                            unsafe { _exit(137) };
+                        }
+                    }
+                });
+        }
+    }
+}

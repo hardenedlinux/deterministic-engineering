@@ -36,7 +36,7 @@ build-dependency package:
 build:
     timeout --foreground --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q build
 
-test-file path pattern=".*":
+test-file path pattern=".*" timeout_s="120s":
     #!/usr/bin/env bash
     set -euo pipefail
     test -f "{{path}}"
@@ -47,7 +47,7 @@ test-file path pattern=".*":
     mkdir -p .data/test-logs
     log="$(mktemp .data/test-logs/test-XXXXXX)"
     # Establish the native package environment before gxtest initializes imports.
-    timeout --foreground --signal=TERM --kill-after=5s 120s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxtest -v 5 -r "{{pattern}}" "{{path}}" 2>&1 | tee "$log"
+    timeout --foreground --signal=TERM --kill-after=5s {{timeout_s}} {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxtest -v 5 -r "{{pattern}}" "{{path}}" 2>&1 | tee "$log"
     if rg 'ERROR (MODULE|CHECK|CASE|HARNESS)|Heap overflow|Stack overflow' "$log"; then exit 1; fi
     rg -F -x 'MODULE-OK {{path}}' "$log" >/dev/null
     rg -F 'HARNESS-OK' "$log" >/dev/null
@@ -479,3 +479,18 @@ check-defense:
     for f in t/yanxu/Quint.Engineering.Defense/*/qualification-test.ss; do
       just test-file "$f"
     done
+
+# M5 multi-method verification gate (SysML v2 -> Fun-Flow DAG -> Quint + LeanPoo + Clippy + Rust SIGKILL Oracle -> ASCENT MR01-MR06/ER01-ER04/IR01-IR04).
+check-multi-method:
+    just test-file t/yanxu/Library/verification-flow/governance-and-sysml-linkage-test.ss
+    just test-file t/yanxu/Library/verification-flow/end-to-end-ops-runner-test.ss ".*" 240s
+    just test-file t/yanxu/Library/verification-flow/incremental-cache-reuse-test.ss ".*" 240s
+
+# Run the M5 multi-method Fun-Flow Ops Runner (optional content-addressed cache_dir) and write a fresh JSON evidence report.
+investigate-multi-method output cache_dir="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    test ! -e "{{output}}"
+    mkdir -p .data/test-logs
+    log="$(mktemp .data/test-logs/multi-method-XXXXXX)"
+    timeout --foreground --signal=TERM --kill-after=5s 300s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/verification-flow-runner.ss "{{output}}" "{{cache_dir}}" 2>&1 | tee "$log"

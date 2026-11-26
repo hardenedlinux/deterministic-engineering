@@ -18,6 +18,7 @@ const names = [
   '90.140-flat-declarative-library-boundary',
   '90.141-repository-organization-and-packages',
   '90.142-quint-models-library-and-packages',
+  '90.143-multi-method-funflow-and-leanpoo-architecture',
 ];
 const output = path.join(root, '.cache/render/library-boundary');
 const compositionSources = [

@@ -1,0 +1,36 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Deterministic Engineering LeanPoo Models (=packages/lean-models/=)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Scope
+
+Standalone Lake package (=lean-model-content= family, [[file:../../docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.org][10.154]]) owning unbounded
+parametric invariants, algebraic bounds, =LeanPoo.Functional.ObjectContract.refine=
+specializations, and =LeanPoo.Proof.reuse= proof-transport certificates.
+
+Zero duplication with =packages/quint-models/=: Quint owns bounded concurrency
+and fault-race interleavings + MBT ITF traces; LeanPoo owns arbitrary-depth
+induction, monotonic contract refinement, and dependency-certified proof reuse.
+
+* Modules
+
+- =DeterministicEngineering.Core.Containment=: arbitrary-depth =OwnershipTree=
+  containment closure (=killContainer_allDead_of_closed=), crash/SIGKILL
+  fate-sharing (=crashSafe_killContainer_after_root_sigkill=), and negative
+  single-PID orphan witness (=singlePidKill_strands_live_child=).
+- =DeterministicEngineering.Engineering.ProcessTree=: =ObjectContract.refine=
+  platform contracts (=linuxCgroupV2Contract=, =darwinPgidPipeContract=) and
+  =LeanPoo.Proof.reuse= transport across grace-period tuning vs. invalidation on
+  single-PID regression.
+
+* Verification
+
+#+begin_src sh
+cd packages/lean-models
+lake build
+#+end_src
