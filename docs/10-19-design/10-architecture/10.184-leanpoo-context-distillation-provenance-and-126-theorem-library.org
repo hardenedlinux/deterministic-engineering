@@ -1,0 +1,38 @@
+#+TITLE: 10.184 LeanPoo Unbounded Controlled Context Distillation & Epistemic Provenance Preservation (B12, 11 Modules / 126 Theorems)
+#+AUTHOR: hardenedlinux Linux Team and Contributors
+#+DATE: 2026-11-27
+#+STARTUP: overview
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+* Overview: B12 Controlled Context Distillation & Epistemic Provenance
+:PROPERTIES:
+:CUSTOM_ID: arch10184-overview
+:END:
+
+Phase 36 introduces Business Extension **=B12=: Controlled Multi-Agent Context
+Distillation & Epistemic Provenance Preservation**, formally closing the four
+failure modes of LLM context-window compaction over long-horizon sessions:
+1. **Pinned =M1= Constraint & Veto Amnesia** (`dropping_pinned_m1_constraint_always_refused`)
+2. **Hallucinated / Orphan Citation Fabrication** (`hallucinated_citation_always_refused`)
+3. **Secrecy-Tag Stripping via Paraphrasing** (`secrecy_tag_stripping_by_summarizer_refused`)
+4. **Integrity Laundering (`UntrustedExternal -> TrustedSystem`) & Token Overflow** (`integrity_laundering_untrusted_to_trusted_refused`, `distilled_context_exceeding_token_budget_refused`)
+
+Composes directly with =cedar-poo-spec='s =CedarPooSpec.Data.{ProtectionProfile,CumulativeDisclosure}=
+via the two-step =LeanPoo.Functional.ObjectContract.refine= theorem
+`distillationContract_preserves_rejection`, raising the zero-Mathlib, zero-Cedar
+=LeanPoo= formal library to **11 modules / 126 machine-checked theorems**.
+
+* Verification Receipts (AG186-AG190)
+:PROPERTIES:
+:CUSTOM_ID: arch10184-receipts
+:END:
+
+- Lean 4 / =LeanPoo= build (11 modules / 126 theorems):
+  [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/ContextDistillationAndProvenance.lean][ContextDistillationAndProvenance.lean]]
+- Runtime distiller engine:
+  [[file:../../../languages-engineering/ts/defense/agent-audit/context-distillation-provenance.ts][context-distillation-provenance.ts]]
+- Benchmark suite (=AG186=–=AG190=, expanding
+  [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05]]
+  to **190 cases** across **33 Bun test suites**):
+  [[file:../../../languages-engineering/ts/defense/agent-audit/context-distillation-provenance.test.ts][context-distillation-provenance.test.ts]]

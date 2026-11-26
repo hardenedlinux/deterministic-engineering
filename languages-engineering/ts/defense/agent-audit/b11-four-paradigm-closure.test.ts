@@ -313,7 +313,7 @@ describe('Phase 35 — B11 Four-Paradigm Symmetry Closure: 20 Quint Models + B1-
           const rep = auditFourParadigmCrossConsistency({kv});
           expect(rep.verdict).toBe('Proven');
           expect(rep.quintModelCount).toBe(20);
-          expect(rep.leanPooTheoremCount).toBe(116);
+          expect(rep.leanPooTheoremCount).toBe(LEANPOO_EXPECTED_THEOREM_COUNT);
           return rep.releaseAttestationDigest;
         })()
       : sha256Digest({milestone: 185, quint: 20, theorems: 116});

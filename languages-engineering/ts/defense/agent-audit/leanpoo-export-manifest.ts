@@ -48,7 +48,10 @@ export const LEANPOO_MERKLE_ASYNC_FACADE_MODULE =
 export const LEANPOO_TOOL_SANDBOX_FACADE_MODULE =
   'DeterministicEngineering.Engineering.ToolSandboxAndRpcBoundary';
 
-export const LEANPOO_TOP_FACADE_MODULE = LEANPOO_TOOL_SANDBOX_FACADE_MODULE;
+export const LEANPOO_CONTEXT_DISTILLATION_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.ContextDistillationAndProvenance';
+
+export const LEANPOO_TOP_FACADE_MODULE = LEANPOO_CONTEXT_DISTILLATION_FACADE_MODULE;
 
 export const LEANPOO_LIBRARY_EXPORT_MANIFEST: readonly LeanPooExportModuleSpec[] = [
   {
@@ -237,6 +240,23 @@ export const LEANPOO_LIBRARY_EXPORT_MANIFEST: readonly LeanPooExportModuleSpec[]
       'disablingSchemaPinning_invalidates_reuse',
     ],
   },
+  {
+    moduleName: LEANPOO_CONTEXT_DISTILLATION_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/ContextDistillationAndProvenance.lean',
+    pillars: ['B12', 'ContextDistillation', 'Provenance'],
+    theorems: [
+      'dropping_pinned_m1_constraint_always_refused',
+      'hallucinated_citation_always_refused',
+      'secrecy_tag_stripping_by_summarizer_refused',
+      'integrity_laundering_untrusted_to_trusted_refused',
+      'distilled_context_exceeding_token_budget_refused',
+      'empty_sources_with_zero_citations_and_budget_admitted',
+      'retained_pinned_subset_monotonic_under_append',
+      'distillationContract_preserves_rejection',
+      'summaryPromptVersionTuning_preserves_distillation_certificate',
+      'disablingPinnedRetention_invalidates_reuse',
+    ],
+  },
 ];
 
 export const LEANPOO_EXPECTED_MODULE_COUNT = LEANPOO_LIBRARY_EXPORT_MANIFEST.length;
@@ -380,16 +400,18 @@ export function verifyLeanPooLibraryFleet(params?: {
   }
 
   const facadeToImport = manifest.some(
-    m => m.moduleName === LEANPOO_TOOL_SANDBOX_FACADE_MODULE,
+    m => m.moduleName === LEANPOO_CONTEXT_DISTILLATION_FACADE_MODULE,
   )
-    ? LEANPOO_TOOL_SANDBOX_FACADE_MODULE
-    : manifest.some(m => m.moduleName === LEANPOO_MERKLE_ASYNC_FACADE_MODULE)
-      ? LEANPOO_MERKLE_ASYNC_FACADE_MODULE
-      : manifest.some(m => m.moduleName === LEANPOO_RELEASE_CERT_FACADE_MODULE)
-        ? LEANPOO_RELEASE_CERT_FACADE_MODULE
-        : manifest.some(m => m.moduleName === LEANPOO_FOUR_PARADIGM_FACADE_MODULE)
-          ? LEANPOO_FOUR_PARADIGM_FACADE_MODULE
-          : LEANPOO_EXPORT_FACADE_MODULE;
+    ? LEANPOO_CONTEXT_DISTILLATION_FACADE_MODULE
+    : manifest.some(m => m.moduleName === LEANPOO_TOOL_SANDBOX_FACADE_MODULE)
+      ? LEANPOO_TOOL_SANDBOX_FACADE_MODULE
+      : manifest.some(m => m.moduleName === LEANPOO_MERKLE_ASYNC_FACADE_MODULE)
+        ? LEANPOO_MERKLE_ASYNC_FACADE_MODULE
+        : manifest.some(m => m.moduleName === LEANPOO_RELEASE_CERT_FACADE_MODULE)
+          ? LEANPOO_RELEASE_CERT_FACADE_MODULE
+          : manifest.some(m => m.moduleName === LEANPOO_FOUR_PARADIGM_FACADE_MODULE)
+            ? LEANPOO_FOUR_PARADIGM_FACADE_MODULE
+            : LEANPOO_EXPORT_FACADE_MODULE;
 
   const stdinScript = [
     `import ${facadeToImport}`,

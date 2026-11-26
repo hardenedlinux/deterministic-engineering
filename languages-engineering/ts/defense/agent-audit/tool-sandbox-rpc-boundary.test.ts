@@ -45,8 +45,8 @@ const TOOL_SANDBOX_THEOREMS = LEANPOO_LIBRARY_EXPORT_MANIFEST.find(
 describe('Phase 34 — B11 MCP / Tool-Sandbox & RPC Schema-Boundary Safety + 116-Theorem 10-Module LeanPoo Library (10.182 / 30.05 AG176-AG180)', () => {
   test('AG176: Live Lean 4 / LeanPoo verifies all 10 ToolSandboxAndRpcBoundary theorems + single-shot 116/116-theorem 10-module fleet attestation', () => {
     expect(TOOL_SANDBOX_THEOREMS.length).toBe(10);
-    expect(LEANPOO_EXPECTED_MODULE_COUNT).toBe(10);
-    expect(LEANPOO_EXPECTED_THEOREM_COUNT).toBe(116);
+    expect(LEANPOO_EXPECTED_MODULE_COUNT).toBeGreaterThanOrEqual(10);
+    expect(LEANPOO_EXPECTED_THEOREM_COUNT).toBeGreaterThanOrEqual(116);
 
     const kv = new ContentAddressedKvStore();
     if (!isLeanToolchainAvailable()) {
@@ -74,8 +74,8 @@ describe('Phase 34 — B11 MCP / Tool-Sandbox & RPC Schema-Boundary Safety + 116
     const fleet = verifyLeanPooLibraryFleet({kv});
     expect(fleet.kind).toBe('Proven');
     if (fleet.kind !== 'Proven') throw new Error('expected Proven');
-    expect(fleet.moduleCount).toBe(10);
-    expect(fleet.verifiedTheoremCount).toBe(116);
+    expect(fleet.moduleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);
+    expect(fleet.verifiedTheoremCount).toBe(LEANPOO_EXPECTED_THEOREM_COUNT);
 
     kv.gcUnreferenced();
     expect(kv.hasBlob(modRes.pinnedCertificateHash!)).toBe(true);
@@ -335,8 +335,8 @@ describe('Phase 34 — B11 MCP / Tool-Sandbox & RPC Schema-Boundary Safety + 116
         releaseAttestationDigest: string;
       };
       expect(out.verdict).toBe('Proven');
-      expect(out.moduleCount).toBe(10);
-      expect(out.verifiedTheoremCount).toBe(116);
+      expect(out.moduleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);
+      expect(out.verifiedTheoremCount).toBe(LEANPOO_EXPECTED_THEOREM_COUNT);
       expect(out.quintModelCount).toBe(EXPECTED_QUINT_DEFENSE_MODELS.length);
       expect(out.zeroMathlib).toBe(true);
       expect(out.zeroCedar).toBe(true);
