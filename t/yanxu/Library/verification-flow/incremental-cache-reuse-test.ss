@@ -150,21 +150,23 @@
       (def cache-file (path-expand "verification-cache.v1.json" cache-dir))
 
       ;; Phase 1 — Cold run: executes all 4 real engines, persists SHA-256 cache.
-      (def r1 (run-multi-method-verification-pipeline repo-root cache-dir: cache-dir request-id: "req-inc-1-cold"))
-      (check-equal? (replay-report-valid? (.get r1 replay-report)) #t)
-      (check-equal? ((.ref (.get r1 er-result) 'rows-of) 'er_finding) '())
-      (check-equal? (length (.get (.get r1 cache-summary) executed)) 4)
-      (check-equal? (.get (.get r1 cache-summary) reused) '())
-      (check-equal? (file-exists? cache-file) #t)
+      (let ((r1 (run-multi-method-verification-pipeline repo-root cache-dir: cache-dir request-id: "req-inc-1-cold")))
+        (check-equal? (replay-report-valid? (.get r1 replay-report)) #t)
+        (check-equal? ((.ref (.get r1 er-result) 'rows-of) 'er_finding) '())
+        (check-equal? (length (.get (.get r1 cache-summary) executed)) 4)
+        (check-equal? (.get (.get r1 cache-summary) reused) '())
+        (check-equal? (file-exists? cache-file) #t))
+      (##gc)
 
       ;; Phase 2 — Warm identical run: 0 engines spawned, 4/4 reused from SHA-256 cache!
-      (def r2 (run-multi-method-verification-pipeline repo-root cache-dir: cache-dir request-id: "req-inc-2-warm"))
-      (check-equal? (replay-report-valid? (.get r2 replay-report)) #t)
-      (check-equal? ((.ref (.get r2 er-result) 'rows-of) 'er_finding) '())
-      (check-equal? ((.ref (.get r2 er-result) 'rows-of) 'verification_admitted)
-                    '(("engineering.lifecycle.process-tree-reclamation")))
-      (check-equal? (.get (.get r2 cache-summary) executed) '())
-      (check-equal? (length (.get (.get r2 cache-summary) reused)) 4)
+      (let ((r2 (run-multi-method-verification-pipeline repo-root cache-dir: cache-dir request-id: "req-inc-2-warm")))
+        (check-equal? (replay-report-valid? (.get r2 replay-report)) #t)
+        (check-equal? ((.ref (.get r2 er-result) 'rows-of) 'er_finding) '())
+        (check-equal? ((.ref (.get r2 er-result) 'rows-of) 'verification_admitted)
+                      '(("engineering.lifecycle.process-tree-reclamation")))
+        (check-equal? (.get (.get r2 cache-summary) executed) '())
+        (check-equal? (length (.get (.get r2 cache-summary) reused)) 4))
+      (##gc)
 
       ;; Phase 3 — Selective Rust-only invalidation: drift ONLY src/lib.rs digest in cache ->
       ;;           re-executes ONLY sourceContractTarget (Clippy) + rustOracleTarget (OS SIGKILL Oracle),
@@ -173,20 +175,21 @@
         '("sourceContractTarget" "rustOracleTarget")
         "languages-engineering/rust/lifecycle/process-tree-guard/src/lib.rs"
         "0000000000000000000000000000000000000000000000000000000000000000")
-      (def r3 (run-multi-method-verification-pipeline repo-root cache-dir: cache-dir request-id: "req-inc-3-rust-only"))
-      (check-equal? (replay-report-valid? (.get r3 replay-report)) #t)
-      (check-equal? ((.ref (.get r3 er-result) 'rows-of) 'er_finding) '())
-      (check-equal? ((.ref (.get r3 er-result) 'rows-of) 'premise_verified) '(("SpawnPreservesContainer")))
-      (check (set-eq? (.get (.get r3 cache-summary) executed) '("sourceContractTarget" "rustOracleTarget")) => #t)
-      (check (set-eq? (.get (.get r3 cache-summary) reused) '("quintTarget" "leanPooTarget")) => #t)
+      (let ((r3 (run-multi-method-verification-pipeline repo-root cache-dir: cache-dir request-id: "req-inc-3-rust-only")))
+        (check-equal? (replay-report-valid? (.get r3 replay-report)) #t)
+        (check-equal? ((.ref (.get r3 er-result) 'rows-of) 'er_finding) '())
+        (check-equal? ((.ref (.get r3 er-result) 'rows-of) 'premise_verified) '(("SpawnPreservesContainer")))
+        (check (set-eq? (.get (.get r3 cache-summary) executed) '("sourceContractTarget" "rustOracleTarget")) => #t)
+        (check (set-eq? (.get (.get r3 cache-summary) reused) '("quintTarget" "leanPooTarget")) => #t))
+      (##gc)
 
       ;; Phase 4 — IR04 fresh-M3 policy: re-runs ONLY M3-mutable-root (rustOracleTarget),
       ;;           reusing all 3 M1-immutable-proof receipts (Quint + LeanPoo + Clippy)!
-      (def r4 (run-multi-method-verification-pipeline repo-root
-                cache-dir: cache-dir
-                policy-flags: '("require-fresh-m3")
-                request-id: "req-inc-4-fresh-m3"))
-      (check-equal? (replay-report-valid? (.get r4 replay-report)) #t)
-      (check-equal? ((.ref (.get r4 er-result) 'rows-of) 'er_finding) '())
-      (check-equal? (.get (.get r4 cache-summary) executed) '("rustOracleTarget"))
-      (check (set-eq? (.get (.get r4 cache-summary) reused) '("quintTarget" "leanPooTarget" "sourceContractTarget")) => #t))))
+      (let ((r4 (run-multi-method-verification-pipeline repo-root
+                  cache-dir: cache-dir
+                  policy-flags: '("require-fresh-m3")
+                  request-id: "req-inc-4-fresh-m3")))
+        (check-equal? (replay-report-valid? (.get r4 replay-report)) #t)
+        (check-equal? ((.ref (.get r4 er-result) 'rows-of) 'er_finding) '())
+        (check-equal? (.get (.get r4 cache-summary) executed) '("rustOracleTarget"))
+        (check (set-eq? (.get (.get r4 cache-summary) reused) '("quintTarget" "leanPooTarget" "sourceContractTarget")) => #t)))))

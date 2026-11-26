@@ -13,7 +13,8 @@
 //!    both in explicit `shutdown_graceful(self)` and in `Drop::drop` during panic unwinding.
 //! 4. Prevents post-reap PID-reuse signaling via explicit `reaped` state tracking.
 
-use std::io;
+use std::io::{self, Read, Write};
+use std::net::{SocketAddr, TcpStream};
 use std::os::unix::process::CommandExt;
 use std::process::{Child, Command, ExitStatus};
 use std::thread;
@@ -48,6 +49,15 @@ pub struct ShutdownReport {
     pub pgid: i32,
     pub escalated_to_pgid_sigkill: bool,
     pub status: Option<ExitStatus>,
+}
+
+/// Outcome of cooperative HTTP `POST /shutdown` followed by bounded grace wait
+/// and atomic process-group escalation (addresses the `asp_http_e2e` /
+/// `forwarding_gateway` `GatewayGuard::drop` premature `SIGKILL` incident).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HttpShutdownOutcome {
+    pub http_status_code: Option<u16>,
+    pub report: ShutdownReport,
 }
 
 /// Owned supervisor handle enforcing process-group containment, Pipe-EOF fate-sharing,
@@ -171,6 +181,97 @@ impl ProcessTreeGuard {
         self.teardown_bounded()
     }
 
+    /// Cooperative HTTP `POST <path>` shutdown followed by bounded `grace_period` wait,
+    /// NEVER issuing immediate `SIGKILL` upon HTTP 200 OK (`PT-R02`), and escalating to
+    /// atomic `kill(-pgid, SIGKILL)` + Pipe-EOF closure only if the gateway hangs past grace.
+    pub fn shutdown_http_then_graceful(
+        mut self,
+        addr: SocketAddr,
+        path: &str,
+        http_timeout: Duration,
+    ) -> io::Result<HttpShutdownOutcome> {
+        let pid = self.child.id();
+        let pgid = self.pgid;
+        if self.reaped {
+            return Ok(HttpShutdownOutcome {
+                http_status_code: None,
+                report: ShutdownReport {
+                    pid,
+                    pgid,
+                    escalated_to_pgid_sigkill: false,
+                    status: None,
+                },
+            });
+        }
+
+        // If supervisor already died before HTTP shutdown, reap and close process group cleanly.
+        if let Some(status) = self.child.try_wait()? {
+            self.close_watchdog_pipe();
+            unsafe {
+                kill(-pgid, SIGKILL);
+            }
+            self.reaped = true;
+            return Ok(HttpShutdownOutcome {
+                http_status_code: None,
+                report: ShutdownReport {
+                    pid,
+                    pgid,
+                    escalated_to_pgid_sigkill: false,
+                    status: Some(status),
+                },
+            });
+        }
+
+        // Phase 1: Best-effort bounded HTTP POST /shutdown (connection errors never panic).
+        let http_status_code = send_http_post_shutdown(addr, path, http_timeout);
+
+        // If HTTP request failed (e.g., gateway not listening / crashed), fall back to SIGTERM.
+        if http_status_code.is_none() && self.child.try_wait()?.is_none() {
+            unsafe {
+                kill(pid as i32, SIGTERM);
+            }
+        }
+
+        // Phase 2 & 3: Wait bounded grace period for cooperative child drain; escalate ONLY on expiry.
+        let report = self.wait_grace_or_escalate(pid, pgid)?;
+        Ok(HttpShutdownOutcome {
+            http_status_code,
+            report,
+        })
+    }
+
+    fn wait_grace_or_escalate(&mut self, pid: u32, pgid: i32) -> io::Result<ShutdownReport> {
+        let deadline = Instant::now() + self.grace_period;
+        while Instant::now() < deadline {
+            if let Some(status) = self.child.try_wait()? {
+                self.close_watchdog_pipe();
+                self.reaped = true;
+                return Ok(ShutdownReport {
+                    pid,
+                    pgid,
+                    escalated_to_pgid_sigkill: false,
+                    status: Some(status),
+                });
+            }
+            thread::sleep(Duration::from_millis(15));
+        }
+
+        // Grace period expired -> atomic process-group SIGKILL + close Pipe-EOF + reap.
+        self.close_watchdog_pipe();
+        // SAFETY: `pgid` is the isolated process group owned by this guard.
+        unsafe {
+            kill(-pgid, SIGKILL);
+        }
+        let status = self.child.wait()?;
+        self.reaped = true;
+        Ok(ShutdownReport {
+            pid,
+            pgid,
+            escalated_to_pgid_sigkill: true,
+            status: Some(status),
+        })
+    }
+
     fn teardown_bounded(&mut self) -> io::Result<ShutdownReport> {
         let pid = self.child.id();
         let pgid = self.pgid;
@@ -205,37 +306,26 @@ impl ProcessTreeGuard {
             kill(pid as i32, SIGTERM);
         }
 
-        // Phase 2: Wait up to bounded `grace_period` for clean drain & exit.
-        let deadline = Instant::now() + self.grace_period;
-        while Instant::now() < deadline {
-            if let Some(status) = self.child.try_wait()? {
-                self.close_watchdog_pipe();
-                self.reaped = true;
-                return Ok(ShutdownReport {
-                    pid,
-                    pgid,
-                    escalated_to_pgid_sigkill: false,
-                    status: Some(status),
-                });
-            }
-            thread::sleep(Duration::from_millis(15));
-        }
-
-        // Phase 3: Grace period expired -> atomic process-group SIGKILL + close Pipe-EOF + reap.
-        self.close_watchdog_pipe();
-        // SAFETY: `pgid` is the isolated process group owned by this guard.
-        unsafe {
-            kill(-pgid, SIGKILL);
-        }
-        let status = self.child.wait()?;
-        self.reaped = true;
-        Ok(ShutdownReport {
-            pid,
-            pgid,
-            escalated_to_pgid_sigkill: true,
-            status: Some(status),
-        })
+        // Phase 2 & 3: Wait bounded grace period, escalating to kill(-pgid, SIGKILL) only on expiry.
+        self.wait_grace_or_escalate(pid, pgid)
     }
+}
+
+fn send_http_post_shutdown(addr: SocketAddr, path: &str, timeout: Duration) -> Option<u16> {
+    let mut stream = TcpStream::connect_timeout(&addr, timeout).ok()?;
+    let _ = stream.set_read_timeout(Some(timeout));
+    let _ = stream.set_write_timeout(Some(timeout));
+    let req = format!(
+        "POST {path} HTTP/1.1\r\nHost: localhost\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    );
+    stream.write_all(req.as_bytes()).ok()?;
+    let _ = stream.flush();
+    let mut buf = [0u8; 256];
+    let n = stream.read(&mut buf).ok()?;
+    let head = std::str::from_utf8(&buf[..n]).ok()?;
+    let first_line = head.lines().next()?;
+    let code_str = first_line.split_whitespace().nth(1)?;
+    code_str.parse::<u16>().ok()
 }
 
 impl Drop for ProcessTreeGuard {

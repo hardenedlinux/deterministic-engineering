@@ -1,36 +1,34 @@
-# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-#
-# SPDX-License-Identifier: LGPL-2.1-or-later
+#+TITLE: Deterministic Engineering Lean 4 / LeanPoo Models Package
+#+SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#+SPDX-License-Identifier: LGPL-2.1-or-later
 
-#+TITLE: Deterministic Engineering LeanPoo Models (=packages/lean-models/=)
-#+LANGUAGE: en
-#+STARTUP: overview
-#+OPTIONS: toc:2 num:nil
+* Responsibility Boundary (10.154 / MR01-MR02)
 
-* Scope
+This Lake package (~lean-model-content~) proves *unbounded algebraic laws*,
+*arbitrary-depth structural induction*, *LeanPoo contract refinements*
+(~LeanPoo.Functional.ObjectContract.refine~), and *dependency-certified cross-patch
+proof reuse* (~LeanPoo.Proof.reuse~ / ~LeanPoo.Proof.close~).
 
-Standalone Lake package (=lean-model-content= family, [[file:../../docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.org][10.154]]) owning unbounded
-parametric invariants, algebraic bounds, =LeanPoo.Functional.ObjectContract.refine=
-specializations, and =LeanPoo.Proof.reuse= proof-transport certificates.
+It does *not* duplicate finite-state Quint interleavings or countermodels
+(owned by ~packages/quint-models/~).
 
-Zero duplication with =packages/quint-models/=: Quint owns bounded concurrency
-and fault-race interleavings + MBT ITF traces; LeanPoo owns arbitrary-depth
-induction, monotonic contract refinement, and dependency-certified proof reuse.
+* Module Inventory
 
-* Modules
+** Reusable Mathematical Core (~DeterministicEngineering.Core.*~)
 
-- =DeterministicEngineering.Core.Containment=: arbitrary-depth =OwnershipTree=
-  containment closure (=killContainer_allDead_of_closed=), crash/SIGKILL
-  fate-sharing (=crashSafe_killContainer_after_root_sigkill=), and negative
-  single-PID orphan witness (=singlePidKill_strands_live_child=).
-- =DeterministicEngineering.Engineering.ProcessTree=: =ObjectContract.refine=
-  platform contracts (=linuxCgroupV2Contract=, =darwinPgidPipeContract=) and
-  =LeanPoo.Proof.reuse= transport across grace-period tuning vs. invalidation on
-  single-PID regression.
+- ~Core/Conservation.lean~: single-ownership capacity conservation and idempotent release
+- ~Core/Budget.lean~: unbounded peak-memory algebraic bounds, monotonicity, and shrink reuse
+- ~Core/Containment.lean~: arbitrary-depth process-tree container closure and crash-safe fate-sharing
+- ~Core/Order.lean~: monotonic fencing-token epochs and Band-5 governance floor join-semilattice
+- ~Core/Transport.lean~: reusable LeanPoo certificate transport and multi-step refinement combinators
+
+** Domain Engineering Refinements (~DeterministicEngineering.Engineering.*~)
+
+- ~Engineering/ProcessTree.lean~: Linux cgroup v2 & Darwin PGID/Pipe-EOF contract refinements + grace-tuning proof reuse
+- ~Engineering/Backpressure.lean~: Tokio + Rayon bounded backpressure contract refinement + poll-tuning proof reuse
 
 * Verification
 
-#+begin_src sh
-cd packages/lean-models
-lake build
+#+begin_src bash
+cd packages/lean-models && lake build
 #+end_src

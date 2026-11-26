@@ -94,7 +94,12 @@
   operation: run-lean-lake-check
   payload: '((lake-root . "packages/lean-models")
              (lean-module . "DeterministicEngineering.Engineering.ProcessTree")
-             (theorems . ("DeterministicEngineering.Core.Containment.killContainer_allDead_of_closed"
+             (theorems . ("DeterministicEngineering.Core.Conservation.admit_preserves_withinCap"
+                          "DeterministicEngineering.Core.Conservation.release_idempotent"
+                          "DeterministicEngineering.Core.Order.staleEpoch_rejected"
+                          "DeterministicEngineering.Core.Order.join_never_weakens_left"
+                          "DeterministicEngineering.Core.Transport.close_single_set_untouched"
+                          "DeterministicEngineering.Core.Containment.killContainer_allDead_of_closed"
                           "DeterministicEngineering.Core.Containment.crashSafe_killContainer_after_root_sigkill"
                           "DeterministicEngineering.Core.Containment.singlePidKill_strands_live_child"
                           "DeterministicEngineering.Engineering.ProcessTree.linuxCgroupV2_preserves_rejection"
@@ -451,6 +456,7 @@
              "\"$CARGO_BIN\" test -- --nocapture --test-threads=1\n")))
       (let-values (((code out) (exec-bash-captured crate-dir script)))
         (def ok? (and (= code 0)
+                      (and (string-contains out "http_1_post_shutdown_allows_gateway_to_drain_grandchild_cleanly ... ok") #t)
                       (and (string-contains out "3 passed; 0 failed") #t)
                       (and (string-contains out "4 passed; 0 failed") #t)))
         (validate VerificationRawReceiptType
@@ -460,8 +466,8 @@
                                (cons 'consumed-itf-dir itf-dir)
                                (cons 'premise premise))
               summary: (if ok?
-                         "Rust ProcessTreeGuard 3/3 live Quint ITF MBT replay + 4/4 OS SIGKILL leak oracle controls passed"
-                         (string-append "Rust ITF MBT / OS SIGKILL oracle failed: "
+                         "Rust ProcessTreeGuard 3/3 HTTP /shutdown E2E + 3/3 live Quint ITF MBT replay + 4/4 OS SIGKILL leak oracle passed"
+                         (string-append "Rust HTTP / ITF MBT / OS SIGKILL oracle failed: "
                                         (last-nonempty-line out "cargo test error")))))))))
 
 (def (dispatch-verification-operation repo-root step-name op payload)
@@ -502,6 +508,9 @@
      "packages/lean-models/lean-toolchain"
      "packages/lean-models/lakefile.toml"
      "packages/lean-models/DeterministicEngineering.lean"
+     "packages/lean-models/DeterministicEngineering/Core/Conservation.lean"
+     "packages/lean-models/DeterministicEngineering/Core/Order.lean"
+     "packages/lean-models/DeterministicEngineering/Core/Transport.lean"
      "packages/lean-models/DeterministicEngineering/Core/Containment.lean"
      "packages/lean-models/DeterministicEngineering/Engineering/ProcessTree.lean")
     ("sourceContractTarget"
@@ -515,7 +524,8 @@
      "languages-engineering/rust/lifecycle/process-tree-guard/src/lib.rs"
      "languages-engineering/rust/lifecycle/process-tree-guard/src/bin/mock_tree.rs"
      "languages-engineering/rust/lifecycle/process-tree-guard/tests/sigkill_leak_oracle.rs"
-     "languages-engineering/rust/lifecycle/process-tree-guard/tests/itf_mbt_replay.rs")))
+     "languages-engineering/rust/lifecycle/process-tree-guard/tests/itf_mbt_replay.rs"
+     "languages-engineering/rust/lifecycle/process-tree-guard/tests/http_shutdown_e2e.rs")))
 
 (def backpressure-step-input-files
   '(("bpQuintTarget"

@@ -8,6 +8,8 @@
 
 use std::env;
 use std::fs;
+use std::io::{Read, Write};
+use std::net::TcpListener;
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
@@ -93,6 +95,51 @@ fn main() {
             loop {
                 thread::sleep(Duration::from_millis(50));
             }
+        }
+        "gateway-http-graceful" => {
+            let port_file = &args[2];
+            let grandchild_pid_file = &args[3];
+            let drain_marker_file = &args[4];
+            let mut child = spawn_grandchild("grandchild-normal", grandchild_pid_file);
+            let listener = TcpListener::bind("127.0.0.1:0").expect("bind http gateway");
+            let port = listener.local_addr().expect("local_addr").port();
+            fs::write(port_file, port.to_string()).expect("write port file");
+            if let Ok((mut stream, _)) = listener.accept() {
+                let mut buf = [0u8; 512];
+                let _ = stream.read(&mut buf);
+                let _ = stream.write_all(
+                    b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nok",
+                );
+                let _ = stream.flush();
+            }
+            // Simulate realistic post-ACK cooperative child drain time (80ms) before reaping grandchild.
+            thread::sleep(Duration::from_millis(80));
+            unsafe {
+                kill(child.id() as i32, SIGTERM);
+            }
+            let _ = child.wait();
+            fs::write(drain_marker_file, "http-drained-cleanly").expect("write drain marker");
+        }
+        "gateway-http-ack-then-hang" => {
+            let port_file = &args[2];
+            let grandchild_pid_file = &args[3];
+            unsafe {
+                signal(SIGTERM, SIG_IGN);
+            }
+            let mut child = spawn_grandchild("grandchild-ignore-sigterm", grandchild_pid_file);
+            let listener = TcpListener::bind("127.0.0.1:0").expect("bind hung http gateway");
+            let port = listener.local_addr().expect("local_addr").port();
+            fs::write(port_file, port.to_string()).expect("write port file");
+            if let Ok((mut stream, _)) = listener.accept() {
+                let mut buf = [0u8; 512];
+                let _ = stream.read(&mut buf);
+                let _ = stream.write_all(
+                    b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nok",
+                );
+                let _ = stream.flush();
+            }
+            // Reproduces `http-ack-not-quiescence`: ACKed 200 OK then hangs without draining!
+            let _ = child.wait();
         }
         other => panic!("unknown mock_tree mode: {other}"),
     }
