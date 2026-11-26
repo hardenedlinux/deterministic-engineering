@@ -889,6 +889,22 @@
          (and admitted-pub
               (verify-report-with-pinned-key report-path admitted-pub)))))
 
+;; Native POSIX lstat() segment-by-segment containment check blocking lexical traversal
+;; AND any symbolic link along intermediate directories or the leaf child report.
+(def (resolve-contained-child-report-path fleet-dir rel)
+  (and (safe-relative-child-path? rel)
+       (let loop ((segs (string-split rel #\/)) (acc fleet-dir))
+         (if (null? segs)
+           #f
+           (let* ((seg (car segs))
+                  (rest (cdr segs))
+                  (cur (path-expand seg acc))
+                  (ftype (with-catch (lambda (_) #f)
+                           (lambda () (file-info-type (file-info cur #f))))))
+             (if (null? rest)
+               (and (eq? ftype 'regular) cur)
+               (and (eq? ftype 'directory) (loop rest cur))))))))
+
 ;; Strict multi-key Trust Store 2-level Fleet Merkle verifier: checks BOTH Fleet signature
 ;; and every child subject report against the pinned Trust Store (rejecting revoked keys anywhere).
 (def (verify-fleet-report-with-trust-store fleet-report-path trust-store)
@@ -925,8 +941,7 @@
                      (andmap
                        (lambda (s)
                          (let* ((rel-path (hash-get s "reportRelativePath"))
-                                (child-path (and (safe-relative-child-path? rel-path)
-                                                 (path-expand rel-path fleet-dir)))
+                                (child-path (resolve-contained-child-report-path fleet-dir rel-path))
                                 (expected-child-sha (hash-get s "reportPayloadSha256")))
                            (and child-path
                                 (verify-report-with-trust-store child-path trust-store)
@@ -976,8 +991,7 @@
                      (andmap
                        (lambda (s)
                          (let* ((rel-path (hash-get s "reportRelativePath"))
-                                (child-path (and (safe-relative-child-path? rel-path)
-                                                 (path-expand rel-path fleet-dir)))
+                                (child-path (resolve-contained-child-report-path fleet-dir rel-path))
                                 (expected-child-sha (hash-get s "reportPayloadSha256")))
                            (and child-path
                                 (verify-report-with-pinned-key child-path trusted-pub-key)

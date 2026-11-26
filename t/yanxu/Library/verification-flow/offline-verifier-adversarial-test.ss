@@ -354,4 +354,63 @@
       (check-equal? (safe-relative-child-path? "./report.json") #f)
       (check-equal? (safe-relative-child-path? "sub\\report.json") #f)
 
+      ;; Attack 18A: File symlink escape (`evil-link.json -> ../rep-ok.json`) inside subfleet/ -> MUST be rejected!
+      (def evil-file-link (path-expand "evil-link.json" subfleet-dir))
+      (create-symbolic-link rep-ok evil-file-link)
+      (def fleet-sym-file (path-expand "fleet-sym-file.json" subfleet-dir))
+      (write-signed-fleet fleet-sym-file
+        (list (hash ("subjectKey" "demo") ("subjectId" "subject.demo")
+                    ("reportRelativePath" "evil-link.json")
+                    ("reportPayloadSha256" rep-ok-sha)
+                    ("replayValid" #t) ("admitted" #t)))
+        k2 "fl-sym-file")
+      (check-equal? (verify-fleet-offline fleet-sym-file tp-valid) #f)
+
+      ;; Attack 18B: Directory symlink escape (`linked-dir -> ..`, path `linked-dir/rep-ok.json`) -> MUST be rejected!
+      (def evil-dir-link (path-expand "linked-dir" subfleet-dir))
+      (create-symbolic-link work evil-dir-link)
+      (def fleet-sym-dir (path-expand "fleet-sym-dir.json" subfleet-dir))
+      (write-signed-fleet fleet-sym-dir
+        (list (hash ("subjectKey" "demo") ("subjectId" "subject.demo")
+                    ("reportRelativePath" "linked-dir/rep-ok.json")
+                    ("reportPayloadSha256" rep-ok-sha)
+                    ("replayValid" #t) ("admitted" #t)))
+        k2 "fl-sym-dir")
+      (check-equal? (verify-fleet-offline fleet-sym-dir tp-valid) #f)
+
+      ;; Machine-readable `--json` CLI mode: positive (exit 0, ok=#t) & negative (exit != 0, ok=#f)!
+      (def (run-json-cli mode target store)
+        (let* ((cmd (string-append
+                      "cd \"" repo-root "\" && "
+                      "gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q "
+                      "t/support/offline-attestation-verifier.ss --json " mode " "
+                      "\"" target "\" \"" store "\""))
+               (proc (open-process
+                       (list path: "/bin/bash"
+                             arguments: (list "-euo" "pipefail" "-c" cmd)
+                             stdin-redirection: #f
+                             stdout-redirection: #t
+                             stderr-redirection: #t)))
+               (out (read-all-as-string proc))
+               (st (process-status proc)))
+          (close-port proc)
+          (values st out)))
+      (let-values (((st out) (run-json-cli "--verify-report" rep-ok ts-rel-path)))
+        (check-equal? st 0)
+        (let* ((json-line (car (filter (lambda (ln) (and (> (string-length ln) 0)
+                                                         (char=? (string-ref ln 0) #\{)))
+                                       (string-split out #\newline))))
+               (doc (call-with-input-string json-line (cut read-json <> object-as-hash: #t))))
+          (check-equal? (hash-get doc "schema") "de.attestation.offline-verify-result.v1")
+          (check-equal? (hash-get doc "ok") #t)
+          (check-equal? (hash-get doc "mode") "verify-report")))
+      (let-values (((st out) (run-json-cli "--verify-report" rep-bad-b64 ts-rel-path)))
+        (check (not (= st 0)) => #t)
+        (let* ((json-line (car (filter (lambda (ln) (and (> (string-length ln) 0)
+                                                         (char=? (string-ref ln 0) #\{)))
+                                       (string-split out #\newline))))
+               (doc (call-with-input-string json-line (cut read-json <> object-as-hash: #t))))
+          (check-equal? (hash-get doc "ok") #f)
+          (check (string? (hash-get doc "reason")) => #t)))
+
       (run-process (list "rm" "-rf" work)))))

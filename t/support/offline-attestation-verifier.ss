@@ -20,6 +20,7 @@
   :deterministic-engineering/library/verification-flow/attestation)
 (export
   load-trust-store-json-lite
+  resolve-contained-child-report-path
   verify-report-offline
   verify-fleet-offline
   verify-cache-offline
@@ -52,6 +53,23 @@
   (when (hash-table? ht)
     (hash-for-each (lambda (k v) (set! acc (cons (cons k v) acc))) ht))
   acc)
+
+;; Native POSIX lstat() segment-by-segment containment check:
+;; Rejects lexical traversal (`safe-relative-child-path?`) AND any symbolic link
+;; along intermediate directories OR the leaf report file itself!
+(def (resolve-contained-child-report-path fleet-dir rel)
+  (and (safe-relative-child-path? rel)
+       (let loop ((segs (string-split rel #\/)) (acc fleet-dir))
+         (if (null? segs)
+           #f
+           (let* ((seg (car segs))
+                  (rest (cdr segs))
+                  (cur (path-expand seg acc))
+                  (ftype (with-catch (lambda (_) #f)
+                           (lambda () (file-info-type (file-info cur #f))))))
+             (if (null? rest)
+               (and (eq? ftype 'regular) cur)
+               (and (eq? ftype 'directory) (loop rest cur))))))))
 
 (def (ed25519-verify-raw pub-pem payload-str sig-b64)
   (if (and (string? pub-pem) (file-exists? pub-pem)
@@ -188,8 +206,7 @@
                      (andmap
                        (lambda (s)
                          (let* ((rel (hash-get s "reportRelativePath"))
-                                (child-path (and (safe-relative-child-path? rel)
-                                                 (path-expand rel fleet-dir)))
+                                (child-path (resolve-contained-child-report-path fleet-dir rel))
                                 (expected-child-sha (hash-get s "reportPayloadSha256")))
                            (and child-path
                                 (verify-report-offline child-path trust-pair)
@@ -239,22 +256,70 @@
                   entries)
                 (and all-ok? (> count 0) count))))))
 
-(def (main mode target-path store-path)
-  (def trust-pair (load-trust-store-json-lite store-path))
+(def (emit-json-result! ok? mode target-path store-path detail-or-reason (extra-pairs '()))
+  (def doc
+    (hash ("schema" "de.attestation.offline-verify-result.v1")
+          ("ok" (and ok? #t))
+          ("mode" mode)
+          ("target" target-path)
+          ("trustStore" store-path)))
+  (hash-put! doc (if ok? "detail" "reason") detail-or-reason)
+  (for-each (lambda (p) (hash-put! doc (car p) (cdr p))) extra-pairs)
+  (write-json (current-output-port) doc)
+  (newline))
+
+(def (main . args)
+  (def json-mode? (and (member "--json" args) #t))
+  (def clean-args (filter (lambda (a) (not (equal? a "--json"))) args))
+  (unless (= (length clean-args) 3)
+    (error "usage: [--json] --verify-report|--verify-fleet|--verify-cache <artifact.json> <trust-store.json>"
+           args))
+  (def mode (list-ref clean-args 0))
+  (def target-path (list-ref clean-args 1))
+  (def store-path (list-ref clean-args 2))
+  (def trust-pair
+    (with-catch
+      (lambda (e)
+        (if json-mode?
+          (begin
+            (emit-json-result! #f mode target-path store-path
+              (string-append "trust-store load failed: " (error-message e)))
+            (exit 1))
+          (raise e)))
+      (lambda () (load-trust-store-json-lite store-path))))
   (cond
    ((equal? mode "--verify-report")
-    (unless (verify-report-offline target-path trust-pair)
-      (error "offline report verification failed" target-path))
-    (displayln "MULTI-METHOD-VERIFY-REPORT-OK " target-path))
+    (if (verify-report-offline target-path trust-pair)
+      (if json-mode?
+        (emit-json-result! #t "verify-report" target-path store-path "authentic-admitted-report")
+        (displayln "MULTI-METHOD-VERIFY-REPORT-OK " target-path))
+      (if json-mode?
+        (begin
+          (emit-json-result! #f "verify-report" target-path store-path "offline report verification failed")
+          (exit 1))
+        (error "offline report verification failed" target-path))))
    ((equal? mode "--verify-fleet")
-    (unless (verify-fleet-offline target-path trust-pair)
-      (error "offline fleet verification failed" target-path))
-    (displayln "MULTI-METHOD-VERIFY-FLEET-OK " target-path))
+    (if (verify-fleet-offline target-path trust-pair)
+      (if json-mode?
+        (emit-json-result! #t "verify-fleet" target-path store-path "authentic-2-level-merkle-fleet")
+        (displayln "MULTI-METHOD-VERIFY-FLEET-OK " target-path))
+      (if json-mode?
+        (begin
+          (emit-json-result! #f "verify-fleet" target-path store-path "offline fleet verification failed")
+          (exit 1))
+        (error "offline fleet verification failed" target-path))))
    ((equal? mode "--verify-cache")
     (let ((n (verify-cache-offline target-path trust-pair)))
-      (unless n
-        (error "offline cache verification failed" target-path))
-      (displayln "MULTI-METHOD-VERIFY-CACHE-OK " target-path " entries=" n)))
+      (if n
+        (if json-mode?
+          (emit-json-result! #t "verify-cache" target-path store-path "all-cache-witnesses-verified"
+            (list (cons "entries" n)))
+          (displayln "MULTI-METHOD-VERIFY-CACHE-OK " target-path " entries=" n))
+        (if json-mode?
+          (begin
+            (emit-json-result! #f "verify-cache" target-path store-path "offline cache verification failed")
+            (exit 1))
+          (error "offline cache verification failed" target-path)))))
    (else
-    (error "usage: --verify-report|--verify-fleet|--verify-cache <artifact.json> <trust-store.json>"
+    (error "usage: [--json] --verify-report|--verify-fleet|--verify-cache <artifact.json> <trust-store.json>"
            mode))))
