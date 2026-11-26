@@ -529,4 +529,82 @@ theorem revoked_key_blocks_reuse_and_downstream {Step Key Digest Toolchain PubKe
   have hInvU : Invalidated sys u := Invalidated.ir06 u hSign hNotAttU
   refine ⟨fun hRu => hRu hInvU, fun hRv => hRv (ir07_mixed_dag_and_premise_invalidation sys hStrict hPath hInvU)⟩
 
+/-! ## 9. Mixed-Key 2-Level Merkle Fleet Verification & Sub-Report Revocation Cascade -/
+
+structure SignedChildReport (PubKey Payload Digest Sig : Type) where
+  key : PubKey
+  payload : Payload
+  claimedDigest : Digest
+  sig : Sig
+
+structure SignedFleetBundle (Subject PubKey Payload Digest Sig : Type) where
+  rootKey : PubKey
+  rootPayload : Payload
+  rootSig : Sig
+  childOf : Subject → SignedChildReport PubKey Payload Digest Sig
+  boundDigestOf : Subject → Digest
+
+/-- Exact formal model of `offline-attestation-verifier.ss --verify-fleet`:
+both the top-level Fleet root AND every child subject report must be signed by an
+admitted (trusted & unrevoked) key in `pol`, with matching 2-level Merkle digests. -/
+def FleetTrustStoreVerified {Subject PubKey Payload Digest Sig : Type}
+    (m : FleetMerkleModel PubKey Payload Digest Sig)
+    (pol : KeyTrustPolicy PubKey)
+    (fleet : SignedFleetBundle Subject PubKey Payload Digest Sig) : Prop :=
+  KeyAdmitted pol fleet.rootKey ∧
+  m.verify fleet.rootKey fleet.rootPayload fleet.rootSig ∧
+  ∀ s : Subject,
+    let c := fleet.childOf s
+    KeyAdmitted pol c.key ∧
+    m.verify c.key c.payload c.sig ∧
+    m.digestOf c.payload = c.claimedDigest ∧
+    c.claimedDigest = fleet.boundDigestOf s
+
+/-- Constructive zero-axiom proof: adding a rotated key `pkNew` to a Trust Store preserves
+offline verification of any valid Mixed-Key Fleet without re-signing existing child reports. -/
+theorem mixedKeyFleet_rotation_preserves_verification {Subject PubKey Payload Digest Sig : Type}
+    (m : FleetMerkleModel PubKey Payload Digest Sig)
+    (pol : KeyTrustPolicy PubKey) (pkNew : PubKey)
+    (fleet : SignedFleetBundle Subject PubKey Payload Digest Sig)
+    (hVer : FleetTrustStoreVerified m pol fleet) :
+    let rotated : KeyTrustPolicy PubKey :=
+      { trusted := fun k => pol.trusted k ∨ k = pkNew, revoked := pol.revoked }
+    FleetTrustStoreVerified m rotated fleet := by
+  rcases hVer with ⟨hRootAdm, hRootSig, hChildren⟩
+  refine ⟨⟨Or.inl hRootAdm.1, hRootAdm.2⟩, hRootSig, ?_⟩
+  intro s
+  rcases hChildren s with ⟨hChildAdm, hChildSig, hDig1, hDig2⟩
+  exact ⟨⟨Or.inl hChildAdm.1, hChildAdm.2⟩, hChildSig, hDig1, hDig2⟩
+
+/-- Constructive zero-axiom sub-report revocation cascade: revoking ANY child subject's signing key
+immediately invalidates the entire 2-level Merkle Fleet, even if the top-level Fleet root key
+remains trusted, unrevoked, and cryptographically valid. -/
+theorem mixedKeyFleet_rejects_revoked_child_even_with_valid_root_key
+    {Subject PubKey Payload Digest Sig : Type}
+    (m : FleetMerkleModel PubKey Payload Digest Sig)
+    (pol : KeyTrustPolicy PubKey)
+    (fleet : SignedFleetBundle Subject PubKey Payload Digest Sig)
+    (s : Subject)
+    (hChildRevoked : pol.revoked (fleet.childOf s).key) :
+    ¬ FleetTrustStoreVerified m pol fleet := by
+  intro hVer
+  rcases hVer with ⟨_, _, hChildren⟩
+  exact (hChildren s).1.2 hChildRevoked
+
+/-- Constructive zero-axiom 2-level Merkle binding rejection: if any child subject's payload
+digest diverges from the root-bound Merkle digest, offline Fleet verification fails unconditionally
+(even if an attacker re-signs the forged child report with a valid trusted key). -/
+theorem mixedKeyFleet_rejects_tampered_child_digest
+    {Subject PubKey Payload Digest Sig : Type}
+    (m : FleetMerkleModel PubKey Payload Digest Sig)
+    (pol : KeyTrustPolicy PubKey)
+    (fleet : SignedFleetBundle Subject PubKey Payload Digest Sig)
+    (s : Subject)
+    (hMismatch : m.digestOf (fleet.childOf s).payload ≠ fleet.boundDigestOf s) :
+    ¬ FleetTrustStoreVerified m pol fleet := by
+  intro hVer
+  rcases hVer with ⟨_, _, hChildren⟩
+  rcases hChildren s with ⟨_, _, hDig1, hDig2⟩
+  exact hMismatch (hDig1.trans hDig2)
+
 end DeterministicEngineering.Core.MetaGovernance

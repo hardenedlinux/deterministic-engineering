@@ -150,6 +150,24 @@ theorem fullMetaGovContract_preserves_rejection
     diagnose fullMetaGovContract cfg path ≠ [] :=
   refine_two_step_preserves_rejection baseMetaGovContract erAdmissionExt signedCacheExt cfg path hRej
 
+/-- Instantiated Mixed-Key 2-Level Merkle Fleet contract: key rotation preserves valid mixed-key
+Fleets, while revoking ANY child subject's key or tampering any child payload digest rejects
+the entire Fleet even when the top-level Fleet root signature uses an unrevoked rotated key. -/
+theorem mixedKeyFleet_rotation_and_childRevocation_sound
+    {Subject PubKey Payload Digest Sig : Type}
+    (m : FleetMerkleModel PubKey Payload Digest Sig)
+    (pol : KeyTrustPolicy PubKey) (pkNew : PubKey)
+    (fleet : SignedFleetBundle Subject PubKey Payload Digest Sig) :
+    (FleetTrustStoreVerified m pol fleet →
+      FleetTrustStoreVerified m
+        { trusted := fun k => pol.trusted k ∨ k = pkNew, revoked := pol.revoked } fleet) ∧
+    (∀ s : Subject, pol.revoked (fleet.childOf s).key → ¬ FleetTrustStoreVerified m pol fleet) ∧
+    (∀ s : Subject, m.digestOf (fleet.childOf s).payload ≠ fleet.boundDigestOf s →
+      ¬ FleetTrustStoreVerified m pol fleet) :=
+  ⟨fun hVer => mixedKeyFleet_rotation_preserves_verification m pol pkNew fleet hVer,
+   fun s hRev => mixedKeyFleet_rejects_revoked_child_even_with_valid_root_key m pol fleet s hRev,
+   fun s hMis => mixedKeyFleet_rejects_tampered_child_digest m pol fleet s hMis⟩
+
 /-! ## One-Line Proof Transport via `Core.Transport` -/
 
 inductive MetaProofKey where
