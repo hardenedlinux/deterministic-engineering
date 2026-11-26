@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Deterministic MCP / Tool-Sandbox & RPC Schema-Boundary Safety
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.defense.tool-sandbox-rpc-boundary=
+- *Subdomain*: =quint.engineering.defense=
+- *Quint Module*: =tool_sandbox_rpc_boundary= (=[[file:ToolSandboxRpcBoundary.qnt][ToolSandboxRpcBoundary.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/defense/tool-sandbox-rpc-boundary/ToolSandboxRpcBoundary=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Tool execution requires an intact M1-pinned schema (rugPullViolations == 0), valid M3 sandbox scope containment (scopeEscapeViolations == 0), and zero unreconciled PendingUnknownEffect RPC timeouts (blindRetryViolations == 0).
+
+#+begin_src quint
+val safety = (h.rugPullViolations == 0 and h.scopeEscapeViolations == 0 and h.blindRetryViolations == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =require-pinned-schema-intact= | =stepSchemaRugPull= | =h.rugPullViolations > 0= |
+| =require-sandbox-scope-valid= | =stepSandboxScopeEscape= | =h.scopeEscapeViolations > 0= |
+| =require-no-pending-timeout= | =stepBlindRpcRetry= | =h.blindRetryViolations > 0= |
+
+* Grounded Papers & Specifications
+
+- *Model Context Protocol Security Advisory & Tool-Poisoning Literature (2025)*: MCP tool-description rug-pull, shadow tool injection, and cross-tool privilege escalation.
+- *E. Debenedetti et al. (2025)*: CaMeL: Defeating Prompt Injections by Design — isolating untrusted tool outputs from control flow.
+- *Deterministic Engineering (10.182 / 10.183)*: Immutable M1 MCP tool manifest pinning, R3 ToolSandboxCapability confinement, and PendingUnknownEffect RPC timeout fencing.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/defense/tool-sandbox-rpc-boundary/ToolSandboxRpcBoundary.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/defense/tool-sandbox-rpc-boundary/ToolSandboxRpcBoundary.qnt --main=tool_sandbox_rpc_boundary --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Single-tool bounded execution counter (safeExecutions < 3) over pinned schema integrity, sandbox scope validity, and PendingUnknownEffect timeout fencing; unbounded multi-tool and response-firewall properties are proved in ToolSandboxAndRpcBoundary.lean.

@@ -80,6 +80,7 @@ export const EXPECTED_QUINT_DEFENSE_MODELS = [
   'partial-order-delivery',
   'policy-admission-sufficiency',
   'release-sod-rollback',
+  'tool-sandbox-rpc-boundary',
   'transparency-log-equivocation',
   'unknown-effect-retry',
   'witness-epoch-reconfiguration',
@@ -142,7 +143,8 @@ export function auditFourParadigmCrossConsistency(params?: {
       ascentSrc.includes('DurableGovernanceMetaAuditProgram') &&
       ascentSrc.includes('quorum_3_verified') &&
       ascentSrc.includes('split_world_finality_breach') &&
-      ascentSrc.includes('slashed_witness_reentry_violation');
+      ascentSrc.includes('slashed_witness_reentry_violation') &&
+      ascentSrc.includes('mcp_tool_violation');
   }
   const ascentVerdict: EpistemicVerdict = ascentRulesPresent ? 'Proven' : 'Refuted';
 
@@ -264,7 +266,7 @@ if (import.meta.main) {
   } else {
     console.log(
       `[${report.verdict}] Four-Paradigm LeanPoo Fleet Audit: ` +
-        `Quint=${report.quintModelCount}/19 ASCENT=${report.ascentRulesPresent} ` +
+        `Quint=${report.quintModelCount}/${EXPECTED_QUINT_DEFENSE_MODELS.length} ASCENT=${report.ascentRulesPresent} ` +
         `MultiLang=${report.multiLangHarnessCount}/${EXPECTED_MULTILANG_HARNESSES.length} ` +
         `LeanPoo=${report.leanPooModuleCount} modules / ${report.leanPooTheoremCount} theorems ` +
         `(zeroMathlib=${report.zeroMathlib}, zeroCedar=${report.zeroCedar}) ` +

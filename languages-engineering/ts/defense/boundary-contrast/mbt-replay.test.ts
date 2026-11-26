@@ -1704,6 +1704,76 @@ class BadUnilateralHandoverSUT extends WitnessEpochReconfigurationSUT {
   }
 }
 
+class ToolSandboxRpcBoundarySUT {
+  manifestPinned = false;
+  schemaRugPulled = false;
+  scopeValid = false;
+  rpcTimeoutPending = false;
+  safeExecutions = 0;
+  rugPullViolations = 0;
+  scopeEscapeViolations = 0;
+  blindRetryViolations = 0;
+
+  apply(action: string): void {
+    switch (action) {
+      case 'pinToolManifest':
+        if (!this.manifestPinned) this.manifestPinned = true;
+        break;
+      case 'grantValidScope':
+        if (!this.scopeValid) this.scopeValid = true;
+        break;
+      case 'mutateSchemaRugPull':
+        if (this.manifestPinned && !this.schemaRugPulled) this.schemaRugPulled = true;
+        break;
+      case 'triggerAmbiguousTimeout':
+        if (this.manifestPinned && !this.rpcTimeoutPending) this.rpcTimeoutPending = true;
+        break;
+      case 'reconcileTimeout':
+        if (this.rpcTimeoutPending) this.rpcTimeoutPending = false;
+        break;
+      case 'invokeToolSafe':
+        if (
+          this.safeExecutions < 3 &&
+          this.manifestPinned &&
+          !this.schemaRugPulled &&
+          this.scopeValid &&
+          !this.rpcTimeoutPending
+        ) {
+          this.safeExecutions += 1;
+        }
+        break;
+      default:
+        throw new Error(`Unknown ToolSandboxRpcBoundary action: ${action}`);
+    }
+  }
+
+  snapshot() {
+    return {
+      manifestPinned: this.manifestPinned,
+      schemaRugPulled: this.schemaRugPulled,
+      scopeValid: this.scopeValid,
+      rpcTimeoutPending: this.rpcTimeoutPending,
+      safeExecutions: this.safeExecutions,
+      rugPullViolations: this.rugPullViolations,
+      scopeEscapeViolations: this.scopeEscapeViolations,
+      blindRetryViolations: this.blindRetryViolations,
+    };
+  }
+}
+
+class BadSchemaRugPullSUT extends ToolSandboxRpcBoundarySUT {
+  override apply(action: string): void {
+    if (action === 'invokeToolSafe' && this.safeExecutions < 3 && this.scopeValid && !this.rpcTimeoutPending) {
+      // Anti-pattern: drops `require-pinned-schema-intact` guard and executes rug-pulled MCP tool!
+      const intact = this.manifestPinned && !this.schemaRugPulled;
+      this.safeExecutions += 1;
+      if (!intact) this.rugPullViolations += 1;
+      return;
+    }
+    super.apply(action);
+  }
+}
+
 const repoRoot = resolve(import.meta.dir, '../../../..');
 
 function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(): Record<string, unknown>}>(
@@ -1756,7 +1826,7 @@ function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(
   }
 }
 
-describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (19 Defense Models)', () => {
+describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (20 Defense Models)', () => {
   test('EpistemicStateLattice ITF actions drive EpistemicLatticeSUT with exact step-by-step state isomorphism', () => {
     const stats = replayModelAgainstSut(
       'packages/quint-models/engineering/defense/epistemic-state-lattice/EpistemicStateLattice.qnt',
@@ -2177,6 +2247,27 @@ describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (19 Defense Models
       () => new WitnessEpochReconfigurationSUT(),
       projectH,
       () => new BadUnilateralHandoverSUT(),
+    );
+    expect(stats.transitions).toBeGreaterThan(50);
+    expect(stats.brokenDiverged).toBe(true);
+  }, 30_000);
+
+  test('ToolSandboxRpcBoundary ITF actions drive ToolSandboxRpcBoundarySUT with exact state isomorphism and reject BadSchemaRugPullSUT', () => {
+    const projectH = (h: Record<string, unknown>) => ({
+      manifestPinned: Boolean(h.manifestPinned),
+      schemaRugPulled: Boolean(h.schemaRugPulled),
+      scopeValid: Boolean(h.scopeValid),
+      rpcTimeoutPending: Boolean(h.rpcTimeoutPending),
+      safeExecutions: asInt(h.safeExecutions),
+      rugPullViolations: asInt(h.rugPullViolations),
+      scopeEscapeViolations: asInt(h.scopeEscapeViolations),
+      blindRetryViolations: asInt(h.blindRetryViolations),
+    });
+    const stats = replayModelAgainstSut(
+      'packages/quint-models/engineering/defense/tool-sandbox-rpc-boundary/ToolSandboxRpcBoundary.qnt',
+      () => new ToolSandboxRpcBoundarySUT(),
+      projectH,
+      () => new BadSchemaRugPullSUT(),
     );
     expect(stats.transitions).toBeGreaterThan(50);
     expect(stats.brokenDiverged).toBe(true);

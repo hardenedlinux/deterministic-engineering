@@ -31,7 +31,10 @@ import {
   LEANPOO_RELEASE_CERT_FACADE_MODULE,
   verifyLeanPooLibraryFleet,
 } from './leanpoo-export-manifest.ts';
-import {auditFourParadigmCrossConsistency} from './leanpoo-fleet-audit.ts';
+import {
+  auditFourParadigmCrossConsistency,
+  EXPECTED_QUINT_DEFENSE_MODELS,
+} from './leanpoo-fleet-audit.ts';
 import {
   issueSignedLibraryReleaseCertificate,
   LibraryReleaseSigningKey,
@@ -366,7 +369,7 @@ describe('Phase 32 — Air-Gapped Ed25519 Release Certificate Replay & 96-Theore
     expect(out.verdict).toBe('Proven');
     expect(out.moduleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);
     expect(out.verifiedTheoremCount).toBe(LEANPOO_EXPECTED_THEOREM_COUNT);
-    expect(out.quintModelCount).toBe(19);
+    expect(out.quintModelCount).toBe(EXPECTED_QUINT_DEFENSE_MODELS.length);
     expect(out.zeroMathlib).toBe(true);
     expect(out.zeroCedar).toBe(true);
   }, 45_000);

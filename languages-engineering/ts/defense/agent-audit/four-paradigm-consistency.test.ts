@@ -116,7 +116,7 @@ describe('Phase 31 — Four-Paradigm Cross-Consistency & 86-Theorem LeanPoo CLI 
     };
     expect(parsed.verdict).toBe('Proven');
     expect(parsed.facadeModule).toBe(LEANPOO_TOP_FACADE_MODULE);
-    expect(parsed.quintModelCount).toBe(19);
+    expect(parsed.quintModelCount).toBe(EXPECTED_QUINT_DEFENSE_MODELS.length);
     expect(parsed.ascentRulesPresent).toBe(true);
     expect(parsed.multiLangHarnessCount).toBe(8);
     expect(parsed.moduleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);

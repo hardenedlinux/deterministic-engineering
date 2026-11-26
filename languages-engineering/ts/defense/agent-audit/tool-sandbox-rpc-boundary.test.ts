@@ -36,6 +36,7 @@ import {
   DeterministicToolSandboxEngine,
   ToolSandboxCapability,
 } from './tool-sandbox-rpc-boundary.ts';
+import {EXPECTED_QUINT_DEFENSE_MODELS} from './leanpoo-fleet-audit.ts';
 
 const TOOL_SANDBOX_THEOREMS = LEANPOO_LIBRARY_EXPORT_MANIFEST.find(
   m => m.moduleName === LEANPOO_TOOL_SANDBOX_FACADE_MODULE,
@@ -336,7 +337,7 @@ describe('Phase 34 — B11 MCP / Tool-Sandbox & RPC Schema-Boundary Safety + 116
       expect(out.verdict).toBe('Proven');
       expect(out.moduleCount).toBe(10);
       expect(out.verifiedTheoremCount).toBe(116);
-      expect(out.quintModelCount).toBe(19);
+      expect(out.quintModelCount).toBe(EXPECTED_QUINT_DEFENSE_MODELS.length);
       expect(out.zeroMathlib).toBe(true);
       expect(out.zeroCedar).toBe(true);
       opDigest = out.releaseAttestationDigest;

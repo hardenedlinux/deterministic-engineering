@@ -59,6 +59,8 @@ export interface MetaAuditFactBundle {
   release_requires_finality: Array<[string, string]>;
   slashed_witness: Array<[string, string]>;
   next_epoch_roster: Array<[string, string, string]>;
+  mcp_tool_pinned_schema: Array<[string, string]>;
+  mcp_tool_invoked: Array<[string, string, string, string]>;
 }
 
 export interface AscentMetaAuditOutput {
@@ -73,6 +75,7 @@ export interface AscentMetaAuditOutput {
   sub_quorum_finality_violation: string[][];
   split_world_finality_breach: string[][];
   slashed_witness_reentry_violation: string[][];
+  mcp_tool_violation: string[][];
   release_disqualified: string[][];
   release_admitted: string[][];
 }
@@ -152,6 +155,13 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
   }>;
   slashedWitnesses?: ReadonlyArray<{logId: string; witnessId: string}>;
   nextEpochRosters?: ReadonlyArray<{logId: string; epoch: number; witnessIds: readonly string[]}>;
+  mcpPinnedTools?: ReadonlyArray<{toolId: string; pinnedSchemaHash: string}>;
+  mcpToolInvocations?: ReadonlyArray<{
+    releaseId: string;
+    toolId: string;
+    observedSchemaHash: string;
+    scopeOk: boolean;
+  }>;
   releaseProposals: ReadonlyArray<{
     releaseId: string;
     authorId: string;
@@ -293,6 +303,19 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
     }
   }
 
+  const mcp_tool_pinned_schema: Array<[string, string]> = (params.mcpPinnedTools ?? []).map(t => [
+    t.toolId,
+    t.pinnedSchemaHash,
+  ]);
+  const mcp_tool_invoked: Array<[string, string, string, string]> = (
+    params.mcpToolInvocations ?? []
+  ).map(inv => [
+    inv.releaseId,
+    inv.toolId,
+    inv.observedSchemaHash,
+    inv.scopeOk ? 'yes' : 'no',
+  ]);
+
   const bundle: MetaAuditFactBundle = {
     delegation_edge: dedupeTuples(delegation_edge),
     revoked_principal: dedupeTuples(revoked_principal),
@@ -316,6 +339,8 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
     release_requires_finality: dedupeTuples(release_requires_finality),
     slashed_witness: dedupeTuples(slashed_witness),
     next_epoch_roster: dedupeTuples(next_epoch_roster),
+    mcp_tool_pinned_schema: dedupeTuples(mcp_tool_pinned_schema),
+    mcp_tool_invoked: dedupeTuples(mcp_tool_invoked),
   };
 
   const factBundleMerkleHash = params.kv.putBlob('ascent-meta-audit-fact-bundle', bundle, []);
@@ -366,6 +391,7 @@ export function parseFramedAscentOutput(rawStdout: string): AscentOracleRunVerdi
     'sub_quorum_finality_violation',
     'split_world_finality_breach',
     'slashed_witness_reentry_violation',
+    'mcp_tool_violation',
     'release_disqualified',
     'release_admitted',
   ];
@@ -439,7 +465,7 @@ export function runLiveGerbilAscentMetaAudit(
        (keys '(effectively_revoked belief_poisoned tainted_value exfiltration_violation
                equivocation_violation byzantine_witness_equivocation invalid_witness_cosign
                quorum_3_verified sub_quorum_finality_violation split_world_finality_breach
-               slashed_witness_reentry_violation release_disqualified release_admitted)))
+               slashed_witness_reentry_violation mcp_tool_violation release_disqualified release_admitted)))
   (display "${BEGIN_MARKER}\\n{")
   (let loop ((ks keys) (first #t))
     (when (pair? ks)

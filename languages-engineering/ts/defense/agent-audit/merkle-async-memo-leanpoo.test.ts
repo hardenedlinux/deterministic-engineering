@@ -31,7 +31,10 @@ import {
   LEANPOO_MERKLE_ASYNC_FACADE_MODULE,
   verifyLeanPooLibraryFleet,
 } from './leanpoo-export-manifest.ts';
-import {auditFourParadigmCrossConsistency} from './leanpoo-fleet-audit.ts';
+import {
+  auditFourParadigmCrossConsistency,
+  EXPECTED_QUINT_DEFENSE_MODELS,
+} from './leanpoo-fleet-audit.ts';
 import {
   issueSignedLibraryReleaseCertificate,
   LibraryReleaseSigningKey,
@@ -199,7 +202,7 @@ describe('Phase 33 — 106-Theorem LeanPoo Milestone (B9 Merkle Consistency, R2 
       expect(cliOut.verdict).toBe('Proven');
       expect(cliOut.moduleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);
       expect(cliOut.verifiedTheoremCount).toBe(LEANPOO_EXPECTED_THEOREM_COUNT);
-      expect(cliOut.quintModelCount).toBe(19);
+      expect(cliOut.quintModelCount).toBe(EXPECTED_QUINT_DEFENSE_MODELS.length);
       expect(cliOut.zeroMathlib).toBe(true);
       expect(cliOut.zeroCedar).toBe(true);
 
