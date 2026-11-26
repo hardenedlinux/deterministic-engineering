@@ -59,6 +59,9 @@
     (not-paused (not (. h paused)))
     (not-revoked (not (. h revoked)))
     (clear-verified (and verified finalized noCode)))
+  guard-classifications:
+  '((not-delegated precondition "Base containment framing precondition enforced in attempt; revocation and clearance witnessed by countermodels")
+    (not-paused precondition "Base pause framing precondition enforced in attempt; revocation and clearance witnessed by countermodels"))
   transitions:
   '((delegate
       (action delegate ()

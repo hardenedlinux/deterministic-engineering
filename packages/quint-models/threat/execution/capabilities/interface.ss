@@ -16,7 +16,8 @@
           quint.domain.threat
           quint.threat.execution
           quint.property.stateless
-          quint.failure.privilege-escalation)
+          quint.failure.privilege-escalation
+          defense.mutability.immutable)
   slot-specs: QuintModelSlotSpecs
   defaults: QuintStatelessModelDefaultSlots
   core:

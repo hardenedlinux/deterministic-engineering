@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Negative Dependencies, Immutable Cuts & Bounded Revalidation (DE01)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.defense.bounded-negative-revalidation=
+- *Subdomain*: =quint.engineering.defense=
+- *Quint Module*: =bounded_negative_revalidation= (=[[file:BoundedNegativeRevalidation.qnt][BoundedNegativeRevalidation.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/defense/bounded-negative-revalidation/BoundedNegativeRevalidation=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Frozen historical cuts and independent M1 method bytes remain intact across negative-domain expansion; stale negative-absence reviews are invalidated upon relevant counter arrival; re-closing current review requires an admitted replacement reason.
+
+#+begin_src quint
+val safety = (h.frozenCutIntact and h.independentMethodValid and (not(h.negDomainExpanded) or not(h.oldNegReviewActive)) and (not(h.negDomainExpanded) or not(h.currentReviewClosed) or h.admittedReplacementReason))
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =invalidate-dependent-review= | =stepStaleNegReuse= | =h.negDomainExpanded == true and h.oldNegReviewActive == true= |
+| =preserve-frozen-history= | =stepGlobalHistoryPurge= | =h.frozenCutIntact == false= |
+| =preserve-independent-method= | =stepPurgeIndependentMethod= | =h.independentMethodValid == false= |
+| =require-admitted-replacement= | =stepRepeatFalseReason= | =h.negDomainExpanded == true and h.currentReviewClosed == true and h.admittedReplacementReason == false= |
+
+* Grounded Papers & Specifications
+
+- *Deterministic Engineering (20.16 / 20.17 / 20.18)*: DE01 / ND / MV / AM: scoped revalidation on negative-dependency changes without global purge or false-reason replay.
+- *R. Reiter (1980) / Stratified Datalog*: Non-monotonic negative dependencies over named finite closed domains.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/defense/bounded-negative-revalidation/BoundedNegativeRevalidation.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/defense/bounded-negative-revalidation/BoundedNegativeRevalidation.qnt --main=bounded_negative_revalidation --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite single-counter expansion model of DE01 negative-dependency invalidation; does not model arbitrary multi-domain policy hierarchies or external artifact byte hashing.

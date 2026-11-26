@@ -19,7 +19,9 @@
           quint.property.stateful
           quint.property.emergent-invariant
           quint.property.mbt-ready
-          quint.failure.zombie-write)
+          quint.failure.zombie-write
+          defense.mutability.mutable-root
+          defense.property.guard-declared)
   slot-specs: QuintModelSlotSpecs
   defaults: QuintModelDefaultSlots
   governance-floor: QuintModelGovernanceFloor

@@ -449,6 +449,33 @@ check-quint:
 fleet-quint:
     bun run fleet:quint
 
-# Concurrent 35-model Quint MBT dead-action & coverage regression gate (100% action coverage).
+# Concurrent 40-model Quint MBT dead-action & coverage regression gate (100% action coverage).
 mbt-quint:
     bun run mbt:quint
+
+# Audit AI Agent patch/PR diffs (or explicit paths) for G2 defensive hallucinations across TS/C/C++/Rust/Scheme.
+audit-agent-patch *args:
+    bun languages-engineering/ts/defense/agent-audit/agent-defense-audit.ts {{ if args == "" { "--diff" } else { args } }}
+
+# Unified D1-D4 + E2-E3 defensive-engineering verification gate (TS/C/C++/Rust contrasts, CBMC proof, MBT SUT refinement, 24-case 5-language Agent AST benchmark, Gerbil F1-F4/G1-G4/OR01-OR07).
+check-defense:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    mkdir -p .data/test-runs/check-defense
+    bun test languages-engineering/ts/defense/boundary-contrast/contrast.test.ts languages-engineering/ts/defense/boundary-contrast/mbt-replay.test.ts languages-engineering/ts/defense/agent-audit/agent-benchmark.test.ts languages-engineering/ts/defense/agent-audit/agent-defense-audit.test.ts
+    clang -Wall -Wextra -Werror languages-engineering/c/defense/silent-fallback-contrast/bad_defensive.c languages-engineering/c/defense/silent-fallback-contrast/deterministic_boundary.c languages-engineering/c/defense/silent-fallback-contrast/contrast_test.c -o .data/test-runs/check-defense/c_contrast
+    .data/test-runs/check-defense/c_contrast
+    cbmc languages-engineering/c/defense/silent-fallback-contrast/deterministic_boundary.c languages-engineering/c/defense/silent-fallback-contrast/proof.c --bounds-check --pointer-check --unsigned-overflow-check
+    clang++ -std=c++20 -Wall -Wextra -Werror languages-engineering/cpp/defense/raii-fallback-contrast/contrast_test.cpp -o .data/test-runs/check-defense/cpp_contrast
+    .data/test-runs/check-defense/cpp_contrast
+    "$("$HOME/.cargo/bin/rustup" which rustc)" --test languages-engineering/rust/defense/ownership-boundary-contrast/contrast.rs -o .data/test-runs/check-defense/rust_contrast
+    .data/test-runs/check-defense/rust_contrast
+    just test-file t/yanxu/Library/quint-methods/projection-contracts-test.ss
+    just test-file t/yanxu/Library/defensive-boundaries/catalog-contract-test.ss
+    just test-file t/yanxu/Library/defensive-governance/governance-ascent-test.ss
+    just test-file t/yanxu/Library/defensive-governance/agent-benchmark-test.ss
+    just test-file t/yanxu/Library/defense-profiles/convergence-test.ss
+    just test-file t/yanxu/Library/project-organization/repository-organization-test.ss
+    for f in t/yanxu/Quint.Engineering.Defense/*/qualification-test.ss; do
+      just test-file "$f"
+    done

@@ -1,0 +1,41 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# org-target: docs/10-19-design/10-architecture/10.153-defensive-engineering-taxonomy-and-modular-organization.org
+
+direction: right
+
+taxonomy: "3D Problem Space (L x P x M)" {
+  axis_layers: "Axis L: Layers\nL1 Formal & Evidentiary\nL2 Language & Boundaries\nL3 Workflow & Agent Gov"
+  axis_pathologies: "Axis P: Pathologies\nP1 Masking / Silent Fallback\nP2 Misplaced / TOCTOU / Blind Retry\nP3 Over-Blocking / Global Purge\nP4 Defensive Bloat"
+  axis_mutability: "Axis M: Premise Mutability\nM1 Immutable (Sufficiency Stop)\nM2 Negative Domain (Bounded Reval)\nM3 Mutable Root (Use-Time Atomic)"
+}
+
+dag: "Acyclic Layer DAG (OR07: foundation < evidence < domain < method < defense < governance < profile)" {
+  foundation: "0 Foundation\nproject-organization\nproject-formation (OR01-OR07)"
+  evidence: "1 Evidence\nevidence"
+  domain: "2 Domains\nbackpressure-memory\nbounded-capacity\nresource-lifetime"
+  method: "3 Methods\nquint-methods (F3 guard-audit)\nsource-contracts\nrust-resources"
+  defense: "4 Defense\ndefensive-boundaries (C1-C4)\nQuint.Engineering.Defense (4 models)"
+  governance: "5 Governance\ndefensive-governance\nG1 5-tuple / G2 Detector / ASCENT F1-F2"
+  profile: "6 Profiles\ndefense-profiles (Band-5 Meet)\nquint-profiles (3-Axis)"
+
+  profile -> governance
+  profile -> defense
+  profile -> method
+  governance -> defense
+  governance -> evidence
+  defense -> domain
+  method -> domain
+  domain -> foundation
+  evidence -> foundation
+}
+
+contrast: "Executable Refinement & Contrast (C4 + MBT)" {
+  quint: "41 Co-Located Quint Models\n4 Defense Models + Apalache 0.62.1\n100% F3 Guard Audit & 100% MBT"
+  langs: "4-Language Paired Contrast\nTS (bun + MBT ITF replay)\nC (clang + CBMC 50/50)\nC++20 (RAII reverse-drop)\nRust (RAII + typestate)"
+
+  quint -> langs: "--mbt ITF trace replay"
+}
+
+taxonomy -> dag: "by-tag Yuanxu Design 165"
+dag -> contrast: "sealed contracts & projections"

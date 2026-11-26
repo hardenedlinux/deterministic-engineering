@@ -6,7 +6,7 @@
 (export ResourceLifetime)
 (.def ResourceLifetime
   identity: 'resource-lifetime
-  tags: '(engineering domain memory source-contract)
+  tags: '(engineering domain memory source-contract de.layer.domain)
   core: (.o
           admissions: (.o Config: (.o export-path: '(config) contract-path: '(contracts config)))
           scope-contract: (.get CatalogScopeContract value-contract)

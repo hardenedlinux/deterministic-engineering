@@ -54,6 +54,9 @@
   '((authority-current (call isCurrent (. h paused) (. h fresh) (. h credential) (. h bytes)))
     (epoch-current (call epochCurrent (. h epoch) (. h planned)))
     (durable-ack (and (= (. h phase) 2) (. h durable))))
+  guard-classifications:
+  '((authority-current precondition "Imported stateless AuthorityCurrentness framing precondition; durability and rollback witnessed by countermodels")
+    (epoch-current precondition "Imported stateless AuthorityCurrentness epoch precondition; durability and rollback witnessed by countermodels"))
   transitions:
   '((current
       (val current (call isCurrent (. h paused) (. h fresh) (. h credential) (. h bytes))))

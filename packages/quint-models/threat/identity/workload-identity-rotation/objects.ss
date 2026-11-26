@@ -7,7 +7,8 @@
         (only-in :deterministic-engineering/packages/quint-models/threat/zero-trust/authority-currentness/objects
                  AuthorityCurrentnessModel))
 (export WorkloadIdentityRotationModel
-        GraceWindowRevokedCountermodel)
+        GraceWindowRevokedCountermodel
+        ExpiredCredReuseCountermodel)
 
 (.def (WorkloadIdentityRotationModel @ AuthorityCurrentnessModel)
   identity: 'threat.identity.workload-identity-rotation
@@ -129,8 +130,11 @@
         (then init rotateStart emergencyRevoke authenticate checkBlocked)))
     (revokedGraceCountermodelTest
       (run revokedGraceCountermodelTest
-        (then init rotateStart emergencyRevoke authIgnoreRevocation checkUnsafe))))
-  countermodels: (list GraceWindowRevokedCountermodel)
+        (then init rotateStart emergencyRevoke authIgnoreRevocation checkUnsafe)))
+    (expiredCredCountermodelTest
+      (run expiredCredCountermodelTest
+        (then init expireCred authIgnoreValidGeneration checkUnsafe))))
+  countermodels: (list GraceWindowRevokedCountermodel ExpiredCredReuseCountermodel)
   limits: "Finite SVID generation-rotation abstraction; does not model X.509/JWT cryptography, clock drift, or CRL/OCSP transport latency.")
 
 (.def (GraceWindowRevokedCountermodel @ WorkloadIdentityRotationModel)
@@ -140,3 +144,11 @@
   derive-from-transition: 'authenticate
   derive-action-name: 'authIgnoreRevocation
   expected-itf-predicate: "h.sessionActive == true and h.sessionGen == h.revokedGen")
+
+(.def (ExpiredCredReuseCountermodel @ WorkloadIdentityRotationModel)
+  identity: 'threat.identity.workload-identity-rotation.expired-cred-reuse
+  dropped-guard: 'valid-generation
+  step-action: "stepExpiredCredReuse"
+  derive-from-transition: 'authenticate
+  derive-action-name: 'authIgnoreValidGeneration
+  expected-itf-predicate: "h.sessionActive == true and h.sessionExpired == true")

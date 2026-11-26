@@ -10,7 +10,8 @@
 (export BackpressureOwnersModel
         BackpressureEarlyReleaseCountermodel
         BackpressureOverAdmitCountermodel
-        BackpressureQueueOverflowCountermodel)
+        BackpressureQueueOverflowCountermodel
+        BackpressureDuplicateAdmitCountermodel)
 
 (.def (BackpressureOwnersModel @ ThreatModel.)
   identity: 'engineering.concurrency.backpressure-memory
@@ -177,11 +178,18 @@
         (then init (call admitJob 0) (call admitJobQueueOverflow 1)
               (all (assert (not safety))
                    (assert (> (size (. h queued)) (. h queueLimit)))
+                   (keep-h)))))
+    (duplicateAdmitViolatesSafetyTest
+      (run duplicateAdmitViolatesSafetyTest
+        (then init (call admitJob 0) (call startJob 0) (call admitJobDuplicate 0)
+              (all (assert (not safety))
+                   (assert (> (size (intersect (. h queued) (. h running))) 0))
                    (keep-h))))))
   countermodels:
   (list BackpressureEarlyReleaseCountermodel
         BackpressureOverAdmitCountermodel
-        BackpressureQueueOverflowCountermodel)
+        BackpressureQueueOverflowCountermodel
+        BackpressureDuplicateAdmitCountermodel)
   limits: "Finite-state bounded ownership abstraction over 4 discrete job IDs (limit=2, queueLimit=1); makes no Rust scheduler, allocator, byte-accounting, or kernel memory-reclamation claim.")
 
 (.def (BackpressureEarlyReleaseCountermodel @ BackpressureOwnersModel)
@@ -210,3 +218,12 @@
   derive-action-name: 'admitJobQueueOverflow
   derive-step-call: '(nondet ((j jobs)) (call admitJobQueueOverflow j))
   expected-itf-predicate: "size(h.queued) > h.queueLimit")
+
+(.def (BackpressureDuplicateAdmitCountermodel @ BackpressureOwnersModel)
+  identity: 'engineering.concurrency.backpressure-memory.duplicate-admit
+  dropped-guard: 'admit-disjoint-job
+  step-action: "stepDuplicateAdmit"
+  derive-from-transition: 'admitJob
+  derive-action-name: 'admitJobDuplicate
+  derive-step-call: '(nondet ((j jobs)) (call admitJobDuplicate j))
+  expected-itf-predicate: "size(h.queued) + size(h.running) + size(h.returned) + size(h.cleanup) > size(h.admitted) or (size(h.done) > 0 and size(h.queued) > 0)")

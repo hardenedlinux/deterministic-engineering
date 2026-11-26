@@ -65,7 +65,19 @@
                                 "./src/index.ts" "inside")))
     (cons 'declared_file_ref '(("packages/render/package.json" "src" "present")
                                ("projects/library-formation/init.ss" "project-organization" "present")))
-    (cons 'rendered_placement rendered)))
+    (cons 'rendered_placement rendered)
+    (cons 'library_module '(("project-organization") ("evidence") ("backpressure-memory")
+                            ("quint-methods") ("defensive-boundaries")
+                            ("defensive-governance") ("defense-profiles")))
+    (cons 'module_layer '(("project-organization" "de.layer.foundation" "0")
+                          ("evidence" "de.layer.evidence" "1")
+                          ("backpressure-memory" "de.layer.domain" "2")
+                          ("quint-methods" "de.layer.method" "3")
+                          ("defensive-boundaries" "de.layer.defense" "4")
+                          ("defensive-governance" "de.layer.governance" "5")
+                          ("defense-profiles" "de.layer.profile" "6")))
+    (cons 'module_import_edge '(("defensive-governance" "defensive-boundaries")
+                                ("defense-profiles" "defensive-governance")))))
 
 (def repository-organization-test
   (test-suite "Repository organization rules OR01-OR06 and debt detection D1-D6"
@@ -163,4 +175,29 @@
       (def missing-rendered (replace-fact base 'rendered_placement '()))
       (check-equal? (has-finding? (rows (reason-repository-organization missing-rendered) 'finding)
                                   "OR06" "SchemeModule")
+                    #t)
+      ;; OR07 acyclic layer DAG (10.153): missing layer tag, multiple layer tags, reverse layer imports
+      (def untagged-mod
+        (replace-fact base 'library_module (cons '("untagged-leaf") (cdr (assq 'library_module base)))))
+      (check-equal? (and (member '("OR07" "untagged-leaf" "missing-layer-tag")
+                                 (rows (reason-repository-organization untagged-mod) 'finding))
+                         #t)
+                    #t)
+      (def multi-layer
+        (replace-fact base 'module_layer
+                      (cons '("backpressure-memory" "de.layer.profile" "6")
+                            (cdr (assq 'module_layer base)))))
+      (check-equal? (and (member '("OR07" "backpressure-memory" "multiple-layer-tags")
+                                 (rows (reason-repository-organization multi-layer) 'finding))
+                         #t)
+                    #t)
+      (def reverse-edges
+        (replace-fact base 'module_import_edge
+                      '(("backpressure-memory" "defense-profiles")
+                        ("project-organization" "backpressure-memory")
+                        ("backpressure-memory" "defensive-governance"))))
+      (def o7-rows (rows (reason-repository-organization reverse-edges) 'finding))
+      (check-equal? (and (member '("OR07" "backpressure-memory" "reverse-layer-dependency") o7-rows)
+                         (member '("OR07" "project-organization" "reverse-layer-dependency") o7-rows)
+                         #t)
                     #t))))

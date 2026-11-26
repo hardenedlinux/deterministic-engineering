@@ -16,7 +16,8 @@
           quint.domain.threat
           quint.threat.zero-trust
           quint.property.stateless
-          quint.failure.stale-authority)
+          quint.failure.stale-authority
+          defense.mutability.mutable-root)
   slot-specs: QuintModelSlotSpecs
   defaults: QuintStatelessModelDefaultSlots
   core:

@@ -29,6 +29,7 @@ val safety = (owners == h.admitted and size(h.admitted) <= h.limit and size(h.qu
 | =cancel-retains-permit= | =stepEarlyRelease= | =size(h.cleanup) > 0 and not(subseteq(h.cleanup, h.admitted))= |
 | =admit-capacity-bound= | =stepOverAdmit= | =size(h.admitted) > h.limit= |
 | =admit-queue-bound= | =stepQueueOverflow= | =size(h.queued) > h.queueLimit= |
+| =admit-disjoint-job= | =stepDuplicateAdmit= | =size(h.queued) + size(h.running) + size(h.returned) + size(h.cleanup) > size(h.admitted) or (size(h.done) > 0 and size(h.queued) > 0)= |
 
 * Grounded Papers & Specifications
 

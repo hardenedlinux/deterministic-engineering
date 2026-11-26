@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Unknown Remote Effect Retry & Consumption-Time Authority Boundary
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.defense.unknown-effect-retry=
+- *Subdomain*: =quint.engineering.defense=
+- *Quint Module*: =unknown_effect_retry= (=[[file:UnknownEffectRetry.qnt][UnknownEffectRetry.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/defense/unknown-effect-retry/UnknownEffectRetry=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Every dispatched effect is authorized at actual consumption time (authorizedDispatches == dispatches), and no non-idempotent effect is dispatched more than once under an unknown remote outcome.
+
+#+begin_src quint
+val safety = (h.authorizedDispatches == h.dispatches and h.nonIdempotentDispatches <= 1)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =no-blind-retry-unknown-effect= | =stepBlindRetry= | =h.nonIdempotentDispatches > 1= |
+| =check-authority-at-use= | =stepToctouRevokedUse= | =h.authorizedDispatches < h.dispatches= |
+
+* Grounded Papers & Specifications
+
+- *Deterministic Engineering (20.16 CO05 / DE01-S4 / 10.153)*: Unresolved remote effects are not safe retry; request-time allow is not consumption-time authority.
+- *P. Helland (CIDR 2007)*: Life Beyond Distributed Transactions: idempotency contracts under uncertain delivery outcomes.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/defense/unknown-effect-retry/UnknownEffectRetry.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/defense/unknown-effect-retry/UnknownEffectRetry.qnt --main=unknown_effect_retry --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite single-effect retry and revocation abstraction; does not model network packet duplication, compensation saga choreography, or clock skew.

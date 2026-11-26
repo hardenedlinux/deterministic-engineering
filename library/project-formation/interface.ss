@@ -9,7 +9,7 @@
 (def Library (.get ProjectOrganizationLibrary core exports))
 (.def ProjectFormation
   identity: 'project-formation
-  tags: '(engineering driver organization)
+  tags: '(engineering driver organization de.layer.foundation)
   core: (.o
           admissions: (.o
                         Config: (.o

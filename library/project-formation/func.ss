@@ -439,7 +439,7 @@
     (cons 'role_layout (.get profile layout))
     (cons 'role_dependency (.get profile dependencies))))
 
-;; Finite organization placement rules OR01-OR06 (10.150). Pure ASCENT program; no I/O.
+;; Finite organization placement rules OR01-OR07 (10.150 / 10.153). Pure ASCENT program; no I/O.
 (define-program
   (make-organization-placement-program)
   (sources
@@ -455,7 +455,10 @@
    package_export_family
    package_reference
    declared_file_ref
-   rendered_placement)
+   rendered_placement
+   library_module
+   module_layer
+   module_import_edge)
   (outputs
    finding
    or01_finding
@@ -463,7 +466,8 @@
    or03_finding
    or04_finding
    or05_finding
-   or06_finding)
+   or06_finding
+   or07_finding)
   (relation declared_placement ((name string?) (pattern string?)))
   (relation declared_placement_role ((placement string?) (role string?)))
   (relation required_role ((role string?)))
@@ -477,6 +481,9 @@
   (relation package_reference ((dir string?) (pkg string?) (target string?) (scope string?)))
   (relation declared_file_ref ((owner string?) (ref_path string?) (status string?)))
   (relation rendered_placement ((placement string?)))
+  (relation library_module ((mod string?)))
+  (relation module_layer ((mod string?) (layer string?) (rank string?)))
+  (relation module_import_edge ((src string?) (dst string?)))
   (relation finding ((rule string?) (subject string?) (reason string?)))
   (relation or01_finding ((subject string?) (reason string?)))
   (relation or02_finding ((subject string?) (reason string?)))
@@ -484,6 +491,7 @@
   (relation or04_finding ((subject string?) (reason string?)))
   (relation or05_finding ((subject string?) (reason string?)))
   (relation or06_finding ((subject string?) (reason string?)))
+  (relation or07_finding ((subject string?) (reason string?)))
   ;; OR01 single owner: every managed path matches exactly one placement.
   ((or01_finding P (lit "unowned-path"))
    <--
@@ -527,6 +535,23 @@
    <--
    (declared_placement Pl _)
    (not (rendered_placement Pl)))
+  ;; OR07 acyclic layer DAG (10.153): every library module declares one de.layer.* tag
+  ;; and never imports a higher-ranked layer (foundation < evidence < domain < method < defense < governance < profile).
+  ((or07_finding Mod (lit "missing-layer-tag"))
+   <--
+   (library_module Mod)
+   (not (module_layer Mod _ _)))
+  ((or07_finding Mod (lit "multiple-layer-tags"))
+   <--
+   (module_layer Mod L1 _)
+   (module_layer Mod L2 _)
+   (if (L1 L2) (not (equal? L1 L2))))
+  ((or07_finding Src (lit "reverse-layer-dependency"))
+   <--
+   (module_import_edge Src Dst)
+   (module_layer Src _ R1)
+   (module_layer Dst _ R2)
+   (if (R1 R2) (string<? R1 R2)))
   ;; Unified finding projection.
   ((finding (lit "OR01") S R) <-- (or01_finding S R))
   ((finding (lit "OR02") S R) <-- (or02_finding S R))
@@ -534,6 +559,7 @@
   ((finding (lit "OR04") S R) <-- (or04_finding S R))
   ((finding (lit "OR05") S R) <-- (or05_finding S R))
   ((finding (lit "OR06") S R) <-- (or06_finding S R))
+  ((finding (lit "OR07") S R) <-- (or07_finding S R))
   (bounds 4096 4096 4096))
 
 (def OrganizationPlacementDeclaration (make-organization-placement-program))

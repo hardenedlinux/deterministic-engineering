@@ -56,6 +56,18 @@
     :profiles (assurance.bounded-proof bound.standard governance.mandatory-countermodels)
     :test-dir "./t"
 
+  :load-modules "./packages/quint-models/engineering/defense"
+    mode: auto
+    mount: Quint.Engineering.Defense
+    export: QuintEngineeringDefenseSource
+    :profiles (assurance.bounded-proof bound.standard governance.mandatory-countermodels)
+    :test-dir "./t"
+  (epistemic-state-lattice profiles: (bound.extended-counterexample))
+  (bounded-negative-revalidation profiles: (bound.compact))
+  (unknown-effect-retry profiles: (bound.compact))
+  (policy-admission-sufficiency profiles: (bound.compact))
+  (partial-order-delivery profiles: (bound.compact))
+
   ;; ── Threat-First Formal Security Models (5 subdomains) ──
   :load-modules "./packages/quint-models/threat/zero-trust"
     mode: auto

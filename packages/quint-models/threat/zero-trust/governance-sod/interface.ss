@@ -19,7 +19,9 @@
           quint.property.stateful
           quint.property.emergent-invariant
           quint.property.mbt-ready
-          quint.failure.privilege-escalation)
+          quint.failure.privilege-escalation
+          defense.mutability.negative-domain
+          defense.property.guard-declared)
   slot-specs: QuintModelSlotSpecs
   defaults: QuintModelDefaultSlots
   governance-floor: QuintModelGovernanceFloor

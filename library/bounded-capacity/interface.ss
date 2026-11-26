@@ -6,7 +6,7 @@
 (export BoundedCapacity)
 (.def BoundedCapacity
   identity: 'bounded-capacity
-  tags: '(engineering domain numeric source-contract)
+  tags: '(engineering domain numeric source-contract de.layer.domain)
   core: (.o
           admissions: (.o Config: (.o export-path: '(config) contract-path: '(contracts config)))
           scope-contract: (.get CatalogScopeContract value-contract)

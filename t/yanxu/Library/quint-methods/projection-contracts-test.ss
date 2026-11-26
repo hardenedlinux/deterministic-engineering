@@ -170,4 +170,29 @@
                 (.o deterministic-engineering:
                     (.o languages:
                         (.o quint: (.o settings: (.o timeout: 999))))))))
-        TypeError?))))
+        TypeError?))
+
+    (test-case "F3 quint-guard-audit classifies witnessed guards, rejects unwitnessed/redundant guards, and admits explicit preconditions"
+      (def pass-report (quint-guard-audit ZeroTrustPepPdpModel))
+      (validate QuintGuardAuditReportType pass-report)
+      (check-equal? (.get pass-report passed?) #t)
+      (check-equal? (.get pass-report unwitnessed-guards) '())
+      (check-equal? (.get pass-report undeclared-ast-guards) '())
+      ;; Removing one countermodel must fail the F3 guard necessity audit:
+      (def unwitnessed-model
+        (.cc ZeroTrustPepPdpModel 'countermodels (list StalePolicyDecisionCountermodel)))
+      (def fail-report (quint-guard-audit unwitnessed-model))
+      (check-equal? (.get fail-report passed?) #f)
+      (check-equal? (.get fail-report unwitnessed-guards) '(policy-active))
+      ;; Explicit 'precondition annotation justifies a domain framing guard:
+      (def precond-model
+        (.cc unwitnessed-model
+             'guard-classifications '((policy-active precondition "Explicit domain well-formedness frame"))))
+      (def precond-report (quint-guard-audit precond-model))
+      (check-equal? (.get precond-report passed?) #t)
+      ;; Explicit 'redundant annotation still fails passed? so redundant defenses cannot pass silently:
+      (def redundant-model
+        (.cc unwitnessed-model
+             'guard-classifications '((policy-active redundant "Pruned guard left safety intact"))))
+      (def redundant-report (quint-guard-audit redundant-model))
+      (check-equal? (.get redundant-report passed?) #f))))

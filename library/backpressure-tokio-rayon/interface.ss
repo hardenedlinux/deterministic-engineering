@@ -9,7 +9,7 @@
 (def Parent (.get BackpressureLibrary core exports))
 (.def TokioRayonLibrary
   identity: 'backpressure-tokio-rayon
-  tags: '(engineering domain rust concurrency)
+  tags: '(engineering domain rust concurrency de.layer.domain)
   core: (.o
     admissions: (.o
       Config: (.o export-path: '(config) contract-path: '(contracts config)))

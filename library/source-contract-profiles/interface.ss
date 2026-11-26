@@ -10,7 +10,7 @@
 (def Driver (.get SourceContracts core exports))
 (.def ProfileModule
   identity: 'source-contract-profiles
-  tags: '(engineering profile source-contract)
+  tags: '(engineering profile source-contract de.layer.profile)
   core:
   (.o
     admissions: (.o Config: (.o export-path: '(config) contract-path: '(config-type)))

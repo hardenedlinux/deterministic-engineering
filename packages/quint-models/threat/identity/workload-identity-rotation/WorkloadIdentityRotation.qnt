@@ -5,6 +5,7 @@
 // @apalache-version 0.62.1
 // @verify safety max-steps=12
 // @countermodel revocation-overrides-overlap step=stepGraceWindowReuse max-steps=6 itf="h.sessionActive == true and h.sessionGen == h.revokedGen"
+// @countermodel valid-generation step=stepExpiredCredReuse max-steps=6 itf="h.sessionActive == true and h.sessionExpired == true"
 // Limits: Finite SVID generation-rotation abstraction; does not model X.509/JWT cryptography, clock drift, or CRL/OCSP transport latency.
 module workload_identity_rotation {
   import authority_currentness.* from "../../zero-trust/authority-currentness/AuthorityCurrentness"
@@ -23,6 +24,9 @@ module workload_identity_rotation {
   // Countermodel threat.identity.workload-identity-rotation.revoked-in-grace-window (dropped guard: revocation-overrides-overlap)
   action authIgnoreRevocation = if ((inWindow and true)) h' = h.with("accepted", (h.accepted + 1)).with("sessionActive", true).with("sessionGen", h.credGen).with("sessionExpired", h.credExpired) else h' = h
   action stepGraceWindowReuse = any { step, authIgnoreRevocation }
+  // Countermodel threat.identity.workload-identity-rotation.expired-cred-reuse (dropped guard: valid-generation)
+  action authIgnoreValidGeneration = if ((true and h.credGen != h.revokedGen)) h' = h.with("accepted", (h.accepted + 1)).with("sessionActive", true).with("sessionGen", h.credGen).with("sessionExpired", h.credExpired) else h' = h
+  action stepExpiredCredReuse = any { step, authIgnoreValidGeneration }
   action checkSafe = all { assert(safety), h' = h }
   action checkBlocked = all { assert(h.accepted == 0), assert(safety), h' = h }
   action checkUnsafe = all { assert(not(safety)), h' = h }
@@ -30,4 +34,5 @@ module workload_identity_rotation {
   run retireBlocksOldCredTest = init.then(rotateStart).then(retireOverlap).then(authenticate).then(checkBlocked)
   run revocationOverridesOverlapTest = init.then(rotateStart).then(emergencyRevoke).then(authenticate).then(checkBlocked)
   run revokedGraceCountermodelTest = init.then(rotateStart).then(emergencyRevoke).then(authIgnoreRevocation).then(checkUnsafe)
+  run expiredCredCountermodelTest = init.then(expireCred).then(authIgnoreValidGeneration).then(checkUnsafe)
 }

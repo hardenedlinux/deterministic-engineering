@@ -6,7 +6,7 @@
 (export SourceContracts)
 (.def SourceContracts
   identity: 'source-contracts
-  tags: '(engineering method verification source-contract)
+  tags: '(engineering method verification source-contract de.layer.method)
   core:
   (.o
     admissions:

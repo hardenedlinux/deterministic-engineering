@@ -8,7 +8,7 @@
 (export BackpressureLibrary)
 (.def BackpressureLibrary
   identity: 'backpressure-memory
-  tags: '(engineering domain concurrency)
+  tags: '(engineering domain concurrency de.layer.domain)
   core: (.o
           admissions: (.o
                         Config: (.o

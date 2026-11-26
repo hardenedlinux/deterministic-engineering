@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Six-State Epistemic Lattice & Non-Collapsing Defense Boundaries
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.defense.epistemic-state-lattice=
+- *Subdomain*: =quint.engineering.defense=
+- *Quint Module*: =epistemic_state_lattice= (=[[file:EpistemicStateLattice.qnt][EpistemicStateLattice.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/defense/epistemic-state-lattice/EpistemicStateLattice=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=8=
+
+* Emergent Safety Invariant
+
+Missing expected body (SetupDefect), incomplete method/scope (PendingMethod/PendingScope), and unresolved contradictory records (Conflict) never collapse into Proven (3) or Refuted (4).
+
+#+begin_src quint
+val safety = ((h.bodyPresent or (h.status != 3 and h.status != 4)) and ((h.methodDone and h.scopeKnown) or (h.status != 3 and h.status != 4)) and (not((h.hasAllow and h.hasDeny)) or h.conflictResolved or (h.status != 3 and h.status != 4)))
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =no-fallback-on-defect= | =stepFallbackOnDefect= | =h.bodyPresent == false and h.status == 3= |
+| =no-violation-on-pending= | =stepViolationOnPending= | =h.status == 4 and (h.methodDone == false or h.scopeKnown == false)= |
+| =preserve-conflict-no-lww= | =stepConflictLww= | =h.hasAllow == true and h.hasDeny == true and h.conflictResolved == false and h.status == 3= |
+
+* Grounded Papers & Specifications
+
+- *N. D. Belnap (1977)*: A Useful Four-Valued Logic: separating Proven, Refuted, Unknown, and Conflict without explosion.
+- *Deterministic Engineering (20.16 / 10.153)*: F1 six-state contract lattice: SetupDefect, PendingMethod, PendingScope, Proven, Refuted, and Conflict.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/defense/epistemic-state-lattice/EpistemicStateLattice.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/defense/epistemic-state-lattice/EpistemicStateLattice.qnt --main=epistemic_state_lattice --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite six-state epistemic abstraction (0=SetupDefect, 1=PendingMethod, 2=PendingScope, 3=Proven, 4=Refuted, 5=Conflict); does not model cryptographic signature verification or external authority transport.

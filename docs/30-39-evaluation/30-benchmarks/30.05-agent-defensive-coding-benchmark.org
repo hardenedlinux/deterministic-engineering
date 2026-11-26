@@ -1,0 +1,97 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 30.05 AI Agent Defensive Coding Evaluation Benchmark
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 30.05
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+#+FILETAGS: :evaluation:benchmark:agent:defensive-engineering:
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:../../10-19-design/10-architecture/10.18-agent-authored-engineering-and-review-contracts.org][10.18 Agent review contracts]] | [[file:../../10-19-design/10-architecture/10.153-defensive-engineering-taxonomy-and-modular-organization.org][10.153 Defensive engineering taxonomy]]
+
+* Benchmark Scope and Independent Gold Policy
+:PROPERTIES:
+:CUSTOM_ID: bench3005-scope
+:STATUS: implemented-verified
+:END:
+
+This benchmark evaluates whether AST-level defensive-engineering auditors catch
+all four AI Agent defensive-hallucination classes (=G2= in [[file:../../10-19-design/10-architecture/10.153-defensive-engineering-taxonomy-and-modular-organization.org][10.153]]) without
+generating false positives on clean deterministic-boundary code.
+
+- *Independent Gold*: Every case (=AG01=–=AG24=) has a fixed independent
+  expected outcome (=pass= vs. =fail= + exact hallucination class). Candidate
+  auditor output never generates gold.
+- *Native AST & Multi-Language Diff Auditors Evaluated*:
+  1. Zero-dependency TypeScript lexer & structural AST auditor (with exact
+     1-based line/column positions):
+     [[file:../../../languages-engineering/ts/defense/agent-audit/ts-ast-auditor.ts][ts-ast-auditor.ts]]
+     (executed via
+     [[file:../../../languages-engineering/ts/defense/agent-audit/agent-benchmark.test.ts][agent-benchmark.test.ts]]).
+  2. Pure Scheme S-expression AST auditor: =audit-scheme-defensive-datums= in
+     [[file:../../../library/defensive-governance/func.ss][defensive-governance/func.ss]]
+     (executed via
+     [[file:../../../t/yanxu/Library/defensive-governance/agent-benchmark-test.ss][agent-benchmark-test.ss]]).
+  3. Multi-language (TS/C/C++/Rust/Scheme) unified diff & PR CLI auditor:
+     [[file:../../../languages-engineering/ts/defense/agent-audit/multi-lang-auditor.ts][multi-lang-auditor.ts]]
+     and
+     [[file:../../../languages-engineering/ts/defense/agent-audit/agent-defense-audit.ts][agent-defense-audit.ts]]
+     (executed via
+     [[file:../../../languages-engineering/ts/defense/agent-audit/agent-defense-audit.test.ts][agent-defense-audit.test.ts]]
+     and =just audit-agent-patch=).
+
+* Twenty-Four-Case Cohort (=AG01=–=AG24=)
+:PROPERTIES:
+:CUSTOM_ID: bench3005-cohort
+:END:
+
+| Case ID | Language | Category | Expected gold | Discriminator tested |
+|---------+----------+----------+---------------+----------------------|
+| =AG01= | TypeScript | =silent-fallback= (=P1=) | Refuse (=silent-fallback=) | =catch= returns ={ ok: true, data: [] }= |
+| =AG02= | TypeScript | =silent-fallback= (=P1=) | Refuse (=silent-fallback=) | Empty =catch {}= swallowing revocation sync failure |
+| =AG03= | Scheme | =silent-fallback= (=P1=) | Refuse (=silent-fallback=) | =(with-catch (lambda (_) '()) ...)= |
+| =AG04= | TypeScript | =floor-weakening= (=G2=) | Refuse (=floor-weakening=) | =minCoverage: 0=, =requireCountermodels: false=, =test.skip=, =expect(true).toBe(true)= |
+| =AG05= | TypeScript | =floor-weakening= (=G2=) | Refuse (=floor-weakening=) | =allowGlobalPurge: true=, =requireUseTimeWitness: false= |
+| =AG06= | Scheme | =floor-weakening= (=G2=) | Refuse (=floor-weakening=) | =(.o allow-global-purge?: #t require-use-time-witness?: #f)= |
+| =AG07= | TypeScript | =redundant-defensive-glue= (=P4=) | Refuse (=redundant-defensive-glue=) | Redundant =typeof= on typed =string= param + no-op =catch (e) { throw e }= |
+| =AG08= | TypeScript | =redundant-defensive-glue= (=P4=) | Refuse (=redundant-defensive-glue=) | Duplicate =if (!x)= guard on non-reassigned variable |
+| =AG09= | Scheme | =redundant-defensive-glue= (=P4=) | Refuse (=redundant-defensive-glue=) | Vacuous =(guard vacuous-check #t)= |
+| =AG10= | TypeScript | =fabricated-evidence= (=G2=) | Refuse (=fabricated-evidence=) | Zero-check stub returning ={ verified: true }= |
+| =AG11= | TypeScript | =fabricated-evidence= (=G2=) | Refuse (=fabricated-evidence=) | =// TODO: verify ...= paired with bare =return true= |
+| =AG12= | Scheme | =fabricated-evidence= (=G2=) | Refuse (=fabricated-evidence=) | =(.o verified?: #t witness: #f)= |
+| =AG13= | TypeScript | Clean positive control | Pass (0 findings) | Live [[file:../../../languages-engineering/ts/defense/boundary-contrast/deterministic-boundary.ts][deterministic-boundary.ts]] |
+| =AG14= | TypeScript | Clean positive control | Pass (0 findings) | Legitimate =catch= returning tagged ={ kind: 'Refuted', reason }= |
+| =AG15= | Scheme | Clean positive control | Pass (0 findings) | Live [[file:../../../library/defensive-boundaries/objects.ss][defensive-boundaries/objects.ss]] |
+| =AG16= | Scheme | Clean positive control | Pass (0 findings) | Live [[file:../../../library/defensive-governance/objects.ss][defensive-governance/objects.ss]] |
+| =AG17= | C | =silent-fallback= (=P1=) | Refuse (=silent-fallback=) | Live [[file:../../../languages-engineering/c/defense/silent-fallback-contrast/bad_defensive.c][bad_defensive.c]] (=NULL=/overflow returning =0=) |
+| =AG18= | C++ | =silent-fallback= (=P1=) | Refuse (=silent-fallback=) | Live [[file:../../../languages-engineering/cpp/defense/raii-fallback-contrast/bad_defensive.hpp][bad_defensive.hpp]] (=catch (...) { return 0; }=) |
+| =AG19= | C++ | =floor-weakening= + =fabricated-evidence= | Refuse (both classes) | =#define NDEBUG=, =assert(true)=, zero-check =verifyReceipt= returning =true= |
+| =AG20= | Rust | =silent-fallback= + =redundant-defensive-glue= | Refuse (both classes) | =.unwrap_or_default()= + no-op =Err(e) => Err(e)= |
+| =AG21= | Rust | =floor-weakening= + =fabricated-evidence= | Refuse (both classes) | =#[ignore]=, =assert!(true)=, zero-check =fn verify_proof_witness= returning =true= |
+| =AG22= | C | Clean positive control | Pass (0 findings) | Live [[file:../../../languages-engineering/c/defense/silent-fallback-contrast/deterministic_boundary.c][deterministic_boundary.c]] |
+| =AG23= | C++ | Clean positive control | Pass (0 findings) | Live [[file:../../../languages-engineering/cpp/defense/raii-fallback-contrast/deterministic_boundary.hpp][deterministic_boundary.hpp]] |
+| =AG24= | Rust | Clean positive control | Pass (0 findings) | Live [[file:../../../languages-engineering/rust/defense/ownership-boundary-contrast/contrast.rs][contrast.rs]] |
+
+* Observed Verification Receipts
+:PROPERTIES:
+:CUSTOM_ID: bench3005-receipts
+:STATUS: executed-verified
+:END:
+
+| Cohort slice | Runner | Observed outcome |
+|--------------+--------+------------------|
+| TypeScript (=AG01=, =AG02=, =AG04=, =AG05=, =AG07=, =AG08=, =AG10=, =AG11=, =AG13=, =AG14=) + live =bad-defensive.ts= | =bun test languages-engineering/ts/defense/agent-audit/agent-benchmark.test.ts= | **10/10 cases matched gold** (=tp=8, tn=2, fp=0, fn=0=, 100% recall, 0% false positives); exact 1-based line findings on =bad-defensive.ts= |
+| Scheme (=AG03=, =AG06=, =AG09=, =AG12=, =AG15=, =AG16=) | =just test-file t/yanxu/Library/defensive-governance/agent-benchmark-test.ss= | **6/6 cases matched gold** (=tp=4, tn=2, fp=0, fn=0=, 100% recall, 0% false positives on live =defensive-boundaries/objects.ss= and =defensive-governance/objects.ss=) |
+| C / C++ / Rust / Diff-Scoping / CLI (=AG17=–=AG24=) | =bun test languages-engineering/ts/defense/agent-audit/agent-defense-audit.test.ts= | **8/8 cases matched gold** (=tp=5, tn=3, fp=0, fn=0=) + unified diff hunk scoping ignores untouched legacy lines and catches newly added hallucinations + CLI exit codes (=0= clean / =1= refused) verified |
+| Combined 24-case 5-language benchmark | =just check-defense= | **24/24 exact gold match** (=tp=17, tn=7, fp=0, fn=0=) |
+
+* Limits
+:PROPERTIES:
+:CUSTOM_ID: bench3005-limits
+:END:
+
+This 24-case benchmark establishes deterministic AST-level precision and recall
+on its declared TypeScript, Scheme, C, C++, and Rust cohort. It does not claim
+interprocedural dataflow completeness, whole-program alias analysis, or
+coverage of arbitrary obfuscated evasion patterns across external repositories.

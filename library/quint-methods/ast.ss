@@ -13,6 +13,8 @@
         quint-counter-ast-state-refs-valid?
         quint-expr-contains-guard?
         quint-decl-contains-guard?
+        quint-expr-collect-guards
+        quint-decl-collect-guards
         quint-expr-drop-guard
         quint-decl-drop-guard
         quint-derive-countermodel-decls
@@ -216,6 +218,50 @@
       ((val pure-val run)
        (quint-expr-contains-guard? (caddr d) target-guard))
       (else #f))))
+
+(def (dedup-symbols xs)
+  (let loop ((rest xs) (seen '()) (acc '()))
+    (cond
+     ((null? rest) (reverse acc))
+     ((memq (car rest) seen) (loop (cdr rest) seen acc))
+     (else (loop (cdr rest) (cons (car rest) seen) (cons (car rest) acc))))))
+
+(def (quint-expr-collect-guards-raw e)
+  (cond
+   ((not (pair? e)) '())
+   ((eq? (car e) 'guard)
+    (append (list (cadr e))
+            (quint-expr-collect-guards-raw (caddr e))
+            (if (= (length e) 4) (quint-expr-collect-guards-raw (cadddr e)) '())))
+   ((memq (car e) '(set-h record))
+    (apply append (map (lambda (p) (quint-expr-collect-guards-raw (cadr p))) (cdr e))))
+   ((eq? (car e) 'nondet)
+    (append (apply append (map (lambda (p) (quint-expr-collect-guards-raw (cadr p))) (cadr e)))
+            (quint-expr-collect-guards-raw (caddr e))))
+   ((eq? (car e) 'exists)
+    (append (quint-expr-collect-guards-raw (cadr e))
+            (quint-expr-collect-guards-raw (cadddr e))))
+   ((eq? (car e) 'call)
+    (apply append (map quint-expr-collect-guards-raw (cddr e))))
+   ((eq? (car e) +dot-sym+) '())
+   (else
+    (apply append (map quint-expr-collect-guards-raw (cdr e))))))
+
+(def (quint-expr-collect-guards e)
+  (dedup-symbols (quint-expr-collect-guards-raw e)))
+
+(def (quint-decl-collect-guards d)
+  (if (not (quint-decl? d))
+    '()
+    (case (car d)
+      ((action)
+       (let ((body (if (= (length d) 4) (cadddr d) (car (cddddr d)))))
+         (quint-expr-collect-guards body)))
+      ((pure-def)
+       (quint-expr-collect-guards (car (cddddr d))))
+      ((val pure-val run)
+       (quint-expr-collect-guards (caddr d)))
+      (else '()))))
 
 ;; Automatic guard pruning metaprogramming: structurally rewrites
 ;; (guard target-id expr [fallback]) -> fallback (default #t) inside an AST while keeping all other guards intact.

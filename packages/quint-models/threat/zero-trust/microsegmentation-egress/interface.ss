@@ -19,7 +19,9 @@
           quint.property.stateful
           quint.property.emergent-invariant
           quint.property.mbt-ready
-          quint.failure.lateral-movement)
+          quint.failure.lateral-movement
+          defense.mutability.mutable-root
+          defense.property.guard-declared)
   slot-specs: QuintModelSlotSpecs
   defaults: QuintModelDefaultSlots
   governance-floor: QuintModelGovernanceFloor

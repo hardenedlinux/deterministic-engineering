@@ -27,6 +27,9 @@
       (def eff-profile (or profile (quint-model->verification-profile model)))
       (def plan (quint-plan model eff-profile DefaultQuintPolicy))
       (validate QuintPlanType plan)
+      (def guard-audit (quint-guard-audit model))
+      (validate QuintGuardAuditReportType guard-audit)
+      (check-equal? (.get guard-audit passed?) #t)
       (def expected-text (quint-module model))
       (def model-dir
         (path-expand (.get model domain-dir)

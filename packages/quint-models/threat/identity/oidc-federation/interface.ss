@@ -19,7 +19,9 @@
           quint.property.stateful
           quint.property.emergent-invariant
           quint.property.mbt-ready
-          quint.failure.identity-confusion)
+          quint.failure.identity-confusion
+          defense.mutability.immutable
+          defense.property.guard-declared)
   slot-specs: QuintModelSlotSpecs
   defaults: QuintModelDefaultSlots
   governance-floor: QuintModelGovernanceFloor

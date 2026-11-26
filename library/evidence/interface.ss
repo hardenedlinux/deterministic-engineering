@@ -8,7 +8,7 @@
 (export ResourceEvidence)
 (.def ResourceEvidence
   identity: 'evidence
-  tags: '(engineering driver reasoning source-contract)
+  tags: '(engineering driver reasoning source-contract de.layer.evidence)
   core:
   (.o
     admissions: (.o Config: (.o export-path: '(config) contract-path: '(config-contract)))

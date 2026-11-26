@@ -16,6 +16,7 @@ import {packageSourceResolver} from './resolver.ts';
 import {executePlan} from './plan.ts';
 import {composeQuintFiles, expandExtendedQntFile, writeExpandedQntFile} from './compose.ts';
 import {auditMbtCoverage, runFleetPlans} from './mbt.ts';
+import {probeGuardNecessity} from './guard-probe.ts';
 import {discoverInstalledQuintModels, verifyInstalledQuintPackages} from './pkg.ts';
 
 const req = createRequire(import.meta.url);
@@ -257,6 +258,60 @@ export async function runCli(argv: string[]) {
     const verify = argv.includes('--verify');
     const summary = executePlan(targetPath, {verify});
     console.log(`PLAN-OK ${targetPath} (passed=${summary.passed}, skipped=${summary.skipped}, verify=${verify})`);
+    return;
+  }
+  if (argv[0] === 'guard-probe') {
+    const targetPath = argv[1];
+    if (!targetPath) {
+      console.error('Usage: quint-modules-resolver guard-probe <Model.qnt> --action=<name> --guard-expr=<expr> [--fallback=<expr>] [--main=<mod>] [--invariant=<inv>] [--max-steps=6] [--json]');
+      process.exit(2);
+    }
+    let action: string | undefined;
+    let guardExpr: string | undefined;
+    let fallbackExpr: string | undefined;
+    let main: string | undefined;
+    let invariant: string | undefined;
+    let maxSteps: number | undefined;
+    let jsonOut = false;
+    for (let i = 2; i < argv.length; i++) {
+      const tok = argv[i]!;
+      if (tok === '--json') {
+        jsonOut = true;
+        continue;
+      }
+      const eq = tok.indexOf('=');
+      const key = eq >= 0 ? tok.slice(0, eq) : tok;
+      const val = eq >= 0 ? tok.slice(eq + 1) : argv[++i];
+      if (key === '--action') action = val;
+      else if (key === '--guard-expr') guardExpr = val;
+      else if (key === '--fallback') fallbackExpr = val;
+      else if (key === '--main') main = val;
+      else if (key === '--invariant') invariant = val;
+      else if (key === '--max-steps') maxSteps = Number(val);
+      else {
+        console.error(`Unknown guard-probe option: ${tok}`);
+        process.exit(2);
+      }
+    }
+    if (!action || !guardExpr) {
+      console.error('guard-probe requires --action=<name> and --guard-expr=<expr>');
+      process.exit(2);
+    }
+    const report = probeGuardNecessity(targetPath, {
+      action,
+      guardExpr,
+      fallbackExpr,
+      main,
+      invariant,
+      maxSteps,
+    });
+    if (jsonOut) {
+      console.log(JSON.stringify(report, null, 2));
+    } else {
+      console.log(
+        `GUARD-PROBE ${report.module}.${report.action} classification=${report.classification} counterexample=${report.counterexampleFound} maxSteps=${report.maxSteps} (${report.durationMs}ms)`,
+      );
+    }
     return;
   }
   if (argv[0] === 'mbt-audit') {

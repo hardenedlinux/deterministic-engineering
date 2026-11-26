@@ -7,6 +7,7 @@
 // @countermodel cancel-retains-permit step=stepEarlyRelease max-steps=6 itf="size(h.cleanup) > 0 and not(subseteq(h.cleanup, h.admitted))"
 // @countermodel admit-capacity-bound step=stepOverAdmit max-steps=6 itf="size(h.admitted) > h.limit"
 // @countermodel admit-queue-bound step=stepQueueOverflow max-steps=6 itf="size(h.queued) > h.queueLimit"
+// @countermodel admit-disjoint-job step=stepDuplicateAdmit max-steps=6 itf="size(h.queued) + size(h.running) + size(h.returned) + size(h.cleanup) > size(h.admitted) or (size(h.done) > 0 and size(h.queued) > 0)"
 // Limits: Finite-state bounded ownership abstraction over 4 discrete job IDs (limit=2, queueLimit=1); makes no Rust scheduler, allocator, byte-accounting, or kernel memory-reclamation claim.
 module BackpressureOwners {
   type State = { limit: int, queueLimit: int, admitted: Set[int], queued: Set[int], running: Set[int], returned: Set[int], cleanup: Set[int], done: Set[int] }
@@ -46,9 +47,14 @@ module BackpressureOwners {
   action admitJobQueueOverflow(j: int): bool = all { (not(owners.contains(j)) and not(h.done.contains(j))), size(h.admitted) < h.limit, true, h' = h.with("admitted", h.admitted.union(Set(j))).with("queued", h.queued.union(Set(j))) }
   action stepQueueOverflow = any { step, { nondet j = jobs.oneOf()
     admitJobQueueOverflow(j) } }
+  // Countermodel engineering.concurrency.backpressure-memory.duplicate-admit (dropped guard: admit-disjoint-job)
+  action admitJobDuplicate(j: int): bool = all { true, size(h.admitted) < h.limit, size(h.queued) < h.queueLimit, h' = h.with("admitted", h.admitted.union(Set(j))).with("queued", h.queued.union(Set(j))) }
+  action stepDuplicateAdmit = any { step, { nondet j = jobs.oneOf()
+    admitJobDuplicate(j) } }
   run validLifecycleTest = init.then(admitJob(0)).then(startJob(0)).then(finishJob(0)).then(drainJob(0)).then(all { assert(safety), assert(size(h.done) == 1), assert(size(h.admitted) == 0), h' = h })
   run cancelCleanupTest = init.then(admitJob(0)).then(startJob(0)).then(cancelJob(0)).then(all { assert(safety), assert(size(h.cleanup) == 1), assert(h.cleanup.subseteq(h.admitted)), h' = h }).then(cleanJob(0)).then(all { assert(safety), assert(size(h.done) == 1), h' = h })
   run earlyReleaseViolatesSafetyTest = init.then(admitJob(0)).then(startJob(0)).then(cancelJobEarlyRelease(0)).then(all { assert(not(safety)), assert(size(h.cleanup) > 0), assert(not(h.cleanup.subseteq(h.admitted))), h' = h })
   run overAdmitViolatesSafetyTest = init.then(admitJob(0)).then(startJob(0)).then(admitJob(1)).then(startJob(1)).then(admitJobOverCapacity(2)).then(all { assert(not(safety)), assert(size(h.admitted) > h.limit), h' = h })
   run queueOverflowViolatesSafetyTest = init.then(admitJob(0)).then(admitJobQueueOverflow(1)).then(all { assert(not(safety)), assert(size(h.queued) > h.queueLimit), h' = h })
+  run duplicateAdmitViolatesSafetyTest = init.then(admitJob(0)).then(startJob(0)).then(admitJobDuplicate(0)).then(all { assert(not(safety)), assert(size(h.queued.intersect(h.running)) > 0), h' = h })
 }

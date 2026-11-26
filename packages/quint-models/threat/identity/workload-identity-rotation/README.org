@@ -27,6 +27,7 @@ val safety = (not(h.sessionActive) or (h.sessionGen != h.revokedGen and not(h.se
 | Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
 |----------+----------------------+---------------------------------------|
 | =revocation-overrides-overlap= | =stepGraceWindowReuse= | =h.sessionActive == true and h.sessionGen == h.revokedGen= |
+| =valid-generation= | =stepExpiredCredReuse= | =h.sessionActive == true and h.sessionExpired == true= |
 
 * Grounded Papers & Specifications
 

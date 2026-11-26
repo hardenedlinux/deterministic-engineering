@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Evidence Sufficiency vs. Policy-Required Checks & Method Admission (20.17-20.18)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.defense.policy-admission-sufficiency=
+- *Subdomain*: =quint.engineering.defense=
+- *Quint Module*: =policy_admission_sufficiency= (=[[file:PolicyAdmissionSufficiency.qnt][PolicyAdmissionSufficiency.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/defense/policy-admission-sufficiency/PolicyAdmissionSufficiency=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Refusing an offered binding never deletes authentic original method bytes; a policy-qualified verdict always has sufficient underlying history, an admitted method mapping (status == 1), and a direct boundary record whenever authentic policy requires one.
+
+#+begin_src quint
+val safety = (h.methodPreserved and (not(h.verdictQualified) or h.historySufficient) and (not(h.verdictQualified) or not(h.policyRequiresDirectRecord) or h.directRecordPresent) and (not(h.verdictQualified) or h.methodAdmissionStatus == 1))
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =enforce-policy-direct-record= | =stepBypassDirectRecord= | =h.verdictQualified == true and h.policyRequiresDirectRecord == true and h.directRecordPresent == false= |
+| =require-admitted-method-mapping= | =stepUnadmittedMethod= | =h.verdictQualified == true and h.methodAdmissionStatus != 1= |
+| =preserve-authentic-method-on-refusal= | =stepPurgeMethodOnRefusal= | =h.methodPreserved == false= |
+
+* Grounded Papers & Specifications
+
+- *Deterministic Engineering (20.17 HA/AH & 20.18 OP/BR/AM)*: Sufficient existing evidence stops redundant format demands, while authentic mandatory policy clauses and method admission mappings remain strictly enforced.
+- *Deterministic Engineering (10.153)*: G3 Monotonic governance floor vs. M1 sufficiency stopping.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/defense/policy-admission-sufficiency/PolicyAdmissionSufficiency.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/defense/policy-admission-sufficiency/PolicyAdmissionSufficiency.qnt --main=policy_admission_sufficiency --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite single-verdict policy-admission and sufficiency abstraction (methodAdmissionStatus: 0=unknown, 1=admitted, 2=forbidden); does not model multi-tenant delegation chains or cryptographic receipt verification.

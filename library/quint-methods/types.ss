@@ -15,6 +15,7 @@
         QuintCountermodelType QuintDomainModelShape QuintDomainModelType
         ThreatDomainModelType EngineeringDomainModelType
         QuintCheckStep QuintPolicyType QuintProfileType QuintPlanType
+        QuintGuardClassification QuintGuardAuditEntryType QuintGuardAuditReportType
         QuintMethodsContractsShape QuintMethodsScopeType)
 
 (def (list-tuple-type id . elem-types)
@@ -103,6 +104,7 @@
            parameters: [(List QuintParamRow)]
            state: [(List QuintStateField)]
            guards: [(List QuintGuardRow)]
+           guard-classifications: [(List Any) optional: #t]
            transitions: [(List QuintTransitionRow)]
            safety: [(Or LibraryNonemptyString QuintExprASTType)]
            traces: [(List QuintTraceRow)]
@@ -253,12 +255,42 @@
            (and (pair? steps)
                 (and (find (lambda (s) (equal? (.get s kind) "typecheck")) steps) #t))))))
 
+(define-type QuintGuardClassification
+  (Or (Exactly 'essential)
+      (Exactly 'precondition)
+      (Exactly 'redundant)
+      (Exactly 'under-modeled)
+      (Exactly 'unwitnessed)))
+
+(define-type
+  (QuintGuardAuditEntryType @
+   (Record guard-id: [Symbol]
+           classification: [QuintGuardClassification]
+           in-ast?: [Bool]
+           witnessed?: [Bool]
+           witness: [LibraryNonemptyString optional: #t]
+           rationale: [LibraryNonemptyString optional: #t]))
+  sealed: #t)
+
+(define-type
+  (QuintGuardAuditReportType @
+   (Record model-identity: [Symbol]
+           declared-guards: [(List Symbol)]
+           ast-guards: [(List Symbol)]
+           witnessed-guards: [(List Symbol)]
+           unwitnessed-guards: [(List Symbol)]
+           undeclared-ast-guards: [(List Symbol)]
+           entries: [(List QuintGuardAuditEntryType)]
+           passed?: [Bool]))
+  sealed: #t)
+
 (define-type
   (QuintMethodsContractsShape @
    (Record policy: [Type]
            plan: [Type]
            profile: [Type]
            step: [Type]
+           guard-audit: [Type]
            scope: [Type]))
   sealed: #t)
 
@@ -269,5 +301,6 @@
             project-module: [(Function (list Object) (list LibraryNonemptyString))]
             project-readme: [(Function (list Object) (list LibraryNonemptyString))]
             plan: [(Function (list Object QuintProfileType QuintPolicyType) (list QuintPlanType))]
+            audit-guards: [(Function (list Object) (list QuintGuardAuditReportType))]
             contracts: [QuintMethodsContractsShape])
     'identity 'quint-methods/scope))

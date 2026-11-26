@@ -6,7 +6,7 @@
 (export ProfileModule)
 (.def ProfileModule
   identity: 'library-formation-profiles
-  tags: '(engineering profile)
+  tags: '(engineering profile de.layer.profile)
   core:
   (.o
     admissions: (.o Config: (.o export-path: '(config) contract-path: '(config-type)))

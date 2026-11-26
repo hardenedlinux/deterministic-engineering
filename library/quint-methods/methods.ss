@@ -10,11 +10,12 @@
         (only-in "objects.ss" ThreatModel.)
         "ast.ss"
         "types.ss")
-(export quint-module quint-plan quint-model-readme)
+(export quint-module quint-plan quint-model-readme quint-guard-audit)
 
 (.defgeneric quint-module (model))
 (.defgeneric quint-plan (model profile policy))
 (.defgeneric quint-model-readme (model))
+(.defgeneric quint-guard-audit (model))
 
 (def (join-lines items sep)
   (let loop ((rest items) (acc ""))
@@ -246,3 +247,83 @@
       (display "#+end_src\n\n" out)
       (display "* Explicit Limits\n\n" out)
       (fprintf out "%a\n" limits))))
+
+(def (dedup-syms xs)
+  (let loop ((rest xs) (seen '()) (acc '()))
+    (cond
+     ((null? rest) (reverse acc))
+     ((memq (car rest) seen) (loop (cdr rest) seen acc))
+     (else (loop (cdr rest) (cons (car rest) seen) (cons (car rest) acc))))))
+
+(.defmethod (quint-guard-audit (model (prototype ThreatModel.)))
+  (validate QuintDomainModelType model)
+  (def decl-guards (dedup-syms (map car (.get model guards))))
+  (def ast-guard-ids
+    (dedup-syms
+      (apply append
+        (map (lambda (tr)
+               (let ((body (cadr tr)))
+                 (if (quint-decl? body) (quint-decl-collect-guards body) '())))
+             (.get model transitions)))))
+  (def cms (.get model countermodels))
+  (def wit-guards (dedup-syms (map (lambda (cm) (.get cm dropped-guard)) cms)))
+  (def annotations
+    (if (.slot? model 'guard-classifications)
+      (.get model guard-classifications)
+      '()))
+  (def stateful? (has-state-record? (.get model state)))
+  (def all-guards (dedup-syms (append decl-guards ast-guard-ids)))
+  (def audit-entries
+    (map
+      (lambda (gid)
+        (def cm (find (lambda (c) (eq? (.get c dropped-guard) gid)) cms))
+        (def ann (assq gid annotations))
+        (def found-in-ast? (and (memq gid ast-guard-ids) #t))
+        (cond
+         (cm
+          (.o guard-id: gid
+              classification: 'essential
+              in-ast?: found-in-ast?
+              witnessed?: #t
+              witness: (.get cm step-action)))
+         ((not stateful?)
+          (.o guard-id: gid
+              classification: 'precondition
+              in-ast?: found-in-ast?
+              witnessed?: #f
+              rationale: "Stateless pure reference predicate (no stateful step transition)"))
+         ((and ann (>= (length ann) 3) (eq? (cadr ann) 'precondition))
+          (.o guard-id: gid
+              classification: 'precondition
+              in-ast?: found-in-ast?
+              witnessed?: #f
+              rationale: (caddr ann)))
+         ((and ann (>= (length ann) 3)
+               (memq (cadr ann) '(redundant under-modeled)))
+          (.o guard-id: gid
+              classification: (cadr ann)
+              in-ast?: found-in-ast?
+              witnessed?: #f
+              rationale: (caddr ann)))
+         (else
+          (.o guard-id: gid
+              classification: 'unwitnessed
+              in-ast?: found-in-ast?
+              witnessed?: #f))))
+      all-guards))
+  (def unwit-guards
+    (map (lambda (e) (.get e guard-id))
+         (filter (lambda (e)
+                   (memq (.get e classification) '(unwitnessed redundant under-modeled)))
+                 audit-entries)))
+  (def undec-ast-guards
+    (filter (lambda (gid) (not (memq gid decl-guards))) ast-guard-ids))
+  (validate QuintGuardAuditReportType
+    (.o model-identity: (.get model identity)
+        declared-guards: decl-guards
+        ast-guards: ast-guard-ids
+        witnessed-guards: wit-guards
+        unwitnessed-guards: unwit-guards
+        undeclared-ast-guards: undec-ast-guards
+        entries: audit-entries
+        passed?: (and (null? unwit-guards) (null? undec-ast-guards)))))

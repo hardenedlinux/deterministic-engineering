@@ -11,7 +11,7 @@
 
 (.def QuintProfiles
   identity: 'quint-profiles
-  tags: '(engineering profile quint)
+  tags: '(engineering profile quint de.layer.profile)
   profile-catalog: QuintProfileRegistry
   core:
   (.o

@@ -11,7 +11,7 @@
 (def ModelLibrary (.get TokioRayonLibrary core exports))
 (.def RustResources
   identity: 'rust-resources
-  tags: '(engineering driver rust)
+  tags: '(engineering driver rust de.layer.method)
   core:
   (.o
     admissions: (.o

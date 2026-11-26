@@ -9,7 +9,7 @@
 (export ProjectOrganizationLibrary)
 (.def ProjectOrganizationLibrary
   identity: 'project-organization
-  tags: '(engineering domain organization)
+  tags: '(engineering domain organization de.layer.foundation)
   core: (.o
           admissions: (.o
                         Config: (.o
