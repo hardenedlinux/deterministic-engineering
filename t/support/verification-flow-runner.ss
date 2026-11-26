@@ -281,8 +281,12 @@
       (let-values (((code out) (exec-bash-captured crate-dir script)))
         (def ok? (and (= code 0)
                       (and (string-contains out "http_1_post_shutdown_allows_gateway_to_drain_grandchild_cleanly ... ok") #t)
+                      (and (string-contains out "mbt_4_online_os_process_driver_executes_live_quint_itf_actions_step_by_step ... ok") #t)
+                      (and (string-contains out "control_5_darwin_setsid_pgid_escape_caught_by_pipe_eof_fate_sharing ... ok") #t)
+                      (and (string-contains out "control_6_negative_control_untrusted_setsid_without_watchdog_falsifies_pgid_only_containment ... ok") #t)
                       (and (string-contains out "3 passed; 0 failed") #t)
-                      (and (string-contains out "4 passed; 0 failed") #t)))
+                      (and (string-contains out "4 passed; 0 failed") #t)
+                      (and (string-contains out "6 passed; 0 failed") #t)))
         (validate VerificationRawReceiptType
           (.o step: step-name
               exit-code: (if ok? 0 (if (= code 0) 1 code))
@@ -290,7 +294,7 @@
                                (cons 'consumed-itf-dir itf-dir)
                                (cons 'premise premise))
               summary: (if ok?
-                         "Rust ProcessTreeGuard 3/3 HTTP /shutdown E2E + 3/3 live Quint ITF MBT replay + 4/4 OS SIGKILL leak oracle passed"
+                         "Rust ProcessTreeGuard 3/3 HTTP /shutdown E2E + 4/4 live Quint ITF & online OS MBT + 6/6 OS SIGKILL & Darwin setsid escape controls passed"
                          (string-append "Rust HTTP / ITF MBT / OS SIGKILL oracle failed: "
                                         (last-nonempty-line out "cargo test error")))))))))
 

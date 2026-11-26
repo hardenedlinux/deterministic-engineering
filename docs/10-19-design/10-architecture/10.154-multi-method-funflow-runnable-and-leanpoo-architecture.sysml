@@ -416,7 +416,7 @@ package MultiMethodFunFlowArchitecture {
                 attribute staticBans : String = "raw-Command::spawn,tokio-kill_on_drop";
                 attribute consumesArtifact : String = "itf-trace";
                 attribute supportsPremise : String = "SpawnPreservesContainer";
-                attribute faultControls : String = "normal-shutdown,panic-drop-grace,external-sigkill-137,hung-child-sigterm-ignore";
+                attribute faultControls : String = "normal-shutdown,panic-drop-grace,external-sigkill-137,hung-child-sigterm-ignore,online-os-itf-driver,darwin-setsid-pipe-eof-catch,darwin-setsid-rogue-escape-negative-control";
                 attribute inputFiles : String = "languages-engineering/rust/lifecycle/process-tree-guard/Cargo.toml,languages-engineering/rust/lifecycle/process-tree-guard/clippy.toml,languages-engineering/rust/lifecycle/process-tree-guard/src/lib.rs,languages-engineering/rust/lifecycle/process-tree-guard/src/bin/mock_tree.rs,languages-engineering/rust/lifecycle/process-tree-guard/tests/sigkill_leak_oracle.rs,languages-engineering/rust/lifecycle/process-tree-guard/tests/itf_mbt_replay.rs,languages-engineering/rust/lifecycle/process-tree-guard/tests/http_shutdown_e2e.rs";
                 port traceIn : ArtifactConsumerPort;
                 port premiseOut : PremiseHandoffPort;

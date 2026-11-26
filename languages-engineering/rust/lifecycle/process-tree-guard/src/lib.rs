@@ -38,6 +38,7 @@ unsafe extern "C" {
     fn read(fd: i32, buf: *mut u8, count: usize) -> isize;
     fn fcntl(fd: i32, cmd: i32, ...) -> i32;
     fn setpgid(pid: i32, pgid: i32) -> i32;
+    fn getpgid(pid: i32) -> i32;
     fn kill(pid: i32, sig: i32) -> i32;
     fn _exit(status: i32) -> !;
 }
@@ -343,6 +344,18 @@ pub fn inject_sigkill(pid: u32) -> io::Result<()> {
         Ok(())
     } else {
         Err(io::Error::last_os_error())
+    }
+}
+
+/// Query the real kernel process group ID (`getpgid`) of a live process.
+/// Used to verify `SpawnPreservesContainer` and detect `setsid()` container escapes.
+pub fn process_pgid(pid: u32) -> io::Result<i32> {
+    // SAFETY: `getpgid` is a read-only POSIX query syscall.
+    let pgid = unsafe { getpgid(pid as i32) };
+    if pgid < 0 {
+        Err(io::Error::last_os_error())
+    } else {
+        Ok(pgid)
     }
 }
 

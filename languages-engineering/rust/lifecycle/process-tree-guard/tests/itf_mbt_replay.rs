@@ -15,12 +15,14 @@
 
 use std::collections::BTreeSet;
 use std::fs;
+use std::io::{BufRead, BufReader, Write};
+use std::net::TcpStream;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use process_tree_guard::{
-    assert_pgid_reaped, target_exists, ProcessTreeGuard, ProcessTreeStateMachine,
+    assert_pgid_reaped, process_pgid, target_exists, ProcessTreeGuard, ProcessTreeStateMachine,
 };
 
 #[derive(Debug, Clone)]
@@ -488,6 +490,245 @@ fn mbt_3_negative_control_defective_single_pid_gateway_guard_rejected_by_quint_i
         "live Quint ITF traces must catch defective single-PID GatewayGuard divergence"
     );
 
+    if let Some(tmp) = cleanup {
+        let _ = fs::remove_dir_all(tmp);
+    }
+}
+
+fn wait_for_port_file(path: &Path, timeout: Duration) -> u16 {
+    let deadline = Instant::now() + timeout;
+    while Instant::now() < deadline {
+        if let Ok(content) = fs::read_to_string(path) {
+            if let Ok(port) = content.trim().parse::<u16>() {
+                return port;
+            }
+        }
+        std::thread::sleep(Duration::from_millis(15));
+    }
+    panic!("timed out waiting for mbt driver port file {}", path.display());
+}
+
+fn send_driver_cmd(writer: &mut TcpStream, reader: &mut BufReader<TcpStream>, cmd: &str) -> String {
+    writeln!(writer, "{cmd}").expect("write mbt driver cmd");
+    writer.flush().expect("flush mbt driver cmd");
+    let mut reply = String::new();
+    reader
+        .read_line(&mut reply)
+        .expect("read mbt driver reply");
+    reply.trim().to_string()
+}
+
+fn wait_until_pid_dead(pid: u32, timeout: Duration) {
+    let deadline = Instant::now() + timeout;
+    while Instant::now() < deadline {
+        if !target_exists(pid as i32) {
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(15));
+    }
+    panic!("expected OS process {pid} to exit within {timeout:?}");
+}
+
+/// Live OS-level online MBT driver: steps real OS `ProcessTreeGuard` + `mock_tree`
+/// supervisor & grandchildren through live Quint `--mbt` ITF traces action-by-action,
+/// checking kernel `getpgid` (`SpawnPreservesContainer`), non-premature kill, and zero orphans!
+#[test]
+fn mbt_4_online_os_process_driver_executes_live_quint_itf_actions_step_by_step() {
+    let (traces, cleanup) = load_or_generate_itf_traces();
+
+    let mut selected: Vec<&(PathBuf, Vec<ItfStep>)> = traces
+        .iter()
+        .filter(|(_, steps)| {
+            let spawns = steps
+                .iter()
+                .any(|s| s.action == "spawnC1" || s.action == "spawnC2");
+            let terminates = steps.iter().any(|s| {
+                s.action == "escalateKill"
+                    || s.action == "supervisorCleanExit"
+                    || s.action == "sendShutdown"
+            });
+            spawns && terminates
+        })
+        .take(4)
+        .collect();
+    assert!(
+        !selected.is_empty(),
+        "expected at least one live Quint ITF trace with spawn + shutdown/escalation"
+    );
+    if !selected
+        .iter()
+        .any(|(_, steps)| steps.iter().any(|s| s.action == "escalateKill"))
+    {
+        if let Some(esc) = traces
+            .iter()
+            .find(|(_, steps)| steps.iter().any(|s| s.action == "escalateKill"))
+        {
+            selected.push(esc);
+        }
+    }
+
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    let root_dir = std::env::temp_dir().join(format!(
+        "ptree-online-os-mbt-{}-{nanos}",
+        std::process::id()
+    ));
+    fs::create_dir_all(&root_dir).expect("create online mbt dir");
+
+    let mut total_os_spawns = 0usize;
+    let mut total_os_teardowns = 0usize;
+
+    for (trace_idx, (trace_path, steps)) in selected.iter().enumerate() {
+        let run_dir = root_dir.join(format!("trace-{trace_idx}"));
+        fs::create_dir_all(&run_dir).expect("create trace run dir");
+        let port_file = run_dir.join("mbt.port");
+
+        let mut guard_opt = Some(
+            ProcessTreeGuard::spawn_contained(
+                mock_tree_cmd(&[
+                    "supervisor-mbt-driver",
+                    port_file.to_str().unwrap(),
+                    run_dir.to_str().unwrap(),
+                ]),
+                Duration::from_millis(180),
+            )
+            .expect("spawn contained online mbt driver"),
+        );
+        let pgid = guard_opt.as_ref().unwrap().pgid();
+        let port = wait_for_port_file(&port_file, Duration::from_secs(5));
+        let mut writer =
+            TcpStream::connect(("127.0.0.1", port)).expect("connect to mbt driver");
+        let mut reader = BufReader::new(writer.try_clone().expect("clone mbt tcp"));
+
+        let mut prev = ProcessTreeStateMachine::new();
+        let mut c1_pid: Option<u32> = None;
+        let mut c2_pid: Option<u32> = None;
+        let mut reaped = false;
+
+        for step in steps {
+            let next = &step.state;
+            if !reaped {
+                match step.action.as_str() {
+                    "spawnC1" if prev.c1 == 0 && next.c1 == 1 => {
+                        let reply = send_driver_cmd(&mut writer, &mut reader, "SPAWN c1");
+                        let pid: u32 = reply
+                            .strip_prefix("PID ")
+                            .unwrap_or_else(|| panic!("unexpected SPAWN c1 reply: {reply}"))
+                            .parse()
+                            .expect("parse c1 pid");
+                        let pid_file = run_dir.join("c1.pid");
+                        let _ = wait_for_pid_file(&pid_file, Duration::from_secs(5));
+                        assert!(target_exists(pid as i32), "c1 must be live after spawnC1");
+                        assert_eq!(
+                            process_pgid(pid).expect("getpgid(c1)"),
+                            pgid,
+                            "SpawnPreservesContainer violated for c1 in {}",
+                            trace_path.display()
+                        );
+                        c1_pid = Some(pid);
+                        total_os_spawns += 1;
+                    }
+                    "spawnC2" if prev.c2 == 0 && next.c2 == 1 => {
+                        let reply = send_driver_cmd(&mut writer, &mut reader, "SPAWN c2");
+                        let pid: u32 = reply
+                            .strip_prefix("PID ")
+                            .unwrap_or_else(|| panic!("unexpected SPAWN c2 reply: {reply}"))
+                            .parse()
+                            .expect("parse c2 pid");
+                        let pid_file = run_dir.join("c2.pid");
+                        let _ = wait_for_pid_file(&pid_file, Duration::from_secs(5));
+                        assert!(target_exists(pid as i32), "c2 must be live after spawnC2");
+                        assert_eq!(
+                            process_pgid(pid).expect("getpgid(c2)"),
+                            pgid,
+                            "SpawnPreservesContainer violated for c2 in {}",
+                            trace_path.display()
+                        );
+                        c2_pid = Some(pid);
+                        total_os_spawns += 1;
+                    }
+                    "supervisorHttpAck" if prev.supervisor == 0 && next.supervisor == 1 => {
+                        let reply = send_driver_cmd(&mut writer, &mut reader, "HTTP_ACK");
+                        assert_eq!(reply, "ACK 200");
+                        if let Some(pid) = c1_pid {
+                            assert!(target_exists(pid as i32), "c1 prematurely killed on HTTP_ACK");
+                        }
+                        if let Some(pid) = c2_pid {
+                            assert!(target_exists(pid as i32), "c2 prematurely killed on HTTP_ACK");
+                        }
+                    }
+                    "supervisorBeginDrain" if prev.supervisor < 2 && next.supervisor == 2 => {
+                        let reply = send_driver_cmd(&mut writer, &mut reader, "BEGIN_DRAIN");
+                        assert_eq!(reply, "DRAINING");
+                    }
+                    "childC1Exit" if (prev.c1 == 1 || prev.c1 == 2) && next.c1 == 3 => {
+                        if let Some(pid) = c1_pid.take() {
+                            let reply = send_driver_cmd(&mut writer, &mut reader, "EXIT_CHILD c1");
+                            assert_eq!(reply, "EXITED c1");
+                            wait_until_pid_dead(pid, Duration::from_secs(5));
+                        }
+                    }
+                    "childC2Exit" if (prev.c2 == 1 || prev.c2 == 2) && next.c2 == 3 => {
+                        if let Some(pid) = c2_pid.take() {
+                            let reply = send_driver_cmd(&mut writer, &mut reader, "EXIT_CHILD c2");
+                            assert_eq!(reply, "EXITED c2");
+                            wait_until_pid_dead(pid, Duration::from_secs(5));
+                        }
+                    }
+                    "supervisorHang" if prev.supervisor < 3 && next.supervisor == 5 => {
+                        let reply = send_driver_cmd(&mut writer, &mut reader, "HANG");
+                        assert_eq!(reply, "HUNG");
+                    }
+                    "supervisorCleanExit" if prev.supervisor == 2 && next.supervisor == 3 => {
+                        let reply = send_driver_cmd(&mut writer, &mut reader, "CLEAN_EXIT");
+                        assert_eq!(reply, "BYE");
+                        let guard = guard_opt.take().unwrap();
+                        let rep = guard.shutdown_graceful().expect("reap after clean exit");
+                        assert!(!rep.escalated_to_pgid_sigkill);
+                        assert_pgid_reaped(pgid, Duration::from_secs(5));
+                        reaped = true;
+                        total_os_teardowns += 1;
+                    }
+                    "escalateKill" if prev.guardian == 1 && next.guardian == 2 => {
+                        let _ = send_driver_cmd(&mut writer, &mut reader, "HANG");
+                        let guard = guard_opt.take().unwrap();
+                        let rep = guard.shutdown_graceful().expect("escalated pgid sigkill");
+                        assert!(rep.escalated_to_pgid_sigkill);
+                        assert_pgid_reaped(pgid, Duration::from_secs(5));
+                        if let Some(pid) = c1_pid.take() {
+                            assert!(!target_exists(pid as i32), "c1 leaked after escalateKill");
+                        }
+                        if let Some(pid) = c2_pid.take() {
+                            assert!(!target_exists(pid as i32), "c2 leaked after escalateKill");
+                        }
+                        reaped = true;
+                        total_os_teardowns += 1;
+                    }
+                    _ => {}
+                }
+            }
+            prev = next.clone();
+        }
+
+        if let Some(guard) = guard_opt.take() {
+            let _ = guard.shutdown_graceful();
+            assert_pgid_reaped(pgid, Duration::from_secs(5));
+            if let Some(pid) = c1_pid.take() {
+                assert!(!target_exists(pid as i32));
+            }
+            if let Some(pid) = c2_pid.take() {
+                assert!(!target_exists(pid as i32));
+            }
+            total_os_teardowns += 1;
+        }
+    }
+
+    assert!(total_os_spawns >= 1, "online OS MBT must spawn real OS grandchildren");
+    assert!(total_os_teardowns >= 1, "online OS MBT must reap real OS process trees");
+
+    let _ = fs::remove_dir_all(&root_dir);
     if let Some(tmp) = cleanup {
         let _ = fs::remove_dir_all(tmp);
     }

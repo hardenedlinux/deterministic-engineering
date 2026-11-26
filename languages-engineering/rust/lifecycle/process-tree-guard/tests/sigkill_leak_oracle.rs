@@ -16,7 +16,7 @@ use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use process_tree_guard::{
-    assert_pgid_reaped, inject_sigkill, target_exists, ProcessTreeGuard,
+    assert_pgid_reaped, inject_sigkill, process_pgid, target_exists, ProcessTreeGuard,
 };
 
 fn unique_temp_dir(label: &str) -> PathBuf {
@@ -179,5 +179,104 @@ fn control_4_hung_supervisor_and_grandchild_ignoring_sigterm_escalated_to_pgid_s
 
     assert_pgid_reaped(pgid, Duration::from_secs(5));
     assert!(!target_exists(gc_pid as i32), "hung grandchild ignoring SIGTERM must be killed");
+    let _ = fs::remove_dir_all(&dir);
+}
+
+struct PidCleanupGuard(u32);
+impl Drop for PidCleanupGuard {
+    fn drop(&mut self) {
+        let _ = inject_sigkill(self.0);
+    }
+}
+
+/// Control 5: A grandchild calls `setsid()` to escape the supervisor's process group
+/// (`getpgid(gc) != guard.pgid()`) and ignores `SIGTERM`. Pure `kill(-pgid, SIGKILL)`
+/// CANNOT reach it, yet `ProcessTreeGuard`'s kernel Pipe-EOF fate-sharing STILL terminates it!
+#[test]
+fn control_5_darwin_setsid_pgid_escape_caught_by_pipe_eof_fate_sharing() {
+    let dir = unique_temp_dir("setsid-pipe-eof");
+    let gc_pid_file = dir.join("gc.pid");
+
+    let guard = ProcessTreeGuard::spawn_contained(
+        mock_tree_cmd(&["supervisor-setsid-with-watchdog", gc_pid_file.to_str().unwrap()]),
+        Duration::from_millis(200),
+    )
+    .expect("spawn setsid-with-watchdog supervisor");
+
+    let pgid = guard.pgid();
+    let gc_pid = wait_for_pid_file(&gc_pid_file, Duration::from_secs(5));
+    let _safety_cleanup = PidCleanupGuard(gc_pid);
+
+    assert!(target_exists(gc_pid as i32), "escaped grandchild must be alive");
+    let gc_pgid = process_pgid(gc_pid).expect("query escaped grandchild pgid");
+    assert_ne!(
+        gc_pgid, pgid,
+        "grandchild must have genuinely escaped supervisor PGID via setsid()"
+    );
+
+    let report = guard.shutdown_graceful().expect("escalated shutdown");
+    assert!(report.escalated_to_pgid_sigkill);
+    assert_pgid_reaped(pgid, Duration::from_secs(5));
+
+    // Wait briefly for the kernel Pipe-EOF watchdog thread to call _exit(137).
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while Instant::now() < deadline && target_exists(gc_pid as i32) {
+        thread::sleep(Duration::from_millis(15));
+    }
+    assert!(
+        !target_exists(gc_pid as i32),
+        "Pipe-EOF fate-sharing must terminate setsid()-escaped grandchild even outside -pgid"
+    );
+    let _ = fs::remove_dir_all(&dir);
+}
+
+/// Control 6 (Negative Control — Falsifying `SpawnPreservesContainer` on Darwin):
+/// An adversarial untrusted binary calls `setsid()` AND deliberately closes `PTREE_WATCHDOG_FD`.
+/// Proves empirically that PGID-only containment on Darwin CANNOT catch an untrusted `setsid()`
+/// escape (justifying Linux `cgroup v2` `cgroup.kill` for untrusted multi-tenant workloads).
+#[test]
+fn control_6_negative_control_untrusted_setsid_without_watchdog_falsifies_pgid_only_containment() {
+    let dir = unique_temp_dir("setsid-rogue-escape");
+    let gc_pid_file = dir.join("gc.pid");
+
+    let guard = ProcessTreeGuard::spawn_contained(
+        mock_tree_cmd(&[
+            "supervisor-setsid-rogue-no-watchdog",
+            gc_pid_file.to_str().unwrap(),
+        ]),
+        Duration::from_millis(180),
+    )
+    .expect("spawn rogue setsid supervisor");
+
+    let pgid = guard.pgid();
+    let rogue_pid = wait_for_pid_file(&gc_pid_file, Duration::from_secs(5));
+    // Guaranteed cleanup so even if an assertion fails, ZERO orphan processes ever leak.
+    let _cleanup = PidCleanupGuard(rogue_pid);
+
+    assert_ne!(
+        process_pgid(rogue_pid).expect("query rogue pgid"),
+        pgid,
+        "rogue grandchild must be in a distinct session/PGID"
+    );
+
+    let report = guard.shutdown_graceful().expect("escalated shutdown");
+    assert!(report.escalated_to_pgid_sigkill);
+    assert_pgid_reaped(pgid, Duration::from_secs(5));
+
+    // Give kernel a brief moment to settle: the rogue escaped PID MUST still be alive,
+    // empirically witnessing the exact OS boundary where `SpawnPreservesContainer` is falsified!
+    thread::sleep(Duration::from_millis(120));
+    assert!(
+        target_exists(rogue_pid as i32),
+        "negative control: rogue setsid()+close(watchdog) must escape PGID-only containment"
+    );
+
+    // Explicitly reap the rogue test process and confirm 0 leaks at test exit.
+    inject_sigkill(rogue_pid).expect("clean up rogue escaped process");
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while Instant::now() < deadline && target_exists(rogue_pid as i32) {
+        thread::sleep(Duration::from_millis(15));
+    }
+    assert!(!target_exists(rogue_pid as i32));
     let _ = fs::remove_dir_all(&dir);
 }
