@@ -462,7 +462,7 @@ check-defense:
     #!/usr/bin/env bash
     set -euo pipefail
     mkdir -p .data/test-runs/check-defense
-    bun test languages-engineering/ts/defense/boundary-contrast/contrast.test.ts languages-engineering/ts/defense/boundary-contrast/mbt-replay.test.ts languages-engineering/ts/defense/agent-audit/agent-benchmark.test.ts languages-engineering/ts/defense/agent-audit/agent-defense-audit.test.ts languages-engineering/ts/defense/agent-audit/governance-harness.test.ts languages-engineering/ts/defense/agent-audit/durable-merkle-store.test.ts
+    bun test languages-engineering/ts/defense/boundary-contrast/contrast.test.ts languages-engineering/ts/defense/boundary-contrast/mbt-replay.test.ts languages-engineering/ts/defense/agent-audit/agent-benchmark.test.ts languages-engineering/ts/defense/agent-audit/agent-defense-audit.test.ts languages-engineering/ts/defense/agent-audit/governance-harness.test.ts languages-engineering/ts/defense/agent-audit/durable-merkle-store.test.ts languages-engineering/ts/defense/agent-audit/durable-ai-context.test.ts
     clang -Wall -Wextra -Werror languages-engineering/c/defense/silent-fallback-contrast/bad_defensive.c languages-engineering/c/defense/silent-fallback-contrast/deterministic_boundary.c languages-engineering/c/defense/silent-fallback-contrast/contrast_test.c -o .data/test-runs/check-defense/c_contrast
     .data/test-runs/check-defense/c_contrast
     cbmc languages-engineering/c/defense/silent-fallback-contrast/deterministic_boundary.c languages-engineering/c/defense/silent-fallback-contrast/proof.c --bounds-check --pointer-check --unsigned-overflow-check

@@ -751,6 +751,76 @@ class BadBlindReplaySUT extends ByzantineEncryptedStoreSUT {
   }
 }
 
+// ── Concrete Stateful SUT 10: DurableAiContextSsi (10.157) ──
+class DurableAiContextSsiSUT {
+  durableEvidenceIntact = true;
+  rawChatCompacted = false;
+  readWriteSkew = false;
+  activeEpoch = 1;
+  workerEpoch = 1;
+  proseSanitized = true;
+  writeSkewMerges = 0;
+  fencedCommits = 0;
+  injectedReviews = 0;
+
+  apply(action: string): void {
+    switch (action) {
+      case 'compactRawChatHistory':
+        if (!this.rawChatCompacted) this.rawChatCompacted = true;
+        break;
+      case 'introduceRwAntidependency':
+        if (!this.readWriteSkew) this.readWriteSkew = true;
+        break;
+      case 'revalidateStaleReader':
+        if (this.readWriteSkew) this.readWriteSkew = false;
+        break;
+      case 'advanceLeaseEpochOnTimeout':
+        if (this.activeEpoch === 1) this.activeEpoch = 2;
+        break;
+      case 'refreshWorkerEpoch':
+        if (this.workerEpoch < this.activeEpoch) this.workerEpoch = this.activeEpoch;
+        break;
+      case 'injectCoderProseDraft':
+        if (this.proseSanitized) this.proseSanitized = false;
+        break;
+      case 'projectSanitizedReviewerView':
+        if (!this.proseSanitized) this.proseSanitized = true;
+        break;
+      case 'mergeDisjointAgentBranches':
+      case 'commitWorkerBranch':
+      case 'runReviewerEvaluation':
+        break;
+      default:
+        throw new Error(`Unknown DurableAiContextSsiSUT action: ${action}`);
+    }
+  }
+
+  snapshot() {
+    return {
+      durableEvidenceIntact: this.durableEvidenceIntact,
+      rawChatCompacted: this.rawChatCompacted,
+      readWriteSkew: this.readWriteSkew,
+      activeEpoch: this.activeEpoch,
+      workerEpoch: this.workerEpoch,
+      proseSanitized: this.proseSanitized,
+      writeSkewMerges: this.writeSkewMerges,
+      fencedCommits: this.fencedCommits,
+      injectedReviews: this.injectedReviews,
+    };
+  }
+}
+
+class BadWriteSkewMergeSUT extends DurableAiContextSsiSUT {
+  override apply(action: string): void {
+    if (action === 'introduceRwAntidependency' && !this.readWriteSkew) {
+      // Anti-pattern: ignores rw-antidependency because files are disjoint!
+      this.writeSkewMerges += 1;
+      return;
+    }
+    super.apply(action);
+  }
+}
+
 const repoRoot = resolve(import.meta.dir, '../../../..');
 
 function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(): Record<string, unknown>}>(
@@ -803,7 +873,7 @@ function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(
   }
 }
 
-describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (9 Defense Models)', () => {
+describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (10 Defense Models)', () => {
   test('EpistemicStateLattice ITF actions drive EpistemicLatticeSUT with exact step-by-step state isomorphism', () => {
     const stats = replayModelAgainstSut(
       'packages/quint-models/engineering/defense/epistemic-state-lattice/EpistemicStateLattice.qnt',
@@ -979,6 +1049,28 @@ describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (9 Defense Models)
       () => new ByzantineEncryptedStoreSUT(),
       projectH,
       () => new BadBlindReplaySUT(),
+    );
+    expect(stats.transitions).toBeGreaterThan(50);
+    expect(stats.brokenDiverged).toBe(true);
+  }, 30_000);
+
+  test('DurableAiContextSsi ITF actions drive DurableAiContextSsiSUT with exact state isomorphism and reject BadWriteSkewMergeSUT', () => {
+    const projectH = (h: Record<string, unknown>) => ({
+      durableEvidenceIntact: Boolean(h.durableEvidenceIntact),
+      rawChatCompacted: Boolean(h.rawChatCompacted),
+      readWriteSkew: Boolean(h.readWriteSkew),
+      activeEpoch: asInt(h.activeEpoch),
+      workerEpoch: asInt(h.workerEpoch),
+      proseSanitized: Boolean(h.proseSanitized),
+      writeSkewMerges: asInt(h.writeSkewMerges),
+      fencedCommits: asInt(h.fencedCommits),
+      injectedReviews: asInt(h.injectedReviews),
+    });
+    const stats = replayModelAgainstSut(
+      'packages/quint-models/engineering/defense/durable-ai-context-ssi/DurableAiContextSsi.qnt',
+      () => new DurableAiContextSsiSUT(),
+      projectH,
+      () => new BadWriteSkewMergeSUT(),
     );
     expect(stats.transitions).toBeGreaterThan(50);
     expect(stats.brokenDiverged).toBe(true);

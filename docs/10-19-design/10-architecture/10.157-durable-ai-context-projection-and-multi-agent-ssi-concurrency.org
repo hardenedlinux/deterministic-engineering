@@ -1,0 +1,73 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 10.157 Durable AI: Role-Projected Epistemic Context, Anti-Overthinking Offloading, and Multi-Agent SSI Concurrency
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.157
+#+STARTUP: overview
+#+OPTIONS: toc:3 num:nil
+#+FILETAGS: :architecture:durable-ai:context-projection:anti-overthinking:ssi:multi-agent:
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.153-defensive-engineering-taxonomy-and-modular-organization.org][10.153 Defensive engineering taxonomy]] | [[file:10.155-ai-agent-coding-governance-and-anti-evasion-architecture.org][10.155 AI Agent anti-evasion]] | [[file:10.156-orthogonal-persistence-durable-multi-agent-governance.org][10.156 Stratified orthogonal persistence]] | [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05 55-case Agent benchmark]]
+
+* Core Thesis: Durable Merkle Evidence as Truth, LLM Context as Ephemeral Materialized View
+:PROPERTIES:
+:CUSTOM_ID: dai157-thesis
+:STATUS: implemented-verified
+:END:
+
+Long-horizon multi-agent AI systems suffer from two compounding pathologies when
+conversation history (=Context=) is conflated with authoritative persistent
+state (=Durable State=):
+
+1. *Overthinking & Circular Re-Derivation*: After context compaction or agent
+   handoff, the LLM cannot distinguish already-settled truths from disproved
+   dead-ends and open obligations. It burns thinking tokens re-deriving proven
+   invariants, re-exploring previously refuted designs, or hallucinating
+   contradictions.
+2. *Context Pollution & Semantic Write-Skew*: Passing raw prose across agent
+   boundaries lets prompt-injection or overconfident Coder summaries bias the
+   Reviewer; meanwhile, concurrent agents editing disjoint files still break
+   interfaces via unnoticed *ReadSet × WriteSet* (=rw=-antidependency) write-skew.
+
+Drawing on =gerbil-persist= (content-addressed immutable =M1= graphs + minimal
+atomic =M3= root) and Cahill, Röhm & Fekete's *Serializable Snapshot Isolation
+(SSI)* (SIGMOD 2008 / ACM TODS 2009), we enforce a strict *Truth vs. View vs.
+Live-Capability* split:
+
+| Plane | Role | Persistence & Lifecycle | Anti-Overthinking / Governance Effect |
+|-------+------+-------------------------+---------------------------------------|
+| *Durable Evidence Graph (Truth)* | =ContentAddressedKvStore= (=M1= Merkle DAG + =M3= root) | Permanent, content-addressed, compaction-immune | Preserves settled =Proven= proofs, =Refuted= dead-end witnesses, and =M2= policy manifests with zero amnesia |
+| *Role-Projected Context (View)* | =projectRoleContext= in [[file:../../../languages-engineering/ts/defense/agent-audit/durable-ai-context.ts][durable-ai-context.ts]] | Ephemeral materialized view reconstructed deterministically from the Merkle root | Projects settled =M1= facts as O(1) hash anchors (=rethinkForbidden: true=), pins =Refuted= dead-ends, isolates the narrow =Pending= frontier, and strips Coder prose from Reviewer views |
+| *Multi-Agent SSI & Lease Fence* | =evaluateMultiAgentSsiMerge= + [[file:../../../packages/quint-models/engineering/defense/durable-ai-context-ssi/DurableAiContextSsi.qnt][DurableAiContextSsi.qnt]] | Per-branch =ReadSet × WriteSet= digests + monotonic =M3= fencing epoch | Catches disjoint-file semantic write-skew (=PendingRevalidation=) and blocks stalled zombie workers (=fenced-stale-agent-epoch=) |
+
+* Executable Artifacts & Verification Receipts
+:PROPERTIES:
+:CUSTOM_ID: dai157-artifacts
+:STATUS: executed-verified
+:END:
+
+- *10th Formal Model*: [[file:../../../packages/quint-models/engineering/defense/durable-ai-context-ssi/DurableAiContextSsi.qnt][DurableAiContextSsi.qnt]]
+  ([[file:../../../packages/quint-models/engineering/defense/durable-ai-context-ssi/objects.ss][objects.ss]],
+  [[file:../../../t/yanxu/Quint.Engineering.Defense/durable-ai-context-ssi/qualification-test.ss][qualification-test.ss]]):
+  Apalache 0.62.1 =run-plan --verify= passed with all 3 essential countermodels
+  (=SemanticWriteSkewMergeCountermodel=, =ZombieWorkerFenceCountermodel=,
+  =UnsanitizedContextInjectionCountermodel=); 100% MBT coverage;
+  =DurableAiContextSsiSUT= verified step-by-step in
+  [[file:../../../languages-engineering/ts/defense/boundary-contrast/mbt-replay.test.ts][mbt-replay.test.ts]]
+  (rejecting =BadWriteSkewMergeSUT=).
+- *Context Projector & SSI Engine*:
+  [[file:../../../languages-engineering/ts/defense/agent-audit/durable-ai-context.ts][durable-ai-context.ts]]
+  verified by [[file:../../../languages-engineering/ts/defense/agent-audit/durable-ai-context.test.ts][durable-ai-context.test.ts]]
+  (=AG51=–=AG55= in [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05]], 55-case cohort).
+
+* Limits
+:PROPERTIES:
+:CUSTOM_ID: dai157-limits
+:END:
+
+The =ReadSet × WriteSet= SSI check operates at declared file/contract digest
+granularity; finer symbol-level AST dependency extraction is a clean orthogonal
+refinement on top of the same =evaluateMultiAgentSsiMerge= contract. Reviewer
+context sanitization removes free-form prose channels but does not eliminate
+covert steganography embedded inside syntactically valid code diffs.
