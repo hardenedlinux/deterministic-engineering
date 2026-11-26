@@ -52,10 +52,13 @@
   compute-step-toolchain-fingerprints
   ensure-cache-signing-keypair!
   verify-verification-report-attestation
+  verify-report-with-pinned-key
+  verify-fleet-report-with-pinned-key
   load-verification-cache
   save-verification-cache!
   make-real-verification-runtime-adapter
   run-multi-method-verification-pipeline
+  run-multi-method-fleet
   main)
 
 ;; ── Zero-Glue SysML v2 -> Fun-Flow DAG Compilation (Single Source of Truth) ──
@@ -645,6 +648,71 @@
                      (equal? actual-sha expected-sha)
                      (ed25519-verify-string pub canonical sig)))))))
 
+;; Strict offline trust-anchor verifier: NEVER reads publicKeyPath from untrusted report.json!
+;; Checks both cryptographic Ed25519 signature against externally pinned `trusted-pub-key`
+;; AND semantic admission (replayValid, zero mr/er findings, non-empty verificationAdmitted).
+(def (verify-report-with-pinned-key report-path trusted-pub-key)
+  (and (string? trusted-pub-key)
+       (file-exists? trusted-pub-key)
+       (verify-verification-report-attestation report-path trusted-pub-key)
+       (let ((doc (call-with-input-file report-path (cut read-json <> object-as-hash: #t))))
+         (and (hash-table? doc)
+              (eq? (hash-get doc "replayValid") #t)
+              (equal? (hash-get doc "mrFindings") '())
+              (equal? (hash-get doc "mrOpenPremises") '())
+              (equal? (hash-get doc "erFindings") '())
+              (pair? (hash-get doc "verificationAdmitted"))))))
+
+;; Strict 2-level Merkle verifier for a multi-subject Fleet report:
+;; Verifies Fleet Ed25519 signature against pinned `trusted-pub-key`, AND verifies every
+;; subject's individual report.json against the same pinned key & Merkle payloadSha256!
+(def (verify-fleet-report-with-pinned-key fleet-report-path trusted-pub-key)
+  (and (string? trusted-pub-key)
+       (file-exists? trusted-pub-key)
+       (file-exists? fleet-report-path)
+       (let* ((doc (call-with-input-file fleet-report-path (cut read-json <> object-as-hash: #t)))
+              (att (and (hash-table? doc) (hash-get doc "attestation")))
+              (subjects (and (hash-table? doc) (hash-get doc "subjects"))))
+         (and (hash-table? att)
+              (list? subjects)
+              (pair? subjects)
+              (equal? (hash-get att "algorithm") "Ed25519")
+              (let* ((expected-kid (hash-get att "keyId"))
+                     (expected-sha (hash-get att "payloadSha256"))
+                     (sig (hash-get att "signature"))
+                     (actual-kid (substring (sha256-of-file trusted-pub-key) 0 16))
+                     (fleet-dir (path-directory fleet-report-path))
+                     (entries
+                       (map (lambda (s)
+                              (list (or (hash-get s "subjectKey") "")
+                                    (or (hash-get s "subjectId") "")
+                                    (or (hash-get s "reportPayloadSha256") "")
+                                    (eq? (hash-get s "replayValid") #t)
+                                    (eq? (hash-get s "admitted") #t)))
+                            subjects))
+                     (canonical
+                       (canonical-fleet-signing-payload
+                         (or (hash-get doc "fleetId") "")
+                         (or (hash-get doc "sysmlSha256") "")
+                         entries))
+                     (actual-sha (sha256-of-string canonical)))
+                (and (equal? actual-kid expected-kid)
+                     (equal? actual-sha expected-sha)
+                     (ed25519-verify-string trusted-pub-key canonical sig)
+                     (andmap
+                       (lambda (s)
+                         (let* ((rel-path (hash-get s "reportRelativePath"))
+                                (child-path (and (string? rel-path) (path-expand rel-path fleet-dir)))
+                                (expected-child-sha (hash-get s "reportPayloadSha256")))
+                           (and child-path
+                                (verify-report-with-pinned-key child-path trusted-pub-key)
+                                (let* ((cdoc (call-with-input-file child-path
+                                               (cut read-json <> object-as-hash: #t)))
+                                       (catt (and (hash-table? cdoc) (hash-get cdoc "attestation"))))
+                                  (and (hash-table? catt)
+                                       (equal? (hash-get catt "payloadSha256") expected-child-sha))))))
+                       subjects)))))))
+
 ;; Cache-aware Fun-Flow RuntimeAdapter: skips subprocess execution iff ASCENT IR01-IR04
 ;; explicitly admitted the step into `step_reusable`.
 (def (make-real-verification-runtime-adapter repo-root (reuse-plan #f) (cached-by-step #f))
@@ -911,26 +979,146 @@
           er-result: er-result
           report-path: report-path))))
 
-(def (main output-dir . rest)
-  (def cache-dir (and (pair? rest) (> (string-length (car rest)) 0) (car rest)))
-  (def subject-key
-    (if (and (pair? rest) (pair? (cdr rest)) (> (string-length (cadr rest)) 0))
-      (string->symbol (cadr rest))
-      'process-tree-reclamation))
+;; Multi-Subject Fleet Orchestrator: discovers EVERY subject declared in 10.154-*.sysml
+;; dynamically, runs each in a GC-isolated scope against a shared Ed25519-signed cache,
+;; and emits a 2-level Merkle-bound Ed25519-signed `fleet-report.json`.
+(def (run-multi-method-fleet
+       repo-root
+       output-dir
+       cache-dir: (cache-dir #f)
+       policy-flags: (policy-flags '())
+       fleet-id: (fleet-id "fleet-m5-001"))
+  (def sysml-path
+    (path-expand
+      "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml"
+      repo-root))
+  (def sysml-sha (sha256-of-file sysml-path))
+  (def projected (project-sysml-model repo-root))
+  (def subject-keys
+    (map (lambda (sp) (string->symbol (.get sp subject-key)))
+         (.get projected subject-specs)))
+  (def resolved-out (path-expand output-dir repo-root))
+  (when (file-exists? resolved-out)
+    (error "fresh fleet output directory required" resolved-out))
+  (create-directory* resolved-out)
+  (def resolved-cache-dir (and cache-dir (path-expand cache-dir repo-root)))
+  (def keypair
+    (ensure-cache-signing-keypair!
+      (or resolved-cache-dir (path-expand ".data/verification-keys" repo-root))))
+
+  (def subject-hashes '())
+  (def subject-canonical-entries '())
+  (def total-executed 0)
+  (def total-reused 0)
+  (def all-admitted? #t)
+
+  (for-each
+    (lambda (skey)
+      (let* ((skey-str (symbol->string skey))
+             (sub-out (path-expand skey-str resolved-out))
+             (outcome (run-multi-method-verification-pipeline repo-root
+                        subject-key: skey
+                        output-dir: sub-out
+                        cache-dir: cache-dir
+                        policy-flags: policy-flags
+                        request-id: (string-append fleet-id "-" skey-str)))
+             (rpath (.get outcome report-path))
+             (rdoc (call-with-input-file rpath (cut read-json <> object-as-hash: #t)))
+             (ratt (hash-get rdoc "attestation"))
+             (rsha (or (and (hash-table? ratt) (hash-get ratt "payloadSha256")) ""))
+             (sid (or (hash-get rdoc "subject") ""))
+             (rvalid? (replay-report-valid? (.get outcome replay-report)))
+             (er-res (.get outcome er-result))
+             (admitted? (and rvalid?
+                             (null? ((.ref er-res 'rows-of) 'er_finding))
+                             (pair? ((.ref er-res 'rows-of) 'verification_admitted))))
+             (csum (.get outcome cache-summary))
+             (exec-list (.get csum executed))
+             (reuse-list (.get csum reused)))
+        (set! total-executed (+ total-executed (length exec-list)))
+        (set! total-reused (+ total-reused (length reuse-list)))
+        (unless admitted? (set! all-admitted? #f))
+        (set! subject-canonical-entries
+          (cons (list skey-str sid rsha rvalid? admitted?) subject-canonical-entries))
+        (set! subject-hashes
+          (cons (hash ("subjectKey" skey-str)
+                      ("subjectId" sid)
+                      ("reportRelativePath" (string-append skey-str "/report.json"))
+                      ("reportPayloadSha256" rsha)
+                      ("replayValid" rvalid?)
+                      ("admitted" admitted?)
+                      ("executed" exec-list)
+                      ("reused" reuse-list))
+                subject-hashes)))
+      (##gc))
+    subject-keys)
+
+  (def ordered-entries (reverse subject-canonical-entries))
+  (def canonical-fleet (canonical-fleet-signing-payload fleet-id sysml-sha ordered-entries))
+  (def fleet-sha (sha256-of-string canonical-fleet))
+  (def fleet-sig (ed25519-sign-string (.get keypair private-key) canonical-fleet))
+  (def fleet-report-path (path-expand "fleet-report.json" resolved-out))
+  (call-with-output-file fleet-report-path
+    (lambda (port)
+      (write-json
+        port
+        (hash ("schema" "deterministic-engineering.multi-method-fleet-report.v1")
+              ("fleetId" fleet-id)
+              ("sysmlSource" sysml-path)
+              ("sysmlSha256" sysml-sha)
+              ("allAdmitted" all-admitted?)
+              ("totalExecuted" total-executed)
+              ("totalReused" total-reused)
+              ("subjects" (reverse subject-hashes))
+              ("attestation"
+               (hash ("algorithm" "Ed25519")
+                     ("keyId" (.get keypair key-id))
+                     ("publicKeyPath" (.get keypair public-key))
+                     ("payloadSha256" fleet-sha)
+                     ("signature" fleet-sig)))))
+      (newline port)))
+  (.o bind-these: #f
+      fleet-report-path: fleet-report-path
+      public-key-path: (.get keypair public-key)
+      key-id: (.get keypair key-id)
+      subject-keys: subject-keys
+      all-admitted?: all-admitted?
+      total-executed: total-executed
+      total-reused: total-reused))
+
+(def (main mode-or-output . rest)
   (def repo-root (path-normalize (path-expand "../.." (path-directory (this-source-file)))))
-  (def outcome
-    (run-multi-method-verification-pipeline repo-root
-      subject-key: subject-key
-      output-dir: output-dir
-      cache-dir: cache-dir))
-  (def er-res (.get outcome er-result))
-  (def admitted ((.ref er-res 'rows-of) 'verification_admitted))
-  (def er-findings ((.ref er-res 'rows-of) 'er_finding))
-  (unless (and (replay-report-valid? (.get outcome replay-report))
-               (null? er-findings)
-               (pair? admitted))
-    (error "multi-method verification pipeline refused admission"
-           (list (replay-report-status (.get outcome replay-report))
-                 er-findings
-                 admitted)))
-  (displayln "MULTI-METHOD-VERIFICATION-OK " (.get outcome report-path)))
+  (cond
+   ((equal? mode-or-output "--fleet")
+    (let* ((output-dir (car rest))
+           (cache-dir (and (pair? (cdr rest)) (> (string-length (cadr rest)) 0) (cadr rest)))
+           (res (run-multi-method-fleet repo-root output-dir cache-dir: cache-dir)))
+      (unless (.get res all-admitted?)
+        (error "multi-method fleet verification refused admission" (.get res fleet-report-path)))
+      (displayln "MULTI-METHOD-FLEET-OK " (.get res fleet-report-path)
+                 " subjects=" (length (.get res subject-keys))
+                 " executed=" (.get res total-executed)
+                 " reused=" (.get res total-reused))))
+   (else
+    (let* ((output-dir mode-or-output)
+           (cache-dir (and (pair? rest) (> (string-length (car rest)) 0) (car rest)))
+           (subject-key
+             (if (and (pair? rest) (pair? (cdr rest)) (> (string-length (cadr rest)) 0))
+               (string->symbol (cadr rest))
+               'process-tree-reclamation))
+           (outcome
+             (run-multi-method-verification-pipeline repo-root
+               subject-key: subject-key
+               output-dir: output-dir
+               cache-dir: cache-dir))
+           (er-res (.get outcome er-result))
+           (admitted ((.ref er-res 'rows-of) 'verification_admitted))
+           (er-findings ((.ref er-res 'rows-of) 'er_finding)))
+      (unless (and (replay-report-valid? (.get outcome replay-report))
+                   (null? er-findings)
+                   (pair? admitted))
+        (error "multi-method verification pipeline refused admission"
+               (list (replay-report-status (.get outcome replay-report))
+                     er-findings
+                     admitted)))
+      (displayln "MULTI-METHOD-VERIFICATION-OK " (.get outcome report-path))))))

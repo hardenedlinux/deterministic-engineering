@@ -480,7 +480,7 @@ check-defense:
       just test-file "$f"
     done
 
-# M5 multi-method verification gate (SysML v2 -> Zero-Glue Fun-Flow DAG Compiler -> Quint + LeanPoo + Clippy + Native Oracles -> ASCENT MR01-MR06/ER01-ER04/IR01-IR06 + Ed25519 Signed Cache across ProcessTreeReclamation, BackpressureMemory, & LeaseFencingToken).
+# M5 multi-method verification gate (SysML v2 -> Zero-Glue Fun-Flow DAG Compiler -> Quint + LeanPoo + Clippy + Native Oracles -> ASCENT MR01-MR06/ER01-ER04/IR01-IR06 + Ed25519 Signed Cache & 3-Subject Fleet).
 check-multi-method:
     just test-file t/yanxu/Library/verification-flow/governance-and-sysml-linkage-test.ss
     just test-file t/yanxu/Library/verification-flow/sysml-compiler-and-lease-fencing-test.ss ".*" 240s
@@ -488,8 +488,9 @@ check-multi-method:
     just test-file t/yanxu/Library/verification-flow/end-to-end-ops-runner-test.ss ".*" 240s
     just test-file t/yanxu/Library/verification-flow/incremental-cache-reuse-test.ss ".*" 240s
     just test-file t/yanxu/Library/verification-flow/multi-subject-backpressure-test.ss ".*" 240s
+    just test-file t/yanxu/Library/verification-flow/multi-subject-fleet-and-pinned-attestation-test.ss ".*" 360s
 
-# Run the M5 multi-method Fun-Flow Ops Runner (optional cache_dir & subject: process-tree-reclamation | backpressure-memory | lease-fencing-token) and write a fresh JSON evidence report.
+# Run the M5 multi-method Fun-Flow Ops Runner (optional cache_dir & subject: process-tree-reclamation | backpressure-memory | lease-fencing-token) and write a fresh signed JSON evidence report.
 investigate-multi-method output cache_dir="" subject="process-tree-reclamation":
     #!/usr/bin/env bash
     set -euo pipefail
@@ -497,3 +498,12 @@ investigate-multi-method output cache_dir="" subject="process-tree-reclamation":
     mkdir -p .data/test-logs
     log="$(mktemp .data/test-logs/multi-method-XXXXXX)"
     timeout --foreground --signal=TERM --kill-after=5s 300s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/verification-flow-runner.ss "{{output}}" "{{cache_dir}}" "{{subject}}" 2>&1 | tee "$log"
+
+# Run ALL SysML v2 subjects as one Ed25519-signed Merkle-bound Fleet against a shared cache.
+fleet-multi-method output cache_dir="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    test ! -e "{{output}}"
+    mkdir -p .data/test-logs
+    log="$(mktemp .data/test-logs/multi-method-fleet-XXXXXX)"
+    timeout --foreground --signal=TERM --kill-after=5s 420s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/verification-flow-runner.ss --fleet "{{output}}" "{{cache_dir}}" 2>&1 | tee "$log"

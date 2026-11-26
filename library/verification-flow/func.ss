@@ -35,6 +35,7 @@
   filter-governance-sources-for-subject
   canonical-witness-signing-payload
   canonical-report-signing-payload
+  canonical-fleet-signing-payload
   flow-of
   run-ascent-program
   adapter-result->raw-receipt
@@ -163,6 +164,33 @@
                (frame-canonical-kv "ev.outcome" (list-ref ev 4))
                (frame-canonical-kv "ev.detail" (list-ref ev 5))))
            sorted-ev))))
+
+;; Deterministic 2-level Merkle payload for a multi-subject Fleet verification report.
+;; `subject-entries` is a list of (subject-key subject-id report-payload-sha256 replay-valid? admitted?) lists.
+(def (canonical-fleet-signing-payload fleet-id sysml-sha256 subject-entries)
+  (def sorted-entries
+    (sort-by (map (lambda (e)
+                    (list (sym->str (list-ref e 0))
+                          (sym->str (list-ref e 1))
+                          (sym->str (list-ref e 2))
+                          (if (list-ref e 3) "true" "false")
+                          (if (list-ref e 4) "true" "false")))
+                  subject-entries)
+             (lambda (a b) (string<? (car a) (car b)))))
+  (apply string-append
+    (append
+      (list "de.verification-fleet-report.v1\n"
+            (frame-canonical-kv "fleetId" fleet-id)
+            (frame-canonical-kv "sysmlSha256" sysml-sha256)
+            (frame-canonical-kv "subjectCount" (number->string (length sorted-entries))))
+      (map (lambda (e)
+             (string-append
+               (frame-canonical-kv "sub.key" (list-ref e 0))
+               (frame-canonical-kv "sub.id" (list-ref e 1))
+               (frame-canonical-kv "sub.reportSha256" (list-ref e 2))
+               (frame-canonical-kv "sub.replayValid" (list-ref e 3))
+               (frame-canonical-kv "sub.admitted" (list-ref e 4))))
+           sorted-entries))))
 
 ;; Polymorphic unwrapper: extracts `.flow` from a VerificationStep or passes a Flow through.
 (def (flow-of step-or-flow)
