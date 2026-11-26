@@ -16,3 +16,26 @@ test('ITF predicate evaluator checks boolean, bigint, negation and qualified var
   expect(traceSatisfiesItfPredicate(trace, 'h.unsafe == true and not(h.durable)')).toBe(false);
   expect(traceSatisfiesItfPredicate(trace, 'h.sent == 2 or h.sent == 3')).toBe(true);
 });
+
+test('ITF predicate evaluator supports emergent set operators (size, contains, subseteq)', () => {
+  const trace: ItfTrace = {
+    vars: ['h'],
+    states: [
+      {
+        h: {
+          acceptedActors: {'#set': [{'#bigint': '1'}, {'#bigint': '2'}]},
+          usedJtis: {'#set': [{'#bigint': '1'}]},
+          totalAccepted: {'#bigint': '2'},
+          executedPerms: {'#set': [{'#bigint': '1'}, {'#bigint': '3'}]},
+          attenuatedPerms: {'#set': [{'#bigint': '1'}, {'#bigint': '2'}]},
+        },
+      },
+    ],
+  };
+  expect(traceSatisfiesItfPredicate(trace, 'contains(h.acceptedActors, 2)')).toBe(true);
+  expect(traceSatisfiesItfPredicate(trace, 'contains(h.acceptedActors, 9)')).toBe(false);
+  expect(traceSatisfiesItfPredicate(trace, 'h.totalAccepted > size(h.usedJtis)')).toBe(true);
+  expect(traceSatisfiesItfPredicate(trace, 'not(subseteq(h.executedPerms, h.attenuatedPerms))')).toBe(true);
+  expect(traceSatisfiesItfPredicate(trace, 'h.totalAccepted + size(h.usedJtis) == 3')).toBe(true);
+  expect(traceSatisfiesItfPredicate(trace, 'h.totalAccepted - size(h.usedJtis) == 1')).toBe(true);
+});

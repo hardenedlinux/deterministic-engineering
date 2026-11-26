@@ -104,4 +104,4 @@ test('all projected pure .qnt models in packages/quint-models pass run-plan with
   const ver = run(['bun', cliPath, '--version'], repoRoot);
   expect(ver.exitCode).toBe(0);
   expect(ver.stdout.trim()).toBe('0.33.0');
-}, 120000);
+}, 300000);

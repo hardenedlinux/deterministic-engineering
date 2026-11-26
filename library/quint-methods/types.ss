@@ -7,7 +7,8 @@
   :clan/poo/object
   (only-in :clan/poo/type define-type Any Object Function Type Type. Bool
            Record Symbol String List Exactly Or element?)
-  (only-in "../../types.ss" LibraryNonemptyString))
+  (only-in "../../types.ss" LibraryNonemptyString)
+  "ast.ss")
 (export QuintTimeout QuintDepth QuintSeed QuintStepKind QuintExpectedExit
         QuintImportRow QuintParamRow QuintStateField QuintGuardRow
         QuintTransitionRow QuintTraceRow QuintRuleRow QuintDepRow
@@ -34,9 +35,21 @@
 (def QuintStateField
   (Or (list-tuple-type 'quint/state-field-init Symbol LibraryNonemptyString LibraryNonemptyString)
       (list-tuple-type 'quint/state-field-pure Symbol LibraryNonemptyString)))
-(def QuintGuardRow (list-tuple-type 'quint/guard-row Symbol LibraryNonemptyString))
-(def QuintTransitionRow (list-tuple-type 'quint/transition-row Symbol LibraryNonemptyString))
-(def QuintTraceRow (list-tuple-type 'quint/trace-row Symbol LibraryNonemptyString))
+(define-type (QuintExprASTType @ Type.)
+  identity: 'quint/expr-ast
+  .element?: quint-expr?)
+
+(define-type (QuintDeclASTType @ Type.)
+  identity: 'quint/decl-ast
+  .element?: quint-decl?)
+
+(define-type (QuintCounterASTType @ Type.)
+  identity: 'quint/counter-ast
+  .element?: quint-counter-ast?)
+
+(def QuintGuardRow (list-tuple-type 'quint/guard-row Symbol (Or LibraryNonemptyString QuintExprASTType)))
+(def QuintTransitionRow (list-tuple-type 'quint/transition-row Symbol (Or LibraryNonemptyString QuintDeclASTType)))
+(def QuintTraceRow (list-tuple-type 'quint/trace-row Symbol (Or LibraryNonemptyString QuintDeclASTType)))
 (def QuintRuleRow (list-tuple-type 'quint/rule-row Symbol Symbol (Exactly 'quint)))
 (def QuintDepRow
   (list-tuple-type 'quint/dep-row Symbol (Or (Exactly 'source) (Exactly 'profile) (Exactly 'method))))
@@ -56,9 +69,16 @@
    (Record identity: [Symbol]
            dropped-guard: [Symbol]
            step-action: [LibraryNonemptyString]
-           counter-action: [LibraryNonemptyString]
+           derive-from-transition: [Symbol optional: #t]
+           derive-action-name: [Symbol optional: #t]
+           derive-step-call: [QuintExprASTType optional: #t]
+           counter-action: [(Or LibraryNonemptyString QuintCounterASTType) optional: #t]
            expected-itf-predicate: [LibraryNonemptyString]))
   sealed: #f)
+
+(define-type (QuintDepth @ Type.)
+  identity: 'quint/depth
+  .element?: (lambda (v) (and (exact-integer? v) (>= v 1) (<= v 64))))
 
 (define-type
   (QuintDomainModelShape @
@@ -71,6 +91,9 @@
            quint-file: [LibraryNonemptyString]
            domain-dir: [LibraryNonemptyString]
            quint-imports: [(List QuintImportRow) optional: #t]
+           verify-const-bindings: [(List QuintParamRow) optional: #t]
+           verify-depth: [QuintDepth optional: #t]
+           countermodel-depth: [QuintDepth optional: #t]
            rules: [(List QuintRuleRow)]
            dependencies: [(List QuintDepRow)]
            invariant: [LibraryNonemptyString]
@@ -78,7 +101,7 @@
            state: [(List QuintStateField)]
            guards: [(List QuintGuardRow)]
            transitions: [(List QuintTransitionRow)]
-           safety: [LibraryNonemptyString]
+           safety: [(Or LibraryNonemptyString QuintExprASTType)]
            traces: [(List QuintTraceRow)]
            countermodels: [(List QuintCountermodelType)]
            limits: [LibraryNonemptyString]))
@@ -97,11 +120,40 @@
          (let ((guard-ids (map car (.get m guards))))
            (andmap (lambda (cm) (and (memq (.get cm dropped-guard) guard-ids) #t))
                    (.get m countermodels)))
-         ;; Stateful models (3-tuple state fields) must declare a 'step transition.
+         ;; Stateful models (3-tuple state fields) must declare a 'step transition
+         ;; and all structural AST state references (. h field) / (set-h ...) must match declared state fields.
          (let ((st (.get m state)))
            (or (null? st)
                (not (= (length (car st)) 3))
-               (and (assq 'step (.get m transitions)) #t))))))
+               (let ((state-fields (map car st))
+                     (safety-val (.get m safety)))
+                 (and (assq 'step (.get m transitions))
+                      (or (string? safety-val) (quint-expr-state-refs-valid? safety-val state-fields))
+                      (andmap (lambda (tr)
+                                (let ((body (cadr tr)))
+                                  (or (string? body) (quint-decl-state-refs-valid? body state-fields))))
+                              (.get m transitions))
+                      (andmap (lambda (tr)
+                                (let ((body (cadr tr)))
+                                  (or (string? body) (quint-decl-state-refs-valid? body state-fields))))
+                              (.get m traces))
+                      (andmap (lambda (cm)
+                                (cond
+                                 ((.slot? cm 'derive-from-transition)
+                                  (let ((tr (assq (.get cm derive-from-transition) (.get m transitions))))
+                                    (and tr
+                                         (quint-decl? (cadr tr))
+                                         (quint-decl-contains-guard? (cadr tr) (.get cm dropped-guard))
+                                         (.slot? cm 'derive-action-name)
+                                         (or (not (.slot? cm 'derive-step-call))
+                                             (quint-expr-state-refs-valid? (.get cm derive-step-call) state-fields))
+                                         #t)))
+                                 ((.slot? cm 'counter-action)
+                                  (let ((ca (.get cm counter-action)))
+                                    (or (string? ca) (quint-counter-ast-state-refs-valid? ca state-fields))))
+                                 (else #f)))
+                              (.get m countermodels))
+                      #t)))))))
 
 (define-type (ThreatDomainModelType @ QuintDomainModelType)
   identity: 'quint/threat-domain-model
@@ -121,10 +173,6 @@
 (define-type (QuintTimeout @ Type.)
   identity: 'quint/timeout
   .element?: (lambda (v) (and (exact-integer? v) (>= v 1) (<= v 120))))
-
-(define-type (QuintDepth @ Type.)
-  identity: 'quint/depth
-  .element?: (lambda (v) (and (exact-integer? v) (>= v 1) (<= v 64))))
 
 (define-type (QuintSeed @ Type.)
   identity: 'quint/seed

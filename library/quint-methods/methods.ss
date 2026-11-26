@@ -7,7 +7,8 @@
         (only-in :clan/poo/type validate)
         (only-in :clan/poo/mop/clos/generic-syntax .defgeneric .defmethod)
         :std/format
-        (only-in "../threat-capabilities/objects.ss" ThreatModel.)
+        (only-in "objects.ss" ThreatModel.)
+        "ast.ss"
         "types.ss")
 (export quint-module quint-plan)
 
@@ -44,12 +45,22 @@
       (fprintf out "// @quint-model %a\n" (.get model identity))
       (display "// @quint-version 0.33.0\n" out)
       (display "// @apalache-version 0.62.1\n" out)
+      (def verify-depth (if (.slot? model 'verify-depth) (.get model verify-depth) 12))
       (when (has-state-record? state-rows)
-        (display "// @verify safety max-steps=12\n" out))
+        (if (and (.slot? model 'verify-const-bindings)
+                 (pair? (.get model verify-const-bindings)))
+          (fprintf out "// @verify safety max-steps=%a const=\"%a\"\n"
+                   verify-depth
+                   (join-lines
+                     (map (lambda (b) (format "%a=%a" (car b) (cadr b)))
+                          (.get model verify-const-bindings))
+                     ", "))
+          (fprintf out "// @verify safety max-steps=%a\n" verify-depth)))
+      (def cm-depth (if (.slot? model 'countermodel-depth) (.get model countermodel-depth) 6))
       (for-each
         (lambda (cm)
-          (fprintf out "// @countermodel %a step=%a max-steps=6 itf=\"%a\"\n"
-                   (.get cm dropped-guard) (.get cm step-action) (.get cm expected-itf-predicate)))
+          (fprintf out "// @countermodel %a step=%a max-steps=%a itf=\"%a\"\n"
+                   (.get cm dropped-guard) (.get cm step-action) cm-depth (.get cm expected-itf-predicate)))
         countermodels)
       (fprintf out "// Limits: %a\n" limits)
       (fprintf out "module %a {\n" mod-name)
@@ -69,19 +80,31 @@
                  (join-lines (map (lambda (r) (format "%a: %a" (car r) (caddr r))) state-rows) ", ")))
       (for-each
         (lambda (tr)
-          (fprintf out "  %a\n" (cadr tr)))
+          (def body (cadr tr))
+          (fprintf out "  %a\n" (if (string? body) body (emit-quint-decl body))))
         transitions)
       (when (has-state-record? state-rows)
-        (fprintf out "  val safety = %a\n" safety))
+        (fprintf out "  val safety = %a\n" (if (string? safety) safety (emit-quint-expr safety))))
       (for-each
         (lambda (cm)
           (fprintf out "  // Countermodel %a (dropped guard: %a)\n"
                    (.get cm identity) (.get cm dropped-guard))
-          (fprintf out "  %a\n" (.get cm counter-action)))
+          (if (.slot? cm 'derive-from-transition)
+            (let* ((base-tr (assq (.get cm derive-from-transition) transitions))
+                   (step-call (if (.slot? cm 'derive-step-call) (.get cm derive-step-call) #f))
+                   (derived (quint-derive-countermodel-decls
+                              (cadr base-tr)
+                              (.get cm dropped-guard)
+                              (.get cm derive-action-name)
+                              (string->symbol (.get cm step-action))
+                              step-call)))
+              (fprintf out "  %a\n" (emit-quint-counter-ast derived)))
+            (fprintf out "  %a\n" (emit-quint-counter-ast (.get cm counter-action)))))
         countermodels)
       (for-each
         (lambda (tr)
-          (fprintf out "  %a\n" (cadr tr)))
+          (def body (cadr tr))
+          (fprintf out "  %a\n" (if (string? body) body (emit-quint-decl body))))
         traces)
       (display "}\n" out))))
 

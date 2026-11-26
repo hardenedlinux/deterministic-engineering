@@ -10,8 +10,14 @@
  *   orExpr := andExpr ('or' andExpr)*
  *   andExpr := notExpr ('and' notExpr)*
  *   notExpr := 'not' '(' expr ')' | cmpExpr
- *   cmpExpr := atom (('==' | '!=' | '>=' | '<=' | '>' | '<') atom)?
- *   atom := '(' expr ')' | 'true' | 'false' | INT | IDENT ('.' IDENT)*
+ *   cmpExpr := addExpr (('==' | '!=' | '>=' | '<=' | '>' | '<') addExpr)?
+ *   addExpr := atom (('+' | '-') atom)*
+ *   atom := '(' expr ')'
+ *         | '-' atom
+ *         | 'size' '(' addExpr ')'
+ *         | 'contains' '(' addExpr ',' addExpr ')'
+ *         | 'subseteq' '(' addExpr ',' addExpr ')'
+ *         | 'true' | 'false' | INT | IDENT ('.' IDENT)*
  */
 
 export interface ItfTrace {
@@ -22,10 +28,14 @@ export interface ItfTrace {
 type Token =
   | {kind: 'lparen'}
   | {kind: 'rparen'}
+  | {kind: 'comma'}
+  | {kind: 'arith'; value: '+' | '-'}
   | {kind: 'op'; value: '==' | '!=' | '>=' | '<=' | '>' | '<'}
-  | {kind: 'kw'; value: 'and' | 'or' | 'not' | 'true' | 'false'}
+  | {kind: 'kw'; value: 'and' | 'or' | 'not' | 'true' | 'false' | 'size' | 'contains' | 'subseteq'}
   | {kind: 'int'; value: bigint}
   | {kind: 'ident'; value: string};
+
+const KEYWORDS = new Set(['and', 'or', 'not', 'true', 'false', 'size', 'contains', 'subseteq']);
 
 function tokenize(input: string): Token[] {
   const tokens: Token[] = [];
@@ -46,6 +56,11 @@ function tokenize(input: string): Token[] {
       i++;
       continue;
     }
+    if (ch === ',') {
+      tokens.push({kind: 'comma'});
+      i++;
+      continue;
+    }
     const two = input.slice(i, i + 2);
     if (two === '==' || two === '!=' || two === '>=' || two === '<=') {
       tokens.push({kind: 'op', value: two});
@@ -57,7 +72,12 @@ function tokenize(input: string): Token[] {
       i++;
       continue;
     }
-    if (/[0-9]/.test(ch) || (ch === '-' && /[0-9]/.test(input[i + 1] ?? ''))) {
+    if (ch === '+' || ch === '-') {
+      tokens.push({kind: 'arith', value: ch});
+      i++;
+      continue;
+    }
+    if (/[0-9]/.test(ch)) {
       let end = i + 1;
       while (end < input.length && /[0-9]/.test(input[end]!)) end++;
       tokens.push({kind: 'int', value: BigInt(input.slice(i, end))});
@@ -68,8 +88,8 @@ function tokenize(input: string): Token[] {
       let end = i + 1;
       while (end < input.length && /[A-Za-z0-9_.]/.test(input[end]!)) end++;
       const word = input.slice(i, end);
-      if (word === 'and' || word === 'or' || word === 'not' || word === 'true' || word === 'false') {
-        tokens.push({kind: 'kw', value: word});
+      if (KEYWORDS.has(word)) {
+        tokens.push({kind: 'kw', value: word as Extract<Token, {kind: 'kw'}>['value']});
       } else {
         tokens.push({kind: 'ident', value: word});
       }
@@ -81,11 +101,19 @@ function tokenize(input: string): Token[] {
   return tokens;
 }
 
-function normalizeItfValue(v: unknown): boolean | bigint | string | null {
+type NormalizedVal = boolean | bigint | string | NormalizedVal[] | null;
+
+function normalizeItfValue(v: unknown): NormalizedVal {
   if (typeof v === 'boolean' || typeof v === 'string') return v;
   if (typeof v === 'number') return BigInt(Math.trunc(v));
-  if (v && typeof v === 'object' && '#bigint' in v) {
-    return BigInt(String((v as {'#bigint': string})['#bigint']));
+  if (Array.isArray(v)) return v.map(normalizeItfValue);
+  if (v && typeof v === 'object') {
+    if ('#bigint' in v) {
+      return BigInt(String((v as {'#bigint': string})['#bigint']));
+    }
+    if ('#set' in v && Array.isArray((v as {'#set': unknown[]})['#set'])) {
+      return (v as {'#set': unknown[]})['#set'].map(normalizeItfValue);
+    }
   }
   return null;
 }
@@ -119,6 +147,11 @@ export function evaluateItfPredicateOnState(
   const peek = () => tokens[pos];
   const consume = () => tokens[pos++];
 
+  function expectKind(kind: Token['kind'], ctx: string): void {
+    const t = consume();
+    if (t?.kind !== kind) throw new Error(`Expected '${kind}' in ${ctx}`);
+  }
+
   function parseOr(): unknown {
     let left = Boolean(parseAnd());
     while (peek()?.kind === 'kw' && (peek() as {kind: 'kw'; value: string}).value === 'or') {
@@ -142,21 +175,19 @@ export function evaluateItfPredicateOnState(
   function parseNot(): unknown {
     if (peek()?.kind === 'kw' && (peek() as {kind: 'kw'; value: string}).value === 'not') {
       consume();
-      const lp = consume();
-      if (lp?.kind !== 'lparen') throw new Error('Expected "(" after not');
+      expectKind('lparen', 'not(...)');
       const val = parseOr();
-      const rp = consume();
-      if (rp?.kind !== 'rparen') throw new Error('Expected ")" after not(...)');
+      expectKind('rparen', 'not(...)');
       return !Boolean(val);
     }
     return parseCmp();
   }
 
   function parseCmp(): unknown {
-    const left = parseAtom();
+    const left = parseAdd();
     if (peek()?.kind === 'op') {
       const op = (consume() as {kind: 'op'; value: '==' | '!=' | '>=' | '<=' | '>' | '<'}).value;
-      const right = parseAtom();
+      const right = parseAdd();
       switch (op) {
         case '==': return left === right;
         case '!=': return left !== right;
@@ -169,17 +200,53 @@ export function evaluateItfPredicateOnState(
     return left;
   }
 
+  function parseAdd(): unknown {
+    let left = parseAtom();
+    while (peek()?.kind === 'arith') {
+      const op = (consume() as {kind: 'arith'; value: '+' | '-'}).value;
+      const right = parseAtom();
+      if (typeof left !== 'bigint' || typeof right !== 'bigint') return null;
+      left = op === '+' ? left + right : left - right;
+    }
+    return left;
+  }
+
   function parseAtom(): unknown {
     const tok = consume();
     if (!tok) throw new Error(`Unexpected end of ITF predicate: ${predicate}`);
+    if (tok.kind === 'arith' && tok.value === '-') {
+      const inner = parseAtom();
+      return typeof inner === 'bigint' ? -inner : null;
+    }
     if (tok.kind === 'lparen') {
       const val = parseOr();
-      const rp = consume();
-      if (rp?.kind !== 'rparen') throw new Error('Expected closing ")" in ITF predicate');
+      expectKind('rparen', '(...)');
       return val;
     }
     if (tok.kind === 'kw' && tok.value === 'true') return true;
     if (tok.kind === 'kw' && tok.value === 'false') return false;
+    if (tok.kind === 'kw' && tok.value === 'size') {
+      expectKind('lparen', 'size(...)');
+      const arg = parseAdd();
+      expectKind('rparen', 'size(...)');
+      return Array.isArray(arg) ? BigInt(arg.length) : null;
+    }
+    if (tok.kind === 'kw' && tok.value === 'contains') {
+      expectKind('lparen', 'contains(...)');
+      const setVal = parseAdd();
+      expectKind('comma', 'contains(set, item)');
+      const itemVal = parseAdd();
+      expectKind('rparen', 'contains(...)');
+      return Array.isArray(setVal) && setVal.some(el => el === itemVal);
+    }
+    if (tok.kind === 'kw' && tok.value === 'subseteq') {
+      expectKind('lparen', 'subseteq(...)');
+      const sub = parseAdd();
+      expectKind('comma', 'subseteq(a, b)');
+      const sup = parseAdd();
+      expectKind('rparen', 'subseteq(...)');
+      return Array.isArray(sub) && Array.isArray(sup) && sub.every(el => sup.some(s => s === el));
+    }
     if (tok.kind === 'int') return tok.value;
     if (tok.kind === 'ident') {
       return normalizeItfValue(resolvePath(state, vars, tok.value));

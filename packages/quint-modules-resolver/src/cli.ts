@@ -32,7 +32,7 @@ interface ParsedArgs {
   command: string;
   input: string;
   main?: string;
-  seed?: string;
+  seed?: string | bigint;
   maxSamples?: number;
   maxSteps?: number;
   invariant?: string;
@@ -50,6 +50,10 @@ interface ParsedArgs {
   tlcConfig?: string;
   randomTransitions?: boolean;
   serverEndpoint?: {hostname: string; port: number};
+  mbt?: boolean;
+  nTraces?: number;
+  witnesses?: string[];
+  hide?: string[];
 }
 
 function parseCliArgs(argv: string[]): ParsedArgs {
@@ -59,13 +63,17 @@ function parseCliArgs(argv: string[]): ParsedArgs {
   }
   const [command, input, ...rest] = argv;
   if (!command || !input) {
-    console.error('Usage: quint-modules-resolver <parse|typecheck|test|verify> <input.qnt> [options]');
+    console.error('Usage: quint-modules-resolver <parse|typecheck|test|run|verify|run-plan|compose|list|verify-deps> <input> [options]');
     process.exit(2);
   }
   const args: ParsedArgs = {command, input, verbosity: 2};
   let rawServerEndpoint = 'localhost:8822';
   for (let i = 0; i < rest.length; i++) {
     const token = rest[i]!;
+    if (token === '--mbt') {
+      args.mbt = true;
+      continue;
+    }
     const eq = token.indexOf('=');
     const key = eq >= 0 ? token.slice(0, eq) : token;
     const val = eq >= 0 ? token.slice(eq + 1) : rest[++i];
@@ -86,6 +94,14 @@ function parseCliArgs(argv: string[]): ParsedArgs {
       case '--out': args.out = val; break;
       case '--out-itf': args.outItf = val; break;
       case '--match': args.match = val; break;
+      case '--mbt': args.mbt = val !== 'false'; break;
+      case '--n-traces': args.nTraces = Number(val); break;
+      case '--witnesses':
+        args.witnesses = [...(args.witnesses ?? []), ...(val ? val.split(',').filter(Boolean) : [])];
+        break;
+      case '--hide':
+        args.hide = [...(args.hide ?? []), ...(val ? val.split(',').filter(Boolean) : [])];
+        break;
       case '--apalache-version': args.apalacheVersion = val; break;
       case '--apalache-config': args.apalacheConfig = val; break;
       case '--tlc-config': args.tlcConfig = val; break;
@@ -98,6 +114,21 @@ function parseCliArgs(argv: string[]): ParsedArgs {
   }
   if (command === 'test' && args.maxSamples === undefined) {
     args.maxSamples = args.seed !== undefined ? 1 : 10000;
+  }
+  if (command === 'run') {
+    args.init ??= 'init';
+    args.step ??= 'step';
+    args.invariants ??= [];
+    args.witnesses ??= [];
+    args.hide ??= [];
+    args.maxSamples ??= 100;
+    args.maxSteps ??= 20;
+    args.nTraces ??= 1;
+    args.mbt ??= false;
+    args.backend ??= 'typescript';
+    if (typeof args.seed === 'string') {
+      args.seed = BigInt(args.seed);
+    }
   }
   if (command === 'verify') {
     args.init ??= 'init';
@@ -197,11 +228,13 @@ export async function runCli(argv: string[]) {
   }
   const args = parseCliArgs(argv);
   let result = await parseWithPackages(args);
-  if (args.command === 'typecheck' || args.command === 'test' || args.command === 'verify') {
+  if (args.command === 'typecheck' || args.command === 'test' || args.command === 'run' || args.command === 'verify') {
     result = await result.asyncChain(cliCommands.typecheck);
   }
   if (args.command === 'test') {
     result = await result.asyncChain(cliCommands.runTests);
+  } else if (args.command === 'run') {
+    result = await result.asyncChain(cliCommands.runSimulator);
   } else if (args.command === 'verify') {
     result = await result.asyncChain(cliCommands.compile);
     result = await result.asyncChain(cliCommands.verifySpec);

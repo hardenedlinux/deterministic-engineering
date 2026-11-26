@@ -20,7 +20,7 @@ function run(cmd: string[], cwd: string) {
   };
 }
 
-test('pure .qnt structural AST compose extends upstream model without JSON IR or Scheme', () => {
+test('pure .qnt structural AST compose extends upstream model without JSON IR or Scheme', async () => {
   const work = mkdtempSync(join(tmpdir(), 'qmr-ast-compose-'));
   try {
     mkdirSync(join(work, 'node_modules/@deterministic-engineering'), {recursive: true});
@@ -111,6 +111,31 @@ test('pure .qnt structural AST compose extends upstream model without JSON IR or
     const badCollide = run(['bun', cliPath, 'compose', baseSpec, badCollideOverlay, `--out=${join(work, 'BadCollide.qnt')}`], work);
     expect(badCollide.exitCode).not.toBe(0);
     expect(badCollide.stderr + badCollide.stdout).toContain('redeclares non-mergeable symbol');
+
+    // 6. MBT simulator run with --mbt --out-itf emits mbt::actionTaken and mbt::nondetPicks.
+    const itfOut = join(work, 'oauth-mbt.itf.json');
+    const sim = run(
+      [
+        'bun',
+        cliPath,
+        'run',
+        outQnt,
+        '--main=consumer_auth_composed',
+        '--invariant=safety',
+        '--max-steps=8',
+        '--max-samples=5',
+        '--n-traces=1',
+        '--seed=7',
+        '--mbt',
+        `--out-itf=${itfOut}`,
+      ],
+      work,
+    );
+    expect(sim.exitCode).toBe(0);
+    const itfRaw = JSON.parse(Bun.file(itfOut).text ? await Bun.file(itfOut).text() : '{}');
+    expect(Array.isArray(itfRaw.states)).toBe(true);
+    expect(itfRaw.states.length).toBeGreaterThan(1);
+    expect(itfRaw.vars).toContain('mbt::actionTaken');
   } finally {
     rmSync(work, {recursive: true, force: true});
   }

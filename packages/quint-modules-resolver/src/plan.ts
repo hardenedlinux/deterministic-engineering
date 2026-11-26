@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
-import {existsSync, mkdtempSync, readFileSync, rmSync} from 'node:fs';
+import {existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
-import {basename, dirname, join, resolve} from 'node:path';
+import {basename, dirname, join, relative, resolve} from 'node:path';
 import {newIdGenerator, parsePhase1fromText} from '@informalsystems/quint';
 import {type ItfTrace, traceSatisfiesItfPredicate} from './itf.ts';
 
@@ -25,6 +25,7 @@ export interface QuintPlan {
   positiveDepth: number;
   negativeDepth: number;
   timeout: number;
+  verifyConstBindings?: string;
   steps: PlanStep[];
 }
 
@@ -37,7 +38,7 @@ export interface QntHeaderDirectives {
   modelIdentity?: string;
   quintVersion: string;
   apalacheVersion: string;
-  verify?: {invariant: string; maxSteps: number};
+  verify?: {invariant: string; maxSteps: number; constBindings?: string};
   countermodels: Array<{
     droppedGuard: string;
     stepAction: string;
@@ -73,11 +74,14 @@ export function parseQntHeaderDirectives(source: string): QntHeaderDirectives {
       result.apalacheVersion = apaMatch[1]!;
       continue;
     }
-    const verifyMatch = line.match(/^\/\/\s*@verify\s+(\S+)(?:\s+max-steps=(\d+))?/);
+    const verifyMatch = line.match(
+      /^\/\/\s*@verify\s+(\S+)(?:\s+max-steps=(\d+))?(?:\s+const="([^"]+)")?/,
+    );
     if (verifyMatch) {
       result.verify = {
         invariant: verifyMatch[1]!,
         maxSteps: verifyMatch[2] ? Number(verifyMatch[2]) : 12,
+        constBindings: verifyMatch[3],
       };
       continue;
     }
@@ -159,6 +163,7 @@ export function parsePlanFromQnt(qntPath: string): QuintPlan {
     positiveDepth: directives.verify?.maxSteps ?? 12,
     negativeDepth: directives.countermodels[0]?.maxSteps ?? 6,
     timeout: 120,
+    verifyConstBindings: directives.verify?.constBindings,
     steps,
   };
 }
@@ -180,7 +185,19 @@ export function executePlan(planOrQntPath: string, options: PlanRunOptions = {})
 
   let passed = 0;
   let skipped = 0;
-  const workDir = mkdtempSync(join(tmpdir(), 'qmr-plan-'));
+  const workDir = realpathSync(mkdtempSync(join(tmpdir(), 'qmr-plan-')));
+  let instPath: string | undefined;
+  const instModule = '__verify_inst';
+  if (parameterized && plan.verifyConstBindings) {
+    const relImport = relative(workDir, realpathSync(qntPath)).replace(/\.qnt$/, '').replaceAll('\\', '/');
+    const importSpec = relImport.startsWith('.') ? relImport : `./${relImport}`;
+    instPath = join(workDir, `${instModule}.qnt`);
+    writeFileSync(
+      instPath,
+      `module ${instModule} {\n  import ${plan.module}(${plan.verifyConstBindings}).* from "${importSpec}"\n}\n`,
+      'utf8',
+    );
+  }
   try {
     for (const step of plan.steps) {
       const isVerify = step.kind === 'bounded-safety' || step.kind === 'required-countermodel';
@@ -188,12 +205,17 @@ export function executePlan(planOrQntPath: string, options: PlanRunOptions = {})
         skipped++;
         continue;
       }
-      if (parameterized && step.kind !== 'typecheck') {
+      if (parameterized && step.kind !== 'typecheck' && !instPath) {
         skipped++;
         continue;
       }
 
-      const cmdArgs = step.command.map((token, idx) => (idx === 1 ? qntPath : token));
+      const targetFile = parameterized && step.kind !== 'typecheck' && instPath ? instPath : qntPath;
+      const cmdArgs = step.command.map((token, idx) => {
+        if (idx === 1) return targetFile;
+        if (targetFile === instPath && token.startsWith('--main=')) return `--main=${instModule}`;
+        return token;
+      });
       let itfOut: string | undefined;
       if (isVerify) {
         cmdArgs.push('--backend=apalache', `--apalache-version=${plan.apalacheVersion}`);
