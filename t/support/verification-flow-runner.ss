@@ -547,8 +547,11 @@
     (hash-for-each (lambda (k v) (set! acc (cons (cons k v) acc))) ht))
   acc)
 
+(def (current-unix-epoch-seconds)
+  (inexact->exact (floor (time->seconds (current-time)))))
+
 ;; Loads persisted verification cache & cryptographically verifies Ed25519 signatures ->
-;; (values cached-witness-rows cached-input-rows cached-toolchain-rows attested-steps entry-by-step-hash).
+;; (values cached-witness-rows cached-input-rows cached-toolchain-rows attested-steps issued-alist entry-by-step-hash).
 (def (load-verification-cache cache-file (pub-key-path #f))
   (def by-step (make-hash-table))
   (if (and cache-file (file-exists? cache-file))
@@ -557,7 +560,8 @@
            (w-rows '())
            (i-rows '())
            (tc-rows '())
-           (attested '()))
+           (attested '())
+           (issued-alist '()))
       (when (hash-table? entries)
         (hash-for-each
           (lambda (step-str rec)
@@ -568,11 +572,13 @@
                      (out (or (hash-get rec "outcome") ""))
                      (det (or (hash-get rec "detail") ""))
                      (tc (hash-get rec "toolchainFingerprint"))
+                     (issued (hash-get rec "issuedAtEpoch"))
                      (sig (hash-get rec "signature"))
                      (digs (hash-get rec "inputDigests"))
                      (dig-pairs (hash-table->alist-strings digs)))
                 (hash-put! by-step step-str rec)
                 (set! w-rows (cons (list step-str obl meth ck out det) w-rows))
+                (set! issued-alist (cons (cons step-str issued) issued-alist))
                 (for-each (lambda (p) (set! i-rows (cons (list step-str (car p) (cdr p)) i-rows)))
                           dig-pairs)
                 (when (string? tc)
@@ -580,12 +586,14 @@
                 (when (and pub-key-path (string? tc) (string? sig))
                   (let ((canonical
                          (canonical-witness-signing-payload
-                           step-str obl meth ck out det tc dig-pairs)))
+                           step-str obl meth ck out det tc dig-pairs
+                           (if (exact-integer? issued) (number->string issued) ""))))
                     (when (ed25519-verify-string pub-key-path canonical sig)
                       (set! attested (cons step-str attested))))))))
           entries))
-      (values (reverse w-rows) (reverse i-rows) (reverse tc-rows) (reverse attested) by-step))
-    (values '() '() '() '() by-step)))
+      (values (reverse w-rows) (reverse i-rows) (reverse tc-rows)
+              (reverse attested) (reverse issued-alist) by-step))
+    (values '() '() '() '() '() by-step)))
 
 (def (save-verification-cache!
        cache-file
@@ -594,7 +602,8 @@
        prev-by-step
        (toolchain-rows '())
        (keypair #f)
-       (reused-steps '()))
+       (reused-steps '())
+       (now-epoch (current-unix-epoch-seconds)))
   (def entries (make-hash-table))
   ;; Preserve prior passing entries for any steps not overwritten.
   (hash-for-each (lambda (k v) (hash-put! entries k v)) prev-by-step)
@@ -631,12 +640,13 @@
                            ("claimKind" ck)
                            ("outcome" "pass")
                            ("detail" det)
+                           ("issuedAtEpoch" now-epoch)
                            ("toolchainFingerprint" tc)
                            ("inputDigests" digs))))
               (when keypair
                 (let* ((canonical
                         (canonical-witness-signing-payload
-                          st obl meth ck "pass" det tc dig-pairs))
+                          st obl meth ck "pass" det tc dig-pairs (number->string now-epoch)))
                        (sig (ed25519-sign-string (.get keypair private-key) canonical)))
                   (hash-put! entry "keyId" (.get keypair key-id))
                   (hash-put! entry "signature" sig)))
@@ -891,6 +901,8 @@
        cache-dir: (cache-dir #f)
        policy-flags: (policy-flags '())
        parallel?: (parallel? #t)
+       m3-ttl-seconds: (m3-ttl-seconds #f)
+       now-epoch: (now-epoch #f)
        request-id: (request-id "req-pt-m5-001"))
   (def sysml-path
     (path-expand
@@ -940,8 +952,10 @@
       (if (and cache-file (not (member "require-signed-cache" policy-flags)))
         (cons "require-signed-cache" policy-flags)
         policy-flags))
-    (let-values (((cached-w-rows cached-i-rows cached-tc-rows attested-steps cached-by-step)
+    (def effective-now (or now-epoch (current-unix-epoch-seconds)))
+    (let-values (((cached-w-rows cached-i-rows cached-tc-rows attested-steps cached-issued-alist cached-by-step)
                   (load-verification-cache cache-file (and keypair (.get keypair public-key)))))
+      (def expired-steps (compute-expired-steps cached-issued-alist effective-now m3-ttl-seconds))
       (def reuse-plan
         (if cache-file
           (reuse-result->plan
@@ -955,7 +969,8 @@
                 cached-i-rows
                 current-toolchains
                 cached-tc-rows
-                attested-steps)))
+                attested-steps
+                expired-steps)))
           #f))
 
       ;; 5. Execute independent pending DAG waves concurrently (if parallel?: #t),
@@ -992,7 +1007,7 @@
       (when cache-file
         (save-verification-cache!
           cache-file evidence-records current-digests cached-by-step
-          current-toolchains keypair (.get exec-stats reused)))
+          current-toolchains keypair (.get exec-stats reused) effective-now))
 
       (def cache-summary
         (.o bind-these: #f
@@ -1266,7 +1281,7 @@
     (if (and cache-file (not (member "require-signed-cache" policy-flags)))
       (cons "require-signed-cache" policy-flags)
       policy-flags))
-  (let-values (((cached-w-rows cached-i-rows cached-tc-rows attested-steps _by-step)
+  (let-values (((cached-w-rows cached-i-rows cached-tc-rows attested-steps _issued _by-step)
                 (load-verification-cache cache-file pub-key)))
     (def total-pending 0)
     (def total-reusable 0)

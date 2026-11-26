@@ -60,7 +60,8 @@
        cached-input-rows
        (current-toolchain-rows '())
        (cached-toolchain-rows '())
-       (attested-steps '()))
+       (attested-steps '())
+       (expired-steps '()))
   (list
     (cons 'flow_step (alist-ref gov-sources 'flow_step '()))
     (cons 'flow_dag_edge (alist-ref gov-sources 'flow_dag_edge '()))
@@ -85,7 +86,9 @@
           (map (lambda (r) (list (sym->str (car r)) (sym->str (cadr r))))
                cached-toolchain-rows))
     (cons 'cached_witness_attested
-          (map (lambda (s) (list (sym->str s))) attested-steps))))
+          (map (lambda (s) (list (sym->str s))) attested-steps))
+    (cons 'cached_witness_expired
+          (map (lambda (s) (list (sym->str s))) expired-steps))))
 
 ;; Pure projection of an IR01-IR04 ASCENT result into a concise planning object.
 (def (reuse-result->plan reuse-res)

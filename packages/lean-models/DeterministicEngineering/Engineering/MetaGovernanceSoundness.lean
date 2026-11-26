@@ -74,6 +74,16 @@ theorem strictPremisePolicy_blocks_stale_downstream_proofs {Step Key Digest Tool
     Reusable sys u :=
   ir07_reusable_implies_premise_supporters_reusable sys hStrict hPath hReuseV
 
+/-- Constructive zero-axiom certification of `IR08` M3 TTL expiry and `IR07` cascade. -/
+theorem expiredM3Oracle_blocks_reuse_and_strict_dependents {Step Key Digest Toolchain : Type}
+    (sys : ReuseSystem Step Key Digest Toolchain) {sup req : Step}
+    (hStrict : sys.strictPremiseRecheck)
+    (hPath : DagPath (fun a b => sys.dagEdge a b ∨ sys.premiseSupportEdge a b) sup req)
+    (hM3 : sys.isM3Mutable sup) (hExp : sys.witnessExpired sup) :
+    ¬ Reusable sys sup ∧ ¬ Reusable sys req :=
+  ⟨ir08_expired_m3_prevents_reuse sys sup hM3 hExp,
+   ir08_expired_m3_cascades_under_strict_premise sys hStrict hPath hM3 hExp⟩
+
 /-! ## Two-Step LeanPoo `ObjectContract.refine` (via `Core.Transport`) -/
 
 structure MetaGovConfig where

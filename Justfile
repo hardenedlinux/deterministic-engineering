@@ -484,7 +484,7 @@ check-defense:
 check-multi-method:
     just test-file t/yanxu/Library/verification-flow/governance-and-sysml-linkage-test.ss
     just test-file t/yanxu/Library/verification-flow/sysml-compiler-and-lease-fencing-test.ss ".*" 240s
-    just test-file t/yanxu/Library/verification-flow/signed-cache-and-toolchain-attestation-test.ss ".*" 240s
+    just test-file t/yanxu/Library/verification-flow/signed-cache-and-toolchain-attestation-test.ss ".*" 360s
     just test-file t/yanxu/Library/verification-flow/parallel-frontier-execution-test.ss ".*" 240s
     just test-file t/yanxu/Library/verification-flow/end-to-end-ops-runner-test.ss ".*" 240s
     just test-file t/yanxu/Library/verification-flow/incremental-cache-reuse-test.ss ".*" 240s

@@ -1,0 +1,59 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+name: Multi-Method Verification Gate (10.154)
+on:
+  pull_request:
+    paths:
+      - 'docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml'
+      - 'library/verification-flow/**'
+      - 'packages/lean-models/**'
+      - 'languages-engineering/rust/lifecycle/process-tree-guard/**'
+      - 'languages-engineering/c/defense/silent-fallback-contrast/**'
+      - 't/support/verification-flow-runner.ss'
+      - 't/yanxu/Library/verification-flow/**'
+      - '.github/workflows/multi-method-verification.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml'
+      - 'library/verification-flow/**'
+      - 'packages/lean-models/**'
+      - 'languages-engineering/rust/lifecycle/process-tree-guard/**'
+      - 'languages-engineering/c/defense/silent-fallback-contrast/**'
+      - 't/support/verification-flow-runner.ss'
+      - 't/yanxu/Library/verification-flow/**'
+      - '.github/workflows/multi-method-verification.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  rust-process-tree-guard:
+    name: Rust ProcessTreeGuard (Clippy Ban + HTTP /shutdown + OS SIGKILL & Escape Oracle)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Run Clippy API-ban lint (-D warnings)
+        working-directory: languages-engineering/rust/lifecycle/process-tree-guard
+        run: cargo clippy --all-targets -- -D warnings
+      - name: Run HTTP /shutdown E2E & OS SIGKILL/setsid leak oracle controls
+        working-directory: languages-engineering/rust/lifecycle/process-tree-guard
+        run: |
+          cargo test --test http_shutdown_e2e -- --nocapture --test-threads=1
+          cargo test --test sigkill_leak_oracle -- --nocapture --test-threads=1
+
+  c-cbmc-boundary-proof:
+    name: C Trust-Boundary CBMC Proof (source-memory-ub)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Install CBMC & run bounds/pointer/unsigned-overflow proof
+        working-directory: languages-engineering/c/defense/silent-fallback-contrast
+        run: |
+          sudo apt-get update && sudo apt-get install -y cbmc
+          clang -Wall -Wextra -Werror bad_defensive.c deterministic_boundary.c contrast_test.c -o /tmp/c_contrast
+          /tmp/c_contrast
+          cbmc deterministic_boundary.c proof.c --bounds-check --pointer-check --unsigned-overflow-check

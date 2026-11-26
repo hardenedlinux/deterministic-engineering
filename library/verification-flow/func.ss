@@ -36,6 +36,7 @@
   canonical-witness-signing-payload
   canonical-report-signing-payload
   canonical-fleet-signing-payload
+  compute-expired-steps
   partition-parallel-frontier-waves
   changed-files->affected-frontier
   flow-of
@@ -116,10 +117,12 @@
 
 ;; Deterministic, collision-free byte representation of a cached verification witness.
 ;; `input-pairs` is an alist of (path-string . sha256-hex-string) sorted lexicographically.
-(def (canonical-witness-signing-payload step obligation method claim-kind outcome detail toolchain input-pairs)
+;; Optional `issued-at` (epoch string) binds issuance timestamp into Ed25519 to defeat rollback/backdating.
+(def (canonical-witness-signing-payload step obligation method claim-kind outcome detail toolchain input-pairs (issued-at ""))
   (def sorted-inputs
     (sort-by (map (lambda (p) (cons (sym->str (car p)) (sym->str (cdr p)))) input-pairs)
              (lambda (a b) (string<? (car a) (car b)))))
+  (def issued-str (if (number? issued-at) (number->string issued-at) (sym->str issued-at)))
   (apply string-append
     (append
       (list "de.verification-witness.v2\n"
@@ -129,10 +132,29 @@
             (frame-canonical-kv "claimKind" claim-kind)
             (frame-canonical-kv "outcome" outcome)
             (frame-canonical-kv "detail" detail)
-            (frame-canonical-kv "toolchain" toolchain)
-            (frame-canonical-kv "inputCount" (number->string (length sorted-inputs))))
+            (frame-canonical-kv "toolchain" toolchain))
+      (if (> (string-length issued-str) 0)
+        (list (frame-canonical-kv "issuedAt" issued-str))
+        '())
+      (list (frame-canonical-kv "inputCount" (number->string (length sorted-inputs))))
       (map (lambda (p) (frame-canonical-kv (string-append "in:" (car p)) (cdr p)))
            sorted-inputs))))
+
+;; Pure TTL evaluator for IR08: given `((step . issued-epoch) ...)` alist, `now-epoch`,
+;; and `ttl-seconds` (or #f when TTL disabled), returns list of expired step-name strings
+;; (also rejects future-dated timestamps where issued-epoch > now-epoch).
+(def (compute-expired-steps issued-alist now-epoch ttl-seconds)
+  (if (and (exact-integer? ttl-seconds) (>= ttl-seconds 0) (exact-integer? now-epoch))
+    (filter-map
+      (lambda (entry)
+        (def st (sym->str (car entry)))
+        (def issued (cdr entry))
+        (and (or (not (exact-integer? issued))
+                 (> issued now-epoch)
+                 (> (- now-epoch issued) ttl-seconds))
+             st))
+      issued-alist)
+    '()))
 
 ;; Deterministic canonical payload for an emitted multi-method verification report.
 ;; `evidence-rows` is a list of (step obligation method claim-kind outcome detail) lists.

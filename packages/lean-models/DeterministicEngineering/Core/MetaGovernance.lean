@@ -51,6 +51,7 @@ structure ReuseSystem (Step Key Digest Toolchain : Type) where
   cachedToolchain : Step → Toolchain → Prop
   isM3Mutable : Step → Prop
   attested : Step → Prop
+  witnessExpired : Step → Prop
   requireFreshM3 : Prop
   requireSignedCache : Prop
   strictPremiseRecheck : Prop
@@ -87,6 +88,7 @@ inductive Invalidated {Step Key Digest Toolchain : Type}
   | ir06 (s : Step) : sys.requireSignedCache → ¬ sys.attested s → Invalidated sys s
   | ir07 {sup req : Step} : sys.strictPremiseRecheck → sys.premiseSupportEdge sup req →
       Invalidated sys sup → Invalidated sys req
+  | ir08 (s : Step) : sys.isM3Mutable s → sys.witnessExpired s → Invalidated sys s
 
 def Pending {Step Key Digest Toolchain : Type}
     (sys : ReuseSystem Step Key Digest Toolchain) (s : Step) : Prop :=
@@ -189,6 +191,25 @@ theorem ir07_reusable_implies_premise_supporters_reusable {Step Key Digest Toolc
     Reusable sys sup := by
   intro hInvSup
   exact hReuseReq (ir07_mixed_dag_and_premise_invalidation sys hStrict hPath hInvSup)
+
+/-- Constructive zero-axiom `IR08` soundness: any expired `M3-mutable-root` witness is
+strictly non-reusable, AND under `strictPremiseRecheck` cascades to block downstream reuse. -/
+theorem ir08_expired_m3_prevents_reuse {Step Key Digest Toolchain : Type}
+    (sys : ReuseSystem Step Key Digest Toolchain) (s : Step)
+    (hM3 : sys.isM3Mutable s) (hExp : sys.witnessExpired s) :
+    ¬ Reusable sys s := by
+  intro hReuse
+  exact hReuse (Invalidated.ir08 s hM3 hExp)
+
+theorem ir08_expired_m3_cascades_under_strict_premise {Step Key Digest Toolchain : Type}
+    (sys : ReuseSystem Step Key Digest Toolchain) {sup req : Step}
+    (hStrict : sys.strictPremiseRecheck)
+    (hPath : DagPath (fun a b => sys.dagEdge a b ∨ sys.premiseSupportEdge a b) sup req)
+    (hM3 : sys.isM3Mutable sup) (hExp : sys.witnessExpired sup) :
+    ¬ Reusable sys req := by
+  intro hReuseReq
+  exact ir08_expired_m3_prevents_reuse sys sup hM3 hExp
+    (ir07_reusable_implies_premise_supporters_reusable sys hStrict hPath hReuseReq)
 
 /-! ## 3. Exact Declarative Semantics of ASCENT `MR01`–`MR02` & `ER01`–`ER04` -/
 

@@ -154,7 +154,35 @@
       (check (and (member '("rustOracleTarget" "IR03-upstream-dag-invalidated")
                           (.get p-ir07-cascade invalidations)) #t) => #t)
       (check (and (member '("leanPooTarget" "IR07-premise-supporter-invalidated")
-                          (.get p-ir07-cascade invalidations)) #t) => #t))
+                          (.get p-ir07-cascade invalidations)) #t) => #t)
+
+      ;; 7. IR08: Expired M3 witness invalidates ONLY M3-mutable-root (rustOracleTarget);
+      ;;          M1-immutable-proof (leanPooTarget) is timeless and immune to IR08!
+      (def p-ir08
+        (reuse-result->plan
+          (reason-incremental-reuse
+            (build-incremental-reuse-sources
+              gov default-process-tree-step-mutability '("require-signed-cache")
+              base-inputs all-cached base-inputs base-tc base-tc all-attested
+              '("rustOracleTarget" "leanPooTarget")))))
+      (check-equal? (.get p-ir08 pending) '("rustOracleTarget"))
+      (check (and (member '("rustOracleTarget" "IR08-witness-ttl-expired")
+                          (.get p-ir08 invalidations)) #t) => #t)
+      (check (set-eq? (.get p-ir08 reusable) '("quintTarget" "leanPooTarget" "sourceContractTarget")) => #t)
+
+      ;; 8. IR08 + IR07: Under strict-premise-recheck, expired M3 rustOracleTarget ALSO cascades to leanPooTarget!
+      (def p-ir08-strict
+        (reuse-result->plan
+          (reason-incremental-reuse
+            (build-incremental-reuse-sources
+              gov default-process-tree-step-mutability '("require-signed-cache" "strict-premise-recheck")
+              base-inputs all-cached base-inputs base-tc base-tc all-attested
+              '("rustOracleTarget")))))
+      (check (set-eq? (.get p-ir08-strict pending) '("rustOracleTarget" "leanPooTarget")) => #t)
+      (check (and (member '("rustOracleTarget" "IR08-witness-ttl-expired")
+                          (.get p-ir08-strict invalidations)) #t) => #t)
+      (check (and (member '("leanPooTarget" "IR07-premise-supporter-invalidated")
+                          (.get p-ir08-strict invalidations)) #t) => #t))
 
     (test-case "live Ed25519 signed cache & report reject forged detail (IR06), toolchain drift (IR05), and tampered report.json"
       (def tmp-parent (path-expand ".data/test-runs" repo-root))
@@ -250,4 +278,62 @@
         (check-equal? (.get res total-executed) 2)
         (def pub-key (path-expand "attestation-ed25519.pub.pem" imp-cache))
         (def rep-path (cdr (assq 'c-boundary-conservation (.get res reports))))
-        (check-equal? (verify-report-with-pinned-key rep-path pub-key) #t)))))
+        (check-equal? (verify-report-with-pinned-key rep-path pub-key) #t)))
+
+    (test-case "live IR08 M3 witness TTL expires ONLY M3 oracle while M1 proofs stay reusable, and timestamp forgery is caught by IR06 Ed25519"
+      (def tmp-parent (path-expand ".data/test-runs" repo-root))
+      (create-directory* tmp-parent)
+      (def ttl-cache (path-expand "m5-ir08-ttl-cache" tmp-parent))
+      (run-process (list "rm" "-rf" ttl-cache))
+      (create-directory* ttl-cache)
+      (def ttl-cache-file (path-expand "verification-cache.v1.json" ttl-cache))
+      (def t0 1760000000)
+
+      ;; Cold run on backpressure-memory at t0: signs issuedAtEpoch=t0 on all 4 steps!
+      (let ((r1 (run-multi-method-verification-pipeline repo-root
+                  subject-key: 'backpressure-memory
+                  cache-dir: ttl-cache
+                  now-epoch: t0
+                  m3-ttl-seconds: 3600
+                  request-id: "req-ttl-1-cold")))
+        (check-equal? (length (.get (.get r1 cache-summary) executed)) 4))
+      (##gc)
+
+      ;; Warm run at t0 + 60s (within 3600s TTL): 0 executed / 4 reused!
+      (let ((r2 (run-multi-method-verification-pipeline repo-root
+                  subject-key: 'backpressure-memory
+                  cache-dir: ttl-cache
+                  now-epoch: (+ t0 60)
+                  m3-ttl-seconds: 3600
+                  request-id: "req-ttl-2-fresh")))
+        (check-equal? (.get (.get r2 cache-summary) executed) '())
+        (check-equal? (length (.get (.get r2 cache-summary) reused)) 4))
+      (##gc)
+
+      ;; Warm run at t0 + 7200s (beyond 3600s TTL): ONLY M3 bpRustOracleTarget re-runs via IR08!
+      ;; All 3 M1 immutable proofs (Quint, LeanPoo, Clippy) remain reused!
+      (let ((r3 (run-multi-method-verification-pipeline repo-root
+                  subject-key: 'backpressure-memory
+                  cache-dir: ttl-cache
+                  now-epoch: (+ t0 7200)
+                  m3-ttl-seconds: 3600
+                  request-id: "req-ttl-3-expired")))
+        (check-equal? (.get (.get r3 cache-summary) executed) '("bpRustOracleTarget"))
+        (check (set-eq? (.get (.get r3 cache-summary) reused)
+                        '("bpQuintTarget" "bpLeanPooTarget" "bpSourceContractTarget")) => #t)
+        (check (and (member '("bpRustOracleTarget" "IR08-witness-ttl-expired")
+                            (.get (.get r3 cache-summary) invalidations)) #t) => #t))
+      (##gc)
+
+      ;; Timestamp-forgery attack: attacker forward-dates issuedAtEpoch in JSON to evade TTL ->
+      ;; Ed25519 signature breaks -> caught by IR06-attestation-invalid!
+      (patch-cache-entry-field! ttl-cache-file "bpRustOracleTarget" "issuedAtEpoch" (+ t0 999999))
+      (let ((r4 (run-multi-method-verification-pipeline repo-root
+                  subject-key: 'backpressure-memory
+                  cache-dir: ttl-cache
+                  now-epoch: (+ t0 7260)
+                  m3-ttl-seconds: 3600
+                  request-id: "req-ttl-4-timestamp-forge")))
+        (check-equal? (.get (.get r4 cache-summary) executed) '("bpRustOracleTarget"))
+        (check (and (member '("bpRustOracleTarget" "IR06-attestation-invalid")
+                            (.get (.get r4 cache-summary) invalidations)) #t) => #t)))))

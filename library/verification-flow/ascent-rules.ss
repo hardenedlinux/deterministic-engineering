@@ -274,7 +274,8 @@
    cached_witness_input
    step_toolchain_fingerprint
    cached_witness_toolchain
-   cached_witness_attested)
+   cached_witness_attested
+   cached_witness_expired)
   (outputs
    step_has_passing_cache
    step_input_dirty
@@ -294,6 +295,7 @@
   (relation step_toolchain_fingerprint ((step string?) (fingerprint string?)))
   (relation cached_witness_toolchain ((step string?) (fingerprint string?)))
   (relation cached_witness_attested ((step string?)))
+  (relation cached_witness_expired ((step string?)))
 
   (relation step_has_passing_cache ((step string?)))
   (relation input_mismatch ((step string?) (input_key string?)))
@@ -396,6 +398,14 @@
    (step_requires_premise ReqStep P)
    (step_supports_premise SupStep P)
    (step_invalidated SupStep _))
+
+  ;; IR08: M3-mutable-root empirical witnesses expire after their bounded freshness TTL
+  ;;       (prevents replay of stale yet legitimately signed OS oracle receipts; M1 proofs are timeless).
+  ((step_invalidated Step (lit "IR08-witness-ttl-expired"))
+   <--
+   (flow_step Step _ _ _ _)
+   (step_mutability Step (lit "M3-mutable-root"))
+   (cached_witness_expired Step))
 
   ;; Partition every declared step into exactly pending or reusable.
   ((step_pending Step)
