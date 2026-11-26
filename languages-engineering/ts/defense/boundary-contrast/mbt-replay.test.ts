@@ -1424,6 +1424,86 @@ class BadUnverifiedPromotionSUT extends DurableMemoryTmsSUT {
   }
 }
 
+class TransparencyLogEquivocationSUT {
+  sth1Published = false;
+  sth2Published = false;
+  inclusionProofValid = false;
+  consistencyProofValid = false;
+  equivocationDetected = false;
+  unverifiedEntryAccepts = 0;
+  historyRewriteAccepts = 0;
+  equivocationAccepts = 0;
+  verifiedAudits = 0;
+
+  apply(action: string): void {
+    switch (action) {
+      case 'publishInitialSth':
+        if (!this.sth1Published) this.sth1Published = true;
+        break;
+      case 'verifyEntryInclusion':
+        if (this.sth1Published && !this.inclusionProofValid) this.inclusionProofValid = true;
+        break;
+      case 'appendConsistentSth2':
+        if (this.sth1Published && !this.sth2Published) {
+          this.sth2Published = true;
+          this.consistencyProofValid = true;
+        }
+        break;
+      case 'attemptHistoryRewrite':
+        if (this.sth1Published && !this.sth2Published) {
+          this.sth2Published = true;
+          this.consistencyProofValid = false;
+        }
+        break;
+      case 'emitSplitViewSth':
+        if (this.sth1Published && !this.equivocationDetected) this.equivocationDetected = true;
+        break;
+      case 'acceptAuditSnapshot': {
+        const incOk = this.inclusionProofValid;
+        const consOk = this.consistencyProofValid;
+        const noEquiv = !this.equivocationDetected;
+        if (this.sth2Published && incOk && consOk && noEquiv) {
+          this.verifiedAudits += 1;
+          if (!incOk) this.unverifiedEntryAccepts += 1;
+          if (!consOk) this.historyRewriteAccepts += 1;
+          if (!noEquiv) this.equivocationAccepts += 1;
+        }
+        break;
+      }
+      default:
+        throw new Error(`Unknown TransparencyLogEquivocationSUT action: ${action}`);
+    }
+  }
+
+  snapshot() {
+    return {
+      sth1Published: this.sth1Published,
+      sth2Published: this.sth2Published,
+      inclusionProofValid: this.inclusionProofValid,
+      consistencyProofValid: this.consistencyProofValid,
+      equivocationDetected: this.equivocationDetected,
+      unverifiedEntryAccepts: this.unverifiedEntryAccepts,
+      historyRewriteAccepts: this.historyRewriteAccepts,
+      equivocationAccepts: this.equivocationAccepts,
+      verifiedAudits: this.verifiedAudits,
+    };
+  }
+}
+
+class BadSplitViewAcceptingSUT extends TransparencyLogEquivocationSUT {
+  override apply(action: string): void {
+    if (action === 'acceptAuditSnapshot' && this.sth2Published) {
+      // Anti-pattern: blindly accepts audit snapshot without checking inclusion/consistency/equivocation!
+      this.verifiedAudits += 1;
+      if (!this.inclusionProofValid) this.unverifiedEntryAccepts += 1;
+      if (!this.consistencyProofValid) this.historyRewriteAccepts += 1;
+      if (this.equivocationDetected) this.equivocationAccepts += 1;
+      return;
+    }
+    super.apply(action);
+  }
+}
+
 const repoRoot = resolve(import.meta.dir, '../../../..');
 
 function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(): Record<string, unknown>}>(
@@ -1476,7 +1556,7 @@ function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(
   }
 }
 
-describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (16 Defense Models)', () => {
+describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (17 Defense Models)', () => {
   test('EpistemicStateLattice ITF actions drive EpistemicLatticeSUT with exact step-by-step state isomorphism', () => {
     const stats = replayModelAgainstSut(
       'packages/quint-models/engineering/defense/epistemic-state-lattice/EpistemicStateLattice.qnt',
@@ -1823,6 +1903,28 @@ describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (16 Defense Models
       () => new DurableMemoryTmsSUT(),
       projectH,
       () => new BadUnverifiedPromotionSUT(),
+    );
+    expect(stats.transitions).toBeGreaterThan(50);
+    expect(stats.brokenDiverged).toBe(true);
+  }, 30_000);
+
+  test('TransparencyLogEquivocation ITF actions drive TransparencyLogEquivocationSUT with exact state isomorphism and reject BadSplitViewAcceptingSUT', () => {
+    const projectH = (h: Record<string, unknown>) => ({
+      sth1Published: Boolean(h.sth1Published),
+      sth2Published: Boolean(h.sth2Published),
+      inclusionProofValid: Boolean(h.inclusionProofValid),
+      consistencyProofValid: Boolean(h.consistencyProofValid),
+      equivocationDetected: Boolean(h.equivocationDetected),
+      unverifiedEntryAccepts: asInt(h.unverifiedEntryAccepts),
+      historyRewriteAccepts: asInt(h.historyRewriteAccepts),
+      equivocationAccepts: asInt(h.equivocationAccepts),
+      verifiedAudits: asInt(h.verifiedAudits),
+    });
+    const stats = replayModelAgainstSut(
+      'packages/quint-models/engineering/defense/transparency-log-equivocation/TransparencyLogEquivocation.qnt',
+      () => new TransparencyLogEquivocationSUT(),
+      projectH,
+      () => new BadSplitViewAcceptingSUT(),
     );
     expect(stats.transitions).toBeGreaterThan(50);
     expect(stats.brokenDiverged).toBe(true);

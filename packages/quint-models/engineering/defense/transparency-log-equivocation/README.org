@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Verifiable Transparency Log: RFC 6962 Consistency & Split-View Equivocation Defense
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.defense.transparency-log-equivocation=
+- *Subdomain*: =quint.engineering.defense=
+- *Quint Module*: =transparency_log_equivocation= (=[[file:TransparencyLogEquivocation.qnt][TransparencyLogEquivocation.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/defense/transparency-log-equivocation/TransparencyLogEquivocation=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+No governance audit accepts an unverified entry (unverifiedEntryAccepts == 0), a retroactively rewritten or rolled-back history (historyRewriteAccepts == 0), or a split-view equivocating coordinator (equivocationAccepts == 0).
+
+#+begin_src quint
+val safety = (h.unverifiedEntryAccepts == 0 and h.historyRewriteAccepts == 0 and h.equivocationAccepts == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =require-inclusion-proof= | =stepUnverifiedInclusion= | =h.unverifiedEntryAccepts > 0= |
+| =require-append-only-consistency= | =stepHistoryRewrite= | =h.historyRewriteAccepts > 0= |
+| =forbid-split-view-equivocation= | =stepSplitView= | =h.equivocationAccepts > 0= |
+
+* Grounded Papers & Specifications
+
+- *B. Laurie, A. Langley & E. Kasper (RFC 6962 / ACM Queue 2014)*: Certificate Transparency: O(log N) Merkle inclusion & append-only consistency proofs.
+- *M. Syta et al. (IEEE S&P 2016)*: Keeping Authorities 'Honest or Bust' with Decentralized Witness Cosigning & Split-View Fraud Proofs.
+- *Deterministic Engineering (10.156 / 10.166)*: Asymmetric Ed25519 Signed Tree Heads eliminating the trusted-coordinator assumption.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/defense/transparency-log-equivocation/TransparencyLogEquivocation.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/defense/transparency-log-equivocation/TransparencyLogEquivocation.qnt --main=transparency_log_equivocation --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite two-STH inclusion, consistency, and witness-gossip equivocation abstraction; does not model network eclipse attacks that completely isolate all external witnesses from gossiping with one another.
