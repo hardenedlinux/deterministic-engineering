@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Agent & Tool Execution Circuit Breaker, Lease Epoch Fencing, and Human-Only Re-Arm
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.execution.agent-tool-circuit-breaker=
+- *Subdomain*: =quint.threat.execution=
+- *Quint Module*: =agent_tool_circuit_breaker= (=[[file:AgentToolCircuitBreaker.qnt][AgentToolCircuitBreaker.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/execution/agent-tool-circuit-breaker/AgentToolCircuitBreaker=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Tool execution effects never commit while the circuit breaker is tripped or via a pre-trip stale lease after re-arm, AI agents never self-rearm a tripped breaker, and execution never exceeds the armed budget cap.
+
+#+begin_src quint
+val safety = (not(h.execWhileTripped) and not(h.staleLeaseCommit) and not(h.agentSelfRearmed) and not(h.budgetOverrun) and h.budgetUsed <= 1)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =breaker-closed-at-commit= | =stepExecWhileTripped= | =h.execWhileTripped == true= |
+| =lease-epoch-current= | =stepStaleLeaseAfterTrip= | =h.staleLeaseCommit == true= |
+| =human-only-rearm= | =stepAgentSelfRearm= | =h.agentSelfRearmed == true= |
+| =tool-budget-bounded= | =stepBudgetRunaway= | =h.budgetOverrun == true= |
+
+* Grounded Papers & Specifications
+
+- *N. Leveson (MIT Press, 2011)*: Engineering a Safer World: fail-safe latched trip-wires, independent interlocks, and non-self-resetting emergency stops.
+- *E. Debenedetti et al. (2025)*: Defeating Prompt Injections by Design (CaMeL): deterministic runtime control-plane enforcement outside the AI agent's authority.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/execution/agent-tool-circuit-breaker/AgentToolCircuitBreaker.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/execution/agent-tool-circuit-breaker/AgentToolCircuitBreaker.qnt --main=agent_tool_circuit_breaker --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite single-lease execution breaker and armed-window budget abstraction; does not model OS process SIGKILL signal delivery latencies, hardware watchdogs, or distributed consensus across multi-region executors.
