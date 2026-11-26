@@ -86,6 +86,7 @@
   (durable-memory-tms profiles: (bound.compact))
   (transparency-log-equivocation profiles: (bound.compact))
   (witness-quorum-finality profiles: (bound.compact))
+  (witness-epoch-reconfiguration profiles: (bound.compact))
 
   ;; ── Threat-First Formal Security Models (5 subdomains) ──
   :load-modules "./packages/quint-models/threat/zero-trust"

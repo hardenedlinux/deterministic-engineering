@@ -1610,6 +1610,100 @@ class BadSubQuorumFinalitySUT extends WitnessQuorumFinalitySUT {
   }
 }
 
+class WitnessEpochReconfigurationSUT {
+  activeEpoch = 1;
+  pinnedEpoch = 1;
+  epoch1CheckpointCount = 0;
+  oldQuorumSignedHandover = false;
+  newQuorumSignedHandover = false;
+  oldKeysZeroized = false;
+  oldKeysPosteriorCompromised = false;
+  anchorConsistencyVerified = false;
+  epoch2CleanFinalized = false;
+  epoch1PostHandoverForkAccepted = false;
+  unilateralHandoverViolations = 0;
+  unanchoredEpoch2Violations = 0;
+  longRangeRewriteViolations = 0;
+
+  apply(action: string): void {
+    switch (action) {
+      case 'acceptEpoch1Checkpoint':
+        if (
+          !this.epoch1PostHandoverForkAccepted &&
+          (this.epoch1CheckpointCount === 0 || this.pinnedEpoch >= 2) &&
+          this.pinnedEpoch === 1
+        ) {
+          this.epoch1CheckpointCount += 1;
+        }
+        break;
+      case 'oldQuorumSignHandover':
+        if (!this.oldQuorumSignedHandover) this.oldQuorumSignedHandover = true;
+        break;
+      case 'newQuorumSignHandover':
+        if (!this.newQuorumSignedHandover) this.newQuorumSignedHandover = true;
+        break;
+      case 'completeJointHandover':
+        if (this.activeEpoch === 1 && this.oldQuorumSignedHandover && this.newQuorumSignedHandover) {
+          this.activeEpoch = 2;
+          this.pinnedEpoch = 2;
+        }
+        break;
+      case 'zeroizeRetiredOldKeys':
+        if (this.activeEpoch >= 2 && !this.oldKeysZeroized) this.oldKeysZeroized = true;
+        break;
+      case 'adversaryCompromiseRetiredOldKeys':
+        if (this.activeEpoch >= 2 && !this.oldKeysPosteriorCompromised) {
+          this.oldKeysPosteriorCompromised = true;
+        }
+        break;
+      case 'verifyEpoch2AnchorConsistency':
+        if (this.activeEpoch >= 2 && !this.anchorConsistencyVerified) {
+          this.anchorConsistencyVerified = true;
+        }
+        break;
+      case 'finalizeEpoch2Checkpoint':
+        if (this.activeEpoch >= 2 && !this.epoch2CleanFinalized && this.anchorConsistencyVerified) {
+          this.epoch2CleanFinalized = true;
+        }
+        break;
+      default:
+        throw new Error(`Unknown WitnessEpochReconfiguration action: ${action}`);
+    }
+  }
+
+  snapshot() {
+    return {
+      activeEpoch: this.activeEpoch,
+      pinnedEpoch: this.pinnedEpoch,
+      epoch1CheckpointCount: this.epoch1CheckpointCount,
+      oldQuorumSignedHandover: this.oldQuorumSignedHandover,
+      newQuorumSignedHandover: this.newQuorumSignedHandover,
+      oldKeysZeroized: this.oldKeysZeroized,
+      oldKeysPosteriorCompromised: this.oldKeysPosteriorCompromised,
+      anchorConsistencyVerified: this.anchorConsistencyVerified,
+      epoch2CleanFinalized: this.epoch2CleanFinalized,
+      epoch1PostHandoverForkAccepted: this.epoch1PostHandoverForkAccepted,
+      unilateralHandoverViolations: this.unilateralHandoverViolations,
+      unanchoredEpoch2Violations: this.unanchoredEpoch2Violations,
+      longRangeRewriteViolations: this.longRangeRewriteViolations,
+    };
+  }
+}
+
+class BadUnilateralHandoverSUT extends WitnessEpochReconfigurationSUT {
+  override apply(action: string): void {
+    if (action === 'completeJointHandover' && this.activeEpoch === 1) {
+      // Anti-pattern: drops `require-dual-quorum-handover` guard and advances epoch unilaterally!
+      const dualOk = this.oldQuorumSignedHandover && this.newQuorumSignedHandover;
+      this.activeEpoch = 2;
+      this.pinnedEpoch = 2;
+      if (!dualOk) this.unilateralHandoverViolations += 1;
+      return;
+    }
+    super.apply(action);
+  }
+}
+
 const repoRoot = resolve(import.meta.dir, '../../../..');
 
 function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(): Record<string, unknown>}>(
@@ -1662,7 +1756,7 @@ function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(
   }
 }
 
-describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (18 Defense Models)', () => {
+describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (19 Defense Models)', () => {
   test('EpistemicStateLattice ITF actions drive EpistemicLatticeSUT with exact step-by-step state isomorphism', () => {
     const stats = replayModelAgainstSut(
       'packages/quint-models/engineering/defense/epistemic-state-lattice/EpistemicStateLattice.qnt',
@@ -2057,6 +2151,32 @@ describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (18 Defense Models
       () => new WitnessQuorumFinalitySUT(),
       projectH,
       () => new BadSubQuorumFinalitySUT(),
+    );
+    expect(stats.transitions).toBeGreaterThan(50);
+    expect(stats.brokenDiverged).toBe(true);
+  }, 30_000);
+
+  test('WitnessEpochReconfiguration ITF actions drive WitnessEpochReconfigurationSUT with exact state isomorphism and reject BadUnilateralHandoverSUT', () => {
+    const projectH = (h: Record<string, unknown>) => ({
+      activeEpoch: asInt(h.activeEpoch),
+      pinnedEpoch: asInt(h.pinnedEpoch),
+      epoch1CheckpointCount: asInt(h.epoch1CheckpointCount),
+      oldQuorumSignedHandover: Boolean(h.oldQuorumSignedHandover),
+      newQuorumSignedHandover: Boolean(h.newQuorumSignedHandover),
+      oldKeysZeroized: Boolean(h.oldKeysZeroized),
+      oldKeysPosteriorCompromised: Boolean(h.oldKeysPosteriorCompromised),
+      anchorConsistencyVerified: Boolean(h.anchorConsistencyVerified),
+      epoch2CleanFinalized: Boolean(h.epoch2CleanFinalized),
+      epoch1PostHandoverForkAccepted: Boolean(h.epoch1PostHandoverForkAccepted),
+      unilateralHandoverViolations: asInt(h.unilateralHandoverViolations),
+      unanchoredEpoch2Violations: asInt(h.unanchoredEpoch2Violations),
+      longRangeRewriteViolations: asInt(h.longRangeRewriteViolations),
+    });
+    const stats = replayModelAgainstSut(
+      'packages/quint-models/engineering/defense/witness-epoch-reconfiguration/WitnessEpochReconfiguration.qnt',
+      () => new WitnessEpochReconfigurationSUT(),
+      projectH,
+      () => new BadUnilateralHandoverSUT(),
     );
     expect(stats.transitions).toBeGreaterThan(50);
     expect(stats.brokenDiverged).toBe(true);
