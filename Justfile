@@ -514,3 +514,9 @@ plan-multi-method-fleet cache_dir="":
     #!/usr/bin/env bash
     set -euo pipefail
     {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/verification-flow-runner.ss --plan "{{cache_dir}}"
+
+# Pure static change-impact analysis from SysML v2 inputFiles + transitive DAG edges (defaults to git diff --name-only HEAD).
+impact-multi-method *files:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/verification-flow-runner.ss --impact {{files}}

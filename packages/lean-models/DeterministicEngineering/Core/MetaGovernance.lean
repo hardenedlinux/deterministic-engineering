@@ -368,4 +368,65 @@ theorem same_wave_implies_independent {Step : Type}
   · intro hConf
     exact hValid.respectsConflict a b hConf hSameWave
 
+/-! ## 6. Acyclicity Meta-Soundness (`MR07` Premise Acyclicity & `MR08` DAG Acyclicity) -/
+
+def PremiseDepEdge {Sub St Obl Meth CK Prem : Type}
+    (g : GovernanceSystem Sub St Obl Meth CK Prem) (req sup : St) : Prop :=
+  ∃ p, g.requiresPremise req p ∧ g.supportsPremise sup p
+
+def Mr07CyclicPremise {Sub St Obl Meth CK Prem : Type}
+    (g : GovernanceSystem Sub St Obl Meth CK Prem) (s : Sub) : Prop :=
+  ∃ st o m k, g.flowStep st s o m k ∧ NonEmptyDagPath (PremiseDepEdge g) st st
+
+def Mr08CyclicDag {Sub St Obl Meth CK Prem Art Fac Plat Grd : Type}
+    (g : ExtendedGovernance Sub St Obl Meth CK Prem Art Fac Plat Grd) (s : Sub) : Prop :=
+  ∃ st o m k, g.flowStep st s o m k ∧ NonEmptyDagPath g.dagEdge st st
+
+/-- Constructive zero-axiom `MR07` soundness: zero `Mr07CyclicPremise` findings rule out
+both self-justification (`A` proves its own premise) and arbitrary-length circular justification cycles! -/
+theorem mr07_acyclic_premise_sound {Sub St Obl Meth CK Prem : Type}
+    (g : GovernanceSystem Sub St Obl Meth CK Prem) (s : Sub)
+    (hNo7 : ¬ Mr07CyclicPremise g s) :
+    ∀ st o m k, g.flowStep st s o m k → ¬ NonEmptyDagPath (PremiseDepEdge g) st st := by
+  intro st o m k hStep hCycle
+  exact hNo7 ⟨st, o, m, k, hStep, hCycle⟩
+
+/-- Constructive zero-axiom `MR08` soundness: zero `Mr08CyclicDag` findings guarantee
+that no step of `s` lies on a directed `flow_dag_edge` cycle of any length. -/
+theorem mr08_acyclic_dag_sound {Sub St Obl Meth CK Prem Art Fac Plat Grd : Type}
+    (g : ExtendedGovernance Sub St Obl Meth CK Prem Art Fac Plat Grd) (s : Sub)
+    (hNo8 : ¬ Mr08CyclicDag g s) :
+    ∀ st o m k, g.flowStep st s o m k → ¬ NonEmptyDagPath g.dagEdge st st := by
+  intro st o m k hStep hCycle
+  exact hNo8 ⟨st, o, m, k, hStep, hCycle⟩
+
+/-! ## 7. Two-Level Fleet Merkle Attestation & Pinned-Key Soundness -/
+
+structure FleetMerkleModel (PubKey Payload Digest Sig : Type) where
+  digestOf : Payload → Digest
+  verify : PubKey → Payload → Sig → Prop
+  hashCollisionResistant : ∀ p1 p2, digestOf p1 = digestOf p2 → p1 = p2
+  sigUnforgeable : ∀ pk1 pk2 p1 p2 sig,
+    verify pk1 p1 sig → verify pk2 p2 sig → pk1 = pk2 ∧ p1 = p2
+
+/-- Constructive zero-axiom tamper-resistance theorem: under collision resistance and
+pinned-key unforgeability, ANY change to the canonical Fleet payload (e.g. changing
+`sysmlSha256` or any child subject's `reportPayloadSha256`) invalidates the Fleet signature,
+and substituting a different public key `pk' ≠ pk` is strictly rejected. -/
+theorem fleet_merkle_pinned_key_tamper_resistant {PubKey Payload Digest Sig : Type}
+    (m : FleetMerkleModel PubKey Payload Digest Sig)
+    {pk pk' : PubKey} {p p' : Payload} {sig : Sig}
+    (hValid : m.verify pk p sig) :
+    (p ≠ p' → ¬ m.verify pk p' sig) ∧
+    (pk ≠ pk' → ¬ m.verify pk' p sig) ∧
+    (m.digestOf p ≠ m.digestOf p' → ¬ m.verify pk p' sig) := by
+  refine ⟨?_, ?_, ?_⟩
+  · intro hNe hV'
+    exact hNe (m.sigUnforgeable pk pk p p' sig hValid hV').2
+  · intro hNePk hV'
+    exact hNePk (m.sigUnforgeable pk pk' p p sig hValid hV').1
+  · intro hNeDig hV'
+    have hEq := (m.sigUnforgeable pk pk p p' sig hValid hV').2
+    exact hNeDig (congrArg m.digestOf hEq)
+
 end DeterministicEngineering.Core.MetaGovernance

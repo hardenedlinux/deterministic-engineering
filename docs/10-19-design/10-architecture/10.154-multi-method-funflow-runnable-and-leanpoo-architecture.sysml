@@ -185,12 +185,12 @@ package MultiMethodFunFlowArchitecture {
         }
     }
 
-    // ── 5. ASCENT Multi-Method Governance Program (MR01-MR06, ER01-ER04, IR01-IR06) ──
+    // ── 5. ASCENT Multi-Method Governance Program (MR01-MR08, ER01-ER04, IR01-IR06) ──
 
     part def AscentGovernanceProgram {
         attribute dslModule : String = ":gerbil-ascent/rules/func";
         attribute yuanxuLayer : String = "de.layer.governance";
-        attribute rules : String = "MR01-claim-routing,MR02-anti-duplication,MR03-premise-handoff,MR04-artifact-dag-closure,MR05-mandatory-countermodels,MR06-subprocess-containment,ER01-ER04-evidence-admission,IR01-IR04-incremental-reuse,IR05-toolchain-drift,IR06-attestation-invalid";
+        attribute rules : String = "MR01-claim-routing,MR02-anti-duplication,MR03-premise-handoff,MR04-artifact-dag-closure,MR05-mandatory-countermodels,MR06-subprocess-containment,MR07-cyclic-premise-dependency,MR08-cyclic-flow-dag,ER01-ER04-evidence-admission,IR01-IR04-incremental-reuse,IR05-toolchain-drift,IR06-attestation-invalid";
         attribute evidenceSession : String = "library/evidence/func.ss::make-resource-evidence";
 
         port gatePort : GovernanceGatePort;
@@ -555,7 +555,7 @@ package MultiMethodFunFlowArchitecture {
                 attribute module : String = "DeterministicEngineering.Engineering.MetaGovernanceSoundness";
                 attribute refinesCore : String = "DeterministicEngineering.Core.MetaGovernance,DeterministicEngineering.Core.Transport";
                 attribute transportContract : String = "ObjectContract.refine+Patch.frame+Proof.reuse";
-                attribute theorems : String = "DeterministicEngineering.Core.MetaGovernance.ir_partition_exclusive,DeterministicEngineering.Core.MetaGovernance.ir03_transitive_path_invalidation,DeterministicEngineering.Core.MetaGovernance.reusable_implies_all_ancestors_reusable,DeterministicEngineering.Core.MetaGovernance.reusable_sound,DeterministicEngineering.Core.MetaGovernance.er_admitted_sound,DeterministicEngineering.Core.MetaGovernance.mr_admitted_sound,DeterministicEngineering.Core.MetaGovernance.mr03_06_full_sound,DeterministicEngineering.Core.MetaGovernance.same_wave_implies_independent,DeterministicEngineering.Engineering.MetaGovernanceSoundness.fleetSignedCache_reusable_is_authentic,DeterministicEngineering.Engineering.MetaGovernanceSoundness.parallelWave_concurrent_execution_race_free,DeterministicEngineering.Engineering.MetaGovernanceSoundness.fullMetaGovContract_preserves_rejection,DeterministicEngineering.Engineering.MetaGovernanceSoundness.reportFormatTunedCertified,DeterministicEngineering.Engineering.MetaGovernanceSoundness.disableSignedCache_invalidates_reuse";
+                attribute theorems : String = "DeterministicEngineering.Core.MetaGovernance.ir_partition_exclusive,DeterministicEngineering.Core.MetaGovernance.ir03_transitive_path_invalidation,DeterministicEngineering.Core.MetaGovernance.reusable_implies_all_ancestors_reusable,DeterministicEngineering.Core.MetaGovernance.reusable_sound,DeterministicEngineering.Core.MetaGovernance.er_admitted_sound,DeterministicEngineering.Core.MetaGovernance.mr_admitted_sound,DeterministicEngineering.Core.MetaGovernance.mr03_06_full_sound,DeterministicEngineering.Core.MetaGovernance.mr07_acyclic_premise_sound,DeterministicEngineering.Core.MetaGovernance.mr08_acyclic_dag_sound,DeterministicEngineering.Core.MetaGovernance.same_wave_implies_independent,DeterministicEngineering.Core.MetaGovernance.fleet_merkle_pinned_key_tamper_resistant,DeterministicEngineering.Engineering.MetaGovernanceSoundness.fleetSignedCache_reusable_is_authentic,DeterministicEngineering.Engineering.MetaGovernanceSoundness.parallelWave_concurrent_execution_race_free,DeterministicEngineering.Engineering.MetaGovernanceSoundness.fleetAttestation_rejects_tamper_and_rogue_key,DeterministicEngineering.Engineering.MetaGovernanceSoundness.fullMetaGovContract_preserves_rejection,DeterministicEngineering.Engineering.MetaGovernanceSoundness.reportFormatTunedCertified,DeterministicEngineering.Engineering.MetaGovernanceSoundness.disableSignedCache_invalidates_reuse";
                 attribute inputFiles : String = "library/verification-flow/ascent-rules.ss,packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/MetaGovernance.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Engineering/MetaGovernanceSoundness.lean";
             }
         }

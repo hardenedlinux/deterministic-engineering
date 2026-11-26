@@ -11,6 +11,8 @@
 ;;;    simultaneously in Wave 1 while preserving 100% deterministic Fun-Flow Replay
 ;;;    (`replayValid = #t`) and ASCENT ER01-ER04 admission!
 (import :std/test
+        :std/encoding/json
+        :std/misc/process
         :clan/poo/object
         (only-in :std/source this-source-file)
         (only-in :tao3k/agentic-ai-lab/modules/funflow/control-plane/api
@@ -111,4 +113,32 @@
         (alist-replace (.get proj-with-br governance-sources) 'flow_step
           (cons dup-step (alist-ref (.get proj-with-br governance-sources) 'flow_step '()))))
       (check (pair? ((.ref (reason-multi-method-governance src-no-br) 'rows-of) 'mr02_finding)) => #t)
-      (check-equal? ((.ref (reason-multi-method-governance src-with-br) 'rows-of) 'mr02_finding) '()))))
+      (check-equal? ((.ref (reason-multi-method-governance src-with-br) 'rows-of) 'mr02_finding) '()))
+
+    (test-case "pure changed-files->affected-frontier computes minimal direct + transitive IR03 impact across all 5 SysML subjects"
+      (def projected (sysml-api-json->governance-facts
+                       (call-with-input-string
+                         (run-process (list "sysml" "-convert" "api-json"
+                                            (path-expand "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml" repo-root)))
+                         (cut read-json <> object-as-hash: #t))))
+      ;; Editing ONLY ProcessTreeReclamation.qnt affects quintTarget AND transitively rustOracleTarget (not Lean/Clippy or other 4 subjects)!
+      (def imp-q (changed-files->affected-frontier projected
+                   '("packages/quint-models/engineering/concurrency/process-tree-reclamation/ProcessTreeReclamation.qnt")))
+      (def pt-q (car (filter (lambda (s) (eq? (.get s subject-key) 'process-tree-reclamation)) imp-q)))
+      (check-equal? (.get pt-q direct-steps) '("quintTarget"))
+      (check (set-eq? (.get pt-q affected-steps) '("quintTarget" "rustOracleTarget")) => #t)
+      (check-equal? (length (filter (lambda (s) (pair? (.get s affected-steps))) imp-q)) 1)
+
+      ;; Editing ONLY ascent-rules.ss affects ONLY self-verifying meta-governance-soundness::mgLeanPooTarget!
+      (def imp-ascent (changed-files->affected-frontier projected '("library/verification-flow/ascent-rules.ss")))
+      (def affected-ascent (filter (lambda (s) (pair? (.get s affected-steps))) imp-ascent))
+      (check-equal? (length affected-ascent) 1)
+      (check-equal? (.get (car affected-ascent) subject-key) 'meta-governance-soundness)
+      (check-equal? (.get (car affected-ascent) affected-steps) '("mgLeanPooTarget"))
+
+      ;; Editing ONLY deterministic_boundary.c affects ONLY c-boundary-conservation::cbCbmcTarget!
+      (def imp-c (changed-files->affected-frontier projected '("languages-engineering/c/defense/silent-fallback-contrast/deterministic_boundary.c")))
+      (def affected-c (filter (lambda (s) (pair? (.get s affected-steps))) imp-c))
+      (check-equal? (length affected-c) 1)
+      (check-equal? (.get (car affected-c) subject-key) 'c-boundary-conservation)
+      (check-equal? (.get (car affected-c) affected-steps) '("cbCbmcTarget")))))

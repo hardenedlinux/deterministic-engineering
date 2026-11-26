@@ -1251,6 +1251,23 @@
 (def (main mode-or-output . rest)
   (def repo-root (path-normalize (path-expand "../.." (path-directory (this-source-file)))))
   (cond
+   ((equal? mode-or-output "--impact")
+    (let* ((files (if (pair? rest)
+                    rest
+                    (filter (lambda (ln) (> (string-length ln) 0))
+                            (string-split (run-process '("git" "diff" "--name-only" "HEAD") directory: repo-root)
+                                          #\newline))))
+           (projected (project-sysml-model repo-root))
+           (impact (changed-files->affected-frontier projected files)))
+      (for-each
+        (lambda (s)
+          (when (pair? (.get s affected-steps))
+            (displayln "AFFECTED " (.get s subject-key)
+                       " direct=" (.get s direct-steps)
+                       " transitive=" (.get s affected-steps))))
+        impact)
+      (displayln "MULTI-METHOD-IMPACT-OK changed-files=" (length files)
+                 " affected-subjects=" (length (filter (lambda (s) (pair? (.get s affected-steps))) impact)))))
    ((equal? mode-or-output "--plan")
     (let* ((cache-dir (and (pair? rest) (> (string-length (car rest)) 0) (car rest)))
            (plan (predict-fleet-reuse-plan repo-root cache-dir: cache-dir)))

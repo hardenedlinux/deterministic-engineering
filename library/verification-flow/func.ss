@@ -37,6 +37,7 @@
   canonical-report-signing-payload
   canonical-fleet-signing-payload
   partition-parallel-frontier-waves
+  changed-files->affected-frontier
   flow-of
   run-ascent-program
   adapter-result->raw-receipt
@@ -238,6 +239,50 @@
         (loop (filter (lambda (n) (not (member n ready))) remaining)
               (append ready done)
               (cons ready waves))))))
+
+;; Pure static change-impact analyzer directly from SysML v2 `projected` specs + `changed-paths`.
+;; Computes both direct dirty steps (whose `input-files` intersect `changed-paths`) AND
+;; transitive downstream steps along `dag-edges` (matching IR03 closure) with ZERO I/O.
+(def (changed-files->affected-frontier projected changed-paths)
+  (def norm-changed
+    (map (lambda (p) (if (and (>= (string-length p) 2) (equal? (substring p 0 2) "./"))
+                       (substring p 2 (string-length p))
+                       p))
+         changed-paths))
+  (def (touches-any? files)
+    (ormap (lambda (f) (and (member f norm-changed) #t)) files))
+  (map
+    (lambda (spec)
+      (def skey (string->symbol (.get spec subject-key)))
+      (def sid (string->symbol (.get spec identity)))
+      (def targets (.get spec targets))
+      (def edges (.get spec dag-edges))
+      (def direct
+        (filter-map
+          (lambda (ts) (and (touches-any? (.get ts input-files)) (.get ts name)))
+          targets))
+      ;; Fixed-point transitive closure along `dag-edges` (producer -> consumer).
+      (def affected
+        (let loop ((cur direct))
+          (def added
+            (filter-map
+              (lambda (e)
+                (and (member (car e) cur)
+                     (not (member (cadr e) cur))
+                     (cadr e)))
+              edges))
+          (if (null? added)
+            cur
+            (loop (append cur added)))))
+      (def all-names (map (lambda (ts) (.get ts name)) targets))
+      (def unaffected (filter (lambda (n) (not (member n affected))) all-names))
+      (.o bind-these: #f
+          subject-key: skey
+          identity: sid
+          direct-steps: direct
+          affected-steps: affected
+          unaffected-steps: unaffected))
+    (.get projected subject-specs)))
 
 ;; Polymorphic unwrapper: extracts `.flow` from a VerificationStep or passes a Flow through.
 (def (flow-of step-or-flow)

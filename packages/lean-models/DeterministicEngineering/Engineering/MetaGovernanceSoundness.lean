@@ -54,6 +54,16 @@ theorem parallelWave_concurrent_execution_race_free {Step : Type}
     ¬ NonEmptyDagPath edge a b ∧ ¬ NonEmptyDagPath edge b a ∧ ¬ conflict a b :=
   same_wave_implies_independent hValid hSameWave
 
+/-- Constructive zero-axiom certification of pinned-key 2-level Fleet Merkle integrity. -/
+theorem fleetAttestation_rejects_tamper_and_rogue_key {PubKey Payload Digest Sig : Type}
+    (m : FleetMerkleModel PubKey Payload Digest Sig)
+    {pk pk' : PubKey} {p p' : Payload} {sig : Sig}
+    (hValid : m.verify pk p sig) :
+    (p ≠ p' → ¬ m.verify pk p' sig) ∧
+    (pk ≠ pk' → ¬ m.verify pk' p sig) ∧
+    (m.digestOf p ≠ m.digestOf p' → ¬ m.verify pk p' sig) :=
+  fleet_merkle_pinned_key_tamper_resistant m hValid
+
 /-! ## Two-Step LeanPoo `ObjectContract.refine` (via `Core.Transport`) -/
 
 structure MetaGovConfig where

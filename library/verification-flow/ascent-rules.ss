@@ -44,7 +44,11 @@
    mr04_finding
    mr05_finding
    mr06_finding
+   mr07_finding
+   mr08_finding
    artifact_edge_satisfied
+   premise_dep_reach
+   dag_reach
    runnable_admitted)
   (relation subject_obligation ((subject string?) (obligation string?) (claim_kind string?)))
   (relation subject_factor ((subject string?) (factor string?)))
@@ -61,12 +65,17 @@
   (relation declared_os_containment ((subject string?) (platform string?) (strategy string?)))
 
   (relation artifact_edge_satisfied ((step string?) (artifact string?)))
+  (relation premise_dep_edge ((from_step string?) (to_step string?)))
+  (relation premise_dep_reach ((from_step string?) (to_step string?)))
+  (relation dag_reach ((from_step string?) (to_step string?)))
   (relation mr01_finding ((subject string?) (step string?) (reason string?)))
   (relation mr02_finding ((subject string?) (obligation string?) (reason string?)))
   (relation mr03_open_premise ((subject string?) (step string?) (premise string?)))
   (relation mr04_finding ((subject string?) (step string?) (artifact string?)))
   (relation mr05_finding ((subject string?) (step string?) (reason string?)))
   (relation mr06_finding ((subject string?) (subject_id string?) (reason string?)))
+  (relation mr07_finding ((subject string?) (step string?) (reason string?)))
+  (relation mr08_finding ((subject string?) (step string?) (reason string?)))
   (relation mr_finding ((rule string?) (subject string?) (detail string?)))
   (relation runnable_admitted ((subject string?)))
 
@@ -121,12 +130,34 @@
    (subject_factor S (lit "owns-subprocess-tree"))
    (not (flow_step _ S _ _ (lit "os-sigkill-oracle"))))
 
+  ;; MR07: reject circular premise justification (self-justification or mutual cycles A ->+ A).
+  ((premise_dep_edge ReqStep SupStep)
+   <--
+   (step_requires_premise ReqStep P)
+   (step_supports_premise SupStep P))
+  ((premise_dep_reach A B) <-- (premise_dep_edge A B))
+  ((premise_dep_reach A C) <-- (premise_dep_edge A B) (premise_dep_reach B C))
+  ((mr07_finding S Step (lit "cyclic-premise-dependency"))
+   <--
+   (flow_step Step S _ _ _)
+   (premise_dep_reach Step Step))
+
+  ;; MR08: reject cyclic Fun-Flow DAG artifact edges (A ->+ A).
+  ((dag_reach A B) <-- (flow_dag_edge A B))
+  ((dag_reach A C) <-- (flow_dag_edge A B) (dag_reach B C))
+  ((mr08_finding S Step (lit "cyclic-flow-dag"))
+   <--
+   (flow_step Step S _ _ _)
+   (dag_reach Step Step))
+
   ;; Unified MR finding summary.
   ((mr_finding (lit "MR01") S Step) <-- (mr01_finding S Step _))
   ((mr_finding (lit "MR02") S O) <-- (mr02_finding S O _))
   ((mr_finding (lit "MR04") S Step) <-- (mr04_finding S Step _))
   ((mr_finding (lit "MR05") S Step) <-- (mr05_finding S Step _))
   ((mr_finding (lit "MR06") S Reason) <-- (mr06_finding S _ Reason))
+  ((mr_finding (lit "MR07") S Step) <-- (mr07_finding S Step _))
+  ((mr_finding (lit "MR08") S Step) <-- (mr08_finding S Step _))
 
   ((runnable_admitted S)
    <--

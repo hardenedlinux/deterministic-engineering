@@ -187,6 +187,35 @@
                     (cdr (assq 'flow_step base))))))
       (check (pair? ((.ref r-mr06-oracle 'rows-of) 'mr06_finding)) => #t)
 
+      ;; MR07: self-justification & 2-hop mutual premise cycle both caught and refused!
+      (def r-mr07-self
+        (reason-multi-method-governance
+          (replace-source base 'step_supports_premise
+            (cons '("lean-process-tree-closure" "SpawnPreservesContainer")
+                  (cdr (assq 'step_supports_premise base))))))
+      (check (pair? ((.ref r-mr07-self 'rows-of) 'mr07_finding)) => #t)
+      (check-equal? ((.ref r-mr07-self 'rows-of) 'runnable_admitted) '())
+      (def r-mr07-mutual
+        (reason-multi-method-governance
+          (replace-source
+            (replace-source base 'step_requires_premise
+              (cons '("rust-sigkill-oracle" "LeanClosurePremise")
+                    (cdr (assq 'step_requires_premise base))))
+            'step_supports_premise
+            (cons '("lean-process-tree-closure" "LeanClosurePremise")
+                  (cdr (assq 'step_supports_premise base))))))
+      (check (pair? ((.ref r-mr07-mutual 'rows-of) 'mr07_finding)) => #t)
+      (check-equal? ((.ref r-mr07-mutual 'rows-of) 'runnable_admitted) '())
+
+      ;; MR08: 2-hop cycle in flow_dag_edge caught and refused!
+      (def r-mr08
+        (reason-multi-method-governance
+          (replace-source base 'flow_dag_edge
+            '(("quint-process-tree" "rust-sigkill-oracle")
+              ("rust-sigkill-oracle" "quint-process-tree")))))
+      (check (pair? ((.ref r-mr08 'rows-of) 'mr08_finding)) => #t)
+      (check-equal? ((.ref r-mr08 'rows-of) 'runnable_admitted) '())
+
       ;; Gate refuses manifest emission when subject violates MR04 (drop dag-edges)
       (def bad-subject (.cc pt-subject 'dag-edges '()))
       (check-exception (subject->dag-runtime-manifest bad-subject "req-bad") error?))
