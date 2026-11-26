@@ -52,6 +52,8 @@
   compute-step-toolchain-fingerprints
   ensure-cache-signing-keypair!
   make-ed25519-trust-store
+  write-ed25519-trust-store-json
+  load-ed25519-trust-store-json
   verify-verification-report-attestation
   verify-report-with-pinned-key
   verify-report-with-trust-store
@@ -757,6 +759,57 @@
               (equal? (hash-get doc "erFindings") '())
               (pair? (hash-get doc "verificationAdmitted"))))))
 
+;; Serialize a Multi-Key Ed25519 Trust Store POO object to a portable JSON manifest.
+(def (write-ed25519-trust-store-json trust-store out-path)
+  (def parent-dir (path-directory out-path))
+  (unless (file-exists? parent-dir)
+    (create-directory* parent-dir))
+  (def keys-ht (make-hash-table))
+  (for-each
+    (lambda (pair)
+      (hash-put! keys-ht (car pair) (cdr pair)))
+    (.get trust-store trusted-keys))
+  (def doc
+    (hash ("schema" "de.attestation.ed25519-trust-store.v1")
+          ("trustedKeys" keys-ht)
+          ("revokedKeyIds" (.get trust-store revoked-key-ids))))
+  (call-with-output-file out-path
+    (lambda (port)
+      (write-json port doc)
+      (newline port)))
+  out-path)
+
+;; Load and validate a portable Multi-Key Ed25519 Trust Store JSON file.
+;; Resolves relative public-key paths against the trust-store directory and enforces
+;; that every key file's actual sha256[:16] matches its declared keyId.
+(def (load-ed25519-trust-store-json trust-store-path)
+  (unless (and (string? trust-store-path) (file-exists? trust-store-path))
+    (error "Ed25519 trust store file not found" trust-store-path))
+  (def base-dir (path-directory trust-store-path))
+  (def doc (call-with-input-file trust-store-path (cut read-json <> object-as-hash: #t)))
+  (unless (and (hash-table? doc)
+               (equal? (hash-get doc "schema") "de.attestation.ed25519-trust-store.v1"))
+    (error "Invalid Ed25519 trust store schema" trust-store-path))
+  (def keys-ht (hash-get doc "trustedKeys"))
+  (unless (hash-table? keys-ht)
+    (error "Ed25519 trust store missing trustedKeys map" trust-store-path))
+  (def pub-paths '())
+  (hash-for-each
+    (lambda (declared-kid raw-path)
+      (unless (and (string? declared-kid) (string? raw-path))
+        (error "Invalid trustedKeys entry in trust store" declared-kid raw-path))
+      (let ((resolved (path-expand raw-path base-dir)))
+        (unless (file-exists? resolved)
+          (error "Trusted public key file missing" declared-kid resolved))
+        (let ((actual-kid (substring (sha256-of-file resolved) 0 16)))
+          (unless (equal? actual-kid declared-kid)
+            (error "Trusted public keyId mismatch (possible spoofing)"
+                   declared-kid actual-kid resolved))
+          (set! pub-paths (cons resolved pub-paths)))))
+    keys-ht)
+  (def revoked-raw (or (hash-get doc "revokedKeyIds") '()))
+  (make-ed25519-trust-store (reverse pub-paths) (filter string? revoked-raw)))
+
 ;; Strict multi-key Trust Store report verifier: supports zero-downtime key rotation
 ;; across multiple pinned public keys while unconditionally rejecting any revoked keyId!
 (def (verify-report-with-trust-store report-path trust-store)
@@ -1417,6 +1470,26 @@
 (def (main mode-or-output . rest)
   (def repo-root (path-normalize (path-expand "../.." (path-directory (this-source-file)))))
   (cond
+   ((equal? mode-or-output "--verify-report")
+    (unless (and (pair? rest) (pair? (cdr rest)))
+      (error "usage: --verify-report <report.json> <trust-store.json>"))
+    (let* ((report-path (path-expand (car rest) repo-root))
+           (store-path (path-expand (cadr rest) repo-root))
+           (ts (load-ed25519-trust-store-json store-path)))
+      (unless (verify-report-with-trust-store report-path ts)
+        (error "offline report verification failed (invalid signature, revoked key, or un-admitted report)"
+               report-path))
+      (displayln "MULTI-METHOD-VERIFY-REPORT-OK " report-path)))
+   ((equal? mode-or-output "--verify-fleet")
+    (unless (and (pair? rest) (pair? (cdr rest)))
+      (error "usage: --verify-fleet <fleet-report.json> <trust-store.json>"))
+    (let* ((fleet-path (path-expand (car rest) repo-root))
+           (store-path (path-expand (cadr rest) repo-root))
+           (ts (load-ed25519-trust-store-json store-path)))
+      (unless (verify-fleet-report-with-trust-store fleet-path ts)
+        (error "offline fleet verification failed (invalid Merkle signature, revoked key, or tampered child report)"
+               fleet-path))
+      (displayln "MULTI-METHOD-VERIFY-FLEET-OK " fleet-path)))
    ((equal? mode-or-output "--impact")
     (let* ((files (if (pair? rest)
                     rest

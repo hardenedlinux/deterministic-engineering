@@ -39,21 +39,21 @@
       (run-process (list "rm" "-rf" cache-dir cold-dir warm-dir rogue-key-dir tamper-copy-dir))
       (create-directory* cache-dir)
 
-      ;; Phase 0 — Dry-run Change-Impact Predictor before Cold Fleet: 13 pending, 0 reusable!
+      ;; Phase 0 — Dry-run Change-Impact Predictor before Cold Fleet: 15 pending, 0 reusable!
       (let ((p0 (predict-fleet-reuse-plan repo-root cache-dir: cache-dir)))
-        (check-equal? (length (.get p0 subjects)) 5)
-        (check-equal? (.get p0 total-pending) 13)
+        (check-equal? (length (.get p0 subjects)) 6)
+        (check-equal? (.get p0 total-pending) 15)
         (check-equal? (.get p0 total-reusable) 0))
 
-      ;; Phase 1 — Cold Fleet across all 5 SysML v2 subjects (4 + 4 + 2 + 2 + 1 = 13 engines,
-      ;;           covering Quint/Apalache, LeanPoo 6/6 cores incl. self-verifying Core.MetaGovernance,
+      ;; Phase 1 — Cold Fleet across all 6 SysML v2 subjects (4 + 4 + 2 + 2 + 1 + 2 = 15 engines,
+      ;;           covering Quint/Apalache, LeanPoo 6/6 cores across Engineering + Threat,
       ;;           Clippy, CBMC 6.11, and Rust OS/MBT Oracles!).
       (let ((f1 (run-multi-method-fleet repo-root cold-dir cache-dir: cache-dir fleet-id: "fleet-test-cold")))
         (def frpath (.get f1 fleet-report-path))
         (def trusted-pub (.get f1 public-key-path))
-        (check-equal? (length (.get f1 subject-keys)) 5)
+        (check-equal? (length (.get f1 subject-keys)) 6)
         (check-equal? (.get f1 all-admitted?) #t)
-        (check-equal? (.get f1 total-executed) 13)
+        (check-equal? (.get f1 total-executed) 15)
         (check-equal? (.get f1 total-reused) 0)
 
         ;; Genuine Fleet + all 5 child reports verify cleanly against externally pinned public key!
@@ -77,17 +77,17 @@
           (check-equal? (verify-fleet-report-with-pinned-key copied-fleet trusted-pub) #f)))
       (##gc)
 
-      ;; Phase 1.5 — Dry-run Change-Impact Predictor after Cold Fleet: 0 pending, 13 reusable (<1s)!
+      ;; Phase 1.5 — Dry-run Change-Impact Predictor after Cold Fleet: 0 pending, 15 reusable (<1s)!
       (let ((p1 (predict-fleet-reuse-plan repo-root cache-dir: cache-dir)))
         (check-equal? (.get p1 total-pending) 0)
-        (check-equal? (.get p1 total-reusable) 13))
+        (check-equal? (.get p1 total-reusable) 15))
 
-      ;; Phase 2 — Warm Fleet: 0 engines executed, 13/13 verified Ed25519 cache hits across all 5 subjects!
+      ;; Phase 2 — Warm Fleet: 0 engines executed, 15/15 verified Ed25519 cache hits across all 6 subjects!
       (let ((f2 (run-multi-method-fleet repo-root warm-dir cache-dir: cache-dir fleet-id: "fleet-test-warm")))
-        (check-equal? (length (.get f2 subject-keys)) 5)
+        (check-equal? (length (.get f2 subject-keys)) 6)
         (check-equal? (.get f2 all-admitted?) #t)
         (check-equal? (.get f2 total-executed) 0)
-        (check-equal? (.get f2 total-reused) 13)
+        (check-equal? (.get f2 total-reused) 15)
         (check-equal? (verify-fleet-report-with-pinned-key
                         (.get f2 fleet-report-path)
                         (.get f2 public-key-path))

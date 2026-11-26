@@ -486,6 +486,7 @@ check-multi-method:
     just test-file t/yanxu/Library/verification-flow/sysml-compiler-and-lease-fencing-test.ss ".*" 240s
     just test-file t/yanxu/Library/verification-flow/signed-cache-and-toolchain-attestation-test.ss ".*" 360s
     just test-file t/yanxu/Library/verification-flow/key-rotation-and-revocation-test.ss ".*" 240s
+    just test-file t/yanxu/Library/verification-flow/threat-capability-and-offline-verifier-test.ss ".*" 240s
     just test-file t/yanxu/Library/verification-flow/parallel-frontier-execution-test.ss ".*" 240s
     just test-file t/yanxu/Library/verification-flow/end-to-end-ops-runner-test.ss ".*" 240s
     just test-file t/yanxu/Library/verification-flow/incremental-cache-reuse-test.ss ".*" 240s
@@ -521,3 +522,15 @@ impact-multi-method *files:
     #!/usr/bin/env bash
     set -euo pipefail
     {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/verification-flow-runner.ss --impact {{files}}
+
+# Offline zero-execution Ed25519 trust-store verifier for a single subject report.json.
+verify-multi-method-report report trust_store:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/verification-flow-runner.ss --verify-report "{{report}}" "{{trust_store}}"
+
+# Offline zero-execution 2-level Merkle + Ed25519 trust-store verifier for a Fleet report.
+verify-multi-method-fleet fleet_report trust_store:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/verification-flow-runner.ss --verify-fleet "{{fleet_report}}" "{{trust_store}}"

@@ -559,6 +559,37 @@ package MultiMethodFunFlowArchitecture {
                 attribute inputFiles : String = "library/verification-flow/ascent-rules.ss,packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/MetaGovernance.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Engineering/MetaGovernanceSoundness.lean";
             }
         }
+
+        // Sixth Zero-Glue Subject (First Threat-Domain Subject: cross-domain reuse of Core.Containment + Core.Order + Core.Transport)
+        part delegatedAgentAuthz {
+            attribute subjectKey : String = "delegated-agent-authz";
+            attribute identity : String = "threat.identity.delegated-agent-authz";
+            attribute tags : String = "threat,identity,delegation,defense.mutability.immutable-proof,hazard.scope-amplification";
+            attribute factors : String = "delegated-capability-containment";
+
+            part daQuintTarget {
+                attribute modelId : String = "threat.identity.delegated-agent-authz";
+                attribute quintFile : String = "packages/quint-models/threat/identity/delegated-agent-authz/DelegatedAgentAuthz.qnt";
+                attribute quintMain : String = "delegated_agent_authz";
+                attribute itfSubdir : String = "delegated-agent-authz";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "obo-scope-attenuation,obo-actor-provenance,obo-revocation-currency,step-up-verified-floor";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/identity/delegated-agent-authz/DelegatedAgentAuthz.qnt,packages/quint-models/threat/identity/delegated-agent-authz/types.ss,packages/quint-models/threat/identity/delegated-agent-authz/objects.ss,packages/quint-models/threat/identity/delegated-agent-authz/interface.ss,packages/quint-models/threat/zero-trust/authority-currentness/AuthorityCurrentness.qnt";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part daLeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Threat.CapabilityContainment";
+                attribute refinesCore : String = "DeterministicEngineering.Core.Containment,DeterministicEngineering.Core.Order,DeterministicEngineering.Core.Transport";
+                attribute transportContract : String = "ObjectContract.refine+Patch.frame+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Threat.CapabilityContainment.revokeRootSession_kills_all_delegated_hops,DeterministicEngineering.Threat.CapabilityContainment.crashSafe_sessionRevocation_zero_zombie_tokens,DeterministicEngineering.Threat.CapabilityContainment.multiHop_attenuation_prevents_amplification,DeterministicEngineering.Threat.CapabilityContainment.revokedEpoch_rejects_zombie_delegation,DeterministicEngineering.Threat.CapabilityContainment.oboDelegationContract_preserves_rejection,DeterministicEngineering.Threat.CapabilityContainment.auditBatchTunedCertified,DeterministicEngineering.Threat.CapabilityContainment.disableRevocationEpoch_invalidates_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Containment.lean,packages/lean-models/DeterministicEngineering/Core/Order.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Threat/CapabilityContainment.lean";
+            }
+        }
     }
 
     // ── 12. Architectural, Cross-Method, and Requirement Dependencies ──
@@ -593,6 +624,12 @@ package MultiMethodFunFlowArchitecture {
     dependency 'mg-lean-refines-meta' from system::metaGovernanceSoundness::mgLeanPooTarget to system::leanModels::core::metaGovernance;
     dependency 'mg-lean-refines-transport' from system::metaGovernanceSoundness::mgLeanPooTarget to system::leanModels::core::transport;
     dependency 'mg-verifies-governance' from system::metaGovernanceSoundness::mgLeanPooTarget to system::governance;
+
+    dependency 'da-quint-source' from system::delegatedAgentAuthz::daQuintTarget to system::quintModels;
+    dependency 'da-lean-source' from system::delegatedAgentAuthz::daLeanPooTarget to system::leanModels;
+    dependency 'da-lean-refines-containment' from system::delegatedAgentAuthz::daLeanPooTarget to system::leanModels::core::containment;
+    dependency 'da-lean-refines-order' from system::delegatedAgentAuthz::daLeanPooTarget to system::leanModels::core::order;
+    dependency 'da-lean-refines-transport' from system::delegatedAgentAuthz::daLeanPooTarget to system::leanModels::core::transport;
 
     // Cross-method edges enforced by MR03 & MR04 (zero model duplication)
     dependency 'pt-mbt-itf-edge' from system::processTreeReclamation::rustOracleTarget::traceIn to system::processTreeReclamation::quintTarget::traceOut;

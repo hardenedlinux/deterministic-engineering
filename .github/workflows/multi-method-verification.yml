@@ -69,7 +69,7 @@ jobs:
         run: |
           curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-      - name: Modular Lake build across all 5 Engineering subjects & 6 Cores
+      - name: Modular Lake build across all 6 Subjects (5 Engineering + 1 Threat) & 6 Cores
         working-directory: packages/lean-models
         run: |
           lake build \
@@ -77,11 +77,12 @@ jobs:
             DeterministicEngineering.Engineering.Backpressure \
             DeterministicEngineering.Engineering.LeaseFencing \
             DeterministicEngineering.Engineering.BoundaryConservation \
-            DeterministicEngineering.Engineering.MetaGovernanceSoundness
-      - name: Audit #print axioms (0 sorryAx, zero axioms on MetaGovernanceSoundness)
+            DeterministicEngineering.Engineering.MetaGovernanceSoundness \
+            DeterministicEngineering.Threat.CapabilityContainment
+      - name: Audit #print axioms (0 sorryAx everywhere; zero axioms on Core.MetaGovernance)
         working-directory: packages/lean-models
         run: |
-          out="$(lake env lean --stdin <<'EOF'
+          meta_out="$(lake env lean --stdin <<'EOF'
           import DeterministicEngineering.Core.MetaGovernance
           import DeterministicEngineering.Engineering.MetaGovernanceSoundness
           #print axioms DeterministicEngineering.Core.MetaGovernance.ir03_dag_invalidation_transitive
@@ -95,12 +96,25 @@ jobs:
           #print axioms DeterministicEngineering.Engineering.MetaGovernanceSoundness.keyRevocation_invalidates_witness_and_downstream
           EOF
           )"
-          printf '%s\n' "$out"
-          if printf '%s\n' "$out" | grep -q 'sorryAx'; then
-            echo "ERROR: sorryAx detected in Lean 4 meta-soundness audit" >&2
+          printf '%s\n' "$meta_out"
+          if printf '%s\n' "$meta_out" | grep -q 'sorryAx'; then
+            echo "ERROR: sorryAx detected in MetaGovernance audit" >&2
             exit 1
           fi
-          if printf '%s\n' "$out" | grep -q 'depends on axioms'; then
+          if printf '%s\n' "$meta_out" | grep -q 'depends on axioms'; then
             echo "ERROR: unexpected non-constructive axiom detected in MetaGovernance proofs" >&2
+            exit 1
+          fi
+          threat_out="$(lake env lean --stdin <<'EOF'
+          import DeterministicEngineering.Threat.CapabilityContainment
+          #print axioms DeterministicEngineering.Threat.CapabilityContainment.revokeRootSession_kills_all_delegated_hops
+          #print axioms DeterministicEngineering.Threat.CapabilityContainment.crashSafe_sessionRevocation_zero_zombie_tokens
+          #print axioms DeterministicEngineering.Threat.CapabilityContainment.multiHop_attenuation_prevents_amplification
+          #print axioms DeterministicEngineering.Threat.CapabilityContainment.revokedEpoch_rejects_zombie_delegation
+          EOF
+          )"
+          printf '%s\n' "$threat_out"
+          if printf '%s\n' "$threat_out" | grep -q 'sorryAx'; then
+            echo "ERROR: sorryAx detected in Threat.CapabilityContainment audit" >&2
             exit 1
           fi
