@@ -653,4 +653,147 @@ theorem droppingExternalPolicyHost_invalidates_reuse :
 
 end LeanPooProofTransport
 
+/-! ## Section 8: B10c Equivocation Slash Tombstones, Anti-Reentry & 3rd-Step LeanPoo Refinement -/
+
+section EquivocationSlashingAndReentry
+
+/-- Self-authenticating equivocation slash proof: witness `w` signed two distinct roots. -/
+structure SlashEvidence {α Root : Type} (signed : α → Root → Prop) (w : α) where
+  r1 : Root
+  r2 : Root
+  distinct : r1 ≠ r2
+  signed1 : signed w r1
+  signed2 : signed w r2
+
+/--
+**Theorem 8a (Zero False-Positive Slashing of Honest Witnesses)**:
+If honest witnesses (`w ∉ byzantine`) never sign two distinct roots, then any
+witness admitting a valid `SlashEvidence` is mathematically guaranteed to be
+Byzantine (`w ∈ byzantine`).
+-/
+theorem slashed_witness_is_byzantine
+    {α Root : Type} [DecidableEq α] (byzantine : List α) (signed : α → Root → Prop) (w : α)
+    (hhonest : ∀ u r1 r2, u ∉ byzantine → signed u r1 → signed u r2 → r1 = r2)
+    (hproof : SlashEvidence signed w) :
+    w ∈ byzantine := by
+  by_cases h : w ∈ byzantine
+  · exact h
+  · exact False.elim (hproof.distinct (hhonest w hproof.r1 hproof.r2 h hproof.signed1 hproof.signed2))
+
+structure SlashedEpochStep (α : Type) where
+  nextRoster : List α
+  newlySlashed : List α
+
+/-- Monotonic slash-tombstone accumulation + anti-reentry gate across an arbitrary
+    sequence of future committee reconfigurations. -/
+def validSlashFreeReconfigs {α : Type} : List α → List (SlashedEpochStep α) → Prop
+  | _, [] => True
+  | tombstones, step :: rest =>
+    (∀ w ∈ step.nextRoster, w ∉ tombstones) ∧
+    validSlashFreeReconfigs (tombstones ++ step.newlySlashed) rest
+
+/--
+**Theorem 8b (Unbounded Anti-Reentry Across Arbitrary Future Epochs `∀ k`)**:
+Once a witness `w` enters the `M1` slash tombstone set, `w` can NEVER appear in
+`nextRoster` of ANY subsequent epoch across an arbitrary `k`-step reconfiguration chain.
+-/
+theorem slashed_witness_never_reenters_future_epochs {α : Type} :
+    ∀ (chain : List (SlashedEpochStep α)) (tombstones : List α) (w : α),
+      w ∈ tombstones →
+      validSlashFreeReconfigs tombstones chain →
+      ∀ step ∈ chain, w ∉ step.nextRoster
+  | [], _, _, _, _, _, hmem => nomatch hmem
+  | s :: rest, tombstones, w, hwTomb, ⟨hnoReentry, hrest⟩, step, hmem => by
+    cases List.mem_cons.mp hmem with
+    | inl heq =>
+      subst heq
+      intro hwIn
+      exact hnoReentry w hwIn hwTomb
+    | inr htail =>
+      have hwTomb' : w ∈ tombstones ++ s.newlySlashed := List.mem_append_left _ hwTomb
+      exact slashed_witness_never_reenters_future_epochs rest (tombstones ++ s.newlySlashed) w hwTomb' hrest step htail
+
+/-- 3rd-step `LeanPoo` library refinement (`B10c`): blocks re-entry of slashed witnesses. -/
+structure SlashingQuorumConfig extends DurableQuorumConfig where
+  slashReentryBlocked : Bool
+  deriving DecidableEq, Repr
+
+inductive SlashingQuorumKey where
+  | base (k : DurableQuorumKey)
+  | slashReentryBlocked
+  deriving DecidableEq, Repr
+
+inductive SlashingQuorumIssue where
+  | base (i : DurableQuorumIssue)
+  | slashedWitnessReentryAllowed
+  deriving DecidableEq, Repr
+
+private def slashingQuorumView : View SlashingQuorumConfig SlashingQuorumKey Unit where
+  isObject := fun _ => true
+  prototype := fun _ => true
+  names := fun _ => []
+  lookup := fun _ _ => none
+
+def baseFullLibraryContract :
+    Contract SlashingQuorumConfig SlashingQuorumKey Unit SlashingQuorumIssue where
+  view := slashingQuorumView
+  fields := []
+  strict := true
+  constraints := []
+  obligations := fun cfg path =>
+    (if cfg.bftIntersectionEnforced then [] else [.rejected path (.base .unsafeNonIntersectingQuorum)]) ++
+    (if cfg.externalPolicyHostBound then [] else [.rejected path (.base .missingExternalPolicyHostBinding)]) ++
+    (if cfg.dualQuorumHandoverEnforced then [] else [.rejected path (.base .unilateralEpochHandoverAllowed)]) ++
+    (if cfg.retiredKeyZeroizationEnforced then [] else [.rejected path (.base .unzeroizedRetiredWitnessKey)])
+  validInventory := Or.inl rfl
+
+def slashReentryExt (cfg : SlashingQuorumConfig) (path : List SlashingQuorumKey) :
+    List (Issue SlashingQuorumKey SlashingQuorumIssue) :=
+  if cfg.slashReentryBlocked then [] else [.rejected path .slashedWitnessReentryAllowed]
+
+def slashEnforcedLibraryContract :
+    Contract SlashingQuorumConfig SlashingQuorumKey Unit SlashingQuorumIssue :=
+  refine baseFullLibraryContract slashReentryExt
+
+/-- **Theorem 8c (`LeanPoo` B10c Refinement + `cedar-poo-spec` Host Preservation)**:
+    Adding `slashReentryExt` AND any downstream `cedar-poo-spec` authorization extension
+    `hostAuthExt` monotonically preserves every base library rejection. -/
+theorem hostPolicyOverSlashing_preserves_library_rejection
+    (hostAuthExt : SlashingQuorumConfig → List SlashingQuorumKey →
+      List (Issue SlashingQuorumKey SlashingQuorumIssue))
+    (cfg : SlashingQuorumConfig) (path : List SlashingQuorumKey)
+    (hRej : diagnose baseFullLibraryContract cfg path ≠ []) :
+    diagnose (refine slashEnforcedLibraryContract hostAuthExt) cfg path ≠ [] :=
+  refine_two_step_preserves_rejection
+    baseFullLibraryContract slashReentryExt hostAuthExt cfg path hRej
+
+inductive SlashProofKey where
+  | slashReentryBlocked
+  | externalPolicyHostBound
+  | metricsFlushMs
+  deriving DecidableEq
+
+abbrev SlashProofValue : SlashProofKey → Type
+  | .slashReentryBlocked => Bool
+  | .externalPolicyHostBound => Bool
+  | .metricsFlushMs => Nat
+
+def slashReentryObligation : LeanPoo.Proof.Obligation SlashProofKey SlashProofValue where
+  dependencies := [.slashReentryBlocked, .externalPolicyHostBound]
+  holds := fun s => s .slashReentryBlocked = true ∧ s .externalPolicyHostBound = true
+  stable := by
+    intro before after same ⟨h1, h2⟩
+    exact ⟨(same .slashReentryBlocked (by simp)).symm.trans h1,
+           (same .externalPolicyHostBound (by simp)).symm.trans h2⟩
+
+/-- **Theorem 8d (`LeanPoo` Negative Control)**: Disabling `.slashReentryBlocked`
+    always invalidates certificate reuse via `Core.Transport`. -/
+theorem droppingSlashReentryGuard_invalidates_reuse :
+    ¬ LeanPoo.Proof.unaffected slashReentryObligation
+        (LeanPoo.Proof.Patch.set .slashReentryBlocked false) :=
+  set_dependency_invalidates_unaffected slashReentryObligation
+    .slashReentryBlocked false (by simp [slashReentryObligation])
+
+end EquivocationSlashingAndReentry
+
 end DeterministicEngineering.Engineering.DurableGovernanceQuorum

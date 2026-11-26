@@ -692,7 +692,9 @@
     witness_roster
     witness_cosign
     claimed_finalized
-    release_requires_finality)
+    release_requires_finality
+    slashed_witness
+    next_epoch_roster)
   (outputs
     effectively_revoked
     belief_poisoned
@@ -704,6 +706,7 @@
     quorum_3_verified
     sub_quorum_finality_violation
     split_world_finality_breach
+    slashed_witness_reentry_violation
     release_disqualified
     release_admitted)
   (relation delegation_edge ((parent string?) (child string?)))
@@ -726,12 +729,15 @@
   (relation witness_cosign ((witness string?) (log_id string?) (size string?) (root string?) (consistency_ok string?)))
   (relation claimed_finalized ((ckpt_id string?) (log_id string?) (size string?) (root string?)))
   (relation release_requires_finality ((rel_id string?) (ckpt_id string?)))
+  (relation slashed_witness ((log_id string?) (witness string?)))
+  (relation next_epoch_roster ((log_id string?) (epoch string?) (witness string?)))
 
-  ;; Internal stratified helper relations for pure relational identity & cross-log finality:
+  ;; Internal stratified helper relations for pure relational identity, cross-log finality & slashing:
   (relation same_root ((r1 string?) (r2 string?)))
   (relation same_witness ((w1 string?) (w2 string?)))
   (relation valid_witness_cosign ((witness string?) (log_id string?) (size string?) (root string?)))
   (relation release_finality_satisfied ((rel_id string?) (ckpt_id string?)))
+  (relation effectively_slashed ((log_id string?) (witness string?)))
 
   (relation effectively_revoked ((principal string?)))
   (relation belief_poisoned ((belief_id string?)))
@@ -743,6 +749,7 @@
   (relation quorum_3_verified ((ckpt_id string?) (log_id string?) (size string?) (root string?)))
   (relation sub_quorum_finality_violation ((ckpt_id string?) (log_id string?) (size string?) (root string?)))
   (relation split_world_finality_breach ((log_id string?) (size string?) (r1 string?) (r2 string?)))
+  (relation slashed_witness_reentry_violation ((log_id string?) (epoch string?) (witness string?)))
   (relation release_disqualified ((rel_id string?) (reason string?)))
   (relation release_admitted ((rel_id string?)))
 
@@ -837,7 +844,19 @@
    (quorum_3_verified _ L Sz R2)
    (not (same_root R1 R2)))
 
-  ;; 6. Cross-pillar B1/B3/B5/B6/B8/B9/B10 release disqualification & clean admission:
+  ;; 5b. B10c Equivocation slash tombstones & anti-reentry across dynamic epoch reconfigurations:
+  ((effectively_slashed L W)
+   <--
+   (slashed_witness L W))
+  ((effectively_slashed L W)
+   <--
+   (byzantine_witness_equivocation W L _ _ _))
+  ((slashed_witness_reentry_violation L Ep W)
+   <--
+   (next_epoch_roster L Ep W)
+   (effectively_slashed L W))
+
+  ;; 6. Cross-pillar B1/B3/B5/B6/B8/B9/B10/B10c release disqualification & clean admission:
   ((release_finality_satisfied Rel Ckpt)
    <--
    (release_proposal Rel _ _ Log)
@@ -873,6 +892,10 @@
    <--
    (release_proposal Rel _ _ Log)
    (split_world_finality_breach Log _ _ _))
+  ((release_disqualified Rel (lit "slashed-witness-reentry"))
+   <--
+   (release_proposal Rel _ _ Log)
+   (slashed_witness_reentry_violation Log _ _))
   ((release_admitted Rel)
    <--
    (release_proposal Rel _ _ _)

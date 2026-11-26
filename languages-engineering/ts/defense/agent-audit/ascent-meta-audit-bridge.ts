@@ -57,6 +57,8 @@ export interface MetaAuditFactBundle {
   witness_cosign: Array<[string, string, string, string, string]>;
   claimed_finalized: Array<[string, string, string, string]>;
   release_requires_finality: Array<[string, string]>;
+  slashed_witness: Array<[string, string]>;
+  next_epoch_roster: Array<[string, string, string]>;
 }
 
 export interface AscentMetaAuditOutput {
@@ -70,6 +72,7 @@ export interface AscentMetaAuditOutput {
   quorum_3_verified: string[][];
   sub_quorum_finality_violation: string[][];
   split_world_finality_breach: string[][];
+  slashed_witness_reentry_violation: string[][];
   release_disqualified: string[][];
   release_admitted: string[][];
 }
@@ -147,6 +150,8 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
     checkpoint: ThresholdCosignedCheckpoint;
     consistencyVerifiedByWitness?: Readonly<Record<string, boolean>>;
   }>;
+  slashedWitnesses?: ReadonlyArray<{logId: string; witnessId: string}>;
+  nextEpochRosters?: ReadonlyArray<{logId: string; epoch: number; witnessIds: readonly string[]}>;
   releaseProposals: ReadonlyArray<{
     releaseId: string;
     authorId: string;
@@ -277,6 +282,17 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
     }
   }
 
+  const slashed_witness: Array<[string, string]> = (params.slashedWitnesses ?? []).map(s => [
+    s.logId,
+    s.witnessId,
+  ]);
+  const next_epoch_roster: Array<[string, string, string]> = [];
+  for (const nr of params.nextEpochRosters ?? []) {
+    for (const wid of nr.witnessIds) {
+      next_epoch_roster.push([nr.logId, String(nr.epoch), wid]);
+    }
+  }
+
   const bundle: MetaAuditFactBundle = {
     delegation_edge: dedupeTuples(delegation_edge),
     revoked_principal: dedupeTuples(revoked_principal),
@@ -298,6 +314,8 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
     witness_cosign: dedupeTuples(witness_cosign),
     claimed_finalized: dedupeTuples(claimed_finalized),
     release_requires_finality: dedupeTuples(release_requires_finality),
+    slashed_witness: dedupeTuples(slashed_witness),
+    next_epoch_roster: dedupeTuples(next_epoch_roster),
   };
 
   const factBundleMerkleHash = params.kv.putBlob('ascent-meta-audit-fact-bundle', bundle, []);
@@ -347,6 +365,7 @@ export function parseFramedAscentOutput(rawStdout: string): AscentOracleRunVerdi
     'quorum_3_verified',
     'sub_quorum_finality_violation',
     'split_world_finality_breach',
+    'slashed_witness_reentry_violation',
     'release_disqualified',
     'release_admitted',
   ];
@@ -365,6 +384,7 @@ export function parseFramedAscentOutput(rawStdout: string): AscentOracleRunVerdi
 }
 
 const DEFAULT_REPO_ROOT = resolve(import.meta.dir, '../../../..');
+const LIVE_ASCENT_M1_CACHE = new Map<string, AscentOracleRunVerdict>();
 
 export function isGerbilAscentRuntimeAvailable(repoRoot = DEFAULT_REPO_ROOT): boolean {
   const compiledLib = resolve(
@@ -386,6 +406,12 @@ export function runLiveGerbilAscentMetaAudit(
 ): AscentOracleRunVerdict {
   const repoRoot = opts?.repoRoot ?? DEFAULT_REPO_ROOT;
   const gerbilBin = opts?.gerbilBinary ?? 'gerbil';
+  const cacheKey =
+    !opts?.gerbilBinary && !opts?.repoRoot ? sha256Digest(bundle) : undefined;
+  if (cacheKey) {
+    const cached = LIVE_ASCENT_M1_CACHE.get(cacheKey);
+    if (cached) return cached;
+  }
   const compiledLib = resolve(
     repoRoot,
     '.gerbil/lib/deterministic-engineering/library/defensive-governance/func.ssi',
@@ -413,7 +439,7 @@ export function runLiveGerbilAscentMetaAudit(
        (keys '(effectively_revoked belief_poisoned tainted_value exfiltration_violation
                equivocation_violation byzantine_witness_equivocation invalid_witness_cosign
                quorum_3_verified sub_quorum_finality_violation split_world_finality_breach
-               release_disqualified release_admitted)))
+               slashed_witness_reentry_violation release_disqualified release_admitted)))
   (display "${BEGIN_MARKER}\\n{")
   (let loop ((ks keys) (first #t))
     (when (pair? ks)
@@ -459,7 +485,9 @@ export function runLiveGerbilAscentMetaAudit(
 
   const parsed = parseFramedAscentOutput(proc.stdout);
   if (parsed.kind === 'Verified') {
-    return {...parsed, durationMs};
+    const verified: AscentOracleRunVerdict = {...parsed, durationMs};
+    if (cacheKey) LIVE_ASCENT_M1_CACHE.set(cacheKey, verified);
+    return verified;
   }
   return parsed;
 }

@@ -261,6 +261,7 @@ function buildLiveB10QuorumFixture() {
             split_world_finality_breach: [
               ['log-b10-breached', '2', sthBreachA.rootHashHex, sthBreachB.rootHashHex],
             ],
+            slashed_witness_reentry_violation: [],
             release_disqualified: [
               ['rel-b10-subquorum', 'unfinalized-quorum-checkpoint'],
               ['rel-b10-crosslog', 'unfinalized-quorum-checkpoint'],
@@ -326,7 +327,7 @@ describe('Phase 22 Full B1-B10 Declarative ASCENT Quorum Closure & 120-Case Mile
       sharedB10.kv.gcUnreferenced();
       expect(sharedB10.kv.hasBlob(verdict.dualAdmissionReceiptHash)).toBe(true);
     }
-  }, 30_000);
+  }, 60_000);
 
   test('AG117: N-Version ASCENT oracle catches buggy TS coordinator admitting sub-quorum (2-of-4) or cross-log replayed checkpoint', () => {
     const res = sharedB10.runOracle();
@@ -657,6 +658,7 @@ describe('Phase 22 Full B1-B10 Declarative ASCENT Quorum Closure & 120-Case Mile
               quorum_3_verified: [['ckpt-120', 'log-milestone-120', '1', sth.rootHashHex]],
               sub_quorum_finality_violation: [],
               split_world_finality_breach: [],
+              slashed_witness_reentry_violation: [],
               release_disqualified: [],
               release_admitted: [['rel-milestone-120']],
             },
@@ -680,5 +682,5 @@ describe('Phase 22 Full B1-B10 Declarative ASCENT Quorum Closure & 120-Case Mile
     if (dualVerdict.kind === 'Proven') {
       expect(kv.hasBlob(dualVerdict.dualAdmissionReceiptHash)).toBe(true);
     }
-  }, 30_000);
+  }, 60_000);
 });

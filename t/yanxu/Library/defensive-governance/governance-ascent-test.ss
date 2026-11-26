@@ -271,7 +271,11 @@
                                      ("ckpt-breach-b" "log-breached" "9" "root-b-evil")))
           (cons 'release_requires_finality '(("rel-clean" "ckpt-clean")
                                              ("rel-subq" "ckpt-subq")
-                                             ("rel-crosslog" "ckpt-other")))))
+                                             ("rel-crosslog" "ckpt-other")))
+          (cons 'slashed_witness '(("log-reentry" "w-slashed")))
+          (cons 'next_epoch_roster '(("log-honest" "2" "w1")
+                                     ("log-honest" "2" "w2")
+                                     ("log-reentry" "2" "w-slashed")))))
 
       (def mres (reason-durable-governance-meta-audit m-facts))
       (def revoked (rows mres 'effectively_revoked))
@@ -283,6 +287,7 @@
       (def q3 (rows mres 'quorum_3_verified))
       (def subq (rows mres 'sub_quorum_finality_violation))
       (def splitf (rows mres 'split_world_finality_breach))
+      (def reentry (rows mres 'slashed_witness_reentry_violation))
       (def disq (rows mres 'release_disqualified))
       (def admitted (rows mres 'release_admitted))
 
@@ -306,6 +311,7 @@
       (check-equal? (and (member '("w-rogue" "log-honest" "4" "root-h4-evil" "unregistered-witness") inv-c) #t) #t)
       (check-equal? (and (member '("w1" "log-honest" "5" "root-h5-unver" "missing-consistency-proof") inv-c) #t) #t)
       (check-equal? (and (member '("log-breached" "9" "root-b-clean" "root-b-evil") splitf) #t) #t)
+      (check-equal? reentry '(("log-reentry" "2" "w-slashed")))
       ;; 6. Only rel-clean is admitted; all cross-pillar B1-B10 violations are disqualified:
       (check-equal? admitted '(("rel-clean")))
       (check-equal? (and (member '("rel-sod" "sod-self-approval") disq) #t) #t)

@@ -428,11 +428,104 @@ export type EpochHandoverApplyVerdict =
   | {kind: 'Refuted'; reason: string};
 
 /**
+ * Phase 25 (B10c, 10.173): Self-Authenticating Cryptographic Equivocation Slash Proof.
+ * Pure library primitive: any offline node can verify that `witnessId` signed two
+ * distinct roots at the same `(logId, epoch, treeSize)` under `witnessPublicKeyPem`.
+ */
+export interface WitnessEquivocationSlashProof {
+  witnessId: string;
+  witnessPublicKeyPem: string;
+  witnessPublicKeyDigest: string;
+  logId: string;
+  epoch: number;
+  treeSize: number;
+  cosigA: WitnessCosignature;
+  cosigB: WitnessCosignature;
+  slashProofDigest: string;
+}
+
+export type SlashProofBuildVerdict =
+  | {kind: 'SlashProofCreated'; proof: WitnessEquivocationSlashProof}
+  | {kind: 'Refuted'; reason: string};
+
+export function verifyWitnessSlashProof(
+  proof: WitnessEquivocationSlashProof,
+): {kind: 'Valid'} | {kind: 'Refuted'; reason: string} {
+  const {cosigA, cosigB} = proof;
+  if (
+    cosigA.witnessId !== proof.witnessId ||
+    cosigB.witnessId !== proof.witnessId ||
+    cosigA.logId !== proof.logId ||
+    cosigB.logId !== proof.logId ||
+    cosigA.epoch !== proof.epoch ||
+    cosigB.epoch !== proof.epoch ||
+    cosigA.treeSize !== proof.treeSize ||
+    cosigB.treeSize !== proof.treeSize
+  ) {
+    return {kind: 'Refuted', reason: 'slash-proof-metadata-mismatch'};
+  }
+  if (cosigA.rootHashHex === cosigB.rootHashHex) {
+    return {kind: 'Refuted', reason: 'identical-roots-not-equivocation'};
+  }
+  if (sha256Digest(proof.witnessPublicKeyPem) !== proof.witnessPublicKeyDigest) {
+    return {kind: 'Refuted', reason: 'pubkey-digest-mismatch'};
+  }
+  const pubKey = createPublicKey(proof.witnessPublicKeyPem);
+  const okA = cryptoVerify(
+    null,
+    canonicalCheckpointCosignMessage(cosigA),
+    pubKey,
+    Buffer.from(cosigA.cosignatureBase64, 'base64'),
+  );
+  const okB = cryptoVerify(
+    null,
+    canonicalCheckpointCosignMessage(cosigB),
+    pubKey,
+    Buffer.from(cosigB.cosignatureBase64, 'base64'),
+  );
+  if (!okA || !okB) {
+    return {kind: 'Refuted', reason: 'invalid-slash-ed25519-signature'};
+  }
+  return {kind: 'Valid'};
+}
+
+export function buildWitnessSlashProof(params: {
+  cosigA: WitnessCosignature;
+  cosigB: WitnessCosignature;
+  witnessPublicKeyPem: string;
+}): SlashProofBuildVerdict {
+  const {cosigA, cosigB, witnessPublicKeyPem} = params;
+  const witnessPublicKeyDigest = sha256Digest(witnessPublicKeyPem);
+  const draft: WitnessEquivocationSlashProof = {
+    witnessId: cosigA.witnessId,
+    witnessPublicKeyPem,
+    witnessPublicKeyDigest,
+    logId: cosigA.logId,
+    epoch: cosigA.epoch,
+    treeSize: cosigA.treeSize,
+    cosigA,
+    cosigB,
+    slashProofDigest: sha256Digest({
+      witnessId: cosigA.witnessId,
+      witnessPublicKeyDigest,
+      logId: cosigA.logId,
+      epoch: cosigA.epoch,
+      treeSize: cosigA.treeSize,
+      roots: [cosigA.rootHashHex, cosigB.rootHashHex].sort(),
+    }),
+  };
+  const check = verifyWitnessSlashProof(draft);
+  if (check.kind !== 'Valid') return check;
+  return {kind: 'SlashProofCreated', proof: draft};
+}
+
+/**
  * Offline Weak-Subjectivity Monotonic Epoch Trust-Anchor Verifier.
- * Pins the highest completed handover epoch and refuses:
+ * Pins the highest completed handover epoch and monotonic M1 slash tombstones, refusing:
  *   - Retired-epoch checkpoints or alternative handovers (defeats posterior corruption),
  *   - Future-epoch checkpoints without verified Joint-Consensus handover,
- *   - Spliced post-handover trees failing RFC 6962 consistency from the epoch anchor.
+ *   - Spliced post-handover trees failing RFC 6962 consistency from the epoch anchor,
+ *   - Re-entry of cryptographically slashed witnesses by ID OR Sybil public-key reuse (B10c).
  */
 export class ForwardSealedEpochVerifier {
   private activeRoster: EpochRoster;
@@ -440,6 +533,8 @@ export class ForwardSealedEpochVerifier {
   private anchorRootHashHex = '';
   private lastFinalizedSize = 0;
   private lastFinalizedRootHex = '';
+  private readonly slashedWitnessIds = new Set<string>();
+  private readonly slashedPublicKeyDigests = new Set<string>();
 
   constructor(
     private readonly kv: ContentAddressedKvStore,
@@ -457,6 +552,43 @@ export class ForwardSealedEpochVerifier {
     return this.activeRoster;
   }
 
+  getSlashedWitnessIds(): string[] {
+    return [...this.slashedWitnessIds].sort();
+  }
+
+  /**
+   * Verifies a self-authenticating `WitnessEquivocationSlashProof` offline and pins an
+   * immutable M1 slash tombstone (blocking future re-entry by ID or Sybil pubkey reuse).
+   */
+  recordVerifiedSlashProof(
+    proof: WitnessEquivocationSlashProof,
+  ): {kind: 'Slashed'; slashTombstoneHash: string; witnessId: string} | {kind: 'Refuted'; reason: string} {
+    if (proof.logId !== this.activeRoster.logId) {
+      return {kind: 'Refuted', reason: 'slash-log-id-mismatch'};
+    }
+    const check = verifyWitnessSlashProof(proof);
+    if (check.kind !== 'Valid') return check;
+
+    this.slashedWitnessIds.add(proof.witnessId);
+    this.slashedPublicKeyDigests.add(proof.witnessPublicKeyDigest);
+
+    const slashTombstoneHash = this.kv.putBlob(
+      'witness-equivocation-slash-tombstone',
+      {
+        logId: proof.logId,
+        witnessId: proof.witnessId,
+        witnessPublicKeyDigest: proof.witnessPublicKeyDigest,
+        epoch: proof.epoch,
+        treeSize: proof.treeSize,
+        slashProofDigest: proof.slashProofDigest,
+      },
+      [],
+    );
+    this.kv.pinHistoricalCut(slashTombstoneHash);
+
+    return {kind: 'Slashed', slashTombstoneHash, witnessId: proof.witnessId};
+  }
+
   verifyCheckpointInCurrentEpoch(params: {
     checkpoint: ThresholdCosignedCheckpoint;
     consistencyProofFromAnchor?: string[];
@@ -471,6 +603,21 @@ export class ForwardSealedEpochVerifier {
     if (sth.epoch > this.activeRoster.epoch) {
       return {kind: 'Refuted', reason: 'future-epoch-without-handover-refused'};
     }
+
+    // Filter out any cosignatures from cryptographically slashed witnesses before quorum check:
+    const unslashedCosigs = params.checkpoint.cosignatures.filter(c => {
+      if (this.slashedWitnessIds.has(c.witnessId)) return false;
+      const pem = this.activeRoster.witnessPublicKeys[c.witnessId];
+      if (pem && this.slashedPublicKeyDigests.has(sha256Digest(pem))) return false;
+      return true;
+    });
+    if (unslashedCosigs.length < this.activeRoster.threshold) {
+      return {kind: 'Refuted', reason: 'insufficient-unslashed-witness-quorum'};
+    }
+    const filteredCheckpoint: ThresholdCosignedCheckpoint = {
+      ...params.checkpoint,
+      cosignatures: unslashedCosigs,
+    };
 
     // Enforce RFC 6962 append-only continuity from the pinned epoch anchor:
     if (this.anchorTreeSize > 0) {
@@ -496,7 +643,7 @@ export class ForwardSealedEpochVerifier {
     }
 
     const qcVerdict = verifyThresholdCosignedCheckpoint({
-      checkpoint: params.checkpoint,
+      checkpoint: filteredCheckpoint,
       coordinatorPublicKeyPem: this.coordinatorPublicKeyPem,
       witnessRosterPublicKeys: this.activeRoster.witnessPublicKeys,
       maxByzantineFaults: this.activeRoster.maxByzantineFaults,
@@ -531,6 +678,16 @@ export class ForwardSealedEpochVerifier {
     }
     if (cert.fromEpoch !== this.activeRoster.epoch) {
       return {kind: 'Refuted', reason: 'non-monotonic-epoch-transition'};
+    }
+
+    // B10c Anti-Reentry Gate: forbid any slashed witness ID OR Sybil pubkey reuse in newRoster!
+    for (const [wid, pem] of Object.entries(cert.newRoster.witnessPublicKeys)) {
+      if (this.slashedWitnessIds.has(wid)) {
+        return {kind: 'Refuted', reason: 'slashed-witness-reentry-refused'};
+      }
+      if (this.slashedPublicKeyDigests.has(sha256Digest(pem))) {
+        return {kind: 'Refuted', reason: 'slashed-pubkey-sybil-reentry-refused'};
+      }
     }
 
     const verifyRes = verifyJointHandoverCertificate({cert, oldRoster: this.activeRoster});

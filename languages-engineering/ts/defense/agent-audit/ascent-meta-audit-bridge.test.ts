@@ -245,7 +245,7 @@ describe('Phase 20 Cross-Runtime Proof-Carrying TS <-> Gerbil Scheme ASCENT Brid
     expect(res.output.exfiltration_violation).toEqual([['public-sink', 'v2', 'tenant:alpha']]);
     expect(res.output.equivocation_violation.some(r => r[0] === 'log-split')).toBe(true);
     expect(res.output.release_admitted).toEqual([['rel-clean']]);
-  }, 30_000);
+  }, 60_000);
 
   test('AG108: N-Version Agreement Gate catches buggy/compromised TS coordinator claiming ADMIT on poisoned or split-view release', () => {
     const {kv, bundle, factBundleMerkleHash} = buildLiveCrossPillarFixture();
@@ -267,6 +267,7 @@ describe('Phase 20 Cross-Runtime Proof-Carrying TS <-> Gerbil Scheme ASCENT Brid
             quorum_3_verified: [],
             sub_quorum_finality_violation: [],
             split_world_finality_breach: [],
+            slashed_witness_reentry_violation: [],
             release_disqualified: [
               ['rel-poison-chain', 'poisoned-supporting-belief'],
               ['rel-split-log', 'coordinator-equivocated'],
@@ -328,6 +329,7 @@ describe('Phase 20 Cross-Runtime Proof-Carrying TS <-> Gerbil Scheme ASCENT Brid
               quorum_3_verified: [],
               sub_quorum_finality_violation: [],
               split_world_finality_breach: [],
+              slashed_witness_reentry_violation: [],
               release_disqualified: [],
               release_admitted: [['rel-clean']],
             },

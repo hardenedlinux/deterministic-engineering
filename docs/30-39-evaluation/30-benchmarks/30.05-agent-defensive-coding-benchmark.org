@@ -186,6 +186,11 @@ generating false positives on clean deterministic-boundary code.
 | =AG128= | Lean 4 × =B10b= Chain | 5-epoch chain (=E1 -> E2 -> E3 -> E4 -> E5=) + key zeroization | Refuse ALL 4 retired epochs; finalize =E5= cleanly | Exercises multi-epoch handover induction with per-hop zeroization & RFC 6962 continuity |
 | =AG129= | Lean 4 × =R3/B6= Depth | 20-level nested =R3= key leak & 4-level 15-agent budget tree | Refuse deep =R3= leak; exact conservation (=1000 == 1000=) | Validates arbitrary-depth =R3= reachability refusal & multi-level linear budget conservation |
 | =AG130= | =G2= × Lean 4 Gate | Anti-fabrication gate catches =sorry=/=axiom= & missing =lake= | Refuse (=unverified-sorry-or-custom-axiom=); =PendingMethod= | Blocks fabricated Lean proofs statically & via =#print axioms=; fails closed when toolchain absent |
+| =AG131= | Witness Slashing (=B10c=) | Self-authenticating slash proof & anti-framing check | =Slashed= + GC-safe =M1= tombstone; refuse framing | Pins cryptographic double-sign tombstone for =w4-byz= & refuses identical-root/forged framing of honest =w1= |
+| =AG132= | Anti-Reentry (=B10c=) | Slashed witness re-entry by ID & Sybil pubkey alias | Refuse both; admit clean eviction handover | Blocks =w4-byz= ID re-entry & =w4-sybil-alias= pubkey reuse in Epoch 2 roster; admits ={w1,w2,w5,w6}= |
+| =AG133= | =B10c= × ASCENT Oracle | Live =gxi= derives =slashed_witness_reentry_violation= | Refuse (=oracle-disagreement-fail-closed=) | Declarative Scheme Datalog links live double-sign to =next_epoch_roster= & overrides buggy TS =ADMIT= |
+| =AG134= | =B10c= × =LeanPoo= Oracle | Live =lake env lean= verifies 4 new =B10c= theorems (19 total) | =Proven= (zero =sorryAx=/custom axioms) + GC | Verifies =slashed_witness_is_byzantine=, =∀ k= anti-reentry, =cedar-poo-spec= refinement & negative control |
+| =AG135= | Full =B10c= Lifecycle | Detect -> Slash -> Refuse QC -> Evict -> Zeroize -> E2 | Refuse slashed QC; =EpochAdvanced= + =FinalizedInEpoch= | Closes end-to-end eviction lifecycle with both =M1= slash tombstone & handover receipt surviving GC |
 
 * Observed Verification Receipts
 :PROPERTIES:
@@ -214,15 +219,16 @@ generating false positives on clean deterministic-boundary code.
 | Proactive Threshold Witness Cosigning (=2f+1= of =3f+1=) & Quorum Finality (=AG111=–=AG115=) | =bun test languages-engineering/ts/defense/agent-audit/witness-quorum-finality.test.ts= | **5/5 cases matched gold** (offline 3-of-4 Ed25519 QC finality, Byzantine double-signer eclipse block, duplicate/rogue/forged cosig refusal, pre-cosign rewrite refusal, =R3= key non-leakage & BFT parameter gate) |
 | Full =B1=–=B10= Declarative ASCENT Quorum Closure & 120-Case Milestone (=AG116=–=AG120=) | =bun test languages-engineering/ts/defense/agent-audit/b10-ascent-quorum-closure.test.ts= | **5/5 cases matched gold** (live =gxi= =B10= quorum finality under =f=1= fault + Byzantine witness exposure, sub-quorum & cross-log replay catch, rogue/unverified cosig rejection, split-world finality breach, full 10-pillar + 7/7 =R3= =AG120= milestone) |
 | Dynamic Witness Roster Reconfiguration & Forward-Secure Epoch Handover (=B10b=, =AG121=–=AG125=) | =bun test languages-engineering/ts/defense/agent-audit/witness-epoch-reconfiguration.test.ts= | **5/5 cases matched gold** (dual-quorum =Q_old ∩ Q_new= handover + RFC 6962 continuity, unilateral handover refusal, retired-key zeroization & Long-Range attack defense, spliced Epoch 2 refusal, =R3= key non-leakage & epoch-skip refusal) |
-| Unbounded Lean 4 Machine-Checked Meta-Theorems & Proof-Carrying Oracle (=AG126=–=AG130=) | =bun test languages-engineering/ts/defense/agent-audit/lean-proof-verification.test.ts= + =lake build= | **5/5 cases matched gold** (live =#print axioms= zero-=sorry= audit on 10 unbounded Lean 4 theorems, =N=4..100= BFT parity, 5-epoch handover chain, 20-level =R3= + 15-agent budget conservation, =G2= anti-fabricated-proof gate) |
-| Combined 130-case 5-language, anti-evasion, Full =B1=–=B10b=, N-Version & Lean 4 benchmark | =just check-defense= | **130/130 exact gold match** (=tp=90, tn=40, fp=0, fn=0=) |
+| Unbounded Lean 4 Machine-Checked Meta-Theorems & Proof-Carrying Oracle (=AG126=–=AG130=) | =bun test languages-engineering/ts/defense/agent-audit/lean-proof-verification.test.ts= + =lake build= | **5/5 cases matched gold** (live =#print axioms= zero-=sorry= audit on 15 unbounded + =LeanPoo= theorems, =N=4..100= BFT parity, 5-epoch handover chain, 20-level =R3= + 15-agent budget conservation, =G2= anti-fabricated-proof gate) |
+| Evidence-Driven Witness Equivocation Slashing & Anti-Reentry (=B10c=, =AG131=–=AG135=) | =bun test languages-engineering/ts/defense/agent-audit/witness-slashing-reentry.test.ts= | **5/5 cases matched gold** (self-authenticating slash tombstone + anti-framing, ID & Sybil pubkey re-entry block, live =gxi= ASCENT catch, live =LeanPoo= 19-theorem axiom verification, full detect->slash->evict->zeroize->E2 lifecycle) |
+| Combined 135-case 5-language, anti-evasion, Full =B1=–=B10c=, N-Version & =LeanPoo= benchmark | =just check-defense= | **135/135 exact gold match** (=tp=93, tn=42, fp=0, fn=0=) |
 
 * Limits
 :PROPERTIES:
 :CUSTOM_ID: bench3005-limits
 :END:
 
-This 130-case benchmark establishes deterministic AST-level, diff-delta,
+This 135-case benchmark establishes deterministic AST-level, diff-delta,
 scope-fencing, bounded closed-loop, hot-policy co-evolution, async-cut,
 semantic-drift memoization, AEAD-isolated Merkle storage, role-projected
 context, multi-agent SSI concurrency, and business SoD/replay precision and
