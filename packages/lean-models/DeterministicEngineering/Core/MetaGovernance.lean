@@ -257,4 +257,115 @@ theorem mr_admitted_sound {Sub St Obl Meth CK Prem : Type}
       hNo2 ⟨st1, st2, o, m1, m2, k, h1, h2, hNe,
             fun hb => hNoBr (Or.inl hb), fun hb => hNoBr (Or.inr hb)⟩
 
+/-! ## 4. Full `MR03`–`MR06` Pre-Flight Governance Soundness -/
+
+structure ExtendedGovernance (Subject Step Obligation Method ClaimKind Premise Artifact Factor Platform Guard : Type)
+    extends GovernanceSystem Subject Step Obligation Method ClaimKind Premise where
+  dagEdge : Step → Step → Prop
+  produces : Step → Artifact → Prop
+  consumes : Step → Artifact → Prop
+  statefulQuint : Step → Prop
+  countermodel : Step → Guard → Prop
+  subjectFactor : Subject → Factor → Prop
+  ownsSubprocessTree : Factor
+  osSigkillClaim : ClaimKind
+  osContainment : Subject → Platform → Prop
+
+def ArtifactEdgeSatisfied {Sub St Obl Meth CK Prem Art Fac Plat Grd : Type}
+    (g : ExtendedGovernance Sub St Obl Meth CK Prem Art Fac Plat Grd) (st : St) (a : Art) : Prop :=
+  ∃ u, g.dagEdge u st ∧ g.produces u a ∧ g.consumes st a
+
+def Mr03OpenPremise {Sub St Obl Meth CK Prem Art Fac Plat Grd : Type}
+    (g : ExtendedGovernance Sub St Obl Meth CK Prem Art Fac Plat Grd) (s : Sub) : Prop :=
+  ∃ st o m k p, g.flowStep st s o m k ∧ g.requiresPremise st p ∧ ∀ sup, ¬ g.supportsPremise sup p
+
+def Mr04MissingArtifactEdge {Sub St Obl Meth CK Prem Art Fac Plat Grd : Type}
+    (g : ExtendedGovernance Sub St Obl Meth CK Prem Art Fac Plat Grd) (s : Sub) : Prop :=
+  ∃ st o m k a, g.flowStep st s o m k ∧ g.consumes st a ∧ ¬ ArtifactEdgeSatisfied g st a
+
+def Mr05MissingCountermodel {Sub St Obl Meth CK Prem Art Fac Plat Grd : Type}
+    (g : ExtendedGovernance Sub St Obl Meth CK Prem Art Fac Plat Grd) (s : Sub) : Prop :=
+  ∃ st o m k, g.flowStep st s o m k ∧ g.statefulQuint st ∧ ∀ grd, ¬ g.countermodel st grd
+
+def Mr06MissingContainmentOrOracle {Sub St Obl Meth CK Prem Art Fac Plat Grd : Type}
+    (g : ExtendedGovernance Sub St Obl Meth CK Prem Art Fac Plat Grd) (s : Sub) : Prop :=
+  g.subjectFactor s g.ownsSubprocessTree ∧
+  ((∀ plat, ¬ g.osContainment s plat) ∨
+   (∀ st o m, ¬ g.flowStep st s o m g.osSigkillClaim))
+
+/-- Complete `MR03`–`MR06` soundness: zero findings guarantee closed premises,
+satisfied DAG artifact edges, mandatory stateful-Quint countermodels, and OS containment + SIGKILL oracle. -/
+theorem mr03_06_full_sound {Sub St Obl Meth CK Prem Art Fac Plat Grd : Type}
+    (g : ExtendedGovernance Sub St Obl Meth CK Prem Art Fac Plat Grd) (s : Sub)
+    (hNo3 : ¬ Mr03OpenPremise g s)
+    (hNo4 : ¬ Mr04MissingArtifactEdge g s)
+    (hNo5 : ¬ Mr05MissingCountermodel g s)
+    (hNo6 : ¬ Mr06MissingContainmentOrOracle g s) :
+    (∀ st o m k p, g.flowStep st s o m k → g.requiresPremise st p → ∃ sup, g.supportsPremise sup p) ∧
+    (∀ st o m k a, g.flowStep st s o m k → g.consumes st a → ArtifactEdgeSatisfied g st a) ∧
+    (∀ st o m k, g.flowStep st s o m k → g.statefulQuint st → ∃ grd, g.countermodel st grd) ∧
+    (g.subjectFactor s g.ownsSubprocessTree →
+      (∃ plat, g.osContainment s plat) ∧ (∃ st o m, g.flowStep st s o m g.osSigkillClaim)) := by
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · intro st o m k p hSt hReq
+    exact Classical.byContradiction fun hNo =>
+      hNo3 ⟨st, o, m, k, p, hSt, hReq, fun sup hSup => hNo ⟨sup, hSup⟩⟩
+  · intro st o m k a hSt hCons
+    exact Classical.byContradiction fun hNo =>
+      hNo4 ⟨st, o, m, k, a, hSt, hCons, hNo⟩
+  · intro st o m k hSt hQ
+    exact Classical.byContradiction fun hNo =>
+      hNo5 ⟨st, o, m, k, hSt, hQ, fun grd hCm => hNo ⟨grd, hCm⟩⟩
+  · intro hFac
+    refine ⟨?_, ?_⟩
+    · exact Classical.byContradiction fun hNo =>
+        hNo6 ⟨hFac, Or.inl (fun plat hP => hNo ⟨plat, hP⟩)⟩
+    · exact Classical.byContradiction fun hNo =>
+        hNo6 ⟨hFac, Or.inr (fun st o m hF => hNo ⟨st, o, m, hF⟩)⟩
+
+/-! ## 5. Parallel Frontier Wave Scheduling Soundness (Zero-Race Confluence) -/
+
+inductive NonEmptyDagPath {Step : Type} (edge : Step → Step → Prop) : Step → Step → Prop where
+  | single {a b : Step} : edge a b → NonEmptyDagPath edge a b
+  | cons {a b c : Step} : edge a b → NonEmptyDagPath edge b c → NonEmptyDagPath edge a c
+
+/-- A wave assignment `waveOf : Step → Nat` is valid iff every DAG edge strictly increases
+wave index and no resource-exclusive pair shares the same wave. -/
+structure ValidWaveSchedule {Step : Type}
+    (dagEdge : Step → Step → Prop)
+    (resourceConflict : Step → Step → Prop)
+    (waveOf : Step → Nat) : Prop where
+  respectsDag : ∀ u v, dagEdge u v → waveOf u < waveOf v
+  respectsConflict : ∀ u v, resourceConflict u v → waveOf u ≠ waveOf v
+
+/-- Arbitrary-depth topological ordering: any non-empty directed path `u →+ v` strictly increases wave index. -/
+theorem valid_wave_strictly_increasing_along_path {Step : Type}
+    {edge conflict : Step → Step → Prop} {waveOf : Step → Nat}
+    (hValid : ValidWaveSchedule edge conflict waveOf)
+    {u v : Step} (hPath : NonEmptyDagPath edge u v) :
+    waveOf u < waveOf v := by
+  induction hPath with
+  | single hab => exact hValid.respectsDag _ _ hab
+  | cons hab _ ih => exact Nat.lt_trans (hValid.respectsDag _ _ hab) ih
+
+/-- Parallel wave confluence / zero-race theorem (constructive, zero axioms!):
+Any two steps assigned to the SAME parallel wave have NO directed DAG dependency path
+in either direction and NO shared resource conflict (e.g., Cargo target lock). -/
+theorem same_wave_implies_independent {Step : Type}
+    {edge conflict : Step → Step → Prop} {waveOf : Step → Nat}
+    (hValid : ValidWaveSchedule edge conflict waveOf)
+    {a b : Step} (hSameWave : waveOf a = waveOf b) :
+    ¬ NonEmptyDagPath edge a b ∧ ¬ NonEmptyDagPath edge b a ∧ ¬ conflict a b := by
+  refine ⟨?_, ?_, ?_⟩
+  · intro hPath
+    have hLt := valid_wave_strictly_increasing_along_path hValid hPath
+    rw [hSameWave] at hLt
+    exact Nat.lt_irrefl _ hLt
+  · intro hPath
+    have hLt := valid_wave_strictly_increasing_along_path hValid hPath
+    rw [hSameWave] at hLt
+    exact Nat.lt_irrefl _ hLt
+  · intro hConf
+    exact hValid.respectsConflict a b hConf hSameWave
+
 end DeterministicEngineering.Core.MetaGovernance

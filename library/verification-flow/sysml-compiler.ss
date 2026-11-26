@@ -213,7 +213,10 @@
                 steps: all-steps
                 dag-edges: (map (lambda (e) (list (string->symbol (car e)) (string->symbol (cadr e))))
                                 dag-edges)
-                correspondence-bridges: '()
+                correspondence-bridges: (map (lambda (b) (map string->symbol b))
+                                             (if (.slot? spec 'correspondence-bridges)
+                                               (.get spec correspondence-bridges)
+                                               '()))
                 dag-flow: dag-flow)))
         (.o bind-these: #f
             subject-key: (string->symbol skey-str)

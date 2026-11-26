@@ -44,6 +44,16 @@ theorem upstreamTamper_blocks_arbitrary_downstream_reuse {Step Key Digest Toolch
     ¬ Reusable sys v :=
   upstream_forged_cache_prevents_downstream_reuse sys hPath hPolicy hTampered
 
+/-- Constructive zero-axiom certification that any two steps scheduled in the same
+Fun-Flow parallel wave (e.g. `quintTarget || leanPooTarget || sourceContractTarget`)
+are causally independent and conflict-free across arbitrary DAG depths. -/
+theorem parallelWave_concurrent_execution_race_free {Step : Type}
+    {edge conflict : Step → Step → Prop} {waveOf : Step → Nat}
+    (hValid : ValidWaveSchedule edge conflict waveOf)
+    {a b : Step} (hSameWave : waveOf a = waveOf b) :
+    ¬ NonEmptyDagPath edge a b ∧ ¬ NonEmptyDagPath edge b a ∧ ¬ conflict a b :=
+  same_wave_implies_independent hValid hSameWave
+
 /-! ## Two-Step LeanPoo `ObjectContract.refine` (via `Core.Transport`) -/
 
 structure MetaGovConfig where

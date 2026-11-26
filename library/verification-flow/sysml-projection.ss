@@ -194,7 +194,15 @@
   (def sq-steps '())
   (def scm-rows '())
   (def os-rows '())
+  (def bridge-rows '())
   (def subject-specs '())
+
+  (def (parse-bridge-entries raw)
+    (filter-map
+      (lambda (item)
+        (let ((parts (map trim-ws (string-split item #\:))))
+          (and (= (length parts) 3) parts)))
+      (split-csv raw)))
 
   (for-each
     (lambda (el)
@@ -206,10 +214,12 @@
           (when (and sid facs)
             (let ((skey (or (part-attr pid "subjectKey") pname))
                   (fac-list (split-csv facs))
+                  (subj-bridges (parse-bridge-entries (part-attr pid "correspondenceBridges")))
                   (child-ids '())
                   (target-specs '())
                   (subj-edges '())
                   (subj-os '()))
+              (for-each (lambda (b) (set! bridge-rows (cons b bridge-rows))) subj-bridges)
               (for-each (lambda (f) (set! subj-factors (cons (list sid f) subj-factors)))
                         fac-list)
               (for-each
@@ -357,6 +367,7 @@
                           factors: fac-list
                           os-containment: (reverse subj-os)
                           dag-edges: (reverse subj-edges)
+                          correspondence-bridges: subj-bridges
                           targets: (reverse target-specs))
                       subject-specs)))))))
     elements)
@@ -382,7 +393,7 @@
         (cons 'step_consumes (reverse sconsumes))
         (cons 'step_requires_premise (reverse sreq-prem))
         (cons 'step_supports_premise (reverse ssup-prem))
-        (cons 'correspondence_bridge '())
+        (cons 'correspondence_bridge (reverse bridge-rows))
         (cons 'stateful_quint_step (reverse sq-steps))
         (cons 'step_countermodel (reverse scm-rows))
         (cons 'declared_os_containment (reverse os-rows)))))
