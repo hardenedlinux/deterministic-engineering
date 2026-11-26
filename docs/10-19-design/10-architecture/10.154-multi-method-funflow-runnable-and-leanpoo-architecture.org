@@ -20,13 +20,15 @@
 #+BEGIN_QUOTE
 Status: *implemented and end-to-end verified (M0–M5 + Zero-Glue SysML v2 Compiler +
 Parallel Conflict-Free Waves + Multi-Key Ed25519 Trust Store/Rotation/Revocation +
-ASCENT MR01–MR08 / ER01–ER04 / IR01–IR08 + 27 Zero-Axiom Lean 4 Meta-Theorems +
-Linux cgroup v2 Backend + 5-Subject / 13-Engine Fleet)*. The companion
+Offline JSON Trust-Store CLI + ASCENT MR01–MR08 / ER01–ER04 / IR01–IR08 +
+27 Zero-Axiom Lean 4 Meta-Theorems + Linux cgroup v2 Backend +
+6-Subject [5 Engineering + 1 Threat] / 15-Engine Fleet)*. The companion
 [[file:10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml][10.154 SysML v2 specification]]
 is the live single source of truth compiled directly into Fun-Flow DAGs by
 [[file:../../../library/verification-flow/sysml-compiler.ss][sysml-compiler.ss]] and
 gated by =just check-multi-method=, =just fleet-multi-method=,
-=just plan-multi-method-fleet=, and =just impact-multi-method=.
+=just plan-multi-method-fleet=, =just impact-multi-method=,
+=just verify-multi-method-report=, and =just verify-multi-method-fleet=.
 #+END_QUOTE
 
 This item defines the macro multi-method verification architecture that complements
@@ -116,16 +118,17 @@ method family is authorized to discharge only its own =claim-kind= set:
 | *Source Verifiers (CBMC / Kani / Clippy / Miri)* | =languages-engineering/<lang>/= | Bound via =Methods= / =Defense= | =source-memory-ub=, =drop-unwind-safety=, =api-ban-lint= | Distributed protocol safety, multi-process crash orchestration | Native C/C++/Rust harnesses & checked subjects |
 | *Native OS Fault Oracles* | =t/= & consumer harnesses | =DevelopmentVerification= | =empirical-mbt-replay=, =os-sigkill-oracle=, =zero-leak-assertion= | Claiming exhaustive schedule coverage or universal liveness | Replayed ITF runs, =SIGKILL (137)= controls, leak receipts |
 
-** Zero-duplication verification across five concrete engineering subjects (live 5-subject / 13-engine parallel Fleet)
+** Zero-duplication verification across six concrete subjects (live 6-subject [5 Engineering + 1 Threat] / 15-engine parallel Fleet)
 
 #+NAME: zero-duplication-examples
-| Engineering subject | Quint owns (finite races & MBT) | LeanPoo owns (unbounded laws & 6/6 cores) | Source / OS Oracle owns (physical grounding) | Premise handoff (=MR03=/=ER03=) |
-|---------------------+---------------------------------+-------------------------------------------+----------------------------------------------+---------------------------------|
+| Engineering / Threat subject | Quint owns (finite races & MBT) | LeanPoo owns (unbounded laws & 6/6 cores) | Source / OS Oracle owns (physical grounding) | Premise handoff (=MR03=/=ER03=) |
+|------------------------------+---------------------------------+-------------------------------------------+----------------------------------------------+---------------------------------|
 | =process-tree-reclamation= (pilot vertical slice) | 3-tier finite transitions, 5 guard-pruning countermodels, 20 =--mbt= ITF traces | =Core.Containment= + =Engineering.ProcessTree= ($\forall d,k$ tree closure, =LinuxCgroupV2= / =DarwinPgidPipe= refinement, =Patch.frame= reuse) | Rust =ProcessTreeGuard= (Linux =cgroup v2= zero-TOCTOU =pre_exec= + =cgroup.kill=, Darwin =setpgid=+Pipe-EOF) + Clippy ban + 3 HTTP =/shutdown= E2E + 4 live Quint/online-OS MBT + 7 OS =SIGKILL=/=setsid()=/=cgroup v2= controls | =SpawnPreservesContainer= (Rust Oracle -> LeanPoo) |
 | =backpressure-memory= (horizontal reuse) | Disjoint holder-set transitions, 4 countermodels, 10 =--mbt= ITF traces | =Core.Budget= + =Engineering.Backpressure= (monotonic additive memory bound, shrink safety, =Patch.frame= reuse) | Rust Clippy (=--offline=) + Tokio/Rayon 6-case lifecycle oracle (=RL-M01..RL-M06=, =live=0, available=1=) | =PayloadDropPrecedesPermitRelease= (Rust Oracle -> LeanPoo) |
 | =lease-fencing-token= (zero-glue 3rd subject) | 2-client GC-pause lease race, =monotonic-fencing-token= countermodel, Apalache verify + 10 =--mbt= ITF traces | =Core.Order= + =Core.Transport= + =Engineering.LeaseFencing= (unbounded =Nat= zombie-write rejection, 2-step =ObjectContract.refine=, 1-line =Proof.reuse=) | (Pure formal 2-engine subject; no OS premise required) | None (closed) |
 | =c-boundary-conservation= (zero-glue 4th subject) | (Pure C + LeanPoo 2-engine subject; zero Quint duplication) | =Core.Conservation= + =Core.Transport= + =Engineering.BoundaryConservation= (unbounded single-ownership cap & idempotent release, 2-step refinement, 1-line =Proof.reuse=) | *CBMC 6.11* (=source-memory-ub= on =deterministic_boundary.c= + =proof.c=: bounds, pointer, unsigned-overflow proof) | =NoCSourceOverflowOrPointerUB= (CBMC -> LeanPoo) |
 | =meta-governance-soundness= (self-verifying 5th subject) | (Self-verifies ASCENT Datalog governance, parallel waves, Fleet Merkle attestation, & key revocation) | =Core.MetaGovernance= + =Core.Transport= + =Engineering.MetaGovernanceSoundness= (*27 constructive zero-axiom theorems*: =IR01=–=IR08= partition/transitivity/strict-premise/TTL, =MR01=–=MR08=/=ER01=–=ER04=, zero-race =ValidWaveSchedule=, Fleet Merkle tamper resistance, Multi-Key rotation & revocation) | Hashes live =library/verification-flow/ascent-rules.ss= so rule edits automatically trigger =IR02= meta-reverification | None (closed) |
+| =delegated-agent-authz= (zero-glue 6th subject — Threat domain) | Depth-1 RFC 8693 OBO delegation + 4 countermodels (=obo-scope-attenuation=, =obo-actor-provenance=, =obo-revocation-currency=, =step-up-verified-floor=) + 10 =--mbt= ITF traces | =Threat.CapabilityContainment= + =Threat.AuthorityCurrentness= (cross-domain reuse of =Core.Containment= + =Core.Order= + =Core.Transport=: $\forall d,k$ multi-hop revocation closure, monotonic scope attenuation, unbounded epoch currentness, 14 Lean theorems) | (Pure formal Threat 2-engine subject; zero duplicated Core math) | None (closed) |
 
 * LeanPoo distribution package family (=packages/lean-models/=)
 :PROPERTIES:

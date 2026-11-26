@@ -17,6 +17,7 @@
 ;;;    across all 3 subjects and passes full pinned-key Merkle verification!
 (import :std/test
         :std/encoding/json
+        :std/misc/ports
         :std/misc/process
         :clan/poo/object
         (only-in :std/source this-source-file)
@@ -26,9 +27,26 @@
 (def repo-root
   (path-normalize (path-expand "../../../.." (path-directory (this-source-file)))))
 
+(def (run-verify-fleet-cli fleet-report-path trust-store-path)
+  (let* ((cmd (string-append
+                "cd \"" repo-root "\" && "
+                "gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q "
+                "t/support/verification-flow-runner.ss --verify-fleet "
+                "\"" fleet-report-path "\" \"" trust-store-path "\""))
+         (proc (open-process
+                 (list path: "/bin/bash"
+                       arguments: (list "-euo" "pipefail" "-c" cmd)
+                       stdin-redirection: #f
+                       stdout-redirection: #t
+                       stderr-redirection: #t)))
+         (out (read-all-as-string proc))
+         (status (process-status proc)))
+    (close-port proc)
+    (values status out)))
+
 (def verification-flow-multi-subject-fleet-and-pinned-attestation-test
   (test-suite "Multi-subject Fleet orchestration and 2-level Merkle pinned-key Ed25519 attestation"
-    (test-case "live 3-subject Fleet passes Cold (10/0) -> Warm (0/10), pinned-key Merkle verification, and rejects rogue-key & child-tamper attacks"
+    (test-case "live 6-subject Fleet passes Cold (15/0) -> Warm (0/15), pinned-key & offline --verify-fleet CLI, and rejects rogue-key, revocation & child-tamper attacks"
       (def tmp-parent (path-expand ".data/test-runs" repo-root))
       (create-directory* tmp-parent)
       (def cache-dir (path-expand "m5-fleet-cache-test" tmp-parent))
@@ -56,8 +74,22 @@
         (check-equal? (.get f1 total-executed) 15)
         (check-equal? (.get f1 total-reused) 0)
 
-        ;; Genuine Fleet + all 5 child reports verify cleanly against externally pinned public key!
+        ;; Genuine Fleet + all 6 child reports verify cleanly against externally pinned public key
+        ;; AND via standalone offline `--verify-fleet` CLI with portable JSON Trust Store!
         (check-equal? (verify-fleet-report-with-pinned-key frpath trusted-pub) #t)
+        (let* ((ts-valid (make-ed25519-trust-store (list trusted-pub)))
+               (ts-valid-json (path-expand "fleet-trust-valid.json" cold-dir))
+               (fleet-kid (car (car (.get ts-valid trusted-keys))))
+               (ts-revoked (make-ed25519-trust-store (list trusted-pub) (list fleet-kid)))
+               (ts-revoked-json (path-expand "fleet-trust-revoked.json" cold-dir)))
+          (write-ed25519-trust-store-json ts-valid ts-valid-json)
+          (write-ed25519-trust-store-json ts-revoked ts-revoked-json)
+          (let-values (((st out) (run-verify-fleet-cli frpath ts-valid-json)))
+            (check-equal? st 0)
+            (check (and (string-contains out "MULTI-METHOD-VERIFY-FLEET-OK") #t) => #t))
+          ;; Negative Control C: Revoked Fleet key in JSON Trust Store -> CLI MUST reject!
+          (let-values (((st _out) (run-verify-fleet-cli frpath ts-revoked-json)))
+            (check (not (= st 0)) => #t)))
 
         ;; Negative Control A: Rogue/untrusted Ed25519 public key MUST be rejected!
         (let* ((rogue-kp (ensure-cache-signing-keypair! rogue-key-dir))
@@ -66,15 +98,19 @@
           (check-equal? (verify-fleet-report-with-pinned-key frpath rogue-pub) #f)
           (check-equal? (verify-report-with-pinned-key child-rep rogue-pub) #f))
 
-        ;; Negative Control B: Tampering 1 field inside a child report breaks 2-level Fleet Merkle check!
+        ;; Negative Control B + D: Tampering 1 field inside a child report breaks BOTH in-process
+        ;; pinned-key Merkle check AND standalone offline `--verify-fleet` CLI!
         (run-process (list "cp" "-R" cold-dir tamper-copy-dir))
         (let* ((copied-fleet (path-expand "fleet-report.json" tamper-copy-dir))
                (copied-child (path-expand "meta-governance-soundness/report.json" tamper-copy-dir))
+               (ts-valid-json (path-expand "fleet-trust-valid.json" cold-dir))
                (cdoc (call-with-input-file copied-child (cut read-json <> object-as-hash: #t))))
           (hash-put! cdoc "requestId" "forged-child-request")
           (call-with-output-file copied-child
             (lambda (port) (write-json port cdoc) (newline port)))
-          (check-equal? (verify-fleet-report-with-pinned-key copied-fleet trusted-pub) #f)))
+          (check-equal? (verify-fleet-report-with-pinned-key copied-fleet trusted-pub) #f)
+          (let-values (((st _out) (run-verify-fleet-cli copied-fleet ts-valid-json)))
+            (check (not (= st 0)) => #t))))
       (##gc)
 
       ;; Phase 1.5 — Dry-run Change-Impact Predictor after Cold Fleet: 0 pending, 15 reusable (<1s)!

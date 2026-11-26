@@ -491,7 +491,7 @@ check-multi-method:
     just test-file t/yanxu/Library/verification-flow/end-to-end-ops-runner-test.ss ".*" 240s
     just test-file t/yanxu/Library/verification-flow/incremental-cache-reuse-test.ss ".*" 240s
     just test-file t/yanxu/Library/verification-flow/multi-subject-backpressure-test.ss ".*" 240s
-    just test-file t/yanxu/Library/verification-flow/multi-subject-fleet-and-pinned-attestation-test.ss ".*" 360s
+    just test-file t/yanxu/Library/verification-flow/multi-subject-fleet-and-pinned-attestation-test.ss ".*" 600s
 
 # Run the M5 multi-method Fun-Flow Ops Runner (optional cache_dir & subject: process-tree-reclamation | backpressure-memory | lease-fencing-token | c-boundary-conservation) and write a fresh signed JSON evidence report.
 investigate-multi-method output cache_dir="" subject="process-tree-reclamation":

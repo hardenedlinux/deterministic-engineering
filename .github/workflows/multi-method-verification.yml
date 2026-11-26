@@ -69,7 +69,7 @@ jobs:
         run: |
           curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-      - name: Modular Lake build across all 6 Subjects (5 Engineering + 1 Threat) & 6 Cores
+      - name: Modular Lake build across all 6 Subjects (5 Engineering + 2 Threat Modules) & 6 Cores
         working-directory: packages/lean-models
         run: |
           lake build \
@@ -78,7 +78,8 @@ jobs:
             DeterministicEngineering.Engineering.LeaseFencing \
             DeterministicEngineering.Engineering.BoundaryConservation \
             DeterministicEngineering.Engineering.MetaGovernanceSoundness \
-            DeterministicEngineering.Threat.CapabilityContainment
+            DeterministicEngineering.Threat.CapabilityContainment \
+            DeterministicEngineering.Threat.AuthorityCurrentness
       - name: Audit #print axioms (0 sorryAx everywhere; zero axioms on Core.MetaGovernance)
         working-directory: packages/lean-models
         run: |
@@ -107,10 +108,15 @@ jobs:
           fi
           threat_out="$(lake env lean --stdin <<'EOF'
           import DeterministicEngineering.Threat.CapabilityContainment
+          import DeterministicEngineering.Threat.AuthorityCurrentness
           #print axioms DeterministicEngineering.Threat.CapabilityContainment.revokeRootSession_kills_all_delegated_hops
           #print axioms DeterministicEngineering.Threat.CapabilityContainment.crashSafe_sessionRevocation_zero_zombie_tokens
           #print axioms DeterministicEngineering.Threat.CapabilityContainment.multiHop_attenuation_prevents_amplification
           #print axioms DeterministicEngineering.Threat.CapabilityContainment.revokedEpoch_rejects_zombie_delegation
+          #print axioms DeterministicEngineering.Threat.AuthorityCurrentness.isCurrent_eq_true_iff
+          #print axioms DeterministicEngineering.Threat.AuthorityCurrentness.paused_never_current
+          #print axioms DeterministicEngineering.Threat.AuthorityCurrentness.epochAdvance_invalidates_all_prior_plans
+          #print axioms DeterministicEngineering.Threat.AuthorityCurrentness.authorityFloor_join_never_weakens
           EOF
           )"
           printf '%s\n' "$threat_out"
