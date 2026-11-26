@@ -185,12 +185,12 @@ package MultiMethodFunFlowArchitecture {
         }
     }
 
-    // ── 5. ASCENT Multi-Method Governance Program (MR01-MR06) ──
+    // ── 5. ASCENT Multi-Method Governance Program (MR01-MR06, ER01-ER04, IR01-IR06) ──
 
     part def AscentGovernanceProgram {
         attribute dslModule : String = ":gerbil-ascent/rules/func";
         attribute yuanxuLayer : String = "de.layer.governance";
-        attribute rules : String = "MR01-claim-routing,MR02-anti-duplication,MR03-premise-handoff,MR04-artifact-dag-closure,MR05-mandatory-countermodels,MR06-subprocess-containment";
+        attribute rules : String = "MR01-claim-routing,MR02-anti-duplication,MR03-premise-handoff,MR04-artifact-dag-closure,MR05-mandatory-countermodels,MR06-subprocess-containment,ER01-ER04-evidence-admission,IR01-IR04-incremental-reuse,IR05-toolchain-drift,IR06-attestation-invalid";
         attribute evidenceSession : String = "library/evidence/func.ss::make-resource-evidence";
 
         port gatePort : GovernanceGatePort;

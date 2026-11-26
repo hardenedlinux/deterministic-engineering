@@ -49,6 +49,9 @@
   default-process-tree-step-mutability
   default-backpressure-step-mutability
   compute-step-input-digests
+  compute-step-toolchain-fingerprints
+  ensure-cache-signing-keypair!
+  verify-verification-report-attestation
   load-verification-cache
   save-verification-cache!
   make-real-verification-runtime-adapter
@@ -351,42 +354,194 @@
                 (cdr entry)))
          step-files)))
 
-;; Loads persisted verification cache -> (values cached-witness-rows cached-input-rows entry-by-step-hash).
-(def (load-verification-cache cache-file)
+;; ── Live Verifier Toolchain Fingerprinting (IR05) & OpenSSL Ed25519 Attestation (IR06) ──
+
+(def *cached-host-toolchain-map* #f)
+
+(def (probe-host-toolchain-versions repo-root)
+  (unless *cached-host-toolchain-map*
+    (let ((script
+           (string-append
+             "export PATH=\"$HOME/.bun/bin:$HOME/.elan/bin:$HOME/.cargo/bin:$PATH\"\n"
+             "CARGO_BIN=\"${RESOURCE_CARGO:-$(\"$HOME/.cargo/bin/rustup\" which cargo 2>/dev/null || command -v cargo || true)}\"\n"
+             "if [ -n \"$CARGO_BIN\" ]; then export PATH=\"$(dirname \"$CARGO_BIN\"):$PATH\"; fi\n"
+             "printf 'os=%s/%s\\n' \"$(uname -s)\" \"$(uname -m)\"\n"
+             "printf 'sysml=%s\\n' \"$(sysml -version 2>&1 | head -n 1 | tr -d '\\r')\"\n"
+             "printf 'quint=%s\\n' \"$(quint --version 2>/dev/null | head -n 1 | tr -d '\\r' || echo unknown)\"\n"
+             "printf 'bun=%s\\n' \"$(bun --version 2>/dev/null | head -n 1 | tr -d '\\r' || echo unknown)\"\n"
+             "printf 'lean=%s\\n' \"$(lean --version 2>/dev/null | head -n 1 | tr -d '\\r' || echo unknown)\"\n"
+             "printf 'rustc=%s\\n' \"$(rustc --version 2>/dev/null | head -n 1 | tr -d '\\r' || echo unknown)\"\n"
+             "printf 'clippy=%s\\n' \"$(cargo clippy --version 2>/dev/null | head -n 1 | tr -d '\\r' || echo unknown)\"\n")))
+      (let-values (((_code out) (exec-bash-captured repo-root script)))
+        (def tbl (make-hash-table))
+        (for-each
+          (lambda (line)
+            (def idx
+              (let ((n (string-length line)))
+                (let loop ((i 0))
+                  (cond ((>= i n) #f)
+                        ((char=? (string-ref line i) #\=) i)
+                        (else (loop (+ i 1)))))))
+            (when (and idx (> idx 0))
+              (hash-put! tbl
+                         (substring line 0 idx)
+                         (substring line (+ idx 1) (string-length line)))))
+          (string-split out #\newline))
+        (set! *cached-host-toolchain-map* tbl))))
+  *cached-host-toolchain-map*)
+
+(def (method-toolchain-fingerprint tbl method-str)
+  (def (v k) (or (hash-get tbl k) "unknown"))
+  (cond
+   ((equal? method-str "de-quint")
+    (string-append "quint=" (v "quint") "|bun=" (v "bun") "|sysml=" (v "sysml") "|os=" (v "os")))
+   ((equal? method-str "de-lean-poo")
+    (string-append "lean=" (v "lean") "|sysml=" (v "sysml") "|os=" (v "os")))
+   ((equal? method-str "de-source-contract")
+    (string-append "rustc=" (v "rustc") "|clippy=" (v "clippy") "|os=" (v "os")))
+   ((equal? method-str "de-native-oracle")
+    (string-append "rustc=" (v "rustc") "|os=" (v "os")))
+   (else
+    (string-append "sysml=" (v "sysml") "|os=" (v "os")))))
+
+;; Computes ((step-str toolchain-fingerprint) ...) for every step in `subject-gov-sources`.
+(def (compute-step-toolchain-fingerprints repo-root subject-gov-sources)
+  (def tbl (probe-host-toolchain-versions repo-root))
+  (map (lambda (row)
+         (def st (car row))
+         (def meth (list-ref row 3))
+         (list st (method-toolchain-fingerprint tbl meth)))
+       (alist-ref subject-gov-sources 'flow_step '())))
+
+(def (trim-nl s)
+  (let loop ((n (string-length s)))
+    (if (and (> n 0)
+             (let ((c (string-ref s (- n 1))))
+               (or (char=? c #\newline) (char=? c #\return) (char=? c #\space))))
+      (loop (- n 1))
+      (substring s 0 n))))
+
+(def (sha256-of-file path)
+  (def out (run-process (list "shasum" "-a" "256" path)))
+  (if (>= (string-length out) 64)
+    (substring out 0 64)
+    (error "failed to compute sha256 for file" path out)))
+
+(def (sha256-of-string text)
+  (def tmpd (trim-nl (run-process (list "mktemp" "-d"))))
+  (try
+    (let ((p (path-expand "payload.txt" tmpd)))
+      (call-with-output-file p (lambda (port) (display text port)))
+      (sha256-of-file p))
+    (finally (run-process (list "rm" "-rf" tmpd)))))
+
+(def (ensure-cache-signing-keypair! key-dir)
+  (unless (file-exists? key-dir)
+    (create-directory* key-dir))
+  (def priv (path-expand "attestation-ed25519.pem" key-dir))
+  (def pub (path-expand "attestation-ed25519.pub.pem" key-dir))
+  (unless (and (file-exists? priv) (file-exists? pub))
+    (run-process (list "openssl" "genpkey" "-algorithm" "ED25519" "-out" priv))
+    (run-process (list "chmod" "600" priv))
+    (run-process (list "openssl" "pkey" "-in" priv "-pubout" "-out" pub)))
+  (def key-id (substring (sha256-of-file pub) 0 16))
+  (.o bind-these: #f
+      private-key: priv
+      public-key: pub
+      key-id: key-id))
+
+(def (ed25519-sign-string priv-pem payload-str)
+  (def tmpd (trim-nl (run-process (list "mktemp" "-d"))))
+  (try
+    (let ((msg-path (path-expand "msg.bin" tmpd))
+          (sig-path (path-expand "sig.bin" tmpd)))
+      (call-with-output-file msg-path (lambda (port) (display payload-str port)))
+      (run-process (list "openssl" "pkeyutl" "-sign" "-rawin"
+                         "-inkey" priv-pem "-in" msg-path "-out" sig-path))
+      (trim-nl (run-process (list "openssl" "base64" "-A" "-in" sig-path))))
+    (finally (run-process (list "rm" "-rf" tmpd)))))
+
+(def (ed25519-verify-string pub-pem payload-str sig-b64)
+  (if (and (string? pub-pem) (file-exists? pub-pem)
+           (string? sig-b64) (> (string-length sig-b64) 0))
+    (let ((tmpd (trim-nl (run-process (list "mktemp" "-d")))))
+      (try
+        (let ((msg-path (path-expand "msg.bin" tmpd))
+              (b64-path (path-expand "sig.b64" tmpd))
+              (sig-path (path-expand "sig.bin" tmpd)))
+          (call-with-output-file msg-path (lambda (port) (display payload-str port)))
+          (call-with-output-file b64-path (lambda (port) (display sig-b64 port)))
+          (let-values (((dcode _dout)
+                        (exec-bash-captured tmpd
+                          "openssl base64 -A -d -in sig.b64 -out sig.bin")))
+            (if (= dcode 0)
+              (let-values (((vcode _vout)
+                            (exec-bash-captured tmpd
+                              (string-append "openssl pkeyutl -verify -rawin -pubin -inkey \""
+                                             pub-pem "\" -sigfile sig.bin -in msg.bin"))))
+                (= vcode 0))
+              #f)))
+        (finally (run-process (list "rm" "-rf" tmpd)))))
+    #f))
+
+(def (hash-table->alist-strings ht)
+  (def acc '())
+  (when (hash-table? ht)
+    (hash-for-each (lambda (k v) (set! acc (cons (cons k v) acc))) ht))
+  acc)
+
+;; Loads persisted verification cache & cryptographically verifies Ed25519 signatures ->
+;; (values cached-witness-rows cached-input-rows cached-toolchain-rows attested-steps entry-by-step-hash).
+(def (load-verification-cache cache-file (pub-key-path #f))
   (def by-step (make-hash-table))
   (if (and cache-file (file-exists? cache-file))
     (let* ((doc (call-with-input-file cache-file (cut read-json <> object-as-hash: #t)))
            (entries (and (hash-table? doc) (hash-get doc "entries")))
            (w-rows '())
-           (i-rows '()))
+           (i-rows '())
+           (tc-rows '())
+           (attested '()))
       (when (hash-table? entries)
         (hash-for-each
           (lambda (step-str rec)
             (when (hash-table? rec)
-              (hash-put! by-step step-str rec)
-              (set! w-rows
-                (cons (list step-str
-                            (or (hash-get rec "obligation") "")
-                            (or (hash-get rec "method") "")
-                            (or (hash-get rec "claimKind") "")
-                            (or (hash-get rec "outcome") "")
-                            (or (hash-get rec "detail") ""))
-                      w-rows))
-              (let ((digs (hash-get rec "inputDigests")))
-                (when (hash-table? digs)
-                  (hash-for-each
-                    (lambda (k v)
-                      (set! i-rows (cons (list step-str k v) i-rows)))
-                    digs)))))
+              (let* ((obl (or (hash-get rec "obligation") ""))
+                     (meth (or (hash-get rec "method") ""))
+                     (ck (or (hash-get rec "claimKind") ""))
+                     (out (or (hash-get rec "outcome") ""))
+                     (det (or (hash-get rec "detail") ""))
+                     (tc (hash-get rec "toolchainFingerprint"))
+                     (sig (hash-get rec "signature"))
+                     (digs (hash-get rec "inputDigests"))
+                     (dig-pairs (hash-table->alist-strings digs)))
+                (hash-put! by-step step-str rec)
+                (set! w-rows (cons (list step-str obl meth ck out det) w-rows))
+                (for-each (lambda (p) (set! i-rows (cons (list step-str (car p) (cdr p)) i-rows)))
+                          dig-pairs)
+                (when (string? tc)
+                  (set! tc-rows (cons (list step-str tc) tc-rows)))
+                (when (and pub-key-path (string? tc) (string? sig))
+                  (let ((canonical
+                         (canonical-witness-signing-payload
+                           step-str obl meth ck out det tc dig-pairs)))
+                    (when (ed25519-verify-string pub-key-path canonical sig)
+                      (set! attested (cons step-str attested))))))))
           entries))
-      (values (reverse w-rows) (reverse i-rows) by-step))
-    (values '() '() by-step)))
+      (values (reverse w-rows) (reverse i-rows) (reverse tc-rows) (reverse attested) by-step))
+    (values '() '() '() '() by-step)))
 
-(def (save-verification-cache! cache-file evidence-records input-digest-rows prev-by-step)
+(def (save-verification-cache!
+       cache-file
+       evidence-records
+       input-digest-rows
+       prev-by-step
+       (toolchain-rows '())
+       (keypair #f)
+       (reused-steps '()))
   (def entries (make-hash-table))
   ;; Preserve prior passing entries for any steps not overwritten.
   (hash-for-each (lambda (k v) (hash-put! entries k v)) prev-by-step)
-  ;; Index current input digests by step-str.
+  ;; Index current input digests and toolchain fingerprints by step-str.
   (def digs-by-step (make-hash-table))
   (for-each
     (lambda (row)
@@ -397,29 +552,94 @@
         (hash-put! sub k d)
         (hash-put! digs-by-step st sub)))
     input-digest-rows)
+  (def tc-by-step (make-hash-table))
+  (for-each (lambda (row) (hash-put! tc-by-step (car row) (cadr row))) toolchain-rows)
   ;; Only persist PASSING evidence records (never cache failures!).
+  ;; Reused steps keep their exact prior signed entry untouched.
   (for-each
     (lambda (ev)
       (when (eq? (.get ev outcome) 'pass)
         (let ((st (symbol->string (.get ev step))))
-          (hash-put! entries st
-            (hash ("obligation" (symbol->string (.get ev obligation)))
-                  ("method" (symbol->string (.get ev method)))
-                  ("claimKind" (symbol->string (.get ev claim-kind)))
-                  ("outcome" "pass")
-                  ("detail" (.get ev detail))
-                  ("inputDigests" (or (hash-get digs-by-step st) (make-hash-table))))))))
+          (unless (and (member st reused-steps) (hash-key? prev-by-step st))
+            (let* ((obl (symbol->string (.get ev obligation)))
+                   (meth (symbol->string (.get ev method)))
+                   (ck (symbol->string (.get ev claim-kind)))
+                   (det (.get ev detail))
+                   (tc (or (hash-get tc-by-step st) ""))
+                   (digs (or (hash-get digs-by-step st) (make-hash-table)))
+                   (dig-pairs (hash-table->alist-strings digs))
+                   (entry
+                     (hash ("obligation" obl)
+                           ("method" meth)
+                           ("claimKind" ck)
+                           ("outcome" "pass")
+                           ("detail" det)
+                           ("toolchainFingerprint" tc)
+                           ("inputDigests" digs))))
+              (when keypair
+                (let* ((canonical
+                        (canonical-witness-signing-payload
+                          st obl meth ck "pass" det tc dig-pairs))
+                       (sig (ed25519-sign-string (.get keypair private-key) canonical)))
+                  (hash-put! entry "keyId" (.get keypair key-id))
+                  (hash-put! entry "signature" sig)))
+              (hash-put! entries st entry))))))
     evidence-records)
   (def parent-dir (path-directory cache-file))
   (unless (file-exists? parent-dir)
     (create-directory* parent-dir))
+  (def doc
+    (hash ("schema" "deterministic-engineering.verification-cache.v2")
+          ("entries" entries)))
+  (when keypair
+    (hash-put! doc "attestation"
+      (hash ("algorithm" "Ed25519")
+            ("keyId" (.get keypair key-id))
+            ("publicKeyPath" (.get keypair public-key)))))
   (call-with-output-file cache-file
     (lambda (port)
-      (write-json
-        port
-        (hash ("schema" "deterministic-engineering.verification-cache.v1")
-              ("entries" entries)))
+      (write-json port doc)
       (newline port))))
+
+;; Offline verifier for a signed multi-method verification report (`report.json`).
+(def (verify-verification-report-attestation report-path (override-pub-key #f))
+  (and (file-exists? report-path)
+       (let* ((doc (call-with-input-file report-path (cut read-json <> object-as-hash: #t)))
+              (att (and (hash-table? doc) (hash-get doc "attestation"))))
+         (and (hash-table? att)
+              (equal? (hash-get att "algorithm") "Ed25519")
+              (let* ((pub (or override-pub-key (hash-get att "publicKeyPath")))
+                     (sig (hash-get att "signature"))
+                     (expected-kid (hash-get att "keyId"))
+                     (expected-sha (hash-get att "payloadSha256"))
+                     (actual-kid (and (string? pub) (file-exists? pub)
+                                      (substring (sha256-of-file pub) 0 16)))
+                     (admitted-raw (or (hash-get doc "verificationAdmitted") '()))
+                     (admitted-flat (map (lambda (r) (if (pair? r) (car r) r)) admitted-raw))
+                     (ev-raw (or (hash-get doc "evidence") '()))
+                     (ev-rows
+                       (map (lambda (e)
+                              (list (or (hash-get e "step") "")
+                                    (or (hash-get e "obligation") "")
+                                    (or (hash-get e "method") "")
+                                    (or (hash-get e "claimKind") "")
+                                    (or (hash-get e "outcome") "")
+                                    (or (hash-get e "detail") "")))
+                            ev-raw))
+                     (tc-pairs (hash-table->alist-strings (hash-get doc "toolchainFingerprints")))
+                     (canonical
+                       (canonical-report-signing-payload
+                         (or (hash-get doc "subject") "")
+                         (or (hash-get doc "requestId") "")
+                         (or (hash-get doc "replayStatus") "")
+                         (and (hash-get doc "replayValid") #t)
+                         admitted-flat
+                         ev-rows
+                         tc-pairs))
+                     (actual-sha (sha256-of-string canonical)))
+                (and (equal? actual-kid expected-kid)
+                     (equal? actual-sha expected-sha)
+                     (ed25519-verify-string pub canonical sig)))))))
 
 ;; Cache-aware Fun-Flow RuntimeAdapter: skips subprocess execution iff ASCENT IR01-IR04
 ;; explicitly admitted the step into `step_reusable`.
@@ -531,12 +751,25 @@
     (def dag-receipt (subject->dag-receipt subject-obj))
     (def dag-manifest (subject->dag-runtime-manifest subject-obj request-id))
 
-    ;; 4. Compute SHA-256 input closure & run ASCENT IR01-IR04 incremental reuse gate.
+    ;; 4. Compute SHA-256 input closure, live verifier toolchain fingerprints (IR05),
+    ;;    Ed25519 cache attestation verification (IR06), & ASCENT IR01-IR06 reuse gate.
+    (def resolved-cache-dir (and cache-dir (path-expand cache-dir repo-root)))
     (def cache-file
-      (and cache-dir (path-expand "verification-cache.v1.json" (path-expand cache-dir repo-root))))
+      (and resolved-cache-dir (path-expand "verification-cache.v1.json" resolved-cache-dir)))
+    (def keypair
+      (cond
+       (resolved-cache-dir (ensure-cache-signing-keypair! resolved-cache-dir))
+       (output-dir (ensure-cache-signing-keypair!
+                     (path-expand ".data/verification-keys" repo-root)))
+       (else #f)))
     (def current-digests (if cache-file (compute-step-input-digests repo-root step-input-files) '()))
-    (let-values (((cached-w-rows cached-i-rows cached-by-step)
-                  (load-verification-cache cache-file)))
+    (def current-toolchains (compute-step-toolchain-fingerprints repo-root subject-gov-sources))
+    (def effective-policy-flags
+      (if (and cache-file (not (member "require-signed-cache" policy-flags)))
+        (cons "require-signed-cache" policy-flags)
+        policy-flags))
+    (let-values (((cached-w-rows cached-i-rows cached-tc-rows attested-steps cached-by-step)
+                  (load-verification-cache cache-file (and keypair (.get keypair public-key)))))
       (def reuse-plan
         (if cache-file
           (reuse-result->plan
@@ -544,13 +777,16 @@
               (build-incremental-reuse-sources
                 subject-gov-sources
                 step-mutability
-                policy-flags
+                effective-policy-flags
                 current-digests
                 cached-w-rows
-                cached-i-rows)))
+                cached-i-rows
+                current-toolchains
+                cached-tc-rows
+                attested-steps)))
           #f))
 
-      ;; 5. Execute the 4-engine Fun-Flow DAG via upstream make-runner / runner-run.
+      ;; 5. Execute the Fun-Flow DAG via upstream make-runner / runner-run.
       (def strategy
         (if cache-file (make-cached-local-eager-strategy) (make-local-eager-strategy)))
       (def adapter-bundle
@@ -567,21 +803,25 @@
       (def root-receipt (run-result-receipt run-res))
       (def replay-rep (validate-replay-report plan root-receipt))
 
-      ;; 6. Extract all 4 VerificationEvidenceRecordType from Fun-Flow Receipt tree
+      ;; 6. Extract VerificationEvidenceRecordType from Fun-Flow Receipt tree
       ;;    and admit against LIVE SysML v2 obligations/premises via ASCENT ER01-ER04!
       (def evidence-records (receipt-tree->evidence-records root-receipt))
       (def er-sources (governance+evidence->admission-sources subject-gov-sources evidence-records))
       (def er-result (reason-verification-evidence-admission er-sources))
       (def exec-stats ((.get adapter-bundle stats)))
 
-      ;; Persist passing receipts into content-addressed cache if cache-dir enabled.
+      ;; Persist Ed25519-signed passing receipts into content-addressed cache if cache-dir enabled.
       (when cache-file
-        (save-verification-cache! cache-file evidence-records current-digests cached-by-step))
+        (save-verification-cache!
+          cache-file evidence-records current-digests cached-by-step
+          current-toolchains keypair (.get exec-stats reused)))
 
       (def cache-summary
         (.o bind-these: #f
             enabled?: (and cache-file #t)
             cache-path: (or cache-file "")
+            key-id: (if keypair (.get keypair key-id) "")
+            attested-hits: attested-steps
             executed: (.get exec-stats executed)
             reused: (.get exec-stats reused)
             invalidations: (if reuse-plan (.get reuse-plan invalidations) '())))
@@ -592,32 +832,64 @@
             (when (file-exists? resolved-out)
               (error "fresh verification output directory required" resolved-out))
             (create-directory resolved-out)
-            (let ((rpath (path-expand "report.json" resolved-out)))
+            (let* ((rpath (path-expand "report.json" resolved-out))
+                   (admitted-rows (wire-rows ((.ref er-result 'rows-of) 'verification_admitted)))
+                   (tc-hash (make-hash-table))
+                   (tc-pairs (map (lambda (r)
+                                    (hash-put! tc-hash (car r) (cadr r))
+                                    (cons (car r) (cadr r)))
+                                  current-toolchains))
+                   (ev-rows (map (lambda (ev)
+                                   (list (symbol->string (.get ev step))
+                                         (symbol->string (.get ev obligation))
+                                         (symbol->string (.get ev method))
+                                         (symbol->string (.get ev claim-kind))
+                                         (symbol->string (.get ev outcome))
+                                         (.get ev detail)))
+                                 evidence-records))
+                   (canonical-rep
+                     (canonical-report-signing-payload
+                       (symbol->string subject-id)
+                       request-id
+                       (symbol->string (replay-report-status replay-rep))
+                       (replay-report-valid? replay-rep)
+                       (map car admitted-rows)
+                       ev-rows
+                       tc-pairs))
+                   (report-doc
+                     (hash
+                       ("schema" "deterministic-engineering.multi-method-verification-report.v2")
+                       ("subject" (symbol->string subject-id))
+                       ("requestId" request-id)
+                       ("sysmlSource" sysml-path)
+                       ("funflowManifestSchema" (symbol->string (cdr (assoc 'schema dag-manifest))))
+                       ("replayStatus" (symbol->string (replay-report-status replay-rep)))
+                       ("replayValid" (replay-report-valid? replay-rep))
+                       ("toolchainFingerprints" tc-hash)
+                       ("mrFindings" (wire-rows mr-findings))
+                       ("mrOpenPremises" (wire-rows mr-open-premises))
+                       ("erFindings" (wire-rows ((.ref er-result 'rows-of) 'er_finding)))
+                       ("obligationsPassed" (wire-rows ((.ref er-result 'rows-of) 'obligation_passed)))
+                       ("premisesVerified" (wire-rows ((.ref er-result 'rows-of) 'premise_verified)))
+                       ("verificationAdmitted" admitted-rows)
+                       ("cacheSummary"
+                        (hash ("enabled" (.get cache-summary enabled?))
+                              ("cachePath" (.get cache-summary cache-path))
+                              ("keyId" (.get cache-summary key-id))
+                              ("executed" (.get cache-summary executed))
+                              ("reused" (.get cache-summary reused))
+                              ("invalidations" (wire-rows (.get cache-summary invalidations)))))
+                       ("evidence" (map evidence-record->json-hash evidence-records)))))
+              (when keypair
+                (hash-put! report-doc "attestation"
+                  (hash ("algorithm" "Ed25519")
+                        ("keyId" (.get keypair key-id))
+                        ("publicKeyPath" (.get keypair public-key))
+                        ("payloadSha256" (sha256-of-string canonical-rep))
+                        ("signature" (ed25519-sign-string (.get keypair private-key) canonical-rep)))))
               (call-with-output-file rpath
                 (lambda (port)
-                  (write-json
-                    port
-                    (hash
-                      ("schema" "deterministic-engineering.multi-method-verification-report.v1")
-                      ("subject" (symbol->string subject-id))
-                      ("requestId" request-id)
-                      ("sysmlSource" sysml-path)
-                      ("funflowManifestSchema" (symbol->string (cdr (assoc 'schema dag-manifest))))
-                      ("replayStatus" (symbol->string (replay-report-status replay-rep)))
-                      ("replayValid" (replay-report-valid? replay-rep))
-                      ("mrFindings" (wire-rows mr-findings))
-                      ("mrOpenPremises" (wire-rows mr-open-premises))
-                      ("erFindings" (wire-rows ((.ref er-result 'rows-of) 'er_finding)))
-                      ("obligationsPassed" (wire-rows ((.ref er-result 'rows-of) 'obligation_passed)))
-                      ("premisesVerified" (wire-rows ((.ref er-result 'rows-of) 'premise_verified)))
-                      ("verificationAdmitted" (wire-rows ((.ref er-result 'rows-of) 'verification_admitted)))
-                      ("cacheSummary"
-                       (hash ("enabled" (.get cache-summary enabled?))
-                             ("cachePath" (.get cache-summary cache-path))
-                             ("executed" (.get cache-summary executed))
-                             ("reused" (.get cache-summary reused))
-                             ("invalidations" (wire-rows (.get cache-summary invalidations)))))
-                      ("evidence" (map evidence-record->json-hash evidence-records))))
+                  (write-json port report-doc)
                   (newline port)))
               rpath))
           #f))

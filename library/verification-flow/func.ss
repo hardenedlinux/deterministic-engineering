@@ -33,6 +33,8 @@
   alist-ref
   alist-replace
   filter-governance-sources-for-subject
+  canonical-witness-signing-payload
+  canonical-report-signing-payload
   flow-of
   run-ascent-program
   adapter-result->raw-receipt
@@ -92,6 +94,75 @@
           (filter (lambda (r) (in-steps? (car r))) (alist-ref gov-sources 'step_countermodel '())))
     (cons 'declared_os_containment
           (filter (lambda (r) (equal? (car r) sid)) (alist-ref gov-sources 'declared_os_containment '())))))
+
+;; ── Injection-proof canonical payload framing for Ed25519 cache & report attestation ──
+
+(def (sort-by lst less?)
+  (define (insert x sorted)
+    (cond
+     ((null? sorted) (list x))
+     ((less? x (car sorted)) (cons x sorted))
+     (else (cons (car sorted) (insert x (cdr sorted))))))
+  (let loop ((xs lst) (acc '()))
+    (if (null? xs) acc (loop (cdr xs) (insert (car xs) acc)))))
+
+(def (frame-canonical-kv k v)
+  (def ks (sym->str k))
+  (def vs (sym->str v))
+  (string-append ks "=" (number->string (string-length vs)) ":" vs "\n"))
+
+;; Deterministic, collision-free byte representation of a cached verification witness.
+;; `input-pairs` is an alist of (path-string . sha256-hex-string) sorted lexicographically.
+(def (canonical-witness-signing-payload step obligation method claim-kind outcome detail toolchain input-pairs)
+  (def sorted-inputs
+    (sort-by (map (lambda (p) (cons (sym->str (car p)) (sym->str (cdr p)))) input-pairs)
+             (lambda (a b) (string<? (car a) (car b)))))
+  (apply string-append
+    (append
+      (list "de.verification-witness.v2\n"
+            (frame-canonical-kv "step" step)
+            (frame-canonical-kv "obligation" obligation)
+            (frame-canonical-kv "method" method)
+            (frame-canonical-kv "claimKind" claim-kind)
+            (frame-canonical-kv "outcome" outcome)
+            (frame-canonical-kv "detail" detail)
+            (frame-canonical-kv "toolchain" toolchain)
+            (frame-canonical-kv "inputCount" (number->string (length sorted-inputs))))
+      (map (lambda (p) (frame-canonical-kv (string-append "in:" (car p)) (cdr p)))
+           sorted-inputs))))
+
+;; Deterministic canonical payload for an emitted multi-method verification report.
+;; `evidence-rows` is a list of (step obligation method claim-kind outcome detail) lists.
+;; `toolchain-pairs` is an alist of (step . toolchain-fingerprint).
+(def (canonical-report-signing-payload subject request-id replay-status replay-valid? admitted-subjects evidence-rows toolchain-pairs)
+  (def sorted-admitted (sort-by (map sym->str admitted-subjects) string<?))
+  (def sorted-ev
+    (sort-by (map (lambda (r) (map sym->str r)) evidence-rows)
+             (lambda (a b) (string<? (car a) (car b)))))
+  (def sorted-tc
+    (sort-by (map (lambda (p) (cons (sym->str (car p)) (sym->str (cdr p)))) toolchain-pairs)
+             (lambda (a b) (string<? (car a) (car b)))))
+  (apply string-append
+    (append
+      (list "de.verification-report.v2\n"
+            (frame-canonical-kv "subject" subject)
+            (frame-canonical-kv "requestId" request-id)
+            (frame-canonical-kv "replayStatus" replay-status)
+            (frame-canonical-kv "replayValid" (if replay-valid? "true" "false"))
+            (frame-canonical-kv "admittedCount" (number->string (length sorted-admitted))))
+      (map (lambda (s) (frame-canonical-kv "admitted" s)) sorted-admitted)
+      (list (frame-canonical-kv "toolchainCount" (number->string (length sorted-tc))))
+      (map (lambda (p) (frame-canonical-kv (string-append "tc:" (car p)) (cdr p))) sorted-tc)
+      (list (frame-canonical-kv "evidenceCount" (number->string (length sorted-ev))))
+      (map (lambda (ev)
+             (string-append
+               (frame-canonical-kv "ev.step" (list-ref ev 0))
+               (frame-canonical-kv "ev.obligation" (list-ref ev 1))
+               (frame-canonical-kv "ev.method" (list-ref ev 2))
+               (frame-canonical-kv "ev.claimKind" (list-ref ev 3))
+               (frame-canonical-kv "ev.outcome" (list-ref ev 4))
+               (frame-canonical-kv "ev.detail" (list-ref ev 5))))
+           sorted-ev))))
 
 ;; Polymorphic unwrapper: extracts `.flow` from a VerificationStep or passes a Flow through.
 (def (flow-of step-or-flow)

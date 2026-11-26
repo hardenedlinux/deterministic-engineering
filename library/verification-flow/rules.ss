@@ -48,15 +48,19 @@
                       "incremental cache reuse"
                       replacements))
 
-;; Pure projector assembling IR01-IR04 ASCENT sources from governance sources,
-;; mutability annotations, policy flags, current input digests, and cached witnesses.
+;; Pure projector assembling IR01-IR06 ASCENT sources from governance sources,
+;; mutability annotations, policy flags, current input digests, cached witnesses,
+;; optional live/cached toolchain fingerprints (IR05), and verified attested steps (IR06).
 (def (build-incremental-reuse-sources
        gov-sources
        mutability-rows
        policy-flags
        current-input-rows
        cached-witness-rows
-       cached-input-rows)
+       cached-input-rows
+       (current-toolchain-rows '())
+       (cached-toolchain-rows '())
+       (attested-steps '()))
   (list
     (cons 'flow_step (alist-ref gov-sources 'flow_step '()))
     (cons 'flow_dag_edge (alist-ref gov-sources 'flow_dag_edge '()))
@@ -71,7 +75,15 @@
           (map (lambda (r) (map sym->str r)) cached-witness-rows))
     (cons 'cached_witness_input
           (map (lambda (r) (list (sym->str (car r)) (sym->str (cadr r)) (caddr r)))
-               cached-input-rows))))
+               cached-input-rows))
+    (cons 'step_toolchain_fingerprint
+          (map (lambda (r) (list (sym->str (car r)) (sym->str (cadr r))))
+               current-toolchain-rows))
+    (cons 'cached_witness_toolchain
+          (map (lambda (r) (list (sym->str (car r)) (sym->str (cadr r))))
+               cached-toolchain-rows))
+    (cons 'cached_witness_attested
+          (map (lambda (s) (list (sym->str s))) attested-steps))))
 
 ;; Pure projection of an IR01-IR04 ASCENT result into a concise planning object.
 (def (reuse-result->plan reuse-res)

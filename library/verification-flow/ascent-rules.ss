@@ -224,9 +224,10 @@
 (def VerificationEvidenceAdmissionDeclaration (make-verification-evidence-admission-program))
 (def VerificationEvidenceAdmissionProgram (rule-module-program VerificationEvidenceAdmissionDeclaration))
 
-;; ── Phase 3: Content-Addressed Incremental Cache Reuse & Selective Invalidation (IR01-IR04) ──
+;; ── Phase 3: Content-Addressed & Attested Incremental Cache Reuse (IR01-IR06) ──
 ;; Computes the exact pending vs reusable step frontier via stratified fixed-point
-;; over input digests, DAG artifact edges, and M1/M3 mutability boundaries (10.153 F2 / 10.154 M5).
+;; over input digests, DAG artifact edges, M1/M3 mutability boundaries, live
+;; toolchain/host fingerprints (IR05), and Ed25519 attestation (IR06).
 (define-program
   (make-incremental-reuse-program)
   (sources
@@ -236,10 +237,14 @@
    reuse_policy
    step_input_digest
    cached_witness
-   cached_witness_input)
+   cached_witness_input
+   step_toolchain_fingerprint
+   cached_witness_toolchain
+   cached_witness_attested)
   (outputs
    step_has_passing_cache
    step_input_dirty
+   step_toolchain_dirty
    step_invalidated
    step_pending
    step_reusable)
@@ -250,12 +255,18 @@
   (relation step_input_digest ((step string?) (input_key string?) (digest string?)))
   (relation cached_witness ((step string?) (obligation string?) (method string?) (claim_kind string?) (outcome string?) (detail string?)))
   (relation cached_witness_input ((step string?) (input_key string?) (digest string?)))
+  (relation step_toolchain_fingerprint ((step string?) (fingerprint string?)))
+  (relation cached_witness_toolchain ((step string?) (fingerprint string?)))
+  (relation cached_witness_attested ((step string?)))
 
   (relation step_has_passing_cache ((step string?)))
   (relation input_mismatch ((step string?) (input_key string?)))
   (relation input_missing_in_cache ((step string?) (input_key string?)))
   (relation input_extra_in_cache ((step string?) (input_key string?)))
   (relation step_input_dirty ((step string?)))
+  (relation toolchain_mismatch ((step string?)))
+  (relation toolchain_missing_in_cache ((step string?)))
+  (relation step_toolchain_dirty ((step string?)))
   (relation step_invalidated ((step string?) (reason string?)))
   (relation step_pending ((step string?)))
   (relation step_reusable ((step string?)))
@@ -288,6 +299,21 @@
   ((step_input_dirty Step) <-- (input_missing_in_cache Step _))
   ((step_input_dirty Step) <-- (input_extra_in_cache Step _))
 
+  ;; Exact verifier toolchain & host OS/arch comparison (IR05).
+  ((toolchain_mismatch Step)
+   <--
+   (step_toolchain_fingerprint Step F1)
+   (cached_witness_toolchain Step F2)
+   (if (F1 F2) (not (equal? F1 F2))))
+
+  ((toolchain_missing_in_cache Step)
+   <--
+   (step_toolchain_fingerprint Step _)
+   (not (cached_witness_toolchain Step _)))
+
+  ((step_toolchain_dirty Step) <-- (toolchain_mismatch Step))
+  ((step_toolchain_dirty Step) <-- (toolchain_missing_in_cache Step))
+
   ;; IR01: missing or non-pass cached witness forces execution.
   ((step_invalidated Step (lit "IR01-no-passing-cache"))
    <--
@@ -312,6 +338,19 @@
    (flow_step Step _ _ _ _)
    (step_mutability Step (lit "M3-mutable-root"))
    (reuse_policy (lit "require-fresh-m3")))
+
+  ;; IR05: verifier toolchain, compiler, or host OS/arch drift invalidates cached proofs.
+  ((step_invalidated Step (lit "IR05-toolchain-drift"))
+   <--
+   (flow_step Step _ _ _ _)
+   (step_toolchain_dirty Step))
+
+  ;; IR06: under require-signed-cache, unsigned or cryptographically tampered witnesses are rejected.
+  ((step_invalidated Step (lit "IR06-attestation-invalid"))
+   <--
+   (flow_step Step _ _ _ _)
+   (reuse_policy (lit "require-signed-cache"))
+   (not (cached_witness_attested Step)))
 
   ;; Partition every declared step into exactly pending or reusable.
   ((step_pending Step)
