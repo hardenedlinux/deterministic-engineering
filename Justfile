@@ -545,3 +545,9 @@ verify-multi-method-cache cache_file trust_store:
     #!/usr/bin/env bash
     set -euo pipefail
     {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/offline-attestation-verifier.ss --verify-cache "{{cache_file}}" "{{trust_store}}"
+
+# Offline zero-execution air-gapped self-audit for a Multi-Key Ed25519 Trust Store JSON (supports --json).
+verify-multi-method-trust-store trust_store *flags:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/offline-attestation-verifier.ss {{flags}} --verify-trust-store "{{trust_store}}"

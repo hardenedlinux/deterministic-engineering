@@ -413,4 +413,70 @@
           (check-equal? (hash-get doc "ok") #f)
           (check (string? (hash-get doc "reason")) => #t)))
 
+      ;; Attack 19: Symlink PEM substitution inside trust-store.json -> MUST throw!
+      (def k1-symlink (path-expand "k1-link.pub.pem" keys-dir))
+      (create-symbolic-link (caddr k1) k1-symlink)
+      (def ts-sym-pem (path-expand "trust-sym-pem.json" work))
+      (def tk-sym (make-hash-table))
+      (hash-put! tk-sym kid1 "keys/k1-link.pub.pem")
+      (write-json-file ts-sym-pem
+        (hash ("schema" "de.attestation.ed25519-trust-store.v1")
+              ("trustedKeys" tk-sym) ("revokedKeyIds" '())))
+      (check-equal? (throws? (lambda () (load-trust-store-json-lite ts-sym-pem))) #t)
+
+      ;; Attack 20A: Relative `..` traversal in trust-store.json PEM path -> MUST throw!
+      (def ts-trav-pem (path-expand "trust-trav-pem.json" subfleet-dir))
+      (def tk-trav (make-hash-table))
+      (hash-put! tk-trav kid1 "../keys/k1.pub.pem")
+      (write-json-file ts-trav-pem
+        (hash ("schema" "de.attestation.ed25519-trust-store.v1")
+              ("trustedKeys" tk-trav) ("revokedKeyIds" '())))
+      (check-equal? (throws? (lambda () (load-trust-store-json-lite ts-trav-pem))) #t)
+
+      ;; Attack 20B: `--json --verify-trust-store` self-audit CLI:
+      ;;   - Valid store with K1 revoked & K2 active -> exit 0, ok=#t, activeKeyIds=[kid2], revokedKeyIds=[kid1]
+      ;;   - Lockout store with ALL keys revoked (0 active) -> exit != 0, ok=#f!
+      (def (run-ts-audit-cli store)
+        (let* ((cmd (string-append
+                      "cd \"" repo-root "\" && "
+                      "gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q "
+                      "t/support/offline-attestation-verifier.ss --json --verify-trust-store "
+                      "\"" store "\""))
+               (proc (open-process
+                       (list path: "/bin/bash"
+                             arguments: (list "-euo" "pipefail" "-c" cmd)
+                             stdin-redirection: #f
+                             stdout-redirection: #t
+                             stderr-redirection: #t)))
+               (out (read-all-as-string proc))
+               (st (process-status proc)))
+          (close-port proc)
+          (values st out)))
+      (def ts-rot-k1-rev (path-expand "trust-k1-rev-k2-active.json" work))
+      (write-json-file ts-rot-k1-rev
+        (hash ("schema" "de.attestation.ed25519-trust-store.v1")
+              ("trustedKeys" tk-rel) ("revokedKeyIds" (list kid1))))
+      (let-values (((st out) (run-ts-audit-cli ts-rot-k1-rev)))
+        (check-equal? st 0)
+        (let* ((json-line (car (filter (lambda (ln) (and (> (string-length ln) 0)
+                                                         (char=? (string-ref ln 0) #\{)))
+                                       (string-split out #\newline))))
+               (doc (call-with-input-string json-line (cut read-json <> object-as-hash: #t))))
+          (check-equal? (hash-get doc "ok") #t)
+          (check-equal? (hash-get doc "mode") "verify-trust-store")
+          (check-equal? (hash-get doc "activeKeyIds") (list kid2))
+          (check-equal? (hash-get doc "revokedKeyIds") (list kid1))))
+      (def ts-lockout (path-expand "trust-zero-active.json" work))
+      (write-json-file ts-lockout
+        (hash ("schema" "de.attestation.ed25519-trust-store.v1")
+              ("trustedKeys" tk-rel) ("revokedKeyIds" (list kid1 kid2))))
+      (let-values (((st out) (run-ts-audit-cli ts-lockout)))
+        (check (not (= st 0)) => #t)
+        (let* ((json-line (car (filter (lambda (ln) (and (> (string-length ln) 0)
+                                                         (char=? (string-ref ln 0) #\{)))
+                                       (string-split out #\newline))))
+               (doc (call-with-input-string json-line (cut read-json <> object-as-hash: #t))))
+          (check-equal? (hash-get doc "ok") #f)
+          (check-equal? (hash-get doc "activeKeyIds") '())))
+
       (run-process (list "rm" "-rf" work)))))

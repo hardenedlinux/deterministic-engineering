@@ -101,7 +101,23 @@
         #f))
     #f))
 
-;; Returns `(cons trusted-keys-alist revoked-key-ids-list)` after validating schema & keyId SHA-256.
+(def (resolve-trusted-pem-path base-dir raw-path)
+  (unless (and (string? raw-path) (> (string-length raw-path) 0))
+    (error "Invalid trusted public key path" raw-path))
+  (if (char=? (string-ref raw-path 0) #\/)
+    (let ((ftype (with-catch (lambda (_) #f)
+                   (lambda () (file-info-type (file-info raw-path #f))))))
+      (unless (eq? ftype 'regular)
+        (error "Trusted public key must be an existing regular non-symlink file" raw-path))
+      raw-path)
+    (let ((contained (resolve-contained-child-report-path base-dir raw-path)))
+      (unless contained
+        (error "Relative trusted public key path rejected (missing, traversal, or symlink)"
+               raw-path base-dir))
+      contained)))
+
+;; Returns `(cons trusted-keys-alist revoked-key-ids-list)` after validating schema,
+;; non-symlink regular PEM files, and keyId SHA-256 anti-spoofing.
 (def (load-trust-store-json-lite store-path)
   (unless (and (string? store-path) (file-exists? store-path))
     (error "Ed25519 trust store file not found" store-path))
@@ -118,14 +134,12 @@
     (lambda (declared-kid raw-path)
       (unless (and (string? declared-kid) (string? raw-path))
         (error "Invalid trustedKeys entry" declared-kid raw-path))
-      (let ((resolved (path-expand raw-path base-dir)))
-        (unless (file-exists? resolved)
-          (error "Trusted public key file missing" declared-kid resolved))
-        (let ((actual-kid (substring (sha256-file resolved) 0 16)))
-          (unless (equal? actual-kid declared-kid)
-            (error "Trusted public keyId mismatch (possible spoofing)"
-                   declared-kid actual-kid resolved))
-          (set! trusted (cons (cons declared-kid resolved) trusted)))))
+      (let* ((resolved (resolve-trusted-pem-path base-dir raw-path))
+             (actual-kid (substring (sha256-file resolved) 0 16)))
+        (unless (equal? actual-kid declared-kid)
+          (error "Trusted public keyId mismatch (possible spoofing)"
+                 declared-kid actual-kid resolved))
+        (set! trusted (cons (cons declared-kid resolved) trusted))))
     keys-ht)
   (def revoked (filter string? (or (hash-get doc "revokedKeyIds") '())))
   (cons (reverse trusted) revoked))
@@ -271,55 +285,97 @@
 (def (main . args)
   (def json-mode? (and (member "--json" args) #t))
   (def clean-args (filter (lambda (a) (not (equal? a "--json"))) args))
-  (unless (= (length clean-args) 3)
-    (error "usage: [--json] --verify-report|--verify-fleet|--verify-cache <artifact.json> <trust-store.json>"
+  (when (null? clean-args)
+    (error "usage: [--json] --verify-report|--verify-fleet|--verify-cache <artifact.json> <trust-store.json> | [--json] --verify-trust-store <trust-store.json>"
            args))
-  (def mode (list-ref clean-args 0))
-  (def target-path (list-ref clean-args 1))
-  (def store-path (list-ref clean-args 2))
-  (def trust-pair
-    (with-catch
-      (lambda (e)
-        (if json-mode?
-          (begin
-            (emit-json-result! #f mode target-path store-path
-              (string-append "trust-store load failed: " (error-message e)))
-            (exit 1))
-          (raise e)))
-      (lambda () (load-trust-store-json-lite store-path))))
-  (cond
-   ((equal? mode "--verify-report")
-    (if (verify-report-offline target-path trust-pair)
-      (if json-mode?
-        (emit-json-result! #t "verify-report" target-path store-path "authentic-admitted-report")
-        (displayln "MULTI-METHOD-VERIFY-REPORT-OK " target-path))
-      (if json-mode?
-        (begin
-          (emit-json-result! #f "verify-report" target-path store-path "offline report verification failed")
-          (exit 1))
-        (error "offline report verification failed" target-path))))
-   ((equal? mode "--verify-fleet")
-    (if (verify-fleet-offline target-path trust-pair)
-      (if json-mode?
-        (emit-json-result! #t "verify-fleet" target-path store-path "authentic-2-level-merkle-fleet")
-        (displayln "MULTI-METHOD-VERIFY-FLEET-OK " target-path))
-      (if json-mode?
-        (begin
-          (emit-json-result! #f "verify-fleet" target-path store-path "offline fleet verification failed")
-          (exit 1))
-        (error "offline fleet verification failed" target-path))))
-   ((equal? mode "--verify-cache")
-    (let ((n (verify-cache-offline target-path trust-pair)))
-      (if n
-        (if json-mode?
-          (emit-json-result! #t "verify-cache" target-path store-path "all-cache-witnesses-verified"
-            (list (cons "entries" n)))
-          (displayln "MULTI-METHOD-VERIFY-CACHE-OK " target-path " entries=" n))
-        (if json-mode?
-          (begin
-            (emit-json-result! #f "verify-cache" target-path store-path "offline cache verification failed")
-            (exit 1))
-          (error "offline cache verification failed" target-path)))))
-   (else
-    (error "usage: [--json] --verify-report|--verify-fleet|--verify-cache <artifact.json> <trust-store.json>"
-           mode))))
+  (def mode (car clean-args))
+  (if (equal? mode "--verify-trust-store")
+    (begin
+      (unless (= (length clean-args) 2)
+        (error "usage: [--json] --verify-trust-store <trust-store.json>" args))
+      (let* ((store-path (cadr clean-args))
+             (trust-pair
+               (with-catch
+                 (lambda (e)
+                   (if json-mode?
+                     (begin
+                       (emit-json-result! #f "verify-trust-store" store-path store-path
+                         (string-append "trust-store load failed: " (error-message e)))
+                       (exit 1))
+                     (raise e)))
+                 (lambda () (load-trust-store-json-lite store-path))))
+             (trusted (car trust-pair))
+             (revoked (sort-by (cdr trust-pair) string<?))
+             (active (sort-by
+                       (filter (lambda (kid) (not (member kid revoked)))
+                               (map car trusted))
+                       string<?)))
+        (if (pair? active)
+          (if json-mode?
+            (emit-json-result! #t "verify-trust-store" store-path store-path
+              "trust-store-valid-with-active-keys"
+              (list (cons "activeKeyIds" active)
+                    (cons "revokedKeyIds" revoked)))
+            (displayln "MULTI-METHOD-VERIFY-TRUST-STORE-OK " store-path
+                       " active=" (length active)
+                       " revoked=" (length revoked)))
+          (if json-mode?
+            (begin
+              (emit-json-result! #f "verify-trust-store" store-path store-path
+                "trust-store has zero active unrevoked keys"
+                (list (cons "activeKeyIds" '())
+                      (cons "revokedKeyIds" revoked)))
+              (exit 1))
+            (error "trust-store has zero active unrevoked keys" store-path)))))
+    (begin
+      (unless (= (length clean-args) 3)
+        (error "usage: [--json] --verify-report|--verify-fleet|--verify-cache <artifact.json> <trust-store.json>"
+               args))
+      (let* ((target-path (list-ref clean-args 1))
+             (store-path (list-ref clean-args 2))
+             (trust-pair
+               (with-catch
+                 (lambda (e)
+                   (if json-mode?
+                     (begin
+                       (emit-json-result! #f mode target-path store-path
+                         (string-append "trust-store load failed: " (error-message e)))
+                       (exit 1))
+                     (raise e)))
+                 (lambda () (load-trust-store-json-lite store-path)))))
+        (cond
+         ((equal? mode "--verify-report")
+          (if (verify-report-offline target-path trust-pair)
+            (if json-mode?
+              (emit-json-result! #t "verify-report" target-path store-path "authentic-admitted-report")
+              (displayln "MULTI-METHOD-VERIFY-REPORT-OK " target-path))
+            (if json-mode?
+              (begin
+                (emit-json-result! #f "verify-report" target-path store-path "offline report verification failed")
+                (exit 1))
+              (error "offline report verification failed" target-path))))
+         ((equal? mode "--verify-fleet")
+          (if (verify-fleet-offline target-path trust-pair)
+            (if json-mode?
+              (emit-json-result! #t "verify-fleet" target-path store-path "authentic-2-level-merkle-fleet")
+              (displayln "MULTI-METHOD-VERIFY-FLEET-OK " target-path))
+            (if json-mode?
+              (begin
+                (emit-json-result! #f "verify-fleet" target-path store-path "offline fleet verification failed")
+                (exit 1))
+              (error "offline fleet verification failed" target-path))))
+         ((equal? mode "--verify-cache")
+          (let ((n (verify-cache-offline target-path trust-pair)))
+            (if n
+              (if json-mode?
+                (emit-json-result! #t "verify-cache" target-path store-path "all-cache-witnesses-verified"
+                  (list (cons "entries" n)))
+                (displayln "MULTI-METHOD-VERIFY-CACHE-OK " target-path " entries=" n))
+              (if json-mode?
+                (begin
+                  (emit-json-result! #f "verify-cache" target-path store-path "offline cache verification failed")
+                  (exit 1))
+                (error "offline cache verification failed" target-path)))))
+         (else
+          (error "usage: [--json] --verify-report|--verify-fleet|--verify-cache <artifact.json> <trust-store.json>"
+                 mode)))))))

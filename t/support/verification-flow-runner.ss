@@ -863,11 +863,21 @@
   (def pub-paths '())
   (hash-for-each
     (lambda (declared-kid raw-path)
-      (unless (and (string? declared-kid) (string? raw-path))
+      (unless (and (string? declared-kid) (string? raw-path) (> (string-length raw-path) 0))
         (error "Invalid trustedKeys entry in trust store" declared-kid raw-path))
-      (let ((resolved (path-expand raw-path base-dir)))
-        (unless (file-exists? resolved)
-          (error "Trusted public key file missing" declared-kid resolved))
+      (let ((resolved
+             (if (char=? (string-ref raw-path 0) #\/)
+               (let ((ftype (with-catch (lambda (_) #f)
+                              (lambda () (file-info-type (file-info raw-path #f))))))
+                 (unless (eq? ftype 'regular)
+                   (error "Trusted public key must be an existing regular non-symlink file"
+                          declared-kid raw-path))
+                 raw-path)
+               (let ((contained (resolve-contained-child-report-path base-dir raw-path)))
+                 (unless contained
+                   (error "Relative trusted public key path rejected (missing, traversal, or symlink)"
+                          declared-kid raw-path base-dir))
+                 contained))))
         (let ((actual-kid (substring (sha256-of-file resolved) 0 16)))
           (unless (equal? actual-kid declared-kid)
             (error "Trusted public keyId mismatch (possible spoofing)"
