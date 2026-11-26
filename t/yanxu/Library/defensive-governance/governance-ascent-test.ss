@@ -162,4 +162,40 @@
       (check-equal? (and (member '("p-prose-only" "self-certified-without-oracle") blocked) #t) #t)
       (check-equal? (and (member '("p-evasive-escalate") escalated) #t) #t)
       (check-equal? (and (member '("p-tamper-scope") escalated) #t) #t)
-      (check-equal? (and (member '("p-prose-only") escalated) #t) #t))))
+      (check-equal? (and (member '("p-prose-only") escalated) #t) #t))
+
+    (test-case "R3 assert-m1-persistable! blocks accidental reachability leak of M3 capability and R1 ASCENT co-evolution selectively revalidates"
+      (def m3-cap (make-m3-transient-capability 'cap-deploy "src/**" 7))
+      ;; Pure M1 data (nested POO + lists + strings) passes:
+      (check-equal?
+        (assert-m1-persistable! (.o patch-id: "p1" digest: "abc123" tags: '(m1 immutable)))
+        #t)
+      ;; Accidental reachability leak: M3 capability buried deep inside a POO/list graph MUST be refused!
+      (check-exception
+        (assert-m1-persistable! (.o handoff: (list "ok" (.o nested-cap: m3-cap))))
+        error?)
+      ;; R1 live ASCENT hot policy co-evolution:
+      (def p-facts
+        (list
+          (cons 'suspended_verdict '(("v-auth-affected") ("v-parser-unaffected")))
+          (cons 'verdict_depends_on_domain '(("v-auth-affected" "auth-policy")
+                                             ("v-parser-unaffected" "parser-bounds")))
+          (cons 'verdict_policy_digest '(("v-auth-affected" "pol-v1")
+                                         ("v-parser-unaffected" "pol-v1")))
+          (cons 'active_policy_digest '(("pol-v2")))
+          (cons 'domain_changed_in_upgrade '(("auth-policy")))
+          (cons 'm1_evidence_leaf '(("llm-step-1" "sha-aaa") ("apalache-proof-1" "sha-bbb")))
+          (cons 'frozen_historical_cut '(("cut-v1" "root-111")))))
+      (def pres (reason-hot-policy-coevolution p-facts))
+      (def reval (rows pres 'verdict_needs_revalidation))
+      (def valid (rows pres 'verdict_still_valid))
+      ;; Only v-auth-affected requires revalidation; v-parser-unaffected stays valid without replay crash:
+      (check-equal? (and (member '("v-auth-affected" "affected-domain-changed") reval) #t) #t)
+      (check-equal? (and (member '("v-auth-affected" "stale-policy-digest") reval) #t) #t)
+      (check-equal? valid '(("v-parser-unaffected")))
+      ;; M1 evidence leaves & frozen historical cut remain 100% preserved:
+      (def m1-reuse (rows pres 'm1_evidence_reusable))
+      (check-equal? (length m1-reuse) 2)
+      (check-equal? (and (member '("llm-step-1" "sha-aaa") m1-reuse) #t) #t)
+      (check-equal? (and (member '("apalache-proof-1" "sha-bbb") m1-reuse) #t) #t)
+      (check-equal? (rows pres 'historical_cut_preserved) '(("cut-v1" "root-111"))))))

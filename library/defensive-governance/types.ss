@@ -16,6 +16,7 @@
         AgentHallucinationClassType
         AgentHallucinationControlType
         ReviewTierType
+        M3TransientCapabilityType
         DefensiveGovernanceScopeType)
 
 (define-type GuardWitnessKindType
@@ -58,15 +59,30 @@
       (Exactly 'bounded-contract)
       (Exactly 'semantic-review)))
 
+;; R3: Sealed linear/non-serializable M3 live-authority wrapper.
+;; Any M1 Merkle persistence boundary MUST refuse object graphs reaching this type.
+(define-type
+  (M3TransientCapabilityType @
+   (Record capability-id: [Symbol]
+           scope: [LibraryNonemptyString]
+           revocation-epoch: [Any]
+           mutability: [(Exactly 'M3-mutable-root)]
+           non-serializable?: [(Exactly #t)]))
+  sealed: #t)
+
 (define-type DefensiveGovernanceScopeType
   (.cc
     (Record admit-guard: [Any]
             audit-submission: [Any]
             audit-scheme-datums: [Any]
+            assert-m1-persistable: [Any]
+            make-m3-capability: [Any]
             hallucination-controls: [(List AgentHallucinationControlType)]
             revalidation-program: [Any]
             reason-revalidation: [Any]
             transcript-audit-program: [Any]
             reason-transcript: [Any]
+            policy-coevolution-program: [Any]
+            reason-policy-coevolution: [Any]
             contracts: [Object])
     'identity 'defensive-governance/scope))

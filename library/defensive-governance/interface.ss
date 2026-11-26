@@ -23,15 +23,20 @@
     (.o admit-guard: admit-guard-five-tuple
         audit-submission: audit-agent-defensive-submission
         audit-scheme-datums: audit-scheme-defensive-datums
+        assert-m1-persistable: assert-m1-persistable!
+        make-m3-capability: make-m3-transient-capability
         hallucination-controls: AgentDefensiveHallucinationControls
         revalidation-program: BoundedRevalidationProgram
         reason-revalidation: reason-bounded-revalidation
         transcript-audit-program: AgentTranscriptAuditProgram
         reason-transcript: reason-agent-transcript
+        policy-coevolution-program: HotPolicyCoEvolutionProgram
+        reason-policy-coevolution: reason-hot-policy-coevolution
         contracts: (.o witness-kind: GuardWitnessKindType
                        guard-admission: GuardAdmissionFiveTupleType
                        hallucination-class: AgentHallucinationClassType
                        hallucination-control: AgentHallucinationControlType
                        review-tier: ReviewTierType
+                       m3-capability: M3TransientCapabilityType
                        scope: DefensiveGovernanceScopeType)))
   features: (.o))

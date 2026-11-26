@@ -21,6 +21,60 @@
 import {createHash} from 'node:crypto';
 import type {GovernanceTranscript} from './governance-harness.ts';
 
+/**
+ * R3 (10.156): Unforgeable runtime symbol branding non-serializable M3 live capabilities.
+ * Mechanically eliminates PJama-style accidental reachability leaks into M1 Merkle blobs.
+ */
+export const M3_NON_SERIALIZABLE_CAPABILITY = Symbol.for(
+  'deterministic-engineering.m3.non-serializable-capability',
+);
+
+export class LiveM3Capability {
+  readonly [M3_NON_SERIALIZABLE_CAPABILITY] = true;
+  readonly mutability = 'M3-mutable-root' as const;
+
+  constructor(
+    readonly capabilityId: string,
+    readonly scope: string,
+    readonly revocationEpoch: number,
+  ) {}
+
+  toJSON(): never {
+    throw new Error(
+      `R3 ReachabilityLeakError: LiveM3Capability '${this.capabilityId}' is non-serializable and cannot enter M1 persistence`,
+    );
+  }
+}
+
+export function assertM1Persistable(value: unknown, path = 'root', seen = new Set<unknown>()): void {
+  if (value === null || value === undefined) return;
+  const t = typeof value;
+  if (t === 'boolean' || t === 'number' || t === 'string') return;
+  if (t === 'function' || t === 'symbol') {
+    throw new Error(`R3 ReachabilityLeakError: non-persistable ${t} at '${path}'`);
+  }
+  if (t === 'object') {
+    if (seen.has(value)) return;
+    seen.add(value);
+    const rec = value as Record<string | symbol, unknown>;
+    if (rec[M3_NON_SERIALIZABLE_CAPABILITY] === true || rec.nonSerializable === true) {
+      const id = typeof rec.capabilityId === 'string' ? rec.capabilityId : 'unknown-m3';
+      throw new Error(
+        `R3 ReachabilityLeakError: accidental reachability leak of M3 capability '${id}' at '${path}'`,
+      );
+    }
+    if (Array.isArray(value)) {
+      for (let i = 0; i < value.length; i++) {
+        assertM1Persistable(value[i], `${path}[${i}]`, seen);
+      }
+      return;
+    }
+    for (const [k, v] of Object.entries(rec)) {
+      assertM1Persistable(v, `${path}.${k}`, seen);
+    }
+  }
+}
+
 export interface MerkleBlob<T = unknown> {
   kind: string;
   payload: T;
@@ -69,6 +123,8 @@ export class ContentAddressedKvStore {
   private readonly pinnedCuts = new Set<string>();
 
   putBlob<T>(kind: string, payload: T, refs: string[] = []): string {
+    // R3 mechanical reachability-leak fence: reject any object graph reaching an M3 live capability!
+    assertM1Persistable(payload, `blob(${kind})`);
     for (const r of refs) {
       if (!this.blobs.has(r)) {
         throw new Error(`Dangling Merkle reference '${r}' rejected (fail-closed)`);
@@ -315,5 +371,184 @@ export class DurableMultiAgentCoordinator {
 
   isResumeReattested(): boolean {
     return this.resumeReattested;
+  }
+}
+
+// ── R1: Hot Policy Co-Evolution Across Suspended Agents (Delimited Yield + M2 Manifest) ──
+
+export interface SuspendedVerdictRecord {
+  verdictId: string;
+  policyDigest: string;
+  dependentDomains: string[];
+  m1EvidenceHashes: string[];
+  status: 'Valid' | 'PendingRevalidation';
+}
+
+export interface HotPolicyUpgradeResult {
+  newPolicyDigest: string;
+  revalidationRequired: string[];
+  stillValid: string[];
+  reusedM1EvidenceCount: number;
+}
+
+export function hotUpgradePolicyAndRevalidate(
+  kv: ContentAddressedKvStore,
+  suspendedVerdicts: readonly SuspendedVerdictRecord[],
+  newPolicyDigest: string,
+  changedDomains: readonly string[],
+): {updated: SuspendedVerdictRecord[]; summary: HotPolicyUpgradeResult} {
+  const changed = new Set(changedDomains);
+  const revalidationRequired: string[] = [];
+  const stillValid: string[] = [];
+  const reusedEvidence = new Set<string>();
+
+  const updated = suspendedVerdicts.map(v => {
+    for (const h of v.m1EvidenceHashes) {
+      // Verify M1 Merkle evidence integrity stays intact across hot upgrade (no replay/purge!)
+      kv.getBlob(h);
+      reusedEvidence.add(h);
+    }
+    const affected =
+      v.policyDigest !== newPolicyDigest &&
+      v.dependentDomains.some(d => changed.has(d));
+    if (affected) {
+      revalidationRequired.push(v.verdictId);
+      return {...v, status: 'PendingRevalidation' as const};
+    }
+    stillValid.push(v.verdictId);
+    return {...v, status: 'Valid' as const};
+  });
+
+  return {
+    updated,
+    summary: {
+      newPolicyDigest,
+      revalidationRequired,
+      stillValid,
+      reusedM1EvidenceCount: reusedEvidence.size,
+    },
+  };
+}
+
+// ── R2: Per-Agent Merkle Branches + Chandy-Lamport Async Marker Cuts (Straggler-Free) ──
+
+export interface AgentBranchCommit {
+  agentId: string;
+  parentHash: string | null;
+  fileDigests: Record<string, string>;
+}
+
+export interface CrossAgentMessage {
+  id: string;
+  fromAgent: string;
+  toAgent: string;
+  payloadHash: string;
+}
+
+export interface AsyncGlobalCut {
+  cutId: string;
+  branchRoots: Record<string, string>;
+  capturedInFlightMessages: CrossAgentMessage[];
+}
+
+export type BranchMergeVerdict =
+  | {kind: 'Proven'; mergedRootHash: string; mergedFiles: Record<string, string>}
+  | {kind: 'Conflict'; conflictingFiles: string[]};
+
+export class PerAgentAsyncCutCoordinator {
+  private readonly agentBranches = new Map<string, string>();
+  private readonly blockedAgents = new Set<string>();
+  private readonly inFlightChannel: CrossAgentMessage[] = [];
+
+  constructor(private readonly kv: ContentAddressedKvStore) {}
+
+  markAgentBlocked(agentId: string, blocked: boolean): void {
+    if (blocked) this.blockedAgents.add(agentId);
+    else this.blockedAgents.delete(agentId);
+  }
+
+  /** Fast agents commit at full local speed to their own branch even while peers are blocked (R2 straggler freedom) */
+  commitAgentBranch(agentId: string, fileDigests: Record<string, string>): DurableRootCell {
+    const branchName = `agent/${agentId}`;
+    const cur = this.kv.getRoot(branchName);
+    const parentHash = cur?.rootHash ?? null;
+    const node: AgentBranchCommit = {agentId, parentHash, fileDigests};
+    const refs = parentHash ? [parentHash] : [];
+    const commitHash = this.kv.putBlob('agent-branch-commit', node, refs);
+    const cell = this.kv.atomicSwapRoot(branchName, cur?.version ?? 0, commitHash, null);
+    this.agentBranches.set(agentId, commitHash);
+    return cell;
+  }
+
+  sendCrossAgentMessage(fromAgent: string, toAgent: string, payloadHash: string): CrossAgentMessage {
+    if (!this.kv.hasBlob(payloadHash)) {
+      throw new Error(`Cannot send cross-agent message with unknown M1 payload '${payloadHash}'`);
+    }
+    const msg: CrossAgentMessage = {
+      id: `msg-${this.inFlightChannel.length + 1}`,
+      fromAgent,
+      toAgent,
+      payloadHash,
+    };
+    this.inFlightChannel.push(msg);
+    return msg;
+  }
+
+  /** Chandy-Lamport asynchronous marker cut: snapshots local branch roots + drains in-flight channel messages */
+  recordAsyncCut(cutId: string): AsyncGlobalCut {
+    const branchRoots: Record<string, string> = {};
+    for (const [agentId, rootHash] of this.agentBranches.entries()) {
+      branchRoots[agentId] = rootHash;
+    }
+    const capturedInFlightMessages = this.inFlightChannel.splice(0, this.inFlightChannel.length);
+    const cut: AsyncGlobalCut = {cutId, branchRoots, capturedInFlightMessages};
+    const refs = [
+      ...Object.values(branchRoots),
+      ...capturedInFlightMessages.map(m => m.payloadHash),
+    ];
+    this.kv.putBlob('async-global-cut', cut, refs);
+    return cut;
+  }
+
+  /** Explicit conflict-preserving merge across two agent branches (forbids silent LWW erasure!) */
+  mergeTwoBranches(
+    baseFiles: Record<string, string>,
+    agentA: string,
+    agentB: string,
+  ): BranchMergeVerdict {
+    const hashA = this.agentBranches.get(agentA);
+    const hashB = this.agentBranches.get(agentB);
+    if (!hashA || !hashB) {
+      throw new Error(`Both branches '${agentA}' and '${agentB}' must have commits before merge`);
+    }
+    const filesA = this.kv.getBlob<AgentBranchCommit>(hashA).payload.fileDigests;
+    const filesB = this.kv.getBlob<AgentBranchCommit>(hashB).payload.fileDigests;
+
+    const allKeys = new Set([...Object.keys(baseFiles), ...Object.keys(filesA), ...Object.keys(filesB)]);
+    const mergedFiles: Record<string, string> = {};
+    const conflictingFiles: string[] = [];
+
+    for (const key of [...allKeys].sort()) {
+      const baseV = baseFiles[key];
+      const aV = filesA[key] ?? baseV;
+      const bV = filesB[key] ?? baseV;
+      const aChanged = aV !== baseV;
+      const bChanged = bV !== baseV;
+      if (aChanged && bChanged && aV !== bV) {
+        conflictingFiles.push(key);
+      } else if (aChanged && aV !== undefined) {
+        mergedFiles[key] = aV;
+      } else if (bChanged && bV !== undefined) {
+        mergedFiles[key] = bV;
+      } else if (baseV !== undefined) {
+        mergedFiles[key] = baseV;
+      }
+    }
+
+    if (conflictingFiles.length > 0) {
+      return {kind: 'Conflict', conflictingFiles};
+    }
+    const mergedRootHash = this.kv.putBlob('merged-agent-cut', {agentA, agentB, mergedFiles}, [hashA, hashB]);
+    return {kind: 'Proven', mergedRootHash, mergedFiles};
   }
 }

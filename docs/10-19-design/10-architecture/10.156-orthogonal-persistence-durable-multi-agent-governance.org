@@ -149,41 +149,45 @@ formally proves three guards, each witnessed by a dedicated Apalache countermode
    =inFlightIntent= into explicit =PendingUnknownEffect= until explicit
    reconciliation completes.
 
-* Five Open Frontier Research Questions (=R1=–=R5=)
+* Frontier Research Problems (=R1=–=R5=): Landed Breakthroughs (=R1=–=R3=) and Open Work (=R4=–=R5=)
 :PROPERTIES:
 :CUSTOM_ID: op156-frontier
 :END:
 
-Beyond our landed prototype, five hard research problems define the next
-frontier of Durable Multi-Agent Orthogonal Persistence:
-
-- *R1 — Hot Code/Policy Evolution Across Suspended Agents*: When a human updates
-  a Band-5 floor or Reviewer policy *while* Coding Agents are paused awaiting
-  approval, persisting *reified algebraic state + content-addressed policy
-  digests* at explicit yield boundaries (never raw VM call stacks) allows
-  ASCENT =F2= revalidation to re-check only the =M2=-affected verdicts without
-  PJama's continuation crash or Temporal's replay divergence.
-- *R2 — Avoiding the Coordinated Pre-Commit Straggler Bottleneck*: Global
-  pre-commit settlement across all peers works for a 3–5 agent pod, but stalls
-  if one agent blocks on a 10-minute formal proof or human review. Moving to
-  *per-agent Merkle branch roots + asynchronous Chandy-Lamport marker cuts* at
-  explicit merge/handoff boundaries decouples fast agents from slow oracles.
-- *R3 — Type-Level Prevention of Accidental Reachability Leaks*: In Gerbil/Yuanxu
-  POO, enforcing *non-serializable / linear =M3= capability wrappers* so
-  =putBlob= statically or contractually refuses any object graph reaching a
-  live credential, socket, or authority handle mechanically eliminates PJama's
-  reachability-leak hazard.
-- *R4 — Semantic Drift vs. Stochastic LLM Memoization*: Cached LLM outputs are
-  immutable =M1= bytes, *not* timeless truths. Defining principled =M2=
-  dependency manifests linking each memoized LLM reasoning node to exact
-  upstream commit hashes, policy digests, and prompt templates enables surgical
-  selective re-prompting instead of either stale blind replay or wasteful full
-  re-runs.
-- *R5 — Byzantine / Prompt-Injected Peers on a Shared Persistent Store*:
-  Classical OP assumed benign processes. Formalizing *capability-isolated
-  Merkle partitions* (EROS capabilities + =gerbil-persist= per-role AEAD keys +
-  independent oracle attestation) protects the Reviewer's gold state even when
-  a Coder Agent is actively compromised by indirect prompt injection.
+- *R1 — Hot Code/Policy Evolution Across Suspended Agents* (*implemented & verified*):
+  Persisting *reified algebraic state + content-addressed =M2= policy manifests*
+  at delimited yield boundaries (never raw VM call stacks) lets
+  =HotPolicyCoEvolutionProgram= in [[file:../../../library/defensive-governance/func.ss][defensive-governance/func.ss]]
+  and =hotUpgradePolicyAndRevalidate= in [[file:../../../languages-engineering/ts/defense/agent-audit/durable-merkle-store.ts][durable-merkle-store.ts]]
+  selectively mark only affected-domain verdicts =PendingRevalidation= while
+  keeping unaffected verdicts =Valid= and reusing 100% of =M1= Merkle evidence
+  (formally proved by =StalePolicyHotUpgradeCountermodel= in
+  [[file:../../../packages/quint-models/engineering/defense/async-merkle-cut/AsyncMerkleCut.qnt][AsyncMerkleCut.qnt]]).
+- *R2 — Avoiding the Coordinated Pre-Commit Straggler Bottleneck* (*implemented & verified*):
+  Global pre-commit settlement stalls fast agents when one peer blocks on a slow
+  formal proof or human review. =PerAgentAsyncCutCoordinator= in
+  [[file:../../../languages-engineering/ts/defense/agent-audit/durable-merkle-store.ts][durable-merkle-store.ts]]
+  and [[file:../../../packages/quint-models/engineering/defense/async-merkle-cut/AsyncMerkleCut.qnt][AsyncMerkleCut.qnt]]
+  decouple fast agents via *per-agent Merkle branch roots*, capture in-flight
+  cross-agent messages via *Chandy-Lamport asynchronous marker cuts*
+  (=DroppedInFlightCutCountermodel=), and preserve divergent concurrent edits as
+  explicit =Conflict= (=SilentLwwConflictMergeCountermodel=).
+- *R3 — Type/Contract-Level Prevention of Accidental Reachability Leaks* (*implemented & verified*):
+  Sealed =M3TransientCapabilityType= + recursive =assert-m1-persistable!= in
+  [[file:../../../library/defensive-governance/func.ss][defensive-governance/func.ss]]
+  and branded =LiveM3Capability= + =assertM1Persistable= inside
+  =ContentAddressedKvStore.putBlob= mechanically refuse any object graph
+  reaching a live =M3= credential, capability, or I/O port before hashing.
+- *R4 — Semantic Drift vs. Stochastic LLM Memoization* (*open research*):
+  Cached LLM outputs are immutable =M1= bytes, *not* timeless truths. Defining
+  principled =M2= dependency manifests linking each memoized LLM reasoning node
+  to exact upstream commit hashes, policy digests, and prompt templates enables
+  surgical selective re-prompting instead of stale blind replay or full re-runs.
+- *R5 — Byzantine / Prompt-Injected Peers on a Shared Persistent Store* (*open research*):
+  Formalizing *capability-isolated Merkle partitions* (EROS capabilities +
+  =gerbil-persist= per-role AEAD keys + independent oracle attestation) protects
+  the Reviewer's gold state even when a Coder Agent is actively compromised by
+  indirect prompt injection.
 
 * Executable Artifacts & Limits
 :PROPERTIES:
@@ -191,8 +195,9 @@ frontier of Durable Multi-Agent Orthogonal Persistence:
 :STATUS: executed-verified
 :END:
 
-- Formal model: [[file:../../../packages/quint-models/engineering/defense/durable-agent-persistence/DurableAgentPersistence.qnt][DurableAgentPersistence.qnt]] (Apalache 0.62.1 =run-plan --verify= + 100% MBT + =DurableAgentPersistenceSUT=).
-- Reference store & handoff engine: [[file:../../../languages-engineering/ts/defense/agent-audit/durable-merkle-store.ts][durable-merkle-store.ts]] & [[file:../../../languages-engineering/ts/defense/agent-audit/durable-merkle-store.test.ts][durable-merkle-store.test.ts]] (=AG37=–=AG40= in [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05]]).
+- Formal models: [[file:../../../packages/quint-models/engineering/defense/durable-agent-persistence/DurableAgentPersistence.qnt][DurableAgentPersistence.qnt]] and [[file:../../../packages/quint-models/engineering/defense/async-merkle-cut/AsyncMerkleCut.qnt][AsyncMerkleCut.qnt]] (Apalache 0.62.1 =run-plan --verify= + 100% MBT + =DurableAgentPersistenceSUT= / =AsyncMerkleCutSUT=).
+- Scheme POO & ASCENT implementation: =M3TransientCapabilityType=, =assert-m1-persistable!=, and =HotPolicyCoEvolutionProgram= in [[file:../../../library/defensive-governance/func.ss][defensive-governance/func.ss]].
+- TypeScript reference store & async-cut engine: [[file:../../../languages-engineering/ts/defense/agent-audit/durable-merkle-store.ts][durable-merkle-store.ts]] & [[file:../../../languages-engineering/ts/defense/agent-audit/durable-merkle-store.test.ts][durable-merkle-store.test.ts]] (=AG37=–=AG45= in [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05]]).
 - *Limits*: =durable-merkle-store.ts= is an in-process reference implementation
   verifying the logical Merkle/CAS/re-attestation/intent-fence invariants; real
   production backing over SQLite/LMDB/PostgreSQL additionally requires durable

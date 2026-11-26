@@ -5,6 +5,9 @@ import {describe, expect, test} from 'bun:test';
 import {
   ContentAddressedKvStore,
   DurableMultiAgentCoordinator,
+  hotUpgradePolicyAndRevalidate,
+  LiveM3Capability,
+  PerAgentAsyncCutCoordinator,
 } from './durable-merkle-store.ts';
 import {runGovernedAgentRepairLoop} from './governance-harness.ts';
 
@@ -126,5 +129,92 @@ describe('Phase 6 Orthogonal Persistence x Durable Multi-Agent Governance (10.15
     expect(kv.hasBlob(r1.rootHash)).toBe(true);
     expect(kv.hasBlob(r2.rootHash)).toBe(true);
     expect(coord.loadVerifiedLineage().length).toBe(2);
+  });
+
+  test('AG41 (R3): ContentAddressedKvStore mechanically blocks accidental reachability leak of LiveM3Capability', () => {
+    const kv = new ContentAddressedKvStore();
+    const liveCap = new LiveM3Capability('cap-prod-deploy', 'src/**', 9);
+
+    // Pure M1 payload persists cleanly:
+    const cleanHash = kv.putBlob('m1-artifact', {patch: 'clean', digest: 'sha256-ok'});
+    expect(kv.hasBlob(cleanHash)).toBe(true);
+
+    // Deeply nested LiveM3Capability inside an agent closure/handoff object MUST be rejected!
+    expect(() =>
+      kv.putBlob('leaky-handoff', {
+        summary: 'handoff',
+        nested: [{meta: {accidentalCap: liveCap}}],
+      }),
+    ).toThrow(/R3 ReachabilityLeakError/);
+  });
+
+  test('AG42 (R1): Hot policy upgrade selectively marks affected suspended verdicts PendingRevalidation while reusing M1 evidence', () => {
+    const kv = new ContentAddressedKvStore();
+    const llmLeaf = kv.putBlob('m1-llm-output', {model: 'coder', output: 'diff-1'});
+    const proofLeaf = kv.putBlob('m1-apalache-proof', {model: 'UnknownEffectRetry', passed: true});
+
+    const {updated, summary} = hotUpgradePolicyAndRevalidate(
+      kv,
+      [
+        {
+          verdictId: 'v-auth',
+          policyDigest: 'pol-v1',
+          dependentDomains: ['auth-policy'],
+          m1EvidenceHashes: [llmLeaf],
+          status: 'Valid',
+        },
+        {
+          verdictId: 'v-parser',
+          policyDigest: 'pol-v1',
+          dependentDomains: ['parser-bounds'],
+          m1EvidenceHashes: [proofLeaf],
+          status: 'Valid',
+        },
+      ],
+      'pol-v2',
+      ['auth-policy'],
+    );
+
+    expect(summary.revalidationRequired).toEqual(['v-auth']);
+    expect(summary.stillValid).toEqual(['v-parser']);
+    expect(summary.reusedM1EvidenceCount).toBe(2);
+    expect(updated.find(v => v.verdictId === 'v-auth')!.status).toBe('PendingRevalidation');
+    expect(updated.find(v => v.verdictId === 'v-parser')!.status).toBe('Valid');
+  });
+
+  test('AG43-AG45 (R2): Straggler-free per-agent branches, Chandy-Lamport async cut & explicit conflict-preserving merge', () => {
+    const kv = new ContentAddressedKvStore();
+    const asyncCoord = new PerAgentAsyncCutCoordinator(kv);
+    const baseFiles = {'src/a.ts': 'base-a', 'src/b.ts': 'base-b', 'src/shared.ts': 'base-shared'};
+
+    // AG43: Verifier is blocked on a slow 10-min formal proof; fast Coder commits 3 times locally with zero blocking!
+    asyncCoord.markAgentBlocked('verifier', true);
+    asyncCoord.commitAgentBranch('verifier', {'src/b.ts': 'verifier-b'});
+    asyncCoord.commitAgentBranch('coder', {'src/a.ts': 'coder-a-1'});
+    asyncCoord.commitAgentBranch('coder', {'src/a.ts': 'coder-a-2'});
+    const fastCell = asyncCoord.commitAgentBranch('coder', {'src/a.ts': 'coder-a-3'});
+    expect(fastCell.version).toBe(3);
+
+    // AG44: Chandy-Lamport async marker cut captures in-flight cross-agent handoff message without dropping it!
+    const msgPayload = kv.putBlob('handoff-msg', {note: 'coder->verifier proof request'});
+    asyncCoord.sendCrossAgentMessage('coder', 'verifier', msgPayload);
+    const cut = asyncCoord.recordAsyncCut('cut-001');
+    expect(cut.capturedInFlightMessages.length).toBe(1);
+    expect(cut.capturedInFlightMessages[0]!.payloadHash).toBe(msgPayload);
+    expect(Object.keys(cut.branchRoots).sort()).toEqual(['coder', 'verifier']);
+
+    // AG45a: Disjoint edits across branches merge deterministically into Proven!
+    const cleanMerge = asyncCoord.mergeTwoBranches(baseFiles, 'coder', 'verifier');
+    expect(cleanMerge.kind).toBe('Proven');
+    if (cleanMerge.kind === 'Proven') {
+      expect(cleanMerge.mergedFiles['src/a.ts']).toBe('coder-a-3');
+      expect(cleanMerge.mergedFiles['src/b.ts']).toBe('verifier-b');
+    }
+
+    // AG45b: Divergent edits to the same file preserve explicit Conflict (NEVER silent LWW)!
+    asyncCoord.commitAgentBranch('coder', {'src/shared.ts': 'coder-edit'});
+    asyncCoord.commitAgentBranch('verifier', {'src/shared.ts': 'verifier-edit'});
+    const conflictMerge = asyncCoord.mergeTwoBranches(baseFiles, 'coder', 'verifier');
+    expect(conflictMerge).toEqual({kind: 'Conflict', conflictingFiles: ['src/shared.ts']});
   });
 });

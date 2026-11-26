@@ -581,6 +581,102 @@ class BadZombieResumeSUT extends DurableAgentPersistenceSUT {
   }
 }
 
+// ── Concrete Stateful SUT 8: AsyncMerkleCut (R1 + R2 / 10.156) ──
+class AsyncMerkleCutSUT {
+  fastCommits = 0;
+  slowBlocked = false;
+  inFlightMsg = false;
+  channelDrained = true;
+  branchConflict = false;
+  activePolicyVer = 1;
+  verdictPolicyVer = 1;
+  cutConsistent = true;
+  droppedChannelCuts = 0;
+  lwwConflictsErased = 0;
+  stalePolicyAdmits = 0;
+
+  apply(action: string): void {
+    switch (action) {
+      case 'blockSlowAgent':
+        if (!this.slowBlocked) this.slowBlocked = true;
+        break;
+      case 'fastAgentLocalCommit':
+        if (this.fastCommits < 3) this.fastCommits += 1;
+        break;
+      case 'sendCrossAgentHandoff':
+        if (!this.inFlightMsg) {
+          this.inFlightMsg = true;
+          this.channelDrained = false;
+        }
+        break;
+      case 'captureChannelMessage':
+        if (this.inFlightMsg && !this.channelDrained) {
+          this.inFlightMsg = false;
+          this.channelDrained = true;
+        }
+        break;
+      case 'introduceBranchConflict':
+        if (!this.branchConflict) this.branchConflict = true;
+        break;
+      case 'resolveConflictExplicitly':
+        if (this.branchConflict) this.branchConflict = false;
+        break;
+      case 'hotUpgradePolicy':
+        if (this.activePolicyVer === 1) this.activePolicyVer = 2;
+        break;
+      case 'revalidateUnderActivePolicy':
+        if (this.verdictPolicyVer < this.activePolicyVer) {
+          this.verdictPolicyVer = this.activePolicyVer;
+        }
+        break;
+      case 'sealAsyncCut':
+        if (this.channelDrained) {
+          // safe cut
+        }
+        break;
+      case 'mergeBranches':
+        if (!this.branchConflict) {
+          // safe merge
+        }
+        break;
+      case 'admitSuspendedVerdict':
+        if (this.verdictPolicyVer === this.activePolicyVer) {
+          // safe admission
+        }
+        break;
+      default:
+        throw new Error(`Unknown AsyncMerkleCutSUT action: ${action}`);
+    }
+  }
+
+  snapshot() {
+    return {
+      fastCommits: this.fastCommits,
+      slowBlocked: this.slowBlocked,
+      inFlightMsg: this.inFlightMsg,
+      channelDrained: this.channelDrained,
+      branchConflict: this.branchConflict,
+      activePolicyVer: this.activePolicyVer,
+      verdictPolicyVer: this.verdictPolicyVer,
+      cutConsistent: this.cutConsistent,
+      droppedChannelCuts: this.droppedChannelCuts,
+      lwwConflictsErased: this.lwwConflictsErased,
+      stalePolicyAdmits: this.stalePolicyAdmits,
+    };
+  }
+}
+
+class BadLwwMergeSUT extends AsyncMerkleCutSUT {
+  override apply(action: string): void {
+    if (action === 'introduceBranchConflict' && !this.branchConflict) {
+      // Anti-pattern: silently overwrites conflict via LWW instead of preserving Conflict!
+      this.lwwConflictsErased += 1;
+      return;
+    }
+    super.apply(action);
+  }
+}
+
 const repoRoot = resolve(import.meta.dir, '../../../..');
 
 function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(): Record<string, unknown>}>(
@@ -633,7 +729,7 @@ function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(
   }
 }
 
-describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (7 Defense Models)', () => {
+describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (8 Defense Models)', () => {
   test('EpistemicStateLattice ITF actions drive EpistemicLatticeSUT with exact step-by-step state isomorphism', () => {
     const stats = replayModelAgainstSut(
       'packages/quint-models/engineering/defense/epistemic-state-lattice/EpistemicStateLattice.qnt',
@@ -763,6 +859,30 @@ describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (7 Defense Models)
       () => new DurableAgentPersistenceSUT(),
       projectH,
       () => new BadZombieResumeSUT(),
+    );
+    expect(stats.transitions).toBeGreaterThan(50);
+    expect(stats.brokenDiverged).toBe(true);
+  }, 30_000);
+
+  test('AsyncMerkleCut ITF actions drive AsyncMerkleCutSUT with exact state isomorphism and reject BadLwwMergeSUT', () => {
+    const projectH = (h: Record<string, unknown>) => ({
+      fastCommits: asInt(h.fastCommits),
+      slowBlocked: Boolean(h.slowBlocked),
+      inFlightMsg: Boolean(h.inFlightMsg),
+      channelDrained: Boolean(h.channelDrained),
+      branchConflict: Boolean(h.branchConflict),
+      activePolicyVer: asInt(h.activePolicyVer),
+      verdictPolicyVer: asInt(h.verdictPolicyVer),
+      cutConsistent: Boolean(h.cutConsistent),
+      droppedChannelCuts: asInt(h.droppedChannelCuts),
+      lwwConflictsErased: asInt(h.lwwConflictsErased),
+      stalePolicyAdmits: asInt(h.stalePolicyAdmits),
+    });
+    const stats = replayModelAgainstSut(
+      'packages/quint-models/engineering/defense/async-merkle-cut/AsyncMerkleCut.qnt',
+      () => new AsyncMerkleCutSUT(),
+      projectH,
+      () => new BadLwwMergeSUT(),
     );
     expect(stats.transitions).toBeGreaterThan(50);
     expect(stats.brokenDiverged).toBe(true);

@@ -12,12 +12,17 @@
         audit-agent-defensive-submission
         extract-scheme-defensive-facts
         audit-scheme-defensive-datums
+        make-m3-transient-capability
+        assert-m1-persistable!
         BoundedRevalidationProgram
         make-bounded-revalidation-program
         reason-bounded-revalidation
         AgentTranscriptAuditProgram
         make-agent-transcript-audit-program
-        reason-agent-transcript)
+        reason-agent-transcript
+        HotPolicyCoEvolutionProgram
+        make-hot-policy-coevolution-program
+        reason-hot-policy-coevolution)
 
 ;; G1: Refuse any guard missing required 5-tuple evidence or claiming immutable reuse on an M3 mutable root.
 (def (admit-guard-five-tuple candidate)
@@ -498,4 +503,156 @@
       (rule-module-bindings AgentTranscriptAuditDeclaration)))
   (.o program: tprog-val
       output-bindings: (lambda () (map (lambda (e) (cons (car e) (cdr e))) tout-bindings))
+      rows-of: (lambda (name) (copy-fact (native-rows name)))))
+
+;; R3 (10.156): Mechanical Prevention of Accidental Reachability Leaks into M1 Persistent Blobs.
+;; Constructs sealed non-serializable M3 live-authority wrappers and recursively rejects
+;; any object graph (pairs, lists, vectors, POO objects, or I/O ports) reaching an M3 token.
+(def (make-m3-transient-capability cap-id cap-scope cap-epoch)
+  (validate M3TransientCapabilityType
+    (.o capability-id: cap-id
+        scope: cap-scope
+        revocation-epoch: cap-epoch
+        mutability: 'M3-mutable-root
+        non-serializable?: #t)))
+
+(def (assert-m1-persistable! datum (path 'root))
+  (cond
+   ((or (null? datum) (boolean? datum) (number? datum) (string? datum) (symbol? datum) (keyword? datum))
+    #t)
+   ((port? datum)
+    (error "R3 refusal: accidental reachability leak of live I/O port into M1 persistent blob" path))
+   ((object? datum)
+    (when (and (.slot? datum 'non-serializable?) (eq? (.ref datum 'non-serializable?) #t))
+      (error "R3 refusal: accidental reachability leak of non-serializable M3 capability into M1 persistent blob"
+             path
+             (if (.slot? datum 'capability-id) (.ref datum 'capability-id) 'unknown-capability)))
+    (when (and (.slot? datum 'mutability) (eq? (.ref datum 'mutability) 'M3-mutable-root)
+               (.slot? datum 'capability-id))
+      (error "R3 refusal: M3 mutable-root capability cannot enter M1 persistent Merkle store"
+             path (.ref datum 'capability-id)))
+    (for-each
+      (lambda (slot-name)
+        (assert-m1-persistable! (.ref datum slot-name) (list path slot-name)))
+      (.all-slots datum))
+    #t)
+   ((pair? datum)
+    (assert-m1-persistable! (car datum) (list path 'car))
+    (assert-m1-persistable! (cdr datum) (list path 'cdr))
+    #t)
+   ((vector? datum)
+    (let loop ((idx 0))
+      (when (< idx (vector-length datum))
+        (assert-m1-persistable! (vector-ref datum idx) (list path idx))
+        (loop (+ idx 1))))
+    #t)
+   (else
+    (error "R3 refusal: non-persistable runtime object cannot enter M1 persistent blob" path datum))))
+
+;; R1 (10.156): Live pure ASCENT Datalog program for Hot Policy Co-Evolution Across Suspended Agents.
+;; Separates M1 immutable evidence reuse from M2 policy-digest invalidation without crashing
+;; suspended continuations (PJama) or breaking deterministic replay (Temporal).
+(define-program
+  (make-hot-policy-coevolution-program)
+  (sources
+    suspended_verdict
+    verdict_depends_on_domain
+    verdict_policy_digest
+    active_policy_digest
+    domain_changed_in_upgrade
+    m1_evidence_leaf
+    frozen_historical_cut)
+  (outputs
+    verdict_needs_revalidation
+    verdict_still_valid
+    m1_evidence_reusable
+    historical_cut_preserved)
+  (relation suspended_verdict ((vid string?)))
+  (relation verdict_depends_on_domain ((vid string?) (domain string?)))
+  (relation verdict_policy_digest ((vid string?) (digest string?)))
+  (relation active_policy_digest ((digest string?)))
+  (relation domain_changed_in_upgrade ((domain string?)))
+  (relation m1_evidence_leaf ((leaf_id string?) (sha string?)))
+  (relation frozen_historical_cut ((cut_id string?) (root_sha string?)))
+
+  (relation verdict_needs_revalidation ((vid string?) (reason string?)))
+  (relation verdict_still_valid ((vid string?)))
+  (relation m1_evidence_reusable ((leaf_id string?) (sha string?)))
+  (relation historical_cut_preserved ((cut_id string?) (root_sha string?)))
+
+  ;; Any verdict depending on a domain altered by the hot policy upgrade must be revalidated:
+  ((verdict_needs_revalidation V (lit "affected-domain-changed"))
+   <--
+   (suspended_verdict V)
+   (verdict_depends_on_domain V D)
+   (domain_changed_in_upgrade D))
+
+  ;; Any verdict pinned to an older policy digest whose domain changed (or mismatched active policy on changed domain):
+  ((verdict_needs_revalidation V (lit "stale-policy-digest"))
+   <--
+   (suspended_verdict V)
+   (verdict_policy_digest V OldP)
+   (active_policy_digest NewP)
+   (not (verdict_policy_digest V NewP))
+   (verdict_depends_on_domain V D)
+   (domain_changed_in_upgrade D))
+
+  ;; Suspended verdicts on unaffected domains remain valid without re-execution or replay crash:
+  ((verdict_still_valid V)
+   <--
+   (suspended_verdict V)
+   (not (verdict_needs_revalidation V _)))
+
+  ;; M1 content-addressed evidence leaves & frozen historical cuts are unconditionally preserved:
+  ((m1_evidence_reusable L H)
+   <--
+   (m1_evidence_leaf L H))
+  ((historical_cut_preserved C R)
+   <--
+   (frozen_historical_cut C R))
+
+  (bounds 4096 4096 4096))
+
+(def HotPolicyCoEvolutionDeclaration (make-hot-policy-coevolution-program))
+(def HotPolicyCoEvolutionProgram (rule-module-program HotPolicyCoEvolutionDeclaration))
+
+(def (reason-hot-policy-coevolution replacements)
+  (def pprog-val HotPolicyCoEvolutionProgram)
+  (def expected (.ref pprog-val 'source-handles))
+  (unless (and (list? replacements) (andmap pair? replacements))
+    (error "hot-policy-coevolution replacements must be an alist"))
+  (for-each
+    (lambda (entry)
+      (unless (memq (car entry) expected)
+        (error "unknown hot-policy-coevolution source" (car entry))))
+    replacements)
+  (for-each
+    (lambda (handle)
+      (unless (assq handle replacements)
+        (error "missing hot-policy-coevolution source" handle)))
+    expected)
+  (def prepared (map (lambda (entry) (cons (car entry) (copy-fact (cdr entry)))) replacements))
+  (def session (gerbil-ascent-open-session pprog-val))
+  (def result
+    (gerbil-ascent-session-replace-sources!
+      session
+      prepared
+      (lambda (prospective)
+        (and (.ref prospective 'finished)
+             (andmap
+               (lambda (entry)
+                 (let ((actual ((.ref prospective 'rows-of) (car entry)))
+                       (wanted (cdr entry)))
+                   (and (andmap (cut member <> wanted) actual)
+                        (andmap (cut member <> actual) wanted))))
+               prepared)))))
+  (unless (.ref result 'finished)
+    (error "hot-policy-coevolution evaluation incomplete"))
+  (def native-rows (.ref result 'rows-of))
+  (def pout-bindings
+    (filter
+      (lambda (binding) (not (memq (cdr binding) expected)))
+      (rule-module-bindings HotPolicyCoEvolutionDeclaration)))
+  (.o program: pprog-val
+      output-bindings: (lambda () (map (lambda (e) (cons (car e) (cdr e))) pout-bindings))
       rows-of: (lambda (name) (copy-fact (native-rows name)))))
