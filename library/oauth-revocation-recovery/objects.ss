@@ -2,8 +2,7 @@
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 ;;; OAuth PAR + Crash-Safe Revocation Recovery threat model (RFC 9126 / RFC 7009).
-;;; Models PAR request-URI binding and durable revocation-intent journaling so a
-;;; host crash mid-signout never resurrects an active token on recovery.
+;;; Emergent crash-recovery safety (zero synthetic unsafe flag); countermodels auto-derived via (guard ...).
 (import :clan/poo/object
         (only-in "../authority-currentness/objects.ss" AuthorityCurrentnessModel))
 (export OAuthRevocationRecoveryModel
@@ -25,28 +24,74 @@
   parameters: '()
   state: '((parRegistered "bool" "false")
            (sessionActive "bool" "false")
+           (sessionPersisted "bool" "false")
            (revokeRequested "bool" "false")
            (revokeIntentDurable "bool" "false")
            (crashed "bool" "false")
-           (revokedOnServer "bool" "false")
-           (unsafe "bool" "false"))
-  guards: '((par-request-binding "h.parRegistered")
-            (durable-revoke-intent "h.revokeIntentDurable"))
+           (revokedOnServer "bool" "false"))
+  guards: '((par-request-binding (. h parRegistered))
+            (durable-revoke-intent (. h revokeIntentDurable)))
   transitions:
-  '((registerPar "action registerPar = if (not(h.parRegistered) and not(h.sessionActive) and not(h.revokeRequested))\n    h' = h.with(\"parRegistered\", true)\n    else h' = h")
-    (admitViaPar "action admitViaPar = if (h.parRegistered and not(h.sessionActive) and not(h.revokeRequested) and not(h.crashed))\n    h' = h.with(\"sessionActive\", true)\n    else h' = h")
-    (requestRevokeDurable "action requestRevokeDurable = if (h.sessionActive and not(h.revokeRequested) and not(h.crashed))\n    h' = h.with(\"revokeRequested\", true).with(\"revokeIntentDurable\", true).with(\"sessionActive\", false)\n    else h' = h")
-    (crashHost "action crashHost = if (not(h.crashed))\n    h' = h.with(\"crashed\", true)\n    else h' = h")
-    (recoverHost "action recoverHost = if (h.crashed)\n    if (h.revokeIntentDurable)\n      h' = h.with(\"crashed\", false).with(\"sessionActive\", false).with(\"revokedOnServer\", true)\n    else h' = h.with(\"crashed\", false)\n    else h' = h")
-    (completeRevoke "action completeRevoke = if (h.revokeIntentDurable and not(h.crashed) and not(h.revokedOnServer))\n    h' = h.with(\"revokedOnServer\", true).with(\"sessionActive\", false)\n    else h' = h")
-    (step "action step = any { registerPar, admitViaPar, requestRevokeDurable, crashHost, recoverHost, completeRevoke }"))
-  safety: "not(h.unsafe) and (not(h.sessionActive) or (h.parRegistered and not(h.revokeRequested)))"
+  '((registerPar
+     (action registerPar ()
+       (if (and (not (. h parRegistered)) (not (. h sessionActive)) (not (. h revokeRequested)))
+         (set-h (parRegistered #t))
+         (keep-h))))
+    (admitViaPar
+     (action admitViaPar ()
+       (if (and (guard par-request-binding (. h parRegistered))
+                (not (. h sessionActive))
+                (not (. h revokeRequested))
+                (not (. h crashed)))
+         (set-h (sessionActive #t) (sessionPersisted #t))
+         (keep-h))))
+    (requestRevokeDurable
+     (action requestRevokeDurable ()
+       (if (and (. h sessionActive) (not (. h revokeRequested)) (not (. h crashed)))
+         (set-h (revokeRequested #t)
+                (revokeIntentDurable (guard durable-revoke-intent #t #f))
+                (sessionActive #f))
+         (keep-h))))
+    (crashHost
+     (action crashHost ()
+       (if (not (. h crashed))
+         (set-h (crashed #t) (sessionActive #f))
+         (keep-h))))
+    (recoverHost
+     (action recoverHost ()
+       (if (. h crashed)
+         (if (. h revokeIntentDurable)
+           (set-h (crashed #f) (sessionActive #f) (sessionPersisted #f) (revokedOnServer #t))
+           (set-h (crashed #f) (sessionActive (. h sessionPersisted))))
+         (keep-h))))
+    (completeRevoke
+     (action completeRevoke ()
+       (if (and (. h revokeIntentDurable) (not (. h crashed)) (not (. h revokedOnServer)))
+         (set-h (revokedOnServer #t) (sessionActive #f) (sessionPersisted #f))
+         (keep-h))))
+    (step
+     (action step ()
+       (any registerPar admitViaPar requestRevokeDurable crashHost recoverHost completeRevoke))))
+  safety:
+  '(or (not (. h sessionActive))
+       (and (. h parRegistered) (not (. h revokeRequested))))
   traces:
-  '((checkSafe "action checkSafe = all { assert(safety), h' = h }")
-    (checkUnsafe "action checkUnsafe = all { assert(not(safety)), h' = h }")
-    (crashSafeRevocationRecoveryTest "run crashSafeRevocationRecoveryTest = init.then(registerPar).then(admitViaPar).then(requestRevokeDurable).then(crashHost).then(recoverHost).then(all { assert(not(h.sessionActive)), assert(h.revokedOnServer), assert(safety), h' = h })")
-    (unboundParBlockedTest "run unboundParBlockedTest = init.then(admitViaPar).then(all { assert(not(h.sessionActive)), assert(safety), h' = h })")
-    (crashDropsRevocationCountermodelTest "run crashDropsRevocationCountermodelTest = init.then(registerPar).then(admitViaPar).then(requestRevokeVolatile).then(crashHost).then(recoverVolatile).then(checkUnsafe)"))
+  '((checkSafe (action checkSafe () (all (assert safety) (keep-h))))
+    (checkUnsafe (action checkUnsafe () (all (assert (not safety)) (keep-h))))
+    (crashSafeRevocationRecoveryTest
+     (run crashSafeRevocationRecoveryTest
+       (then init registerPar admitViaPar requestRevokeDurable crashHost recoverHost
+             (all (assert (not (. h sessionActive)))
+                  (assert (. h revokedOnServer))
+                  (assert safety)
+                  (keep-h)))))
+    (unboundParBlockedTest
+     (run unboundParBlockedTest
+       (then init admitViaPar
+             (all (assert (not (. h sessionActive))) (assert safety) (keep-h)))))
+    (crashDropsRevocationCountermodelTest
+     (run crashDropsRevocationCountermodelTest
+       (then init registerPar admitViaPar requestRevokeVolatile crashHost recoverHost checkUnsafe))))
   countermodels: (list CrashDropsRevocationCountermodel UnboundParExchangeCountermodel)
   limits: "Finite PAR and crash-recovery state abstraction; does not model network partitions to RFC 7009 endpoints or filesystem fsync internals.")
 
@@ -54,12 +99,14 @@
   identity: 'threat.oauth-revocation-recovery.crash-drops-revocation
   dropped-guard: 'durable-revoke-intent
   step-action: "stepCrashDropsRevocation"
-  counter-action: "action requestRevokeVolatile = if (h.sessionActive and not(h.revokeRequested) and not(h.crashed))\n    h' = h.with(\"revokeRequested\", true).with(\"revokeIntentDurable\", false)\n    else h' = h\n  action recoverVolatile = if (h.crashed and h.revokeRequested and not(h.revokeIntentDurable))\n    h' = h.with(\"crashed\", false).with(\"sessionActive\", true).with(\"unsafe\", true)\n    else h' = h\n  action stepCrashDropsRevocation = any { step, requestRevokeVolatile, recoverVolatile }"
+  derive-from-transition: 'requestRevokeDurable
+  derive-action-name: 'requestRevokeVolatile
   expected-itf-predicate: "h.sessionActive == true and h.revokeRequested == true")
 
 (.def (UnboundParExchangeCountermodel @ OAuthRevocationRecoveryModel)
   identity: 'threat.oauth-revocation-recovery.unbound-par-exchange
   dropped-guard: 'par-request-binding
   step-action: "stepUnboundPar"
-  counter-action: "action admitWithoutPar = if (not(h.parRegistered) and not(h.sessionActive))\n    h' = h.with(\"sessionActive\", true).with(\"unsafe\", true)\n    else h' = h\n  action stepUnboundPar = any { step, admitWithoutPar }"
+  derive-from-transition: 'admitViaPar
+  derive-action-name: 'admitWithoutPar
   expected-itf-predicate: "h.sessionActive == true and not(h.parRegistered)")

@@ -21,15 +21,29 @@
            (bytes "bool")
            (epoch "int")
            (planned "int"))
-  guards: '((unpaused "not(paused)")
-            (fresh "fresh")
-            (credential "credential")
-            (bytes "bytes")
-            (epoch-match "epoch == planned"))
-  transitions: '((isCurrent "pure def isCurrent(paused: bool, fresh: bool, credential: bool, bytes: bool): bool =\n    not(paused) and fresh and credential and bytes")
-                 (epochCurrent "pure def epochCurrent(epoch: int, planned: int): bool =\n    epoch == planned"))
-  safety: "true"
-  traces: '((currentnessTest "run currentnessTest = all {\n    assert(isCurrent(false, true, true, true)),\n    assert(not(isCurrent(true, true, true, true))),\n    assert(not(isCurrent(false, false, true, true))),\n    assert(not(isCurrent(false, true, false, true))),\n    assert(not(isCurrent(false, true, true, false))),\n    assert(epochCurrent(0, 0)),\n    assert(not(epochCurrent(1, 0)))\n  }"))
+  guards: '((unpaused (not paused))
+            (fresh fresh)
+            (credential credential)
+            (bytes bytes)
+            (epoch-match (= epoch planned)))
+  transitions:
+  '((isCurrent
+     (pure-def isCurrent ((paused "bool") (fresh "bool") (credential "bool") (bytes "bool")) "bool"
+       (and (not paused) fresh credential bytes)))
+    (epochCurrent
+     (pure-def epochCurrent ((epoch "int") (planned "int")) "bool"
+       (= epoch planned))))
+  safety: #t
+  traces:
+  '((currentnessTest
+     (run currentnessTest
+       (all (assert (call isCurrent #f #t #t #t))
+            (assert (not (call isCurrent #t #t #t #t)))
+            (assert (not (call isCurrent #f #f #t #t)))
+            (assert (not (call isCurrent #f #t #f #t)))
+            (assert (not (call isCurrent #f #t #t #f)))
+            (assert (call epochCurrent 0 0))
+            (assert (not (call epochCurrent 1 0)))))))
   countermodels: '()
   parameters: '()
   limits: "Trusted boolean bits abstract real clock freshness, revocation checks, signature verification and writer fencing.")

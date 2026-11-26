@@ -45,10 +45,74 @@ informs.
   - Structured threat identification; our framework elevates these from static
     diagrams into executable Quint state machines with mandatory countermodels.
 - *Daniel Fett, Ralf Küsters, Guido Schmitz (2016)*, /A Comprehensive Formal
-  Security Analysis of OAuth 2.0/, ACM CCS 2016; and *IETF RFC 9700 (2025)*,
-  /Best Current Practice for OAuth 2.0 Security/.
-  - Formalizes OAuth 2.0/2.1 protocol attacks (mix-up, code injection/replay,
-    token reuse) directly modeled in =threat/oauth-token-lifecycle=.
+  Security Analysis of OAuth 2.0/, ACM CCS 2016; *Daniel Fett, Pedram Hosseyni,
+  Ralf Küsters (2023–2025)*, /Formal Security Analysis of FAPI 2.0 & DPoP (RFC
+  9449)/; and *IETF RFC 9700 (2025)*, /Best Current Practice for OAuth 2.0
+  Security/.
+  - Formalizes OAuth 2.0/2.1 protocol attacks, sender-constrained tokens (DPoP
+    =cnf.jkt= + single-use =jti=), and PAR/revocation recovery directly modeled
+    in =threat/oauth-token-lifecycle=, =threat/oidc-federation=,
+    =threat/device-authorization=, =threat/oauth-revocation-recovery=, and
+    =threat/dpop-sender-constrain=.
+- *Justin Samuel, Nick Mathewson, Justin Cappos, Roger Dingledine (2010)*,
+  /Survivable Key Compromise in Software Update Systems/ (TUF), ACM CCS 2010;
+  *Santiago Torres-Arias et al. (2019)*, /in-toto: Providing farm-to-table
+  guarantees for bits and bytes/, USENIX Security 2019; and *Zachary Newman et
+  al. (2022)*, /Sigstore: Software Signing for Everybody/, ACM CCS 2022.
+  - Rollback, indefinite freeze, and mix-and-match metadata defenses modeled
+    with emergent invariants in =threat/supply-chain-tuf=.
+- *Arnar Birgisson, Joe Gibbs Politz, Úlfar Erlingsson, Ankur Taly, Michael
+  Vrable, Mark Lentczner (2014)*, /Macaroons: Cookies with Contextual Caveats
+  for Decentralized Authorization in the Cloud/, NDSS 2014.
+  - Monotonic multi-hop caveat attenuation and chained HMAC integrity for
+    agent-to-subagent delegation modeled in =threat/macaroon-delegation-chain=.
+- *Edoardo Debenedetti, Ilia Shumailov, Nicholas Carlini, Florian Tramèr et al.
+  (2025)*, /Defeating Prompt Injections by Design/ (CaMeL, Google DeepMind & ETH
+  Zurich, arXiv:2503.18813).
+  - Separates privileged control flow from quarantined untrusted data flow and
+    tracks capability-based provenance; directly informs
+    =threat/agent-ifc-capability=.
+- *Manuel Costa, Boris Köpf, Aashish Kolluri, Andrew Paverd, Mark Russinovich et
+  al. (2025)*, /Securing AI Agents with Information-Flow Control/ (FIDES,
+  Microsoft Research, NeurIPS 2025, arXiv:2505.23643).
+  - Confidentiality/integrity lattice labels and deterministic policy
+    enforcement outside the LLM reasoning loop; directly informs
+    =threat/agent-ifc-capability=.
+- *Manuel Barbosa, Alexandra Boldyreva, Shan Chen, Bogdan Warinschi (2021)*,
+  /Provable Security Analysis of FIDO2/, CRYPTO 2021; *Charlie Jacomme & Steve
+  Kremer (2021)*, /An Extensive Formal Analysis of Multi-Factor Authentication
+  Protocols/, ACM TOPS / IEEE CSF; and *W3C WebAuthn Level 3*.
+  - Formalizes RP-ID origin binding against MitM phishing proxies, single-use
+    ceremony challenges, and monotonic =signCount= roaming-authenticator clone
+    detection; directly informs =threat/webauthn-passkey-ceremony=.
+- *IETF RFC 9162 (2021)*, /Certificate Transparency Version 2.0/ (§2.1.4
+  Consistency Proofs); *Laurent Chuat, Pawel Szalachowski, Adrian Perrig, Ben
+  Laurie, Eran Messeri (2015)*, /Efficient Gossip Protocols for Verifying the
+  Consistency of Certificate Logs/, IEEE CNS / NDSS; and *Sigstore Rekor /
+  Omniwitness*.
+  - Demonstrates why inclusion proofs alone cannot stop a compromised log from
+    serving a forked split-view tree and why STH consistency gossip is mandatory;
+    directly informs =threat/transparency-log-gossip=.
+- *Andreas Haas, Andreas Rossberg, Derek L. Schuff, Ben L. Titzer et al. (2017)*,
+  /Bringing the Web up to Speed with WebAssembly/, PLDI 2017; *Shravan Narayan
+  et al. (2020)*, /Retrofitting Fine Grain Isolation in the Firefox Renderer/
+  (RLBox), USENIX Security 2020; and *WASI Preview 2 / Linux =openat2(RESOLVE_BENEATH)=*.
+  - Linear-memory bounds checking, non-ambient capability handle tables, and
+    preopened root confinement against path traversal directly modeled in
+    =threat/wasm-sandbox-confinement=.
+- *Eric Rescorla (2018)*, /IETF RFC 8446: The Transport Layer Security (TLS)
+  Protocol Version 1.3/ (§2.3, §8, Appendix E.5) & *IETF RFC 8470*
+  (=Early-Data= / =425 Too Early=); *Cas Cremers, Marko Horvat, Jonathan
+  Hoyland, Sam Scott, Thyla van der Merwe (2017)*, /A Comprehensive Symbolic
+  Analysis of TLS 1.3/, ACM CCS 2017; *Karthikeyan Bhargavan, Bruno Blanchet,
+  Nadim Kobeissi (2017)*, /Verified Models and Reference Implementations for the
+  TLS 1.3 Standard Candidate/, IEEE S&P 2017; *Marc Fischlin & Felix Günther
+  (2017)*, /Replay Attacks on Zero Round-Trip Time/, IEEE EuroS&P 2017; and
+  *Trevor Perrin (2018)*, /The Noise Protocol Framework/.
+  - Non-idempotent 0-RTT exclusion, multi-node cross-edge strike-register
+    replication against replay, and ephemeral (EC)DHE forward secrecy against
+    retroactive long-term PSK/STEK compromise directly modeled in
+    =threat/tls13-0rtt-forward-secrecy=.
 
 * 3. Exact-Effect Handoff, Durability & Rollback Resistance
 
@@ -74,9 +138,29 @@ informs.
   *Thomas E. Hart et al. (2007)*, /Performance of Memory Reclamation for
   Lockless Synchronization/, JPDC.
   - Epoch-Based Reclamation (EBR) and safe memory reclamation invariants.
+- *Maged M. Michael (2004)*, /Hazard Pointers: Safe Memory Reclamation for
+  Lock-Free Objects/, IEEE TPDS 15(6); and *Peter Sewell, Susmit Sarkar, Scott
+  Owens, Francesco Zappa Nardelli, Magnus O. Myreen (2010)*, /x86-TSO: A
+  Rigorous and Usable Programmer's Model for x86 Multiprocessors/, CACM 53(7).
+  - Explicit per-thread TSO store-buffer reordering and mandatory =mfence=
+    before validation; omitting the fence yields a genuine 7-step emergent
+    Use-After-Free counterexample in =engineering/parallel/hazard-pointers-tso=.
 - *Backpressure & Bounded Ownership*:
   - Informed by reactive-streams / bounded-queue flow control and realized in
     =engineering/concurrency/backpressure-memory=.
+- *Martin Kleppmann (2016)*, /How to do distributed locking/; *Mike Burrows
+  (2006)*, /The Chubby lock service for loosely-coupled distributed systems/,
+  OSDI 2006; and *Diego Ongaro & John Ousterhout (2014)*, /In Search of an
+  Understandable Consensus Algorithm/ (Raft), USENIX ATC 2014.
+  - Monotonic fencing tokens neutralizing zombie writes from paused lease
+    holders; directly modeled in =engineering/concurrency/lease-fencing-token=.
+  - Raft §5.4.1 up-to-date log election restriction and §5.4.2 Figure 8
+    current-term commitment rule (automatically synthesizing the classic 8-step
+    Figure 8 commit-overwrite counterexample when omitted) directly modeled in
+    =engineering/consensus/raft-leader-commitment=.
+  - Saga compensating transactions, idempotency key deduplication under reply
+    loss, and durable cancellation tombstones blocking late in-flight retries
+    modeled in =engineering/concurrency/saga-compensation-idempotency=.
 
 * 5. Garbage Collection & Memory-Barrier Verification
 
@@ -97,3 +181,30 @@ informs.
   Handbook: The Art of Automatic Memory Management/ (2nd ed.), CRC Press.
   - Comprehensive taxonomy of concurrent marking, barriers, and safepoints used
     to structure =engineering/gc/=.
+
+* 6. Storage Crash Consistency & Write-Ahead Logging
+
+- *C. Mohan, Don Haderle, Bruce Lindsay, Hamid Pirahesh, Peter Schwarz (1992)*,
+  /ARIES: A Transaction Recovery Method Supporting Fine-Granularity Locking and
+  Partial Rollbacks Using Write-Ahead Logging/, ACM TODS 17(1).
+  - Canonical Write-Ahead Logging rule: redo/undo log records must reach stable
+    storage before dirty in-place data pages are flushed to disk.
+- *Thanumalayan Sankaranarayana Pillai, Vijay Chidambaram, Ramnatthan Alagappan,
+  Samer Al-Kiswany, Andrea C. Arpaci-Dusseau, Remzi H. Arpaci-Dusseau (2014)*,
+  /All File Systems Are Not Created Equal: On the Complexity of Crafting
+  Crash-Consistent Applications/, USENIX OSDI 2014 (BOB / ALICE); and *James
+  Bornholt et al. (2016)*, /Specifying and Checking File System Crash-Consistency
+  Models/, ASPLOS 2016.
+  - Formalizes out-of-order OS page-cache writeback and missing-=fsync= commit
+    loss anomalies directly modeled in =engineering/storage/wal-crash-recovery=.
+- *Hal Berenson, Phil Bernstein, Jim Gray, Jim Melton, Elizabeth O'Neil,
+  Patrick O'Neil (1995)*, /A Critique of ANSI SQL Isolation Levels/, ACM SIGMOD
+  1995; *Atul Adya, Barbara Liskov, Patrick O'Neil (2000)*, /Generalized
+  Isolation Level Definitions/, ICDE 2000; *Michael J. Cahill, Uwe Röhm, Alan D.
+  Fekete (2008 / 2009)*, /Serializable Isolation for Snapshot Databases/, ACM
+  SIGMOD 2008 / ACM TODS 2009; and *Dan R. K. Ports & Kevin Grittner (2012)*,
+  /Serializable Snapshot Isolation in PostgreSQL/, PVLDB 2012.
+  - Formalizes Snapshot Isolation Write Skew (A5B), First-Committer-Wins lost
+    update conservation, dangerous =rw=-antidependency cycles, post-commit
+    =SIREAD= lock retention (§2.2), and read-time =rw=-conflict detection (§3.2)
+    directly modeled in =engineering/storage/mvcc-ssi-write-skew=.

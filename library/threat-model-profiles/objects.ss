@@ -19,11 +19,25 @@
   (only-in "../governance-sod/objects.ss" GovernanceSodModel)
   (only-in "../data-lineage-disclosure/objects.ss" DataLineageDisclosureModel)
   (only-in "../oauth-revocation-recovery/objects.ss" OAuthRevocationRecoveryModel)
+  (only-in "../agent-ifc-capability/objects.ss" AgentIfcCapabilityModel)
+  (only-in "../dpop-sender-constrain/objects.ss" DpopSenderConstrainModel)
+  (only-in "../supply-chain-tuf/objects.ss" SupplyChainTufModel)
+  (only-in "../macaroon-delegation-chain/objects.ss" MacaroonDelegationModel)
+  (only-in "../webauthn-passkey-ceremony/objects.ss" WebAuthnPasskeyCeremonyModel)
+  (only-in "../transparency-log-gossip/objects.ss" TransparencyLogGossipModel)
+  (only-in "../wasm-sandbox-confinement/objects.ss" WasmSandboxConfinementModel)
+  (only-in "../tls13-0rtt-forward-secrecy/objects.ss" Tls13ZeroRttForwardSecrecyModel)
   (only-in "../gc-tricolor-barrier/objects.ss" TricolorWriteBarrierModel)
   (only-in "../gc-safepoint-handshake/objects.ss" SafepointHandshakeModel)
   (only-in "../parallel-epoch-reclamation/objects.ss" EpochReclamationModel)
   (only-in "../parallel-work-stealing/objects.ss" WorkStealingDequeModel)
+  (only-in "../parallel-hazard-pointers-tso/objects.ss" HazardPointersTsoModel)
   (only-in "../concurrency-structured-cancel/objects.ss" StructuredCancelModel)
+  (only-in "../concurrency-lease-fencing/objects.ss" LeaseFencingModel)
+  (only-in "../concurrency-saga-compensation/objects.ss" SagaCompensationModel)
+  (only-in "../storage-wal-crash-recovery/objects.ss" WalCrashRecoveryModel)
+  (only-in "../storage-mvcc-ssi/objects.ss" MvccSsiWriteSkewModel)
+  (only-in "../consensus-raft-commitment/objects.ss" RaftLeaderCommitmentModel)
   (only-in "../quint-methods/types.ss" QuintProfileType))
 (export ThreatModelProfiles)
 
@@ -143,6 +157,70 @@
           positive-depth: 12
           negative-depth: 6
           require-countermodels?: #t))
+    agent-ifc-capability:
+    (checked-profile
+      (.o identity: 'agent-ifc-capability
+          model: AgentIfcCapabilityModel
+          seed: 7
+          positive-depth: 12
+          negative-depth: 4
+          require-countermodels?: #t))
+    dpop-sender-constrain:
+    (checked-profile
+      (.o identity: 'dpop-sender-constrain
+          model: DpopSenderConstrainModel
+          seed: 7
+          positive-depth: 12
+          negative-depth: 6
+          require-countermodels?: #t))
+    supply-chain-tuf:
+    (checked-profile
+      (.o identity: 'supply-chain-tuf
+          model: SupplyChainTufModel
+          seed: 7
+          positive-depth: 12
+          negative-depth: 6
+          require-countermodels?: #t))
+    macaroon-delegation-chain:
+    (checked-profile
+      (.o identity: 'macaroon-delegation-chain
+          model: MacaroonDelegationModel
+          seed: 7
+          positive-depth: 12
+          negative-depth: 6
+          require-countermodels?: #t))
+    webauthn-passkey-ceremony:
+    (checked-profile
+      (.o identity: 'webauthn-passkey-ceremony
+          model: WebAuthnPasskeyCeremonyModel
+          seed: 7
+          positive-depth: 12
+          negative-depth: 6
+          require-countermodels?: #t))
+    transparency-log-gossip:
+    (checked-profile
+      (.o identity: 'transparency-log-gossip
+          model: TransparencyLogGossipModel
+          seed: 7
+          positive-depth: 12
+          negative-depth: 6
+          require-countermodels?: #t))
+    wasm-sandbox-confinement:
+    (checked-profile
+      (.o identity: 'wasm-sandbox-confinement
+          model: WasmSandboxConfinementModel
+          seed: 7
+          positive-depth: 12
+          negative-depth: 6
+          require-countermodels?: #t))
+    tls13-0rtt-forward-secrecy:
+    (checked-profile
+      (.o identity: 'tls13-0rtt-forward-secrecy
+          model: Tls13ZeroRttForwardSecrecyModel
+          seed: 7
+          positive-depth: 10
+          negative-depth: 6
+          require-countermodels?: #t))
     gc-tricolor-barrier:
     (checked-profile
       (.o identity: 'gc-tricolor-barrier
@@ -175,6 +253,14 @@
           positive-depth: 12
           negative-depth: 4
           require-countermodels?: #t))
+    parallel-hazard-pointers-tso:
+    (checked-profile
+      (.o identity: 'parallel-hazard-pointers-tso
+          model: HazardPointersTsoModel
+          seed: 7
+          positive-depth: 12
+          negative-depth: 9
+          require-countermodels?: #t))
     concurrency-structured-cancel:
     (checked-profile
       (.o identity: 'concurrency-structured-cancel
@@ -182,4 +268,44 @@
           seed: 7
           positive-depth: 12
           negative-depth: 4
+          require-countermodels?: #t))
+    concurrency-lease-fencing:
+    (checked-profile
+      (.o identity: 'concurrency-lease-fencing
+          model: LeaseFencingModel
+          seed: 7
+          positive-depth: 12
+          negative-depth: 6
+          require-countermodels?: #t))
+    concurrency-saga-compensation:
+    (checked-profile
+      (.o identity: 'concurrency-saga-compensation
+          model: SagaCompensationModel
+          seed: 7
+          positive-depth: 12
+          negative-depth: 6
+          require-countermodels?: #t))
+    storage-wal-crash-recovery:
+    (checked-profile
+      (.o identity: 'storage-wal-crash-recovery
+          model: WalCrashRecoveryModel
+          seed: 7
+          positive-depth: 12
+          negative-depth: 6
+          require-countermodels?: #t))
+    storage-mvcc-ssi:
+    (checked-profile
+      (.o identity: 'storage-mvcc-ssi
+          model: MvccSsiWriteSkewModel
+          seed: 7
+          positive-depth: 10
+          negative-depth: 9
+          require-countermodels?: #t))
+    consensus-raft-commitment:
+    (checked-profile
+      (.o identity: 'consensus-raft-commitment
+          model: RaftLeaderCommitmentModel
+          seed: 7
+          positive-depth: 10
+          negative-depth: 9
           require-countermodels?: #t))))

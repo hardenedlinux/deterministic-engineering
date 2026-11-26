@@ -2,8 +2,7 @@
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 ;;; Structured concurrency cancellation & child-drain quiescence model.
-;;; Models parent scope cancellation waiting for all child tasks to drain before exit,
-;;; paired with a fire-and-forget exit countermodel producing orphaned side effects.
+;;; Typed structural AST + auto-derived fire-and-forget countermodel via (guard ...).
 (import :clan/poo/object
         (only-in "../threat-capabilities/objects.ss" ThreatModel.))
 (export StructuredCancelModel FireAndForgetExitCountermodel)
@@ -27,25 +26,74 @@
            (c1State "int" "0")
            (c2State "int" "0")
            (orphanEffect "bool" "false"))
-  guards: '((child-quiescence-barrier "h.c1State != 1 and h.c1State != 2 and h.c2State != 1 and h.c2State != 2"))
+  guards: '((child-quiescence-barrier (and (!= (. h c1State) 1) (!= (. h c1State) 2)
+                                           (!= (. h c2State) 1) (!= (. h c2State) 2))))
   transitions:
-  '((childrenQuiescent "val childrenQuiescent = h.c1State != 1 and h.c1State != 2 and h.c2State != 1 and h.c2State != 2")
-    (spawnC1 "action spawnC1 = if (not(h.parentExited) and not(h.cancelRequested) and h.c1State == 0)\n    h' = h.with(\"c1State\", 1)\n    else h' = h")
-    (spawnC2 "action spawnC2 = if (not(h.parentExited) and not(h.cancelRequested) and h.c2State == 0)\n    h' = h.with(\"c2State\", 1)\n    else h' = h")
-    (requestCancel "action requestCancel = if (not(h.parentExited) and not(h.cancelRequested))\n    h' = h.with(\"cancelRequested\", true)\n    else h' = h")
-    (c1Drain "action c1Drain = if (h.c1State == 1 and h.cancelRequested)\n    h' = h.with(\"c1State\", 2)\n    else h' = h")
-    (c2Drain "action c2Drain = if (h.c2State == 1 and h.cancelRequested)\n    h' = h.with(\"c2State\", 2)\n    else h' = h")
-    (c1Complete "action c1Complete = if (h.c1State == 1 or h.c1State == 2)\n    h' = h.with(\"c1State\", 3).with(\"orphanEffect\", h.orphanEffect or h.parentExited)\n    else h' = h")
-    (c2Complete "action c2Complete = if (h.c2State == 1 or h.c2State == 2)\n    h' = h.with(\"c2State\", 3).with(\"orphanEffect\", h.orphanEffect or h.parentExited)\n    else h' = h")
-    (parentExit "action parentExit = if (not(h.parentExited) and h.cancelRequested and childrenQuiescent)\n    h' = h.with(\"parentExited\", true)\n    else h' = h")
-    (step "action step = any { spawnC1, spawnC2, requestCancel, c1Drain, c2Drain, c1Complete, c2Complete, parentExit }"))
-  safety: "not(h.orphanEffect) and (not(h.parentExited) or childrenQuiescent)"
+  '((childrenQuiescent
+     (val childrenQuiescent
+       (and (!= (. h c1State) 1) (!= (. h c1State) 2)
+            (!= (. h c2State) 1) (!= (. h c2State) 2))))
+    (spawnC1
+     (action spawnC1 ()
+       (if (and (not (. h parentExited)) (not (. h cancelRequested)) (= (. h c1State) 0))
+         (set-h (c1State 1))
+         (keep-h))))
+    (spawnC2
+     (action spawnC2 ()
+       (if (and (not (. h parentExited)) (not (. h cancelRequested)) (= (. h c2State) 0))
+         (set-h (c2State 1))
+         (keep-h))))
+    (requestCancel
+     (action requestCancel ()
+       (if (and (not (. h parentExited)) (not (. h cancelRequested)))
+         (set-h (cancelRequested #t))
+         (keep-h))))
+    (c1Drain
+     (action c1Drain ()
+       (if (and (= (. h c1State) 1) (. h cancelRequested))
+         (set-h (c1State 2))
+         (keep-h))))
+    (c2Drain
+     (action c2Drain ()
+       (if (and (= (. h c2State) 1) (. h cancelRequested))
+         (set-h (c2State 2))
+         (keep-h))))
+    (c1Complete
+     (action c1Complete ()
+       (if (or (= (. h c1State) 1) (= (. h c1State) 2))
+         (set-h (c1State 3) (orphanEffect (or (. h orphanEffect) (. h parentExited))))
+         (keep-h))))
+    (c2Complete
+     (action c2Complete ()
+       (if (or (= (. h c2State) 1) (= (. h c2State) 2))
+         (set-h (c2State 3) (orphanEffect (or (. h orphanEffect) (. h parentExited))))
+         (keep-h))))
+    (parentExit
+     (action parentExit ()
+       (if (and (not (. h parentExited))
+                (. h cancelRequested)
+                (guard child-quiescence-barrier childrenQuiescent))
+         (set-h (parentExited #t))
+         (keep-h))))
+    (step
+     (action step ()
+       (any spawnC1 spawnC2 requestCancel c1Drain c2Drain c1Complete c2Complete parentExit))))
+  safety:
+  '(and (not (. h orphanEffect))
+        (or (not (. h parentExited)) childrenQuiescent))
   traces:
-  '((checkSafeExit "action checkSafeExit = all { assert(h.parentExited), assert(safety), h' = h }")
-    (checkOrphan "action checkOrphan = all { assert(h.orphanEffect), assert(not(safety)), h' = h }")
-    (gracefulDrainExitTest "run gracefulDrainExitTest = init.then(spawnC1).then(requestCancel).then(c1Drain).then(c1Complete).then(parentExit).then(checkSafeExit)")
-    (activeChildBlocksExitTest "run activeChildBlocksExitTest = init.then(spawnC1).then(requestCancel).then(parentExit).then(all { assert(not(h.parentExited)), assert(safety), h' = h })")
-    (fireAndForgetOrphanTest "run fireAndForgetOrphanTest = init.then(spawnC1).then(requestCancel).then(parentExitUnchecked).then(c1Complete).then(checkOrphan)"))
+  '((checkSafeExit (action checkSafeExit () (all (assert (. h parentExited)) (assert safety) (keep-h))))
+    (checkOrphan (action checkOrphan () (all (assert (. h orphanEffect)) (assert (not safety)) (keep-h))))
+    (gracefulDrainExitTest
+     (run gracefulDrainExitTest
+       (then init spawnC1 requestCancel c1Drain c1Complete parentExit checkSafeExit)))
+    (activeChildBlocksExitTest
+     (run activeChildBlocksExitTest
+       (then init spawnC1 requestCancel parentExit
+             (all (assert (not (. h parentExited))) (assert safety) (keep-h)))))
+    (fireAndForgetOrphanTest
+     (run fireAndForgetOrphanTest
+       (then init spawnC1 requestCancel parentExitUnchecked c1Complete checkOrphan))))
   countermodels: (list FireAndForgetExitCountermodel)
   limits: "Finite 2-child structured concurrency abstraction; does not model OS thread scheduling, panic unwinding, or non-cooperative blocking I/O.")
 
@@ -54,5 +102,6 @@
   identity: 'engineering.concurrency.structured-cancellation.fire-and-forget-exit
   dropped-guard: 'child-quiescence-barrier
   step-action: "stepFireAndForgetExit"
-  counter-action: "action parentExitUnchecked = if (not(h.parentExited) and h.cancelRequested)\n    h' = h.with(\"parentExited\", true)\n    else h' = h\n  action stepFireAndForgetExit = any { step, parentExitUnchecked }"
+  derive-from-transition: 'parentExit
+  derive-action-name: 'parentExitUnchecked
   expected-itf-predicate: "h.parentExited == true and (h.c1State == 1 or h.c2State == 1)")

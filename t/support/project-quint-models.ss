@@ -22,11 +22,25 @@
   "../../library/governance-sod/objects.ss"
   "../../library/data-lineage-disclosure/objects.ss"
   "../../library/oauth-revocation-recovery/objects.ss"
+  "../../library/agent-ifc-capability/objects.ss"
+  "../../library/dpop-sender-constrain/objects.ss"
+  "../../library/supply-chain-tuf/objects.ss"
+  "../../library/macaroon-delegation-chain/objects.ss"
+  "../../library/webauthn-passkey-ceremony/objects.ss"
+  "../../library/transparency-log-gossip/objects.ss"
+  "../../library/wasm-sandbox-confinement/objects.ss"
+  "../../library/tls13-0rtt-forward-secrecy/objects.ss"
   "../../library/gc-tricolor-barrier/objects.ss"
   "../../library/gc-safepoint-handshake/objects.ss"
   "../../library/parallel-epoch-reclamation/objects.ss"
   "../../library/parallel-work-stealing/objects.ss"
+  "../../library/parallel-hazard-pointers-tso/objects.ss"
   "../../library/concurrency-structured-cancel/objects.ss"
+  "../../library/concurrency-lease-fencing/objects.ss"
+  "../../library/concurrency-saga-compensation/objects.ss"
+  "../../library/storage-wal-crash-recovery/objects.ss"
+  "../../library/storage-mvcc-ssi/objects.ss"
+  "../../library/consensus-raft-commitment/objects.ss"
   "../../library/quint-methods/objects.ss"
   "../../library/quint-methods/methods.ss"
   "../../library/threat-model-profiles/objects.ss")
@@ -48,11 +62,25 @@
     (list GovernanceSodModel (.get ThreatModelProfiles governance-sod))
     (list DataLineageDisclosureModel (.get ThreatModelProfiles data-lineage-disclosure))
     (list OAuthRevocationRecoveryModel (.get ThreatModelProfiles oauth-revocation-recovery))
+    (list AgentIfcCapabilityModel (.get ThreatModelProfiles agent-ifc-capability))
+    (list DpopSenderConstrainModel (.get ThreatModelProfiles dpop-sender-constrain))
+    (list SupplyChainTufModel (.get ThreatModelProfiles supply-chain-tuf))
+    (list MacaroonDelegationModel (.get ThreatModelProfiles macaroon-delegation-chain))
+    (list WebAuthnPasskeyCeremonyModel (.get ThreatModelProfiles webauthn-passkey-ceremony))
+    (list TransparencyLogGossipModel (.get ThreatModelProfiles transparency-log-gossip))
+    (list WasmSandboxConfinementModel (.get ThreatModelProfiles wasm-sandbox-confinement))
+    (list Tls13ZeroRttForwardSecrecyModel (.get ThreatModelProfiles tls13-0rtt-forward-secrecy))
     (list TricolorWriteBarrierModel (.get ThreatModelProfiles gc-tricolor-barrier))
     (list SafepointHandshakeModel (.get ThreatModelProfiles gc-safepoint-handshake))
     (list EpochReclamationModel (.get ThreatModelProfiles parallel-epoch-reclamation))
     (list WorkStealingDequeModel (.get ThreatModelProfiles parallel-work-stealing))
-    (list StructuredCancelModel (.get ThreatModelProfiles concurrency-structured-cancel))))
+    (list HazardPointersTsoModel (.get ThreatModelProfiles parallel-hazard-pointers-tso))
+    (list StructuredCancelModel (.get ThreatModelProfiles concurrency-structured-cancel))
+    (list LeaseFencingModel (.get ThreatModelProfiles concurrency-lease-fencing))
+    (list SagaCompensationModel (.get ThreatModelProfiles concurrency-saga-compensation))
+    (list WalCrashRecoveryModel (.get ThreatModelProfiles storage-wal-crash-recovery))
+    (list MvccSsiWriteSkewModel (.get ThreatModelProfiles storage-mvcc-ssi))
+    (list RaftLeaderCommitmentModel (.get ThreatModelProfiles consensus-raft-commitment))))
 
 (def (ensure-qnt-header text identity)
   (if (string-contains text "// @quint-model ")

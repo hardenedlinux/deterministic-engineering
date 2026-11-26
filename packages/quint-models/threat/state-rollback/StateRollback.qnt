@@ -3,27 +3,22 @@
 // @quint-model threat.state-rollback
 // @quint-version 0.33.0
 // @apalache-version 0.62.1
-// @verify safety max-steps=12
-// @countermodel durable-ack step=stepNoDurability max-steps=6 itf="h.unsafe == true and h.sent >= 1"
-// @countermodel monotonic-storage step=stepRollback max-steps=6 itf="h.unsafe == true and h.sent >= 2"
+// @verify safety max-steps=12 const="MaxSends=1"
+// @countermodel durable-ack step=stepNoDurability max-steps=6 itf="h.sent >= 1 and not(h.durable)"
+// @countermodel monotonic-storage step=stepRollback max-steps=6 itf="h.sent >= 2"
 // Limits: Finite rollback model; does not prove physical storage atomicity or external rail deduplication.
 module state_rollback {
   import authority_currentness.* from "../authority-currentness/AuthorityCurrentness"
   const MaxSends: int
-  type State = { phase: int, epoch: int, planned: int, paused: bool, fresh: bool, credential: bool, bytes: bool, durable: bool, unknown: bool, sent: int, unsafe: bool }
+  type State = { phase: int, epoch: int, planned: int, paused: bool, fresh: bool, credential: bool, bytes: bool, durable: bool, unknown: bool, sent: int }
   var h: State
-  action init = h' = { phase: 0, epoch: 0, planned: 0, paused: false, fresh: true, credential: true, bytes: true, durable: false, unknown: false, sent: 0, unsafe: false }
+  action init = h' = { phase: 0, epoch: 0, planned: 0, paused: false, fresh: true, credential: true, bytes: true, durable: false, unknown: false, sent: 0 }
   val current = isCurrent(h.paused, h.fresh, h.credential, h.bytes)
-  action prepare = if (h.phase == 0 and not(h.unknown) and current)
-    h' = h.with("phase", 1).with("planned", h.epoch) else h' = h
-  action commitAs(verified: bool): bool = if (h.phase == 1 and verified and current and epochCurrent(h.epoch, h.planned))
-    h' = h.with("phase", 2).with("durable", true).with("unknown", true) else h' = h
+  action prepare = if ((h.phase == 0 and not(h.unknown) and current)) h' = h.with("phase", 1).with("planned", h.epoch) else h' = h
+  action commitAs(verified: bool): bool = if ((h.phase == 1 and verified and current and epochCurrent(h.epoch, h.planned))) h' = h.with("phase", 2).with("durable", true).with("unknown", true) else h' = h
   action commit = { nondet verified = Set(false, true).oneOf()
     commitAs(verified) }
-  action emit = if (h.phase == 2 and current and h.durable and epochCurrent(h.epoch, h.planned))
-    h' = h.with("phase", 3).with("unknown", true).with("sent", h.sent + 1)
-      .with("unsafe", h.unsafe or h.sent >= MaxSends)
-    else h' = h
+  action emit = if (((h.phase == 2 and h.durable) and h.phase != 0 and h.phase != 3 and current and epochCurrent(h.epoch, h.planned) and h.sent < MaxSends)) h' = h.with("phase", 3).with("unknown", true).with("sent", (h.sent + 1)) else h' = h
   action pause = h' = h.with("paused", true)
   action expire = h' = h.with("fresh", false)
   action changeWriter = h' = h.with("epoch", 1)
@@ -31,14 +26,12 @@ module state_rollback {
   action revoke = h' = h.with("credential", false)
   action recover = h' = h
   action step = any { prepare, commit, emit, pause, expire, changeWriter, substitute, revoke, recover }
-  val safety = not(h.unsafe) and h.sent <= MaxSends and (h.sent == 0 or h.unknown)
+  val safety = (h.sent <= MaxSends and (h.sent == 0 or (h.durable and h.unknown)))
   // Countermodel threat.effect-handoff.no-durability (dropped guard: durable-ack)
-  action noDurability = if (h.phase == 1 and current)
-    h' = h.with("sent", h.sent + 1).with("unsafe", true) else h' = h
+  action noDurability = if ((true and h.phase != 0 and h.phase != 3 and current and epochCurrent(h.epoch, h.planned) and h.sent < MaxSends)) h' = h.with("phase", 3).with("unknown", true).with("sent", (h.sent + 1)) else h' = h
   action stepNoDurability = any { step, noDurability }
   // Countermodel threat.state-rollback.replay-old-state (dropped guard: monotonic-storage)
-  action replayOldState = if (h.phase == 3)
-    h' = h.with("sent", h.sent + 1).with("unsafe", true) else h' = h
+  action replayOldState = if (h.phase == 3) h' = h.with("sent", (h.sent + 1)) else h' = h
   action stepRollback = any { step, replayOldState }
   action blocked = all { assert(h.sent == 0), assert(safety), h' = h }
   action once = all { assert(h.sent == 1), assert(h.unknown), assert(safety), h' = h }

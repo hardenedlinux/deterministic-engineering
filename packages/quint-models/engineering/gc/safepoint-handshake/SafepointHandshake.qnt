@@ -10,32 +10,18 @@ module gc_safepoint_handshake {
   type State = { phase: int, m1Barrier: bool, m2Barrier: bool, unbarrieredWrite: bool }
   var h: State
   action init = h' = { phase: 0, m1Barrier: false, m2Barrier: false, unbarrieredWrite: false }
-  action requestSyncMark = if (h.phase == 0)
-    h' = h.with("phase", 1)
-    else h' = h
-  action m1AckSafepoint = if (h.phase == 1 and not(h.m1Barrier))
-    h' = h.with("m1Barrier", true)
-    else h' = h
-  action m2AckSafepoint = if (h.phase == 1 and not(h.m2Barrier))
-    h' = h.with("m2Barrier", true)
-    else h' = h
-  action enterMark = if (h.phase == 1 and h.m1Barrier and h.m2Barrier)
-    h' = h.with("phase", 2)
-    else h' = h
-  action m1Mutate = h' = h.with("unbarrieredWrite", h.unbarrieredWrite or (h.phase == 2 and not(h.m1Barrier)))
-  action m2Mutate = h' = h.with("unbarrieredWrite", h.unbarrieredWrite or (h.phase == 2 and not(h.m2Barrier)))
-  action enterSweep = if (h.phase == 2)
-    h' = h.with("phase", 3)
-    else h' = h
-  action finishCycle = if (h.phase == 3)
-    h' = h.with("phase", 0).with("m1Barrier", false).with("m2Barrier", false)
-    else h' = h
+  action requestSyncMark = if (h.phase == 0) h' = h.with("phase", 1) else h' = h
+  action m1AckSafepoint = if ((h.phase == 1 and not(h.m1Barrier))) h' = h.with("m1Barrier", true) else h' = h
+  action m2AckSafepoint = if ((h.phase == 1 and not(h.m2Barrier))) h' = h.with("m2Barrier", true) else h' = h
+  action enterMark = if ((h.phase == 1 and (h.m1Barrier and h.m2Barrier))) h' = h.with("phase", 2) else h' = h
+  action m1Mutate = h' = h.with("unbarrieredWrite", (h.unbarrieredWrite or (h.phase == 2 and not(h.m1Barrier))))
+  action m2Mutate = h' = h.with("unbarrieredWrite", (h.unbarrieredWrite or (h.phase == 2 and not(h.m2Barrier))))
+  action enterSweep = if (h.phase == 2) h' = h.with("phase", 3) else h' = h
+  action finishCycle = if (h.phase == 3) h' = h.with("phase", 0).with("m1Barrier", false).with("m2Barrier", false) else h' = h
   action step = any { requestSyncMark, m1AckSafepoint, m2AckSafepoint, enterMark, m1Mutate, m2Mutate, enterSweep, finishCycle }
-  val safety = not(h.unbarrieredWrite) and (h.phase != 2 or (h.m1Barrier and h.m2Barrier))
+  val safety = (not(h.unbarrieredWrite) and (h.phase != 2 or (h.m1Barrier and h.m2Barrier)))
   // Countermodel engineering.gc.safepoint-handshake.skip-handshake (dropped guard: mutator-safepoint-ack)
-  action enterMarkNoHandshake = if (h.phase == 1)
-    h' = h.with("phase", 2)
-    else h' = h
+  action enterMarkNoHandshake = if ((h.phase == 1 and true)) h' = h.with("phase", 2) else h' = h
   action stepSkipHandshake = any { step, enterMarkNoHandshake }
   action checkSafe = all { assert(safety), h' = h }
   action checkUnsafe = all { assert(not(safety)), h' = h }

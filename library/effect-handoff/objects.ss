@@ -1,7 +1,8 @@
 ;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
-;;; Domain-owned guarded effect handoff model; weakened countermodel is a POO descendant.
+;;; Domain-owned guarded effect handoff model; weakened countermodel auto-derived via (guard ...).
+;;; Emergent safety (zero synthetic unsafe flag).
 (import :clan/poo/object
         (only-in "../authority-currentness/objects.ss" AuthorityCurrentnessModel))
 (export EffectHandoffModel NoDurabilityCountermodel)
@@ -19,6 +20,7 @@
                   (HAND-NODUR source) (HAND-NODUR profile) (HAND-NODUR method))
   invariant: "Prepared effects commit durably under current authority and emit at most MaxSends times while retaining unknown outcomes."
   parameters: '((MaxSends "int"))
+  verify-const-bindings: '((MaxSends "1"))
   state: '((phase "int" "0")
            (epoch "int" "0")
            (planned "int" "0")
@@ -28,37 +30,61 @@
            (bytes "bool" "true")
            (durable "bool" "false")
            (unknown "bool" "false")
-           (sent "int" "0")
-           (unsafe "bool" "false"))
-  guards: '((authority-current "isCurrent(h.paused, h.fresh, h.credential, h.bytes)")
-            (epoch-current "epochCurrent(h.epoch, h.planned)")
-            (durable-ack "h.durable"))
+           (sent "int" "0"))
+  guards: '((authority-current (call isCurrent (. h paused) (. h fresh) (. h credential) (. h bytes)))
+            (epoch-current (call epochCurrent (. h epoch) (. h planned)))
+            (durable-ack (and (= (. h phase) 2) (. h durable))))
   transitions:
-  '((current "val current = isCurrent(h.paused, h.fresh, h.credential, h.bytes)")
-    (prepare "action prepare = if (h.phase == 0 and not(h.unknown) and current)\n    h' = h.with(\"phase\", 1).with(\"planned\", h.epoch) else h' = h")
-    (commitAs "action commitAs(verified: bool): bool = if (h.phase == 1 and verified and current and epochCurrent(h.epoch, h.planned))\n    h' = h.with(\"phase\", 2).with(\"durable\", true).with(\"unknown\", true) else h' = h")
-    (commit "action commit = { nondet verified = Set(false, true).oneOf()\n    commitAs(verified) }")
-    (emit "action emit = if (h.phase == 2 and current and h.durable and epochCurrent(h.epoch, h.planned))\n    h' = h.with(\"phase\", 3).with(\"unknown\", true).with(\"sent\", h.sent + 1)\n      .with(\"unsafe\", h.unsafe or h.sent >= MaxSends)\n    else h' = h")
-    (pause "action pause = h' = h.with(\"paused\", true)")
-    (expire "action expire = h' = h.with(\"fresh\", false)")
-    (changeWriter "action changeWriter = h' = h.with(\"epoch\", 1)")
-    (substitute "action substitute = h' = h.with(\"bytes\", false)")
-    (revoke "action revoke = h' = h.with(\"credential\", false)")
-    (recover "action recover = h' = h")
-    (step "action step = any { prepare, commit, emit, pause, expire, changeWriter, substitute, revoke, recover }"))
-  safety: "not(h.unsafe) and h.sent <= MaxSends and (h.sent == 0 or h.unknown)"
+  '((current
+     (val current (call isCurrent (. h paused) (. h fresh) (. h credential) (. h bytes))))
+    (prepare
+     (action prepare ()
+       (if (and (= (. h phase) 0) (not (. h unknown)) current)
+         (set-h (phase 1) (planned (. h epoch)))
+         (keep-h))))
+    (commitAs
+     (action commitAs ((verified "bool")) "bool"
+       (if (and (= (. h phase) 1) verified current (call epochCurrent (. h epoch) (. h planned)))
+         (set-h (phase 2) (durable #t) (unknown #t))
+         (keep-h))))
+    (commit
+     (action commit ()
+       (nondet ((verified (set #f #t)))
+         (call commitAs verified))))
+    (emit
+     (action emit ()
+       (if (and (guard durable-ack (and (= (. h phase) 2) (. h durable)))
+                (!= (. h phase) 0)
+                (!= (. h phase) 3)
+                current
+                (call epochCurrent (. h epoch) (. h planned))
+                (< (. h sent) MaxSends))
+         (set-h (phase 3) (unknown #t) (sent (+ (. h sent) 1)))
+         (keep-h))))
+    (pause (action pause () (set-h (paused #t))))
+    (expire (action expire () (set-h (fresh #f))))
+    (changeWriter (action changeWriter () (set-h (epoch 1))))
+    (substitute (action substitute () (set-h (bytes #f))))
+    (revoke (action revoke () (set-h (credential #f))))
+    (recover (action recover () (keep-h)))
+    (step
+     (action step ()
+       (any prepare commit emit pause expire changeWriter substitute revoke recover))))
+  safety:
+  '(and (<= (. h sent) MaxSends)
+        (or (= (. h sent) 0) (and (. h durable) (. h unknown))))
   traces:
-  '((blocked "action blocked = all { assert(h.sent == 0), assert(safety), h' = h }")
-    (once "action once = all { assert(h.sent == 1), assert(h.unknown), assert(safety), h' = h }")
-    (unsafe "action unsafe = all { assert(not(safety)), h' = h }")
-    (exactHandoffTest "run exactHandoffTest = init.then(prepare).then(commitAs(true)).then(emit).then(once)")
-    (absentAckTest "run absentAckTest = init.then(prepare).then(commitAs(false)).then(emit).then(blocked)")
-    (expiredTest "run expiredTest = init.then(prepare).then(commitAs(true)).then(expire).then(emit).then(blocked)")
-    (pausedTest "run pausedTest = init.then(prepare).then(pause).then(commitAs(true)).then(emit).then(blocked)")
-    (writerChangedTest "run writerChangedTest = init.then(prepare).then(commitAs(true)).then(changeWriter).then(emit).then(blocked)")
-    (substitutedBytesTest "run substitutedBytesTest = init.then(prepare).then(commitAs(true)).then(substitute).then(emit).then(blocked)")
-    (revokedCredentialTest "run revokedCredentialTest = init.then(prepare).then(commitAs(true)).then(revoke).then(emit).then(blocked)")
-    (lostReplyTest "run lostReplyTest = init.then(prepare).then(commitAs(true)).then(emit).then(recover).then(prepare).then(emit).then(once)"))
+  '((blocked (action blocked () (all (assert (= (. h sent) 0)) (assert safety) (keep-h))))
+    (once (action once () (all (assert (= (. h sent) 1)) (assert (. h unknown)) (assert safety) (keep-h))))
+    (unsafe (action unsafe () (all (assert (not safety)) (keep-h))))
+    (exactHandoffTest (run exactHandoffTest (then init prepare (call commitAs #t) emit once)))
+    (absentAckTest (run absentAckTest (then init prepare (call commitAs #f) emit blocked)))
+    (expiredTest (run expiredTest (then init prepare (call commitAs #t) expire emit blocked)))
+    (pausedTest (run pausedTest (then init prepare pause (call commitAs #t) emit blocked)))
+    (writerChangedTest (run writerChangedTest (then init prepare (call commitAs #t) changeWriter emit blocked)))
+    (substitutedBytesTest (run substitutedBytesTest (then init prepare (call commitAs #t) substitute emit blocked)))
+    (revokedCredentialTest (run revokedCredentialTest (then init prepare (call commitAs #t) revoke emit blocked)))
+    (lostReplyTest (run lostReplyTest (then init prepare (call commitAs #t) emit recover prepare emit once))))
   countermodels: (list NoDurabilityCountermodel)
   limits: "Finite protocol abstraction; trusted bits summarize native interpreters; no cryptography, real CAS, codec correctness or Lean refinement is claimed.")
 
@@ -67,5 +93,6 @@
   identity: 'threat.effect-handoff.no-durability
   dropped-guard: 'durable-ack
   step-action: "stepNoDurability"
-  counter-action: "action noDurability = if (h.phase == 1 and current)\n    h' = h.with(\"sent\", h.sent + 1).with(\"unsafe\", true) else h' = h\n  action stepNoDurability = any { step, noDurability }"
-  expected-itf-predicate: "h.unsafe == true and h.sent >= 1")
+  derive-from-transition: 'emit
+  derive-action-name: 'noDurability
+  expected-itf-predicate: "h.sent >= 1 and not(h.durable)")

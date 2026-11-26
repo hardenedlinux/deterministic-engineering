@@ -2,10 +2,13 @@
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 ;;; Zero Trust cross-tenant microsegmentation and egress mediation model.
-;;; Enforces sidecar attestation, quarantine retention, and explicit cross-tenant allowlist.
+;;; Enforces sidecar attestation, quarantine retention, and explicit cross-tenant allowlist
+;;; with emergent active-flow safety and auto-derived countermodels.
 (import :clan/poo/object
         (only-in "../authority-currentness/objects.ss" AuthorityCurrentnessModel))
-(export MicrosegmentationEgressModel BypassSidecarCountermodel)
+(export MicrosegmentationEgressModel
+        BypassSidecarCountermodel
+        BypassTenantPolicyCountermodel)
 
 (.def (MicrosegmentationEgressModel @ AuthorityCurrentnessModel)
   identity: 'threat.microsegmentation-egress
@@ -18,40 +21,89 @@
            (zt-egress-bypass ZT-EGRESS-BYP quint))
   dependencies: '((ZT-EGRESS-MED source) (ZT-EGRESS-MED profile) (ZT-EGRESS-MED method)
                   (ZT-EGRESS-BYP source) (ZT-EGRESS-BYP profile) (ZT-EGRESS-BYP method))
-  invariant: "Cross-tenant egress never leaks without attested sidecar mediation, active non-quarantined standing, and explicit cross-tenant authorization."
+  invariant: "Active egress flows require attested non-quarantined sidecar mediation and explicit cross-tenant authorization when crossing tenant boundaries."
   parameters: '()
   state: '((tenantId "int" "1")
            (crossTenantAllowed "bool" "false")
            (sidecarAttested "bool" "true")
            (quarantined "bool" "false")
            (delivered "int" "0")
-           (leaked "bool" "false"))
-  guards: '((sidecar-attestation "h.sidecarAttested and not(h.quarantined)")
-            (tenant-policy "dest == h.tenantId or h.crossTenantAllowed"))
+           (activeFlowDest "int" "0"))
+  guards: '((sidecar-attestation (and (. h sidecarAttested) (not (. h quarantined))))
+            (tenant-policy (or (= dest (. h tenantId)) (. h crossTenantAllowed))))
   transitions:
-  '((mediateEgressAs "action mediateEgressAs(dest: int): bool = if (h.sidecarAttested and not(h.quarantined) and (dest == h.tenantId or h.crossTenantAllowed))\n    h' = h.with(\"delivered\", h.delivered + 1).with(\"leaked\", h.leaked or (dest != h.tenantId and not(h.crossTenantAllowed)) or h.quarantined or not(h.sidecarAttested))\n    else h' = h")
-    (mediateEgress "action mediateEgress = { nondet dest = Set(1, 2).oneOf()\n    mediateEgressAs(dest) }")
-    (allowCrossTenant "action allowCrossTenant = h' = h.with(\"crossTenantAllowed\", true)")
-    (denyCrossTenant "action denyCrossTenant = h' = h.with(\"crossTenantAllowed\", false)")
-    (loseAttestation "action loseAttestation = h' = h.with(\"sidecarAttested\", false)")
-    (quarantineWorkload "action quarantineWorkload = h' = h.with(\"quarantined\", true)")
-    (step "action step = any { mediateEgress, allowCrossTenant, denyCrossTenant, loseAttestation, quarantineWorkload }"))
-  safety: "not(h.leaked)"
+  '((mediateEgressAs
+     (action mediateEgressAs ((dest "int")) "bool"
+       (if (and (guard sidecar-attestation (and (. h sidecarAttested) (not (. h quarantined))))
+                (guard tenant-policy (or (= dest (. h tenantId)) (. h crossTenantAllowed))))
+         (set-h (delivered (+ (. h delivered) 1))
+                (activeFlowDest dest))
+         (keep-h))))
+    (mediateEgress
+     (action mediateEgress ()
+       (nondet ((dest (set 1 2)))
+         (call mediateEgressAs dest))))
+    (allowCrossTenant
+     (action allowCrossTenant ()
+       (set-h (crossTenantAllowed #t))))
+    (denyCrossTenant
+     (action denyCrossTenant ()
+       (set-h (crossTenantAllowed #f)
+              (activeFlowDest (if (!= (. h activeFlowDest) (. h tenantId)) 0 (. h activeFlowDest))))))
+    (loseAttestation
+     (action loseAttestation ()
+       (set-h (sidecarAttested #f) (activeFlowDest 0))))
+    (quarantineWorkload
+     (action quarantineWorkload ()
+       (set-h (quarantined #t) (activeFlowDest 0))))
+    (step
+     (action step ()
+       (any mediateEgress allowCrossTenant denyCrossTenant loseAttestation quarantineWorkload))))
+  safety:
+  '(or (= (. h activeFlowDest) 0)
+       (and (. h sidecarAttested)
+            (not (. h quarantined))
+            (or (= (. h activeFlowDest) (. h tenantId))
+                (. h crossTenantAllowed))))
   traces:
-  '((checkSafe "action checkSafe = all { assert(safety), h' = h }")
-    (checkBlocked "action checkBlocked = all { assert(h.delivered == 0), assert(safety), h' = h }")
-    (checkLeaked "action checkLeaked = all { assert(h.leaked), assert(not(safety)), h' = h }")
-    (sameTenantAllowedTest "run sameTenantAllowedTest = init.then(mediateEgressAs(1)).then(all { assert(h.delivered == 1), assert(safety), h' = h })")
-    (crossTenantBlockedByDefaultTest "run crossTenantBlockedByDefaultTest = init.then(mediateEgressAs(2)).then(checkBlocked)")
-    (quarantineBlocksEgressTest "run quarantineBlocksEgressTest = init.then(quarantineWorkload).then(mediateEgressAs(1)).then(checkBlocked)")
-    (bypassSidecarLeaksTest "run bypassSidecarLeaksTest = init.then(quarantineWorkload).then(directEgressBypass).then(checkLeaked)"))
-  countermodels: (list BypassSidecarCountermodel)
+  '((checkSafe (action checkSafe () (all (assert safety) (keep-h))))
+    (checkBlocked (action checkBlocked () (all (assert (= (. h delivered) 0)) (assert safety) (keep-h))))
+    (checkUnsafe (action checkUnsafe () (all (assert (not safety)) (keep-h))))
+    (sameTenantAllowedTest
+     (run sameTenantAllowedTest
+       (then init (call mediateEgressAs 1)
+             (all (assert (= (. h delivered) 1)) (assert (= (. h activeFlowDest) 1)) (assert safety) (keep-h)))))
+    (crossTenantBlockedByDefaultTest
+     (run crossTenantBlockedByDefaultTest
+       (then init (call mediateEgressAs 2) checkBlocked)))
+    (quarantineBlocksEgressTest
+     (run quarantineBlocksEgressTest
+       (then init quarantineWorkload (call mediateEgressAs 1) checkBlocked)))
+    (bypassSidecarLeaksTest
+     (run bypassSidecarLeaksTest
+       (then init quarantineWorkload (call mediateEgressBypass 1) checkUnsafe)))
+    (bypassTenantPolicyLeaksTest
+     (run bypassTenantPolicyLeaksTest
+       (then init (call mediateEgressNoPolicy 2) checkUnsafe))))
+  countermodels: (list BypassSidecarCountermodel BypassTenantPolicyCountermodel)
   limits: "Finite 2-tenant egress mediation abstraction; does not model L3/L4 packet filtering, DNS tunneling, or kernel namespace escapes.")
 
-;; Weakened descendant: workload emits cross-tenant traffic directly bypassing sidecar attestation and quarantine.
+;; Weakened descendant 1: workload emits traffic bypassing sidecar attestation and quarantine.
 (.def (BypassSidecarCountermodel @ MicrosegmentationEgressModel)
   identity: 'threat.microsegmentation-egress.bypass-sidecar
   dropped-guard: 'sidecar-attestation
   step-action: "stepBypassSidecar"
-  counter-action: "action directEgressBypass = h' = h.with(\"delivered\", h.delivered + 1).with(\"leaked\", h.leaked or not(h.crossTenantAllowed) or h.quarantined or not(h.sidecarAttested))\n  action stepBypassSidecar = any { step, directEgressBypass }"
-  expected-itf-predicate: "h.leaked == true and h.delivered >= 1")
+  derive-from-transition: 'mediateEgressAs
+  derive-action-name: 'mediateEgressBypass
+  derive-step-call: '(nondet ((dest (set 1 2))) (call mediateEgressBypass dest))
+  expected-itf-predicate: "h.activeFlowDest > 0 and (h.quarantined == true or not(h.sidecarAttested))")
+
+;; Weakened descendant 2: sidecar forwards cross-tenant traffic without allowlist check.
+(.def (BypassTenantPolicyCountermodel @ MicrosegmentationEgressModel)
+  identity: 'threat.microsegmentation-egress.bypass-tenant-policy
+  dropped-guard: 'tenant-policy
+  step-action: "stepBypassTenantPolicy"
+  derive-from-transition: 'mediateEgressAs
+  derive-action-name: 'mediateEgressNoPolicy
+  derive-step-call: '(nondet ((dest (set 1 2))) (call mediateEgressNoPolicy dest))
+  expected-itf-predicate: "h.activeFlowDest > 0 and h.activeFlowDest != h.tenantId and not(h.crossTenantAllowed)")

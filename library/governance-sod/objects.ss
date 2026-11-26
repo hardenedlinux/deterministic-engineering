@@ -2,8 +2,7 @@
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 ;;; Governance Separation of Duties (SoD) and Veto precedence threat model.
-;;; Models host-owned prior-actor provenance, distinct approver enforcement,
-;;; and fail-closed forbid-veto precedence over permit approvals.
+;;; Emergent safety (zero synthetic unsafe flags); countermodels auto-derived via (guard ...).
 (import :clan/poo/object
         (only-in "../authority-currentness/objects.ss" AuthorityCurrentnessModel))
 (export GovernanceSodModel
@@ -26,26 +25,73 @@
   state: '((proposer "int" "0")
            (approver "int" "0")
            (vetoed "bool" "false")
-           (executed "bool" "false")
-           (unsafe "bool" "false"))
-  guards: '((sod-distinct-actor "h.proposer > 0 and actor != h.proposer")
-            (veto-precedence "not(h.vetoed)"))
+           (executed "bool" "false"))
+  guards: '((sod-distinct-actor (and (> (. h proposer) 0) (!= actor (. h proposer))))
+            (veto-precedence (not (. h vetoed))))
   transitions:
-  '((proposeAs "action proposeAs(actor: int): bool = if (h.proposer == 0 and actor > 0)\n    h' = h.with(\"proposer\", actor)\n    else h' = h")
-    (propose "action propose = { nondet actor = Set(1, 2).oneOf()\n    proposeAs(actor) }")
-    (approveAs "action approveAs(actor: int): bool = if (h.proposer > 0 and h.approver == 0 and actor != h.proposer and not(h.vetoed))\n    h' = h.with(\"approver\", actor)\n    else h' = h")
-    (approve "action approve = { nondet actor = Set(1, 2).oneOf()\n    approveAs(actor) }")
-    (veto "action veto = if (not(h.executed))\n    h' = h.with(\"vetoed\", true)\n    else h' = h")
-    (execute "action execute = if (h.proposer > 0 and h.approver > 0 and h.approver != h.proposer and not(h.vetoed) and not(h.executed))\n    h' = h.with(\"executed\", true)\n    else h' = h")
-    (step "action step = any { propose, approve, veto, execute }"))
-  safety: "not(h.unsafe) and (not(h.executed) or (h.proposer > 0 and h.approver > 0 and h.approver != h.proposer and not(h.vetoed)))"
+  '((proposeAs
+     (action proposeAs ((actor "int")) "bool"
+       (if (and (= (. h proposer) 0) (> actor 0))
+         (set-h (proposer actor))
+         (keep-h))))
+    (propose
+     (action propose ()
+       (nondet ((actor (set 1 2)))
+         (call proposeAs actor))))
+    (approveAs
+     (action approveAs ((actor "int")) "bool"
+       (if (and (> (. h proposer) 0)
+                (= (. h approver) 0)
+                (guard sod-distinct-actor (!= actor (. h proposer)))
+                (not (. h vetoed)))
+         (set-h (approver actor))
+         (keep-h))))
+    (approve
+     (action approve ()
+       (nondet ((actor (set 1 2)))
+         (call approveAs actor))))
+    (veto
+     (action veto ()
+       (if (not (. h executed))
+         (set-h (vetoed #t))
+         (keep-h))))
+    (execute
+     (action execute ()
+       (if (and (> (. h proposer) 0)
+                (> (. h approver) 0)
+                (guard veto-precedence (not (. h vetoed)))
+                (not (. h executed)))
+         (set-h (executed #t))
+         (keep-h))))
+    (step
+     (action step () (any propose approve veto execute))))
+  safety:
+  '(or (not (. h executed))
+       (and (> (. h proposer) 0)
+            (> (. h approver) 0)
+            (!= (. h approver) (. h proposer))
+            (not (. h vetoed))))
   traces:
-  '((checkSafe "action checkSafe = all { assert(safety), h' = h }")
-    (checkUnsafe "action checkUnsafe = all { assert(not(safety)), h' = h }")
-    (validDualControlTest "run validDualControlTest = init.then(proposeAs(1)).then(approveAs(2)).then(execute).then(all { assert(h.executed), assert(safety), h' = h })")
-    (selfApprovalBlockedTest "run selfApprovalBlockedTest = init.then(proposeAs(1)).then(approveAs(1)).then(execute).then(all { assert(not(h.executed)), assert(safety), h' = h })")
-    (vetoBlocksExecutionTest "run vetoBlocksExecutionTest = init.then(proposeAs(1)).then(approveAs(2)).then(veto).then(execute).then(all { assert(not(h.executed)), assert(safety), h' = h })")
-    (selfApprovalCountermodelTest "run selfApprovalCountermodelTest = init.then(proposeAs(1)).then(selfApproveAndExec).then(checkUnsafe)"))
+  '((checkSafe (action checkSafe () (all (assert safety) (keep-h))))
+    (checkUnsafe (action checkUnsafe () (all (assert (not safety)) (keep-h))))
+    (validDualControlTest
+     (run validDualControlTest
+       (then init (call proposeAs 1) (call approveAs 2) execute
+             (all (assert (. h executed)) (assert safety) (keep-h)))))
+    (selfApprovalBlockedTest
+     (run selfApprovalBlockedTest
+       (then init (call proposeAs 1) (call approveAs 1) execute
+             (all (assert (not (. h executed))) (assert safety) (keep-h)))))
+    (vetoBlocksExecutionTest
+     (run vetoBlocksExecutionTest
+       (then init (call proposeAs 1) (call approveAs 2) veto execute
+             (all (assert (not (. h executed))) (assert safety) (keep-h)))))
+    (selfApprovalCountermodelTest
+     (run selfApprovalCountermodelTest
+       (then init (call proposeAs 1) (call approveSelfAllowed 1) execute checkUnsafe)))
+    (vetoOverrideCountermodelTest
+     (run vetoOverrideCountermodelTest
+       (then init (call proposeAs 1) (call approveAs 2) veto executeOverVeto checkUnsafe))))
   countermodels: (list SelfApprovalCountermodel VetoOverrideCountermodel)
   limits: "Finite two-principal governance abstraction; does not model cryptographic identity attestation or multi-quorum threshold committees.")
 
@@ -53,12 +99,15 @@
   identity: 'threat.governance-sod.self-approval
   dropped-guard: 'sod-distinct-actor
   step-action: "stepSelfApproval"
-  counter-action: "action selfApproveAndExec = if (h.proposer > 0 and not(h.executed))\n    h' = h.with(\"approver\", h.proposer).with(\"executed\", true).with(\"unsafe\", true)\n    else h' = h\n  action stepSelfApproval = any { step, selfApproveAndExec }"
+  derive-from-transition: 'approveAs
+  derive-action-name: 'approveSelfAllowed
+  derive-step-call: '(nondet ((actor (set 1 2))) (call approveSelfAllowed actor))
   expected-itf-predicate: "h.executed == true and h.approver == h.proposer")
 
 (.def (VetoOverrideCountermodel @ GovernanceSodModel)
   identity: 'threat.governance-sod.veto-override
   dropped-guard: 'veto-precedence
   step-action: "stepVetoOverride"
-  counter-action: "action executeOverVeto = if (h.proposer > 0 and h.approver > 0 and h.vetoed and not(h.executed))\n    h' = h.with(\"executed\", true).with(\"unsafe\", true)\n    else h' = h\n  action stepVetoOverride = any { step, executeOverVeto }"
+  derive-from-transition: 'execute
+  derive-action-name: 'executeOverVeto
   expected-itf-predicate: "h.executed == true and h.vetoed == true")

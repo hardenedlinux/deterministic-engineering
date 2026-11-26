@@ -1,8 +1,9 @@
 ;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
-;;; Concurrent tri-color GC marking model with Dijkstra insertion write barrier
-;;; and weakened countermodel omitting the write barrier (sweeping live object C).
+;;; Concurrent tri-color GC marking model with Dijkstra insertion write barrier.
+;;; Emergent tri-color & live-sweep safety (zero synthetic unsafe flag);
+;;; countermodel auto-derived via 3-arg (guard ...).
 (import :clan/poo/object
         (only-in "../threat-capabilities/objects.ss" ThreatModel.))
 (export TricolorWriteBarrierModel NoWriteBarrierCountermodel)
@@ -29,24 +30,63 @@
            (aToB "bool" "true")
            (bToC "bool" "true")
            (aToC "bool" "false")
-           (sweptC "bool" "false")
-           (unsafe "bool" "false"))
-  guards: '((dijkstra-write-barrier "colorC shaded Grey on Black->White pointer store"))
+           (sweptC "bool" "false"))
+  guards: '((dijkstra-write-barrier (if (= (. h colorC) 0) 1 (. h colorC))))
   transitions:
-  '((liveC "val liveC = h.aToC or (h.aToB and h.bToC)")
-    (mutateWithBarrier "action mutateWithBarrier = if (h.phase == 0 and h.bToC and not(h.aToC))\n    h' = h.with(\"aToC\", true).with(\"bToC\", false).with(\"colorC\", if (h.colorC == 0) 1 else h.colorC)\n    else h' = h")
-    (scanB "action scanB = if (h.phase == 0 and h.colorB == 1)\n    h' = h.with(\"colorB\", 2).with(\"colorC\", if (h.bToC and h.colorC == 0) 1 else h.colorC)\n    else h' = h")
-    (scanC "action scanC = if (h.phase == 0 and h.colorC == 1)\n    h' = h.with(\"colorC\", 2)\n    else h' = h")
-    (finishMark "action finishMark = if (h.phase == 0 and h.colorB != 1 and h.colorC != 1)\n    h' = h.with(\"phase\", 1)\n    else h' = h")
-    (sweep "action sweep = if (h.phase == 1)\n    h' = h.with(\"phase\", 2).with(\"sweptC\", h.colorC == 0).with(\"unsafe\", h.unsafe or (h.colorC == 0 and liveC))\n    else h' = h")
-    (step "action step = any { mutateWithBarrier, scanB, scanC, finishMark, sweep }"))
-  safety: "not(h.unsafe) and not(h.sweptC and liveC) and (h.phase != 0 or not(h.colorA == 2 and h.aToC and h.colorC == 0))"
+  '((liveC
+     (val liveC (or (. h aToC) (and (. h aToB) (. h bToC)))))
+    (mutateWithBarrier
+     (action mutateWithBarrier ()
+       (if (and (= (. h phase) 0) (. h bToC) (not (. h aToC)))
+         (set-h (aToC #t)
+                (bToC #f)
+                (colorC (guard dijkstra-write-barrier
+                               (if (= (. h colorC) 0) 1 (. h colorC))
+                               (. h colorC))))
+         (keep-h))))
+    (scanB
+     (action scanB ()
+       (if (and (= (. h phase) 0) (= (. h colorB) 1))
+         (set-h (colorB 2)
+                (colorC (if (and (. h bToC) (= (. h colorC) 0)) 1 (. h colorC))))
+         (keep-h))))
+    (scanC
+     (action scanC ()
+       (if (and (= (. h phase) 0) (= (. h colorC) 1))
+         (set-h (colorC 2))
+         (keep-h))))
+    (finishMark
+     (action finishMark ()
+       (if (and (= (. h phase) 0) (!= (. h colorB) 1) (!= (. h colorC) 1))
+         (set-h (phase 1))
+         (keep-h))))
+    (sweep
+     (action sweep ()
+       (if (= (. h phase) 1)
+         (set-h (phase 2) (sweptC (= (. h colorC) 0)))
+         (keep-h))))
+    (step
+     (action step () (any mutateWithBarrier scanB scanC finishMark sweep))))
+  safety:
+  '(and (not (and (. h sweptC) liveC))
+        (or (!= (. h phase) 0)
+            (not (and (= (. h colorA) 2) (. h aToC) (= (. h colorC) 0)))))
   traces:
-  '((checkSafeDone "action checkSafeDone = all { assert(h.phase == 2), assert(not(h.sweptC)), assert(safety), h' = h }")
-    (checkUnsafeSwept "action checkUnsafeSwept = all { assert(h.sweptC), assert(h.unsafe), assert(not(safety)), h' = h }")
-    (collectorScansBeforeMutateTest "run collectorScansBeforeMutateTest = init.then(scanB).then(scanC).then(finishMark).then(sweep).then(checkSafeDone)")
-    (barrierPreservesLiveCTest "run barrierPreservesLiveCTest = init.then(mutateWithBarrier).then(scanB).then(scanC).then(finishMark).then(sweep).then(checkSafeDone)")
-    (missingBarrierSweepsLiveCTest "run missingBarrierSweepsLiveCTest = init.then(mutateNoBarrier).then(scanB).then(finishMark).then(sweep).then(checkUnsafeSwept)"))
+  '((checkSafeDone
+     (action checkSafeDone ()
+       (all (assert (= (. h phase) 2)) (assert (not (. h sweptC))) (assert safety) (keep-h))))
+    (checkUnsafeSwept
+     (action checkUnsafeSwept ()
+       (all (assert (. h sweptC)) (assert (not safety)) (keep-h))))
+    (collectorScansBeforeMutateTest
+     (run collectorScansBeforeMutateTest
+       (then init scanB scanC finishMark sweep checkSafeDone)))
+    (barrierPreservesLiveCTest
+     (run barrierPreservesLiveCTest
+       (then init mutateWithBarrier scanB scanC finishMark sweep checkSafeDone)))
+    (missingBarrierSweepsLiveCTest
+     (run missingBarrierSweepsLiveCTest
+       (then init mutateNoBarrier scanB finishMark sweep checkUnsafeSwept))))
   countermodels: (list NoWriteBarrierCountermodel)
   limits: "Finite 3-object tri-color marking abstraction; does not model hardware weak memory ordering, compaction, or allocator fragmentation.")
 
@@ -55,5 +95,6 @@
   identity: 'engineering.gc.tricolor-write-barrier.no-write-barrier
   dropped-guard: 'dijkstra-write-barrier
   step-action: "stepNoWriteBarrier"
-  counter-action: "action mutateNoBarrier = if (h.phase == 0 and h.bToC and not(h.aToC))\n    h' = h.with(\"aToC\", true).with(\"bToC\", false)\n    else h' = h\n  action stepNoWriteBarrier = any { step, mutateNoBarrier }"
+  derive-from-transition: 'mutateWithBarrier
+  derive-action-name: 'mutateNoBarrier
   expected-itf-predicate: "h.colorA == 2 and h.aToC == true and h.colorC == 0")

@@ -40,22 +40,27 @@ protocol lifecycle*:
 | *Refresh Scope Escalation* | Token endpoint returns wider scopes on refresh than originally granted | =scope-monotonicity= (=newScope <= grantedScopeLevel=) | =stepScopeEscalation= |
 | *OIDC Nonce / Audience Confusion* | Client ignores =expectedNonce= in ID token exchange | Mandatory constant-time =nonce= verification in exchanger | Modeled in =completeCallbackAs(pkceOk, nonceOk)= |
 
-* Real-World Case: Marlin / MyGo (=control/auth/=)
+* Real-World Case: Tier-0 OAuth / OIDC Desktop Auth Engine
 
-Applying =threat/oauth-token-lifecycle= directly to Marlin's Tier-0 Go auth
-manager (=control/auth/manager.go=) surfaced five concrete implementation gaps:
+Applying =threat/oauth-token-lifecycle=, =threat/device-authorization=, and
+=threat/oauth-revocation-recovery= directly to a production Go auth manager
+(=AuthManager= + encrypted =CredentialVault=) surfaced concrete concurrency
+and crash-recovery gaps:
 
 1. *Zombie token resurrection*: =ValidAccessToken= wrote refreshed tokens back
-   into =m.vault= after =SignOut= deleted the account, without checking an
+   into the vault after =SignOut= deleted the account, without checking an
    account epoch.
-2. *CancelPending race*: in-flight =ExchangeCode= / =VerifyChallenge= could
-   admit a signed-in account after =CancelPending()=.
+2. *CancelPending & post-I/O expiry races*: in-flight =ExchangeCode=,
+   =PollDeviceToken=, or =VerifyChallenge= could admit a signed-in account
+   after =CancelPending()= or after the challenge expired during network I/O.
 3. *Refresh scope creep*: =ValidAccessToken= accepted arbitrary =refreshed.Scopes=
    without verifying subset monotonicity against originally granted scopes.
-4. *Ignored OIDC nonce*: =HTTPOAuthExchanger.ExchangeCode= discarded its
-   =expectedNonce= parameter (=_=).
-5. *Loopback state-fixation DoS*: =LoopbackReceiver= consumed its single-use
-   slot on the first GET even if =state= did not match.
+4. *Ignored OIDC nonce*: token exchange discarded its =expectedNonce= parameter.
+5. *Loopback state-fixation DoS*: the local callback receiver consumed its
+   single-use slot on the first GET even if =state= did not match.
+6. *Crash-recovery revocation resurrection*: calling remote RFC 7009 token
+   revocation before scrubbing the local durable vault allowed a crash during
+   sign-out to resurrect revoked credentials on restart.
 
-Each gap is eliminated in Go and paired with race-enabled regression tests
-(=go test -race ./control/auth/...=) alongside the Quint scenario model.
+Each gap is eliminated and verified via race-enabled Go MBT tests driven by
+live Quint =--mbt= ITF traces alongside the upstream protocol models.

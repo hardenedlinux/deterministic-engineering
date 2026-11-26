@@ -50,17 +50,33 @@ packages/quint-models/
 │   ├── device-authorization/           # RFC 8628 device-code cancel/expiry epoch & multi-account token binding
 │   ├── governance-sod/                 # Separation of Duties (distinct approver) & forbid-veto precedence
 │   ├── data-lineage-disclosure/        # Cumulative disclosure k-anonymity narrowing floor & budget cap
-│   └── oauth-revocation-recovery/      # OAuth PAR binding & crash-safe durable revocation recovery
+│   ├── oauth-revocation-recovery/      # OAuth PAR binding & crash-safe durable revocation recovery
+│   ├── agent-ifc-capability/           # AI Agent control/data segregation & capability IFC (CaMeL / FIDES)
+│   ├── dpop-sender-constrain/          # OAuth 2.0 DPoP sender-constrained tokens & jti replay (RFC 9449 / FAPI 2.0)
+│   ├── supply-chain-tuf/               # TUF/Sigstore/in-toto rollback, freeze & mix-and-match defense
+│   ├── macaroon-delegation-chain/      # Macaroons multi-hop caveat attenuation & HMAC chain (NDSS 2014)
+│   ├── webauthn-passkey-ceremony/      # WebAuthn/FIDO2 RP-ID origin binding, single-use challenge & signCount cloning
+│   ├── transparency-log-gossip/        # Certificate/Software Transparency RFC 9162 consistency & split-view gossip
+│   ├── wasm-sandbox-confinement/       # Capability-based Wasm linear-memory bounds, WASI OCap handles & openat2 root confinement
+│   └── tls13-0rtt-forward-secrecy/     # TLS 1.3 / Noise 0-RTT anti-replay, cross-edge strike sync & ECDHE forward secrecy
 └── engineering/
     ├── concurrency/
     │   ├── backpressure-memory/        # Bounded backpressure & memory-ownership state machine
-    │   └── structured-cancellation/    # Parent-child cancellation quiescence & fire-and-forget orphan countermodel
+    │   ├── structured-cancellation/    # Parent-child cancellation quiescence & fire-and-forget orphan countermodel
+    │   ├── lease-fencing-token/        # Distributed lease expiry & monotonic fencing token (Kleppmann / Chubby / Raft)
+    │   └── saga-compensation-idempotency/ # Saga compensating transactions, idempotency dedup & late-retry tombstone fence
+    ├── consensus/
+    │   └── raft-leader-commitment/     # Raft §5.4.1 election restriction & §5.4.2 Figure 8 current-term commitment rule
     ├── parallel/
     │   ├── epoch-reclamation/          # Lock-free Epoch-Based Reclamation (EBR) & premature-reclaim countermodel
-    │   └── work-stealing-deque/        # Chase-Lev work-stealing deque & missing last-item CAS countermodel
-    └── gc/
-        ├── tricolor-write-barrier/     # Concurrent tri-color GC with Dijkstra write barrier & omission countermodel
-        └── safepoint-handshake/        # Mutator/collector safepoint handshake & skipped-handshake countermodel
+    │   ├── work-stealing-deque/        # Chase-Lev work-stealing deque & missing last-item CAS countermodel
+    │   └── hazard-pointers-tso/        # Hazard Pointers under x86-TSO store-buffer reordering (Michael 2004)
+    ├── gc/
+    │   ├── tricolor-write-barrier/     # Concurrent tri-color GC with Dijkstra write barrier & omission countermodel
+    │   └── safepoint-handshake/        # Mutator/collector safepoint handshake & skipped-handshake countermodel
+    └── storage/
+        ├── wal-crash-recovery/         # WAL / ARIES page-cache fsync write-reordering & crash durability (OSDI 2014)
+        └── mvcc-ssi-write-skew/        # Distributed MVCC / SSI write-skew A5B, persistent SIREAD & read-time rw detection
 #+end_example
 
 * Consuming Models
@@ -92,10 +108,12 @@ embedded verification directives (=// @quint-model=, =// @verify=,
   determinism, memory budgets, parallel scheduling, and collector invariants.
 - [[file:docs/research-and-papers.org][Research and Papers]] — curated bibliography of formal methods, Zero Trust,
   object-capability, distributed effects, concurrency, and GC literature.
+- [[file:docs/model-based-testing-and-refinement.org][Model-Based Testing & Refinement]] — emergent relational invariants (zero
+  synthetic =unsafe= flags) and Quint =--mbt= ITF trace replay against Go/Rust.
 
 * Limits
 
 These models are finite-state protocol abstractions checked with bounded model
 checking (Apalache) and deterministic traces. They do *not* prove cryptography,
 compiler/codec correctness, kernel isolation, or physical storage atomicity.
-Every model declares its explicit limits in its header and =receipt.json=.
+Every model declares its explicit limits in its =// Limits:= header directive.

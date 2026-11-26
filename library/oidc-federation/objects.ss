@@ -2,8 +2,7 @@
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 ;;; OIDC Federation threat model (OIDC Core 1.0 §3.1.3.7 & §5.3.4 / RFC 7517 JWKS).
-;;; Models asymmetric ID-token verification, multi-audience azp binding, UserInfo
-;;; subject binding against token-substitution, and JWKS force-refresh cooldown.
+;;; Emergent safety (zero synthetic unsafe flag); all 3 countermodels auto-derived via (guard ...).
 (import :clan/poo/object
         (only-in "../authority-currentness/objects.ss" AuthorityCurrentnessModel))
 (export OidcFederationModel
@@ -35,28 +34,82 @@
            (azpMatchesClient "bool" "false")
            (userInfoFetched "bool" "false")
            (userInfoSub "int" "0")
-           (admitted "bool" "false")
-           (unsafe "bool" "false"))
-  guards: '((multi-aud-azp-binding "not(isMultiAud) or azpOk")
-            (userinfo-sub-binding "h.idTokenVerified and uiSub == h.idTokenSub")
-            (jwks-refresh-cooldown "not(h.jwksCooldown) and h.jwksRefreshes < 2"))
+           (admitted "bool" "false"))
+  guards: '((multi-aud-azp-binding (or (not isMultiAud) azpOk))
+            (userinfo-sub-binding (and (. h idTokenVerified) (= uiSub (. h idTokenSub))))
+            (jwks-refresh-cooldown (and (not (. h jwksCooldown)) (< (. h jwksRefreshes) 2))))
   transitions:
-  '((verifyIdTokenAs "action verifyIdTokenAs(sub: int, isMultiAud: bool, azpOk: bool, algSafe: bool): bool = if (not(h.idTokenVerified) and algSafe and (not(isMultiAud) or azpOk))\n    h' = h.with(\"idTokenVerified\", true).with(\"idTokenSub\", sub).with(\"multiAud\", isMultiAud).with(\"azpMatchesClient\", azpOk)\n    else h' = h")
-    (verifyIdToken "action verifyIdToken = { nondet sub = Set(1, 2).oneOf()\n    nondet isMultiAud = Set(false, true).oneOf()\n    nondet azpOk = Set(false, true).oneOf()\n    nondet algSafe = Set(false, true).oneOf()\n    verifyIdTokenAs(sub, isMultiAud, azpOk, algSafe) }")
-    (fetchUserInfoAndAdmitAs "action fetchUserInfoAndAdmitAs(uiSub: int): bool = if (h.idTokenVerified and not(h.admitted) and uiSub == h.idTokenSub)\n    h' = h.with(\"userInfoFetched\", true).with(\"userInfoSub\", uiSub).with(\"admitted\", true)\n    else h' = h")
-    (fetchUserInfoAndAdmit "action fetchUserInfoAndAdmit = { nondet uiSub = Set(1, 2).oneOf()\n    fetchUserInfoAndAdmitAs(uiSub) }")
-    (refreshJwks "action refreshJwks = if (not(h.jwksCooldown) and h.jwksRefreshes < 2)\n    h' = h.with(\"jwksEpoch\", h.jwksEpoch + 1).with(\"jwksRefreshes\", h.jwksRefreshes + 1).with(\"jwksCooldown\", true)\n    else h' = h")
-    (cooldownTick "action cooldownTick = if (h.jwksCooldown)\n    h' = h.with(\"jwksCooldown\", false)\n    else h' = h")
-    (step "action step = any { verifyIdToken, fetchUserInfoAndAdmit, refreshJwks, cooldownTick }"))
-  safety: "not(h.unsafe) and (not(h.admitted) or (h.idTokenVerified and h.userInfoSub == h.idTokenSub and (not(h.multiAud) or h.azpMatchesClient))) and h.jwksRefreshes <= 2"
+  '((verifyIdTokenAs
+     (action verifyIdTokenAs ((sub "int") (isMultiAud "bool") (azpOk "bool") (algSafe "bool")) "bool"
+       (if (and (not (. h idTokenVerified))
+                algSafe
+                (guard multi-aud-azp-binding (or (not isMultiAud) azpOk)))
+         (set-h (idTokenVerified #t)
+                (idTokenSub sub)
+                (multiAud isMultiAud)
+                (azpMatchesClient azpOk))
+         (keep-h))))
+    (verifyIdToken
+     (action verifyIdToken ()
+       (nondet ((sub (set 1 2))
+                (isMultiAud (set #f #t))
+                (azpOk (set #f #t))
+                (algSafe (set #f #t)))
+         (call verifyIdTokenAs sub isMultiAud azpOk algSafe))))
+    (fetchUserInfoAndAdmitAs
+     (action fetchUserInfoAndAdmitAs ((uiSub "int")) "bool"
+       (if (and (. h idTokenVerified)
+                (not (. h admitted))
+                (guard userinfo-sub-binding (= uiSub (. h idTokenSub))))
+         (set-h (userInfoFetched #t) (userInfoSub uiSub) (admitted #t))
+         (keep-h))))
+    (fetchUserInfoAndAdmit
+     (action fetchUserInfoAndAdmit ()
+       (nondet ((uiSub (set 1 2)))
+         (call fetchUserInfoAndAdmitAs uiSub))))
+    (refreshJwks
+     (action refreshJwks ()
+       (if (guard jwks-refresh-cooldown (and (not (. h jwksCooldown)) (< (. h jwksRefreshes) 2)))
+         (set-h (jwksEpoch (+ (. h jwksEpoch) 1))
+                (jwksRefreshes (+ (. h jwksRefreshes) 1))
+                (jwksCooldown #t))
+         (keep-h))))
+    (cooldownTick
+     (action cooldownTick ()
+       (if (. h jwksCooldown)
+         (set-h (jwksCooldown #f))
+         (keep-h))))
+    (step
+     (action step ()
+       (any verifyIdToken fetchUserInfoAndAdmit refreshJwks cooldownTick))))
+  safety:
+  '(and (or (not (. h admitted))
+            (and (. h idTokenVerified)
+                 (= (. h userInfoSub) (. h idTokenSub))
+                 (or (not (. h multiAud)) (. h azpMatchesClient))))
+        (<= (. h jwksRefreshes) 2))
   traces:
-  '((checkSafe "action checkSafe = all { assert(safety), h' = h }")
-    (checkUnsafe "action checkUnsafe = all { assert(not(safety)), h' = h }")
-    (validOidcFederationTest "run validOidcFederationTest = init.then(verifyIdTokenAs(1, true, true, true)).then(fetchUserInfoAndAdmitAs(1)).then(all { assert(h.admitted), assert(safety), h' = h })")
-    (mismatchedUserInfoSubRejectedTest "run mismatchedUserInfoSubRejectedTest = init.then(verifyIdTokenAs(1, false, false, true)).then(fetchUserInfoAndAdmitAs(2)).then(all { assert(not(h.admitted)), assert(safety), h' = h })")
-    (multiAudMissingAzpRejectedTest "run multiAudMissingAzpRejectedTest = init.then(verifyIdTokenAs(1, true, false, true)).then(all { assert(not(h.idTokenVerified)), assert(safety), h' = h })")
-    (jwksCooldownEnforcedTest "run jwksCooldownEnforcedTest = init.then(refreshJwks).then(refreshJwks).then(all { assert(h.jwksRefreshes == 1), assert(safety), h' = h })")
-    (subSubstitutionCountermodelTest "run subSubstitutionCountermodelTest = init.then(verifyIdTokenAs(1, false, false, true)).then(fetchUserInfoNoSubCheck).then(checkUnsafe)"))
+  '((checkSafe (action checkSafe () (all (assert safety) (keep-h))))
+    (checkUnsafe (action checkUnsafe () (all (assert (not safety)) (keep-h))))
+    (validOidcFederationTest
+     (run validOidcFederationTest
+       (then init (call verifyIdTokenAs 1 #t #t #t) (call fetchUserInfoAndAdmitAs 1)
+             (all (assert (. h admitted)) (assert safety) (keep-h)))))
+    (mismatchedUserInfoSubRejectedTest
+     (run mismatchedUserInfoSubRejectedTest
+       (then init (call verifyIdTokenAs 1 #f #f #t) (call fetchUserInfoAndAdmitAs 2)
+             (all (assert (not (. h admitted))) (assert safety) (keep-h)))))
+    (multiAudMissingAzpRejectedTest
+     (run multiAudMissingAzpRejectedTest
+       (then init (call verifyIdTokenAs 1 #t #f #t)
+             (all (assert (not (. h idTokenVerified))) (assert safety) (keep-h)))))
+    (jwksCooldownEnforcedTest
+     (run jwksCooldownEnforcedTest
+       (then init refreshJwks refreshJwks
+             (all (assert (= (. h jwksRefreshes) 1)) (assert safety) (keep-h)))))
+    (subSubstitutionCountermodelTest
+     (run subSubstitutionCountermodelTest
+       (then init (call verifyIdTokenAs 1 #f #f #t) (call fetchUserInfoNoSubCheck 2) checkUnsafe))))
   countermodels: (list SubSubstitutionCountermodel AzpBypassCountermodel JwksRefreshStormCountermodel)
   limits: "Finite OIDC Federation protocol abstraction; does not model RSA/ECDSA/EdDSA signature mathematics, TLS certificate validation, or IdP internal key storage.")
 
@@ -64,19 +117,25 @@
   identity: 'threat.oidc-federation.sub-substitution
   dropped-guard: 'userinfo-sub-binding
   step-action: "stepSubSubstitution"
-  counter-action: "action fetchUserInfoNoSubCheck = if (h.idTokenVerified and not(h.admitted))\n    h' = h.with(\"userInfoFetched\", true).with(\"userInfoSub\", h.idTokenSub + 1).with(\"admitted\", true).with(\"unsafe\", true)\n    else h' = h\n  action stepSubSubstitution = any { step, fetchUserInfoNoSubCheck }"
+  derive-from-transition: 'fetchUserInfoAndAdmitAs
+  derive-action-name: 'fetchUserInfoNoSubCheck
+  derive-step-call: '(nondet ((uiSub (set 1 2))) (call fetchUserInfoNoSubCheck uiSub))
   expected-itf-predicate: "h.admitted == true and h.userInfoSub != h.idTokenSub")
 
 (.def (AzpBypassCountermodel @ OidcFederationModel)
   identity: 'threat.oidc-federation.azp-bypass
   dropped-guard: 'multi-aud-azp-binding
   step-action: "stepAzpBypass"
-  counter-action: "action verifyIdTokenNoAzp = if (not(h.idTokenVerified))\n    h' = h.with(\"idTokenVerified\", true).with(\"idTokenSub\", 1).with(\"multiAud\", true).with(\"azpMatchesClient\", false).with(\"unsafe\", true)\n    else h' = h\n  action stepAzpBypass = any { step, verifyIdTokenNoAzp }"
-  expected-itf-predicate: "h.multiAud == true and not(h.azpMatchesClient)")
+  derive-from-transition: 'verifyIdTokenAs
+  derive-action-name: 'verifyIdTokenNoAzp
+  derive-step-call: '(nondet ((sub (set 1 2)) (isMultiAud (set #f #t)) (azpOk (set #f #t)) (algSafe (set #f #t)))
+                       (call verifyIdTokenNoAzp sub isMultiAud azpOk algSafe))
+  expected-itf-predicate: "h.admitted == true and h.multiAud == true and not(h.azpMatchesClient)")
 
 (.def (JwksRefreshStormCountermodel @ OidcFederationModel)
   identity: 'threat.oidc-federation.jwks-refresh-storm
   dropped-guard: 'jwks-refresh-cooldown
   step-action: "stepJwksStorm"
-  counter-action: "action refreshJwksUnthrottled = h' = h.with(\"jwksRefreshes\", h.jwksRefreshes + 1).with(\"unsafe\", h.unsafe or h.jwksRefreshes >= 2)\n  action stepJwksStorm = any { step, refreshJwksUnthrottled }"
+  derive-from-transition: 'refreshJwks
+  derive-action-name: 'refreshJwksUnthrottled
   expected-itf-predicate: "h.jwksRefreshes > 2")

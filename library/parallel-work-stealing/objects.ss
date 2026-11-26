@@ -1,8 +1,8 @@
 ;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
-;;; Chase-Lev work-stealing deque protocol abstraction with last-item CAS arbitration
-;;; and weakened countermodel omitting last-item CAS (double-taking the final task).
+;;; Chase-Lev work-stealing deque protocol abstraction with two-step thief read + CAS arbitration.
+;;; Emergent safety (zero synthetic doubleTaken flag); countermodel auto-derived via (guard ...).
 (import :clan/poo/object
         (only-in "../threat-capabilities/objects.ss" ThreatModel.))
 (export WorkStealingDequeModel MissingLastItemCasCountermodel)
@@ -25,28 +25,65 @@
            (pushed "int" "0")
            (ownerPopped "int" "0")
            (thiefStolen "int" "0")
-           (doubleTaken "bool" "false"))
-  guards: '((last-item-cas "ownerPop and thiefSteal arbitrate single remaining task atomically"))
+           (thiefReadTop "int" "-1"))
+  guards: '((last-item-cas (and (= (. h top) (. h thiefReadTop)) (< (. h top) (. h bottom)))))
   transitions:
-  '((dequeLen "val dequeLen = h.bottom - h.top")
-    (ownerPush "action ownerPush = if (h.pushed < 3)\n    h' = h.with(\"bottom\", h.bottom + 1).with(\"pushed\", h.pushed + 1)\n    else h' = h")
-    (ownerPop "action ownerPop = if (h.bottom > h.top)\n    h' = h.with(\"bottom\", h.bottom - 1).with(\"ownerPopped\", h.ownerPopped + 1)\n    else h' = h")
-    (thiefSteal "action thiefSteal = if (h.top < h.bottom)\n    h' = h.with(\"top\", h.top + 1).with(\"thiefStolen\", h.thiefStolen + 1)\n    else h' = h")
-    (step "action step = any { ownerPush, ownerPop, thiefSteal }"))
-  safety: "not(h.doubleTaken) and h.ownerPopped + h.thiefStolen <= h.pushed and h.top <= h.bottom"
+  '((dequeLen (val dequeLen (- (. h bottom) (. h top))))
+    (ownerPush
+     (action ownerPush ()
+       (if (< (. h pushed) 3)
+         (set-h (bottom (+ (. h bottom) 1)) (pushed (+ (. h pushed) 1)))
+         (keep-h))))
+    (ownerPop
+     (action ownerPop ()
+       (if (> (. h bottom) (. h top))
+         (set-h (bottom (- (. h bottom) 1)) (ownerPopped (+ (. h ownerPopped) 1)))
+         (keep-h))))
+    (thiefStart
+     (action thiefStart ()
+       (if (and (< (. h thiefReadTop) 0) (< (. h top) (. h bottom)))
+         (set-h (thiefReadTop (. h top)))
+         (keep-h))))
+    (thiefCommitSteal
+     (action thiefCommitSteal ()
+       (if (>= (. h thiefReadTop) 0)
+         (if (guard last-item-cas (and (= (. h top) (. h thiefReadTop)) (< (. h top) (. h bottom))))
+           (set-h (top (+ (. h top) 1))
+                  (thiefStolen (+ (. h thiefStolen) 1))
+                  (thiefReadTop (- 0 1)))
+           (set-h (thiefReadTop (- 0 1))))
+         (keep-h))))
+    (step
+     (action step () (any ownerPush ownerPop thiefStart thiefCommitSteal))))
+  safety:
+  '(and (<= (+ (. h ownerPopped) (. h thiefStolen)) (. h pushed))
+        (<= (. h top) (. h bottom)))
   traces:
-  '((checkSafe "action checkSafe = all { assert(safety), h' = h }")
-    (checkDouble "action checkDouble = all { assert(h.doubleTaken), assert(not(safety)), h' = h }")
-    (pushPopTest "run pushPopTest = init.then(ownerPush).then(ownerPop).then(all { assert(h.ownerPopped == 1), assert(safety), h' = h })")
-    (pushStealTest "run pushStealTest = init.then(ownerPush).then(thiefSteal).then(ownerPop).then(all { assert(h.thiefStolen == 1), assert(h.ownerPopped == 0), assert(safety), h' = h })")
-    (missingCasDoubleTakeTest "run missingCasDoubleTakeTest = init.then(ownerPush).then(raceLastItemNoCas).then(checkDouble)"))
+  '((checkSafe (action checkSafe () (all (assert safety) (keep-h))))
+    (checkDouble (action checkDouble () (all (assert (> (+ (. h ownerPopped) (. h thiefStolen)) (. h pushed))) (assert (not safety)) (keep-h))))
+    (pushPopTest
+     (run pushPopTest
+       (then init ownerPush ownerPop
+             (all (assert (= (. h ownerPopped) 1)) (assert safety) (keep-h)))))
+    (pushStealTest
+     (run pushStealTest
+       (then init ownerPush thiefStart thiefCommitSteal ownerPop
+             (all (assert (= (. h thiefStolen) 1)) (assert (= (. h ownerPopped) 0)) (assert safety) (keep-h)))))
+    (lastItemCasArbitrationTest
+     (run lastItemCasArbitrationTest
+       (then init ownerPush thiefStart ownerPop thiefCommitSteal
+             (all (assert (= (. h ownerPopped) 1)) (assert (= (. h thiefStolen) 0)) (assert safety) (keep-h)))))
+    (missingCasDoubleTakeTest
+     (run missingCasDoubleTakeTest
+       (then init ownerPush thiefStart ownerPop thiefCommitNoCas checkDouble))))
   countermodels: (list MissingLastItemCasCountermodel)
   limits: "Finite 1-owner/1-thief Chase-Lev deque abstraction; does not model circular array resizing or ARMv8/TSO weak memory fences.")
 
-;; Weakened descendant: owner pop and thief steal both consume the sole remaining item without CAS.
+;; Weakened descendant: thief commits steal without CAS verification after owner popped the last item.
 (.def (MissingLastItemCasCountermodel @ WorkStealingDequeModel)
   identity: 'engineering.parallel.work-stealing-deque.missing-last-item-cas
   dropped-guard: 'last-item-cas
   step-action: "stepNoLastItemCas"
-  counter-action: "action raceLastItemNoCas = if (h.bottom - h.top == 1)\n    h' = h.with(\"top\", h.top + 1).with(\"bottom\", h.bottom - 1).with(\"ownerPopped\", h.ownerPopped + 1).with(\"thiefStolen\", h.thiefStolen + 1).with(\"doubleTaken\", true)\n    else h' = h\n  action stepNoLastItemCas = any { step, raceLastItemNoCas }"
-  expected-itf-predicate: "h.doubleTaken == true and h.ownerPopped + h.thiefStolen > h.pushed")
+  derive-from-transition: 'thiefCommitSteal
+  derive-action-name: 'thiefCommitNoCas
+  expected-itf-predicate: "h.ownerPopped + h.thiefStolen > h.pushed")

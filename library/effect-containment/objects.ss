@@ -2,6 +2,7 @@
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 ;;; Domain-owned effect containment and clearance witness model.
+;;; Emergent safety (zero synthetic unsafe flag); both countermodels auto-derived via (guard ...).
 (import :clan/poo/object
         (only-in "../authority-currentness/objects.ss" AuthorityCurrentnessModel))
 (export EffectContainmentModel StaleRecoveryCountermodel FalseClearCountermodel)
@@ -20,6 +21,7 @@
                   (CONT-FALSE source) (CONT-FALSE profile) (CONT-FALSE method))
   invariant: "No signature occurs while delegated, paused, revoked, or clear-pending; clearance requires verified finalized witness."
   parameters: '((MaxSignatures "int"))
+  verify-const-bindings: '((MaxSignatures "1"))
   state: '((delegated "bool" "false")
            (paused "bool" "false")
            (revoked "bool" "false")
@@ -29,25 +31,92 @@
            (witness "bool" "false")
            (burned "bool" "false")
            (signatures "int" "0")
-           (unsafe "bool" "false"))
-  guards: '((not-delegated "not(h.delegated)")
-            (not-paused "not(h.paused)")
-            (not-revoked "not(h.revoked)")
-            (clear-verified "verified and finalized and noCode"))
+           (lastSignedPaused "bool" "false")
+           (lastSignedDelegated "bool" "false"))
+  guards: '((not-delegated (not (. h delegated)))
+            (not-paused (not (. h paused)))
+            (not-revoked (not (. h revoked)))
+            (clear-verified (and verified finalized noCode)))
   transitions:
-  '((attempt "action attempt(bound: bool): bool = if (bound and not(h.delegated) and not(h.paused) and not(h.revoked) and not(h.clearPending) and not(h.burned) and h.signatures < MaxSignatures + 1)\n    h' = h.with(\"burned\", true).with(\"signatures\", h.signatures + 1)\n      .with(\"unsafe\", h.unsafe or h.everPaused or h.delegated or h.signatures >= MaxSignatures)\n    else h' = h")
-    (sign "action sign = { nondet bound = Set(false, true).oneOf()\n    attempt(bound) }")
-    (pause "action pause = h' = h.with(\"paused\", true).with(\"revoked\", true).with(\"everPaused\", true)")
-    (recoverAs "action recoverAs(liveRevoked: bool): bool =\n    h' = h.with(\"revoked\", h.revoked or liveRevoked or h.paused)")
-    (recover "action recover = { nondet live = Set(false, true).oneOf()\n    recoverAs(live) }")
-    (submitClear "action submitClear = if (h.paused and h.revoked and h.delegated)\n    h' = h.with(\"clearPending\", true) else h' = h")
-    (observeAs "action observeAs(verified: bool, finalized: bool, noCode: bool): bool =\n    if (h.clearPending and verified and finalized and noCode)\n      h' = h.with(\"delegated\", false).with(\"cleared\", true).with(\"witness\", true)\n    else h' = h")
-    (observe "action observe = { nondet verified = Set(false, true).oneOf()\n    nondet finalized = Set(false, true).oneOf()\n    nondet noCode = Set(false, true).oneOf()\n    observeAs(verified, finalized, noCode) }")
-    (step "action step = any { sign, pause, recover, submitClear, observe }"))
-  safety: "not(h.unsafe) and h.signatures <= MaxSignatures and (not(h.cleared) or h.witness)"
+  '((delegate
+     (action delegate ()
+       (if (and (= (. h signatures) 0) (not (. h delegated)))
+         (set-h (delegated #t))
+         (keep-h))))
+    (attempt
+     (action attempt ((bound "bool")) "bool"
+       (if (and bound
+                (not (. h delegated))
+                (not (. h paused))
+                (not (. h revoked))
+                (not (. h clearPending))
+                (not (. h burned))
+                (< (. h signatures) MaxSignatures))
+         (set-h (burned #t)
+                (signatures (+ (. h signatures) 1))
+                (lastSignedPaused (. h everPaused))
+                (lastSignedDelegated (. h delegated)))
+         (keep-h))))
+    (sign
+     (action sign ()
+       (nondet ((bound (set #f #t)))
+         (call attempt bound))))
+    (pause
+     (action pause ()
+       (set-h (paused #t) (revoked #t) (everPaused #t))))
+    (recoverAs
+     (action recoverAs ((liveRevoked "bool")) "bool"
+       (set-h (paused (guard not-revoked (. h paused) #f))
+              (revoked (guard not-revoked (or (. h revoked) liveRevoked (. h paused)) #f)))))
+    (recover
+     (action recover ()
+       (nondet ((live (set #f #t)))
+         (call recoverAs live))))
+    (submitClear
+     (action submitClear ()
+       (if (and (. h paused) (. h revoked) (. h delegated))
+         (set-h (clearPending #t))
+         (keep-h))))
+    (observeAs
+     (action observeAs ((verified "bool") (finalized "bool") (noCode "bool")) "bool"
+       (if (and (. h clearPending)
+                (guard clear-verified (and verified finalized noCode)))
+         (set-h (delegated #f)
+                (cleared #t)
+                (witness (and verified finalized noCode)))
+         (keep-h))))
+    (observe
+     (action observe ()
+       (nondet ((verified (set #f #t)) (finalized (set #f #t)) (noCode (set #f #t)))
+         (call observeAs verified finalized noCode))))
+    (step
+     (action step () (any delegate sign pause recover submitClear observe))))
+  safety:
+  '(and (<= (. h signatures) MaxSignatures)
+        (or (= (. h signatures) 0)
+            (and (not (. h lastSignedPaused)) (not (. h lastSignedDelegated))))
+        (or (not (. h cleared)) (. h witness)))
   traces:
-  '((cleanSignTest "run cleanSignTest = init.then(attempt(true)).then(all { assert(h.signatures == 1), assert(safety), h' = h })")
-    (pausedBlocksSignTest "run pausedBlocksSignTest = init.then(pause).then(attempt(true)).then(all { assert(h.signatures == 0), assert(safety), h' = h })"))
+  '((cleanSignTest
+     (run cleanSignTest
+       (then init (call attempt #t)
+             (all (assert (= (. h signatures) 1)) (assert safety) (keep-h)))))
+    (pausedBlocksSignTest
+     (run pausedBlocksSignTest
+       (then init pause (call attempt #t)
+             (all (assert (= (. h signatures) 0)) (assert safety) (keep-h)))))
+    (signThenPauseRemainsSafeTest
+     (run signThenPauseRemainsSafeTest
+       (then init (call attempt #t) pause
+             (all (assert (= (. h signatures) 1)) (assert (not (. h lastSignedPaused))) (assert safety) (keep-h)))))
+    (staleRecoveryCountermodelTest
+     (run staleRecoveryCountermodelTest
+       (then init pause (call staleRecoverAs #f) (call attempt #t)
+             (all (assert (= (. h signatures) 1)) (assert (. h lastSignedPaused)) (assert (not safety)) (keep-h)))))
+    (falseClearCountermodelTest
+     (run falseClearCountermodelTest
+       (then init delegate pause submitClear (call falseClearAs #f #f #f)
+             (all (assert (. h cleared)) (assert (not (. h witness))) (assert (not safety)) (keep-h))))))
   countermodels: (list StaleRecoveryCountermodel FalseClearCountermodel)
   limits: "Finite containment abstraction; verified/finalized/noCode bits abstract trusted Host observations, not EVM/consensus proofs.")
 
@@ -55,12 +124,17 @@
   identity: 'threat.effect-containment.stale-recovery
   dropped-guard: 'not-revoked
   step-action: "stepStaleRecovery"
-  counter-action: "action staleRecover = if (h.paused)\n    h' = h.with(\"paused\", false).with(\"revoked\", false) else h' = h\n  action stepStaleRecovery = any { step, staleRecover }"
-  expected-itf-predicate: "h.unsafe == true")
+  derive-from-transition: 'recoverAs
+  derive-action-name: 'staleRecoverAs
+  derive-step-call: '(nondet ((live (set #f #t))) (call staleRecoverAs live))
+  expected-itf-predicate: "h.signatures >= 1 and h.lastSignedPaused == true")
 
 (.def (FalseClearCountermodel @ EffectContainmentModel)
   identity: 'threat.effect-containment.false-clear
   dropped-guard: 'clear-verified
   step-action: "stepFalseClear"
-  counter-action: "action falseClear = if (h.clearPending)\n    h' = h.with(\"delegated\", false).with(\"cleared\", true) else h' = h\n  action stepFalseClear = any { step, falseClear }"
+  derive-from-transition: 'observeAs
+  derive-action-name: 'falseClearAs
+  derive-step-call: '(nondet ((verified (set #f #t)) (finalized (set #f #t)) (noCode (set #f #t)))
+                       (call falseClearAs verified finalized noCode))
   expected-itf-predicate: "h.cleared == true and h.witness == false")
