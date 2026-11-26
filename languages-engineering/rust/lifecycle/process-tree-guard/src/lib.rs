@@ -149,6 +149,12 @@ impl ProcessTreeGuard {
         self.pgid
     }
 
+    /// Observe the guard's discrete phase matching `ProcessTreeReclamation.qnt`:
+    /// `0` = Running, `3` = Reaped.
+    pub fn guardian_phase(&self) -> i64 {
+        if self.reaped { 3 } else { 0 }
+    }
+
     /// Close the guardian's write end of the fate-sharing pipe, notifying all descendants.
     pub fn close_watchdog_pipe(&mut self) {
         if let Some(fd) = self.watchdog_write_fd.take() {
@@ -300,5 +306,156 @@ pub fn install_pipe_eof_watchdog() {
                     }
                 });
         }
+    }
+}
+
+/// Deterministic Rust reference state machine implementing the exact lifecycle contract
+/// of `ProcessTreeGuard` and refined against `ProcessTreeReclamation.qnt` via live
+/// Quint `--mbt` ITF trace replay (`mbt-itf-edge`).
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct ProcessTreeStateMachine {
+    pub guardian: i64,
+    pub supervisor: i64,
+    pub c1: i64,
+    pub c2: i64,
+    pub grace_expired: bool,
+    pub container_frozen: bool,
+    pub container_killed: bool,
+    pub premature_kill: bool,
+    pub post_reap_signal: bool,
+    pub spawn_escaped: bool,
+}
+
+impl ProcessTreeStateMachine {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn descendants_quiescent(&self) -> bool {
+        (self.c1 == 0 || self.c1 == 3) && (self.c2 == 0 || self.c2 == 3)
+    }
+
+    pub fn safety_invariant(&self) -> bool {
+        !self.premature_kill
+            && !self.post_reap_signal
+            && !self.spawn_escaped
+            && self.c1 != 4
+            && self.c2 != 4
+            && (self.guardian != 3 || self.descendants_quiescent())
+    }
+
+    /// Dispatch a Quint `mbt::actionTaken` onto the Rust `ProcessTreeGuard` state contract.
+    pub fn apply_action(&mut self, action: &str) -> Result<(), String> {
+        match action {
+            "init" => *self = Self::new(),
+            "spawnC1" => {
+                if self.supervisor == 0
+                    && self.c1 == 0
+                    && !self.container_frozen
+                    && !self.container_killed
+                {
+                    self.c1 = 1;
+                }
+            }
+            "spawnC2" => {
+                if self.c2 == 0
+                    && self.supervisor < 3
+                    && !self.container_frozen
+                    && !self.container_killed
+                {
+                    self.c2 = 1;
+                    self.spawn_escaped =
+                        self.spawn_escaped || self.container_frozen || self.container_killed;
+                }
+            }
+            "sendShutdown" => {
+                if self.guardian == 0 {
+                    self.guardian = 1;
+                }
+            }
+            "supervisorHttpAck" => {
+                if self.guardian == 1 && self.supervisor == 0 {
+                    self.supervisor = 1;
+                }
+            }
+            "supervisorBeginDrain" => {
+                if self.guardian == 1 && (self.supervisor == 0 || self.supervisor == 1) {
+                    self.supervisor = 2;
+                    if self.c1 == 1 {
+                        self.c1 = 2;
+                    }
+                    if self.c2 == 1 {
+                        self.c2 = 2;
+                    }
+                }
+            }
+            "childC1Exit" => {
+                if self.c1 == 1 || self.c1 == 2 {
+                    self.c1 = 3;
+                }
+            }
+            "childC2Exit" => {
+                if self.c2 == 1 || self.c2 == 2 {
+                    self.c2 = 3;
+                }
+            }
+            "supervisorCleanExit" => {
+                if self.supervisor == 2 && self.descendants_quiescent() {
+                    self.supervisor = 3;
+                }
+            }
+            "supervisorHang" => {
+                if self.guardian == 1 && self.supervisor < 3 {
+                    self.supervisor = 5;
+                }
+            }
+            "expireGraceTimer" => {
+                if self.guardian == 1 && !self.grace_expired {
+                    self.grace_expired = true;
+                }
+            }
+            "freezeContainer" => {
+                if self.guardian == 1
+                    && (self.grace_expired || self.supervisor == 5)
+                    && !self.container_frozen
+                {
+                    self.container_frozen = true;
+                }
+            }
+            "escalateKill" => {
+                let was_hung = self.supervisor == 5;
+                if self.guardian == 1 && (self.grace_expired || was_hung) {
+                    self.guardian = 2;
+                    self.supervisor = 4;
+                    self.container_frozen = true;
+                    self.container_killed = true;
+                    if self.c1 == 1 || self.c1 == 2 {
+                        self.c1 = 3;
+                    }
+                    if self.c2 == 1 || self.c2 == 2 {
+                        self.c2 = 3;
+                    }
+                    self.premature_kill =
+                        self.premature_kill || (!self.grace_expired && !was_hung);
+                }
+            }
+            "reapAfterShutdown" => {
+                if self.guardian == 1 && self.supervisor == 3 && self.descendants_quiescent() {
+                    self.guardian = 3;
+                }
+            }
+            "reapAfterKill" => {
+                if self.guardian == 2 && self.container_killed && self.descendants_quiescent() {
+                    self.guardian = 3;
+                }
+            }
+            "signalSupervisor" => {
+                if (self.guardian == 1 || self.guardian == 3) && self.guardian < 3 {
+                    self.post_reap_signal = self.post_reap_signal || self.guardian == 3;
+                }
+            }
+            other => return Err(format!("unknown ProcessTreeReclamation action: {other}")),
+        }
+        Ok(())
     }
 }

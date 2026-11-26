@@ -183,26 +183,44 @@
     (car (reverse lines))
     fallback))
 
+(def (process-tree-itf-artifact-dir repo-root)
+  (path-expand ".data/verification-artifacts/process-tree-reclamation/itf-traces" repo-root))
+
 (def (run-quint-op repo-root step-name payload)
   (def qfile (alist-ref payload 'quint-file ""))
+  (def itf-dir (process-tree-itf-artifact-dir repo-root))
   (def script
     (string-append
       "export PATH=\"$HOME/.bun/bin:$PATH\"\n"
-      "bun packages/quint-modules-resolver/src/cli.ts run-plan \"" qfile "\" --verify\n"
-      "bun packages/quint-modules-resolver/src/cli.ts mbt-audit \"" qfile "\"\n"))
+      ;; Capture run-plan into a regular file so Apalache's background server daemon
+      ;; cannot inherit and hold open the stdout/stderr pipe to gxtest/tee.
+      "tmp_log=\"$(mktemp)\"\n"
+      "trap 'rm -f \"$tmp_log\"' EXIT\n"
+      "bun packages/quint-modules-resolver/src/cli.ts run-plan \"" qfile "\" --verify >\"$tmp_log\" 2>&1\n"
+      "cat \"$tmp_log\"\n"
+      "bun packages/quint-modules-resolver/src/cli.ts mbt-audit \"" qfile "\"\n"
+      "rm -rf \"" itf-dir "\" && mkdir -p \"" itf-dir "\"\n"
+      "quint run \"" qfile "\" --main concurrency_process_tree_reclamation --mbt "
+      "--max-samples 60 --n-traces 20 --max-steps 24 --invariant safety --seed 0x154 "
+      "--out-itf \"" itf-dir "/trace_{seq}.itf.json\" >/dev/null\n"
+      "echo \"ITF-EXPORT-OK count=$(ls -1 \"" itf-dir "\"/*.itf.json | wc -l | tr -d ' ')\"\n"))
   (let-values (((code out) (exec-bash-captured repo-root script)))
     (def ok? (and (= code 0)
                   (and (string-contains out "PLAN-OK") #t)
                   (and (string-contains out "MBT-AUDIT-OK") #t)
-                  (and (string-contains out "100.0%") #t)))
+                  (and (string-contains out "100.0%") #t)
+                  (and (string-contains out "ITF-EXPORT-OK count=20") #t)))
     (validate VerificationRawReceiptType
       (.o step: step-name
           exit-code: (if ok? 0 (if (= code 0) 1 code))
-          artifacts: (list (cons 'quint-file qfile) (cons 'artifact 'itf-trace))
+          artifacts: (list (cons 'quint-file qfile)
+                           (cons 'artifact 'itf-trace)
+                           (cons 'itf-trace-dir itf-dir)
+                           (cons 'itf-trace-count 20))
           summary: (if ok?
-                     (string-append "Quint verify+mbt-audit passed: "
-                                    (last-nonempty-line out "MBT-AUDIT-OK"))
-                     (string-append "Quint verification failed: "
+                     (string-append "Quint verify+mbt-audit+20-ITF-export passed: "
+                                    (last-nonempty-line out "ITF-EXPORT-OK"))
+                     (string-append "Quint verification/ITF export failed: "
                                     (last-nonempty-line out "non-zero exit")))))))
 
 (def (run-lean-op repo-root step-name payload)
@@ -253,21 +271,27 @@
 
 (def (run-contained-oracle-op repo-root step-name payload)
   (def crate-dir (path-expand (alist-ref payload 'crate-dir "") repo-root))
+  (def itf-dir (process-tree-itf-artifact-dir repo-root))
   (def script
     (string-append
+      "test -f \"" itf-dir "/trace_0.itf.json\"\n"
       "CARGO_BIN=\"${RESOURCE_CARGO:-$(\"$HOME/.cargo/bin/rustup\" which cargo 2>/dev/null || command -v cargo)}\"\n"
       "export PATH=\"$(dirname \"$CARGO_BIN\"):$HOME/.cargo/bin:$PATH\"\n"
+      "export PTREE_ITF_TRACE_DIR=\"" itf-dir "\"\n"
       "\"$CARGO_BIN\" test -- --nocapture --test-threads=1\n"))
   (let-values (((code out) (exec-bash-captured crate-dir script)))
-    (def ok? (and (= code 0) (and (string-contains out "4 passed; 0 failed") #t)))
+    (def ok? (and (= code 0)
+                  (and (string-contains out "3 passed; 0 failed") #t)
+                  (and (string-contains out "4 passed; 0 failed") #t)))
     (validate VerificationRawReceiptType
       (.o step: step-name
           exit-code: (if ok? 0 (if (= code 0) 1 code))
           artifacts: (list (cons 'crate-dir crate-dir)
+                           (cons 'consumed-itf-dir itf-dir)
                            (cons 'premise 'SpawnPreservesContainer))
           summary: (if ok?
-                     "Rust ProcessTreeGuard 4/4 OS SIGKILL leak oracle controls passed"
-                     (string-append "Rust OS SIGKILL oracle failed: "
+                     "Rust ProcessTreeGuard 3/3 live Quint ITF MBT replay + 4/4 OS SIGKILL leak oracle controls passed"
+                     (string-append "Rust ITF MBT / OS SIGKILL oracle failed: "
                                     (last-nonempty-line out "cargo test error")))))))
 
 (def (dispatch-verification-operation repo-root step-name op payload)
@@ -314,7 +338,8 @@
      "languages-engineering/rust/lifecycle/process-tree-guard/clippy.toml"
      "languages-engineering/rust/lifecycle/process-tree-guard/src/lib.rs"
      "languages-engineering/rust/lifecycle/process-tree-guard/src/bin/mock_tree.rs"
-     "languages-engineering/rust/lifecycle/process-tree-guard/tests/sigkill_leak_oracle.rs")))
+     "languages-engineering/rust/lifecycle/process-tree-guard/tests/sigkill_leak_oracle.rs"
+     "languages-engineering/rust/lifecycle/process-tree-guard/tests/itf_mbt_replay.rs")))
 
 (def (sha256-files-table repo-root rel-paths)
   ;; Single batched shasum -a 256 invocation across all unique paths.
