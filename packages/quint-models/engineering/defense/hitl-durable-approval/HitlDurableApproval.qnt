@@ -1,0 +1,38 @@
+// SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+// SPDX-License-Identifier: LGPL-2.1-or-later
+// @quint-model engineering.defense.hitl-durable-approval
+// @quint-version 0.33.0
+// @apalache-version 0.62.1
+// @verify safety max-steps=10
+// @countermodel require-fresh-m1-binding step=stepStaleDriftBypass max-steps=6 itf="h.staleExecutions > 0"
+// @countermodel forbid-vetoed-or-replayed-execution step=stepVetoOrReplayBypass max-steps=6 itf="h.vetoOrReplayViolations > 0"
+// @countermodel require-cold-hibernation-clean step=stepLeakedM3Resume max-steps=6 itf="h.m3LeakViolations > 0"
+// Limits: Finite single-proposal HITL pause/resume, baseline/policy drift, TTL expiry, and cold-hibernation abstraction; does not model multi-region quorum clock skew, interactive UI phishing outside the M1 brief, or external webhook transport encryption.
+module hitl_durable_approval {
+  type State = { authorId: int, approverId: int, suspended: bool, m3LeaseLeaked: bool, baselineVersion: int, policyEpoch: int, approvedBaseline: int, approvedPolicyEpoch: int, approvalExpired: bool, humanVetoed: bool, executedCount: int, staleExecutions: int, vetoOrReplayViolations: int, m3LeakViolations: int }
+  var h: State
+  action init = h' = { authorId: 1, approverId: 0, suspended: false, m3LeaseLeaked: false, baselineVersion: 1, policyEpoch: 1, approvedBaseline: 0, approvedPolicyEpoch: 0, approvalExpired: false, humanVetoed: false, executedCount: 0, staleExecutions: 0, vetoOrReplayViolations: 0, m3LeakViolations: 0 }
+  action suspendCold = if (not(h.suspended)) h' = h.with("suspended", true).with("m3LeaseLeaked", false) else h' = h
+  action suspendWithLeakedM3 = if ((not(h.suspended) and not(h.m3LeaseLeaked))) h' = h.with("suspended", true).with("m3LeaseLeaked", true) else h' = h
+  action humanApproveCurrent = if ((h.suspended and not(h.humanVetoed) and h.executedCount == 0)) h' = h.with("approverId", 2).with("approvedBaseline", h.baselineVersion).with("approvedPolicyEpoch", h.policyEpoch).with("approvalExpired", false) else h' = h
+  action humanVetoProposal = if ((h.suspended and not(h.humanVetoed))) h' = h.with("humanVetoed", true) else h' = h
+  action baselineDriftsDuringPause = if ((h.suspended and h.baselineVersion < 3)) h' = h.with("baselineVersion", (h.baselineVersion + 1)) else h' = h
+  action policyUpgradesDuringPause = if ((h.suspended and h.policyEpoch < 3)) h' = h.with("policyEpoch", (h.policyEpoch + 1)) else h' = h
+  action approvalTtlExpires = if ((h.approverId != 0 and not(h.approvalExpired))) h' = h.with("approvalExpired", true) else h' = h
+  action resumeAndExecute = if (((h.approverId != 0 and h.approverId != h.authorId and h.approvedBaseline == h.baselineVersion and h.approvedPolicyEpoch == h.policyEpoch and not(h.approvalExpired)) and (not(h.humanVetoed) and h.executedCount == 0) and (h.suspended and not(h.m3LeaseLeaked)))) h' = h.with("executedCount", (h.executedCount + 1)).with("staleExecutions", if ((h.approverId != 0 and h.approverId != h.authorId and h.approvedBaseline == h.baselineVersion and h.approvedPolicyEpoch == h.policyEpoch and not(h.approvalExpired))) h.staleExecutions else (h.staleExecutions + 1)).with("vetoOrReplayViolations", if ((not(h.humanVetoed) and h.executedCount == 0)) h.vetoOrReplayViolations else (h.vetoOrReplayViolations + 1)).with("m3LeakViolations", if ((h.suspended and not(h.m3LeaseLeaked))) h.m3LeakViolations else (h.m3LeakViolations + 1)) else h' = h
+  action step = any { suspendCold, suspendWithLeakedM3, humanApproveCurrent, humanVetoProposal, baselineDriftsDuringPause, policyUpgradesDuringPause, approvalTtlExpires, resumeAndExecute }
+  val safety = (h.staleExecutions == 0 and h.vetoOrReplayViolations == 0 and h.m3LeakViolations == 0 and h.executedCount <= 1)
+  // Countermodel engineering.defense.hitl-durable-approval.stale-drift (dropped guard: require-fresh-m1-binding)
+  action resumeStaleDrift = if ((true and (not(h.humanVetoed) and h.executedCount == 0) and (h.suspended and not(h.m3LeaseLeaked)))) h' = h.with("executedCount", (h.executedCount + 1)).with("staleExecutions", if ((h.approverId != 0 and h.approverId != h.authorId and h.approvedBaseline == h.baselineVersion and h.approvedPolicyEpoch == h.policyEpoch and not(h.approvalExpired))) h.staleExecutions else (h.staleExecutions + 1)).with("vetoOrReplayViolations", if ((not(h.humanVetoed) and h.executedCount == 0)) h.vetoOrReplayViolations else (h.vetoOrReplayViolations + 1)).with("m3LeakViolations", if ((h.suspended and not(h.m3LeaseLeaked))) h.m3LeakViolations else (h.m3LeakViolations + 1)) else h' = h
+  action stepStaleDriftBypass = any { step, resumeStaleDrift }
+  // Countermodel engineering.defense.hitl-durable-approval.veto-or-replay (dropped guard: forbid-vetoed-or-replayed-execution)
+  action resumeIgnoreVetoOrReplay = if (((h.approverId != 0 and h.approverId != h.authorId and h.approvedBaseline == h.baselineVersion and h.approvedPolicyEpoch == h.policyEpoch and not(h.approvalExpired)) and true and (h.suspended and not(h.m3LeaseLeaked)))) h' = h.with("executedCount", (h.executedCount + 1)).with("staleExecutions", if ((h.approverId != 0 and h.approverId != h.authorId and h.approvedBaseline == h.baselineVersion and h.approvedPolicyEpoch == h.policyEpoch and not(h.approvalExpired))) h.staleExecutions else (h.staleExecutions + 1)).with("vetoOrReplayViolations", if ((not(h.humanVetoed) and h.executedCount == 0)) h.vetoOrReplayViolations else (h.vetoOrReplayViolations + 1)).with("m3LeakViolations", if ((h.suspended and not(h.m3LeaseLeaked))) h.m3LeakViolations else (h.m3LeakViolations + 1)) else h' = h
+  action stepVetoOrReplayBypass = any { step, resumeIgnoreVetoOrReplay }
+  // Countermodel engineering.defense.hitl-durable-approval.leaked-m3 (dropped guard: require-cold-hibernation-clean)
+  action resumeWithLeakedM3 = if (((h.approverId != 0 and h.approverId != h.authorId and h.approvedBaseline == h.baselineVersion and h.approvedPolicyEpoch == h.policyEpoch and not(h.approvalExpired)) and (not(h.humanVetoed) and h.executedCount == 0) and true)) h' = h.with("executedCount", (h.executedCount + 1)).with("staleExecutions", if ((h.approverId != 0 and h.approverId != h.authorId and h.approvedBaseline == h.baselineVersion and h.approvedPolicyEpoch == h.policyEpoch and not(h.approvalExpired))) h.staleExecutions else (h.staleExecutions + 1)).with("vetoOrReplayViolations", if ((not(h.humanVetoed) and h.executedCount == 0)) h.vetoOrReplayViolations else (h.vetoOrReplayViolations + 1)).with("m3LeakViolations", if ((h.suspended and not(h.m3LeaseLeaked))) h.m3LeakViolations else (h.m3LeakViolations + 1)) else h' = h
+  action stepLeakedM3Resume = any { step, resumeWithLeakedM3 }
+  run driftReapprovalAndSafeResumeTest = init.then(suspendCold).then(humanApproveCurrent).then(baselineDriftsDuringPause).then(policyUpgradesDuringPause).then(humanApproveCurrent).then(resumeAndExecute).then(all { assert(safety), assert(h.executedCount == 1), assert(h.approvedBaseline == 2), assert(h.approvedPolicyEpoch == 2), h' = h })
+  run staleDriftBypassViolatesSafetyTest = init.then(suspendCold).then(humanApproveCurrent).then(baselineDriftsDuringPause).then(resumeStaleDrift).then(all { assert(not(safety)), assert(h.staleExecutions > 0), h' = h })
+  run vetoBypassViolatesSafetyTest = init.then(suspendCold).then(humanApproveCurrent).then(humanVetoProposal).then(resumeIgnoreVetoOrReplay).then(all { assert(not(safety)), assert(h.vetoOrReplayViolations > 0), h' = h })
+  run leakedM3ResumeViolatesSafetyTest = init.then(suspendWithLeakedM3).then(humanApproveCurrent).then(resumeWithLeakedM3).then(all { assert(not(safety)), assert(h.m3LeakViolations > 0), h' = h })
+}

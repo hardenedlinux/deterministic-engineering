@@ -911,6 +911,121 @@ class BadSelfApprovingReleaseSUT extends ReleaseSodRollbackSUT {
   }
 }
 
+class HitlDurableApprovalSUT {
+  authorId = 1;
+  approverId = 0;
+  suspended = false;
+  m3LeaseLeaked = false;
+  baselineVersion = 1;
+  policyEpoch = 1;
+  approvedBaseline = 0;
+  approvedPolicyEpoch = 0;
+  approvalExpired = false;
+  humanVetoed = false;
+  executedCount = 0;
+  staleExecutions = 0;
+  vetoOrReplayViolations = 0;
+  m3LeakViolations = 0;
+
+  apply(action: string): void {
+    switch (action) {
+      case 'suspendCold':
+        if (!this.suspended) {
+          this.suspended = true;
+          this.m3LeaseLeaked = false;
+        }
+        break;
+      case 'suspendWithLeakedM3':
+        if (!this.suspended && !this.m3LeaseLeaked) {
+          this.suspended = true;
+          this.m3LeaseLeaked = true;
+        }
+        break;
+      case 'humanApproveCurrent':
+        if (this.suspended && !this.humanVetoed && this.executedCount === 0) {
+          this.approverId = 2;
+          this.approvedBaseline = this.baselineVersion;
+          this.approvedPolicyEpoch = this.policyEpoch;
+          this.approvalExpired = false;
+        }
+        break;
+      case 'humanVetoProposal':
+        if (this.suspended && !this.humanVetoed) {
+          this.humanVetoed = true;
+        }
+        break;
+      case 'baselineDriftsDuringPause':
+        if (this.suspended && this.baselineVersion < 3) {
+          this.baselineVersion += 1;
+        }
+        break;
+      case 'policyUpgradesDuringPause':
+        if (this.suspended && this.policyEpoch < 3) {
+          this.policyEpoch += 1;
+        }
+        break;
+      case 'approvalTtlExpires':
+        if (this.approverId !== 0 && !this.approvalExpired) {
+          this.approvalExpired = true;
+        }
+        break;
+      case 'resumeAndExecute': {
+        const freshBinding =
+          this.approverId !== 0 &&
+          this.approverId !== this.authorId &&
+          this.approvedBaseline === this.baselineVersion &&
+          this.approvedPolicyEpoch === this.policyEpoch &&
+          !this.approvalExpired;
+        const notVetoOrReplay = !this.humanVetoed && this.executedCount === 0;
+        const cleanCold = this.suspended && !this.m3LeaseLeaked;
+        if (freshBinding && notVetoOrReplay && cleanCold) {
+          this.executedCount += 1;
+          if (!freshBinding) this.staleExecutions += 1;
+          if (!notVetoOrReplay) this.vetoOrReplayViolations += 1;
+          if (!cleanCold) this.m3LeakViolations += 1;
+        }
+        break;
+      }
+      default:
+        throw new Error(`Unknown HitlDurableApprovalSUT action: ${action}`);
+    }
+  }
+
+  snapshot() {
+    return {
+      authorId: this.authorId,
+      approverId: this.approverId,
+      suspended: this.suspended,
+      m3LeaseLeaked: this.m3LeaseLeaked,
+      baselineVersion: this.baselineVersion,
+      policyEpoch: this.policyEpoch,
+      approvedBaseline: this.approvedBaseline,
+      approvedPolicyEpoch: this.approvedPolicyEpoch,
+      approvalExpired: this.approvalExpired,
+      humanVetoed: this.humanVetoed,
+      executedCount: this.executedCount,
+      staleExecutions: this.staleExecutions,
+      vetoOrReplayViolations: this.vetoOrReplayViolations,
+      m3LeakViolations: this.m3LeakViolations,
+    };
+  }
+}
+
+class BadStaleApprovalResumeSUT extends HitlDurableApprovalSUT {
+  override apply(action: string): void {
+    if (action === 'baselineDriftsDuringPause' && this.suspended && this.baselineVersion < 3) {
+      // Anti-pattern: baseline drifts while sleeping, yet blindly auto-resumes stale approval!
+      this.baselineVersion += 1;
+      if (this.approverId !== 0) {
+        this.executedCount += 1;
+        this.staleExecutions += 1;
+      }
+      return;
+    }
+    super.apply(action);
+  }
+}
+
 const repoRoot = resolve(import.meta.dir, '../../../..');
 
 function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(): Record<string, unknown>}>(
@@ -963,7 +1078,7 @@ function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(
   }
 }
 
-describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (11 Defense Models)', () => {
+describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (12 Defense Models)', () => {
   test('EpistemicStateLattice ITF actions drive EpistemicLatticeSUT with exact step-by-step state isomorphism', () => {
     const stats = replayModelAgainstSut(
       'packages/quint-models/engineering/defense/epistemic-state-lattice/EpistemicStateLattice.qnt',
@@ -1186,6 +1301,33 @@ describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (11 Defense Models
       () => new ReleaseSodRollbackSUT(),
       projectH,
       () => new BadSelfApprovingReleaseSUT(),
+    );
+    expect(stats.transitions).toBeGreaterThan(50);
+    expect(stats.brokenDiverged).toBe(true);
+  }, 30_000);
+
+  test('HitlDurableApproval ITF actions drive HitlDurableApprovalSUT with exact state isomorphism and reject BadStaleApprovalResumeSUT', () => {
+    const projectH = (h: Record<string, unknown>) => ({
+      authorId: asInt(h.authorId),
+      approverId: asInt(h.approverId),
+      suspended: Boolean(h.suspended),
+      m3LeaseLeaked: Boolean(h.m3LeaseLeaked),
+      baselineVersion: asInt(h.baselineVersion),
+      policyEpoch: asInt(h.policyEpoch),
+      approvedBaseline: asInt(h.approvedBaseline),
+      approvedPolicyEpoch: asInt(h.approvedPolicyEpoch),
+      approvalExpired: Boolean(h.approvalExpired),
+      humanVetoed: Boolean(h.humanVetoed),
+      executedCount: asInt(h.executedCount),
+      staleExecutions: asInt(h.staleExecutions),
+      vetoOrReplayViolations: asInt(h.vetoOrReplayViolations),
+      m3LeakViolations: asInt(h.m3LeakViolations),
+    });
+    const stats = replayModelAgainstSut(
+      'packages/quint-models/engineering/defense/hitl-durable-approval/HitlDurableApproval.qnt',
+      () => new HitlDurableApprovalSUT(),
+      projectH,
+      () => new BadStaleApprovalResumeSUT(),
     );
     expect(stats.transitions).toBeGreaterThan(50);
     expect(stats.brokenDiverged).toBe(true);

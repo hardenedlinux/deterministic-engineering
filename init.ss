@@ -79,6 +79,7 @@
   (byzantine-encrypted-store profiles: (bound.compact))
   (durable-ai-context-ssi profiles: (bound.compact))
   (release-sod-rollback profiles: (bound.compact))
+  (hitl-durable-approval profiles: (bound.compact))
 
   ;; ── Threat-First Formal Security Models (5 subdomains) ──
   :load-modules "./packages/quint-models/threat/zero-trust"

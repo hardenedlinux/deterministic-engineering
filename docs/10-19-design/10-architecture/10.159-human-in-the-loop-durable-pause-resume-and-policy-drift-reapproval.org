@@ -1,0 +1,77 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 10.159 Human-in-the-Loop Durable Pause/Resume, Policy-Drift Re-Approval, and Anti-Nagging Veto
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.159
+#+STARTUP: overview
+#+OPTIONS: toc:3 num:nil
+#+FILETAGS: :architecture:hitl:durable-pause-resume:policy-drift:anti-nagging:governance:
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.156-orthogonal-persistence-durable-multi-agent-governance.org][10.156 Stratified orthogonal persistence]] | [[file:10.157-durable-ai-context-projection-and-multi-agent-ssi-concurrency.org][10.157 Durable AI context & SSI]] | [[file:10.158-durable-ai-business-extensions-sod-release-and-regulated-replay.org][10.158 Business extensions B1/B2]] | [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05 65-case benchmark]]
+
+* Problem: Five Structural Failure Modes of Naive HITL Pause/Resume
+:PROPERTIES:
+:CUSTOM_ID: hitl159-problem
+:STATUS: implemented-verified
+:END:
+
+Long-horizon AI workflows frequently pause for hours or days awaiting human
+approval (production rollouts, KMS rotations, schema changes, regulated sign-offs).
+Naive coroutine-checkpointing or chat-interrupt frameworks fail along five axes:
+
+1. *Stale-Approval TOCTOU Across Human Think-Time*: While a human sleeps, the
+   repository baseline moves (=C0 -> C1=), a CVE advisory tightens security
+   policy (=P0 -> P1=), or the approval TTL expires. Blindly resuming a cached
+   "approved = true" flag executes an action invalid under the live world.
+2. *Human Approval Fatigue & Social Engineering*: Feeding 40-page raw agent
+   transcripts or persuasive prose ("URGENT, CEO approved over coffee!") to
+   approvers induces rubber-stamping and prompt-injection bypasses.
+3. *Hibernation Resource & Capability Leak (=R3=)*: Holding live =M3= leases/DB
+   locks during multi-day pause starves peers, while serializing live =M3=
+   handles into checkpoints violates Stratified Orthogonal Persistence
+   ([[file:10.156-orthogonal-persistence-durable-multi-agent-governance.org][10.156]]).
+4. *Duplicate-Webhook & Cross-Proposal Replay*: Double-clicking an approval
+   button or replaying an approval receipt across proposals can duplicate
+   non-idempotent external side effects.
+5. *Agent Nagging / Human MFA-Bombing*: An autonomous retry loop that ignores a
+   human "No" and keeps re-submitting slightly tweaked proposals exploits human
+   fatigue until an accidental click occurs.
+
+* Stratified OP Architecture for Scenario B5
+:PROPERTIES:
+:CUSTOM_ID: hitl159-architecture
+:STATUS: implemented-verified
+:END:
+
+| Governance Mechanism | Stratification & Enforcement | Guarantee |
+|----------------------+------------------------------+-----------|
+| Cold =M1=-Only Hibernation | =assertM1Persistable= (=R3=) + mandatory revocation of active =M3= lease before writing =SuspensionAnchor= | Zero live =M3= handles held or serialized during multi-day pause |
+| Anti-Fatigue =HumanDecisionBrief= | Role-projected cold =M1= brief (diff digest, affected scopes, verified receipts, pinned rollback cut); strips 100% of untrusted =M2= agent prose | Eliminates social-engineering persuasion & approval-context overload |
+| Cryptographically Bound =M1= Approval Receipt + =R1= Drift Co-Evolution | Receipt pins =(suspensionId, proposalHash, baseCutHash, policyEpochHash, expiresAtEpoch)=; on wake-up, baseline drift or intersecting policy drift fails closed (=PendingReapproval=), while provably disjoint policy updates succeed via =R1= | Zero stale-approval execution without unnecessary re-approval storms |
+| Single-Use Consumption & Monotonic =M3= Execution Lease | Atomic consumption ledger + fresh single-use monotonic =M3= lease (=epoch' > suspendedEpoch=) scoped strictly to =proposalHash= | Duplicate clicks return =AlreadyConsumedNoop=; cross-proposal replay is =Refuted= |
+| Multi-Party Quorum & Anti-Nagging Veto Persistence | Distinct-principal =k=-of-=N= SoD (=approverId != requesterId=) + immutable =M1= =HumanVetoConstraint= with finite re-submission budget requiring explicit =vetoResolutionEvidenceHash= | Prevents self-approval, duplicate-signer spoofing, and infinite nagging loops |
+
+* Executable Artifacts & Verification Receipts
+:PROPERTIES:
+:CUSTOM_ID: hitl159-artifacts
+:STATUS: executed-verified
+:END:
+
+| Artifact | Path | Verification Evidence |
+|----------+------+-----------------------|
+| 12th Formal Model (=hitl-durable-approval=) | [[file:../../../packages/quint-models/engineering/defense/hitl-durable-approval/HitlDurableApproval.qnt][HitlDurableApproval.qnt]] | Apalache 6/6 PASS (safety + 3 countermodels: =stale-drift=, =veto-or-replay=, =leaked-m3=), =guard-probe= =essential=, 100% MBT coverage |
+| MBT SUT State-Machine Refinement | [[file:../../../languages-engineering/ts/defense/boundary-contrast/mbt-replay.test.ts][mbt-replay.test.ts]] | =HitlDurableApprovalSUT= step-by-step isomorphic to ITF traces; rejects =BadStaleApprovalResumeSUT= |
+| Executable HITL Engine & Benchmark (=AG61=–=AG65=) | [[file:../../../languages-engineering/ts/defense/agent-audit/durable-hitl-approval.ts][durable-hitl-approval.ts]] / [[file:../../../languages-engineering/ts/defense/agent-audit/durable-hitl-approval.test.ts][durable-hitl-approval.test.ts]] | 5/5 benchmark cases (=AG61=–=AG65=) exact gold match; dogfood =just audit-agent-patch= 0 findings |
+
+* Limits
+:PROPERTIES:
+:CUSTOM_ID: hitl159-limits
+:STATUS: implemented-verified
+:END:
+
+The in-process engine verifies cold hibernation, prose stripping, baseline/policy
+drift invalidation, quorum SoD, idempotent consumption, and anti-nagging budgets.
+Production deployment additionally requires cryptographic human identity signing
+(WebAuthn/OIDC/HSM), durable outbox notification delivery to human channels, and
+external clock/NTP monotonicity guarantees for TTL enforcement.
