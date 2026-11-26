@@ -19,6 +19,7 @@
   "objects.ss"
   "func.ss")
 (export
+  target-spec->payload
   subject-spec->mutability
   subject-spec->input-files
   find-sysml-subject-spec
@@ -218,6 +219,7 @@
             subject-key: (string->symbol skey-str)
             identity: sid-sym
             subject: subject-obj
+            spec: spec
             mutability: (subject-spec->mutability spec)
             input-files: (subject-spec->input-files spec))))))
 

@@ -102,11 +102,13 @@
 ;; ── Subprocess execution with POSIX waitpid decoding ──
 
 (def (exec-bash-captured cwd script)
+  ;; Change directory inside the forked bash child rather than via Gambit's
+  ;; process-wide `directory:` chdir, making concurrent green-thread spawns 100% race-free.
+  (def full-script (string-append "cd \"" cwd "\"\n" script))
   (def proc
     (open-process
       (list path: "/bin/bash"
-            arguments: (list "-euo" "pipefail" "-c" script)
-            directory: cwd
+            arguments: (list "-euo" "pipefail" "-c" full-script)
             stdin-redirection: #f
             stdout-redirection: #t
             stderr-redirection: #t)))
@@ -178,18 +180,43 @@
                      (string-append "Quint verification/ITF export failed: "
                                     (last-nonempty-line out "non-zero exit")))))))
 
+(def (theorem->module-name thm)
+  (let loop ((i (- (string-length thm) 1)))
+    (cond
+     ((< i 0) #f)
+     ((char=? (string-ref thm i) #\.) (substring thm 0 i))
+     (else (loop (- i 1))))))
+
+(def (unique-nonempty-strings xs)
+  (def acc '())
+  (for-each
+    (lambda (s)
+      (when (and (string? s) (> (string-length s) 0) (not (member s acc)))
+        (set! acc (cons s acc))))
+    xs)
+  (reverse acc))
+
 (def (run-lean-op repo-root step-name payload)
   (def lake-root (path-expand (alist-ref payload 'lake-root "packages/lean-models") repo-root))
+  (def lean-mod (alist-ref payload 'lean-module ""))
   (def theorems (alist-ref payload 'theorems '()))
+  ;; Build & import ONLY the exact modules required by this subject's theorems so
+  ;; unrelated WIP Lean modules in packages/lean-models cannot break or pollute it.
+  (def target-mods
+    (let ((mods (unique-nonempty-strings
+                  (cons lean-mod (filter string? (map theorem->module-name theorems))))))
+      (if (pair? mods) mods '("DeterministicEngineering"))))
+  (def build-args (apply string-append (map (lambda (m) (string-append " " m)) target-mods)))
+  (def import-lines (apply string-append (map (lambda (m) (string-append "import " m "\n")) target-mods)))
   (def axiom-lines
     (apply string-append
       (map (lambda (thm) (string-append "#print axioms " thm "\n")) theorems)))
   (def script
     (string-append
       "export PATH=\"$HOME/.elan/bin:$PATH\"\n"
-      "lake build\n"
+      "lake build" build-args "\n"
       "lake env lean --stdin <<'LEAN_EOF'\n"
-      "import DeterministicEngineering\n"
+      import-lines
       axiom-lines
       "LEAN_EOF\n"))
   (let-values (((code out) (exec-bash-captured lake-root script)))
@@ -735,9 +762,54 @@
                                        (equal? (hash-get catt "payloadSha256") expected-child-sha))))))
                        subjects)))))))
 
-;; Cache-aware Fun-Flow RuntimeAdapter: skips subprocess execution iff ASCENT IR01-IR04
-;; explicitly admitted the step into `step_reusable`.
-(def (make-real-verification-runtime-adapter repo-root (reuse-plan #f) (cached-by-step #f))
+;; Pre-execute independent pending Fun-Flow waves concurrently across Gambit green threads
+;; (each invoking an isolated OS subprocess), returning (values precomputed-tbl execution-metrics).
+(def (execute-parallel-frontier-waves repo-root subject-obj spec reuse-plan)
+  (def pending-names (and reuse-plan (.get reuse-plan pending)))
+  (def waves (partition-parallel-frontier-waves (.get subject-obj steps)
+                                                (.get subject-obj dag-edges)
+                                                pending-names))
+  (def tspec-by-name (make-hash-table))
+  (for-each (lambda (ts) (hash-put! tspec-by-name (.get ts name) ts)) (.get spec targets))
+  (def precomputed (make-hash-table))
+  (def sum-ms 0)
+  (def t0 (real-time))
+  (for-each
+    (lambda (wave)
+      (def (run-one step-str)
+        (def ts (hash-get tspec-by-name step-str))
+        (def st0 (real-time))
+        (def raw (dispatch-verification-operation
+                   repo-root
+                   (string->symbol step-str)
+                   (.get ts operation)
+                   (target-spec->payload ts)))
+        (def dt-ms (inexact->exact (round (* 1000.0 (- (real-time) st0)))))
+        (list step-str raw dt-ms))
+      (def results
+        (if (> (length wave) 1)
+          (let ((threads (map (lambda (s) (spawn run-one s)) wave)))
+            (map thread-join! threads))
+          (map run-one wave)))
+      (for-each
+        (lambda (r)
+          (hash-put! precomputed (car r) (cadr r))
+          (set! sum-ms (+ sum-ms (caddr r))))
+        results))
+    waves)
+  (def wall-ms (inexact->exact (round (* 1000.0 (- (real-time) t0)))))
+  (values precomputed
+          (.o bind-these: #f
+              parallel?: #t
+              wave-count: (length waves)
+              waves: waves
+              wall-ms: wall-ms
+              sum-step-ms: sum-ms)))
+
+;; Cache-aware Fun-Flow RuntimeAdapter: skips subprocess execution iff ASCENT IR01-IR06
+;; explicitly admitted the step into `step_reusable`; serves parallel pre-executed receipts
+;; in exact deterministic Fun-Flow order so `validate-replay-report` remains 100% valid.
+(def (make-real-verification-runtime-adapter repo-root (reuse-plan #f) (cached-by-step #f) (precomputed-by-step #f))
   (def reusable-list (if reuse-plan (.get reuse-plan reusable) '()))
   (def executed '())
   (def reused '())
@@ -754,22 +826,26 @@
         (def cached-rec (and cached-by-step
                              (member step-str reusable-list)
                              (hash-get cached-by-step step-str)))
+        (def pre-rec (and precomputed-by-step (hash-get precomputed-by-step step-str)))
         (def raw-receipt
-          (if cached-rec
-            (begin
-              (set! reused (cons step-str reused))
-              (validate VerificationRawReceiptType
-                (.o step: step-name
-                    exit-code: 0
-                    artifacts: (list (cons 'cache-hit #t))
-                    summary: (let ((prev (or (hash-get cached-rec "detail") "cached pass")))
-                               (if (and (>= (string-length prev) 12)
-                                        (equal? (substring prev 0 12) "[CACHE-HIT] "))
-                                 prev
-                                 (string-append "[CACHE-HIT] " prev))))))
-            (begin
-              (set! executed (cons step-str executed))
-              (dispatch-verification-operation repo-root step-name op payload))))
+          (cond
+           (cached-rec
+            (set! reused (cons step-str reused))
+            (validate VerificationRawReceiptType
+              (.o step: step-name
+                  exit-code: 0
+                  artifacts: (list (cons 'cache-hit #t))
+                  summary: (let ((prev (or (hash-get cached-rec "detail") "cached pass")))
+                             (if (and (>= (string-length prev) 12)
+                                      (equal? (substring prev 0 12) "[CACHE-HIT] "))
+                               prev
+                               (string-append "[CACHE-HIT] " prev))))))
+           (pre-rec
+            (set! executed (cons step-str executed))
+            pre-rec)
+           (else
+            (set! executed (cons step-str executed))
+            (dispatch-verification-operation repo-root step-name op payload))))
         (def ok? (= (.get raw-receipt exit-code) 0))
         (make-adapter-result
           (list 'de-ops-request step-name op)
@@ -813,6 +889,7 @@
        output-dir: (output-dir #f)
        cache-dir: (cache-dir #f)
        policy-flags: (policy-flags '())
+       parallel?: (parallel? #t)
        request-id: (request-id "req-pt-m5-001"))
   (def sysml-path
     (path-expand
@@ -880,11 +957,17 @@
                 attested-steps)))
           #f))
 
-      ;; 5. Execute the Fun-Flow DAG via upstream make-runner / runner-run.
+      ;; 5. Execute independent pending DAG waves concurrently (if parallel?: #t),
+      ;;    then drive the Fun-Flow DAG via upstream make-runner / runner-run so
+      ;;    receipts and `validate-replay-report` stay 100% deterministic.
+      (let-values (((precomputed-by-step exec-metrics)
+                    (if parallel?
+                      (execute-parallel-frontier-waves repo-root subject-obj (.get bundle spec) reuse-plan)
+                      (values #f (.o bind-these: #f parallel?: #f wave-count: 0 waves: '() wall-ms: 0 sum-step-ms: 0)))))
       (def strategy
         (if cache-file (make-cached-local-eager-strategy) (make-local-eager-strategy)))
       (def adapter-bundle
-        (make-real-verification-runtime-adapter repo-root reuse-plan cached-by-step))
+        (make-real-verification-runtime-adapter repo-root reuse-plan cached-by-step precomputed-by-step))
       (def runner (make-runner strategy (.get adapter-bundle adapter)))
       (def dag-flow (.get subject-obj dag-flow))
       (def input-env
@@ -993,13 +1076,14 @@
           mr-result: mr-result
           reuse-plan: reuse-plan
           cache-summary: cache-summary
+          execution-metrics: exec-metrics
           dag-receipt: dag-receipt
           dag-manifest: dag-manifest
           run-result: run-res
           replay-report: replay-rep
           evidence-records: evidence-records
           er-result: er-result
-          report-path: report-path))))
+          report-path: report-path)))))
 
 ;; Multi-Subject Fleet Orchestrator: discovers EVERY subject declared in 10.154-*.sysml
 ;; dynamically, runs each in a GC-isolated scope against a shared Ed25519-signed cache,

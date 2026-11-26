@@ -36,6 +36,7 @@
   canonical-witness-signing-payload
   canonical-report-signing-payload
   canonical-fleet-signing-payload
+  partition-parallel-frontier-waves
   flow-of
   run-ascent-program
   adapter-result->raw-receipt
@@ -191,6 +192,52 @@
                (frame-canonical-kv "sub.replayValid" (list-ref e 3))
                (frame-canonical-kv "sub.admitted" (list-ref e 4))))
            sorted-entries))))
+
+;; Pure topological wave partitioner for conflict-free parallel Fun-Flow frontier execution.
+;; Respects explicit `dag-edges` AND implicit Cargo/target-dir exclusivity between
+;; `de-source-contract` and `de-native-oracle` steps within the same subject.
+;; Returns a list of waves, where each wave is a list of step-name strings safe to run concurrently.
+(def (partition-parallel-frontier-waves steps dag-edges (pending-names #f))
+  (def all-names (map (lambda (st) (symbol->string (.get st identity))) steps))
+  (def active-names
+    (if pending-names
+      (filter (lambda (n) (and (member n pending-names) #t)) all-names)
+      all-names))
+  (def (in-active? n) (and (member n active-names) #t))
+  (def family-by-name
+    (map (lambda (st)
+           (cons (symbol->string (.get st identity))
+                 (.get (.get st family) identity)))
+         steps))
+  ;; Explicit DAG edges restricted to active pending steps.
+  (def explicit-edges
+    (filter (lambda (e) (and (in-active? (car e)) (in-active? (cadr e))))
+            (map (lambda (e) (list (sym->str (car e)) (sym->str (cadr e)))) dag-edges)))
+  ;; Implicit exclusivity edges: de-source-contract -> de-native-oracle (prevents Cargo lock contention).
+  (def source-steps
+    (filter (lambda (n) (eq? (alist-ref family-by-name n #f) 'de-source-contract)) active-names))
+  (def oracle-steps
+    (filter (lambda (n) (eq? (alist-ref family-by-name n #f) 'de-native-oracle)) active-names))
+  (def implicit-edges
+    (apply append
+      (map (lambda (s) (map (lambda (o) (list s o)) oracle-steps)) source-steps)))
+  (def edges (append explicit-edges implicit-edges))
+  (let loop ((remaining active-names) (done '()) (waves '()))
+    (if (null? remaining)
+      (reverse waves)
+      (let ((ready
+             (filter
+               (lambda (n)
+                 (andmap (lambda (e)
+                           (or (not (equal? (cadr e) n))
+                               (and (member (car e) done) #t)))
+                         edges))
+               remaining)))
+        (unless (pair? ready)
+          (error "cycle detected in verification DAG frontier" remaining edges))
+        (loop (filter (lambda (n) (not (member n ready))) remaining)
+              (append ready done)
+              (cons ready waves))))))
 
 ;; Polymorphic unwrapper: extracts `.flow` from a VerificationStep or passes a Flow through.
 (def (flow-of step-or-flow)
