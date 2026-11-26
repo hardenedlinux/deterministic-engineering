@@ -1,0 +1,57 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 10.158 Durable AI Business Extensions: Autonomous SoD Release/Rollback and Multi-Tenant Regulated Replay
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.158
+#+STARTUP: overview
+#+OPTIONS: toc:3 num:nil
+#+FILETAGS: :architecture:business-extensions:sod:release-governance:multi-tenant:regulatory-replay:
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.153-defensive-engineering-taxonomy-and-modular-organization.org][10.153 Defensive engineering taxonomy]] | [[file:10.155-ai-agent-coding-governance-and-anti-evasion-architecture.org][10.155 AI Agent anti-evasion]] | [[file:10.156-orthogonal-persistence-durable-multi-agent-governance.org][10.156 Stratified orthogonal persistence]] | [[file:10.157-durable-ai-context-projection-and-multi-agent-ssi-concurrency.org][10.157 Durable AI context & SSI]] | [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05 60-case benchmark]]
+
+* Purpose: Composing Foundational Governance Into High-Stakes Business Operations
+:PROPERTIES:
+:CUSTOM_ID: biz158-purpose
+:STATUS: implemented-verified
+:END:
+
+Documents [[file:10.153-defensive-engineering-taxonomy-and-modular-organization.org][10.153]]–[[file:10.157-durable-ai-context-projection-and-multi-agent-ssi-concurrency.org][10.157]] established the formal, language, persistence, and
+concurrency primitives of Durable AI Governance. This document demonstrates how
+those exact primitives compose without new ad-hoc frameworks into two
+high-stakes enterprise business domains:
+
+1. *Scenario B1 — Autonomous Multi-Agent Production Change, SoD Release & Durable Rollback*:
+   Composes =governance-sod= (Clark & Wilson 1987 Separation of Duties),
+   pinned =M1= pre-release Merkle cuts, live =M3= emergency-freeze checks,
+   epistemic canary SLO states (=Healthy= vs. =PendingScope= vs. =Breached=),
+   and monotonic =M3= lease fencing on rollback—while keeping 100% of failed
+   rollout forensics pinned across GC.
+2. *Scenario B2 — Multi-Tenant Regulated Decision Workflow & Deterministic Regulatory Replay*:
+   Composes per-tenant =AES-256-GCM= AEAD partitions (=R5=), non-serializable
+   =AeadPartitionKey= (=R3=), pinned =M1= decision proof cuts (=F2=), and
+   version-pinned =M2= policy/model digests (=R4=) to guarantee zero cross-tenant
+   leakage and cryptographically verifiable multi-year decision replay after
+   raw chat history compaction and garbage collection.
+
+* Executable Artifacts & Verification Receipts
+:PROPERTIES:
+:CUSTOM_ID: biz158-artifacts
+:STATUS: executed-verified
+:END:
+
+| Business Scenario | Formal Model & SUT | Executable Orchestrator & Benchmark |
+|-------------------+--------------------+-------------------------------------|
+| =B1= Autonomous SoD Release & Durable Rollback | [[file:../../../packages/quint-models/engineering/defense/release-sod-rollback/ReleaseSodRollback.qnt][ReleaseSodRollback.qnt]] (11th defense model; Apalache 6/6 PASS, 3 essential countermodels, 100% MBT, =ReleaseSodRollbackSUT= rejecting =BadSelfApprovingReleaseSUT=) | =AutonomousReleaseOrchestrator= in [[file:../../../languages-engineering/ts/defense/agent-audit/durable-business-orchestrator.ts][durable-business-orchestrator.ts]] (=AG56=–=AG58= in [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05]]) |
+| =B2= Multi-Tenant Regulated Replay | Backed by [[file:../../../packages/quint-models/engineering/defense/byzantine-encrypted-store/ByzantineEncryptedStore.qnt][ByzantineEncryptedStore.qnt]] & [[file:../../../packages/quint-models/engineering/defense/durable-ai-context-ssi/DurableAiContextSsi.qnt][DurableAiContextSsi.qnt]] | =RegulatedMultiTenantDecisionEngine= in [[file:../../../languages-engineering/ts/defense/agent-audit/durable-business-orchestrator.ts][durable-business-orchestrator.ts]] (=AG59=–=AG60= in [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05]]) |
+
+* Limits
+:PROPERTIES:
+:CUSTOM_ID: biz158-limits
+:END:
+
+Both business orchestrators verify the logical SoD, cut-pinning, fencing,
+AEAD-isolation, and deterministic-replay invariants in-process. Production
+deployment additionally requires external KMS/HSM custody of tenant AEAD keys,
+signed human approval identities (e.g. WebAuthn/OIDC), and irreversible
+external side-effect compensation hooks (e.g. multi-region DB schema migrations).

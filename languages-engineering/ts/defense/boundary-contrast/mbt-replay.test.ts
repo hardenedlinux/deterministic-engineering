@@ -821,6 +821,96 @@ class BadWriteSkewMergeSUT extends DurableAiContextSsiSUT {
   }
 }
 
+// ── Concrete Stateful SUT 11: ReleaseSodRollback (Business Extension B1 / 10.158) ──
+class ReleaseSodRollbackSUT {
+  authorId = 1;
+  approverId = 0;
+  independentAuditPassed = false;
+  preReleaseCutPinned = false;
+  authorityRevoked = false;
+  canarySloBreached = false;
+  promotedToProd = false;
+  rolledBack = false;
+  forensicHistoryIntact = true;
+  sodViolations = 0;
+  unpinnedPromotions = 0;
+  revokedOrBreachedPromotions = 0;
+
+  apply(action: string): void {
+    switch (action) {
+      case 'authorSelfApproveAttempt':
+        if (this.approverId === 0 && !this.promotedToProd) this.approverId = this.authorId;
+        break;
+      case 'independentApprove':
+        if (this.approverId !== 2 && !this.promotedToProd) this.approverId = 2;
+        break;
+      case 'passReleaseAudit':
+        if (!this.independentAuditPassed) this.independentAuditPassed = true;
+        break;
+      case 'pinPreReleaseCut':
+        if (!this.preReleaseCutPinned) this.preReleaseCutPinned = true;
+        break;
+      case 'triggerEmergencyFreeze':
+        if (!this.authorityRevoked) this.authorityRevoked = true;
+        break;
+      case 'detectCanaryBreach':
+        if (!this.canarySloBreached) this.canarySloBreached = true;
+        break;
+      case 'promoteToProduction':
+        if (
+          !this.promotedToProd &&
+          this.approverId !== 0 &&
+          this.approverId !== this.authorId &&
+          this.preReleaseCutPinned &&
+          this.independentAuditPassed &&
+          !this.authorityRevoked &&
+          !this.canarySloBreached
+        ) {
+          this.promotedToProd = true;
+        }
+        break;
+      case 'rollbackToPinnedCut':
+        if (this.promotedToProd && this.preReleaseCutPinned && !this.rolledBack) {
+          this.promotedToProd = false;
+          this.rolledBack = true;
+        }
+        break;
+      default:
+        throw new Error(`Unknown ReleaseSodRollbackSUT action: ${action}`);
+    }
+  }
+
+  snapshot() {
+    return {
+      authorId: this.authorId,
+      approverId: this.approverId,
+      independentAuditPassed: this.independentAuditPassed,
+      preReleaseCutPinned: this.preReleaseCutPinned,
+      authorityRevoked: this.authorityRevoked,
+      canarySloBreached: this.canarySloBreached,
+      promotedToProd: this.promotedToProd,
+      rolledBack: this.rolledBack,
+      forensicHistoryIntact: this.forensicHistoryIntact,
+      sodViolations: this.sodViolations,
+      unpinnedPromotions: this.unpinnedPromotions,
+      revokedOrBreachedPromotions: this.revokedOrBreachedPromotions,
+    };
+  }
+}
+
+class BadSelfApprovingReleaseSUT extends ReleaseSodRollbackSUT {
+  override apply(action: string): void {
+    if (action === 'authorSelfApproveAttempt' && this.approverId === 0 && !this.promotedToProd) {
+      // Anti-pattern: lets author self-approve and immediately promotes!
+      this.approverId = this.authorId;
+      this.promotedToProd = true;
+      this.sodViolations += 1;
+      return;
+    }
+    super.apply(action);
+  }
+}
+
 const repoRoot = resolve(import.meta.dir, '../../../..');
 
 function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(): Record<string, unknown>}>(
@@ -873,7 +963,7 @@ function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(
   }
 }
 
-describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (10 Defense Models)', () => {
+describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (11 Defense Models)', () => {
   test('EpistemicStateLattice ITF actions drive EpistemicLatticeSUT with exact step-by-step state isomorphism', () => {
     const stats = replayModelAgainstSut(
       'packages/quint-models/engineering/defense/epistemic-state-lattice/EpistemicStateLattice.qnt',
@@ -1071,6 +1161,31 @@ describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (10 Defense Models
       () => new DurableAiContextSsiSUT(),
       projectH,
       () => new BadWriteSkewMergeSUT(),
+    );
+    expect(stats.transitions).toBeGreaterThan(50);
+    expect(stats.brokenDiverged).toBe(true);
+  }, 30_000);
+
+  test('ReleaseSodRollback ITF actions drive ReleaseSodRollbackSUT with exact state isomorphism and reject BadSelfApprovingReleaseSUT', () => {
+    const projectH = (h: Record<string, unknown>) => ({
+      authorId: asInt(h.authorId),
+      approverId: asInt(h.approverId),
+      independentAuditPassed: Boolean(h.independentAuditPassed),
+      preReleaseCutPinned: Boolean(h.preReleaseCutPinned),
+      authorityRevoked: Boolean(h.authorityRevoked),
+      canarySloBreached: Boolean(h.canarySloBreached),
+      promotedToProd: Boolean(h.promotedToProd),
+      rolledBack: Boolean(h.rolledBack),
+      forensicHistoryIntact: Boolean(h.forensicHistoryIntact),
+      sodViolations: asInt(h.sodViolations),
+      unpinnedPromotions: asInt(h.unpinnedPromotions),
+      revokedOrBreachedPromotions: asInt(h.revokedOrBreachedPromotions),
+    });
+    const stats = replayModelAgainstSut(
+      'packages/quint-models/engineering/defense/release-sod-rollback/ReleaseSodRollback.qnt',
+      () => new ReleaseSodRollbackSUT(),
+      projectH,
+      () => new BadSelfApprovingReleaseSUT(),
     );
     expect(stats.transitions).toBeGreaterThan(50);
     expect(stats.brokenDiverged).toBe(true);
