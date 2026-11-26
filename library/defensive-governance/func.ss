@@ -14,7 +14,10 @@
         audit-scheme-defensive-datums
         BoundedRevalidationProgram
         make-bounded-revalidation-program
-        reason-bounded-revalidation)
+        reason-bounded-revalidation
+        AgentTranscriptAuditProgram
+        make-agent-transcript-audit-program
+        reason-agent-transcript)
 
 ;; G1: Refuse any guard missing required 5-tuple evidence or claiming immutable reuse on an M3 mutable root.
 (def (admit-guard-five-tuple candidate)
@@ -373,4 +376,126 @@
       (rule-module-bindings BoundedRevalidationDeclaration)))
   (.o program: prog-val
       output-bindings: (lambda () (map (lambda (e) (cons (car e) (cdr e))) out-bindings))
+      rows-of: (lambda (name) (copy-fact (native-rows name)))))
+
+;; G5 / 10.155 Live pure ASCENT Datalog program for AI Agent Patch Transcript Auditing:
+;; Cross-validates multi-attempt governance transcripts against scope fencing, anti-evasion findings,
+;; unwitnessed obligation deletions, independent oracle verdicts, and bounded human escalation.
+(define-program
+  (make-agent-transcript-audit-program)
+  (sources
+    patch
+    prose_claim
+    independent_oracle_passed
+    scope_violation
+    evasion_finding
+    obligation_deleted
+    replacement_witness_admitted
+    retry_budget_exhausted)
+  (outputs
+    unwitnessed_deletion
+    patch_blocked
+    patch_admitted
+    escalation_required)
+  (relation patch ((id string?)))
+  (relation prose_claim ((id string?)))
+  (relation independent_oracle_passed ((id string?)))
+  (relation scope_violation ((id string?) (path string?)))
+  (relation evasion_finding ((id string?) (rule string?)))
+  (relation obligation_deleted ((id string?) (kind string?)))
+  (relation replacement_witness_admitted ((id string?) (kind string?)))
+  (relation retry_budget_exhausted ((id string?)))
+
+  (relation unwitnessed_deletion ((id string?) (kind string?)))
+  (relation patch_blocked ((id string?) (reason string?)))
+  (relation patch_admitted ((id string?)))
+  (relation escalation_required ((id string?)))
+
+  ((unwitnessed_deletion P K)
+   <--
+   (obligation_deleted P K)
+   (not (replacement_witness_admitted P K)))
+
+  ((patch_blocked P (lit "protected-or-out-of-scope-mutation"))
+   <--
+   (patch P)
+   (scope_violation P _))
+
+  ((patch_blocked P (lit "ast-or-evasion-finding"))
+   <--
+   (patch P)
+   (evasion_finding P _))
+
+  ((patch_blocked P (lit "unwitnessed-obligation-deletion"))
+   <--
+   (patch P)
+   (unwitnessed_deletion P _))
+
+  ((patch_blocked P (lit "self-certified-without-oracle"))
+   <--
+   (patch P)
+   (prose_claim P)
+   (not (independent_oracle_passed P)))
+
+  ((patch_blocked P (lit "missing-independent-oracle"))
+   <--
+   (patch P)
+   (not (independent_oracle_passed P)))
+
+  ((patch_admitted P)
+   <--
+   (patch P)
+   (independent_oracle_passed P)
+   (not (patch_blocked P _)))
+
+  ((escalation_required P)
+   <--
+   (patch P)
+   (retry_budget_exhausted P)
+   (not (patch_admitted P)))
+
+  (bounds 4096 4096 4096))
+
+(def AgentTranscriptAuditDeclaration (make-agent-transcript-audit-program))
+(def AgentTranscriptAuditProgram (rule-module-program AgentTranscriptAuditDeclaration))
+
+(def (reason-agent-transcript replacements)
+  (def tprog-val AgentTranscriptAuditProgram)
+  (def expected (.ref tprog-val 'source-handles))
+  (unless (and (list? replacements) (andmap pair? replacements))
+    (error "agent-transcript replacements must be an alist"))
+  (for-each
+    (lambda (entry)
+      (unless (memq (car entry) expected)
+        (error "unknown agent-transcript source" (car entry))))
+    replacements)
+  (for-each
+    (lambda (handle)
+      (unless (assq handle replacements)
+        (error "missing agent-transcript source" handle)))
+    expected)
+  (def prepared (map (lambda (entry) (cons (car entry) (copy-fact (cdr entry)))) replacements))
+  (def session (gerbil-ascent-open-session tprog-val))
+  (def result
+    (gerbil-ascent-session-replace-sources!
+      session
+      prepared
+      (lambda (prospective)
+        (and (.ref prospective 'finished)
+             (andmap
+               (lambda (entry)
+                 (let ((actual ((.ref prospective 'rows-of) (car entry)))
+                       (wanted (cdr entry)))
+                   (and (andmap (cut member <> wanted) actual)
+                        (andmap (cut member <> actual) wanted))))
+               prepared)))))
+  (unless (.ref result 'finished)
+    (error "agent-transcript evaluation incomplete"))
+  (def native-rows (.ref result 'rows-of))
+  (def tout-bindings
+    (filter
+      (lambda (binding) (not (memq (cdr binding) expected)))
+      (rule-module-bindings AgentTranscriptAuditDeclaration)))
+  (.o program: tprog-val
+      output-bindings: (lambda () (map (lambda (e) (cons (car e) (cdr e))) tout-bindings))
       rows-of: (lambda (name) (copy-fact (native-rows name)))))

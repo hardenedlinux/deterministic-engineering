@@ -130,4 +130,36 @@
             evidence-claims: '((claim-safe apalache-verified))))
       (def clean-res (audit-agent-defensive-submission clean-sub))
       (check-equal? (.get clean-res passed?) #t)
-      (check-equal? (.get clean-res findings) '()))))
+      (check-equal? (.get clean-res findings) '()))
+
+    (test-case "G5 live ASCENT AgentTranscriptAuditProgram enforces scope, anti-evasion, obligation preservation & bounded human escalation"
+      (def t-facts
+        (list
+          (cons 'patch '(("p-coop-admit") ("p-evasive-escalate") ("p-tamper-scope")
+                         ("p-prose-only") ("p-witnessed-replace")))
+          (cons 'prose_claim '(("p-coop-admit") ("p-prose-only")))
+          (cons 'independent_oracle_passed '(("p-coop-admit") ("p-tamper-scope") ("p-witnessed-replace")))
+          (cons 'scope_violation '(("p-tamper-scope" ".github/workflows/defense-audit.yml")))
+          (cons 'evasion_finding '(("p-evasive-escalate" "catch-log-and-swallow")))
+          (cons 'obligation_deleted '(("p-evasive-escalate" "diff-deleted-assertion")
+                                      ("p-witnessed-replace" "diff-deleted-assertion")))
+          (cons 'replacement_witness_admitted '(("p-witnessed-replace" "diff-deleted-assertion")))
+          (cons 'retry_budget_exhausted '(("p-evasive-escalate") ("p-tamper-scope") ("p-prose-only")))))
+      (def tres (reason-agent-transcript t-facts))
+      (def admitted (rows tres 'patch_admitted))
+      (def blocked (rows tres 'patch_blocked))
+      (def escalated (rows tres 'escalation_required))
+      ;; Cooperative clean patch & explicitly witnessed replacement admit cleanly:
+      (check-equal? (and (member '("p-coop-admit") admitted) #t) #t)
+      (check-equal? (and (member '("p-witnessed-replace") admitted) #t) #t)
+      ;; Adversarial personas are NEVER admitted and MUST escalate when budget exhausted:
+      (check-equal? (member '("p-evasive-escalate") admitted) #f)
+      (check-equal? (member '("p-tamper-scope") admitted) #f)
+      (check-equal? (member '("p-prose-only") admitted) #f)
+      (check-equal? (and (member '("p-tamper-scope" "protected-or-out-of-scope-mutation") blocked) #t) #t)
+      (check-equal? (and (member '("p-evasive-escalate" "ast-or-evasion-finding") blocked) #t) #t)
+      (check-equal? (and (member '("p-evasive-escalate" "unwitnessed-obligation-deletion") blocked) #t) #t)
+      (check-equal? (and (member '("p-prose-only" "self-certified-without-oracle") blocked) #t) #t)
+      (check-equal? (and (member '("p-evasive-escalate") escalated) #t) #t)
+      (check-equal? (and (member '("p-tamper-scope") escalated) #t) #t)
+      (check-equal? (and (member '("p-prose-only") escalated) #t) #t))))

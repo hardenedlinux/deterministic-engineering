@@ -58,6 +58,7 @@ bounded human escalation (visualized in [[file:../../90-99-views/90-architecture
 | 3. Formal Guard Necessity Probe | [[file:../../../packages/quint-modules-resolver/src/guard-probe.ts][guard-probe.ts]] via =agent-defense-audit.ts --probe-quint= | Replaces a proposed Quint guard with =true= inside an isolated =tempDir= and runs Apalache; classifies as =essential= vs. =redundant-or-under-modeled= | =P4= bloat |
 | 4. Closed-Loop =C2= Remediation & SARIF 2.1.0 | [[file:../../../languages-engineering/ts/defense/agent-audit/remediation-catalog.ts][remediation-catalog.ts]] (=--sarif=, =--agent-feedback=) | Binds every refusal to its canonical =C1= ID in [[file:../../../library/defensive-boundaries/objects.ss][defensive-boundaries/objects.ss]], exact =C2= typed replacement contract, =G1= 5-tuple, and explicit anti-evasion warning | =E1=–=E4= |
 | 5. Formal Governance State Machine | [[file:../../../packages/quint-models/engineering/defense/agent-patch-governance/AgentPatchGovernance.qnt][AgentPatchGovernance.qnt]] + =AgentPatchGovernanceSUT= in [[file:../../../languages-engineering/ts/defense/boundary-contrast/mbt-replay.test.ts][mbt-replay.test.ts]] | Proves via Apalache + 100% MBT SUT refinement that prose self-certification, unwitnessed obligation deletion, and floor weakening can never reach =Admitted=, and retry budget exhaustion strictly transitions to =EscalatedToHuman= | =E4= |
+| 6. Scope-Fenced Closed-Loop Repair Harness & ASCENT Transcript Audit | [[file:../../../languages-engineering/ts/defense/agent-audit/governance-harness.ts][governance-harness.ts]] (=--scope= / =--forbid-paths=), [[file:../../../languages-engineering/ts/defense/agent-audit/governance-harness.test.ts][governance-harness.test.ts]] (4 Agent personas =AG33=–=AG36=), and live ASCENT =AgentTranscriptAuditProgram= in [[file:../../../library/defensive-governance/func.ss][defensive-governance/func.ss]] | Enforces =H1= scope/protected-governance-file fencing (blocks unauthorized edits to CI workflows, Band-5 profiles, or auditors), executes multi-attempt repair loops with SHA-256 receipts, and cross-validates admission vs. human escalation via pure ASCENT Datalog | =H1=, =E1=–=E4= |
 
 * Formal Invariants of =AgentPatchGovernance=
 :PROPERTIES:
@@ -93,6 +94,7 @@ All three declared guards carry dedicated Apalache countermodels (=F3= 100% witn
 - *Machine-Readable Agent Repair Packet*: =just audit-agent-patch --agent-feedback --diff= (returns =decision: "ADMIT" | "REFUSE"=, =boundedRetryPolicy=, and per-finding =C2= replacement directives).
 - *IDE / GitHub Code Scanning SARIF 2.1.0*: =just audit-agent-patch --sarif --files <paths...>=.
 - *Quint Guard Necessity Check*: =just audit-agent-patch --probe-quint <Model.qnt> --action=<act> --guard=<expr>=.
+- *Scope-Fenced PR/Patch Gate*: =just audit-agent-patch --scope=src/** --diff= (blocks edits outside declared task scope and forbids mutating protected governance files under =.github/workflows/**=, =library/defense-profiles/**=, =library/defensive-governance/**=, or =languages-engineering/ts/defense/agent-audit/**=).
 - *CI Pull-Request Gate*: [[file:../../../.github/workflows/defense-audit.yml][.github/workflows/defense-audit.yml]].
 
 * Limits
@@ -100,8 +102,9 @@ All three declared guards carry dedicated Apalache countermodels (=F3= 100% witn
 :CUSTOM_ID: ag155-limits
 :END:
 
-AST-level and hunk-level diff auditing establish deterministic refusal for the
-32 declared hallucination and anti-evasion classes in [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05]] across TypeScript,
-C, C++, Rust, and Scheme. They do not replace semantic human architecture review,
-whole-program interprocedural taint analysis, or adversarial CI-runner threat
-modeling.
+AST-level auditing, hunk-level diff-delta checks, scope fencing, closed-loop
+multi-attempt simulation, and ASCENT transcript auditing establish deterministic
+refusal for the 36 declared hallucination, anti-evasion, and governance-tampering
+cases in [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05]] across TypeScript, C, C++, Rust, and Scheme. They do not
+replace semantic human architecture review, whole-program interprocedural taint
+analysis, or adversarial CI-runner threat modeling.

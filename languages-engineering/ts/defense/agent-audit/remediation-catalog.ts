@@ -76,6 +76,14 @@ const CLASS_DIRECTIVES: Record<HallucinationClass, RemediationDirective> = {
 };
 
 export function getRemediationDirective(finding: AstAuditFinding): RemediationDirective {
+  if (finding.rule === 'unauthorized-governance-file-mutation' || finding.rule === 'out-of-scope-file-mutation') {
+    return {
+      ...CLASS_DIRECTIVES['floor-weakening'],
+      antiPatternId: 'g5.scope-or-governance-boundary-tampering',
+      c2Replacement:
+        'Restrict edits strictly to the authorized task scope and never modify CI workflows, Band-5 profile floors, or audit harnesses without explicit human authorization.',
+    };
+  }
   if (finding.rule.startsWith('diff-deleted-')) {
     return {
       ...CLASS_DIRECTIVES['floor-weakening'],

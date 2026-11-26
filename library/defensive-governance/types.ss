@@ -66,5 +66,7 @@
             hallucination-controls: [(List AgentHallucinationControlType)]
             revalidation-program: [Any]
             reason-revalidation: [Any]
+            transcript-audit-program: [Any]
+            reason-transcript: [Any]
             contracts: [Object])
     'identity 'defensive-governance/scope))

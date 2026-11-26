@@ -26,6 +26,8 @@
         hallucination-controls: AgentDefensiveHallucinationControls
         revalidation-program: BoundedRevalidationProgram
         reason-revalidation: reason-bounded-revalidation
+        transcript-audit-program: AgentTranscriptAuditProgram
+        reason-transcript: reason-agent-transcript
         contracts: (.o witness-kind: GuardWitnessKindType
                        guard-admission: GuardAdmissionFiveTupleType
                        hallucination-class: AgentHallucinationClassType

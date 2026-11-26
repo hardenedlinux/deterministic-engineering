@@ -22,8 +22,12 @@ import {dirname, resolve} from 'node:path';
 import {
   auditSourceByPath,
   auditUnifiedDiff,
+  parseUnifiedDiffHunks,
   type MultiLangAuditReport,
 } from './multi-lang-auditor.ts';
+import {
+  evaluateScopeFence,
+} from './governance-harness.ts';
 import {
   formatAgentRepairPacket,
   formatSarifReport,
@@ -35,6 +39,8 @@ interface CliOptions {
   files: string[];
   staged: boolean;
   diffFile?: string;
+  scopeGlobs: string[];
+  forbidGlobs: string[];
   quintFile?: string;
   quintAction?: string;
   quintGuard?: string;
@@ -43,7 +49,14 @@ interface CliOptions {
 }
 
 function parseArgs(argv: string[]): CliOptions {
-  const opts: CliOptions = {mode: 'files', files: [], staged: false, outputFormat: 'text'};
+  const opts: CliOptions = {
+    mode: 'files',
+    files: [],
+    staged: false,
+    scopeGlobs: [],
+    forbidGlobs: [],
+    outputFormat: 'text',
+  };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]!;
     if (a === '--json') {
@@ -59,6 +72,10 @@ function parseArgs(argv: string[]): CliOptions {
     } else if (a === '--diff-file') {
       opts.mode = 'diff-file';
       opts.diffFile = argv[++i];
+    } else if (a.startsWith('--scope=')) {
+      opts.scopeGlobs.push(...a.slice('--scope='.length).split(',').filter(Boolean));
+    } else if (a.startsWith('--forbid-paths=')) {
+      opts.forbidGlobs.push(...a.slice('--forbid-paths='.length).split(',').filter(Boolean));
     } else if (a === '--probe-quint') {
       opts.mode = 'probe-quint';
       opts.quintFile = argv[++i];
@@ -149,10 +166,19 @@ function main(): void {
       }
       diffText = proc.stdout.toString();
     }
-    reports = auditUnifiedDiff(diffText, relPath => {
+    const diffReports = auditUnifiedDiff(diffText, relPath => {
       const full = resolve(process.cwd(), relPath);
       return existsSync(full) ? readFileSync(full, 'utf8') : null;
     });
+    const touchedFiles = [...new Set(parseUnifiedDiffHunks(diffText).map(h => h.filePath))];
+    const scopeReports =
+      opts.scopeGlobs.length > 0 || opts.forbidGlobs.length > 0
+        ? evaluateScopeFence(touchedFiles, {
+            allowedPaths: opts.scopeGlobs.length > 0 ? opts.scopeGlobs : undefined,
+            protectedGovernancePaths: opts.forbidGlobs.length > 0 ? opts.forbidGlobs : undefined,
+          })
+        : [];
+    reports = [...scopeReports, ...diffReports];
   } else {
     if (opts.files.length === 0) {
       console.error('Usage: agent-defense-audit.ts --files <path...> | --diff [--staged] | --diff-file <patch> | --probe-quint ...');
