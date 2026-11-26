@@ -482,4 +482,51 @@ theorem fleet_merkle_pinned_key_tamper_resistant {PubKey Payload Digest Sig : Ty
     have hEq := (m.sigUnforgeable pk pk p p' sig hValid hV').2
     exact hNeDig (congrArg m.digestOf hEq)
 
+/-! ## 8. Multi-Key Trust Store, Zero-Downtime Key Rotation & Compromise Revocation -/
+
+structure KeyTrustPolicy (PubKey : Type) where
+  trusted : PubKey → Prop
+  revoked : PubKey → Prop
+
+def KeyAdmitted {PubKey : Type} (pol : KeyTrustPolicy PubKey) (pk : PubKey) : Prop :=
+  pol.trusted pk ∧ ¬ pol.revoked pk
+
+/-- Constructive zero-axiom revocation soundness: a revoked key is NEVER admitted,
+even if it remains present in the historical `trusted` set. -/
+theorem revoked_key_never_admitted {PubKey : Type} (pol : KeyTrustPolicy PubKey) (pk : PubKey)
+    (hRev : pol.revoked pk) : ¬ KeyAdmitted pol pk :=
+  fun hAdm => hAdm.2 hRev
+
+/-- Constructive zero-axiom untrusted key rejection. -/
+theorem untrusted_key_never_admitted {PubKey : Type} (pol : KeyTrustPolicy PubKey) (pk : PubKey)
+    (hNotTrusted : ¬ pol.trusted pk) : ¬ KeyAdmitted pol pk :=
+  fun hAdm => hNotTrusted hAdm.1
+
+/-- Constructive zero-axiom zero-downtime key rotation: adding a fresh unrevoked key `pkNew`
+preserves admission of existing unrevoked key `pkOld` while admitting `pkNew`. -/
+theorem rotation_preserves_unrevoked_trust {PubKey : Type}
+    (pol : KeyTrustPolicy PubKey) (pkOld pkNew : PubKey)
+    (hOld : KeyAdmitted pol pkOld) (hNewNotRev : ¬ pol.revoked pkNew) :
+    let rotated : KeyTrustPolicy PubKey :=
+      { trusted := fun k => pol.trusted k ∨ k = pkNew, revoked := pol.revoked }
+    KeyAdmitted rotated pkOld ∧ KeyAdmitted rotated pkNew :=
+  ⟨⟨Or.inl hOld.1, hOld.2⟩, ⟨Or.inr rfl, hNewNotRev⟩⟩
+
+/-- Constructive zero-axiom end-to-end key revocation invalidation: when attestation requires
+`KeyAdmitted pol (signerOf s)`, revoking `signerOf u` blocks reuse of `u` AND cascades across
+arbitrary mixed DAG + strict-premise paths `u →* v` to block every downstream consumer `v`. -/
+theorem revoked_key_blocks_reuse_and_downstream {Step Key Digest Toolchain PubKey : Type}
+    (sys : ReuseSystem Step Key Digest Toolchain)
+    (pol : KeyTrustPolicy PubKey) (signerOf : Step → PubKey)
+    (hAttBound : ∀ s, sys.attested s → KeyAdmitted pol (signerOf s))
+    (hSign : sys.requireSignedCache)
+    (hStrict : sys.strictPremiseRecheck)
+    {u v : Step}
+    (hPath : DagPath (fun a b => sys.dagEdge a b ∨ sys.premiseSupportEdge a b) u v)
+    (hRev : pol.revoked (signerOf u)) :
+    ¬ Reusable sys u ∧ ¬ Reusable sys v := by
+  have hNotAttU : ¬ sys.attested u := fun hAtt => (hAttBound u hAtt).2 hRev
+  have hInvU : Invalidated sys u := Invalidated.ir06 u hSign hNotAttU
+  refine ⟨fun hRu => hRu hInvU, fun hRv => hRv (ir07_mixed_dag_and_premise_invalidation sys hStrict hPath hInvU)⟩
+
 end DeterministicEngineering.Core.MetaGovernance

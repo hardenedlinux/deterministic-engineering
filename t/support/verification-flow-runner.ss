@@ -51,9 +51,12 @@
   compute-step-input-digests
   compute-step-toolchain-fingerprints
   ensure-cache-signing-keypair!
+  make-ed25519-trust-store
   verify-verification-report-attestation
   verify-report-with-pinned-key
+  verify-report-with-trust-store
   verify-fleet-report-with-pinned-key
+  verify-fleet-report-with-trust-store
   load-verification-cache
   save-verification-cache!
   make-real-verification-runtime-adapter
@@ -550,9 +553,35 @@
 (def (current-unix-epoch-seconds)
   (inexact->exact (floor (time->seconds (current-time)))))
 
+;; Constructs a pinned multi-key Ed25519 Trust Store supporting zero-downtime key rotation
+;; (`trusted-pub-paths`: list of pinned .pub.pem paths) and instant compromise revocation
+;; (`revoked-key-ids`: list of 16-hex keyIds).
+(def (make-ed25519-trust-store trusted-pub-paths (revoked-key-ids '()))
+  (def pairs
+    (map (lambda (p)
+           (unless (and (string? p) (file-exists? p))
+             (error "pinned trust-store public key not found" p))
+           (cons (substring (sha256-of-file p) 0 16) p))
+         trusted-pub-paths))
+  (.o bind-these: #f
+      trust-store?: #t
+      trusted-keys: pairs
+      revoked-key-ids: revoked-key-ids))
+
+(def (resolve-trusted-pub-key verifier-or-pub key-id)
+  (cond
+   ((and (object? verifier-or-pub) (.slot? verifier-or-pub 'trust-store?))
+    (trust-store-key-admitted? verifier-or-pub key-id))
+   ((and (string? verifier-or-pub) (file-exists? verifier-or-pub))
+    (let ((actual-kid (substring (sha256-of-file verifier-or-pub) 0 16)))
+      (and (or (not (string? key-id)) (equal? key-id actual-kid))
+           verifier-or-pub)))
+   (else #f)))
+
 ;; Loads persisted verification cache & cryptographically verifies Ed25519 signatures ->
 ;; (values cached-witness-rows cached-input-rows cached-toolchain-rows attested-steps issued-alist entry-by-step-hash).
-(def (load-verification-cache cache-file (pub-key-path #f))
+;; `pub-or-trust-store` accepts either a single pinned `.pub.pem` path or a multi-key TrustStore.
+(def (load-verification-cache cache-file (pub-or-trust-store #f))
   (def by-step (make-hash-table))
   (if (and cache-file (file-exists? cache-file))
     (let* ((doc (call-with-input-file cache-file (cut read-json <> object-as-hash: #t)))
@@ -573,9 +602,12 @@
                      (det (or (hash-get rec "detail") ""))
                      (tc (hash-get rec "toolchainFingerprint"))
                      (issued (hash-get rec "issuedAtEpoch"))
+                     (kid (hash-get rec "keyId"))
                      (sig (hash-get rec "signature"))
                      (digs (hash-get rec "inputDigests"))
-                     (dig-pairs (hash-table->alist-strings digs)))
+                     (dig-pairs (hash-table->alist-strings digs))
+                     (pub-key (and pub-or-trust-store
+                                   (resolve-trusted-pub-key pub-or-trust-store kid))))
                 (hash-put! by-step step-str rec)
                 (set! w-rows (cons (list step-str obl meth ck out det) w-rows))
                 (set! issued-alist (cons (cons step-str issued) issued-alist))
@@ -583,12 +615,12 @@
                           dig-pairs)
                 (when (string? tc)
                   (set! tc-rows (cons (list step-str tc) tc-rows)))
-                (when (and pub-key-path (string? tc) (string? sig))
+                (when (and pub-key (string? tc) (string? sig))
                   (let ((canonical
                          (canonical-witness-signing-payload
                            step-str obl meth ck out det tc dig-pairs
                            (if (exact-integer? issued) (number->string issued) ""))))
-                    (when (ed25519-verify-string pub-key-path canonical sig)
+                    (when (ed25519-verify-string pub-key canonical sig)
                       (set! attested (cons step-str attested))))))))
           entries))
       (values (reverse w-rows) (reverse i-rows) (reverse tc-rows)
@@ -722,6 +754,65 @@
               (equal? (hash-get doc "mrOpenPremises") '())
               (equal? (hash-get doc "erFindings") '())
               (pair? (hash-get doc "verificationAdmitted"))))))
+
+;; Strict multi-key Trust Store report verifier: supports zero-downtime key rotation
+;; across multiple pinned public keys while unconditionally rejecting any revoked keyId!
+(def (verify-report-with-trust-store report-path trust-store)
+  (and (file-exists? report-path)
+       (object? trust-store)
+       (let* ((doc (call-with-input-file report-path (cut read-json <> object-as-hash: #t)))
+              (att (and (hash-table? doc) (hash-get doc "attestation")))
+              (kid (and (hash-table? att) (hash-get att "keyId")))
+              (admitted-pub (trust-store-key-admitted? trust-store kid)))
+         (and admitted-pub
+              (verify-report-with-pinned-key report-path admitted-pub)))))
+
+;; Strict multi-key Trust Store 2-level Fleet Merkle verifier: checks BOTH Fleet signature
+;; and every child subject report against the pinned Trust Store (rejecting revoked keys anywhere).
+(def (verify-fleet-report-with-trust-store fleet-report-path trust-store)
+  (and (file-exists? fleet-report-path)
+       (object? trust-store)
+       (let* ((doc (call-with-input-file fleet-report-path (cut read-json <> object-as-hash: #t)))
+              (att (and (hash-table? doc) (hash-get doc "attestation")))
+              (subjects (and (hash-table? doc) (hash-get doc "subjects")))
+              (kid (and (hash-table? att) (hash-get att "keyId")))
+              (fleet-pub (trust-store-key-admitted? trust-store kid)))
+         (and fleet-pub
+              (list? subjects)
+              (pair? subjects)
+              (equal? (hash-get att "algorithm") "Ed25519")
+              (let* ((expected-sha (hash-get att "payloadSha256"))
+                     (sig (hash-get att "signature"))
+                     (fleet-dir (path-directory fleet-report-path))
+                     (entries
+                       (map (lambda (s)
+                              (list (or (hash-get s "subjectKey") "")
+                                    (or (hash-get s "subjectId") "")
+                                    (or (hash-get s "reportPayloadSha256") "")
+                                    (eq? (hash-get s "replayValid") #t)
+                                    (eq? (hash-get s "admitted") #t)))
+                            subjects))
+                     (canonical
+                       (canonical-fleet-signing-payload
+                         (or (hash-get doc "fleetId") "")
+                         (or (hash-get doc "sysmlSha256") "")
+                         entries))
+                     (actual-sha (sha256-of-string canonical)))
+                (and (equal? actual-sha expected-sha)
+                     (ed25519-verify-string fleet-pub canonical sig)
+                     (andmap
+                       (lambda (s)
+                         (let* ((rel-path (hash-get s "reportRelativePath"))
+                                (child-path (and (string? rel-path) (path-expand rel-path fleet-dir)))
+                                (expected-child-sha (hash-get s "reportPayloadSha256")))
+                           (and child-path
+                                (verify-report-with-trust-store child-path trust-store)
+                                (let* ((cdoc (call-with-input-file child-path
+                                               (cut read-json <> object-as-hash: #t)))
+                                       (catt (and (hash-table? cdoc) (hash-get cdoc "attestation"))))
+                                  (and (hash-table? catt)
+                                       (equal? (hash-get catt "payloadSha256") expected-child-sha))))))
+                       subjects)))))))
 
 ;; Strict 2-level Merkle verifier for a multi-subject Fleet report:
 ;; Verifies Fleet Ed25519 signature against pinned `trusted-pub-key`, AND verifies every
@@ -903,6 +994,8 @@
        parallel?: (parallel? #t)
        m3-ttl-seconds: (m3-ttl-seconds #f)
        now-epoch: (now-epoch #f)
+       signing-keypair: (signing-keypair #f)
+       trust-store: (trust-store #f)
        request-id: (request-id "req-pt-m5-001"))
   (def sysml-path
     (path-expand
@@ -942,10 +1035,12 @@
       (and resolved-cache-dir (path-expand "verification-cache.v1.json" resolved-cache-dir)))
     (def keypair
       (cond
+       (signing-keypair signing-keypair)
        (resolved-cache-dir (ensure-cache-signing-keypair! resolved-cache-dir))
        (output-dir (ensure-cache-signing-keypair!
                      (path-expand ".data/verification-keys" repo-root)))
        (else #f)))
+    (def cache-verifier (or trust-store (and keypair (.get keypair public-key))))
     (def current-digests (if cache-file (compute-step-input-digests repo-root step-input-files) '()))
     (def current-toolchains (compute-step-toolchain-fingerprints repo-root subject-gov-sources))
     (def effective-policy-flags
@@ -954,7 +1049,7 @@
         policy-flags))
     (def effective-now (or now-epoch (current-unix-epoch-seconds)))
     (let-values (((cached-w-rows cached-i-rows cached-tc-rows attested-steps cached-issued-alist cached-by-step)
-                  (load-verification-cache cache-file (and keypair (.get keypair public-key)))))
+                  (load-verification-cache cache-file cache-verifier)))
       (def expired-steps (compute-expired-steps cached-issued-alist effective-now m3-ttl-seconds))
       (def reuse-plan
         (if cache-file

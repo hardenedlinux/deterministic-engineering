@@ -84,6 +84,19 @@ theorem expiredM3Oracle_blocks_reuse_and_strict_dependents {Step Key Digest Tool
   ⟨ir08_expired_m3_prevents_reuse sys sup hM3 hExp,
    ir08_expired_m3_cascades_under_strict_premise sys hStrict hPath hM3 hExp⟩
 
+/-- Constructive zero-axiom certification that revoking a compromised CI signing key
+immediately invalidates its witnesses and cascades along mixed DAG + premise chains. -/
+theorem keyRevocation_invalidates_witness_and_downstream {Step Key Digest Toolchain PubKey : Type}
+    (sys : ReuseSystem Step Key Digest Toolchain)
+    (pol : KeyTrustPolicy PubKey) (signerOf : Step → PubKey)
+    (hAttBound : ∀ s, sys.attested s → KeyAdmitted pol (signerOf s))
+    (hSign : sys.requireSignedCache) (hStrict : sys.strictPremiseRecheck)
+    {u v : Step}
+    (hPath : DagPath (fun a b => sys.dagEdge a b ∨ sys.premiseSupportEdge a b) u v)
+    (hRev : pol.revoked (signerOf u)) :
+    ¬ Reusable sys u ∧ ¬ Reusable sys v :=
+  revoked_key_blocks_reuse_and_downstream sys pol signerOf hAttBound hSign hStrict hPath hRev
+
 /-! ## Two-Step LeanPoo `ObjectContract.refine` (via `Core.Transport`) -/
 
 structure MetaGovConfig where

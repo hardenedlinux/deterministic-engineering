@@ -37,6 +37,7 @@
   canonical-report-signing-payload
   canonical-fleet-signing-payload
   compute-expired-steps
+  trust-store-key-admitted?
   partition-parallel-frontier-waves
   changed-files->affected-frontier
   flow-of
@@ -155,6 +156,15 @@
              st))
       issued-alist)
     '()))
+
+;; Pure Multi-Key Trust Store admission predicate:
+;; Returns the pinned public-key material associated with `key-id` iff `key-id` is present
+;; in `trusted-keys` alist AND NOT present in `revoked-key-ids`; otherwise returns `#f`.
+(def (trust-store-key-admitted? trust-store key-id)
+  (and (object? trust-store)
+       (string? key-id)
+       (not (member key-id (.get trust-store revoked-key-ids)))
+       (alist-ref (.get trust-store trusted-keys) key-id #f)))
 
 ;; Deterministic canonical payload for an emitted multi-method verification report.
 ;; `evidence-rows` is a list of (step obligation method claim-kind outcome detail) lists.
