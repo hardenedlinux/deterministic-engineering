@@ -10,6 +10,9 @@
 ;;; toolchains, then admits all receipts against live OpenSysML api-json via
 ;;; ASCENT MR01-MR06 + ER01-ER04.
 (import
+  :std/crypto/digest
+  :std/encoding/base64
+  :std/encoding/hex
   :std/encoding/json
   :std/misc/ports
   :std/misc/process
@@ -76,22 +79,43 @@
 (def runner-repo-root
   (path-normalize (path-expand "../.." (path-directory (this-source-file)))))
 
-(def (project-sysml-model (repo-root runner-repo-root))
-  (def sysml-path
-    (path-expand
-      "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml"
-      repo-root))
-  (let* ((json-text (run-process (list "sysml" "-convert" "api-json" sysml-path)))
-         (parsed (call-with-input-string json-text (cut read-json <> object-as-hash: #t))))
-    (sysml-api-json->governance-facts parsed)))
+(def (sysml-spec-path (repo-root runner-repo-root))
+  (path-expand
+    "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml"
+    repo-root))
 
-;; Cache only lightweight SysML projection metadata (no heavyweight FlowContract DAGs pinned globally).
-(def *cached-sysml-projected* #f)
+;; Content-addressed in-process caches keyed by (sysml-path -> (sha256 . value)).
+;; Automatically invalidate if 10.154-*.sysml changes on disk, while eliminating
+;; redundant OpenSysML subprocess spawns across multi-subject Fleet runs and
+;; keeping offline `--verify-report` / `--verify-fleet` 100% air-gapped (zero `sysml` calls).
+(def *sysml-strict-validated-cache* (make-hash-table))
+(def *sysml-projected-cache* (make-hash-table))
+
+(def (validate-sysml-strict-cached (repo-root runner-repo-root))
+  (def sysml-path (sysml-spec-path repo-root))
+  (def cur-sha (sha256-of-file sysml-path))
+  (def cached (hash-get *sysml-strict-validated-cache* sysml-path))
+  (unless (equal? cached cur-sha)
+    (let ((strict-out (run-process (list "sysml" "-validate" "-strict" sysml-path))))
+      (unless (string-contains strict-out "no errors")
+        (error "OpenSysML strict validation failed" strict-out))
+      (hash-put! *sysml-strict-validated-cache* sysml-path cur-sha)))
+  cur-sha)
+
+(def (project-sysml-model (repo-root runner-repo-root))
+  (def sysml-path (sysml-spec-path repo-root))
+  (def cur-sha (sha256-of-file sysml-path))
+  (def cached (hash-get *sysml-projected-cache* sysml-path))
+  (if (and (pair? cached) (equal? (car cached) cur-sha))
+    (cdr cached)
+    (let* ((json-text (run-process (list "sysml" "-convert" "api-json" sysml-path)))
+           (parsed (call-with-input-string json-text (cut read-json <> object-as-hash: #t)))
+           (projected (sysml-api-json->governance-facts parsed)))
+      (hash-put! *sysml-projected-cache* sysml-path (cons cur-sha projected))
+      projected)))
 
 (def (load-sysml-projected (repo-root runner-repo-root))
-  (unless *cached-sysml-projected*
-    (set! *cached-sysml-projected* (project-sysml-model repo-root)))
-  *cached-sysml-projected*)
+  (project-sysml-model repo-root))
 
 (def (load-compiled-sysml-subjects (repo-root runner-repo-root))
   (sysml-projected->compiled-subjects (load-sysml-projected repo-root)))
@@ -372,32 +396,32 @@
                                   (symbol->string op)))))))
 
 ;; ── Content-Addressed Input Closure & Persistent JSON Cache Store ──
+;; Pure static defaults (cross-checked against live SysML projection in
+;; governance-and-sysml-linkage-test.ss) so importing this module NEVER spawns
+;; `sysml` eagerly — enabling true air-gapped `--verify-report` / `--verify-fleet`.
 
 (def default-process-tree-step-mutability
-  (subject-spec->mutability
-    (find-sysml-subject-spec (load-sysml-projected) 'process-tree-reclamation)))
+  '(("quintTarget" "M1-immutable-proof")
+    ("leanPooTarget" "M1-immutable-proof")
+    ("sourceContractTarget" "M1-immutable-proof")
+    ("rustOracleTarget" "M3-mutable-root")))
 
 (def default-backpressure-step-mutability
-  (subject-spec->mutability
-    (find-sysml-subject-spec (load-sysml-projected) 'backpressure-memory)))
+  '(("bpQuintTarget" "M1-immutable-proof")
+    ("bpLeanPooTarget" "M1-immutable-proof")
+    ("bpSourceContractTarget" "M1-immutable-proof")
+    ("bpRustOracleTarget" "M3-mutable-root")))
 
 (def (sha256-files-table repo-root rel-paths)
-  ;; Single batched shasum -a 256 invocation across all unique paths.
-  (def uniq '())
-  (for-each (lambda (p) (unless (member p uniq) (set! uniq (cons p uniq)))) rel-paths)
-  (def ordered (reverse uniq))
-  (def out
-    (run-process
-      (cons "shasum" (cons "-a" (cons "256" ordered)))
-      directory: repo-root))
+  ;; Pure in-process SHA-256 via native Gerbil `:std/crypto/digest` (zero `shasum` spawns).
   (def tbl (make-hash-table))
   (for-each
-    (lambda (line)
-      (when (> (string-length line) 66)
-        (let ((digest (substring line 0 64))
-              (rel (substring line 66 (string-length line))))
-          (hash-put! tbl rel digest))))
-    (string-split out #\newline))
+    (lambda (rel)
+      (unless (hash-key? tbl rel)
+        (let ((full (path-expand rel repo-root)))
+          (when (file-exists? full)
+            (hash-put! tbl rel (sha256-of-file full))))))
+    rel-paths)
   tbl)
 
 (def (compute-step-input-digests repo-root
@@ -486,18 +510,26 @@
       (substring s 0 n))))
 
 (def (sha256-of-file path)
-  (def out (run-process (list "shasum" "-a" "256" path)))
-  (if (>= (string-length out) 64)
-    (substring out 0 64)
-    (error "failed to compute sha256 for file" path out)))
+  (hex-encode (sha256 (call-with-input-file path read-all-as-u8vector))))
 
 (def (sha256-of-string text)
-  (def tmpd (trim-nl (run-process (list "mktemp" "-d"))))
-  (try
-    (let ((p (path-expand "payload.txt" tmpd)))
-      (call-with-output-file p (lambda (port) (display text port)))
-      (sha256-of-file p))
-    (finally (run-process (list "rm" "-rf" tmpd)))))
+  (hex-encode (sha256 (string->utf8 text))))
+
+(def *ed25519-tmp-seq* 0)
+(def (next-ed25519-tmp-prefix)
+  (set! *ed25519-tmp-seq* (+ *ed25519-tmp-seq* 1))
+  (string-append "/tmp/de-ed25519-"
+                 (number->string (##os-getpid)) "-"
+                 (number->string *ed25519-tmp-seq*)))
+
+(def (write-u8vector-file path vec)
+  (call-with-output-file path
+    (lambda (port)
+      (write-subu8vector vec 0 (u8vector-length vec) port))))
+
+(def (safe-delete-file! path)
+  (when (file-exists? path)
+    (with-catch (lambda (_) (void)) (lambda () (delete-file path)))))
 
 (def (ensure-cache-signing-keypair! key-dir)
   (unless (file-exists? key-dir)
@@ -515,37 +547,46 @@
       key-id: key-id))
 
 (def (ed25519-sign-string priv-pem payload-str)
-  (def tmpd (trim-nl (run-process (list "mktemp" "-d"))))
+  (def prefix (next-ed25519-tmp-prefix))
+  (def msg-path (string-append prefix ".msg"))
+  (def sig-path (string-append prefix ".sig"))
   (try
-    (let ((msg-path (path-expand "msg.bin" tmpd))
-          (sig-path (path-expand "sig.bin" tmpd)))
-      (call-with-output-file msg-path (lambda (port) (display payload-str port)))
-      (run-process (list "openssl" "pkeyutl" "-sign" "-rawin"
-                         "-inkey" priv-pem "-in" msg-path "-out" sig-path))
-      (trim-nl (run-process (list "openssl" "base64" "-A" "-in" sig-path))))
-    (finally (run-process (list "rm" "-rf" tmpd)))))
+    (write-u8vector-file msg-path (string->utf8 payload-str))
+    (run-process (list "openssl" "pkeyutl" "-sign" "-rawin"
+                       "-inkey" priv-pem "-in" msg-path "-out" sig-path))
+    (base64-encode (call-with-input-file sig-path read-all-as-u8vector))
+    (finally
+      (safe-delete-file! msg-path)
+      (safe-delete-file! sig-path))))
 
 (def (ed25519-verify-string pub-pem payload-str sig-b64)
   (if (and (string? pub-pem) (file-exists? pub-pem)
            (string? sig-b64) (> (string-length sig-b64) 0))
-    (let ((tmpd (trim-nl (run-process (list "mktemp" "-d")))))
-      (try
-        (let ((msg-path (path-expand "msg.bin" tmpd))
-              (b64-path (path-expand "sig.b64" tmpd))
-              (sig-path (path-expand "sig.bin" tmpd)))
-          (call-with-output-file msg-path (lambda (port) (display payload-str port)))
-          (call-with-output-file b64-path (lambda (port) (display sig-b64 port)))
-          (let-values (((dcode _dout)
-                        (exec-bash-captured tmpd
-                          "openssl base64 -A -d -in sig.b64 -out sig.bin")))
-            (if (= dcode 0)
-              (let-values (((vcode _vout)
-                            (exec-bash-captured tmpd
-                              (string-append "openssl pkeyutl -verify -rawin -pubin -inkey \""
-                                             pub-pem "\" -sigfile sig.bin -in msg.bin"))))
-                (= vcode 0))
-              #f)))
-        (finally (run-process (list "rm" "-rf" tmpd)))))
+    (let ((sig-bytes (with-catch (lambda (_) #f) (lambda () (base64-decode sig-b64)))))
+      (if (u8vector? sig-bytes)
+        (let* ((prefix (next-ed25519-tmp-prefix))
+               (msg-path (string-append prefix ".msg"))
+               (sig-path (string-append prefix ".sig")))
+          (try
+            (write-u8vector-file msg-path (string->utf8 payload-str))
+            (write-u8vector-file sig-path sig-bytes)
+            (let* ((proc (open-process
+                           (list path: "openssl"
+                                 arguments: (list "pkeyutl" "-verify" "-rawin" "-pubin"
+                                                  "-inkey" pub-pem
+                                                  "-sigfile" sig-path
+                                                  "-in" msg-path)
+                                 stdin-redirection: #f
+                                 stdout-redirection: #t
+                                 stderr-redirection: #t)))
+                   (_out (read-all-as-string proc))
+                   (raw-status (process-status proc)))
+              (close-port proc)
+              (= raw-status 0))
+            (finally
+              (safe-delete-file! msg-path)
+              (safe-delete-file! sig-path))))
+        #f))
     #f))
 
 (def (hash-table->alist-strings ht)
@@ -582,54 +623,78 @@
            verifier-or-pub)))
    (else #f)))
 
+;; Content-addressed in-process memo for `load-verification-cache` keyed by
+;; (cache-file . cache-file-sha256 . verifier-fingerprint). Any 1-byte cache edit
+;; or key rotation/revocation misses the memo and re-verifies every Ed25519 signature.
+(def *verified-cache-memo* (make-hash-table))
+
+(def (verifier-memo-fingerprint verifier-or-pub)
+  (cond
+   ((and (object? verifier-or-pub) (.slot? verifier-or-pub 'trust-store?))
+    (list 'trust-store
+          (map (lambda (p) (cons (car p) (if (file-exists? (cdr p)) (sha256-of-file (cdr p)) "")))
+               (.get verifier-or-pub trusted-keys))
+          (.get verifier-or-pub revoked-key-ids)))
+   ((and (string? verifier-or-pub) (file-exists? verifier-or-pub))
+    (list 'pub-key (sha256-of-file verifier-or-pub)))
+   (else 'none)))
+
 ;; Loads persisted verification cache & cryptographically verifies Ed25519 signatures ->
 ;; (values cached-witness-rows cached-input-rows cached-toolchain-rows attested-steps issued-alist entry-by-step-hash).
 ;; `pub-or-trust-store` accepts either a single pinned `.pub.pem` path or a multi-key TrustStore.
 (def (load-verification-cache cache-file (pub-or-trust-store #f))
-  (def by-step (make-hash-table))
   (if (and cache-file (file-exists? cache-file))
-    (let* ((doc (call-with-input-file cache-file (cut read-json <> object-as-hash: #t)))
-           (entries (and (hash-table? doc) (hash-get doc "entries")))
-           (w-rows '())
-           (i-rows '())
-           (tc-rows '())
-           (attested '())
-           (issued-alist '()))
-      (when (hash-table? entries)
-        (hash-for-each
-          (lambda (step-str rec)
-            (when (hash-table? rec)
-              (let* ((obl (or (hash-get rec "obligation") ""))
-                     (meth (or (hash-get rec "method") ""))
-                     (ck (or (hash-get rec "claimKind") ""))
-                     (out (or (hash-get rec "outcome") ""))
-                     (det (or (hash-get rec "detail") ""))
-                     (tc (hash-get rec "toolchainFingerprint"))
-                     (issued (hash-get rec "issuedAtEpoch"))
-                     (kid (hash-get rec "keyId"))
-                     (sig (hash-get rec "signature"))
-                     (digs (hash-get rec "inputDigests"))
-                     (dig-pairs (hash-table->alist-strings digs))
-                     (pub-key (and pub-or-trust-store
-                                   (resolve-trusted-pub-key pub-or-trust-store kid))))
-                (hash-put! by-step step-str rec)
-                (set! w-rows (cons (list step-str obl meth ck out det) w-rows))
-                (set! issued-alist (cons (cons step-str issued) issued-alist))
-                (for-each (lambda (p) (set! i-rows (cons (list step-str (car p) (cdr p)) i-rows)))
-                          dig-pairs)
-                (when (string? tc)
-                  (set! tc-rows (cons (list step-str tc) tc-rows)))
-                (when (and pub-key (string? tc) (string? sig))
-                  (let ((canonical
-                         (canonical-witness-signing-payload
-                           step-str obl meth ck out det tc dig-pairs
-                           (if (exact-integer? issued) (number->string issued) ""))))
-                    (when (ed25519-verify-string pub-key canonical sig)
-                      (set! attested (cons step-str attested))))))))
-          entries))
-      (values (reverse w-rows) (reverse i-rows) (reverse tc-rows)
-              (reverse attested) (reverse issued-alist) by-step))
-    (values '() '() '() '() '() by-step)))
+    (let* ((cache-sha (sha256-of-file cache-file))
+           (vkey (verifier-memo-fingerprint pub-or-trust-store))
+           (memo-key (list cache-file cache-sha vkey))
+           (memo-hit (hash-get *verified-cache-memo* memo-key)))
+      (if memo-hit
+        (apply values memo-hit)
+        (let* ((by-step (make-hash-table))
+               (doc (call-with-input-file cache-file (cut read-json <> object-as-hash: #t)))
+               (entries (and (hash-table? doc) (hash-get doc "entries")))
+               (w-rows '())
+               (i-rows '())
+               (tc-rows '())
+               (attested '())
+               (issued-alist '()))
+          (when (hash-table? entries)
+            (hash-for-each
+              (lambda (step-str rec)
+                (when (hash-table? rec)
+                  (let* ((obl (or (hash-get rec "obligation") ""))
+                         (meth (or (hash-get rec "method") ""))
+                         (ck (or (hash-get rec "claimKind") ""))
+                         (out (or (hash-get rec "outcome") ""))
+                         (det (or (hash-get rec "detail") ""))
+                         (tc (hash-get rec "toolchainFingerprint"))
+                         (issued (hash-get rec "issuedAtEpoch"))
+                         (kid (hash-get rec "keyId"))
+                         (sig (hash-get rec "signature"))
+                         (digs (hash-get rec "inputDigests"))
+                         (dig-pairs (hash-table->alist-strings digs))
+                         (pub-key (and pub-or-trust-store
+                                       (resolve-trusted-pub-key pub-or-trust-store kid))))
+                    (hash-put! by-step step-str rec)
+                    (set! w-rows (cons (list step-str obl meth ck out det) w-rows))
+                    (set! issued-alist (cons (cons step-str issued) issued-alist))
+                    (for-each (lambda (p) (set! i-rows (cons (list step-str (car p) (cdr p)) i-rows)))
+                              dig-pairs)
+                    (when (string? tc)
+                      (set! tc-rows (cons (list step-str tc) tc-rows)))
+                    (when (and pub-key (string? tc) (string? sig))
+                      (let ((canonical
+                             (canonical-witness-signing-payload
+                               step-str obl meth ck out det tc dig-pairs
+                               (if (exact-integer? issued) (number->string issued) ""))))
+                        (when (ed25519-verify-string pub-key canonical sig)
+                          (set! attested (cons step-str attested))))))))
+              entries))
+          (let ((result (list (reverse w-rows) (reverse i-rows) (reverse tc-rows)
+                              (reverse attested) (reverse issued-alist) by-step)))
+            (hash-put! *verified-cache-memo* memo-key result)
+            (apply values result)))))
+    (values '() '() '() '() '() (make-hash-table))))
 
 (def (save-verification-cache!
        cache-file
@@ -1052,15 +1117,10 @@
        signing-keypair: (signing-keypair #f)
        trust-store: (trust-store #f)
        request-id: (request-id "req-pt-m5-001"))
-  (def sysml-path
-    (path-expand
-      "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml"
-      repo-root))
-  ;; 1. Live OpenSysML strict validation & api-json projection (single source of truth).
-  ;;    Release the raw JSON string & parsed AST immediately after projection so GC reclaims them.
-  (def strict-out (run-process (list "sysml" "-validate" "-strict" sysml-path)))
-  (unless (string-contains strict-out "no errors")
-    (error "OpenSysML strict validation failed" strict-out))
+  ;; 1. Live OpenSysML strict validation & api-json projection (SHA-256 content-addressed
+  ;;    in-process cache so multi-subject Fleets validate/project once per SysML digest).
+  (def sysml-path (sysml-spec-path repo-root))
+  (validate-sysml-strict-cached repo-root)
   (def sysml-projected (project-sysml-model repo-root))
   (def sysml-gov-sources (.get sysml-projected governance-sources))
 

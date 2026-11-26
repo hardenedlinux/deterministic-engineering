@@ -22,6 +22,7 @@
         (only-in :std/source this-source-file)
         (only-in :tao3k/agentic-ai-lab/modules/funflow/control-plane/api
                  replay-report-valid?)
+        :deterministic-engineering/library/verification-flow/sysml-compiler
         "../../../support/verification-flow-runner.ss")
 (export verification-flow-threat-capability-and-offline-verifier-test)
 
@@ -32,9 +33,24 @@
   (when (file-exists? path)
     (run-process (list "rm" "-rf" path))))
 
-(def (run-verify-cli report-path store-path)
-  (let* ((cmd (string-append
-                "cd \"" repo-root "\" && "
+(def (run-verify-cli report-path store-path (air-gapped? #f))
+  (let* ((airgap-setup
+          (if air-gapped?
+            (string-append
+              "GERBIL_REAL=\"$(command -v gerbil)\"\n"
+              "GXI_REAL=\"$(command -v gxi)\"\n"
+              "OPENSSL_BIN=\"$(command -v openssl)\"\n"
+              "AIRGAP_BIN=\"$(mktemp -d)\"\n"
+              "trap 'rm -rf \"$AIRGAP_BIN\"' EXIT\n"
+              "ln -s \"$GERBIL_REAL\" \"$AIRGAP_BIN/gerbil\"\n"
+              "ln -s \"$GXI_REAL\" \"$AIRGAP_BIN/gxi\"\n"
+              "ln -s \"$OPENSSL_BIN\" \"$AIRGAP_BIN/openssl\"\n"
+              "export PATH=\"$AIRGAP_BIN:/usr/bin:/bin\"\n"
+              "if command -v sysml >/dev/null 2>&1; then echo 'ERROR: sysml leaked into airgap PATH' >&2; exit 99; fi\n")
+            ""))
+         (cmd (string-append
+                "cd \"" repo-root "\"\n"
+                airgap-setup
                 "gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q "
                 "t/support/verification-flow-runner.ss --verify-report "
                 "\"" report-path "\" \"" store-path "\""))
@@ -80,12 +96,15 @@
       (check-equal? (length (.get (.get r1 cache-summary) reused)) 0)
       (def report-path (.get r1 report-path))
 
-      ;; 2. Reload portable JSON trust store and verify in-process + via standalone CLI!
+      ;; 2. Reload portable JSON trust store and verify in-process + via AIR-GAPPED standalone CLI!
+      ;;    Hostile minimal PATH strips `sysml`, `quint`, `lean`, `lake`, `cargo`, `cbmc`, `bun`:
+      ;;    proves `--verify-report` needs ONLY Gerbil + OpenSSL + shasum (zero SysML leakage)!
       (def ts-reloaded (load-ed25519-trust-store-json ts-valid-json))
       (check-equal? (verify-report-with-trust-store report-path ts-reloaded) #t)
-      (let-values (((st out) (run-verify-cli report-path ts-valid-json)))
+      (let-values (((st out) (run-verify-cli report-path ts-valid-json #t)))
         (check-equal? st 0)
-        (check (and (string-contains out "MULTI-METHOD-VERIFY-REPORT-OK") #t) => #t))
+        (check (and (string-contains out "MULTI-METHOD-VERIFY-REPORT-OK") #t) => #t)
+        (check (not (string-contains out "RDF conversion")) => #t))
 
       ;; 3. Negative control A: Revoke K1 in trust-store JSON -> standalone CLI MUST reject!
       (def ts-revoked
@@ -114,5 +133,12 @@
                   request-id: "req-threat-da-2")))
         (check-equal? (length (.get (.get r2 cache-summary) executed)) 0)
         (check-equal? (length (.get (.get r2 cache-summary) reused)) 2))
+
+      ;; 6. Verify static air-gapped mutability constants match live SysML v2 projection.
+      (let ((compiled (load-compiled-sysml-subjects repo-root)))
+        (check-equal? default-process-tree-step-mutability
+                      (.get (cdr (assq 'process-tree-reclamation compiled)) mutability))
+        (check-equal? default-backpressure-step-mutability
+                      (.get (cdr (assq 'backpressure-memory compiled)) mutability)))
 
       (rm-rf! work-dir))))
