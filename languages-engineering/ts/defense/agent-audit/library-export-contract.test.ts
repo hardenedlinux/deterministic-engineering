@@ -56,11 +56,11 @@ describe('Phase 30 — LeanPoo Unified Library Export Contract & 76-Theorem Flee
     expect(kv.hasBlob(res.pinnedCertificateHash!)).toBe(true);
   }, 30_000);
 
-  test('AG157: Static Library Boundary Audit enforces ZERO Mathlib, ZERO Cedar, 7/7 SPDX & zero anti-fabrication across all 7 LeanPoo modules', () => {
+  test('AG157: Static Library Boundary Audit enforces ZERO Mathlib, ZERO Cedar, 8/8 SPDX & zero anti-fabrication across all 8 LeanPoo modules', () => {
     const audit = auditLeanPooLibraryBoundaries();
     expect(audit.passed).toBe(true);
-    expect(audit.moduleCount).toBe(7);
-    expect(audit.theoremCount).toBe(86);
+    expect(audit.moduleCount).toBe(8);
+    expect(audit.theoremCount).toBe(96);
     expect(audit.violations).toEqual([]);
 
     // Verify 100% pillar coverage across manifest:
@@ -103,8 +103,8 @@ describe('Phase 30 — LeanPoo Unified Library Export Contract & 76-Theorem Flee
     const run1 = verifyLeanPooLibraryFleet({kv});
     expect(run1.kind).toBe('Proven');
     if (run1.kind !== 'Proven') throw new Error(`expected Proven, got ${JSON.stringify(run1)}`);
-    expect(run1.moduleCount).toBe(7);
-    expect(run1.verifiedTheoremCount).toBe(86);
+    expect(run1.moduleCount).toBe(8);
+    expect(run1.verifiedTheoremCount).toBe(96);
     expect(run1.pinnedReceiptHash).toBeDefined();
 
     // Deterministic attestation digest parity across independent runs:

@@ -20,6 +20,7 @@ import {
 import {
   LEANPOO_FOUR_PARADIGM_FACADE_MODULE,
   LEANPOO_LIBRARY_EXPORT_MANIFEST,
+  LEANPOO_RELEASE_CERT_FACADE_MODULE,
 } from './leanpoo-export-manifest.ts';
 import {
   auditFourParadigmCrossConsistency,
@@ -78,8 +79,8 @@ describe('Phase 31 — Four-Paradigm Cross-Consistency & 86-Theorem LeanPoo CLI 
     expect(rep.ascentRulesPresent).toBe(true);
     expect(rep.multiLangHarnessCount).toBe(EXPECTED_MULTILANG_HARNESSES.length);
     expect(rep.missingHarnesses).toEqual([]);
-    expect(rep.leanPooModuleCount).toBe(7);
-    expect(rep.leanPooTheoremCount).toBe(86);
+    expect(rep.leanPooModuleCount).toBe(8);
+    expect(rep.leanPooTheoremCount).toBe(96);
     expect(rep.zeroMathlib).toBe(true);
     expect(rep.zeroCedar).toBe(true);
     expect(rep.leanPooFleetVerdict.kind).toBe('Proven');
@@ -112,12 +113,12 @@ describe('Phase 31 — Four-Paradigm Cross-Consistency & 86-Theorem LeanPoo CLI 
       pinnedReceiptHash: string;
     };
     expect(parsed.verdict).toBe('Proven');
-    expect(parsed.facadeModule).toBe(LEANPOO_FOUR_PARADIGM_FACADE_MODULE);
+    expect(parsed.facadeModule).toBe(LEANPOO_RELEASE_CERT_FACADE_MODULE);
     expect(parsed.quintModelCount).toBe(19);
     expect(parsed.ascentRulesPresent).toBe(true);
     expect(parsed.multiLangHarnessCount).toBe(8);
-    expect(parsed.moduleCount).toBe(7);
-    expect(parsed.verifiedTheoremCount).toBe(86);
+    expect(parsed.moduleCount).toBe(8);
+    expect(parsed.verifiedTheoremCount).toBe(96);
     expect(parsed.zeroMathlib).toBe(true);
     expect(parsed.zeroCedar).toBe(true);
     expect(parsed.releaseAttestationDigest.length).toBe(64);

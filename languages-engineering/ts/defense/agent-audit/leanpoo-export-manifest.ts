@@ -39,6 +39,9 @@ export const LEANPOO_EXPORT_FACADE_MODULE =
 export const LEANPOO_FOUR_PARADIGM_FACADE_MODULE =
   'DeterministicEngineering.Engineering.FourParadigmConsistency';
 
+export const LEANPOO_RELEASE_CERT_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.ReleaseCertificateReplay';
+
 export const LEANPOO_LIBRARY_EXPORT_MANIFEST: readonly LeanPooExportModuleSpec[] = [
   {
     moduleName: 'DeterministicEngineering.Engineering.DurableGovernanceQuorum',
@@ -173,6 +176,23 @@ export const LEANPOO_LIBRARY_EXPORT_MANIFEST: readonly LeanPooExportModuleSpec[]
       'fourParadigmContract_preserves_rejection',
       'reportFormatTuning_preserves_fourParadigm_certificate',
       'disablingLeanPooGate_invalidates_reuse',
+    ],
+  },
+  {
+    moduleName: LEANPOO_RELEASE_CERT_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/ReleaseCertificateReplay.lean',
+    pillars: ['OfflineReleaseCert', 'AirGappedReplay'],
+    theorems: [
+      'forged_signature_always_rejected',
+      'downgraded_theorem_count_always_rejected',
+      'nonzero_mathlib_or_cedar_always_rejected',
+      'expired_or_revoked_release_epoch_rejected',
+      'insufficient_witness_quorum_rejected',
+      'mismatched_expected_digest_rejected',
+      'offline_verify_sound_and_complete',
+      'releaseCertContract_preserves_rejection',
+      'cacheTtlTuning_preserves_releaseCert_certificate',
+      'disablingAntiDowngrade_invalidates_reuse',
     ],
   },
 ];
@@ -312,10 +332,12 @@ export function verifyLeanPooLibraryFleet(params?: {
   }
 
   const facadeToImport = manifest.some(
-    m => m.moduleName === LEANPOO_FOUR_PARADIGM_FACADE_MODULE,
+    m => m.moduleName === LEANPOO_RELEASE_CERT_FACADE_MODULE,
   )
-    ? LEANPOO_FOUR_PARADIGM_FACADE_MODULE
-    : LEANPOO_EXPORT_FACADE_MODULE;
+    ? LEANPOO_RELEASE_CERT_FACADE_MODULE
+    : manifest.some(m => m.moduleName === LEANPOO_FOUR_PARADIGM_FACADE_MODULE)
+      ? LEANPOO_FOUR_PARADIGM_FACADE_MODULE
+      : LEANPOO_EXPORT_FACADE_MODULE;
 
   const stdinScript = [
     `import ${facadeToImport}`,

@@ -1,0 +1,61 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+direction: right
+
+library: "Reusable Library: deterministic-engineering-qnt\n(ZERO Mathlib • ZERO Cedar • 170 Cases AG01-AG170)" {
+  style.fill: "#eef6ff"
+  style.stroke: "#1d4ed8"
+
+  p1: "Paradigm 1: Quint / Apalache\n19 Defense Models • 100% MBT SUT\nF3 guard-probe • Countermodels" {
+    style.fill: "#ffffff"
+  }
+  p2: "Paradigm 2: Gerbil ASCENT Datalog\n22 Sources x 13 Outputs (B1-B10c)\nLive Cross-Runtime N-Version Oracle" {
+    style.fill: "#ffffff"
+  }
+  p3: "Paradigm 3: CBMC & 5-Language\nC/CBMC • C++20 • Rust • TS • Scheme\n9 R3 Non-Leakable M3 Capabilities" {
+    style.fill: "#ffffff"
+  }
+  p4: "Paradigm 4: Pure Lean 4 + LeanPoo\n8 Modules • 96 Machine-Checked Theorems\nSingle-Shot #print axioms (0 sorry)" {
+    style.fill: "#dbeafe"
+    style.stroke: "#1e40af"
+  }
+
+  facade: "ReleaseCertificateReplay + FourParadigmConsistency\nUnified LeanPoo Library Export Facade\njust audit-leanpoo-fleet --json" {
+    style.fill: "#bfdbfe"
+    style.stroke: "#1e3a8a"
+  }
+
+  p1 -> facade: "19/19 Proven"
+  p2 -> facade: "ASCENT Verified"
+  p3 -> facade: "8/8 Harnesses"
+  p4 -> facade: "96/96 Axioms"
+}
+
+cert: "Air-Gapped Release Artifact (M1 JSON)\nSignedLibraryReleaseCertificate\n• Publisher Ed25519 Signature\n• 3-of-4 Threshold Witness Cosigs\n• zeroMathlib=true, zeroCedar=true\n• Anti-Downgrade Epoch & Revocation" {
+  style.fill: "#fef3c7"
+  style.stroke: "#b45309"
+}
+
+host: "Consuming Authorization Host: cedar-poo-spec\n(Air-Gapped Runtime • Zero lake • Public Keys Only)" {
+  style.fill: "#ecfdf5"
+  style.stroke: "#047857"
+
+  offline: "Offline Certificate Verifier\nverifyLibraryReleaseCertificateOffline()\nPins M1 Verification Receipt" {
+    style.fill: "#ffffff"
+  }
+  cedar: "3-Layer Cedar Policy Refinement\nCedarPooSpec.Authorization\n-> Governance (Veto / SoD / Approval)\n-> Admission (BoundOp / Snapshot)" {
+    style.fill: "#d1fae5"
+    style.stroke: "#065f46"
+  }
+  gate: "Dual-Sovereign Release Gate\nLibrary Finalized AND Host Permit\n(Symmetric Non-Bypassable)" {
+    style.fill: "#a7f3d0"
+    style.stroke: "#064e3b"
+  }
+
+  offline -> gate: "Verified 96-Thm Digest"
+  cedar -> gate: "Forbid-Overrides-Permit"
+}
+
+library.facade -> cert: "Ed25519 + 2f+1 Cosign"
+cert -> host.offline: "Air-Gapped Transfer\n(Public Keys Only)"
