@@ -212,6 +212,21 @@ test('Option A negative controls fail closed on multi-parent @quint-extends, cyc
     const badConst = run(['bun', cliPath, 'expand', join(work, 'BadConst.qnt')], work);
     expect(badConst.exitCode).not.toBe(0);
     expect(badConst.stderr + badConst.stdout).toContain('not a declared const');
+
+    // Multi-module plain .qnt files without @quint-extends must pass through untouched!
+    const multiModPath = join(work, 'MultiPlain.qnt');
+    writeFileSync(
+      multiModPath,
+      'module m1 { val a = 1\n  run t1Test = assert(a == 1)\n}\nmodule m2 { val b = 2\n  run t2Test = assert(b == 2)\n}\n',
+    );
+    const mmTc = run(['bun', cliPath, 'typecheck', multiModPath], work);
+    expect(mmTc.exitCode).toBe(0);
+    const mmTest = run(
+      ['bun', cliPath, 'test', multiModPath, '--main=m2', '--max-samples=1', '--seed=7', '--backend=typescript'],
+      work,
+    );
+    expect(mmTest.exitCode).toBe(0);
+    expect(mmTest.stdout + mmTest.stderr).toContain('1 passing');
   } finally {
     rmSync(work, {recursive: true, force: true});
   }

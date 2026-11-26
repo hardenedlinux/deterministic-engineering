@@ -240,7 +240,8 @@ export async function runCli(argv: string[]) {
     }
     if (outQnt) {
       const res = writeExpandedQntFile(targetPath, outQnt);
-      console.log(`EXPAND-OK ${res.module.name} (${res.chain.join(' -> ')}) -> ${outQnt}`);
+      const label = res.module ? `${res.module.name} (${res.chain.join(' -> ')})` : basename(targetPath);
+      console.log(`EXPAND-OK ${label} -> ${outQnt}`);
     } else {
       const res = expandExtendedQntFile(targetPath);
       process.stdout.write(res.expandedText);

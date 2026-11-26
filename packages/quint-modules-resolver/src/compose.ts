@@ -43,7 +43,7 @@ export interface ExtendDirectives {
 export interface ExpandedQntResult {
   isExtended: boolean;
   expandedText: string;
-  module: QuintModule;
+  module?: QuintModule;
   chain: string[];
 }
 
@@ -442,8 +442,7 @@ export function expandExtendedQntFile(qntPath: string): ExpandedQntResult {
   const absPath = resolve(process.cwd(), qntPath);
   const rawRoot = readFileSync(absPath, 'utf8');
   if (!hasExtendDirectives(rawRoot)) {
-    const mod = parseSingleModuleText(rawRoot, absPath);
-    return {isExtended: false, expandedText: rawRoot, module: mod, chain: [mod.name]};
+    return {isExtended: false, expandedText: rawRoot, chain: []};
   }
 
   interface ChainNode {
