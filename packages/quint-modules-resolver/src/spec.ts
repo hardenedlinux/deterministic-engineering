@@ -35,6 +35,16 @@ export function findEnclosingPackage(filePath: string): {name: string; root: str
   }
 }
 
+export function hasNodeModulesInAncestors(startDir: string): boolean {
+  let cur = startDir;
+  while (true) {
+    if (existsSync(resolve(cur, 'node_modules'))) return true;
+    const parent = dirname(cur);
+    if (parent === cur) return false;
+    cur = parent;
+  }
+}
+
 export function resolveQuintSpec(spec: string, fromDir: string = process.cwd()): ResolvedQuintFile {
   const candidates = spec.endsWith('.qnt') ? [spec] : [spec, `${spec}.qnt`];
   if (!isBareSpecifier(spec)) {
@@ -48,14 +58,17 @@ export function resolveQuintSpec(spec: string, fromDir: string = process.cwd()):
     throw new Error(`Could not resolve Quint module '${spec}' from '${fromDir}'`);
   }
 
-  const anchors = [
-    resolve(fromDir, '_quint_resolver_.qnt'),
-    resolve(process.cwd(), '_quint_resolver_.qnt'),
-  ];
+  const anchors: string[] = [];
   if (process.env.QUINT_RESOLVE_ROOT) {
     anchors.push(resolve(process.env.QUINT_RESOLVE_ROOT, '_quint_resolver_.qnt'));
   }
-  if (process.argv[1]) {
+  if (hasNodeModulesInAncestors(fromDir)) {
+    anchors.push(resolve(fromDir, '_quint_resolver_.qnt'));
+  }
+  if (hasNodeModulesInAncestors(process.cwd())) {
+    anchors.push(resolve(process.cwd(), '_quint_resolver_.qnt'));
+  }
+  if (process.argv[1] && hasNodeModulesInAncestors(dirname(resolve(process.argv[1])))) {
     anchors.push(resolve(process.argv[1]));
   }
   anchors.push(import.meta.url);

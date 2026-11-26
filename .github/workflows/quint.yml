@@ -32,4 +32,7 @@ jobs:
         with:
           bun-version: 1.3.11
       - run: bun install --frozen-lockfile
-      - run: bun run check:quint
+      - run: bun run typecheck:quint
+      - run: bun run fleet:quint
+      - run: bun run mbt:quint
+      - run: bun test ./packages/quint-modules-resolver/test/conformance.test.ts ./packages/quint-modules-resolver/test/compose.test.ts ./packages/quint-modules-resolver/test/itf.test.ts ./packages/quint-modules-resolver/test/mbt-fleet.test.ts

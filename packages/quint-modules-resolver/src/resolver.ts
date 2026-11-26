@@ -3,9 +3,9 @@
 
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
-import {resolve} from 'node:path';
+import {dirname, resolve} from 'node:path';
 import {fileSourceResolver} from '@informalsystems/quint';
-import {isBareSpecifier} from './spec.ts';
+import {hasNodeModulesInAncestors, isBareSpecifier} from './spec.ts';
 import {expandExtendedQntFile, hasExtendDirectives} from './compose.ts';
 
 export {isBareSpecifier} from './spec.ts';
@@ -30,14 +30,17 @@ export function packageSourceResolver(
       if (!isBareSpecifier(importPath)) {
         return nativeResolver.lookupPath(basepath, importPath);
       }
-      const candidates: string[] = [
-        resolve(basepath, '_quint_importer_.qnt'),
-        resolve(process.cwd(), '_quint_importer_.qnt'),
-      ];
+      const candidates: string[] = [];
       if (process.env.QUINT_RESOLVE_ROOT) {
         candidates.push(resolve(process.env.QUINT_RESOLVE_ROOT, '_quint_importer_.qnt'));
       }
-      if (process.argv[1]) {
+      if (hasNodeModulesInAncestors(basepath)) {
+        candidates.push(resolve(basepath, '_quint_importer_.qnt'));
+      }
+      if (hasNodeModulesInAncestors(process.cwd())) {
+        candidates.push(resolve(process.cwd(), '_quint_importer_.qnt'));
+      }
+      if (process.argv[1] && hasNodeModulesInAncestors(dirname(resolve(process.argv[1])))) {
         candidates.push(resolve(process.argv[1]));
       }
       candidates.push(import.meta.url);

@@ -175,19 +175,30 @@ function bindConstsInModule(
   return {...mod, declarations: decls};
 }
 
-function rewriteImportSource(imp: QuintImport, baseInfo: ResolvedBaseQnt): QuintImport {
+function rewriteImportSource(imp: QuintImport, baseInfo: ResolvedBaseQnt, targetDir?: string): QuintImport {
   if (!imp.fromSource || isBareSpecifier(imp.fromSource)) {
     return imp;
   }
   const baseDir = dirname(baseInfo.fullPath);
-  const targetNoExt = resolve(baseDir, imp.fromSource);
+  const targetNoExt = resolve(baseDir, imp.fromSource).replace(/\.qnt$/, '');
   if (baseInfo.packageName && baseInfo.packageRoot) {
     const rel = relative(baseInfo.packageRoot, targetNoExt).replaceAll('\\', '/');
     if (!rel.startsWith('..')) {
-      return {...imp, fromSource: `${baseInfo.packageName}/${rel.replace(/\.qnt$/, '')}`};
+      const bare = `${baseInfo.packageName}/${rel}`;
+      try {
+        resolveQuintSpec(bare, process.cwd());
+        return {...imp, fromSource: bare};
+      } catch {
+        // Package is not installed in node_modules (e.g. local monorepo path); compute relative path.
+      }
     }
   }
-  return {...imp, fromSource: targetNoExt.replace(/\.qnt$/, '')};
+  if (targetDir) {
+    const relFromTarget = relative(targetDir, targetNoExt).replaceAll('\\', '/');
+    const normalized = relFromTarget.startsWith('.') ? relFromTarget : `./${relFromTarget}`;
+    return {...imp, fromSource: normalized};
+  }
+  return {...imp, fromSource: targetNoExt};
 }
 
 function mergeStateTypedef(baseTd: QuintTypeDef, overlayTd: QuintTypeDef): {merged: QuintTypeDef; addedFields: string[]} {
@@ -332,6 +343,7 @@ export function composeQuintAst(
   baseMod: QuintModule,
   overlayMod: QuintModule,
   baseInfo: ResolvedBaseQnt,
+  targetDir?: string,
 ): QuintModule {
   const overImports: QuintImport[] = [];
   let overState: QuintTypeDef | undefined;
@@ -376,7 +388,7 @@ export function composeQuintAst(
   const finalImports: QuintImport[] = [];
   for (const d of baseMod.declarations) {
     if (d.kind === 'import') {
-      const rw = rewriteImportSource(d, baseInfo);
+      const rw = rewriteImportSource(d, baseInfo, targetDir);
       const sig = `${rw.protoName}:${rw.defName ?? '*'}:${rw.fromSource ?? ''}`;
       if (!seenImports.has(sig)) {
         seenImports.add(sig);
@@ -487,10 +499,11 @@ export function expandExtendedQntFile(qntPath: string): ExpandedQntResult {
     limitsParts.push(`${ordered[0]!.module.name}: ${ordered[0]!.directives.limits}`);
   }
 
+  const rootDir = dirname(realpathSync(absPath));
   for (let i = 1; i < ordered.length; i++) {
     const parentNode = ordered[i - 1]!;
     const childNode = ordered[i]!;
-    composed = composeQuintAst(composed, childNode.module, parentNode.fileInfo);
+    composed = composeQuintAst(composed, childNode.module, parentNode.fileInfo, rootDir);
     composed = bindConstsInModule(composed, childNode.directives.constBindings);
     if (childNode.directives.quintVersion) quintVersion = childNode.directives.quintVersion;
     if (childNode.directives.apalacheVersion) apalacheVersion = childNode.directives.apalacheVersion;
@@ -605,7 +618,9 @@ export function composeQuintFiles(
 
   const baseMod = parseSingleModule(baseInfo.fullPath);
   const overlayMod = parseSingleModule(resolve(process.cwd(), overlayQntPath));
-  const composed = composeQuintAst(baseMod, overlayMod, baseInfo);
+  const absOut = resolve(process.cwd(), outQntPath);
+  mkdirSync(dirname(absOut), {recursive: true});
+  const composed = composeQuintAst(baseMod, overlayMod, baseInfo, realpathSync(dirname(absOut)));
 
   // REUSE-IgnoreStart
   const header = [

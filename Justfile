@@ -441,6 +441,14 @@ investigate-formation-consequences output:
     log="$(mktemp .data/test-logs/formation-consequences-XXXXXX)"
     timeout --foreground --signal=TERM --kill-after=5s 120s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/library-formation-consequences.ss "{{output}}" 2>&1 | tee "$log"
 
-# Unified engineering entrypoint for Quint packages (typecheck, conformance, dynamic model & receipt checks).
+# Unified engineering entrypoint for Quint packages (typecheck, unit/conformance tests, 37-model fleet plans & 35-model 100% MBT action-coverage gate).
 check-quint:
     bun run check:quint
+
+# Concurrent 37-model Quint plan fleet (typecheck + deterministic traces, pure TS).
+fleet-quint:
+    bun run fleet:quint
+
+# Concurrent 35-model Quint MBT dead-action & coverage regression gate (100% action coverage).
+mbt-quint:
+    bun run mbt:quint

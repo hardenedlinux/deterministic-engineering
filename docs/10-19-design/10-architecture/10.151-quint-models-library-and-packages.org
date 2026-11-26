@@ -167,14 +167,21 @@ inheritance and guard-pruning strictly in Gerbil Scheme):
   =verify= (Apalache =0.62.1=) with Node-style =exports= resolution and
   transparent single-parent =// @quint-extends= + =// @quint-const= expansion
   (zero intermediate =.tmp/= files required).
-- =run-plan <Model.qnt> [--verify]= & =run-fleet <dir> [--domain=...] [--subdomain=...] [--concurrency=N]=:
+- =run-plan <Model.qnt> [--verify]= & =run-fleet <dir> [--domain=...] [--subdomain=...] [--verify] [--mbt-audit] [--min-coverage=0.75] [--concurrency=N]=:
   parses embedded =// @verify= and =// @countermodel= directives, runs
-  deterministic traces + bounded Apalache safety + inherited/declared
-  countermodel refutations, and evaluates pure zero-=eval= ITF predicates
-  ([[file:../../../packages/quint-modules-resolver/src/itf.ts][itf.ts]]).
-- =mbt-audit <Model.qnt> [--min-coverage=0.5] [--json]=: parses =action step=
-  from Quint's AST, runs =--mbt= traces, and fails closed if action coverage
-  falls below threshold.
+  deterministic traces + bounded Apalache safety (serialized when =--verify=
+  is set to avoid Apalache port-8822 contention) + inherited/declared
+  countermodel refutations, evaluates pure zero-=eval= ITF predicates
+  ([[file:../../../packages/quint-modules-resolver/src/itf.ts][itf.ts]]), and
+  optionally audits MBT action coverage concurrently across an entire model
+  fleet (skipping pure helper libraries with no =action step=).
+- =mbt-audit <Model.qnt> [--n-traces=10] [--max-steps=12] [--max-samples=<n>] [--seed=7] [--min-coverage=0.5] [--out-dir=<dir>] [--json]=:
+  parses =action step= from Quint's AST (supporting both =@quint-extends=
+  chains, parameterized =const= models via =@verify const="..."=, and
+  wildcard =import ... .*= wrappers), runs =--mbt= traces, optionally exports
+  the verified ITF corpus + =mbt-manifest.json= to =--out-dir= for downstream
+  implementation replay, and fails closed if action coverage falls below
+  threshold.
 - =compose <base> <overlay> --out <Derived.qnt>= & =expand <Model.qnt> [--out <Expanded.qnt>]=:
   performs structural Quint AST extension (differential-tested against DE's
   =gerbil-parser= SpanEdit composer on live Apalache proofs).

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 import {expect, test} from 'bun:test';
-import {mkdtempSync, rmSync, writeFileSync} from 'node:fs';
+import {existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join, resolve} from 'node:path';
 import {auditMbtCoverage, type MbtAuditReport, type FleetReport} from '../src/mbt.ts';
@@ -94,9 +94,75 @@ test('run-fleet executes filtered subdomain models concurrently with structured 
   const report = JSON.parse(res.stdout) as FleetReport;
   expect(report.total).toBe(2);
   expect(report.passed).toBe(2);
+  expect(report.skipped).toBe(0);
   expect(report.failed).toBe(0);
   expect(report.results.map(r => r.modelIdentity).sort()).toEqual([
     'engineering.consensus.bft-quorum-lock',
     'engineering.consensus.raft-leader-commitment',
   ]);
 }, 60000);
+
+test('mbt-audit --out-dir persists verified ITF corpus + manifest for parameterized and @quint-extends models', () => {
+  const work = mkdtempSync(join(tmpdir(), 'qmr-mbt-export-'));
+  try {
+    // 1. Parameterized upstream model (StateRollback.qnt has const MaxSends: int with @verify const="MaxSends=1")
+    const paramOut = join(work, 'state-rollback-itf');
+    const stateRollback = join(modelsRoot, 'threat/execution/state-rollback/StateRollback.qnt');
+    const r1 = run(
+      ['bun', cliPath, 'mbt-audit', stateRollback, '--n-traces=6', '--max-steps=10', '--seed=7', '--min-coverage=0.8', `--out-dir=${paramOut}`, '--json'],
+      repoRoot,
+    );
+    expect(r1.exitCode).toBe(0);
+    const rep1 = JSON.parse(r1.stdout) as MbtAuditReport;
+    expect(rep1.passed).toBe(true);
+    expect(rep1.tracesGenerated).toBe(6);
+    expect(rep1.traceFiles?.length).toBe(6);
+    expect(rep1.manifestPath && existsSync(rep1.manifestPath)).toBe(true);
+    for (const tf of rep1.traceFiles ?? []) {
+      expect(existsSync(tf)).toBe(true);
+      const parsed = JSON.parse(readFileSync(tf, 'utf8')) as {states?: unknown[]};
+      expect((parsed.states ?? []).length).toBeGreaterThan(1);
+    }
+
+    // 2. Empty @quint-extends + @quint-const child model (clean single-parent specialization)
+    const childQnt = join(work, 'WalletHostChild.qnt');
+    writeFileSync(
+      childQnt,
+      [
+        `// @quint-extends "${stateRollback}"`,
+        '// @quint-const MaxSends = 1',
+        'module wallet_host_child {}',
+        '',
+      ].join('\n'),
+    );
+    const childOut = join(work, 'child-itf');
+    const r2 = run(
+      ['bun', cliPath, 'mbt-audit', childQnt, '--n-traces=4', '--max-steps=10', '--seed=7', '--min-coverage=0.8', `--out-dir=${childOut}`, '--json'],
+      repoRoot,
+    );
+    expect(r2.exitCode).toBe(0);
+    const rep2 = JSON.parse(r2.stdout) as MbtAuditReport;
+    expect(rep2.module).toBe('wallet_host_child');
+    expect(rep2.passed).toBe(true);
+    expect(rep2.traceFiles?.length).toBe(4);
+  } finally {
+    rmSync(work, {recursive: true, force: true});
+  }
+}, 60000);
+
+test('run-fleet --mbt-audit skips pure helper libraries and audits state-machine models concurrently', () => {
+  const res = run(
+    ['bun', cliPath, 'run-fleet', modelsRoot, '--domain=threat', '--subdomain=execution', '--mbt-audit', '--n-traces=10', '--seed=7', '--min-coverage=0.75', '--concurrency=4', '--json'],
+    repoRoot,
+  );
+  expect(res.exitCode).toBe(0);
+  const report = JSON.parse(res.stdout) as FleetReport;
+  expect(report.mbtAudit).toBe(true);
+  expect(report.failed).toBe(0);
+  expect(report.skipped).toBe(1); // Capabilities.qnt is a pure helper library (no action step)
+  expect(report.passed).toBe(report.total - 1);
+  const caps = report.results.find(r => r.file.endsWith('Capabilities.qnt'));
+  expect(caps?.skipped).toBe(true);
+  expect(caps?.skippedReason).toBe('no-step-action');
+  expect((report.minActionCoverage ?? 0)).toBeGreaterThanOrEqual(0.75);
+}, 90000);
