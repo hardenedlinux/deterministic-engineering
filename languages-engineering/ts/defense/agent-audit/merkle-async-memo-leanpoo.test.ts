@@ -45,8 +45,8 @@ const MERKLE_ASYNC_THEOREMS = LEANPOO_LIBRARY_EXPORT_MANIFEST.find(
 describe('Phase 33 — 106-Theorem LeanPoo Milestone (B9 Merkle Consistency, R2 Async Merge & R4 LLM Drift) (10.181 / 30.05 AG171-AG175)', () => {
   test('AG171: Live Lean 4 / LeanPoo verifies all 10 MerkleConsistencyAndAsyncCut theorems + single-shot 106/106-theorem 9-module fleet attestation', () => {
     expect(MERKLE_ASYNC_THEOREMS.length).toBe(10);
-    expect(LEANPOO_EXPECTED_MODULE_COUNT).toBe(9);
-    expect(LEANPOO_EXPECTED_THEOREM_COUNT).toBe(106);
+    expect(LEANPOO_EXPECTED_MODULE_COUNT).toBeGreaterThanOrEqual(9);
+    expect(LEANPOO_EXPECTED_THEOREM_COUNT).toBeGreaterThanOrEqual(106);
 
     const kv = new ContentAddressedKvStore();
     if (!isLeanToolchainAvailable()) {
@@ -74,8 +74,8 @@ describe('Phase 33 — 106-Theorem LeanPoo Milestone (B9 Merkle Consistency, R2 
     const fleet = verifyLeanPooLibraryFleet({kv});
     expect(fleet.kind).toBe('Proven');
     if (fleet.kind !== 'Proven') throw new Error('expected Proven');
-    expect(fleet.moduleCount).toBe(9);
-    expect(fleet.verifiedTheoremCount).toBe(106);
+    expect(fleet.moduleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);
+    expect(fleet.verifiedTheoremCount).toBe(LEANPOO_EXPECTED_THEOREM_COUNT);
 
     kv.gcUnreferenced();
     expect(kv.hasBlob(modRes.pinnedCertificateHash!)).toBe(true);
@@ -197,8 +197,8 @@ describe('Phase 33 — 106-Theorem LeanPoo Milestone (B9 Merkle Consistency, R2 
         releaseAttestationDigest: string;
       };
       expect(cliOut.verdict).toBe('Proven');
-      expect(cliOut.moduleCount).toBe(9);
-      expect(cliOut.verifiedTheoremCount).toBe(106);
+      expect(cliOut.moduleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);
+      expect(cliOut.verifiedTheoremCount).toBe(LEANPOO_EXPECTED_THEOREM_COUNT);
       expect(cliOut.quintModelCount).toBe(19);
       expect(cliOut.zeroMathlib).toBe(true);
       expect(cliOut.zeroCedar).toBe(true);

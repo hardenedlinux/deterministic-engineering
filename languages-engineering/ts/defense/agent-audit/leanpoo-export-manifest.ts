@@ -45,7 +45,10 @@ export const LEANPOO_RELEASE_CERT_FACADE_MODULE =
 export const LEANPOO_MERKLE_ASYNC_FACADE_MODULE =
   'DeterministicEngineering.Engineering.MerkleConsistencyAndAsyncCut';
 
-export const LEANPOO_TOP_FACADE_MODULE = LEANPOO_MERKLE_ASYNC_FACADE_MODULE;
+export const LEANPOO_TOOL_SANDBOX_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.ToolSandboxAndRpcBoundary';
+
+export const LEANPOO_TOP_FACADE_MODULE = LEANPOO_TOOL_SANDBOX_FACADE_MODULE;
 
 export const LEANPOO_LIBRARY_EXPORT_MANIFEST: readonly LeanPooExportModuleSpec[] = [
   {
@@ -217,6 +220,23 @@ export const LEANPOO_LIBRARY_EXPORT_MANIFEST: readonly LeanPooExportModuleSpec[]
       'disablingSplitViewCheck_invalidates_reuse',
     ],
   },
+  {
+    moduleName: LEANPOO_TOOL_SANDBOX_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/ToolSandboxAndRpcBoundary.lean',
+    pillars: ['B11', 'McpSandbox', 'RpcBoundary'],
+    theorems: [
+      'unpinned_shadow_tool_always_refused',
+      'mcp_schema_rug_pull_always_refused',
+      'sandbox_scope_escalation_always_refused',
+      'side_effecting_tool_without_idempotency_key_refused',
+      'ambiguous_rpc_timeout_blocks_blind_retry',
+      'oversized_or_untagged_tool_output_refused',
+      'tool_response_admit_iff_bounded_and_tainted',
+      'toolSandboxContract_preserves_rejection',
+      'rpcLogSampleRateTuning_preserves_toolSandbox_certificate',
+      'disablingSchemaPinning_invalidates_reuse',
+    ],
+  },
 ];
 
 export const LEANPOO_EXPECTED_MODULE_COUNT = LEANPOO_LIBRARY_EXPORT_MANIFEST.length;
@@ -360,14 +380,16 @@ export function verifyLeanPooLibraryFleet(params?: {
   }
 
   const facadeToImport = manifest.some(
-    m => m.moduleName === LEANPOO_MERKLE_ASYNC_FACADE_MODULE,
+    m => m.moduleName === LEANPOO_TOOL_SANDBOX_FACADE_MODULE,
   )
-    ? LEANPOO_MERKLE_ASYNC_FACADE_MODULE
-    : manifest.some(m => m.moduleName === LEANPOO_RELEASE_CERT_FACADE_MODULE)
-      ? LEANPOO_RELEASE_CERT_FACADE_MODULE
-      : manifest.some(m => m.moduleName === LEANPOO_FOUR_PARADIGM_FACADE_MODULE)
-        ? LEANPOO_FOUR_PARADIGM_FACADE_MODULE
-        : LEANPOO_EXPORT_FACADE_MODULE;
+    ? LEANPOO_TOOL_SANDBOX_FACADE_MODULE
+    : manifest.some(m => m.moduleName === LEANPOO_MERKLE_ASYNC_FACADE_MODULE)
+      ? LEANPOO_MERKLE_ASYNC_FACADE_MODULE
+      : manifest.some(m => m.moduleName === LEANPOO_RELEASE_CERT_FACADE_MODULE)
+        ? LEANPOO_RELEASE_CERT_FACADE_MODULE
+        : manifest.some(m => m.moduleName === LEANPOO_FOUR_PARADIGM_FACADE_MODULE)
+          ? LEANPOO_FOUR_PARADIGM_FACADE_MODULE
+          : LEANPOO_EXPORT_FACADE_MODULE;
 
   const stdinScript = [
     `import ${facadeToImport}`,

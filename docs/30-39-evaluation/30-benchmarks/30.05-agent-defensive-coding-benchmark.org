@@ -20,7 +20,7 @@ This benchmark evaluates whether AST-level defensive-engineering auditors catch
 all four AI Agent defensive-hallucination classes (=G2= in [[file:../../10-19-design/10-architecture/10.153-defensive-engineering-taxonomy-and-modular-organization.org][10.153]]) without
 generating false positives on clean deterministic-boundary code.
 
-- *Independent Gold*: Every case (=AG01=–=AG175=) has a fixed independent
+- *Independent Gold*: Every case (=AG01=–=AG180=) has a fixed independent
   expected outcome (=pass= vs. =fail= + exact hallucination/anti-evasion/escalation/durable-resume class). Candidate
   auditor output never generates gold.
 - *Native AST, Diff-Delta, Scope-Fencing & Closed-Loop Governance Auditors Evaluated*:
@@ -230,7 +230,12 @@ generating false positives on clean deterministic-boundary code.
 | =AG172= | =LeanPoo= × =B9= RFC 6962 | Prefix growth (=1 -> 4 -> 9 -> 16=) via public key & mutated-leaf split-view | =AcceptedConsistent= & =EquivocationDetected= | Verifies multi-step append-only consistency & catches same-size forked root equivocation |
 | =AG173= | =LeanPoo= × =R2= Async Cut | Straggler-free disjoint branch merge vs concurrent divergent edit | =Proven= on disjoint; explicit =Conflict= on divergent | Confirms zero silent LWW erasure on concurrent divergent edits while admitting disjoint peers |
 | =AG174= | =LeanPoo= × =R4= LLM Drift | Exact =M1= reuse vs single-axis drift across all 4 LLM upstream axes | =ReuseM1= on exact; =InvalidatedByDrift= on all 4 axes | Confirms drifting =repoCommit=, =promptTemplate=, =policyDigest= or =modelId= invalidates cache |
-| =AG175= | 175-Case & 106-Thm Seal | Live CLI JSON -> 3-of-4 Ed25519 offline cert -> =cedar-poo-spec= Dual Gate | =Proven= (9 modules, 106 theorems) + GC survival | End-to-end air-gapped 106-theorem release custody & full 30-suite + CBMC/C++/Rust/Gerbil seal |
+| =AG175= | 175-Case & 106-Thm Seal | Live CLI JSON -> 3-of-4 Ed25519 offline cert -> =cedar-poo-spec= Dual Gate | =Proven= + GC survival | End-to-end air-gapped release custody & full 30-suite + CBMC/C++/Rust/Gerbil seal |
+| =AG176= | =LeanPoo= =B11= MCP/RPC | Live =lake env lean= verifies 10 =ToolSandboxAndRpcBoundary= + **116/116** fleet | **116/116 =Proven=** across 10 modules + GC | Verifies unbounded MCP rug-pull, scope confinement, RPC timeout & response firewall axioms |
+| =AG177= | =B11= MCP Rug-Pull & Escape | Shadow tool, mutated schema description & scope escalation vs clean call | Refuse all 3 attacks; =Proven= (=UntrustedExternal=) | Pin-checks immutable =M1= tool manifest & blocks silent MCP schema mutation and egress escape |
+| =AG178= | =B11= RPC Timeout Fence | Side-effecting call missing idempotency key, timeout retry & stale cap epoch | Refuse missing key/stale cap; =PendingUnknownEffect= | Blocks duplicate side-effect RPC retry until explicit =M1= reconciliation receipt clears fence |
+| =AG179= | =B11 × B7= Response Firewall | Oversized response dump (>64B) & untrusted tool URL into CaMeL control slot | Refuse (=oversized= & =untrusted-control-flow-hijack=) | Bounds MCP response size & guarantees =UntrustedExternal= output cannot hijack privileged tools |
+| =AG180= | 180-Case & 116-Thm Milestone | All 10/10 =R3= non-leakable =M3= caps + CLI JSON (=10 modules / 116 theorems=) | Refuse 10/10 =R3= leaks; CLI + =cedar-poo-spec= =Proven= | Closes 180-case benchmark & 10-module 116-theorem zero-Mathlib/zero-Cedar =LeanPoo= Library |
 
 * Observed Verification Receipts
 :PROPERTIES:
@@ -268,15 +273,16 @@ generating false positives on clean deterministic-boundary code.
 | =LeanPoo= Unified Library Export Contract & 76-Theorem Fleet Manifest (=AG156=–=AG160=, 160-Case Milestone) | =bun test languages-engineering/ts/defense/agent-audit/library-export-contract.test.ts= + =lake build= | **5/5 cases matched gold** (live =#print axioms= on 12 =LibraryExportContract= theorems, 0-Mathlib/0-Cedar boundary hygiene, single-shot fleet attestation, 3-layer =cedar-poo-spec= refinement & fail-closed release gate) |
 | Four-Paradigm Cross-Consistency & 86-Theorem =LeanPoo= CLI Release Gate (=AG161=–=AG165=) | =bun test languages-engineering/ts/defense/agent-audit/four-paradigm-consistency.test.ts= + =just audit-leanpoo-fleet= | **5/5 cases matched gold** (live =#print axioms= on 10 =FourParadigmConsistency= theorems, live 19-Quint × ASCENT × 5-Lang/CBMC × =LeanPoo= cross-audit, standalone CLI JSON gate, 15-case fail-closed matrix & 165-case custody closure) |
 | Air-Gapped Ed25519 Release Certificate Replay & 96-Theorem =LeanPoo= Library (=AG166=–=AG170=, 170-Case Milestone) | =bun test languages-engineering/ts/defense/agent-audit/release-certificate-replay.test.ts= + =just audit-leanpoo-fleet --json= | **5/5 cases matched gold** (live =#print axioms= on 10 =ReleaseCertificateReplay= theorems, 100% air-gapped Ed25519 + 3-of-4 witness verification, 7-vector forgery matrix, =cedar-poo-spec= air-gapped runtime consumption & 9/9 =R3= cap non-leakage) |
-| 106-Theorem =LeanPoo= Milestone (=B9= Merkle, =R2= Async Merge, =R4= LLM Drift, =AG171=–=AG175=, 175-Case Seal) | =bun test languages-engineering/ts/defense/agent-audit/merkle-async-memo-leanpoo.test.ts= + full 30-suite regression | **5/5 cases matched gold** (live **106/106** 9-module =LeanPoo= sweep, =B9= prefix/equivocation, =R2= conflict-preserving merge, =R4= 4-axis drift, full 30-suite + C/CBMC + C++20 + Rust + Gerbil ASCENT regression seal) |
-| Combined 175-case 5-language, anti-evasion, Full =B1=–=B10c=, N-Version & 106-Theorem =LeanPoo= benchmark | =just check-defense= | **175/175 exact gold match** (=tp=116, tn=59, fp=0, fn=0=) |
+| 106-Theorem =LeanPoo= Milestone (=B9= Merkle, =R2= Async Merge, =R4= LLM Drift, =AG171=–=AG175=, 175-Case Seal) | =bun test languages-engineering/ts/defense/agent-audit/merkle-async-memo-leanpoo.test.ts= + full 30-suite regression | **5/5 cases matched gold** (live =LeanPoo= sweep, =B9= prefix/equivocation, =R2= conflict-preserving merge, =R4= 4-axis drift, full 30-suite + C/CBMC + C++20 + Rust + Gerbil ASCENT regression seal) |
+| =B11= MCP / Tool-Sandbox & RPC Schema-Boundary Safety + 116-Theorem 10-Module =LeanPoo= Library (=AG176=–=AG180=, 180-Case Milestone) | =bun test languages-engineering/ts/defense/agent-audit/tool-sandbox-rpc-boundary.test.ts= + =just audit-leanpoo-fleet --json= | **5/5 cases matched gold** (live **116/116** 10-module =LeanPoo= sweep, MCP rug-pull/shadow-tool/scope-escape blocks, =PendingUnknownEffect= RPC timeout fence, =B11 × B7= CaMeL response firewall & 10/10 =R3= cap non-leakage) |
+| Combined 180-case 5-language, anti-evasion, Full =B1=–=B11=, N-Version & 116-Theorem =LeanPoo= benchmark | =just check-defense= | **180/180 exact gold match** (=tp=119, tn=61, fp=0, fn=0=) |
 
 * Limits
 :PROPERTIES:
 :CUSTOM_ID: bench3005-limits
 :END:
 
-This 175-case benchmark establishes deterministic AST-level, diff-delta,
+This 180-case benchmark establishes deterministic AST-level, diff-delta,
 scope-fencing, bounded closed-loop, hot-policy co-evolution, async-cut,
 semantic-drift memoization, AEAD-isolated Merkle storage, role-projected
 context, multi-agent SSI concurrency, and business SoD/replay precision and
