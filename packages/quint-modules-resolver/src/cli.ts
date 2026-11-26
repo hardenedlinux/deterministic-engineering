@@ -2,7 +2,6 @@
 // SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
-import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {basename, dirname, resolve} from 'node:path';
 import {
@@ -15,7 +14,7 @@ import {
 } from '@informalsystems/quint';
 import {packageSourceResolver} from './resolver.ts';
 import {executePlan} from './plan.ts';
-import {composeQuintFiles} from './compose.ts';
+import {composeQuintFiles, expandExtendedQntFile, writeExpandedQntFile} from './compose.ts';
 import {auditMbtCoverage, runFleetPlans} from './mbt.ts';
 import {discoverInstalledQuintModels, verifyInstalledQuintPackages} from './pkg.ts';
 
@@ -64,7 +63,7 @@ function parseCliArgs(argv: string[]): ParsedArgs {
   }
   const [command, input, ...rest] = argv;
   if (!command || !input) {
-    console.error('Usage: quint-modules-resolver <parse|typecheck|test|run|verify|run-plan|run-fleet|mbt-audit|compose|list|verify-deps> <input> [options]');
+    console.error('Usage: quint-modules-resolver <parse|typecheck|test|run|verify|run-plan|run-fleet|mbt-audit|compose|expand|list|verify-deps> <input> [options]');
     process.exit(2);
   }
   const args: ParsedArgs = {command, input, verbosity: 2};
@@ -158,10 +157,10 @@ async function parseWithPackages(args: ParsedArgs) {
   const fullPath = resolve(process.cwd(), args.input);
   let text: string;
   try {
-    text = readFileSync(fullPath, 'utf8');
+    text = expandExtendedQntFile(fullPath).expandedText;
   } catch (err) {
     return left({
-      msg: `file ${args.input} could not be opened due to ${String(err)}`,
+      msg: `file ${args.input} could not be opened/expanded due to ${String(err)}`,
       stage: {stage: 'loading', args, errors: [], sourceCode: new Map()},
     });
   }
@@ -219,6 +218,33 @@ export async function runCli(argv: string[]) {
     }
     const mod = composeQuintFiles(baseSpec, overlayPath, outQnt, outPlan);
     console.log(`COMPOSE-OK ${mod.name} -> ${outQnt}${outPlan ? ` (+ ${outPlan})` : ''}`);
+    return;
+  }
+  if (argv[0] === 'expand') {
+    const targetPath = argv[1];
+    if (!targetPath) {
+      console.error('Usage: quint-modules-resolver expand <Model.qnt> [--out <Expanded.qnt>]');
+      process.exit(2);
+    }
+    let outQnt: string | undefined;
+    for (let i = 2; i < argv.length; i++) {
+      const tok = argv[i]!;
+      const eq = tok.indexOf('=');
+      const key = eq >= 0 ? tok.slice(0, eq) : tok;
+      const val = eq >= 0 ? tok.slice(eq + 1) : argv[++i];
+      if (key === '--out') outQnt = val;
+      else {
+        console.error(`Unknown expand option: ${tok}`);
+        process.exit(2);
+      }
+    }
+    if (outQnt) {
+      const res = writeExpandedQntFile(targetPath, outQnt);
+      console.log(`EXPAND-OK ${res.module.name} (${res.chain.join(' -> ')}) -> ${outQnt}`);
+    } else {
+      const res = expandExtendedQntFile(targetPath);
+      process.stdout.write(res.expandedText);
+    }
     return;
   }
   if (argv[0] === 'run-plan') {

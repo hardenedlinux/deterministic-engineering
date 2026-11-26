@@ -2,20 +2,23 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 import {createRequire} from 'node:module';
-import {isAbsolute, resolve} from 'node:path';
+import {readFileSync} from 'node:fs';
+import {resolve} from 'node:path';
 import {fileSourceResolver} from '@informalsystems/quint';
+import {isBareSpecifier} from './spec.ts';
+import {expandExtendedQntFile, hasExtendDirectives} from './compose.ts';
+
+export {isBareSpecifier} from './spec.ts';
 
 export type SourceResolver = ReturnType<typeof fileSourceResolver>;
 export type SourceLookupPath = ReturnType<SourceResolver['lookupPath']>;
 
-export function isBareSpecifier(specifier: string): boolean {
-  return specifier.length > 0 && !specifier.startsWith('.') && !isAbsolute(specifier);
-}
-
 /**
- * Package-aware Quint SourceResolver.
- * Relative and absolute imports delegate directly to Quint's native fileSourceResolver.
- * Bare package specifiers resolve via Node's module resolution (node_modules + package exports).
+ * Package-aware Quint SourceResolver with transparent single-parent `@quint-extends`
+ * and `@quint-const` expansion:
+ * - Relative and absolute imports delegate path lookup to Quint's native fileSourceResolver.
+ * - Bare package specifiers resolve via Node's module resolution (node_modules + package exports).
+ * - Loaded `.qnt` files declaring `@quint-extends` / `@quint-const` expand in memory via `composeQuintAst`.
  */
 export function packageSourceResolver(
   sourceCode: Map<string, string> = new Map(),
@@ -58,6 +61,21 @@ export function packageSourceResolver(
       };
     },
     load(lookupPath: SourceLookupPath) {
+      let raw: string | undefined;
+      try {
+        raw = readFileSync(lookupPath.normalizedPath, 'utf8');
+      } catch {
+        return nativeResolver.load(lookupPath);
+      }
+      if (hasExtendDirectives(raw)) {
+        const expanded = expandExtendedQntFile(lookupPath.normalizedPath).expandedText;
+        const loaded = nativeResolver.load(lookupPath);
+        if (loaded.isRight()) {
+          sourceCode.set(lookupPath.normalizedPath, expanded);
+          return loaded.map(() => expanded);
+        }
+        return loaded;
+      }
       return nativeResolver.load(lookupPath);
     },
     stempath(lookupPath: SourceLookupPath): string {

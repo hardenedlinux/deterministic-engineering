@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
-import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
-import {createRequire} from 'node:module';
-import {dirname, isAbsolute, relative, resolve} from 'node:path';
+import {mkdirSync, readFileSync, realpathSync, writeFileSync} from 'node:fs';
+import {dirname, relative, resolve} from 'node:path';
 import {
   moduleToString,
   newIdGenerator,
   parsePhase1fromText,
   typeToString,
   type QuintApp,
+  type QuintConst,
   type QuintDeclaration,
   type QuintDef,
   type QuintEx,
@@ -18,78 +18,111 @@ import {
   type QuintOpDef,
   type QuintTypeDef,
 } from '@informalsystems/quint';
-import {isBareSpecifier} from './resolver.ts';
+import {isBareSpecifier, resolveQuintSpec, type ResolvedQuintFile} from './spec.ts';
 import {type QuintPlan} from './plan.ts';
 
-export interface ResolvedBaseQnt {
-  fullPath: string;
-  packageName?: string;
-  packageRoot?: string;
+export type ResolvedBaseQnt = ResolvedQuintFile;
+export {resolveQuintSpec} from './spec.ts';
+
+export interface ExtendDirectives {
+  modelIdentity?: string;
+  quintVersion?: string;
+  apalacheVersion?: string;
+  extendsSpecs: string[];
+  constBindings: Array<{name: string; exprText: string}>;
+  verify?: {invariant: string; maxSteps: number; constBindings?: string};
+  countermodels: Array<{
+    droppedGuard: string;
+    stepAction: string;
+    maxSteps: number;
+    expectedItfPredicate: string;
+  }>;
+  limits?: string;
 }
 
-function findEnclosingPackage(filePath: string): {name: string; root: string} | undefined {
-  let cur = dirname(filePath);
-  while (true) {
-    const pkgPath = resolve(cur, 'package.json');
-    if (existsSync(pkgPath)) {
-      try {
-        const parsed = JSON.parse(readFileSync(pkgPath, 'utf8')) as {name?: string};
-        if (parsed.name) {
-          return {name: parsed.name, root: cur};
-        }
-      } catch {
-        // Ignore malformed package.json while walking upward.
-      }
-    }
-    const parent = dirname(cur);
-    if (parent === cur) return undefined;
-    cur = parent;
-  }
+export interface ExpandedQntResult {
+  isExtended: boolean;
+  expandedText: string;
+  module: QuintModule;
+  chain: string[];
 }
 
-export function resolveQuintSpec(spec: string, fromDir: string = process.cwd()): ResolvedBaseQnt {
-  const candidates = spec.endsWith('.qnt') ? [spec] : [spec, `${spec}.qnt`];
-  if (!isBareSpecifier(spec)) {
-    for (const c of candidates) {
-      const full = isAbsolute(c) ? c : resolve(fromDir, c);
-      if (existsSync(full)) {
-        const pkg = findEnclosingPackage(full);
-        return {fullPath: full, packageName: pkg?.name, packageRoot: pkg?.root};
-      }
+export function parseExtendDirectives(source: string): ExtendDirectives {
+  const result: ExtendDirectives = {
+    extendsSpecs: [],
+    constBindings: [],
+    countermodels: [],
+  };
+  for (const rawLine of source.split('\n')) {
+    const line = rawLine.trim();
+    if (!line.startsWith('//')) {
+      if (line.startsWith('module ')) break;
+      continue;
     }
-    throw new Error(`Could not resolve Quint module '${spec}' from '${fromDir}'`);
-  }
-
-  const anchors = [
-    resolve(fromDir, '_quint_compose_.qnt'),
-    resolve(process.cwd(), '_quint_compose_.qnt'),
-  ];
-  if (process.env.QUINT_RESOLVE_ROOT) {
-    anchors.push(resolve(process.env.QUINT_RESOLVE_ROOT, '_quint_compose_.qnt'));
-  }
-  if (process.argv[1]) {
-    anchors.push(resolve(process.argv[1]));
-  }
-  anchors.push(import.meta.url);
-
-  let lastErr: unknown;
-  for (const anchor of anchors) {
-    const req = createRequire(anchor);
-    for (const c of candidates) {
-      try {
-        const full = req.resolve(c);
-        const pkg = findEnclosingPackage(full);
-        return {fullPath: full, packageName: pkg?.name, packageRoot: pkg?.root};
-      } catch (err) {
-        lastErr = err;
-      }
+    const modelMatch = line.match(/^\/\/\s*@quint-model\s+(\S+)/);
+    if (modelMatch) {
+      result.modelIdentity = modelMatch[1];
+      continue;
+    }
+    const verMatch = line.match(/^\/\/\s*@quint-version\s+(\S+)/);
+    if (verMatch) {
+      result.quintVersion = verMatch[1];
+      continue;
+    }
+    const apaMatch = line.match(/^\/\/\s*@apalache-version\s+(\S+)/);
+    if (apaMatch) {
+      result.apalacheVersion = apaMatch[1];
+      continue;
+    }
+    const limitsMatch = line.match(/^\/\/\s*Limits:\s*(.+)$/);
+    if (limitsMatch) {
+      result.limits = limitsMatch[1]!.trim();
+      continue;
+    }
+    const verifyMatch = line.match(
+      /^\/\/\s*@verify\s+(\S+)(?:\s+max-steps=(\d+))?(?:\s+const="([^"]+)")?/,
+    );
+    if (verifyMatch) {
+      result.verify = {
+        invariant: verifyMatch[1]!,
+        maxSteps: verifyMatch[2] ? Number(verifyMatch[2]) : 12,
+        constBindings: verifyMatch[3],
+      };
+      continue;
+    }
+    const cmMatch = line.match(
+      /^\/\/\s*@countermodel\s+(\S+)\s+step=(\S+)(?:\s+max-steps=(\d+))?(?:\s+itf="([^"]*)")?/,
+    );
+    if (cmMatch) {
+      result.countermodels.push({
+        droppedGuard: cmMatch[1]!,
+        stepAction: cmMatch[2]!,
+        maxSteps: cmMatch[3] ? Number(cmMatch[3]) : 6,
+        expectedItfPredicate: cmMatch[4] ?? '',
+      });
+      continue;
+    }
+    const extMatch =
+      line.match(/^\/\/\s*@quint-extends\s+"([^"]+)"/) ??
+      line.match(/^\/\/\s*@quint-extends\s+(\S+)/);
+    if (extMatch) {
+      result.extendsSpecs.push(extMatch[1]!);
+      continue;
+    }
+    const constMatch = line.match(/^\/\/\s*@quint-const\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.+)$/);
+    if (constMatch) {
+      result.constBindings.push({name: constMatch[1]!, exprText: constMatch[2]!.trim()});
     }
   }
-  throw lastErr ?? new Error(`Could not resolve bare Quint specifier '${spec}'`);
+  return result;
 }
 
-function parseSingleModule(filePath: string): QuintModule {
-  const text = readFileSync(filePath, 'utf8');
+export function hasExtendDirectives(source: string): boolean {
+  const d = parseExtendDirectives(source);
+  return d.extendsSpecs.length > 0 || d.constBindings.length > 0;
+}
+
+function parseSingleModuleText(text: string, filePath: string): QuintModule {
   const idGen = newIdGenerator();
   const res = parsePhase1fromText(idGen, text, filePath);
   if (res.errors.length > 0) {
@@ -100,6 +133,46 @@ function parseSingleModule(filePath: string): QuintModule {
     throw new Error(`Expected exactly 1 module in '${filePath}', found ${res.modules.length}`);
   }
   return res.modules[0]!;
+}
+
+function parseSingleModule(filePath: string): QuintModule {
+  return parseSingleModuleText(readFileSync(filePath, 'utf8'), filePath);
+}
+
+function parseQuintExpr(exprText: string, label: string): QuintEx {
+  const mod = parseSingleModuleText(`module __const_expr__ {\n  val __v__ = ${exprText}\n}\n`, `<${label}>`);
+  const decl = mod.declarations[0];
+  if (!decl || decl.kind !== 'def') {
+    throw new Error(`Failed to parse Quint expression for ${label}: ${exprText}`);
+  }
+  return decl.expr;
+}
+
+function bindConstsInModule(
+  mod: QuintModule,
+  bindings: Array<{name: string; exprText: string}>,
+): QuintModule {
+  if (bindings.length === 0) return mod;
+  const decls = [...mod.declarations];
+  for (const b of bindings) {
+    const idx = decls.findIndex(d => d.kind === 'const' && d.name === b.name);
+    if (idx < 0) {
+      throw new Error(
+        `Module '${mod.name}' binds @quint-const '${b.name}', which is not a declared const`,
+      );
+    }
+    const constDecl = decls[idx] as QuintConst;
+    const pureValDecl: QuintOpDef = {
+      id: constDecl.id,
+      kind: 'def',
+      qualifier: 'pureval',
+      name: constDecl.name,
+      typeAnnotation: constDecl.typeAnnotation,
+      expr: parseQuintExpr(b.exprText, `@quint-const ${b.name}`),
+    };
+    decls[idx] = pureValDecl;
+  }
+  return {...mod, declarations: decls};
 }
 
 function rewriteImportSource(imp: QuintImport, baseInfo: ResolvedBaseQnt): QuintImport {
@@ -359,6 +432,131 @@ export function composeQuintAst(
     name: overlayMod.name,
     declarations: [...finalImports, ...mergedBody],
   };
+}
+
+/**
+ * Transparently expands single-parent `// @quint-extends` chains and `// @quint-const`
+ * bindings by reusing `composeQuintAst`. Ordinary `.qnt` files pass through unchanged.
+ */
+export function expandExtendedQntFile(qntPath: string): ExpandedQntResult {
+  const absPath = resolve(process.cwd(), qntPath);
+  const rawRoot = readFileSync(absPath, 'utf8');
+  if (!hasExtendDirectives(rawRoot)) {
+    const mod = parseSingleModuleText(rawRoot, absPath);
+    return {isExtended: false, expandedText: rawRoot, module: mod, chain: [mod.name]};
+  }
+
+  interface ChainNode {
+    fileInfo: ResolvedBaseQnt;
+    directives: ExtendDirectives;
+    module: QuintModule;
+  }
+
+  const visited = new Set<string>();
+  const chainNodes: ChainNode[] = [];
+  let curInfo = resolveQuintSpec(absPath, process.cwd());
+
+  while (true) {
+    const canonical = realpathSync(curInfo.fullPath);
+    if (visited.has(canonical)) {
+      const names = [...chainNodes.map(n => n.module.name), canonical];
+      throw new Error(`Cycle detected in @quint-extends chain: ${names.join(' -> ')}`);
+    }
+    visited.add(canonical);
+    const text = readFileSync(canonical, 'utf8');
+    const directives = parseExtendDirectives(text);
+    if (directives.extendsSpecs.length > 1) {
+      throw new Error(
+        `Module '${canonical}' declares ${directives.extendsSpecs.length} @quint-extends parents; only single-parent extension is supported (use Scheme POO for multi-prototype composition)`,
+      );
+    }
+    const mod = parseSingleModuleText(text, canonical);
+    chainNodes.push({fileInfo: {...curInfo, fullPath: canonical}, directives, module: mod});
+    if (directives.extendsSpecs.length === 0) break;
+    curInfo = resolveQuintSpec(directives.extendsSpecs[0]!, dirname(canonical));
+  }
+
+  // Apply from base -> derived using composeQuintAst.
+  const ordered = [...chainNodes].reverse();
+  let composed = bindConstsInModule(ordered[0]!.module, ordered[0]!.directives.constBindings);
+  let quintVersion = ordered[0]!.directives.quintVersion ?? '0.33.0';
+  let apalacheVersion = ordered[0]!.directives.apalacheVersion ?? '0.62.1';
+  let verifyHeader = ordered[0]!.directives.verify;
+  const countermodels = [...ordered[0]!.directives.countermodels];
+  const limitsParts: string[] = [];
+  if (ordered[0]!.directives.limits) {
+    limitsParts.push(`${ordered[0]!.module.name}: ${ordered[0]!.directives.limits}`);
+  }
+
+  for (let i = 1; i < ordered.length; i++) {
+    const parentNode = ordered[i - 1]!;
+    const childNode = ordered[i]!;
+    composed = composeQuintAst(composed, childNode.module, parentNode.fileInfo);
+    composed = bindConstsInModule(composed, childNode.directives.constBindings);
+    if (childNode.directives.quintVersion) quintVersion = childNode.directives.quintVersion;
+    if (childNode.directives.apalacheVersion) apalacheVersion = childNode.directives.apalacheVersion;
+    if (childNode.directives.verify) verifyHeader = childNode.directives.verify;
+    if (childNode.directives.limits) {
+      limitsParts.push(`${childNode.module.name}: ${childNode.directives.limits}`);
+    }
+    for (const cm of childNode.directives.countermodels) {
+      const dup = countermodels.some(
+        existing => existing.droppedGuard === cm.droppedGuard && existing.stepAction === cm.stepAction,
+      );
+      if (!dup) countermodels.push(cm);
+    }
+  }
+
+  const rootNode = chainNodes[0]!;
+  const chainNames = chainNodes.map(n => n.module.name);
+  // REUSE-IgnoreStart
+  const headerLines: string[] = [
+    '// SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors',
+    '// SPDX-License-Identifier: LGPL-2.1-or-later',
+  ];
+  // REUSE-IgnoreEnd
+  if (rootNode.directives.modelIdentity) {
+    headerLines.push(`// @quint-model ${rootNode.directives.modelIdentity}`);
+  }
+  headerLines.push(`// @quint-version ${quintVersion}`);
+  headerLines.push(`// @apalache-version ${apalacheVersion}`);
+  headerLines.push(`// Extended from: ${chainNames.join(' -> ')}`);
+
+  const hasRemainingConst = composed.declarations.some(d => d.kind === 'const');
+  if (verifyHeader) {
+    const constSuffix =
+      hasRemainingConst && verifyHeader.constBindings ? ` const="${verifyHeader.constBindings}"` : '';
+    headerLines.push(`// @verify ${verifyHeader.invariant} max-steps=${verifyHeader.maxSteps}${constSuffix}`);
+  } else if (
+    composed.declarations.some(d => d.kind === 'def' && d.name === 'safety') &&
+    composed.declarations.some(d => d.kind === 'def' && d.name === 'step')
+  ) {
+    headerLines.push('// @verify safety max-steps=12');
+  }
+  for (const cm of countermodels) {
+    headerLines.push(
+      `// @countermodel ${cm.droppedGuard} step=${cm.stepAction} max-steps=${cm.maxSteps} itf="${cm.expectedItfPredicate}"`,
+    );
+  }
+  if (limitsParts.length > 0) {
+    headerLines.push(`// Limits: ${limitsParts.join(' | ')}`);
+  }
+
+  const expandedText = `${headerLines.join('\n')}\n${moduleToString(composed)}\n`;
+  const verifyParse = parsePhase1fromText(newIdGenerator(), expandedText, absPath);
+  if (verifyParse.errors.length > 0) {
+    const detail = verifyParse.errors.map(e => `${e.code}: ${e.message}`).join('; ');
+    throw new Error(`Internal extend expansion error for '${absPath}': ${detail}`);
+  }
+  return {isExtended: true, expandedText, module: composed, chain: chainNames};
+}
+
+export function writeExpandedQntFile(inputQntPath: string, outQntPath: string): ExpandedQntResult {
+  const expanded = expandExtendedQntFile(inputQntPath);
+  const absOut = resolve(process.cwd(), outQntPath);
+  mkdirSync(dirname(absOut), {recursive: true});
+  writeFileSync(absOut, expanded.expandedText, 'utf8');
+  return expanded;
 }
 
 export function emitPlanFromComposedAst(mod: QuintModule, fileName: string): QuintPlan {

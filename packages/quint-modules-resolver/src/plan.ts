@@ -6,6 +6,7 @@ import {tmpdir} from 'node:os';
 import {basename, dirname, join, relative, resolve} from 'node:path';
 import {newIdGenerator, parsePhase1fromText} from '@informalsystems/quint';
 import {type ItfTrace, traceSatisfiesItfPredicate} from './itf.ts';
+import {expandExtendedQntFile} from './compose.ts';
 
 export interface PlanStep {
   label: string;
@@ -102,7 +103,8 @@ export function parseQntHeaderDirectives(source: string): QntHeaderDirectives {
 
 export function parsePlanFromQnt(qntPath: string): QuintPlan {
   const fullPath = resolve(process.cwd(), qntPath);
-  const source = readFileSync(fullPath, 'utf8');
+  const expanded = expandExtendedQntFile(fullPath);
+  const source = expanded.expandedText;
   const fileName = basename(fullPath);
   const directives = parseQntHeaderDirectives(source);
 
@@ -169,7 +171,7 @@ export function parsePlanFromQnt(qntPath: string): QuintPlan {
 }
 
 function hasUnboundConst(qntPath: string): boolean {
-  const source = readFileSync(qntPath, 'utf8');
+  const source = expandExtendedQntFile(qntPath).expandedText;
   return /^\s*const\s+[A-Za-z0-9_]+\s*:/m.test(source);
 }
 

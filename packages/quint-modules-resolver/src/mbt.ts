@@ -11,6 +11,7 @@ import {
   type QuintModule,
 } from '@informalsystems/quint';
 import {parseQntHeaderDirectives} from './plan.ts';
+import {expandExtendedQntFile} from './compose.ts';
 
 export interface MbtAuditOptions {
   main?: string;
@@ -111,7 +112,7 @@ export function extractDeclaredStepActions(mod: QuintModule, stepName: string = 
 
 export function auditMbtCoverage(qntPath: string, options: MbtAuditOptions = {}): MbtAuditReport {
   const fullPath = resolve(process.cwd(), qntPath);
-  const source = readFileSync(fullPath, 'utf8');
+  const source = expandExtendedQntFile(fullPath).expandedText;
   const directives = parseQntHeaderDirectives(source);
   const parsed = parsePhase1fromText(newIdGenerator(), source, fullPath);
   if (parsed.errors.length > 0 || parsed.modules.length === 0) {
