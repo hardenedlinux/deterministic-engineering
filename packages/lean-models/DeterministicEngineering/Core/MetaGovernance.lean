@@ -607,4 +607,60 @@ theorem mixedKeyFleet_rejects_tampered_child_digest
   rcases hChildren s with ⟨_, _, hDig1, hDig2⟩
   exact hMismatch (hDig1.trans hDig2)
 
+/-! ## 10. Fleet Child-Report Path-Traversal Containment (`safe-relative-child-path?`) -/
+
+inductive PathSegment where
+  | normal (name : String)
+  | dot
+  | dotdot
+  | empty
+
+structure RelativeChildPath where
+  isAbsolute : Bool
+  segments : List PathSegment
+
+def allNormalSegments : List PathSegment → Prop
+  | [] => True
+  | .normal _ :: rest => allNormalSegments rest
+  | .dot :: _ => False
+  | .dotdot :: _ => False
+  | .empty :: _ => False
+
+def containsSegment (target : PathSegment) : List PathSegment → Prop
+  | [] => False
+  | x :: rest => x = target ∨ containsSegment target rest
+
+def SafeRelativeChildPath (p : RelativeChildPath) : Prop :=
+  p.isAbsolute = false ∧
+  p.segments ≠ [] ∧
+  allNormalSegments p.segments
+
+/-- Constructive zero-axiom proof: an absolute child path is never safe. -/
+theorem absolute_path_never_safe (p : RelativeChildPath) (hAbs : p.isAbsolute = true) :
+    ¬ SafeRelativeChildPath p := by
+  intro hSafe
+  exact Bool.noConfusion (hAbs.symm.trans hSafe.1)
+
+/-- Constructive zero-axiom proof: an empty child path is never safe. -/
+theorem empty_path_never_safe (p : RelativeChildPath) (hEmpty : p.segments = []) :
+    ¬ SafeRelativeChildPath p := by
+  intro hSafe
+  exact hSafe.2.1 hEmpty
+
+private theorem dotdot_contradicts_allNormal :
+    ∀ segs : List PathSegment, containsSegment PathSegment.dotdot segs → allNormalSegments segs → False
+  | [], hIn, _ => hIn
+  | .normal _ :: rest, Or.inl hEq, _ => nomatch hEq
+  | .normal _ :: rest, Or.inr hRest, hAll => dotdot_contradicts_allNormal rest hRest hAll
+  | .dot :: _, _, hAll => hAll
+  | .dotdot :: _, _, hAll => hAll
+  | .empty :: _, _, hAll => hAll
+
+/-- Constructive zero-axiom proof: any `..` parent-traversal segment renders the path unsafe. -/
+theorem dotdot_segment_never_safe (p : RelativeChildPath)
+    (hDotDot : containsSegment PathSegment.dotdot p.segments) :
+    ¬ SafeRelativeChildPath p := by
+  intro hSafe
+  exact dotdot_contradicts_allNormal p.segments hDotDot hSafe.2.2
+
 end DeterministicEngineering.Core.MetaGovernance

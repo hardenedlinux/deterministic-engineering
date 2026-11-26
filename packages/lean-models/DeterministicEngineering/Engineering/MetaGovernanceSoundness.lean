@@ -168,6 +168,14 @@ theorem mixedKeyFleet_rotation_and_childRevocation_sound
    fun s hRev => mixedKeyFleet_rejects_revoked_child_even_with_valid_root_key m pol fleet s hRev,
    fun s hMis => mixedKeyFleet_rejects_tampered_child_digest m pol fleet s hMis⟩
 
+/-- Instantiated path-traversal containment contract for 2-level Merkle Fleet child reports:
+rejects absolute paths, empty paths, and any `..` traversal segment constructively with zero axioms. -/
+theorem fleetChildPathContainment_rejects_traversal_and_absolute (p : RelativeChildPath) :
+    (p.isAbsolute = true → ¬ SafeRelativeChildPath p) ∧
+    (p.segments = [] → ¬ SafeRelativeChildPath p) ∧
+    (containsSegment PathSegment.dotdot p.segments → ¬ SafeRelativeChildPath p) :=
+  ⟨absolute_path_never_safe p, empty_path_never_safe p, dotdot_segment_never_safe p⟩
+
 /-! ## One-Line Proof Transport via `Core.Transport` -/
 
 inductive MetaProofKey where

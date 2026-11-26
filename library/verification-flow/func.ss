@@ -39,6 +39,7 @@
   canonical-fleet-signing-payload
   compute-expired-steps
   trust-store-key-admitted?
+  safe-relative-child-path?
   partition-parallel-frontier-waves
   changed-files->affected-frontier
   flow-of

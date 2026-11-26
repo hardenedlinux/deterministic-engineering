@@ -319,4 +319,39 @@
         k2 "fl-missing")
       (check-equal? (verify-fleet-offline fleet-missing-child tp-valid) #f)
 
+      ;; Attack 15: Parent-directory traversal (`../rep-ok.json`) pointing to a REAL valid K1-signed
+      ;;            report OUTSIDE the Fleet directory with matching Merkle digest -> MUST be rejected!
+      (def subfleet-dir (path-expand "subfleet" work))
+      (create-directory* subfleet-dir)
+      (def fleet-traversal (path-expand "fleet-report.json" subfleet-dir))
+      (write-signed-fleet fleet-traversal
+        (list (hash ("subjectKey" "demo") ("subjectId" "subject.demo")
+                    ("reportRelativePath" "../rep-ok.json")
+                    ("reportPayloadSha256" rep-ok-sha)
+                    ("replayValid" #t) ("admitted" #t)))
+        k2 "fl-traversal")
+      (check-equal? (verify-fleet-offline fleet-traversal tp-valid) #f)
+
+      ;; Attack 16: Absolute path override (`/…/rep-ok.json`) pointing to a REAL valid K1-signed
+      ;;            report with matching Merkle digest -> MUST be rejected!
+      (def fleet-abs (path-expand "fleet-abs.json" subfleet-dir))
+      (write-signed-fleet fleet-abs
+        (list (hash ("subjectKey" "demo") ("subjectId" "subject.demo")
+                    ("reportRelativePath" rep-ok)
+                    ("reportPayloadSha256" rep-ok-sha)
+                    ("replayValid" #t) ("admitted" #t)))
+        k2 "fl-abs")
+      (check-equal? (verify-fleet-offline fleet-abs tp-valid) #f)
+
+      ;; Attack 17: Pure `safe-relative-child-path?` matrix.
+      (check-equal? (safe-relative-child-path? "demo/report.json") #t)
+      (check-equal? (safe-relative-child-path? "report.json") #t)
+      (check-equal? (safe-relative-child-path? "") #f)
+      (check-equal? (safe-relative-child-path? "/etc/passwd") #f)
+      (check-equal? (safe-relative-child-path? "../rep-ok.json") #f)
+      (check-equal? (safe-relative-child-path? "sub/../../rep-ok.json") #f)
+      (check-equal? (safe-relative-child-path? "sub//report.json") #f)
+      (check-equal? (safe-relative-child-path? "./report.json") #f)
+      (check-equal? (safe-relative-child-path? "sub\\report.json") #f)
+
       (run-process (list "rm" "-rf" work)))))

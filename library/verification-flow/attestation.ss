@@ -13,7 +13,8 @@
   canonical-witness-signing-payload
   canonical-report-signing-payload
   canonical-fleet-signing-payload
-  trust-store-alist-key-admitted?)
+  trust-store-alist-key-admitted?
+  safe-relative-child-path?)
 
 (def (sym->str x)
   (if (symbol? x) (symbol->string x) x))
@@ -40,6 +41,31 @@
        (not (member key-id revoked-key-ids))
        (let ((entry (assoc key-id trusted-keys)))
          (and entry (cdr entry)))))
+
+;; Pure path-traversal containment predicate for 2-level Merkle Fleet child report paths:
+;; Rejects empty paths, leading slashes (absolute paths), backslashes, NUL bytes,
+;; empty segments (`//`), `.` segments, and `..` parent-traversal segments.
+(def (safe-relative-child-path? rel)
+  (and (string? rel)
+       (> (string-length rel) 0)
+       (not (char=? (string-ref rel 0) #\/))
+       (not (char=? (string-ref rel 0) #\\))
+       (let ((len (string-length rel)))
+         (let loop ((i 0))
+           (cond
+            ((>= i len) #t)
+            ((or (char=? (string-ref rel i) #\\)
+                 (char=? (string-ref rel i) #\nul))
+             #f)
+            (else (loop (+ i 1))))))
+       (let ((segs (string-split rel #\/)))
+         (and (pair? segs)
+              (andmap
+                (lambda (seg)
+                  (and (> (string-length seg) 0)
+                       (not (equal? seg "."))
+                       (not (equal? seg ".."))))
+                segs)))))
 
 ;; Deterministic, collision-free byte representation of a cached verification witness.
 ;; `input-pairs` is an alist of (path-string . sha256-hex-string) sorted lexicographically.

@@ -188,7 +188,8 @@
                      (andmap
                        (lambda (s)
                          (let* ((rel (hash-get s "reportRelativePath"))
-                                (child-path (and (string? rel) (path-expand rel fleet-dir)))
+                                (child-path (and (safe-relative-child-path? rel)
+                                                 (path-expand rel fleet-dir)))
                                 (expected-child-sha (hash-get s "reportPayloadSha256")))
                            (and child-path
                                 (verify-report-offline child-path trust-pair)

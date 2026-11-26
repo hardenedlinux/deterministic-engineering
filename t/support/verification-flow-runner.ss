@@ -925,7 +925,8 @@
                      (andmap
                        (lambda (s)
                          (let* ((rel-path (hash-get s "reportRelativePath"))
-                                (child-path (and (string? rel-path) (path-expand rel-path fleet-dir)))
+                                (child-path (and (safe-relative-child-path? rel-path)
+                                                 (path-expand rel-path fleet-dir)))
                                 (expected-child-sha (hash-get s "reportPayloadSha256")))
                            (and child-path
                                 (verify-report-with-trust-store child-path trust-store)
@@ -975,7 +976,8 @@
                      (andmap
                        (lambda (s)
                          (let* ((rel-path (hash-get s "reportRelativePath"))
-                                (child-path (and (string? rel-path) (path-expand rel-path fleet-dir)))
+                                (child-path (and (safe-relative-child-path? rel-path)
+                                                 (path-expand rel-path fleet-dir)))
                                 (expected-child-sha (hash-get s "reportPayloadSha256")))
                            (and child-path
                                 (verify-report-with-pinned-key child-path trusted-pub-key)
