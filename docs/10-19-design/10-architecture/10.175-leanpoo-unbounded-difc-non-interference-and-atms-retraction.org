@@ -1,0 +1,68 @@
+#+TITLE: 10.175 LeanPoo Unbounded DIFC Non-Interference, CaMeL Control-Flow Integrity and ATMS Causal Retraction (B7-B8)
+#+AUTHOR: hardenedlinux Linux Team and Contributors
+#+DATE: 2026-11-26
+#+STARTUP: overview
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+* Overview
+:PROPERTIES:
+:CUSTOM_ID: arch10175-overview
+:END:
+
+Phases 16–17 ([[file:10.164-difc-taint-confinement-and-camel-control-flow-integrity.org][10.164]],
+[[file:10.165-durable-memory-poisoning-defense-and-atms-causal-retraction.org][10.165]])
+verified =B7= (DIFC secrecy confinement & CaMeL control-flow integrity) and
+=B8= (Doyle TMS causal retraction & de Kleer ATMS multi-justification survival)
+using bounded Quint/Apalache models. Phase 27 elevates BOTH pillars to
+**unbounded, arbitrary-depth machine-checked Lean 4 / =LeanPoo= theorems**
+(zero Mathlib, zero Cedar dependency), completing our **41-theorem =LeanPoo=
+formal library** spanning =B3=, =B6=, =B7=, =B8=, =B10=, =B10b=, =B10c=, =R3=,
+and the =cedar-poo-spec= Dual-Sovereignty Bridge.
+
+* Machine-Checked LeanPoo Theorems (=InformationFlowAndTms.lean=)
+:PROPERTIES:
+:CUSTOM_ID: arch10175-theorems
+:END:
+
+[[file:../../../packages/lean-models/DeterministicEngineering/Engineering/InformationFlowAndTms.lean][InformationFlowAndTms.lean]]
+proves **11 theorems** with zero =sorry= and zero custom axioms:
+
+1. **Unbounded =B7= DIFC Secrecy & CaMeL Integrity (Arbitrary Expression Depth)**:
+   - =difc_secrecy_monotonic_without_declass=: any secret leaf tag survives
+     arbitrary multi-hop LLM synthesis unless explicitly removed by an
+     authorized =M3= capability AND passing deterministic sanitizer.
+   - =difc_no_write_down_blocks_exfiltration=: any unallowed effective tag is
+     blocked at the tool sink.
+   - =difc_failed_declass_preserves_taint=: failed capability or sanitizer never
+     strips taint.
+   - =camel_integrity_meet_never_elevates= & =camel_control_slot_blocks_untrusted=:
+     mixing a single =UntrustedExternal= leaf at any depth collapses integrity
+     to =UntrustedExternal= and blocks privileged control slots.
+2. **Unbounded =B8= Doyle TMS Retraction & de Kleer ATMS Survival**:
+   - =doyle_single_justification_retraction_cascades=: retracting any support in
+     a sole justification immediately withdraws belief support.
+   - =atms_clean_alternative_justification_survives=: an arbitrary-width ATMS
+     belief survives via any clean alternative justification whose supports
+     remain active.
+   - =poison_immunization_tombstone_blocks_reproposal=: monotonic =M1=
+     immunization tombstones block re-proposal across arbitrary future sessions.
+3. **=LeanPoo= Monotonic Refinement (=B7 -> B8 -> cedar-poo-spec=) & Proof Transport**:
+   - =difcAtmsContract_preserves_rejection=: 2-step =ObjectContract.refine=
+     preserving all =B7= rejections under =B8= and arbitrary downstream
+     =cedar-poo-spec= disclosure/pseudonymization policies.
+   - =retentionTuning_preserves_difc_atms_certificate= &
+     =disablingCamelIntegrity_invalidates_reuse= (=Core.Transport= positive &
+     negative controls).
+
+* Verification Receipts (AG141-AG145 — 145-Case Milestone)
+:PROPERTIES:
+:CUSTOM_ID: arch10175-receipts
+:END:
+
+- Lean 4 / =LeanPoo= build & live =#print axioms=:
+  =(cd packages/lean-models && lake build DeterministicEngineering.Engineering.InformationFlowAndTms)=
+- Benchmark suite (=AG141=–=AG145=, registered in
+  [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05]]
+  at **145 cases**):
+  [[file:../../../languages-engineering/ts/defense/agent-audit/difc-atms-leanpoo.test.ts][difc-atms-leanpoo.test.ts]]

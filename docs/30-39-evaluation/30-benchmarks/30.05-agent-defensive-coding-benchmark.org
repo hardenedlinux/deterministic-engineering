@@ -196,6 +196,11 @@ generating false positives on clean deterministic-boundary code.
 | =AG138= | =BoundOperation= & =R1= | Cross-op =Permit= replay, intersecting drift vs =R1= disjoint upgrade | Refuse replay & intersecting drift; =Proven= on disjoint | Blocks =opA -> opB= replay & stale policy on =deploy:prod=; allows unrelated =billing:read= upgrade |
 | =AG139= | =AuthorityConsumption= | Use-time =M3= lease revocation TOCTOU & =R3= leak in host receipt | Refuse stale lease & =R3 ReachabilityLeakError= | Enforces consumption-time lease epoch check & blocks =LiveM3Capability= leaking into =M1= receipt |
 | =AG140= | 140-Case Milestone | Clean =B10/B10b/B10c= Finality × =cedar-poo-spec= Dual-Sovereign Gate | =Proven= + pinned =M1= receipt surviving GC | Unifies Library quorum finality with consuming-host =Permit= receipt intact across aggressive GC |
+| =AG141= | =LeanPoo= =B7/B8= Oracle | Live =lake env lean= verifies 11 =InformationFlowAndTms= theorems | =Proven= (zero =sorryAx=/custom axioms) + GC | Verifies unbounded DIFC, CaMeL, ATMS, 2-step =LeanPoo= refinement & =Core.Transport= axioms |
+| =AG142= | =LeanPoo= × =B7= Depth | 12-hop LLM synthesis taint preservation & failed declass sanitizer | =Refused= at public sink & failed sanitizer | Confirms secret tags survive 12 synthesis hops and unsanitized declass never strips taint |
+| =AG143= | =LeanPoo= × CaMeL Depth | 10-hop synthesis mixing 1 =UntrustedExternal= leaf with 9 trusted | =Refused= (=untrusted-control-flow-hijack=) | Confirms Biba/CaMeL integrity collapse blocks untrusted control laundering across 10 hops |
+| =AG144= | =LeanPoo= × =B8= ATMS | 5-hop Doyle sole-support cascade vs 4-way ATMS survival + tombstone | Retract =b0..b4=; survive =b-atms-resilient=; block rebirth | Verifies deep sole-support cascade, 4-way ATMS clean alternative survival & GC immunization |
+| =AG145= | 145-Case Milestone | =B7= Sanitized Declass + =B8= ATMS + =B10= QC + =cedar-poo-spec= Gate | =Proven= + pinned =M1= receipt surviving GC | Composes sanitized disclosure, verified memory, quorum finality & host =Permit= across GC |
 
 * Observed Verification Receipts
 :PROPERTIES:
@@ -227,14 +232,15 @@ generating false positives on clean deterministic-boundary code.
 | Unbounded Lean 4 Machine-Checked Meta-Theorems & Proof-Carrying Oracle (=AG126=–=AG130=) | =bun test languages-engineering/ts/defense/agent-audit/lean-proof-verification.test.ts= + =lake build= | **5/5 cases matched gold** (live =#print axioms= zero-=sorry= audit on 15 unbounded + =LeanPoo= theorems, =N=4..100= BFT parity, 5-epoch handover chain, 20-level =R3= + 15-agent budget conservation, =G2= anti-fabricated-proof gate) |
 | Evidence-Driven Witness Equivocation Slashing & Anti-Reentry (=B10c=, =AG131=–=AG135=) | =bun test languages-engineering/ts/defense/agent-audit/witness-slashing-reentry.test.ts= | **5/5 cases matched gold** (self-authenticating slash tombstone + anti-framing, ID & Sybil pubkey re-entry block, live =gxi= ASCENT catch, live =LeanPoo= 19-theorem axiom verification, full detect->slash->evict->zeroize->E2 lifecycle) |
 | =LeanPoo= Dual-Sovereignty Bridge for =cedar-poo-spec= (=AG136=–=AG140=, 140-Case Milestone) | =bun test languages-engineering/ts/defense/agent-audit/host-authorization-bridge.test.ts= + =lake build= | **5/5 cases matched gold** (live =#print axioms= on 11 =HostAuthorizationBridge= theorems, symmetric dual-sovereign refusal, =BoundOperation= anti-replay + =R1= disjoint policy transport, =AuthorityConsumption= TOCTOU + =R3=, 140-case GC-safe milestone) |
-| Combined 140-case 5-language, anti-evasion, Full =B1=–=B10c=, N-Version & =LeanPoo= benchmark | =just check-defense= | **140/140 exact gold match** (=tp=96, tn=44, fp=0, fn=0=) |
+| =LeanPoo= Unbounded =B7= DIFC Non-Interference & =B8= ATMS Survival (=AG141=–=AG145=, 145-Case Milestone) | =bun test languages-engineering/ts/defense/agent-audit/difc-atms-leanpoo.test.ts= + =lake build= | **5/5 cases matched gold** (live =#print axioms= on 11 =InformationFlowAndTms= theorems, 12-hop DIFC + 10-hop CaMeL collapse, 5-hop Doyle vs 4-way ATMS survival, cross-layer =B7 × B8 × B10 × cedar-poo-spec= 145-case milestone) |
+| Combined 145-case 5-language, anti-evasion, Full =B1=–=B10c=, N-Version & 41-Theorem =LeanPoo= benchmark | =just check-defense= | **145/145 exact gold match** (=tp=99, tn=46, fp=0, fn=0=) |
 
 * Limits
 :PROPERTIES:
 :CUSTOM_ID: bench3005-limits
 :END:
 
-This 140-case benchmark establishes deterministic AST-level, diff-delta,
+This 145-case benchmark establishes deterministic AST-level, diff-delta,
 scope-fencing, bounded closed-loop, hot-policy co-evolution, async-cut,
 semantic-drift memoization, AEAD-isolated Merkle storage, role-projected
 context, multi-agent SSI concurrency, and business SoD/replay precision and
