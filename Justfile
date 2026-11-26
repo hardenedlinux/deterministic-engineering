@@ -527,14 +527,20 @@ impact-multi-method *files:
     set -euo pipefail
     {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/verification-flow-runner.ss --impact {{files}}
 
-# Offline zero-execution Ed25519 trust-store verifier for a single subject report.json.
+# Offline zero-execution, zero-FunFlow air-gapped Ed25519 trust-store verifier for a single subject report.json (<2s).
 verify-multi-method-report report trust_store:
     #!/usr/bin/env bash
     set -euo pipefail
-    {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/verification-flow-runner.ss --verify-report "{{report}}" "{{trust_store}}"
+    {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/offline-attestation-verifier.ss --verify-report "{{report}}" "{{trust_store}}"
 
-# Offline zero-execution 2-level Merkle + Ed25519 trust-store verifier for a Fleet report.
+# Offline zero-execution, zero-FunFlow air-gapped 2-level Merkle + Ed25519 trust-store verifier for a Fleet report (<2s).
 verify-multi-method-fleet fleet_report trust_store:
     #!/usr/bin/env bash
     set -euo pipefail
-    {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/verification-flow-runner.ss --verify-fleet "{{fleet_report}}" "{{trust_store}}"
+    {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/offline-attestation-verifier.ss --verify-fleet "{{fleet_report}}" "{{trust_store}}"
+
+# Offline zero-execution air-gapped verifier for every Ed25519 witness inside a verification-cache.v1.json (<2s).
+verify-multi-method-cache cache_file trust_store:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/offline-attestation-verifier.ss --verify-cache "{{cache_file}}" "{{trust_store}}"

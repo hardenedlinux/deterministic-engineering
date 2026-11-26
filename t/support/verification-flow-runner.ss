@@ -53,6 +53,8 @@
   default-backpressure-step-mutability
   compute-step-input-digests
   compute-step-toolchain-fingerprints
+  sha256-of-string
+  ed25519-sign-string
   ensure-cache-signing-keypair!
   make-ed25519-trust-store
   write-ed25519-trust-store-json
@@ -1319,24 +1321,26 @@
        output-dir
        cache-dir: (cache-dir #f)
        policy-flags: (policy-flags '())
+       signing-keypair: (signing-keypair #f)
+       trust-store: (trust-store #f)
+       subject-keys: (explicit-subject-keys #f)
        fleet-id: (fleet-id "fleet-m5-001"))
-  (def sysml-path
-    (path-expand
-      "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml"
-      repo-root))
+  (def sysml-path (sysml-spec-path repo-root))
   (def sysml-sha (sha256-of-file sysml-path))
   (def projected (project-sysml-model repo-root))
   (def subject-keys
-    (map (lambda (sp) (string->symbol (.get sp subject-key)))
-         (.get projected subject-specs)))
+    (or explicit-subject-keys
+        (map (lambda (sp) (string->symbol (.get sp subject-key)))
+             (.get projected subject-specs))))
   (def resolved-out (path-expand output-dir repo-root))
   (when (file-exists? resolved-out)
     (error "fresh fleet output directory required" resolved-out))
   (create-directory* resolved-out)
   (def resolved-cache-dir (and cache-dir (path-expand cache-dir repo-root)))
   (def keypair
-    (ensure-cache-signing-keypair!
-      (or resolved-cache-dir (path-expand ".data/verification-keys" repo-root))))
+    (or signing-keypair
+        (ensure-cache-signing-keypair!
+          (or resolved-cache-dir (path-expand ".data/verification-keys" repo-root)))))
 
   (def subject-hashes '())
   (def subject-canonical-entries '())
@@ -1353,6 +1357,8 @@
                         output-dir: sub-out
                         cache-dir: cache-dir
                         policy-flags: policy-flags
+                        signing-keypair: keypair
+                        trust-store: trust-store
                         request-id: (string-append fleet-id "-" skey-str)))
              (rpath (.get outcome report-path))
              (rdoc (call-with-input-file rpath (cut read-json <> object-as-hash: #t)))
