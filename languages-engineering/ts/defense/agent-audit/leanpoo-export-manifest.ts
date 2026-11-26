@@ -54,7 +54,10 @@ export const LEANPOO_CONTEXT_DISTILLATION_FACADE_MODULE =
 export const LEANPOO_FEDERATED_ARBITRATION_FACADE_MODULE =
   'DeterministicEngineering.Engineering.FederatedArbitrationLiveness';
 
-export const LEANPOO_TOP_FACADE_MODULE = LEANPOO_FEDERATED_ARBITRATION_FACADE_MODULE;
+export const LEANPOO_SUPPLY_CHAIN_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.SupplyChainProvenance';
+
+export const LEANPOO_TOP_FACADE_MODULE = LEANPOO_SUPPLY_CHAIN_FACADE_MODULE;
 
 export const LEANPOO_LIBRARY_EXPORT_MANIFEST: readonly LeanPooExportModuleSpec[] = [
   {
@@ -277,6 +280,23 @@ export const LEANPOO_LIBRARY_EXPORT_MANIFEST: readonly LeanPooExportModuleSpec[]
       'disablingRetryCap_invalidates_reuse',
     ],
   },
+  {
+    moduleName: LEANPOO_SUPPLY_CHAIN_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/SupplyChainProvenance.lean',
+    pillars: ['B14', 'SupplyChainProvenance', 'ReproducibleBuilds'],
+    theorems: [
+      'unpinned_dependency_always_refused',
+      'tombstoned_cve_dependency_always_refused',
+      'non_hermetic_network_build_always_refused',
+      'reproducible_build_mismatch_always_refused',
+      'forged_or_revoked_builder_signature_refused',
+      'mismatched_source_or_toolchain_digest_refused',
+      'hermetic_provenance_admit_sound_and_complete',
+      'supplyChainContract_preserves_rejection',
+      'buildLogVerbosityTuning_preserves_certificate',
+      'disablingLockfilePinning_invalidates_reuse',
+    ],
+  },
 ];
 
 export const LEANPOO_EXPECTED_MODULE_COUNT = LEANPOO_LIBRARY_EXPORT_MANIFEST.length;
@@ -420,10 +440,12 @@ export function verifyLeanPooLibraryFleet(params?: {
   }
 
   const facadeToImport = manifest.some(
-    m => m.moduleName === LEANPOO_FEDERATED_ARBITRATION_FACADE_MODULE,
+    m => m.moduleName === LEANPOO_SUPPLY_CHAIN_FACADE_MODULE,
   )
-    ? LEANPOO_FEDERATED_ARBITRATION_FACADE_MODULE
-    : manifest.some(m => m.moduleName === LEANPOO_CONTEXT_DISTILLATION_FACADE_MODULE)
+    ? LEANPOO_SUPPLY_CHAIN_FACADE_MODULE
+    : manifest.some(m => m.moduleName === LEANPOO_FEDERATED_ARBITRATION_FACADE_MODULE)
+      ? LEANPOO_FEDERATED_ARBITRATION_FACADE_MODULE
+      : manifest.some(m => m.moduleName === LEANPOO_CONTEXT_DISTILLATION_FACADE_MODULE)
       ? LEANPOO_CONTEXT_DISTILLATION_FACADE_MODULE
       : manifest.some(m => m.moduleName === LEANPOO_TOOL_SANDBOX_FACADE_MODULE)
         ? LEANPOO_TOOL_SANDBOX_FACADE_MODULE

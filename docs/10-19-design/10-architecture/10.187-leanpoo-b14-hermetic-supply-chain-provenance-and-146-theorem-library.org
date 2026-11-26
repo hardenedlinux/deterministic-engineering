@@ -1,0 +1,45 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 10.187 LeanPoo B14 Hermetic Supply-Chain & Reproducible Build Provenance + 13-Module / 146-Theorem Library (AG206-AG210)
+#+AUTHOR: Deterministic Engineering
+#+DATE: 2026-11-27
+
+* Executive Summary
+:PROPERTIES:
+:CUSTOM_ID: arch10187-summary
+:STATUS: executed-verified
+:END:
+
+Following the =B12=/=B13= four-paradigm symmetry closure in [[file:10.186-b12-b13-four-paradigm-symmetry-22-quint-models-and-28x16-ascent.org][10.186]], Phase 39
+introduces Business Extension **=B14=: Hermetic Supply-Chain & Reproducible Build
+Provenance (SLSA / in-toto, Anti-Slopsquatting Lockfile Pinning, CVE Tombstones &
+2-Builder Bit-for-Bit Parity)** across pure Lean 4 / =LeanPoo= and air-gapped
+Ed25519 TypeScript runtimes:
+
+1. **13th Pure =LeanPoo= Module (=SupplyChainProvenance.lean=, 10 Theorems -> 146 Theorems Across 13 Modules)**:
+   - [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/SupplyChainProvenance.lean][SupplyChainProvenance.lean]] (ZERO Mathlib, ZERO Cedar, zero =sorry=, zero warnings)
+     proves unboundedly:
+     - =unpinned_dependency_always_refused= (blocks AI slopsquatting / unpinned transitive deps)
+     - =tombstoned_cve_dependency_always_refused= (blocks CVE/compromised digests forever)
+     - =non_hermetic_network_build_always_refused= (blocks unpinned network fetches during build)
+     - =reproducible_build_mismatch_always_refused= (blocks Ken Thompson / Trusting Trust compiler divergence)
+     - =forged_or_revoked_builder_signature_refused= & =mismatched_source_or_toolchain_digest_refused=
+     - =hermetic_provenance_admit_sound_and_complete= (exact iff characterization)
+     - =supplyChainContract_preserves_rejection= (2-step =LeanPoo= =ObjectContract.refine= + =cedar-poo-spec= Artifact Admission host)
+     - =buildLogVerbosityTuning_preserves_certificate= & =disablingLockfilePinning_invalidates_reuse= (=Core.Transport=)
+2. **Air-Gapped Ed25519 SLSA/in-toto Runtime & 11th =R3= Non-Leakable =M3= Capability**:
+   - [[file:../../../languages-engineering/ts/defense/agent-audit/supply-chain-provenance.ts][supply-chain-provenance.ts]] implements =BuilderAttestationSigningKey= (11th =R3= non-serializable =M3= capability class mechanically refusing =M1= persistence), canonical SLSA/in-toto payload digesting & Ed25519 signing, and 100% offline 2-builder reproducible-build verification.
+3. **210-Case Benchmark (=AG206=–=AG210=) & 146-Theorem Single-Shot CLI Gate**:
+   - [[file:../../../languages-engineering/ts/defense/agent-audit/leanpoo-export-manifest.ts][leanpoo-export-manifest.ts]] promotes =SupplyChainProvenance= to =LEANPOO_TOP_FACADE_MODULE=, auditing all **146/146 theorems across 13 modules** in a single batched =#print axioms= run.
+   - [[file:../../../languages-engineering/ts/defense/agent-audit/supply-chain-provenance.test.ts][supply-chain-provenance.test.ts]] verifies =AG206=–=AG210= across 11/11 =R3= non-leakable capabilities, slopsquatting/CVE/network/Trusting-Trust refusal, CLI JSON gate, and =cedar-poo-spec= Dual-Sovereign Artifact Admission.
+
+* Verification Receipts
+:PROPERTIES:
+:CUSTOM_ID: arch10187-receipts
+:STATUS: executed-verified
+:END:
+
+- Pure Lean 4 / =LeanPoo= Build: =lake build DeterministicEngineering.Engineering.SupplyChainProvenance= -> =Build completed successfully (85 jobs)= (zero =sorry=, zero warnings, zero Mathlib/Cedar).
+- Live 146/146-Theorem Single-Shot Fleet Gate: =just audit-leanpoo-fleet --json= -> =verdict: "Proven", quintModelCount: 22, ascentRulesPresent: true, moduleCount: 13, verifiedTheoremCount: 146, zeroMathlib: true, zeroCedar: true=.
+- Benchmark & Regression: [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05]] extended to **210 cases (=AG01=–=AG210=)** across 36 Bun test suites.

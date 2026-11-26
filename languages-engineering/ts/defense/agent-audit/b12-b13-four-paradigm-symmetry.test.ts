@@ -358,8 +358,8 @@ describe('Phase 38 — Full B12 & B13 Four-Paradigm Symmetry: 22 Quint/MBT Model
           const rep = auditFourParadigmCrossConsistency({kv});
           expect(rep.verdict).toBe('Proven');
           expect(rep.quintModelCount).toBe(22);
-          expect(rep.leanPooModuleCount).toBe(12);
-          expect(rep.leanPooTheoremCount).toBe(136);
+          expect(rep.leanPooModuleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);
+          expect(rep.leanPooTheoremCount).toBe(LEANPOO_EXPECTED_THEOREM_COUNT);
           return rep.releaseAttestationDigest;
         })()
       : sha256Digest({milestone: 205, quint: 22, modules: 12, theorems: 136});
