@@ -191,6 +191,11 @@ generating false positives on clean deterministic-boundary code.
 | =AG133= | =B10c= × ASCENT Oracle | Live =gxi= derives =slashed_witness_reentry_violation= | Refuse (=oracle-disagreement-fail-closed=) | Declarative Scheme Datalog links live double-sign to =next_epoch_roster= & overrides buggy TS =ADMIT= |
 | =AG134= | =B10c= × =LeanPoo= Oracle | Live =lake env lean= verifies 4 new =B10c= theorems (19 total) | =Proven= (zero =sorryAx=/custom axioms) + GC | Verifies =slashed_witness_is_byzantine=, =∀ k= anti-reentry, =cedar-poo-spec= refinement & negative control |
 | =AG135= | Full =B10c= Lifecycle | Detect -> Slash -> Refuse QC -> Evict -> Zeroize -> E2 | Refuse slashed QC; =EpochAdvanced= + =FinalizedInEpoch= | Closes end-to-end eviction lifecycle with both =M1= slash tombstone & handover receipt surviving GC |
+| =AG136= | =LeanPoo= Host Bridge | Live =lake env lean= verifies 11 =HostAuthorizationBridge= theorems | =Proven= (zero =sorryAx=/custom axioms) + GC | Verifies dual-sovereignty, =BoundOperation=, =PolicySnapshot= & =R1= disjoint policy transport axioms |
+| =AG137= | Dual Sovereignty | Cedar =Permit= vs Library =Refuted= & Library =Finalized= vs =Forbid=/=Pending= | Symmetric refusal on all 3 cross-sovereign attacks | Proves neither side can override the other & verifies canonical =Forbid=-overrides-=Permit= |
+| =AG138= | =BoundOperation= & =R1= | Cross-op =Permit= replay, intersecting drift vs =R1= disjoint upgrade | Refuse replay & intersecting drift; =Proven= on disjoint | Blocks =opA -> opB= replay & stale policy on =deploy:prod=; allows unrelated =billing:read= upgrade |
+| =AG139= | =AuthorityConsumption= | Use-time =M3= lease revocation TOCTOU & =R3= leak in host receipt | Refuse stale lease & =R3 ReachabilityLeakError= | Enforces consumption-time lease epoch check & blocks =LiveM3Capability= leaking into =M1= receipt |
+| =AG140= | 140-Case Milestone | Clean =B10/B10b/B10c= Finality × =cedar-poo-spec= Dual-Sovereign Gate | =Proven= + pinned =M1= receipt surviving GC | Unifies Library quorum finality with consuming-host =Permit= receipt intact across aggressive GC |
 
 * Observed Verification Receipts
 :PROPERTIES:
@@ -221,14 +226,15 @@ generating false positives on clean deterministic-boundary code.
 | Dynamic Witness Roster Reconfiguration & Forward-Secure Epoch Handover (=B10b=, =AG121=–=AG125=) | =bun test languages-engineering/ts/defense/agent-audit/witness-epoch-reconfiguration.test.ts= | **5/5 cases matched gold** (dual-quorum =Q_old ∩ Q_new= handover + RFC 6962 continuity, unilateral handover refusal, retired-key zeroization & Long-Range attack defense, spliced Epoch 2 refusal, =R3= key non-leakage & epoch-skip refusal) |
 | Unbounded Lean 4 Machine-Checked Meta-Theorems & Proof-Carrying Oracle (=AG126=–=AG130=) | =bun test languages-engineering/ts/defense/agent-audit/lean-proof-verification.test.ts= + =lake build= | **5/5 cases matched gold** (live =#print axioms= zero-=sorry= audit on 15 unbounded + =LeanPoo= theorems, =N=4..100= BFT parity, 5-epoch handover chain, 20-level =R3= + 15-agent budget conservation, =G2= anti-fabricated-proof gate) |
 | Evidence-Driven Witness Equivocation Slashing & Anti-Reentry (=B10c=, =AG131=–=AG135=) | =bun test languages-engineering/ts/defense/agent-audit/witness-slashing-reentry.test.ts= | **5/5 cases matched gold** (self-authenticating slash tombstone + anti-framing, ID & Sybil pubkey re-entry block, live =gxi= ASCENT catch, live =LeanPoo= 19-theorem axiom verification, full detect->slash->evict->zeroize->E2 lifecycle) |
-| Combined 135-case 5-language, anti-evasion, Full =B1=–=B10c=, N-Version & =LeanPoo= benchmark | =just check-defense= | **135/135 exact gold match** (=tp=93, tn=42, fp=0, fn=0=) |
+| =LeanPoo= Dual-Sovereignty Bridge for =cedar-poo-spec= (=AG136=–=AG140=, 140-Case Milestone) | =bun test languages-engineering/ts/defense/agent-audit/host-authorization-bridge.test.ts= + =lake build= | **5/5 cases matched gold** (live =#print axioms= on 11 =HostAuthorizationBridge= theorems, symmetric dual-sovereign refusal, =BoundOperation= anti-replay + =R1= disjoint policy transport, =AuthorityConsumption= TOCTOU + =R3=, 140-case GC-safe milestone) |
+| Combined 140-case 5-language, anti-evasion, Full =B1=–=B10c=, N-Version & =LeanPoo= benchmark | =just check-defense= | **140/140 exact gold match** (=tp=96, tn=44, fp=0, fn=0=) |
 
 * Limits
 :PROPERTIES:
 :CUSTOM_ID: bench3005-limits
 :END:
 
-This 135-case benchmark establishes deterministic AST-level, diff-delta,
+This 140-case benchmark establishes deterministic AST-level, diff-delta,
 scope-fencing, bounded closed-loop, hot-policy co-evolution, async-cut,
 semantic-drift memoization, AEAD-isolated Merkle storage, role-projected
 context, multi-agent SSI concurrency, and business SoD/replay precision and
