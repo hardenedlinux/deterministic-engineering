@@ -401,9 +401,9 @@ describe('Phase 40 — Full B14 Four-Paradigm Symmetry: 23 Quint/MBT Models + 32
       ? (() => {
           const rep = auditFourParadigmCrossConsistency({kv});
           expect(rep.verdict).toBe('Proven');
-          expect(rep.quintModelCount).toBe(23);
-          expect(rep.leanPooModuleCount).toBe(13);
-          expect(rep.leanPooTheoremCount).toBe(146);
+          expect(rep.quintModelCount).toBe(EXPECTED_QUINT_DEFENSE_MODELS.length);
+          expect(rep.leanPooModuleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);
+          expect(rep.leanPooTheoremCount).toBe(LEANPOO_EXPECTED_THEOREM_COUNT);
           return rep.releaseAttestationDigest;
         })()
       : sha256Digest({milestone: 215, quint: 23, modules: 13, theorems: 146});

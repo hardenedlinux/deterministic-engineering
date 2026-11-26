@@ -20,7 +20,7 @@ This benchmark evaluates whether AST-level defensive-engineering auditors catch
 all four AI Agent defensive-hallucination classes (=G2= in [[file:../../10-19-design/10-architecture/10.153-defensive-engineering-taxonomy-and-modular-organization.org][10.153]]) without
 generating false positives on clean deterministic-boundary code.
 
-- *Independent Gold*: Every case (=AG01=–=AG215=) has a fixed independent
+- *Independent Gold*: Every case (=AG01=–=AG220=) has a fixed independent
   expected outcome (=pass= vs. =fail= + exact hallucination/anti-evasion/escalation/durable-resume class). Candidate
   auditor output never generates gold.
 - *Native AST, Diff-Delta, Scope-Fencing & Closed-Loop Governance Auditors Evaluated*:
@@ -271,6 +271,11 @@ generating false positives on clean deterministic-boundary code.
 | =AG213= | =B14= × N-Version Gate | Buggy TS coordinator claims =ADMIT= on slopsquatted & diverged-builder releases | Refuse both (=oracle-disagreement-fail-closed=) + GC | Live Scheme ASCENT overrides imperative TS coordinator & pins forensic receipts |
 | =AG214= | 23-Quint × 146-Thm CLI | =leanpoo-fleet-audit --json= verifies 23 Quint × 32×18 ASCENT × 13/146 =LeanPoo= | =quint: 23, ascent: true, modules: 13, thms: 146= | Confirms 23rd Quint model (=supply-chain-provenance=) + 32×18 ASCENT + 146-theorem convergence |
 | =AG215= | 215-Case =B1=–=B14= Closure | 2-builder SLSA + =B10= QC -> dual ASCENT -> 23-Quint offline Ed25519 -> =cedar-poo-spec= | **215/215 =Proven=** + all =M1= receipts survive GC | Seals complete four-paradigm symmetry across all 14 business pillars (=B1=–=B14=) |
+| =AG216= | =LeanPoo= =B15= Hardware TEE | Live =lake env lean= verifies 10 =ConfidentialEnclaveAttestation= + **156/156** fleet | **156/156 =Proven=** across 14 modules + GC | Verifies debug lockout, TCB SVN floor, =B14->B15= composition & =Core.Transport= axioms |
+| =AG217= | =B15= 9-Vector TEE Attack Matrix | Debug enclave, bad measurement, TCB rollback, bad/replayed nonce, forged/rogue/revoked | Refuse all 9 hardware-attestation attacks | Enforces zero-trust measured key-release offline across all 9 TEE failure modes |
+| =AG218= | End-to-End =B14 -> B15= Chain | 2-builder reproducible artifact digest bound directly into hardware TEE quote | =Proven= + both =M1= receipts survive GC | Cryptographically bridges hermetic build provenance to measured running hardware |
+| =AG219= | 12/12 =R3= Non-Leakable Caps | All 12 =M3= capability classes (including =EnclaveRootAttestationKey=) into =M1= | Refuse all 12/12 (=R3 ReachabilityLeakError=) | Mechanically blocks hardware attestation & signing keys from entering =M1= storage |
+| =AG220= | **220-Case & 156-Thm Seal** | 23 Quint × 32×18 ASCENT × 14/156 CLI JSON -> Ed25519 cert -> =cedar-poo-spec= | **220/220 =Proven=** + full 38-suite/5-lang/CBMC seal | Seals 220-case, 156-theorem zero-Mathlib/zero-Cedar =B1=–=B15= stack (=90.152=) |
 
 * Observed Verification Receipts
 :PROPERTIES:
@@ -316,14 +321,15 @@ generating false positives on clean deterministic-boundary code.
 | =B12= & =B13= Four-Paradigm Symmetry Closure: 22 Quint/Apalache Models + 22/22 MBT SUT + 28×16 =B1=–=B13= ASCENT (=AG201=–=AG205=, =10.186=) | =bun test languages-engineering/ts/defense/agent-audit/b12-b13-four-paradigm-symmetry.test.ts= + =mbt-replay.test.ts= + =governance-ascent-test.ss= | **5/5 cases matched gold** (models #21 & #22 Apalache 6/6 =PLAN-OK= & 6/6 =F3= essential, 22/22 MBT SUT isomorphism, live 28×16 =gxi= ASCENT =B12= amnesia & =B13= 3-agent deadlock catch, 22-Quint × 136-Thm CLI + air-gapped =cedar-poo-spec= closure) |
 | =B14= Hermetic Supply-Chain & Reproducible Build Provenance + 13-Module / **146-Theorem =LeanPoo=** Library (=AG206=–=AG210=, =10.187=) | =bun test languages-engineering/ts/defense/agent-audit/supply-chain-provenance.test.ts= + =just audit-leanpoo-fleet --json= | **5/5 cases matched gold** (live **146/146** 13-module =LeanPoo= sweep, anti-slopsquatting/CVE/hermeticity blocks, 2-builder reproducible parity & Ed25519 crypto, 11/11 =R3= non-leakable caps & =cedar-poo-spec= 210-case milestone) |
 | =B14= Four-Paradigm Symmetry Closure: 23rd Quint/Apalache Model + 23/23 MBT SUT + 32×18 =B1=–=B14= ASCENT (=AG211=–=AG215=, =10.188=) | =bun test languages-engineering/ts/defense/agent-audit/b14-four-paradigm-symmetry.test.ts= + =mbt-replay.test.ts= + =governance-ascent-test.ss= | **5/5 cases matched gold** (model #23 Apalache 6/6 =PLAN-OK= & 3/3 =F3= essential, 23/23 MBT SUT isomorphism, live 32×18 =gxi= ASCENT slopsquat/CVE/repro catch, 23-Quint × 146-Thm CLI + air-gapped =cedar-poo-spec= closure) |
-| Combined **215-case** 5-language, 23-Quint MBT, Full =B1=–=B14= 32×18 ASCENT & **146-Theorem =LeanPoo=** benchmark | =just check-defense= | **215/215 exact gold match** (=tp=140, tn=75, fp=0, fn=0=) |
+| =B15= Confidential Compute / Hardware TEE Attestation + 14-Module / **156-Theorem =LeanPoo=** & **220-Case Regression Seal** (=AG216=–=AG220=, =10.189=, =90.152=) | =bun test languages-engineering/ts/defense/agent-audit/confidential-enclave-attestation.test.ts= + full 38-suite + C/CBMC/C++/Rust/Gerbil seal | **5/5 cases matched gold** (live **156/156** 14-module =LeanPoo= sweep, 9-vector TEE attack matrix, =B14->B15= hardware chain, 12/12 =R3= caps, full 38-suite + CBMC 50/50 + C++20 + Rust + Gerbil ASCENT seal) |
+| Combined **220-case** 5-language, 23-Quint MBT, Full =B1=–=B14= 32×18 ASCENT & **156-Theorem =LeanPoo=** benchmark | =just check-defense= | **220/220 exact gold match** (=tp=143, tn=77, fp=0, fn=0=) |
 
 * Limits
 :PROPERTIES:
 :CUSTOM_ID: bench3005-limits
 :END:
 
-This 215-case benchmark establishes deterministic AST-level, diff-delta,
+This 220-case benchmark establishes deterministic AST-level, diff-delta,
 scope-fencing, bounded closed-loop, hot-policy co-evolution, async-cut,
 semantic-drift memoization, AEAD-isolated Merkle storage, role-projected
 context, multi-agent SSI concurrency, and business SoD/replay precision and

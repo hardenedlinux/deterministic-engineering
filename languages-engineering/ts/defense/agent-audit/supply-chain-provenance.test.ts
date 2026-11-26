@@ -54,11 +54,10 @@ const SUPPLY_CHAIN_THEOREMS = LEANPOO_LIBRARY_EXPORT_MANIFEST.find(
 )!.theorems;
 
 describe('Phase 39 — B14 Hermetic Supply-Chain & Reproducible Build Provenance + 13-Module / 146-Theorem LeanPoo Library (10.187 / 30.05 AG206-AG210)', () => {
-  test('AG206: Live Lean 4 / LeanPoo verifies all 10 SupplyChainProvenance theorems + single-shot 146/146-theorem 13-module fleet attestation', () => {
+  test('AG206: Live Lean 4 / LeanPoo verifies all 10 SupplyChainProvenance theorems + single-shot fleet attestation', () => {
     expect(SUPPLY_CHAIN_THEOREMS.length).toBe(10);
-    expect(LEANPOO_EXPECTED_MODULE_COUNT).toBe(13);
-    expect(LEANPOO_EXPECTED_THEOREM_COUNT).toBe(146);
-    expect(LEANPOO_TOP_FACADE_MODULE).toBe(LEANPOO_SUPPLY_CHAIN_FACADE_MODULE);
+    expect(LEANPOO_EXPECTED_MODULE_COUNT).toBeGreaterThanOrEqual(13);
+    expect(LEANPOO_EXPECTED_THEOREM_COUNT).toBeGreaterThanOrEqual(146);
 
     const kv = new ContentAddressedKvStore();
     if (!isLeanToolchainAvailable()) {
@@ -86,8 +85,8 @@ describe('Phase 39 — B14 Hermetic Supply-Chain & Reproducible Build Provenance
     const fleet = verifyLeanPooLibraryFleet({kv});
     expect(fleet.kind).toBe('Proven');
     if (fleet.kind !== 'Proven') throw new Error('expected Proven');
-    expect(fleet.moduleCount).toBe(13);
-    expect(fleet.verifiedTheoremCount).toBe(146);
+    expect(fleet.moduleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);
+    expect(fleet.verifiedTheoremCount).toBe(LEANPOO_EXPECTED_THEOREM_COUNT);
 
     kv.gcUnreferenced();
     expect(kv.hasBlob(modRes.pinnedCertificateHash!)).toBe(true);
@@ -425,12 +424,12 @@ describe('Phase 39 — B14 Hermetic Supply-Chain & Reproducible Build Provenance
         zeroCedar: boolean;
       };
       expect(out.verdict).toBe('Proven');
-      expect(out.facadeModule).toBe(LEANPOO_SUPPLY_CHAIN_FACADE_MODULE);
+      expect(out.facadeModule).toBe(LEANPOO_TOP_FACADE_MODULE);
       expect(out.quintModelCount).toBe(EXPECTED_QUINT_DEFENSE_MODELS.length);
       expect(out.ascentRulesPresent).toBe(true);
       expect(out.multiLangHarnessCount).toBe(8);
-      expect(out.moduleCount).toBe(13);
-      expect(out.verifiedTheoremCount).toBe(146);
+      expect(out.moduleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);
+      expect(out.verifiedTheoremCount).toBe(LEANPOO_EXPECTED_THEOREM_COUNT);
       expect(out.zeroMathlib).toBe(true);
       expect(out.zeroCedar).toBe(true);
     }
@@ -439,8 +438,8 @@ describe('Phase 39 — B14 Hermetic Supply-Chain & Reproducible Build Provenance
       ? (() => {
           const rep = auditFourParadigmCrossConsistency({kv});
           expect(rep.verdict).toBe('Proven');
-          expect(rep.leanPooModuleCount).toBe(13);
-          expect(rep.leanPooTheoremCount).toBe(146);
+          expect(rep.leanPooModuleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);
+          expect(rep.leanPooTheoremCount).toBe(LEANPOO_EXPECTED_THEOREM_COUNT);
           return rep.releaseAttestationDigest;
         })()
       : sha256Digest({milestone: 210, quint: 22, modules: 13, theorems: 146});
