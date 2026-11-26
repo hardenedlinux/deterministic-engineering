@@ -1,0 +1,53 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: TLS 1.3 & Noise Protocol 0-RTT Anti-Replay and Forward Secrecy
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.protocol.tls13-0rtt-forward-secrecy=
+- *Subdomain*: =quint.threat.protocol=
+- *Quint Module*: =tls13_0rtt_forward_secrecy= (=[[file:Tls13ZeroRttForwardSecrecy.qnt][Tls13ZeroRttForwardSecrecy.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/protocol/tls13-0rtt-forward-secrecy/Tls13ZeroRttForwardSecrecy=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Non-idempotent operations never execute in 0-RTT, total 0-RTT executions never exceed genuine client transmissions across edge nodes, and later long-term PSK/STEK compromise never recovers previously exchanged confidential secrets.
+
+#+begin_src quint
+val safety = (h.nonIdempotentZeroRttExecutions == 0 and h.zeroRttExecutions <= h.clientSentZeroRtt and not(h.secretRecovered))
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =reject-non-idempotent-0rtt= | =stepNonIdempotentZeroRtt= | =h.nonIdempotentZeroRttExecutions > 0= |
+| =cross-edge-strike-sync= | =stepCrossEdgeReplay= | =h.zeroRttExecutions > h.clientSentZeroRtt= |
+| =require-ecdhe-pfs= | =stepPskOnlyNoPfs= | =h.secretRecovered == true and h.pskCompromised == true and h.capturedNonPfsSecret == true= |
+
+* Grounded Papers & Specifications
+
+- *E. Rescorla (IETF RFC 8446, 2018)*: The Transport Layer Security (TLS) Protocol Version 1.3: §2.3 0-RTT Early Data and §8 Replay Protection.
+- *M. Thomson, M. Nottingham & W. Tarreau (IETF RFC 8470, 2018)*: Using Early Data in HTTP: idempotency requirements for 0-RTT requests.
+- *C. Cremers, M. Horvat, J. Hoyland, S. Scott & T. van der Merwe (ACM CCS 2017)*: A Comprehensive Symbolic Analysis of TLS 1.3 (Tamarin).
+- *K. Bhargavan, B. Blanchet & N. Kobeissi (IEEE S&P 2017)*: Verified Models and Reference Implementations for the TLS 1.3 Standard Candidate.
+- *M. Fischlin & F. Günther (IEEE EuroS&P 2017)*: Replay Attacks on Zero Round-Trip Time: The Case of the TLS 1.3 Handshake Candidates.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/protocol/tls13-0rtt-forward-secrecy/Tls13ZeroRttForwardSecrecy.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/protocol/tls13-0rtt-forward-secrecy/Tls13ZeroRttForwardSecrecy.qnt --main=tls13_0rtt_forward_secrecy --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Symbolic Dolev-Yao abstraction of TLS 1.3 / Noise 0-RTT anti-replay across 2 edge nodes and post-compromise forward secrecy; does not model cryptographic key schedule collision bounds, ticket age skew windows, or active MitM downgrade cipher suites.

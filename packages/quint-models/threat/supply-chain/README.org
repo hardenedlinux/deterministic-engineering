@@ -1,0 +1,31 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Threat / Software Supply Chain Integrity Models (Quint.Threat.SupplyChain)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+This subdomain groups co-located formal threat models for software update and
+artifact provenance security: TUF/in-toto metadata freshness & rollback defense,
+and RFC 9162 / Rekor transparency-log inclusion & split-view consistency gossip.
+
+* Yuanxu Selection & Reuse
+
+#+begin_src scheme
+(yuanxu!
+  :load-modules (from: :deterministic-engineering/init QuintThreatSupplyChainSource)
+    mode: auto
+    profile: quint.threat.supply-chain
+    mount: SupplyChain
+    :profiles (assurance.bounded-proof bound.standard governance.mandatory-countermodels))
+#+end_src
+
+* Model Matrix
+
+| Model | Failure Class | Core Papers / Specs | Emergent Invariant | Countermodels |
+|-------+---------------+---------------------+--------------------+---------------|
+| [[file:supply-chain-tuf/README.org][supply-chain-tuf]] | =quint.failure.rollback= | Samuel et al. TUF (CCS 2010), in-toto (USENIX 2019), Sigstore (CCS 2022) | Monotonic version floor, unexpired timestamp & atomic snapshot hash binding | Rollback; Freeze; Mix-and-match |
+| [[file:transparency-log-gossip/README.org][transparency-log-gossip]] | =quint.failure.equivocation= | RFC 9162, Chuat et al. (NDSS 2015), Sigstore Rekor (CCS 2022) | Every accepted artifact exists in the publicly audited append-only log | Unlogged artifact; Split-view equivocation |

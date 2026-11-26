@@ -22,4 +22,4 @@
         quint:
         (.o
           enable: #f
-          settings: (.o profile: 'exact-effect-host timeout: 120))))))
+          settings: (.o profile: 'assurance.bounded-proof timeout: 120))))))

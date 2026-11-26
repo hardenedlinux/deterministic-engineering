@@ -173,9 +173,9 @@
                   ("LanguageAssets" "languages-engineering/<lang>/<domain>/<subject>/" "native-toolchain"
                    "checked-subjects"
                    "scheme-declarations,execution-results")
-                  ("DistributionPackage" "packages/<pkg>/" "bun"
+                  ("DistributionPackage" "packages/<pkg>/" "bun,gerbil-yuanxu"
                    "distribution"
-                   "source-of-truth-declarations,foreign-family,outside-references")
+                   "foreign-family,outside-references")
                   ("ProjectEntry" "projects/<project>/" "yuanxu-selection"
                    "project-entry"
                    "definitions")
@@ -210,7 +210,7 @@
                          "d2-sysml-compilation,composition,export,compression"
                          "verification-models,quint-content,check-plans")
                         ("@deterministic-engineering/quint-models" "quint-model-content" "packages/quint-models"
-                         "quint-models,check-plans,projection-receipts"
+                         "quint-models,co-located-yuanxu-declarations,model-readmes"
                          "tool-code,rendering,other-language-models")
                         ("@deterministic-engineering/quint-modules-resolver" "verification-tooling" "packages/quint-modules-resolver"
                          "package-aware-quint-resolution"

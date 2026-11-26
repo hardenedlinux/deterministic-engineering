@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Transparency Log Inclusion & Split-View Consistency Gossip
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.supply-chain.transparency-log-gossip=
+- *Subdomain*: =quint.threat.supply-chain=
+- *Quint Module*: =transparency_log_gossip= (=[[file:TransparencyLogGossip.qnt][TransparencyLogGossip.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/supply-chain/transparency-log-gossip/TransparencyLogGossip=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Every artifact accepted by a client appears in the publicly audited append-only log, preventing both unlogged binaries and split-view equivocation.
+
+#+begin_src quint
+val safety = h.acceptedArtifacts.subseteq(h.publicLog)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =log-inclusion-proof= | =stepUnloggedArtifact= | =not(subseteq(h.acceptedArtifacts, h.publicLog))= |
+| =sth-consistency-gossip= | =stepSplitViewEquivocation= | =h.logForked == true and contains(h.acceptedArtifacts, 99) and not(contains(h.publicLog, 99))= |
+
+* Grounded Papers & Specifications
+
+- *B. Laurie, E. Messeri & R. Stradling (IETF RFC 9162, 2021)*: Certificate Transparency Version 2.0: §2.1.4 Merkle Consistency Proofs and Signed Tree Heads.
+- *L. Chuat, P. Szalachowski, A. Perrig, B. Laurie & E. Messeri (NDSS 2015)*: Efficient Gossip Protocols for Verifying the Consistency of Certificate Logs.
+- *Z. Newman, J. S. Meyers & S. Torres-Arias (ACM CCS 2022)*: Sigstore: Software Signing for Everybody (Rekor transparency log & witness cosigning).
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/supply-chain/transparency-log-gossip/TransparencyLogGossip.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/supply-chain/transparency-log-gossip/TransparencyLogGossip.qnt --main=transparency_log_gossip --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite set-prefix abstraction of Merkle consistency proofs and witness gossip; does not model SHA-256 second-preimage resistance, witness threshold collusion, or network eclipsing.

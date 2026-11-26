@@ -8,26 +8,34 @@
         :std/misc/ports
         :clan/poo/object
         (only-in :clan/poo/type validate)
-        "../../library/quint-methods/types.ss"
-        "../../library/quint-methods/objects.ss"
-        "../../library/quint-methods/methods.ss"
-        "../../library/quint-methods/grammar.ss")
+        :deterministic-engineering/library/quint-methods/types
+        :deterministic-engineering/library/quint-methods/objects
+        :deterministic-engineering/library/quint-methods/methods
+        :deterministic-engineering/library/quint-methods/grammar
+        (only-in :deterministic-engineering/library/quint-profiles/objects
+                 quint-model->verification-profile))
 (export make-quint-model-qualification-suite)
 
-(def repo-root (path-normalize (path-expand "../.." (path-directory (this-source-file)))))
+(def repo-root
+  (path-normalize (path-expand "../.." (path-directory (this-source-file)))))
 
-(def (make-quint-model-qualification-suite label model profile)
+(def (make-quint-model-qualification-suite label model (profile #f))
   (test-suite "Quint Loader owner qualification"
-    (test-case "sealed contract, plan, same-commit .qnt projection, and gerbil-parser parse"
+    (test-case "sealed contract, plan, same-commit .qnt and README.org projection, and gerbil-parser parse"
       (check-equal? (string? label) #t)
       (validate QuintDomainModelType model)
-      (def plan (quint-plan model profile DefaultQuintPolicy))
+      (def eff-profile (or profile (quint-model->verification-profile model)))
+      (def plan (quint-plan model eff-profile DefaultQuintPolicy))
       (validate QuintPlanType plan)
       (def expected-text (quint-module model))
-      (def disk-path
-        (path-expand (.get model quint-file)
-          (path-expand (.get model domain-dir)
-            (path-expand "packages/quint-models" repo-root))))
+      (def model-dir
+        (path-expand (.get model domain-dir)
+          (path-expand "packages/quint-models" repo-root)))
+      (def disk-path (path-expand (.get model quint-file) model-dir))
       (check-equal? (file-exists? disk-path) #t)
       (check-equal? (read-file-string disk-path) expected-text)
-      (check-equal? (quint-source-qualified? expected-text) #t))))
+      (check-equal? (quint-source-qualified? expected-text) #t)
+      (when (.slot? model 'title)
+        (let ((readme-path (path-expand "README.org" model-dir)))
+          (check-equal? (file-exists? readme-path) #t)
+          (check-equal? (read-file-string readme-path) (quint-model-readme model)))))))

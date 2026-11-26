@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Software Supply Chain TUF Rollback, Freeze & Mix-and-Match Defense
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.supply-chain.supply-chain-tuf=
+- *Subdomain*: =quint.threat.supply-chain=
+- *Quint Module*: =supply_chain_tuf= (=[[file:SupplyChainTuf.qnt][SupplyChainTuf.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/supply-chain/supply-chain-tuf/SupplyChainTuf=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Client never installs a target older than its monotonic snapshot floor, never accepts expired timestamp metadata, and always binds artifact hash atomically to its snapshot.
+
+#+begin_src quint
+val safety = (h.installedVer >= h.clientMinVer and h.installedMetaExp >= h.installedAtClock and h.installedHash == h.installedSnapTargetVer)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =monotonic-version-check= | =stepTufRollback= | =h.installedVer < h.clientMinVer= |
+| =timestamp-expiry-check= | =stepTufFreeze= | =h.installedMetaExp < h.installedAtClock= |
+| =snapshot-atomic-binding= | =stepTufMixAndMatch= | =h.installedHash != h.installedSnapTargetVer= |
+
+* Grounded Papers & Specifications
+
+- *J. Samuel, N. Mathewson, J. Cappos & R. Dingledine (ACM CCS 2010)*: Survivable Key Compromise in Software Update Systems (The Update Framework / TUF).
+- *S. Torres-Arias, H. Afzali, T. K. Kuppusamy, R. Curtmola & J. Cappos (USENIX Security 2019)*: in-toto: Providing farm-to-table guarantees for bits and bytes.
+- *Z. Newman, J. S. Meyers & S. Torres-Arias (ACM CCS 2022)*: Sigstore: Software Signing for Everybody.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/supply-chain/supply-chain-tuf/SupplyChainTuf.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/supply-chain/supply-chain-tuf/SupplyChainTuf.qnt --main=supply_chain_tuf --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite TUF 4-role metadata version/expiry/binding abstraction; does not model threshold key rotation ceremonies or Rekor Merkle inclusion proofs.

@@ -4,33 +4,42 @@
 ;;; Loader-owned qualification tests for library/quint-methods:
 ;;; prototype dispatch, sealed Record contracts, structural AST static field & guard checks,
 ;;; native gerbil-parser CST/SpanEdit/overlay composition, and languages.quint Config admission.
-(import
-  :std/test
-  :clan/poo/object
-  (only-in :clan/poo/type validate TypeError?)
-  (only-in :clan/poo/mop/clos/objects clos-failure?)
-  (only-in :tao3k/yuanxu/configuration/json config-defaults)
-  "../../../../config.ss"
-  "../../../../library/threat-capabilities/objects.ss"
-  "../../../../library/zero-trust-pep-pdp/objects.ss"
-  "../../../../library/oauth-token-lifecycle/objects.ss"
-  "../../../../library/gc-tricolor-barrier/objects.ss"
-  "../../../../library/parallel-hazard-pointers-tso/objects.ss"
-  "../../../../library/quint-methods/types.ss"
-  "../../../../library/quint-methods/objects.ss"
-  "../../../../library/quint-methods/methods.ss"
-  "../../../../library/quint-methods/grammar.ss"
-  "../../../../library/threat-model-profiles/types.ss"
-  "../../../../library/threat-model-profiles/objects.ss")
+(import :std/test
+        :clan/poo/object
+        (only-in :clan/poo/type validate TypeError?)
+        (only-in :clan/poo/mop/clos/objects clos-failure?)
+        (only-in :tao3k/yuanxu/configuration/json config-defaults)
+        (only-in :deterministic-engineering/config Config)
+        (only-in :deterministic-engineering/packages/quint-models/threat/execution/capabilities/objects
+                 CapabilitiesModel)
+        (only-in :deterministic-engineering/packages/quint-models/threat/execution/state-rollback/objects
+                 StateRollbackModel)
+        (only-in :deterministic-engineering/packages/quint-models/threat/zero-trust/zero-trust-pep-pdp/objects
+                 ZeroTrustPepPdpModel
+                 StalePolicyDecisionCountermodel)
+        (only-in :deterministic-engineering/packages/quint-models/threat/identity/oauth-token-lifecycle/objects
+                 OAuthTokenLifecycleModel)
+        (only-in :deterministic-engineering/packages/quint-models/engineering/gc/tricolor-write-barrier/objects
+                 TricolorWriteBarrierModel)
+        (only-in :deterministic-engineering/packages/quint-models/engineering/parallel/hazard-pointers-tso/objects
+                 HazardPointersTsoModel)
+        :deterministic-engineering/library/quint-methods/types
+        :deterministic-engineering/library/quint-methods/objects
+        :deterministic-engineering/library/quint-methods/methods
+        :deterministic-engineering/library/quint-methods/grammar
+        (only-in :deterministic-engineering/library/quint-profiles/types QuintConfigType)
+        (only-in :deterministic-engineering/library/quint-profiles/objects
+                 quint-model->verification-profile))
 (export quint-methods-projection-contracts-test)
 
 (def quint-methods-projection-contracts-test
   (test-suite "quint-methods projection, sealed contracts, AST checks, and gerbil-parser composer"
     (test-case "unknown prototype fails dispatch on quint-module and quint-plan"
       (def alien (.o identity: 'alien quint-module: "alien"))
+      (def rollback-prof (quint-model->verification-profile StateRollbackModel))
       (check-exception (quint-module alien) clos-failure?)
       (check-exception
-        (quint-plan alien (.get ThreatModelProfiles exact-effect-host) DefaultQuintPolicy)
+        (quint-plan alien rollback-prof DefaultQuintPolicy)
         clos-failure?))
 
     (test-case "sealed contracts reject invalid steps, cross-domain misuse, bad AST fields, and missing guards"
@@ -49,12 +58,14 @@
               kind: "required-countermodel"))
         TypeError?)
       (def strict-cap
-        (.cc (.get ThreatModelProfiles threat-capabilities) 'require-countermodels? #t))
+        (.cc (quint-model->verification-profile CapabilitiesModel)
+             'require-countermodels? #t))
       (check-exception (quint-plan CapabilitiesModel strict-cap DefaultQuintPolicy) error?)
       (check-exception (validate ThreatDomainModelType TricolorWriteBarrierModel) TypeError?)
       (check-exception (validate EngineeringDomainModelType ZeroTrustPepPdpModel) TypeError?)
       (check-exception
-        (validate EngineeringDomainModelType (.cc TricolorWriteBarrierModel 'countermodels '()))
+        (validate EngineeringDomainModelType
+          (.cc TricolorWriteBarrierModel 'countermodels '()))
         TypeError?)
       (check-exception
         (validate QuintDomainModelType
@@ -67,12 +78,13 @@
       (check-exception
         (validate QuintDomainModelType
           (.cc HazardPointersTsoModel 'transitions
-            '((step (action step () (set-h (typoField #t)))))))
+               '((step (action step () (set-h (typoField #t)))))))
         TypeError?)
       (check-exception
         (validate QuintDomainModelType
           (.cc ZeroTrustPepPdpModel 'countermodels
-            (list (.cc StalePolicyDecisionCountermodel 'derive-from-transition 'policyAllow))))
+               (list (.cc StalePolicyDecisionCountermodel
+                          'derive-from-transition 'policyAllow))))
         TypeError?))
 
     (test-case "native gerbil-parser CST, SpanEdit, and structural overlay compose enforce parity & fail-closed"
@@ -88,7 +100,8 @@
       (def extended (quint-span-extend-step (.get strengthened source) "readerLoadPtr"))
       (check-equal? (.get extended verified?) #t)
       (check-equal? (quint-source-qualified? (.get extended source)) #t)
-      ;; Pure-Scheme .qnt-to-.qnt overlay compose with module rename, dedup, override, mid-decl placement, and run tail:
+      ;; Pure-Scheme .qnt-to-.qnt overlay compose with module rename, dedup, override,
+      ;; mid-decl placement, and run tail:
       (def overlay-src
         (string-append
           "module hp_overlay {\n"
@@ -131,22 +144,30 @@
       (validate QuintConfigType Config)
       (def enabled
         (config-defaults Config
-          (.o programs: (.o deterministic-engineering:
-              (.o languages: (.o quint: (.o enable: #t settings: (.o timeout: 60))))))))
+          (.o programs:
+              (.o deterministic-engineering:
+                  (.o languages:
+                      (.o quint:
+                          (.o enable: #t
+                              settings: (.o timeout: 60))))))))
       (validate QuintConfigType enabled)
       (check-equal? (.get enabled programs deterministic-engineering languages quint enable) #t)
       (check-equal? (.get enabled programs deterministic-engineering languages quint settings timeout) 60)
       (check-equal? (.get enabled programs deterministic-engineering languages quint settings profile)
-                    'exact-effect-host)
+                    'assurance.bounded-proof)
       (check-exception
         (validate QuintConfigType
           (config-defaults Config
-            (.o programs: (.o deterministic-engineering:
-                (.o languages: (.o quint: (.o settings: (.o timout: 60))))))))
+            (.o programs:
+                (.o deterministic-engineering:
+                    (.o languages:
+                        (.o quint: (.o settings: (.o timout: 60))))))))
         TypeError?)
       (check-exception
         (validate QuintConfigType
           (config-defaults Config
-            (.o programs: (.o deterministic-engineering:
-                (.o languages: (.o quint: (.o settings: (.o timeout: 999))))))))
+            (.o programs:
+                (.o deterministic-engineering:
+                    (.o languages:
+                        (.o quint: (.o settings: (.o timeout: 999))))))))
         TypeError?))))

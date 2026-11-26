@@ -7,7 +7,7 @@
   :clan/poo/object
   (only-in :clan/poo/type define-type Any Object Function Type Type. Bool
            Record Symbol String List Exactly Or element?)
-  (only-in "../../types.ss" LibraryNonemptyString)
+  (only-in :deterministic-engineering/types LibraryNonemptyString)
   "ast.ss")
 (export QuintTimeout QuintDepth QuintSeed QuintStepKind QuintExpectedExit
         QuintImportRow QuintParamRow QuintStateField QuintGuardRow
@@ -84,6 +84,9 @@
   (QuintDomainModelShape @
    (Record identity: [Symbol]
            family: [Symbol]
+           title: [LibraryNonemptyString optional: #t]
+           subdomain: [Symbol optional: #t]
+           papers: [(List Any) optional: #t]
            parent: [Any optional: #t]
            revision: [LibraryNonemptyString optional: #t]
            factor-implications: [(List Any) optional: #t]
@@ -264,6 +267,7 @@
     (Record config: [QuintPolicyType]
             config-type: [Type]
             project-module: [(Function (list Object) (list LibraryNonemptyString))]
+            project-readme: [(Function (list Object) (list LibraryNonemptyString))]
             plan: [(Function (list Object QuintProfileType QuintPolicyType) (list QuintPlanType))]
             contracts: [QuintMethodsContractsShape])
     'identity 'quint-methods/scope))

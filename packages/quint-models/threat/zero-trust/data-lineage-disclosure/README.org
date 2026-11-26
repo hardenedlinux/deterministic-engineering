@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Cumulative Data Disclosure & k-Anonymity Singling-Out Ledger
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.zero-trust.data-lineage-disclosure=
+- *Subdomain*: =quint.threat.zero-trust=
+- *Quint Module*: =data_lineage_disclosure= (=[[file:DataLineageDisclosure.qnt][DataLineageDisclosure.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/zero-trust/data-lineage-disclosure/DataLineageDisclosure=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Cumulative query narrowing never shrinks the compatible candidate set below k=2 and total disclosures never exceed budget.
+
+#+begin_src quint
+val safety = (size(h.possibleIds) >= 2 and h.disclosures <= 2)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =k-anonymity-narrowing= | =stepSinglingOut= | =size(h.possibleIds) < 2= |
+| =disclosure-budget= | =stepBudgetOverrun= | =h.disclosures > 2= |
+
+* Grounded Papers & Specifications
+
+- *L. Sweeney (IJUFKS 2002)*: k-Anonymity: A Model for Protecting Privacy — preventing linkage singling-out below cardinality floor k.
+- *A. Cohen & K. Nissim (PNAS 2020)*: Towards Formalizing the GDPR's Notion of Singling Out.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/zero-trust/data-lineage-disclosure/DataLineageDisclosure.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/zero-trust/data-lineage-disclosure/DataLineageDisclosure.qnt --main=data_lineage_disclosure --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite cardinality-based singling-out indicator (k=2 over 4 records); does not provide differential privacy or inference resistance against auxiliary side-information.

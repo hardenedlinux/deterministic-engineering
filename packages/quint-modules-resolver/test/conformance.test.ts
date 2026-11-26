@@ -44,7 +44,7 @@ test('bare package specifier import typechecks and runs all 9 traces while nativ
       caseFile,
       [
         'module wallet_host_case {',
-        '  import state_rollback(MaxSends = 1).* from "@deterministic-engineering/quint-models/threat/state-rollback/StateRollback"',
+        '  import state_rollback(MaxSends = 1).* from "@deterministic-engineering/quint-models/threat/execution/state-rollback/StateRollback"',
         '}',
         '',
       ].join('\n'),
@@ -70,8 +70,8 @@ test('bare package specifier import typechecks and runs all 9 traces while nativ
 
 test('conformance: relative-only models match native quint exit code and pass count', () => {
   const targets = [
-    {file: join(modelsRoot, 'threat/capabilities/Capabilities.qnt'), main: 'threat_capabilities', expected: '1 passing'},
-    {file: join(modelsRoot, 'threat/authority-currentness/AuthorityCurrentness.qnt'), main: 'authority_currentness', expected: '1 passing'},
+    {file: join(modelsRoot, 'threat/execution/capabilities/Capabilities.qnt'), main: 'threat_capabilities', expected: '1 passing'},
+    {file: join(modelsRoot, 'threat/zero-trust/authority-currentness/AuthorityCurrentness.qnt'), main: 'authority_currentness', expected: '1 passing'},
   ];
   for (const t of targets) {
     const resTc = run(['bun', cliPath, 'typecheck', t.file], repoRoot);

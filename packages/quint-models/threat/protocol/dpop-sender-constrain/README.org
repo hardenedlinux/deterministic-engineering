@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: OAuth 2.0 DPoP Sender-Constrained Tokens & jti Replay Prevention
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.protocol.dpop-sender-constrain=
+- *Subdomain*: =quint.threat.protocol=
+- *Quint Module*: =dpop_sender_constrain= (=[[file:DpopSenderConstrain.qnt][DpopSenderConstrain.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/protocol/dpop-sender-constrain/DpopSenderConstrain=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+An attacker who steals a sender-constrained access token never gets accepted at the resource server, and no DPoP proof jti is accepted twice.
+
+#+begin_src quint
+val safety = (not(h.acceptedActors.contains(2)) and h.totalAccepted == size(h.usedJtis))
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =cnf-jkt-binding= | =stepStolenTokenMisuse= | =contains(h.acceptedActors, 2)= |
+| =jti-replay-cache= | =stepDpopProofReplay= | =h.totalAccepted > size(h.usedJtis)= |
+
+* Grounded Papers & Specifications
+
+- *D. Fett, B. Campbell, J. Bradley, T. Lodderstedt, M. Jones & D. Waite (IETF RFC 9449, 2023)*: OAuth 2.0 Demonstrating Proof of Possession (DPoP): cnf.jkt sender binding and jti replay caches.
+- *D. Fett, P. Hosseyni & R. Küsters (ACM CCS 2019 / OpenID FAPI 2.0)*: An Extensive Formal Security Analysis of the OpenID Financial-grade API (FAPI).
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/protocol/dpop-sender-constrain/DpopSenderConstrain.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/protocol/dpop-sender-constrain/DpopSenderConstrain.qnt --main=dpop_sender_constrain --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite RFC 9449 / FAPI 2.0 sender-constrain abstraction; does not model asymmetric JWS signature verification mathematics or TLS transport interception.

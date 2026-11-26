@@ -2,8 +2,13 @@
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 (import (only-in :clan/poo/object .def .o)
-        "types.ss" "objects.ss" "config.ss" "methods.ss")
+        "types.ss"
+        "objects.ss"
+        "config.ss"
+        "methods.ss"
+        "grammar.ss")
 (export QuintMethods)
+
 (.def QuintMethods
   identity: 'quint-methods
   tags: '(engineering method quint)
@@ -12,14 +17,14 @@
     admissions: (.o Config: (.o export-path: '(config) contract-path: '(config-type)))
     scope-contract: QuintMethodsScopeType
     exports:
-    (.o
-      config: Config
-      config-type: QuintPolicyType
-      project-module: quint-module
-      plan: quint-plan
-      contracts: (.o policy: QuintPolicyType
-                     plan: QuintPlanType
-                     profile: QuintProfileType
-                     step: QuintCheckStep
-                     scope: QuintMethodsScopeType)))
+    (.o config: Config
+        config-type: QuintPolicyType
+        project-module: quint-module
+        project-readme: quint-model-readme
+        plan: quint-plan
+        contracts: (.o policy: QuintPolicyType
+                       plan: QuintPlanType
+                       profile: QuintProfileType
+                       step: QuintCheckStep
+                       scope: QuintMethodsScopeType)))
   features: (.o))

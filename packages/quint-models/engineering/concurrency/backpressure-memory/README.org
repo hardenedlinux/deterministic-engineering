@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Bounded Backpressure & Memory Ownership
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.concurrency.backpressure-memory=
+- *Subdomain*: =quint.engineering.concurrency=
+- *Quint Module*: =BackpressureOwners= (=[[file:BackpressureOwners.qnt][BackpressureOwners.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/concurrency/backpressure-memory/BackpressureOwners=
+- *Source Owner*: Native Quint asset in =languages-engineering/quint/concurrency/backpressure-memory/model.qnt=, governed by =library/backpressure-memory/=.
+
+* Safety Invariant
+
+Every admitted job belongs to exactly one mutually disjoint ownership state
+(=queued=, =running=, =returned=, or =cleanup=), total admitted jobs never
+exceed =limit=, queued jobs never exceed =queueLimit=, and completed (=done=)
+jobs hold no active permit.
+
+* Explicit Limits
+
+Project-owned bounded abstraction over 5 discrete job IDs; makes no Rust
+scheduler, allocator, or kernel memory-reclamation claim.

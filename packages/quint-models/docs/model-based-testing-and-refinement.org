@@ -15,13 +15,13 @@ property over real protocol state*:
 
 | Model | Emergent Safety Invariant (Zero =unsafe= Flag) | Real Counterexample Mechanism |
 |-------+------------------------------------------------+-------------------------------|
-| =threat/dpop-sender-constrain= | =not(h.acceptedActors.contains(2)) and h.totalAccepted == size(h.usedJtis)= | Token theft + omission of =cnf.jkt= or =jti= cache |
-| =threat/supply-chain-tuf= | =h.installedVer >= h.clientMinVer and h.installedMetaExp >= h.installedAtClock and h.installedHash == h.installedSnapTargetVer= | Mirror rollback, expired freeze, or snapshot mix-and-match |
-| =threat/macaroon-delegation-chain= | =h.executedPerms.subseteq(h.attenuatedPerms)= | Subagent caveat stripping when HMAC chain check is omitted |
-| =threat/webauthn-passkey-ceremony= | =h.totalLogins == 0 or (h.lastAcceptedOrigin == h.rpOrigin and h.totalLogins == size(h.consumedChallenges) and h.lastAcceptedCounter > h.prevStoredCounter)= | MitM origin phishing relay, ceremony replay, or cloned =signCount= |
-| =threat/transparency-log-gossip= | =h.acceptedArtifacts.subseteq(h.publicLog)= | Unlogged artifact acceptance or compromised log split-view equivocation |
-| =threat/wasm-sandbox-confinement= | =h.maxAccessedAddr < h.guestMemSize and h.usedHandles.subseteq(h.grantedHandles) and not(h.hostRootEscaped)= | Linear-memory OOB bypass, ambient fd forgery, or preopen path traversal |
-| =threat/tls13-0rtt-forward-secrecy= | =h.nonIdempotentZeroRttExecutions == 0 and h.zeroRttExecutions <= h.clientSentZeroRtt and not(h.secretRecovered)= | Non-idempotent 0-RTT acceptance, cross-edge replay without strike sync, or PSK-only post-compromise decryption |
+| =threat/protocol/dpop-sender-constrain= | =not(h.acceptedActors.contains(2)) and h.totalAccepted == size(h.usedJtis)= | Token theft + omission of =cnf.jkt= or =jti= cache |
+| =threat/supply-chain/supply-chain-tuf= | =h.installedVer >= h.clientMinVer and h.installedMetaExp >= h.installedAtClock and h.installedHash == h.installedSnapTargetVer= | Mirror rollback, expired freeze, or snapshot mix-and-match |
+| =threat/protocol/macaroon-delegation-chain= | =h.executedPerms.subseteq(h.attenuatedPerms)= | Subagent caveat stripping when HMAC chain check is omitted |
+| =threat/identity/webauthn-passkey-ceremony= | =h.totalLogins == 0 or (h.lastAcceptedOrigin == h.rpOrigin and h.totalLogins == size(h.consumedChallenges) and h.lastAcceptedCounter > h.prevStoredCounter)= | MitM origin phishing relay, ceremony replay, or cloned =signCount= |
+| =threat/supply-chain/transparency-log-gossip= | =h.acceptedArtifacts.subseteq(h.publicLog)= | Unlogged artifact acceptance or compromised log split-view equivocation |
+| =threat/execution/wasm-sandbox-confinement= | =h.maxAccessedAddr < h.guestMemSize and h.usedHandles.subseteq(h.grantedHandles) and not(h.hostRootEscaped)= | Linear-memory OOB bypass, ambient fd forgery, or preopen path traversal |
+| =threat/protocol/tls13-0rtt-forward-secrecy= | =h.nonIdempotentZeroRttExecutions == 0 and h.zeroRttExecutions <= h.clientSentZeroRtt and not(h.secretRecovered)= | Non-idempotent 0-RTT acceptance, cross-edge replay without strike sync, or PSK-only post-compromise decryption |
 | =engineering/parallel/hazard-pointers-tso= | =not(h.readerPc == 5 and h.nodeFreed)= | x86-TSO store-buffer reordering yielding 8-step auto-derived Use-After-Free without =mfence= |
 | =engineering/storage/wal-crash-recovery= | =h.dataDiskVer <= h.walDiskVer and (not(h.crashed) or h.recoveredVer >= h.ackedCommitVer)= | OS page-cache write-reordering ahead of WAL =fsync= or silent commit loss on power failure |
 | =engineering/storage/mvcc-ssi-write-skew= | =h.balX + h.balY >= 1 and h.balX + h.balY + h.committedWithdrawals == 2= | Snapshot Isolation Write Skew (A5B), PostgreSQL early =SIREAD= release on commit, and missed read-time =rw= edge |
@@ -40,7 +40,7 @@ exposes =run --mbt --out-itf=...=:
 
 #+begin_src sh
 quint-modules-resolver run \
-  @deterministic-engineering/quint-models/threat/oauth-token-lifecycle/OAuthTokenLifecycle.qnt \
+  @deterministic-engineering/quint-models/threat/identity/oauth-token-lifecycle/OAuthTokenLifecycle.qnt \
   --main=oauth_token_lifecycle \
   --mbt --max-steps=12 --max-samples=10 --n-traces=3 --seed=7 \
   --out-itf=.tmp/oauth-mbt.itf.json

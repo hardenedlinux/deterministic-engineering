@@ -1,0 +1,48 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Structured Concurrency Cancellation & Child Quiescence
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.concurrency.structured-cancellation=
+- *Subdomain*: =quint.engineering.concurrency=
+- *Quint Module*: =concurrency_structured_cancel= (=[[file:StructuredCancellation.qnt][StructuredCancellation.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/concurrency/structured-cancellation/StructuredCancellation=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Parent scope exits only after every spawned child task completes draining, preventing orphaned effects after scope close.
+
+#+begin_src quint
+val safety = (not(h.orphanEffect) and (not(h.parentExited) or childrenQuiescent))
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =child-quiescence-barrier= | =stepFireAndForgetExit= | =h.parentExited == true and (h.c1State == 1 or h.c2State == 1)= |
+
+* Grounded Papers & Specifications
+
+- *N. J. Smith (2018)*: Notes on Structured Concurrency, or: Go Statement Considered Harmful — nursery lifetime & child-drain join barriers.
+- *R. Pressler (OpenJDK JEP 453 / 480)*: Structured Concurrency: bounding child task lifetimes to lexical parent scopes.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/concurrency/structured-cancellation/StructuredCancellation.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/concurrency/structured-cancellation/StructuredCancellation.qnt --main=concurrency_structured_cancel --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite 2-child structured concurrency abstraction; does not model OS thread scheduling, panic unwinding, or non-cooperative blocking I/O.

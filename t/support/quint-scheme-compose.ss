@@ -7,7 +7,7 @@
 ;;; library/quint-methods/grammar.ss remains pure.
 (import :clan/poo/object
         :std/misc/ports
-        "../../library/quint-methods/grammar.ss")
+        :deterministic-engineering/library/quint-methods/grammar)
 (export main)
 
 (def (strip-qnt-ext p)

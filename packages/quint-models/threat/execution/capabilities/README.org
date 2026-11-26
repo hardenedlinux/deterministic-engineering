@@ -1,0 +1,44 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Object-Capability Acquisition Graph & Reachability
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.execution.capabilities=
+- *Subdomain*: =quint.threat.execution=
+- *Quint Module*: =threat_capabilities= (=[[file:Capabilities.qnt][Capabilities.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/execution/capabilities/Capabilities=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Target capability is learnable iff a rule grants it and its prerequisites are known.
+
+#+begin_src quint
+val safety = true
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+
+* Grounded Papers & Specifications
+
+- *M. S. Miller, K.-P. Yee & J. Shapiro (2003)*: Capability Myths Demolished: explicit capability transfer and non-ambient authority reachability.
+- *M. S. Miller (Johns Hopkins PhD Thesis 2006)*: Robust Composition: Towards a Unified Approach to Access Control and Concurrency Control.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Typecheck and execute pure reference tests:
+quint-modules-resolver run-plan packages/quint-models/threat/execution/capabilities/Capabilities.qnt
+#+end_src
+
+* Explicit Limits
+
+Finite acquisition projection; does not model timing, side channels or cryptographic compromise.

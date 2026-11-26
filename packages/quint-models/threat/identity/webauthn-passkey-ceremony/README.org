@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: WebAuthn / FIDO2 Passkey Ceremony, RP-ID Binding & signCount Clone Detection
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.identity.webauthn-passkey-ceremony=
+- *Subdomain*: =quint.threat.identity=
+- *Quint Module*: =webauthn_passkey_ceremony= (=[[file:WebAuthnPasskeyCeremony.qnt][WebAuthnPasskeyCeremony.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/identity/webauthn-passkey-ceremony/WebAuthnPasskeyCeremony=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Every accepted WebAuthn login binds to the exact RP origin, consumes a unique ceremony challenge once, and advances the authenticator signCount monotonically.
+
+#+begin_src quint
+val safety = (h.totalLogins == 0 or (h.lastAcceptedOrigin == h.rpOrigin and h.totalLogins == size(h.consumedChallenges) and h.lastAcceptedCounter > h.prevStoredCounter))
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =rpid-origin-binding= | =stepPhishingOriginRelay= | =h.totalLogins >= 1 and h.lastAcceptedOrigin != h.rpOrigin= |
+| =challenge-single-use= | =stepChallengeReplay= | =h.totalLogins > size(h.consumedChallenges)= |
+| =signcount-monotonicity= | =stepClonedSignCount= | =h.totalLogins >= 2 and h.lastAcceptedCounter <= h.prevStoredCounter= |
+
+* Grounded Papers & Specifications
+
+- *W3C WebAuthn Working Group (W3C Recommendation, Level 3)*: Web Authentication: An API for accessing Public Key Credentials — RP-ID origin binding and signCount verification.
+- *M. Barbosa, A. Boldyreva, S. Chen & B. Warinschi (CRYPTO 2021)*: Provable Security Analysis of FIDO2.
+- *C. Jacomme & S. Kremer (ACM TOPS 2021)*: An Extensive Formal Analysis of Multi-Factor Authentication Protocols.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/identity/webauthn-passkey-ceremony/WebAuthnPasskeyCeremony.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/identity/webauthn-passkey-ceremony/WebAuthnPasskeyCeremony.qnt --main=webauthn_passkey_ceremony --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite WebAuthn/FIDO2 ceremony abstraction; assumes honest browser origin reporting and does not model endpoint malware, COSE signature mathematics, or synced zero-counter passkeys.

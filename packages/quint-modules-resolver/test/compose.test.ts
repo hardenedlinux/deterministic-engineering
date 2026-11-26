@@ -29,14 +29,14 @@ test('pure .qnt structural AST compose extends upstream model without JSON IR or
     // 1. Package manager commands: list and verify-deps (pure .qnt, no prototype.json).
     const listed = run(['bun', cliPath, 'list'], work);
     expect(listed.exitCode).toBe(0);
-    expect(listed.stdout).toContain('@deterministic-engineering/quint-models/threat/oauth-token-lifecycle/OAuthTokenLifecycle');
+    expect(listed.stdout).toContain('@deterministic-engineering/quint-models/threat/identity/oauth-token-lifecycle/OAuthTokenLifecycle');
 
     const verified = run(['bun', cliPath, 'verify-deps'], work);
     expect(verified.exitCode).toBe(0);
     expect(verified.stdout).toContain('DEPS-OK');
 
     // 2. Pure .qnt overlay extending upstream OAuthTokenLifecycle.qnt via structural AST merge.
-    const baseSpec = '@deterministic-engineering/quint-models/threat/oauth-token-lifecycle/OAuthTokenLifecycle';
+    const baseSpec = '@deterministic-engineering/quint-models/threat/identity/oauth-token-lifecycle/OAuthTokenLifecycle';
     const overlayPath = join(work, 'ConsumerAuthOverlay.qnt');
     const outQnt = join(work, 'ConsumerAuthComposed.qnt');
     const outPlan = join(work, 'plan.json');

@@ -1,0 +1,34 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Engineering / Concurrency Formal Models (Quint.Engineering.Concurrency)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+This subdomain groups co-located formal models for structured concurrency,
+distributed lease fencing, compensating saga workflows, and bounded backpressure
+ownership. Scheme-authored models expose Yuanxu Design 165 interfaces alongside
+their projected =.qnt= and =README.org= files.
+
+* Yuanxu Selection & Reuse
+
+#+begin_src scheme
+(yuanxu!
+  :load-modules (from: :deterministic-engineering/init QuintEngineeringConcurrencySource)
+    mode: auto
+    profile: quint.engineering.concurrency
+    mount: Concurrency
+    :profiles (assurance.bounded-proof bound.standard governance.mandatory-countermodels))
+#+end_src
+
+* Model Matrix
+
+| Model | Failure Class | Core Papers | Emergent Invariant | Countermodels |
+|-------+---------------+-------------+--------------------+---------------|
+| [[file:structured-cancellation/README.org][structured-cancellation]] | =quint.failure.orphan-effect= | Smith (2018), OpenJDK JEP 453/480 | Parent exits only after all children drain | Fire-and-forget unchecked parent exit |
+| [[file:lease-fencing-token/README.org][lease-fencing-token]] | =quint.failure.zombie-write= | Kleppmann (2016), Burrows Chubby (OSDI 2006) | Storage rejects writes with token < max seen | Stale paused-client zombie write |
+| [[file:saga-compensation-idempotency/README.org][saga-compensation-idempotency]] | =quint.failure.duplicate-effect= | Garcia-Molina & Salem (SIGMOD 1987), Helland (CIDR 2007) | At-most-once debit & zero net effect on abort | Missing idempotency dedup; Late in-flight retry after tombstone |
+| [[file:backpressure-memory/README.org][backpressure-memory]] | =quint.failure.resource-leak= | Project-owned native Quint subject (=library/backpressure-memory=) | Disjoint owner partitions & bounded admission | Early permit release while cleanup owns payload |

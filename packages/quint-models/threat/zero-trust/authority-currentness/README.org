@@ -1,0 +1,44 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Authority Currentness & Writer-Epoch Predicates
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.zero-trust.authority-currentness=
+- *Subdomain*: =quint.threat.zero-trust=
+- *Quint Module*: =authority_currentness= (=[[file:AuthorityCurrentness.qnt][AuthorityCurrentness.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/zero-trust/authority-currentness/AuthorityCurrentness=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Authority is current only while unpaused, fresh, valid credential, intact bytes, and matching writer epoch.
+
+#+begin_src quint
+val safety = true
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+
+* Grounded Papers & Specifications
+
+- *S. Rose, O. Borchert, S. Mitchell & S. Connelly (NIST SP 800-207, 2020)*: Zero Trust Architecture: continuous per-request verification, credential freshness, and revocation currency.
+- *M. S. Miller (Johns Hopkins PhD Thesis 2006)*: Robust Composition: Towards a Unified Approach to Access Control and Concurrency Control.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Typecheck and execute pure reference tests:
+quint-modules-resolver run-plan packages/quint-models/threat/zero-trust/authority-currentness/AuthorityCurrentness.qnt
+#+end_src
+
+* Explicit Limits
+
+Trusted boolean bits abstract real clock freshness, revocation checks, signature verification and writer fencing.

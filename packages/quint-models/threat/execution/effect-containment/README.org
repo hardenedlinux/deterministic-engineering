@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Assume-Breach Effect Containment & Finalized Clearance Witness
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.execution.effect-containment=
+- *Subdomain*: =quint.threat.execution=
+- *Quint Module*: =effect_containment= (=[[file:EffectContainment.qnt][EffectContainment.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/execution/effect-containment/EffectContainment=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+No signature occurs while delegated, paused, revoked, or clear-pending; clearance requires verified finalized witness.
+
+#+begin_src quint
+val safety = (h.signatures <= MaxSignatures and (h.signatures == 0 or (not(h.lastSignedPaused) and not(h.lastSignedDelegated))) and (not(h.cleared) or h.witness))
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =not-revoked= | =stepStaleRecovery= | =h.signatures >= 1 and h.lastSignedPaused == true= |
+| =clear-verified= | =stepFalseClear= | =h.cleared == true and h.witness == false= |
+
+* Grounded Papers & Specifications
+
+- *S. Rose, O. Borchert, S. Mitchell & S. Connelly (NIST SP 800-207, 2020)*: Zero Trust Architecture: assume-breach pause, blast-radius containment, and verified re-admission.
+- *M. S. Miller (Johns Hopkins PhD Thesis 2006)*: Robust Composition: non-recoverable revocation until explicit verified clearance witness.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/execution/effect-containment/EffectContainment.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/execution/effect-containment/EffectContainment.qnt --main=effect_containment --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite containment abstraction; verified/finalized/noCode bits abstract trusted Host observations, not EVM/consensus proofs.

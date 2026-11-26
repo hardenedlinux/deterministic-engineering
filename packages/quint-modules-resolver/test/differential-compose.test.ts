@@ -54,7 +54,7 @@ test('differential equivalence: Scheme gerbil-parser compose matches TS @informa
     symlinkSync(modelsRoot, join(work, 'node_modules/@deterministic-engineering/quint-models'), 'dir');
 
     // 1. Safe overlay on OAuthTokenLifecycle.qnt (adds State field, init, action, step, safety, run).
-    const oauthBase = join(modelsRoot, 'threat/oauth-token-lifecycle/OAuthTokenLifecycle.qnt');
+    const oauthBase = join(modelsRoot, 'threat/identity/oauth-token-lifecycle/OAuthTokenLifecycle.qnt');
     const oauthOverlay = join(work, 'OAuthDiffOverlay.qnt');
     writeFileSync(
       oauthOverlay,
@@ -157,7 +157,7 @@ test('differential equivalence: Scheme gerbil-parser compose matches TS @informa
 
     // 3. Negative behavioral equivalence on Tls13ZeroRttForwardSecrecy.qnt:
     // intentionally unsafe overlay must be rejected by Apalache on BOTH Scheme and TS outputs!
-    const tlsBase = join(modelsRoot, 'threat/tls13-0rtt-forward-secrecy/Tls13ZeroRttForwardSecrecy.qnt');
+    const tlsBase = join(modelsRoot, 'threat/protocol/tls13-0rtt-forward-secrecy/Tls13ZeroRttForwardSecrecy.qnt');
     const unsafeOverlay = join(work, 'TlsUnsafeOverlay.qnt');
     writeFileSync(
       unsafeOverlay,

@@ -22,19 +22,19 @@ gerbil_darwin_env := if os() == "macos" { if gerbil_homebrew_runtime == "true" {
 # Native installation spans several package builds. Keep the original deadline
 # at each package entry; a serial dependency closure is not one package build.
 deps:
-    timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q deps --install
+    timeout --foreground --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q deps --install
 
 
 # Gerbil's public package API owns tagged updates; no Parent path or manifest writer.
 deps-update:
-    timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -e '(import (only-in :gerbil/tools/gxpkg pkg-update pkg-install with-pkg-build-env)) (with-pkg-build-env (for-each (lambda (dependency) (pkg-update dependency) (pkg-install dependency)) (pgetq depend: (call-with-input-file "gerbil.pkg" read) (quote ()))))'
+    timeout --foreground --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -e '(import (only-in :gerbil/tools/gxpkg pkg-update pkg-install with-pkg-build-env)) (with-pkg-build-env (for-each (lambda (dependency) (pkg-update dependency) (pkg-install dependency)) (pgetq depend: (call-with-input-file "gerbil.pkg" read) (quote ()))))'
 
 # Use the ordinary untagged native build with the same host/compiler envelope.
 build-dependency package:
-    timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxpkg build "{{ package }}"
+    timeout --foreground --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxpkg build "{{ package }}"
 
 build:
-    timeout --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q build
+    timeout --foreground --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q build
 
 test-file path pattern=".*":
     #!/usr/bin/env bash
@@ -47,7 +47,7 @@ test-file path pattern=".*":
     mkdir -p .data/test-logs
     log="$(mktemp .data/test-logs/test-XXXXXX)"
     # Establish the native package environment before gxtest initializes imports.
-    timeout --signal=TERM --kill-after=5s 120s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxtest -v 5 -r "{{pattern}}" "{{path}}" 2>&1 | tee "$log"
+    timeout --foreground --signal=TERM --kill-after=5s 120s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxtest -v 5 -r "{{pattern}}" "{{path}}" 2>&1 | tee "$log"
     if rg 'ERROR (MODULE|CHECK|CASE|HARNESS)|Heap overflow|Stack overflow' "$log"; then exit 1; fi
     rg -F -x 'MODULE-OK {{path}}' "$log" >/dev/null
     rg -F 'HARNESS-OK' "$log" >/dev/null
@@ -59,14 +59,15 @@ test-file path pattern=".*":
 test-de-layout:
     just test-file t/integration/module-publication/loader-ownership-test.ss
 
-# Loader-owned Quint methods & domain model qualification suites.
+# Loader-owned Quint methods, profiles & domain model qualification suites.
 test-quint-models:
     #!/usr/bin/env bash
     set -euo pipefail
     just test-file t/yanxu/Library/quint-methods/projection-contracts-test.ss
+    just test-file t/yanxu/Library/quint-profiles/convergence-test.ss
     just test-file t/yanxu/Library/bounded-capacity/contract-test.ss
     just test-file t/yanxu/Library/resource-lifetime/contract-test.ss
-    for f in t/yanxu/Library/*/qualification-test.ss; do
+    for f in t/yanxu/*/*/qualification-test.ss; do
       just test-file "$f"
     done
 

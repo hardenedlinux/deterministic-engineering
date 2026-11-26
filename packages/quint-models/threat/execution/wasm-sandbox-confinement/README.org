@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: WebAssembly / WASI Capability Sandbox & Preopen Root Confinement
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.execution.wasm-sandbox-confinement=
+- *Subdomain*: =quint.threat.execution=
+- *Quint Module*: =wasm_sandbox_confinement= (=[[file:WasmSandboxConfinement.qnt][WasmSandboxConfinement.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/execution/wasm-sandbox-confinement/WasmSandboxConfinement=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+A sandboxed guest module never accesses memory beyond guestMemSize, never invokes ungranted host handles, and never escapes its preopened directory root.
+
+#+begin_src quint
+val safety = (h.maxAccessedAddr < h.guestMemSize and h.usedHandles.subseteq(h.grantedHandles) and not(h.hostRootEscaped))
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =wasm-bounds-check= | =stepBoundsBypass= | =h.maxAccessedAddr >= h.guestMemSize= |
+| =wasi-capability-handle= | =stepAmbientFdForgery= | =not(subseteq(h.usedHandles, h.grantedHandles))= |
+| =preopen-path-confinement= | =stepPathTraversal= | =h.hostRootEscaped == true= |
+
+* Grounded Papers & Specifications
+
+- *A. Haas, A. Rossberg, D. L. Schuff, B. L. Titzer et al. (ACM PLDI 2017)*: Bringing the Web up to Speed with WebAssembly: linear-memory bounds safety and control-flow isolation.
+- *S. Narayan, C. Disselkoen, T. Garfinkel et al. (USENIX Security 2020)*: Retrofitting Fine Grain Isolation in the Firefox Renderer (RLBox).
+- *M. S. Miller (Johns Hopkins PhD Thesis 2006) & Linux openat2(RESOLVE_BENEATH)*: Object-capability non-ambient handles and preopened directory root confinement.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/execution/wasm-sandbox-confinement/WasmSandboxConfinement.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/execution/wasm-sandbox-confinement/WasmSandboxConfinement.qnt --main=wasm_sandbox_confinement --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite Wasm linear-memory and WASI handle/path abstraction; does not model Spectre v1 speculative execution, JIT compiler miscompilation, or kernel symlink race TOCTOU.

@@ -1,0 +1,36 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Threat / Execution Isolation, Capabilities & Effect Containment (Quint.Threat.Execution)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+This subdomain groups co-located formal threat models for execution boundaries,
+object-capability acquisition, exact-effect handoff, host state-rollback
+defense, AI agent control/data-flow IFC, and WebAssembly/WASI sandbox
+confinement.
+
+* Yuanxu Selection & Reuse
+
+#+begin_src scheme
+(yuanxu!
+  :load-modules (from: :deterministic-engineering/init QuintThreatExecutionSource)
+    mode: auto
+    profile: quint.threat.execution
+    mount: Execution
+    :profiles (assurance.bounded-proof bound.standard governance.mandatory-countermodels))
+#+end_src
+
+* Model Matrix
+
+| Model | Failure Class | Core Papers / Specs | Emergent Invariant | Countermodels |
+|-------+---------------+---------------------+--------------------+---------------|
+| [[file:capabilities/README.org][capabilities]] | =quint.failure.privilege-escalation= | Miller et al. (2003), Miller (2006) | Pure object-capability reachability predicate | Pure reference module |
+| [[file:effect-handoff/README.org][effect-handoff]] | =quint.failure.duplicate-effect= | Gray & Lamport (TODS 2006), Helland (CIDR 2007) | Durable commit precedes emission & at most =MaxSends= sends | Missing durability ack |
+| [[file:effect-containment/README.org][effect-containment]] | =quint.failure.containment-escape= | NIST SP 800-207, Miller (2006) | Zero signatures while paused/delegated/revoked; clearance requires witness | Stale recovery; False clearance |
+| [[file:state-rollback/README.org][state-rollback]] | =quint.failure.rollback= | Parno et al. Memoir (IEEE S&P 2011), Strackx et al. ICE (USENIX 2016) | Monotonic storage prevents pre-handoff snapshot replay | No durability; Host snapshot rollback |
+| [[file:agent-ifc-capability/README.org][agent-ifc-capability]] | =quint.failure.information-leak= | CaMeL (2025), FIDES (NeurIPS 2025) | Untrusted data never steers control flow & secret egress needs declassification | Prompt-injection hijack; Confidential exfiltration |
+| [[file:wasm-sandbox-confinement/README.org][wasm-sandbox-confinement]] | =quint.failure.sandbox-escape= | Haas et al. (PLDI 2017), RLBox (USENIX 2020), =openat2(RESOLVE_BENEATH)= | Linear-memory bounds, OCap handles & preopen root confinement | Bounds-check bypass; Ambient fd forgery; Path traversal |

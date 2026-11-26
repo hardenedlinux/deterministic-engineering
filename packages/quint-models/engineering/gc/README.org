@@ -1,16 +1,32 @@
 # SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
-#+TITLE: Engineering Quint Models — Garbage Collection
+#+TITLE: Engineering / Garbage Collection Formal Models (Quint.Engineering.GC)
 #+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
 
-This sub-domain hosts finite-state Quint models for concurrent and incremental
-garbage collection invariants:
+* Overview
 
-- Tri-color marking with Dijkstra insertion barrier (Strong Tri-Color Invariant)
-  and Yuasa SATB deletion barrier (Weak Tri-Color Invariant), paired with a
-  =stepNoWriteBarrier= countermodel showing live-object sweep.
-- Mutator/collector safepoint handshakes across =Idle -> Mark -> Remark -> Sweep=
-  phase transitions.
+This subdomain groups co-located formal models for concurrent and incremental
+garbage collection invariants: tri-color write barriers and mutator/collector
+safepoint handshakes. Each model folder is a self-contained Yuanxu Loader module
+paired with its projected pure =.qnt= specification and verified =README.org=.
 
-See [[file:../../docs/engineering-state-models.org][Engineering State Models]] and [[file:../../docs/research-and-papers.org][Research and Papers]] for references.
+* Yuanxu Selection & Reuse
+
+#+begin_src scheme
+(yuanxu!
+  :load-modules (from: :deterministic-engineering/init QuintEngineeringGcSource)
+    mode: auto
+    profile: quint.engineering.gc
+    mount: GC
+    :profiles (assurance.bounded-proof bound.standard governance.mandatory-countermodels))
+#+end_src
+
+* Model Matrix
+
+| Model | Failure Class | Core Papers | Emergent Invariant | Countermodels |
+|-------+---------------+-------------+--------------------+---------------|
+| [[file:tricolor-write-barrier/README.org][tricolor-write-barrier]] | =quint.failure.live-object-sweep= | Dijkstra et al. (CACM 1978), Jones et al. (2011) | No Black->White edge during Mark & never sweep live object | Omitted Dijkstra insertion write barrier |
+| [[file:safepoint-handshake/README.org][safepoint-handshake]] | =quint.failure.barrier-bypass= | Doligez & Leroy (POPL 1993), Doligez & Gonthier (POPL 1994) | All mutators enable write barriers before Mark starts | Collector skips mutator safepoint ack |
