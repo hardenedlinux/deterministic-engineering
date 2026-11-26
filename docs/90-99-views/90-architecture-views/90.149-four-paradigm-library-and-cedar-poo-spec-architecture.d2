@@ -1,0 +1,45 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+direction: right
+
+title: {
+  label: "90.149 Four-Paradigm Verification Library (deterministic-engineering-qnt) <-> Authorization Host (cedar-poo-spec)"
+  near: top-center
+  shape: text
+  style.font-size: 20
+  style.bold: true
+}
+
+library: "Reusable Formal Engineering Library (deterministic-engineering-qnt)" {
+  style.fill: "#eef2ff"
+  style.stroke: "#4f46e5"
+
+  quint: "1. Quint / Apalache (Bounded Symbolic + MBT)\n• 19 Defense Models / 56 Canonical Models\n• Countermodels + F3 guard-probe\n• 100.0% MBT SUT State-Machine Refinement"
+  ascent: "2. Gerbil Scheme ASCENT Datalog (Live gxi)\n• 22 Sources x 13 Stratified Outputs (B1-B10c)\n• Transitive B3->B8, B7 Exfil, B9/B10/B10c\n• Cross-Runtime N-Version Agreement Gate"
+  leanpoo: "3. Lean 4 + LeanPoo (52 Unbounded Theorems, Zero Mathlib)\n• DurableGovernanceQuorum (19): ∀ N,f,t BFT, ∀ k Epochs, R3, B6, B3, B10c\n• HostAuthorizationBridge (11): Dual-Sovereignty & R1 Policy Transport\n• InformationFlowAndTms (11): DIFC, CaMeL, Doyle TMS & de Kleer ATMS\n• SagaAndSsi (11): Saga Pivot/Undo & Multi-Agent AST SSI (DE01)"
+  cbmc: "4. CBMC & 5-Language Contrast + 150-Case Benchmark\n• C (CBMC), C++20, Rust, TypeScript, Gerbil Scheme\n• 150/150 Exact Gold Match (AG01-AG150)\n• Stratified OP Core: M1 Merkle / M2 Drift / M3 7-Class R3 Keys"
+}
+
+bridge: "LeanPoo Dual-Sovereignty Boundary\n(HostAuthorizationBridge.lean + 10.174)" {
+  style.fill: "#fef9c3"
+  style.stroke: "#ca8a04"
+
+  gate: "Symmetric Conjunction & Transport\n• Cedar Permit CANNOT bypass Library Refuted\n• Library Finalized CANNOT bypass Cedar Forbid/Pending\n• BoundOperation + PolicySnapshot + AuthorityConsumption\n• R1 Disjoint Cedar Evolution -> 1-Line Proof Reuse"
+}
+
+host: "Consuming Authorization Host (cedar-poo-spec)" {
+  style.fill: "#ecfdf5"
+  style.stroke: "#059669"
+
+  cedar: "Cedar + LeanPoo Concrete Authorization\n• Cedar Forbid-Overrides-Permit Policy Sets\n• Concrete Principals, Roles, Tenants & Veto Rules\n• CedarPooSpec.Admission.{BoundOperation,PolicySnapshot,AuthorityConsumption}\n• Monotonically Refines Library Contracts via ObjectContract.refine"
+}
+
+library.quint -> bridge.gate: "Bounded Proofs & MBT"
+library.ascent -> bridge.gate: "N-Version M1 Verdicts"
+library.leanpoo -> bridge.gate: "52 Unbounded LeanPoo Theorems"
+library.cbmc -> bridge.gate: "Runtime Receipts & R3 Guard"
+host.cedar -> bridge.gate: "HostAuthorizationReceipt\n(Permit / Forbid / Pending)"
+bridge.gate -> host.cedar: "Pinned M1 DualSovereignReceipt\n(Zero M3 Key Leakage)" {
+  style.stroke: "#059669"
+}
