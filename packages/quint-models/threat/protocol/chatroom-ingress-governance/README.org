@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Multi-Role Chat Room External Ingress, Channel Isolation & Human-Only Gate Governance
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.protocol.chatroom-ingress-governance=
+- *Subdomain*: =quint.threat.protocol=
+- *Quint Module*: =chatroom_ingress_governance= (=[[file:ChatroomIngressGovernance.qnt][ChatroomIngressGovernance.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/protocol/chatroom-ingress-governance/ChatroomIngressGovernance=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+External room ingress never forges origin or gate receipts and never injects across channels; approval gates resolve strictly once by a human operator; gate-blocked matters cannot be unblocked by AI agents; and untrusted external messages never trigger privileged tools without human gate approval.
+
+#+begin_src quint
+val safety = (not(h.forgedGateReceipt) and not(h.crossChannelInjected) and not(h.gateReplayed) and not(h.agentSelfUnblocked) and not(h.taintedToolBypass))
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =ingress-origin-provenance= | =stepForgedExternalIngress= | =h.forgedGateReceipt == true= |
+| =channel-thread-affinity= | =stepCrossChannelInject= | =h.crossChannelInjected == true= |
+| =gate-oneshot-pending= | =stepGateReplayOrAgentApprove= | =h.gateReplayed == true= |
+| =matter-gate-lock= | =stepAgentSelfUnblock= | =h.agentSelfUnblocked == true= |
+| =tainted-tool-human-gate= | =stepTaintedToolBypass= | =h.taintedToolBypass == true= |
+
+* Grounded Papers & Specifications
+
+- *E. Debenedetti et al. (2025)*: Defeating Prompt Injections by Design (CaMeL): untrusted external ingress taint containment and human-gated tool execution.
+- *R. S. Sandhu, E. J. Coyne, H. L. Feinstein & C. E. Youman (IEEE Computer, 1996)*: Role-Based Access Control Models: separation of duty and non-delegable human approval authority in collaborative rooms.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/protocol/chatroom-ingress-governance/ChatroomIngressGovernance.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/protocol/chatroom-ingress-governance/ChatroomIngressGovernance.qnt --main=chatroom_ingress_governance --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite multi-role agent chatroom ingress, channel affinity, and one-shot human gate governance abstraction; does not model cryptographic webhook HMAC algorithms, semantic LLM prompt classification, or federated transport encryption.

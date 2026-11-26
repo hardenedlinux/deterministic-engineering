@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: RFC 8693 Delegated Agent Authorization (OBO) & RFC 9470 Step-Up Freshness
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.identity.delegated-agent-authz=
+- *Subdomain*: =quint.threat.identity=
+- *Quint Module*: =delegated_agent_authz= (=[[file:DelegatedAgentAuthz.qnt][DelegatedAgentAuthz.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/identity/delegated-agent-authz/DelegatedAgentAuthz=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Delegated agent tokens never amplify human scope, never impersonate direct human authority on human-only gates, fail closed immediately on human session revocation, and privileged operations require verified identity plus fresh step-up authentication.
+
+#+begin_src quint
+val safety = (not(h.scopeAmplified) and not(h.impersonatedHuman) and not(h.zombieDelegatedUse) and not(h.unverifiedPrivileged))
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =obo-scope-attenuation= | =stepScopeAmplification= | =h.scopeAmplified == true= |
+| =obo-actor-provenance= | =stepActorImpersonation= | =h.impersonatedHuman == true= |
+| =obo-revocation-currency= | =stepZombieDelegation= | =h.zombieDelegatedUse == true= |
+| =step-up-verified-floor= | =stepStepUpBypass= | =h.unverifiedPrivileged == true= |
+
+* Grounded Papers & Specifications
+
+- *M. Jones, A. Nadalin, B. Campbell, J. Bradley & C. Mortimore (IETF RFC 8693, 2020)*: OAuth 2.0 Token Exchange: On-Behalf-Of delegation, actor provenance claims, and monotonic scope attenuation.
+- *V. Bertocci & B. Campbell (IETF RFC 9470, 2023)*: OAuth 2.0 Step-Up Authentication Challenge Protocol: fresh human verification for privileged operations.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/identity/delegated-agent-authz/DelegatedAgentAuthz.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/identity/delegated-agent-authz/DelegatedAgentAuthz.qnt --main=delegated_agent_authz --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite RFC 8693 OBO delegation and RFC 9470 step-up abstraction; does not model JWT signature verification, multi-hop nested act arrays beyond depth 1, or IdP MFA phishing resistance.
