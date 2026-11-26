@@ -1,0 +1,82 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 10.161 Automated AST Symbol-Level ReadSet x WriteSet Extraction & Multi-Agent SSI Conflict Arbitration
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.161
+#+STARTUP: overview
+#+OPTIONS: toc:3 num:nil
+#+FILETAGS: :architecture:ssi:ast-symbols:multi-agent-concurrency:write-skew:governance:
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.156-orthogonal-persistence-durable-multi-agent-governance.org][10.156 Stratified orthogonal persistence]] | [[file:10.157-durable-ai-context-projection-and-multi-agent-ssi-concurrency.org][10.157 Durable AI context & SSI]] | [[file:10.160-cross-trust-boundary-capability-attenuation-and-cascading-revocation.org][10.160 Capability attenuation B3]] | [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05 75-case benchmark]]
+
+* Problem: Why Git 3-Way Merge Misses Multi-Agent Semantic Write-Skew
+:PROPERTIES:
+:CUSTOM_ID: ssi161-problem
+:STATUS: implemented-verified
+:END:
+
+When multiple coding Agents edit a shared repository concurrently from the same
+base snapshot, =git merge= checks only *line-level file overlap*. If Agent A
+modifies =src/auth-types.ts= (renaming =AuthSession.expiresAt= -> =expiresAtMs=
+or changing =MAX_RETRIES = 3 -> 0=) while Agent B concurrently modifies
+=src/session-handler.ts= reading =AuthSession=, Git reports *zero conflicts*
+and merges cleanly—silently breaking the codebase.
+
+This is the codebase isomorphic form of database *Serializable Snapshot
+Isolation (SSI) Write-Skew* (Cahill, Röhm & Fekete, SIGMOD 2008). Relying solely
+on post-merge whole-repo builds causes O(N^2) blame ambiguity in N-agent swarms
+and misses dynamic/contract/Scheme-slot regressions.
+
+* In-Process Coordinator Commit-Gate Architecture (Scenario B4)
+:PROPERTIES:
+:CUSTOM_ID: ssi161-architecture
+:STATUS: implemented-verified
+:END:
+
+The core is a *pure in-process Coordinator Commit-Gate engine*
+([[file:../../../languages-engineering/ts/defense/agent-audit/symbol-ssi-arbitrator.ts][symbol-ssi-arbitrator.ts]])
+designed to run inside multi-agent orchestrators or merge queues (with any CLI
+or CI hook acting solely as an optional thin IPC adapter):
+
+1. *Zero-Manual-Annotation AST Symbol Extractors*:
+   - *TypeScript*: Balanced comment/string-aware lexer extracts exported
+     =interface=, =type=, =function= (both =signatureDigest= and =bodyDigest=),
+     =const/let=, and =class= definitions, plus cross-file =import= bindings and
+     namespace references into canonical =file::Symbol= sets.
+   - *Gerbil Scheme*: S-expression parser extracts =(export ...)=, =(def ...)=,
+     =(.def ...)= POO objects, and =(import (only-in "file.ss" ...))= reads.
+2. *Epistemic Separation of Concurrency Hazards*:
+   - *Stale =M3= Lease Fencing*: Isolates zombie workers (=workerEpoch != activeEpoch=)
+     before conflict analysis.
+   - *Direct Write-Write Conflict (=W_i ∩ W_j != ∅=)*: Refuses silent LWW erasure.
+   - *Symbol-Level =rw= Anti-Dependency Graph (=R_i ∩ W_j != ∅=)*: Distinguishes
+     *cyclic mutual write-skew* (=A -> B -> A=, blocks both sides) from *acyclic
+     producer-consumer skew*.
+3. *Bounded =DE01= Partial Admission & Cold =M1= Revalidation Packets*:
+   - In an N-agent swarm, independent agents and acyclic upstream producers commit
+     cleanly while *only* affected downstream consumers receive a pinned =M1=
+     =BoundedRevalidationPacket= naming the exact drifted =file::Symbol= digest.
+
+* Executable Artifacts & Verification Receipts
+:PROPERTIES:
+:CUSTOM_ID: ssi161-artifacts
+:STATUS: executed-verified
+:END:
+
+| Artifact | Path | Verification Evidence |
+|----------+------+-----------------------|
+| Automated AST Symbol SSI Arbitrator | [[file:../../../languages-engineering/ts/defense/agent-audit/symbol-ssi-arbitrator.ts][symbol-ssi-arbitrator.ts]] | Pure in-process TS + Scheme symbol extractor & N-agent SSI commit-gate; dogfood =just audit-agent-patch= 0 findings |
+| 5-Case Benchmark Cohort (=AG71=–=AG75=) | [[file:../../../languages-engineering/ts/defense/agent-audit/symbol-ssi-arbitrator.test.ts][symbol-ssi-arbitrator.test.ts]] | 5/5 exact gold match: disjoint TS =rw= skew, cyclic =A <-> B= skew, 3-agent =DE01= partial admission, Scheme POO =.ss= skew, stale =M3= fence + =ww= refusal |
+| Backing Formal Model | [[file:../../../packages/quint-models/engineering/defense/durable-ai-context-ssi/DurableAiContextSsi.qnt][DurableAiContextSsi.qnt]] | Apalache 6/6 PASS, 100% MBT coverage, =DurableAiContextSsiSUT= isomorphism |
+
+* Limits
+:PROPERTIES:
+:CUSTOM_ID: ssi161-limits
+:STATUS: implemented-verified
+:END:
+
+The structural extractor tracks direct cross-file imports, namespace accesses,
+and exported declarations in TypeScript and Gerbil Scheme. It does not perform
+whole-program type inference, dynamic reflection/string-eval dispatch, or
+transitive multi-hop barrel re-export resolution across external npm packages.

@@ -20,7 +20,7 @@ This benchmark evaluates whether AST-level defensive-engineering auditors catch
 all four AI Agent defensive-hallucination classes (=G2= in [[file:../../10-19-design/10-architecture/10.153-defensive-engineering-taxonomy-and-modular-organization.org][10.153]]) without
 generating false positives on clean deterministic-boundary code.
 
-- *Independent Gold*: Every case (=AG01=–=AG70=) has a fixed independent
+- *Independent Gold*: Every case (=AG01=–=AG75=) has a fixed independent
   expected outcome (=pass= vs. =fail= + exact hallucination/anti-evasion/escalation/durable-resume class). Candidate
   auditor output never generates gold.
 - *Native AST, Diff-Delta, Scope-Fencing & Closed-Loop Governance Auditors Evaluated*:
@@ -49,7 +49,7 @@ generating false positives on clean deterministic-boundary code.
      [[file:../../../languages-engineering/ts/defense/agent-audit/governance-harness.test.ts][governance-harness.test.ts]],
      and =just audit-agent-patch=).
 
-* Seventy-Case Cohort (=AG01=–=AG70=)
+* Seventy-Five-Case Cohort (=AG01=–=AG75=)
 :PROPERTIES:
 :CUSTOM_ID: bench3005-cohort
 :END:
@@ -126,6 +126,11 @@ generating false positives on clean deterministic-boundary code.
 | =AG68= | Capability Attenuation (=B3=) | Macaroon HMAC caveat tampering & bearer theft | Refuse (=chain-mac-tampered= / =bearer-identity-mismatch=) | Detects mutated child caveats without root key, cross-agent certificate hijacking, and TTL expiry |
 | =AG69= | Capability Attenuation (=B3=) | Cascading ancestor revocation (=M3= caretaker) | Refuse (=ancestor-revoked-cascade=); sibling stays alive | Revoking =Contractor-A= immediately invalidates =ToolWorker-C= while leaving sibling =Contractor-B= authorized |
 | =AG70= | Capability Attenuation (=B3 × R3=) | Root HMAC key non-leakage into =M1= Merkle store | Refuse (=R3 ReachabilityLeakError=) | =DelegationRootKey= cannot enter =M1= blob graph or =JSON.stringify= via accidental reachability |
+| =AG71= | AST Symbol SSI (=B4=) | Disjoint-file TypeScript =rw= write-skew auto-extraction | =PartialAdmit= + =M1= revalidation packet | Auto-extracts =src/auth-types.ts::AuthSession= contract drift & holds only downstream reader Agent B |
+| =AG72= | AST Symbol SSI (=B4=) | Cyclic mutual write-skew (=A <-> B=) detection | =ConflictOrCycleBlocked= (both cyclic) | Detects =agent-pricing <-> agent-tax= mutual =rw= cycle & blocks blind merge of either branch |
+| =AG73= | AST Symbol SSI (=B4 × DE01=) | 3-agent swarm bounded partial admission | Admit A & C; revalidate ONLY B | Independent =agent-docs= commits cleanly while only =agent-worker= revalidates against =MAX_RETRIES= |
+| =AG74= | AST Symbol SSI (=B4=) | Gerbil Scheme POO cross-file =.ss= write-skew | =PartialAdmit= + =M1= revalidation packet | Auto-extracts =lib/types.ss::PolicyFloor= =.def= change & =only-in= import read without manual sets |
+| =AG75= | AST Symbol SSI (=B4 × M3=) | Stale =M3= lease fencing & direct =ww= conflict | Fence zombie; refuse silent LWW | Isolates epoch-1 zombie worker & blocks divergent edits to =src/shared.ts= without mutating base |
 
 * Observed Verification Receipts
 :PROPERTIES:
@@ -144,14 +149,15 @@ generating false positives on clean deterministic-boundary code.
 | Production Business Extensions: SoD Release & Regulated Multi-Tenant Replay (=AG56=–=AG60=) | =bun test languages-engineering/ts/defense/agent-audit/durable-business-orchestrator.test.ts= | **5/5 cases matched gold** (SoD refusal, freeze/unpinned fail-closed, canary rollback with forensic preservation & lease fencing, cross-tenant AEAD isolation, deterministic regulatory replay after GC) |
 | Long-Horizon HITL Durable Pause/Resume & Policy-Drift Re-Approval (=AG61=–=AG65=) | =bun test languages-engineering/ts/defense/agent-audit/durable-hitl-approval.test.ts= | **5/5 cases matched gold** (cold hibernation =R3= leak block & prose firewall, baseline/policy drift invalidation vs. =R1= disjoint upgrade, TTL/replay fencing, 2-of-N quorum SoD, anti-nagging veto persistence) |
 | Cross-Trust-Boundary Delegation & Macaroon Capability Attenuation (=AG66=–=AG70=) | =bun test languages-engineering/ts/defense/agent-audit/capability-attenuation.test.ts= | **5/5 cases matched gold** (multi-hop monotonic narrowing + custody receipt, amplification refusal, Macaroon HMAC tamper & bearer theft, cascading ancestor revocation, =R3= root key non-leakage) |
-| Combined 70-case 5-language, anti-evasion, Durable AI & Business Extension benchmark | =just check-defense= | **70/70 exact gold match** (=tp=48, tn=22, fp=0, fn=0=) |
+| Automated AST Symbol-Level =ReadSet x WriteSet= SSI Arbitrator (=AG71=–=AG75=) | =bun test languages-engineering/ts/defense/agent-audit/symbol-ssi-arbitrator.test.ts= | **5/5 cases matched gold** (TS auto-extracted =rw= write-skew, cyclic =A <-> B= skew block, 3-agent =DE01= partial admission, Scheme POO =.ss= symbol skew, stale =M3= lease fence & =ww= refusal) |
+| Combined 75-case 5-language, anti-evasion, Durable AI & Business Extension benchmark | =just check-defense= | **75/75 exact gold match** (=tp=52, tn=23, fp=0, fn=0=) |
 
 * Limits
 :PROPERTIES:
 :CUSTOM_ID: bench3005-limits
 :END:
 
-This 70-case benchmark establishes deterministic AST-level, diff-delta,
+This 75-case benchmark establishes deterministic AST-level, diff-delta,
 scope-fencing, bounded closed-loop, hot-policy co-evolution, async-cut,
 semantic-drift memoization, AEAD-isolated Merkle storage, role-projected
 context, multi-agent SSI concurrency, and business SoD/replay precision and
