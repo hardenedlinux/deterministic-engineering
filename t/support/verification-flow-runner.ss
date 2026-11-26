@@ -59,6 +59,7 @@
   make-real-verification-runtime-adapter
   run-multi-method-verification-pipeline
   run-multi-method-fleet
+  run-impacted-multi-method-fleet
   predict-fleet-reuse-plan
   main)
 
@@ -1191,6 +1192,59 @@
       all-admitted?: all-admitted?
       total-executed: total-executed
       total-reused: total-reused))
+
+;; Selective Impact-Filtered Fleet Runner: given a list of changed repo-relative files,
+;; computes the mathematically minimal affected SysML v2 subjects via `changed-files->affected-frontier`
+;; and runs ONLY those subjects (0 work for unaffected subjects!), returning per-subject outcomes.
+(def (run-impacted-multi-method-fleet
+       repo-root
+       changed-paths
+       output-dir: (output-dir #f)
+       cache-dir: (cache-dir #f)
+       policy-flags: (policy-flags '())
+       fleet-id: (fleet-id "impact-fleet-001"))
+  (def projected (project-sysml-model repo-root))
+  (def impact (changed-files->affected-frontier projected changed-paths))
+  (def affected-specs (filter (lambda (s) (pair? (.get s affected-steps))) impact))
+  (def affected-keys (map (lambda (s) (.get s subject-key)) affected-specs))
+  (def resolved-out (and output-dir (path-expand output-dir repo-root)))
+  (when resolved-out
+    (when (file-exists? resolved-out)
+      (error "fresh impact output directory required" resolved-out))
+    (create-directory* resolved-out))
+  (def all-admitted? #t)
+  (def ran-reports '())
+  (def total-executed 0)
+  (def total-reused 0)
+  (for-each
+    (lambda (skey)
+      (let* ((skey-str (symbol->string skey))
+             (sub-out (and resolved-out (path-expand skey-str resolved-out)))
+             (outcome (run-multi-method-verification-pipeline repo-root
+                        subject-key: skey
+                        output-dir: sub-out
+                        cache-dir: cache-dir
+                        policy-flags: policy-flags
+                        request-id: (string-append fleet-id "-" skey-str)))
+             (er-res (.get outcome er-result))
+             (admitted? (and (replay-report-valid? (.get outcome replay-report))
+                             (null? ((.ref er-res 'rows-of) 'er_finding))
+                             (pair? ((.ref er-res 'rows-of) 'verification_admitted))))
+             (csum (.get outcome cache-summary)))
+        (set! total-executed (+ total-executed (length (.get csum executed))))
+        (set! total-reused (+ total-reused (length (.get csum reused))))
+        (unless admitted? (set! all-admitted? #f))
+        (when (.get outcome report-path)
+          (set! ran-reports (cons (cons skey (.get outcome report-path)) ran-reports))))
+      (##gc))
+    affected-keys)
+  (.o bind-these: #f
+      changed-paths: changed-paths
+      affected-keys: affected-keys
+      all-admitted?: all-admitted?
+      total-executed: total-executed
+      total-reused: total-reused
+      reports: (reverse ran-reports)))
 
 ;; Zero-execution dry-run Change-Impact & Proof-Reuse Predictor across ALL SysML v2 subjects:
 ;; Evaluates ASCENT IR01-IR06 against live SHA-256 input closures, live toolchains, and the

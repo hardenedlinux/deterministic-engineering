@@ -115,7 +115,46 @@
               '("leanPooTarget" "sourceContractTarget" "rustOracleTarget")))))
       (check (set-eq? (.get p-forged pending) '("quintTarget" "rustOracleTarget")) => #t)
       (check (and (member '("quintTarget" "IR06-attestation-invalid") (.get p-forged invalidations)) #t) => #t)
-      (check (and (member '("rustOracleTarget" "IR03-upstream-dag-invalidated") (.get p-forged invalidations)) #t) => #t))
+      (check (and (member '("rustOracleTarget" "IR03-upstream-dag-invalidated") (.get p-forged invalidations)) #t) => #t)
+
+      ;; 5. IR07: Under `strict-premise-recheck`, Rust src/lib.rs edit invalidates rustOracleTarget (IR02)
+      ;;          AND cascades via SpawnPreservesContainer premise edge to invalidate leanPooTarget (IR07),
+      ;;          while still reusing quintTarget!
+      (def rust-edited-inputs
+        '(("quintTarget" "ProcessTreeReclamation.qnt" "sha-q1")
+          ("leanPooTarget" "ProcessTree.lean" "sha-l1")
+          ("sourceContractTarget" "src/lib.rs" "sha-r2-edited")
+          ("rustOracleTarget" "src/lib.rs" "sha-r2-edited")))
+      (def p-ir07-rust
+        (reuse-result->plan
+          (reason-incremental-reuse
+            (build-incremental-reuse-sources
+              gov default-process-tree-step-mutability '("require-signed-cache" "strict-premise-recheck")
+              rust-edited-inputs all-cached base-inputs base-tc base-tc all-attested))))
+      (check (set-eq? (.get p-ir07-rust pending) '("sourceContractTarget" "rustOracleTarget" "leanPooTarget")) => #t)
+      (check-equal? (.get p-ir07-rust reusable) '("quintTarget"))
+      (check (and (member '("leanPooTarget" "IR07-premise-supporter-invalidated")
+                          (.get p-ir07-rust invalidations)) #t) => #t)
+
+      ;; 6. IR07 2-hop cross-graph cascade: Quint edit -> quintTarget (IR02) -> rustOracleTarget (IR03) -> leanPooTarget (IR07),
+      ;;    while sourceContractTarget stays reusable!
+      (def quint-edited-inputs
+        '(("quintTarget" "ProcessTreeReclamation.qnt" "sha-q2-edited")
+          ("leanPooTarget" "ProcessTree.lean" "sha-l1")
+          ("sourceContractTarget" "src/lib.rs" "sha-r1")
+          ("rustOracleTarget" "src/lib.rs" "sha-r1")))
+      (def p-ir07-cascade
+        (reuse-result->plan
+          (reason-incremental-reuse
+            (build-incremental-reuse-sources
+              gov default-process-tree-step-mutability '("require-signed-cache" "strict-premise-recheck")
+              quint-edited-inputs all-cached base-inputs base-tc base-tc all-attested))))
+      (check (set-eq? (.get p-ir07-cascade pending) '("quintTarget" "rustOracleTarget" "leanPooTarget")) => #t)
+      (check-equal? (.get p-ir07-cascade reusable) '("sourceContractTarget"))
+      (check (and (member '("rustOracleTarget" "IR03-upstream-dag-invalidated")
+                          (.get p-ir07-cascade invalidations)) #t) => #t)
+      (check (and (member '("leanPooTarget" "IR07-premise-supporter-invalidated")
+                          (.get p-ir07-cascade invalidations)) #t) => #t))
 
     (test-case "live Ed25519 signed cache & report reject forged detail (IR06), toolchain drift (IR05), and tampered report.json"
       (def tmp-parent (path-expand ".data/test-runs" repo-root))
@@ -187,4 +226,28 @@
         (check-equal? (.get (.get r4 cache-summary) executed) '("lfLeanPooTarget"))
         (check-equal? (.get (.get r4 cache-summary) reused) '("lfQuintTarget"))
         (check (and (member '("lfLeanPooTarget" "IR05-toolchain-drift")
-                            (.get (.get r4 cache-summary) invalidations)) #t) => #t)))))
+                            (.get (.get r4 cache-summary) invalidations)) #t) => #t)))
+
+    (test-case "live run-impacted-multi-method-fleet runs ONLY affected c-boundary-conservation for C file change and skips unrelated subjects"
+      (def tmp-parent (path-expand ".data/test-runs" repo-root))
+      (create-directory* tmp-parent)
+      (def imp-out (path-expand "m5-impact-run-out" tmp-parent))
+      (def imp-cache (path-expand "m5-impact-run-cache" tmp-parent))
+      (run-process (list "rm" "-rf" imp-out imp-cache))
+      (create-directory* imp-cache)
+      ;; Zero-impact file (e.g. README) runs 0 subjects in <0.2s!
+      (let ((empty-res (run-impacted-multi-method-fleet repo-root '("README.md") cache-dir: imp-cache)))
+        (check-equal? (.get empty-res affected-keys) '())
+        (check-equal? (.get empty-res all-admitted?) #t)
+        (check-equal? (.get empty-res total-executed) 0))
+      ;; Editing deterministic_boundary.c runs ONLY c-boundary-conservation (skipping all other 4 subjects)!
+      (let ((res (run-impacted-multi-method-fleet repo-root
+                   '("languages-engineering/c/defense/silent-fallback-contrast/deterministic_boundary.c")
+                   output-dir: imp-out
+                   cache-dir: imp-cache)))
+        (check-equal? (.get res affected-keys) '(c-boundary-conservation))
+        (check-equal? (.get res all-admitted?) #t)
+        (check-equal? (.get res total-executed) 2)
+        (def pub-key (path-expand "attestation-ed25519.pub.pem" imp-cache))
+        (def rep-path (cdr (assq 'c-boundary-conservation (.get res reports))))
+        (check-equal? (verify-report-with-pinned-key rep-path pub-key) #t)))))

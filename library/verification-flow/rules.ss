@@ -64,6 +64,8 @@
   (list
     (cons 'flow_step (alist-ref gov-sources 'flow_step '()))
     (cons 'flow_dag_edge (alist-ref gov-sources 'flow_dag_edge '()))
+    (cons 'step_requires_premise (alist-ref gov-sources 'step_requires_premise '()))
+    (cons 'step_supports_premise (alist-ref gov-sources 'step_supports_premise '()))
     (cons 'step_mutability
           (map (lambda (r) (list (sym->str (car r)) (sym->str (cadr r)))) mutability-rows))
     (cons 'reuse_policy

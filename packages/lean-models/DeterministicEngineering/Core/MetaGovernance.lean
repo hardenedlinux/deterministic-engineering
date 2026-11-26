@@ -43,6 +43,7 @@ theorem DagPath.trans {Step : Type} {edge : Step → Step → Prop} {a b c : Ste
 
 structure ReuseSystem (Step Key Digest Toolchain : Type) where
   dagEdge : Step → Step → Prop
+  premiseSupportEdge : Step → Step → Prop
   hasPassingCache : Step → Prop
   currentInput : Step → Key → Digest → Prop
   cachedInput : Step → Key → Digest → Prop
@@ -52,6 +53,7 @@ structure ReuseSystem (Step Key Digest Toolchain : Type) where
   attested : Step → Prop
   requireFreshM3 : Prop
   requireSignedCache : Prop
+  strictPremiseRecheck : Prop
 
 def inputMismatch {Step Key Digest Toolchain : Type}
     (sys : ReuseSystem Step Key Digest Toolchain) (s : Step) : Prop :=
@@ -74,7 +76,7 @@ def toolchainDirty {Step Key Digest Toolchain : Type}
   (∃ t1 t2, sys.currentToolchain s t1 ∧ sys.cachedToolchain s t2 ∧ t1 ≠ t2) ∨
   (∃ t1, sys.currentToolchain s t1 ∧ ∀ t2, ¬ sys.cachedToolchain s t2)
 
-/-- Least fixed point of ASCENT `step_invalidated` rules (`IR01`–`IR06`). -/
+/-- Least fixed point of ASCENT `step_invalidated` rules (`IR01`–`IR07`). -/
 inductive Invalidated {Step Key Digest Toolchain : Type}
     (sys : ReuseSystem Step Key Digest Toolchain) : Step → Prop where
   | ir01 (s : Step) : ¬ sys.hasPassingCache s → Invalidated sys s
@@ -83,6 +85,8 @@ inductive Invalidated {Step Key Digest Toolchain : Type}
   | ir04 (s : Step) : sys.isM3Mutable s → sys.requireFreshM3 → Invalidated sys s
   | ir05 (s : Step) : toolchainDirty sys s → Invalidated sys s
   | ir06 (s : Step) : sys.requireSignedCache → ¬ sys.attested s → Invalidated sys s
+  | ir07 {sup req : Step} : sys.strictPremiseRecheck → sys.premiseSupportEdge sup req →
+      Invalidated sys sup → Invalidated sys req
 
 def Pending {Step Key Digest Toolchain : Type}
     (sys : ReuseSystem Step Key Digest Toolchain) (s : Step) : Prop :=
@@ -157,6 +161,34 @@ theorem upstream_forged_cache_prevents_downstream_reuse {Step Key Digest Toolcha
     ¬ Reusable sys v := by
   intro hReuseV
   exact hReuseV (ir03_transitive_path_invalidation sys hPath (Invalidated.ir06 u hSign hUnattested))
+
+/-- Constructive zero-axiom `IR07` mixed-graph soundness: under `strictPremiseRecheck`,
+any invalidation propagates along arbitrary mixed sequences of DAG artifact edges (`IR03`)
+and premise-support edges (`IR07`), so no consumer can reuse a stale witness when any
+upstream artifact producer OR premise supporter at arbitrary depth is invalidated. -/
+theorem ir07_mixed_dag_and_premise_invalidation {Step Key Digest Toolchain : Type}
+    (sys : ReuseSystem Step Key Digest Toolchain) {u v : Step}
+    (hStrict : sys.strictPremiseRecheck)
+    (hPath : DagPath (fun a b => sys.dagEdge a b ∨ sys.premiseSupportEdge a b) u v)
+    (hInv : Invalidated sys u) :
+    Invalidated sys v := by
+  induction hPath with
+  | refl _ => exact hInv
+  | step hab _ ih =>
+    cases hab with
+    | inl hDag => exact ih (Invalidated.ir03 hDag hInv)
+    | inr hPrem => exact ih (Invalidated.ir07 hStrict hPrem hInv)
+
+/-- Contrapositive (constructive, zero axioms): under `strictPremiseRecheck`, a `Reusable`
+step guarantees every upstream DAG ancestor AND every premise supporter along mixed paths is `Reusable`. -/
+theorem ir07_reusable_implies_premise_supporters_reusable {Step Key Digest Toolchain : Type}
+    (sys : ReuseSystem Step Key Digest Toolchain) {sup req : Step}
+    (hStrict : sys.strictPremiseRecheck)
+    (hPath : DagPath (fun a b => sys.dagEdge a b ∨ sys.premiseSupportEdge a b) sup req)
+    (hReuseReq : Reusable sys req) :
+    Reusable sys sup := by
+  intro hInvSup
+  exact hReuseReq (ir07_mixed_dag_and_premise_invalidation sys hStrict hPath hInvSup)
 
 /-! ## 3. Exact Declarative Semantics of ASCENT `MR01`–`MR02` & `ER01`–`ER04` -/
 

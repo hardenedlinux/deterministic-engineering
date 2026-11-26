@@ -255,15 +255,18 @@
 (def VerificationEvidenceAdmissionDeclaration (make-verification-evidence-admission-program))
 (def VerificationEvidenceAdmissionProgram (rule-module-program VerificationEvidenceAdmissionDeclaration))
 
-;; ── Phase 3: Content-Addressed & Attested Incremental Cache Reuse (IR01-IR06) ──
+;; ── Phase 3: Content-Addressed & Attested Incremental Cache Reuse (IR01-IR07) ──
 ;; Computes the exact pending vs reusable step frontier via stratified fixed-point
 ;; over input digests, DAG artifact edges, M1/M3 mutability boundaries, live
-;; toolchain/host fingerprints (IR05), and Ed25519 attestation (IR06).
+;; toolchain/host fingerprints (IR05), Ed25519 attestation (IR06), and optional
+;; strict cross-method premise-chain revalidation (IR07).
 (define-program
   (make-incremental-reuse-program)
   (sources
    flow_step
    flow_dag_edge
+   step_requires_premise
+   step_supports_premise
    step_mutability
    reuse_policy
    step_input_digest
@@ -281,6 +284,8 @@
    step_reusable)
   (relation flow_step ((step string?) (subject string?) (obligation string?) (method string?) (claim_kind string?)))
   (relation flow_dag_edge ((from_step string?) (to_step string?)))
+  (relation step_requires_premise ((step string?) (premise string?)))
+  (relation step_supports_premise ((step string?) (premise string?)))
   (relation step_mutability ((step string?) (mutability string?)))
   (relation reuse_policy ((flag string?)))
   (relation step_input_digest ((step string?) (input_key string?) (digest string?)))
@@ -382,6 +387,15 @@
    (flow_step Step _ _ _ _)
    (reuse_policy (lit "require-signed-cache"))
    (not (cached_witness_attested Step)))
+
+  ;; IR07: under strict-premise-recheck policy, invalidating a premise supporter
+  ;;       transitively invalidates every consumer step requiring that premise!
+  ((step_invalidated ReqStep (lit "IR07-premise-supporter-invalidated"))
+   <--
+   (reuse_policy (lit "strict-premise-recheck"))
+   (step_requires_premise ReqStep P)
+   (step_supports_premise SupStep P)
+   (step_invalidated SupStep _))
 
   ;; Partition every declared step into exactly pending or reusable.
   ((step_pending Step)

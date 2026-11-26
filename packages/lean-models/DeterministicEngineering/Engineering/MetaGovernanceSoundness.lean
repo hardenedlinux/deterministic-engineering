@@ -64,6 +64,16 @@ theorem fleetAttestation_rejects_tamper_and_rogue_key {PubKey Payload Digest Sig
     (m.digestOf p ≠ m.digestOf p' → ¬ m.verify pk p' sig) :=
   fleet_merkle_pinned_key_tamper_resistant m hValid
 
+/-- Constructive zero-axiom certification of `IR07` strict cross-method premise-chain
+revalidation across mixed Quint->Oracle (`IR03`) and Oracle/CBMC->LeanPoo (`IR07`) chains. -/
+theorem strictPremisePolicy_blocks_stale_downstream_proofs {Step Key Digest Toolchain : Type}
+    (sys : ReuseSystem Step Key Digest Toolchain) {u v : Step}
+    (hStrict : sys.strictPremiseRecheck)
+    (hPath : DagPath (fun a b => sys.dagEdge a b ∨ sys.premiseSupportEdge a b) u v)
+    (hReuseV : Reusable sys v) :
+    Reusable sys u :=
+  ir07_reusable_implies_premise_supporters_reusable sys hStrict hPath hReuseV
+
 /-! ## Two-Step LeanPoo `ObjectContract.refine` (via `Core.Transport`) -/
 
 structure MetaGovConfig where
