@@ -74,6 +74,7 @@
   (policy-admission-sufficiency profiles: (bound.compact))
   (partial-order-delivery profiles: (bound.compact))
   (agent-patch-governance profiles: (bound.compact))
+  (durable-agent-persistence profiles: (bound.compact))
 
   ;; ── Threat-First Formal Security Models (5 subdomains) ──
   :load-modules "./packages/quint-models/threat/zero-trust"

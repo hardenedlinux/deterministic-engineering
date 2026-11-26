@@ -489,13 +489,106 @@ class BadSelfCertifyingAgentSUT extends AgentPatchGovernanceSUT {
   }
 }
 
+// ── Concrete Stateful SUT 7: DurableAgentPersistence (gerbil-persist x G5 / 10.156) ──
+class DurableAgentPersistenceSUT {
+  rootVersion = 0;
+  merkleHistoryIntact = true;
+  preCommitStable = false;
+  agentCrashed = false;
+  authorityRevoked = false;
+  resumeReattested = false;
+  inFlightIntent = false;
+  unsafeUnstableCommits = 0;
+  unsafeZombieEffects = 0;
+  duplicateCrashEffects = 0;
+
+  apply(action: string): void {
+    switch (action) {
+      case 'settlePreCommitHook':
+        if (!this.agentCrashed && !this.preCommitStable) this.preCommitStable = true;
+        break;
+      case 'commitMerkleRoot':
+        if (!this.agentCrashed && this.rootVersion < 3 && this.preCommitStable) {
+          this.rootVersion += 1;
+          this.preCommitStable = false;
+        }
+        break;
+      case 'recordInFlightIntent':
+        if (!this.agentCrashed && !this.inFlightIntent) this.inFlightIntent = true;
+        break;
+      case 'crashOrSuspendAgent':
+        if (!this.agentCrashed) {
+          this.agentCrashed = true;
+          this.preCommitStable = false;
+          this.resumeReattested = false;
+        }
+        break;
+      case 'revokeLiveAuthority':
+        if (!this.authorityRevoked) {
+          this.authorityRevoked = true;
+          this.resumeReattested = false;
+        }
+        break;
+      case 'resumeFromMerkleRoot':
+        if (this.agentCrashed) {
+          this.agentCrashed = false;
+          this.resumeReattested = false;
+        }
+        break;
+      case 'reattestLiveAuthority':
+        if (!this.agentCrashed && !this.authorityRevoked && !this.resumeReattested) {
+          this.resumeReattested = true;
+        }
+        break;
+      case 'reconcilePendingIntent':
+        if (!this.agentCrashed && this.inFlightIntent) this.inFlightIntent = false;
+        break;
+      case 'dispatchResumedEffect':
+        if (!this.agentCrashed && this.resumeReattested && !this.authorityRevoked && !this.inFlightIntent) {
+          this.inFlightIntent = true;
+        }
+        break;
+      default:
+        throw new Error(`Unknown DurableAgentPersistenceSUT action: ${action}`);
+    }
+  }
+
+  snapshot() {
+    return {
+      rootVersion: this.rootVersion,
+      merkleHistoryIntact: this.merkleHistoryIntact,
+      preCommitStable: this.preCommitStable,
+      agentCrashed: this.agentCrashed,
+      authorityRevoked: this.authorityRevoked,
+      resumeReattested: this.resumeReattested,
+      inFlightIntent: this.inFlightIntent,
+      unsafeUnstableCommits: this.unsafeUnstableCommits,
+      unsafeZombieEffects: this.unsafeZombieEffects,
+      duplicateCrashEffects: this.duplicateCrashEffects,
+    };
+  }
+}
+
+class BadZombieResumeSUT extends DurableAgentPersistenceSUT {
+  override apply(action: string): void {
+    if (action === 'resumeFromMerkleRoot' && this.agentCrashed) {
+      // Anti-pattern: transparently restores persisted pre-crash authority without live M3 re-attestation!
+      this.agentCrashed = false;
+      this.resumeReattested = true;
+      return;
+    }
+    super.apply(action);
+  }
+}
+
 const repoRoot = resolve(import.meta.dir, '../../../..');
 
 function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(): Record<string, unknown>}>(
   relQntPath: string,
   makeSut: () => T,
   projectQuintH: (h: Record<string, unknown>) => Record<string, unknown>,
-): {traces: number; transitions: number} {
+  makeBrokenSut?: () => T,
+): {traces: number; transitions: number; brokenDiverged: boolean} {
   const outDir = mkdtempSync(join(tmpdir(), 'de-mbt-sut-'));
   try {
     const qnt = join(repoRoot, relQntPath);
@@ -503,6 +596,7 @@ function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(
     expect(report.passed).toBe(true);
     expect(report.actionCoverage).toBe(1.0);
     let transitions = 0;
+    let brokenDiverged = false;
     const files = report.traceFiles ?? [];
     expect(files.length).toBeGreaterThan(0);
 
@@ -518,14 +612,28 @@ function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(
         expect(sut.snapshot()).toEqual(projectQuintH(getH(st)));
         transitions += 1;
       }
+
+      if (makeBrokenSut && !brokenDiverged) {
+        const broken = makeBrokenSut();
+        for (let i = 1; i < doc.states.length; i++) {
+          const st = doc.states[i]!;
+          broken.apply(st['mbt::actionTaken']!);
+          try {
+            expect(broken.snapshot()).toEqual(projectQuintH(getH(st)));
+          } catch {
+            brokenDiverged = true;
+            break;
+          }
+        }
+      }
     }
-    return {traces: files.length, transitions};
+    return {traces: files.length, transitions, brokenDiverged};
   } finally {
     rmSync(outDir, {recursive: true, force: true});
   }
 }
 
-describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (6 Defense Models)', () => {
+describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (7 Defense Models)', () => {
   test('EpistemicStateLattice ITF actions drive EpistemicLatticeSUT with exact step-by-step state isomorphism', () => {
     const stats = replayModelAgainstSut(
       'packages/quint-models/engineering/defense/epistemic-state-lattice/EpistemicStateLattice.qnt',
@@ -556,30 +664,11 @@ describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (6 Defense Models)
         currentReviewClosed: Boolean(h.currentReviewClosed),
         newCounterReviewed: Boolean(h.newCounterReviewed),
       }),
+      () => new BadPurgeRevalidationSUT(),
     );
     expect(stats.transitions).toBeGreaterThan(50);
-
-    // Negative refinement check: BadPurgeRevalidationSUT must diverge from the formal ITF trace!
-    let diverged = false;
-    try {
-      replayModelAgainstSut(
-        'packages/quint-models/engineering/defense/bounded-negative-revalidation/BoundedNegativeRevalidation.qnt',
-        () => new BadPurgeRevalidationSUT(),
-        h => ({
-          frozenCutIntact: Boolean(h.frozenCutIntact),
-          independentMethodValid: Boolean(h.independentMethodValid),
-          negDomainExpanded: Boolean(h.negDomainExpanded),
-          oldNegReviewActive: Boolean(h.oldNegReviewActive),
-          admittedReplacementReason: Boolean(h.admittedReplacementReason),
-          currentReviewClosed: Boolean(h.currentReviewClosed),
-          newCounterReviewed: Boolean(h.newCounterReviewed),
-        }),
-      );
-    } catch {
-      diverged = true;
-    }
-    expect(diverged).toBe(true);
-  });
+    expect(stats.brokenDiverged).toBe(true);
+  }, 30_000);
 
   test('UnknownEffectRetry ITF actions drive UnknownEffectRetrySUT with exact state isomorphism', () => {
     const stats = replayModelAgainstSut(
@@ -629,21 +718,11 @@ describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (6 Defense Models)
       'packages/quint-models/engineering/defense/partial-order-delivery/PartialOrderDelivery.qnt',
       () => new PartialOrderDeliverySUT(),
       projectH,
+      () => new BadOutOfOrderDeliverySUT(),
     );
     expect(stats.transitions).toBeGreaterThan(50);
-
-    let diverged = false;
-    try {
-      replayModelAgainstSut(
-        'packages/quint-models/engineering/defense/partial-order-delivery/PartialOrderDelivery.qnt',
-        () => new BadOutOfOrderDeliverySUT(),
-        projectH,
-      );
-    } catch {
-      diverged = true;
-    }
-    expect(diverged).toBe(true);
-  });
+    expect(stats.brokenDiverged).toBe(true);
+  }, 30_000);
 
   test('AgentPatchGovernance ITF actions drive AgentPatchGovernanceSUT with exact state isomorphism and reject BadSelfCertifyingAgentSUT', () => {
     const projectH = (h: Record<string, unknown>) => ({
@@ -660,19 +739,32 @@ describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (6 Defense Models)
       'packages/quint-models/engineering/defense/agent-patch-governance/AgentPatchGovernance.qnt',
       () => new AgentPatchGovernanceSUT(),
       projectH,
+      () => new BadSelfCertifyingAgentSUT(),
     );
     expect(stats.transitions).toBeGreaterThan(50);
+    expect(stats.brokenDiverged).toBe(true);
+  }, 30_000);
 
-    let diverged = false;
-    try {
-      replayModelAgainstSut(
-        'packages/quint-models/engineering/defense/agent-patch-governance/AgentPatchGovernance.qnt',
-        () => new BadSelfCertifyingAgentSUT(),
-        projectH,
-      );
-    } catch {
-      diverged = true;
-    }
-    expect(diverged).toBe(true);
-  });
+  test('DurableAgentPersistence ITF actions drive DurableAgentPersistenceSUT with exact state isomorphism and reject BadZombieResumeSUT', () => {
+    const projectH = (h: Record<string, unknown>) => ({
+      rootVersion: asInt(h.rootVersion),
+      merkleHistoryIntact: Boolean(h.merkleHistoryIntact),
+      preCommitStable: Boolean(h.preCommitStable),
+      agentCrashed: Boolean(h.agentCrashed),
+      authorityRevoked: Boolean(h.authorityRevoked),
+      resumeReattested: Boolean(h.resumeReattested),
+      inFlightIntent: Boolean(h.inFlightIntent),
+      unsafeUnstableCommits: asInt(h.unsafeUnstableCommits),
+      unsafeZombieEffects: asInt(h.unsafeZombieEffects),
+      duplicateCrashEffects: asInt(h.duplicateCrashEffects),
+    });
+    const stats = replayModelAgainstSut(
+      'packages/quint-models/engineering/defense/durable-agent-persistence/DurableAgentPersistence.qnt',
+      () => new DurableAgentPersistenceSUT(),
+      projectH,
+      () => new BadZombieResumeSUT(),
+    );
+    expect(stats.transitions).toBeGreaterThan(50);
+    expect(stats.brokenDiverged).toBe(true);
+  }, 30_000);
 });

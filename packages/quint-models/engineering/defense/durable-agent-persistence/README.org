@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Orthogonal Persistence & Durable Multi-Agent Crash-Resume Governance
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.defense.durable-agent-persistence=
+- *Subdomain*: =quint.engineering.defense=
+- *Quint Module*: =durable_agent_persistence= (=[[file:DurableAgentPersistence.qnt][DurableAgentPersistence.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/defense/durable-agent-persistence/DurableAgentPersistence=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Frozen M1 Merkle history stays intact, no M3 root commit occurs without pre-commit stability (unsafeUnstableCommits == 0), no resumed effect runs under stale/revoked authority (unsafeZombieEffects == 0), and no crash replay duplicates an unresolved in-flight intent (duplicateCrashEffects == 0).
+
+#+begin_src quint
+val safety = (h.merkleHistoryIntact and h.unsafeUnstableCommits == 0 and h.unsafeZombieEffects == 0 and h.duplicateCrashEffects == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =require-precommit-stable= | =stepUnstableCommit= | =h.unsafeUnstableCommits > 0= |
+| =require-resume-reattestation= | =stepZombieResume= | =h.unsafeZombieEffects > 0= |
+| =forbid-blind-crash-replay-intent= | =stepBlindCrashReplay= | =h.duplicateCrashEffects > 0= |
+
+* Grounded Papers & Specifications
+
+- *Mighty Gerbils (gerbil-persist)*: Orthogonal persistence for concurrent activities via content-addressed Merkle DAG, pre-commit hook stability, and single atomic mutable root cell.
+- *M. Atkinson & R. Morrison (VLDB J. 1995)*: Orthogonally Persistent Object Systems.
+- *Deterministic Engineering (10.153 / 10.155 / 10.156)*: Separating persisted M1 Merkleized evidence from live M3 resume-time authority re-attestation and PendingUnknownEffect intent fencing.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/defense/durable-agent-persistence/DurableAgentPersistence.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/defense/durable-agent-persistence/DurableAgentPersistence.qnt --main=durable_agent_persistence --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite single-root orthogonal persistence and crash-resume governance abstraction; does not model Byzantine storage corruption, multi-region consensus latency, or hardware NVRAM tearing.
