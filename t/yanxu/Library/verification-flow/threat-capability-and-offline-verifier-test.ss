@@ -33,7 +33,7 @@
   (when (file-exists? path)
     (run-process (list "rm" "-rf" path))))
 
-(def (run-verify-cli report-path store-path (air-gapped? #f))
+(def (run-verify-cli report-path store-path (air-gapped? #f) (mode "--verify-report"))
   (let* ((airgap-setup
           (if air-gapped?
             (string-append
@@ -52,7 +52,7 @@
                 "cd \"" repo-root "\"\n"
                 airgap-setup
                 "gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q "
-                "t/support/verification-flow-runner.ss --verify-report "
+                "t/support/offline-attestation-verifier.ss " mode " "
                 "\"" report-path "\" \"" store-path "\""))
          (proc (open-process
                  (list path: "/bin/bash"
@@ -97,22 +97,30 @@
       (def report-path (.get r1 report-path))
 
       ;; 2. Reload portable JSON trust store and verify in-process + via AIR-GAPPED standalone CLI!
-      ;;    Hostile minimal PATH strips `sysml`, `quint`, `lean`, `lake`, `cargo`, `cbmc`, `bun`:
-      ;;    proves `--verify-report` needs ONLY Gerbil + OpenSSL + shasum (zero SysML leakage)!
+      ;;    Hostile minimal PATH strips `sysml`, `shasum`, `quint`, `lean`, `lake`, `cargo`, `cbmc`, `bun`:
+      ;;    proves `offline-attestation-verifier.ss` needs ONLY Gerbil + OpenSSL (zero Fun-Flow/SysML)!
       (def ts-reloaded (load-ed25519-trust-store-json ts-valid-json))
       (check-equal? (verify-report-with-trust-store report-path ts-reloaded) #t)
-      (let-values (((st out) (run-verify-cli report-path ts-valid-json #t)))
+      (let-values (((st out) (run-verify-cli report-path ts-valid-json #t "--verify-report")))
         (check-equal? st 0)
         (check (and (string-contains out "MULTI-METHOD-VERIFY-REPORT-OK") #t) => #t)
         (check (not (string-contains out "RDF conversion")) => #t))
+      ;; Also verify the signed proof cache offline under the same air-gapped minimal PATH!
+      (def cache-file (path-expand "verification-cache.v1.json" cache-dir))
+      (let-values (((st out) (run-verify-cli cache-file ts-valid-json #t "--verify-cache")))
+        (check-equal? st 0)
+        (check (and (string-contains out "MULTI-METHOD-VERIFY-CACHE-OK") #t) => #t)
+        (check (and (string-contains out "entries=2") #t) => #t))
 
-      ;; 3. Negative control A: Revoke K1 in trust-store JSON -> standalone CLI MUST reject!
+      ;; 3. Negative control A: Revoke K1 in trust-store JSON -> standalone CLI MUST reject BOTH report & cache!
       (def ts-revoked
         (make-ed25519-trust-store (list (.get k1 public-key))
                                   (list (.get k1 key-id))))
       (def ts-revoked-json (path-expand "trust-store-revoked.json" work-dir))
       (write-ed25519-trust-store-json ts-revoked ts-revoked-json)
-      (let-values (((st _out) (run-verify-cli report-path ts-revoked-json)))
+      (let-values (((st _out) (run-verify-cli report-path ts-revoked-json #t "--verify-report")))
+        (check (not (= st 0)) => #t))
+      (let-values (((st _out) (run-verify-cli cache-file ts-revoked-json #t "--verify-cache")))
         (check (not (= st 0)) => #t))
 
       ;; 4. Negative control B: Tamper with requestId in report.json -> standalone CLI MUST reject!

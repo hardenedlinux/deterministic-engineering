@@ -31,7 +31,7 @@
   (let* ((cmd (string-append
                 "cd \"" repo-root "\" && "
                 "gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q "
-                "t/support/verification-flow-runner.ss --verify-fleet "
+                "t/support/offline-attestation-verifier.ss --verify-fleet "
                 "\"" fleet-report-path "\" \"" trust-store-path "\""))
          (proc (open-process
                  (list path: "/bin/bash"
