@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+# Root pre-push dispatcher for deterministic-engineering monorepo + subtrees.
+# Runs heavier verification only for packages touched in the pushed commit range.
+# Mirror publication is intentionally delegated to GitHub Actions (publish-packages.yml).
+
+set -euo pipefail
+
+if [ "${DE_SKIP_HOOKS:-0}" = "1" ]; then
+  echo "[githooks/pre-push] DE_SKIP_HOOKS=1 set; skipping pre-push checks." >&2
+  exit 0
+fi
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+REMOTE_NAME="${1:-origin}"
+REMOTE_URL="${2:-}"
+ZERO_SHA="0000000000000000000000000000000000000000"
+
+CHANGED_FILES=""
+
+collect_range_files() {
+  local local_sha="$1"
+  local remote_sha="$2"
+  if [ "$local_sha" = "$ZERO_SHA" ]; then
+    return 0
+  fi
+  if [ "$remote_sha" != "$ZERO_SHA" ] && git cat-file -e "${remote_sha}^{commit}" 2>/dev/null; then
+    git diff --name-only "${remote_sha}..${local_sha}"
+    return 0
+  fi
+  # New remote branch: diff against merge-base with origin/main if available, else inspect commits not on remotes.
+  if git rev-parse --verify --quiet "refs/remotes/${REMOTE_NAME}/main" >/dev/null 2>&1; then
+    local base
+    base="$(git merge-base "$local_sha" "refs/remotes/${REMOTE_NAME}/main" || true)"
+    if [ -n "$base" ] && [ "$base" != "$local_sha" ]; then
+      git diff --name-only "${base}..${local_sha}"
+      return 0
+    fi
+  fi
+  git diff-tree --no-commit-id --name-only -r --root "$local_sha"
+}
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ -z "${local_ref:-}" ] && continue
+
+  # Protect remote main against deletion or non-fast-forward force push unless explicitly overridden.
+  if [ "$remote_ref" = "refs/heads/main" ] && [ "${DE_ALLOW_MAIN_FORCE:-0}" != "1" ]; then
+    if [ "$local_sha" = "$ZERO_SHA" ]; then
+      echo "[githooks/pre-push] ERROR: refusing to delete remote refs/heads/main (set DE_ALLOW_MAIN_FORCE=1 to override)." >&2
+      exit 1
+    fi
+    if [ "$remote_sha" != "$ZERO_SHA" ] && git cat-file -e "${remote_sha}^{commit}" 2>/dev/null; then
+      if ! git merge-base --is-ancestor "$remote_sha" "$local_sha"; then
+        echo "[githooks/pre-push] ERROR: non-fast-forward push to refs/heads/main blocked (breaks read-only subtree mirror lineage)." >&2
+        exit 1
+      fi
+    fi
+  fi
+
+  range_files="$(collect_range_files "$local_sha" "$remote_sha" || true)"
+  if [ -n "$range_files" ]; then
+    CHANGED_FILES="$(printf '%s\n%s\n' "$CHANGED_FILES" "$range_files")"
+  fi
+done
+
+CHANGED_FILES="$(printf '%s\n' "$CHANGED_FILES" | sed '/^$/d' | sort -u)"
+if [ -z "$CHANGED_FILES" ]; then
+  exit 0
+fi
+
+if [ -d "$REPO_ROOT/packages" ]; then
+  for hook in "$REPO_ROOT"/packages/*/.githooks/pre-push; do
+    [ -f "$hook" ] || continue
+    pkg_dir="$(dirname "$(dirname "$hook")")"
+    pkg="$(basename "$pkg_dir")"
+    prefix="packages/${pkg}/"
+    pkg_files="$(printf '%s\n' "$CHANGED_FILES" | grep "^${prefix}" | sed "s|^${prefix}||" || true)"
+    if [ -n "$pkg_files" ]; then
+      echo "[githooks/pre-push] Dispatching subtree hook: packages/${pkg}/.githooks/pre-push (remote=${REMOTE_NAME})" >&2
+      (
+        cd "$pkg_dir"
+        DE_HOOK_MODE="monorepo" \
+        DE_REPO_ROOT="$REPO_ROOT" \
+        DE_SUBTREE_PREFIX="packages/${pkg}" \
+        DE_SUBTREE_CHANGED_FILES="$pkg_files" \
+        DE_PUSH_REMOTE="$REMOTE_NAME" \
+        DE_PUSH_URL="$REMOTE_URL" \
+        bash "$hook"
+      )
+    fi
+  done
+fi

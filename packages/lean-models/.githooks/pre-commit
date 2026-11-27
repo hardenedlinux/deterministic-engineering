@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+# Dual-mode pre-commit hook for packages/lean-models (monorepo & standalone split mirror).
+# Enforces zero-Mathlib, zero-Cedar, zero-sorry/admit, lakefile.toml integrity, and SPDX headers.
+
+set -euo pipefail
+
+PKG_ROOT="$(pwd)"
+if [ "${DE_HOOK_MODE:-standalone}" = "standalone" ]; then
+  PKG_ROOT="$(git rev-parse --show-toplevel)"
+  cd "$PKG_ROOT"
+  CHANGED_FILES="$(git diff --cached --name-only --diff-filter=ACMR)"
+else
+  CHANGED_FILES="${DE_SUBTREE_CHANGED_FILES:-}"
+fi
+
+if [ ! -f "$PKG_ROOT/lakefile.toml" ]; then
+  echo "[lean-models/pre-commit] ERROR: missing lakefile.toml in $PKG_ROOT" >&2
+  exit 1
+fi
+
+if ! grep -q '^name = ' "$PKG_ROOT/lakefile.toml" || ! grep -q '^\[\[lean_lib\]\]' "$PKG_ROOT/lakefile.toml"; then
+  echo "[lean-models/pre-commit] ERROR: lakefile.toml must declare name and [[lean_lib]]" >&2
+  exit 1
+fi
+
+if [ -z "$CHANGED_FILES" ]; then
+  exit 0
+fi
+
+failed=0
+while IFS= read -r rel_path; do
+  [ -z "$rel_path" ] && continue
+  [ -f "$PKG_ROOT/$rel_path" ] || continue
+  case "$rel_path" in
+    *.lean)
+      if [ ! -f "$PKG_ROOT/${rel_path}.license" ] && ! head -n 15 "$PKG_ROOT/$rel_path" | grep -q "SPDX-License-Identifier:"; then
+        echo "[lean-models/pre-commit] ERROR: missing SPDX header in $rel_path" >&2
+        failed=1
+      fi
+      # Strip single-line comments before checking forbidden imports and incomplete proofs.
+      stripped="$(sed 's/--.*$//' "$PKG_ROOT/$rel_path")"
+      if printf '%s\n' "$stripped" | grep -Eq '^[[:space:]]*import[[:space:]]+Mathlib(\.|[[:space:]]|$)'; then
+        echo "[lean-models/pre-commit] ERROR: forbidden 'import Mathlib' in $rel_path (zero-Mathlib policy)" >&2
+        failed=1
+      fi
+      if printf '%s\n' "$stripped" | grep -Eq '^[[:space:]]*import[[:space:]]+Cedar(\.|[[:space:]]|$)'; then
+        echo "[lean-models/pre-commit] ERROR: forbidden 'import Cedar' in $rel_path (zero-Cedar policy)" >&2
+        failed=1
+      fi
+      if printf '%s\n' "$stripped" | grep -Eq '(^|[^[:alnum:]_])(sorry|admit)([^[:alnum:]_]|$)'; then
+        echo "[lean-models/pre-commit] ERROR: incomplete proof token (sorry/admit) found in $rel_path" >&2
+        failed=1
+      fi
+      ;;
+  esac
+done <<< "$CHANGED_FILES"
+
+exit "$failed"

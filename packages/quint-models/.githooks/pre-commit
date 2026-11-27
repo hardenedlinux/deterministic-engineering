@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+# Dual-mode pre-commit hook for packages/quint-models (monorepo & standalone split mirror).
+
+set -euo pipefail
+
+PKG_ROOT="$(pwd)"
+if [ "${DE_HOOK_MODE:-standalone}" = "standalone" ]; then
+  PKG_ROOT="$(git rev-parse --show-toplevel)"
+  cd "$PKG_ROOT"
+  CHANGED_FILES="$(git diff --cached --name-only --diff-filter=ACMR)"
+else
+  CHANGED_FILES="${DE_SUBTREE_CHANGED_FILES:-}"
+fi
+
+if [ ! -f "$PKG_ROOT/package.json" ]; then
+  echo "[quint-models/pre-commit] ERROR: missing package.json in $PKG_ROOT" >&2
+  exit 1
+fi
+
+if command -v bun >/dev/null 2>&1; then
+  bun -e '
+    import { readFileSync } from "node:fs";
+    import { resolve } from "node:path";
+    const pkg = JSON.parse(readFileSync(resolve(process.argv[1], "package.json"), "utf8"));
+    for (const key of ["name", "version", "license"]) {
+      if (!pkg[key] || typeof pkg[key] !== "string") {
+        console.error(`[quint-models/pre-commit] ERROR: package.json missing string field: ${key}`);
+        process.exit(1);
+      }
+    }
+  ' "$PKG_ROOT"
+fi
+
+if [ -z "$CHANGED_FILES" ]; then
+  exit 0
+fi
+
+failed=0
+while IFS= read -r rel_path; do
+  [ -z "$rel_path" ] && continue
+  [ -f "$PKG_ROOT/$rel_path" ] || continue
+  case "$rel_path" in
+    *.qnt)
+      if [ ! -f "$PKG_ROOT/${rel_path}.license" ] && ! head -n 15 "$PKG_ROOT/$rel_path" | grep -q "SPDX-License-Identifier:"; then
+        echo "[quint-models/pre-commit] ERROR: missing SPDX header in $rel_path" >&2
+        failed=1
+      fi
+      if ! grep -Eq '^[[:space:]]*module[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\{' "$PKG_ROOT/$rel_path"; then
+        echo "[quint-models/pre-commit] ERROR: missing Quint module declaration in $rel_path" >&2
+        failed=1
+      fi
+      ;;
+  esac
+done <<< "$CHANGED_FILES"
+
+exit "$failed"

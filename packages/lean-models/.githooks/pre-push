@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+# Dual-mode pre-push hook for packages/lean-models (monorepo & standalone split mirror).
+
+set -euo pipefail
+
+PKG_ROOT="$(pwd)"
+if [ "${DE_HOOK_MODE:-standalone}" = "monorepo" ] && [ -n "${DE_REPO_ROOT:-}" ]; then
+  FLEET_AUDIT="$DE_REPO_ROOT/languages-engineering/ts/defense/agent-audit/leanpoo-fleet-audit.ts"
+  if [ -f "$FLEET_AUDIT" ] && command -v bun >/dev/null 2>&1; then
+    echo "[lean-models/pre-push] Running LeanPoo fleet audit gate..." >&2
+    (cd "$DE_REPO_ROOT" && bun "$FLEET_AUDIT" --json >/dev/null)
+    echo "[lean-models/pre-push] LeanPoo fleet audit PASSED." >&2
+    exit 0
+  fi
+fi
+
+# Standalone mirror fallback: verify lakefile.toml and optionally run lake build.
+test -f "$PKG_ROOT/lakefile.toml" || { echo "[lean-models/pre-push] ERROR: missing lakefile.toml" >&2; exit 1; }
+if [ "${DE_HOOK_RUN_LAKE_BUILD:-0}" = "1" ] && command -v lake >/dev/null 2>&1; then
+  echo "[lean-models/pre-push] Running standalone lake build..." >&2
+  (cd "$PKG_ROOT" && lake build)
+fi

@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+# Dual-mode pre-push hook for packages/quint-modules-resolver (monorepo & standalone mirror).
+
+set -euo pipefail
+
+PKG_ROOT="$(pwd)"
+if [ "${DE_HOOK_FAST:-0}" = "1" ]; then
+  echo "[quint-modules-resolver/pre-push] DE_HOOK_FAST=1 set; skipping resolver test suite." >&2
+  exit 0
+fi
+
+if [ -d "$PKG_ROOT/test" ] && command -v bun >/dev/null 2>&1; then
+  echo "[quint-modules-resolver/pre-push] Running packages/quint-modules-resolver test suite..." >&2
+  (cd "$PKG_ROOT" && bun test ./test)
+fi

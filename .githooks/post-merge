@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+# Root post-merge hook: reports affected packages/* subtrees and dispatches optional
+# packages/<pkg>/.githooks/post-merge hooks without mutating the working tree.
+
+set -euo pipefail
+
+if [ "${DE_SKIP_HOOKS:-0}" = "1" ]; then
+  exit 0
+fi
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+if ! git rev-parse --verify --quiet ORIG_HEAD >/dev/null 2>&1; then
+  exit 0
+fi
+
+MERGED_FILES="$(git diff --name-only ORIG_HEAD..HEAD || true)"
+if [ -z "$MERGED_FILES" ]; then
+  exit 0
+fi
+
+BRANCH_NAME="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo detached)"
+AFFECTED_PKGS=()
+
+if [ -d "$REPO_ROOT/packages" ]; then
+  for pkg_dir in "$REPO_ROOT"/packages/*; do
+    [ -d "$pkg_dir" ] || continue
+    pkg="$(basename "$pkg_dir")"
+    prefix="packages/${pkg}/"
+    pkg_files="$(printf '%s\n' "$MERGED_FILES" | grep "^${prefix}" | sed "s|^${prefix}||" || true)"
+    if [ -n "$pkg_files" ]; then
+      AFFECTED_PKGS+=("$pkg")
+      hook="${pkg_dir}/.githooks/post-merge"
+      if [ -f "$hook" ]; then
+        echo "[githooks/post-merge] Dispatching subtree hook: packages/${pkg}/.githooks/post-merge" >&2
+        (
+          cd "$pkg_dir"
+          DE_HOOK_MODE="monorepo" \
+          DE_REPO_ROOT="$REPO_ROOT" \
+          DE_SUBTREE_PREFIX="packages/${pkg}" \
+          DE_SUBTREE_CHANGED_FILES="$pkg_files" \
+          bash "$hook"
+        )
+      fi
+    fi
+  done
+fi
+
+if [ "${#AFFECTED_PKGS[@]}" -gt 0 ]; then
+  echo "[githooks/post-merge] Subtree packages updated on branch '${BRANCH_NAME}': ${AFFECTED_PKGS[*]}" >&2
+  echo "[githooks/post-merge] Pushing '${BRANCH_NAME}' will trigger branch-mirrored CI sync (.github/workflows/publish-packages.yml)." >&2
+fi

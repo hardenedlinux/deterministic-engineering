@@ -1,0 +1,124 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 10.201 Subtree Git Hooks, Branch-Mirrored CI Sync & Subtree-vs-Submodule Boundary
+#+AUTHOR: hardenedlinux Linux Team and Contributors
+#+DATE: 2026-11-27
+
+* Executive Summary
+
+This architecture decision record establishes the deterministic lifecycle for
+=packages/*= subtrees inside =deterministic-engineering=:
+
+1. *Layered Dual-Mode Git Hooks* (=.githooks/= root dispatchers +
+   =packages/<pkg>/.githooks/= self-contained subtree hooks) installed via the
+   worktree-safe [[file:../../../scripts/install-git-hooks.sh][scripts/install-git-hooks.sh]].
+2. *Branch-Mirrored One-Way Subtree CI Sync* in
+   [[file:../../../.github/workflows/publish-packages.yml][.github/workflows/publish-packages.yml]]
+   covering all four packages (=render=, =quint-models=,
+   =quint-modules-resolver=, =lean-models=), with per-ref =concurrency=
+   locking, fast-forward-only pushes, and strict branch isolation.
+3. *Subtree vs. Git Submodule Engineering Boundary* clarifying how external
+   package maintainers contribute without suffering two-way subtree merge pain,
+   and where Git Submodule is the superior choice (downstream consumers).
+
+* Why Not Replace Monorepo Subtrees with Git Submodules?
+
+| Dimension | Monorepo SSOT + One-Way Subtree Mirror (Chosen Internally) | Git Submodule Inside =deterministic-engineering= |
+|-----------+------------------------------------------------------------+--------------------------------------------------|
+| Atomic cross-package PRs (=packages/lean-models= + =packages/quint-models= + =languages-engineering/=) | Single commit, single PR, single 4-paradigm CI verdict | Requires 2--4 synchronized PRs across separate repos + pointer bump PR |
+| External developer contribution flow | Fork =deterministic-engineering=, edit =packages/<pkg>/=, open PR; mirrors are strictly *read-only* | Must coordinate cross-repo permissions, submodule init, and detached-HEAD friction |
+| Branch synchronization (=main= vs =dev=) | CI mirrors =main -> mirror:main= and =dev -> mirror:dev= automatically on push | Every branch switch risks dirty/stale submodule SHAs or detached HEAD |
+| Downstream consumer pinning (e.g., =cedar-poo-spec=) | Consumer uses *Git Submodule* (or Bun/Lake SHA pin) pointing to the read-only mirror | Same downstream pinning, but without losing monorepo atomicity upstream |
+
+**Architectural rule:**
+- *Upstream (inside =deterministic-engineering=):* Keep =packages/*= as
+  first-class monorepo directories published *one-way* via =git subtree split=
+  to read-only mirrors (=hardenedlinux/deterministic-engineering-<pkg>=).
+  Never accept direct PRs or commits into mirror repositories.
+- *Downstream (inside external consumer repositories such as =cedar-poo-spec=):*
+  Consume the read-only mirrors using *Git Submodule* (tracking =main= on
+  consumer =main= and =dev= on consumer =dev=) or immutable tag/SHA pinning.
+
+* Layered Dual-Mode Git Hook Architecture
+
+Git does not automatically run hooks located inside subdirectories, and
+=git subtree split= does not invoke =pre-commit=. Furthermore, linked Git
+worktrees store =.git= as a pointer file rather than a directory.
+
+To make subtree hooks deterministic across both the monorepo (including linked
+worktrees) and exported standalone mirrors:
+
+1. *Worktree-safe activation:* [[file:../../../scripts/install-git-hooks.sh][scripts/install-git-hooks.sh]]
+   detects linked worktrees and sets
+   =git config --worktree core.hooksPath .githooks= (scoping hooks to the
+   worktree without disturbing sibling worktrees), or
+   =git config --local core.hooksPath .githooks= in a normal clone.
+2. *Root dispatchers (=.githooks/{pre-commit,pre-push,post-merge}=):*
+   - =pre-commit=: fast (<2s) SPDX verification, =G2= static defense audit on
+     staged =languages-engineering/ts/defense/*.ts= files, and prefix-filtered
+     dispatch to =packages/<pkg>/.githooks/pre-commit= *only* for packages with
+     staged changes.
+   - =pre-push=: blocks accidental deletion or non-fast-forward force-push to
+     =refs/heads/main= (preserving read-only mirror lineage), computes the
+     pushed file set, and dispatches =packages/<pkg>/.githooks/pre-push= only
+     for touched packages. Local hooks *never* run =git subtree push=.
+   - =post-merge=: reports merged subtree packages and dispatches optional
+     =packages/<pkg>/.githooks/post-merge=.
+3. *Dual-mode subtree hooks (=packages/<pkg>/.githooks/*=):*
+   Because these hooks live inside each =packages/<pkg>/= prefix, =git subtree split=
+   exports them verbatim into the standalone mirror. Each hook reads
+   =DE_HOOK_MODE=monorepo= + =DE_SUBTREE_CHANGED_FILES= when invoked by the
+   root dispatcher, and falls back to standalone =git diff --cached= when a
+   contributor runs =git config core.hooksPath .githooks= inside a standalone
+   mirror checkout:
+   - [[file:../../../packages/lean-models/.githooks/pre-commit][packages/lean-models/.githooks/pre-commit]]: verifies =lakefile.toml=, SPDX headers, zero =import Mathlib=, zero =import Cedar=, zero =sorry=/=admit=.
+   - [[file:../../../packages/lean-models/.githooks/pre-push][packages/lean-models/.githooks/pre-push]]: runs =leanpoo-fleet-audit.ts --json= in monorepo mode (or optional =lake build= standalone).
+   - [[file:../../../packages/render/.githooks/pre-commit][packages/render/.githooks/pre-commit]] & [[file:../../../packages/render/.githooks/pre-push][pre-push]]: verifies =package.json= exports on disk, SPDX headers, and =bun test ./test=.
+   - [[file:../../../packages/quint-models/.githooks/pre-commit][packages/quint-models/.githooks/pre-commit]]: verifies =package.json=, SPDX headers, and Quint =module= declarations.
+   - [[file:../../../packages/quint-modules-resolver/.githooks/pre-commit][packages/quint-modules-resolver/.githooks/pre-commit]] & [[file:../../../packages/quint-modules-resolver/.githooks/pre-push][pre-push]]: verifies =package.json= exports, SPDX headers, and =bun test ./test=.
+
+* Branch-Mirrored CI Sync Matrix
+
+[[file:../../../.github/workflows/publish-packages.yml][.github/workflows/publish-packages.yml]]
+replaces manual local =git subtree push= with a deterministic two-stage
+=plan -> publish= workflow guarded by =concurrency: group: publish-package-mirrors-${{ github.ref }}= (=cancel-in-progress: false=):
+
+| Monorepo Event | Packages Selected | Mirror Target Ref | Push Semantics |
+|----------------+-------------------+-------------------+----------------|
+| Push to =main= | Changed =packages/<pkg>/= only | =refs/heads/main= | Fast-forward only (no =--force=) |
+| Push to =dev= or =docs/quint-threat-library= | Changed =packages/<pkg>/= only | =refs/heads/<same-branch>= | Fast-forward only; *never* touches mirror =main= |
+| Push tag =<pkg>-v*= | Matching =<pkg>= | =refs/heads/main= + =refs/tags/<pkg>-v*= | Fast-forward only + immutable release tag |
+| =workflow_dispatch= | Selected package or =all= | Explicit =target_branch= (default current ref) | Supports =dry_run: true= split/manifest verification |
+
+* External Maintainer Workflow (Zero Subtree Friction)
+
+1. External contributor forks =hardenedlinux/deterministic-engineering= (never
+   the read-only mirror repos).
+2. Runs =scripts/install-git-hooks.sh= once after cloning.
+3. Edits files inside =packages/<pkg>/= on a feature branch; local =pre-commit=
+   and =pre-push= hooks automatically run only the gates for =<pkg>=.
+4. Opens a PR against =dev= or =main= in =deterministic-engineering=.
+5. Once reviewed and merged:
+   - Merging to =dev= updates =mirror:dev= automatically so downstream =dev=
+     consumers stay continuously in sync without touching =mirror:main=.
+   - Merging to =main= (or tagging =<pkg>-vX.Y.Z=) updates =mirror:main= (and
+     release tag) atomically after full monorepo CI verification.
+
+* Verification
+
+Automated end-to-end tests in
+[[file:../../../languages-engineering/ts/defense/agent-audit/subtree-git-hooks.test.ts][subtree-git-hooks.test.ts]]
+verify in isolated temporary Git repositories and linked worktrees:
+- Root =pre-commit= dispatches only the touched subtree hook and rejects
+  missing SPDX headers, forbidden =import Mathlib= / =import Cedar= / =sorry=
+  in =packages/lean-models/=, and broken exports in =packages/render/=.
+- Standalone split-mirror execution of =packages/lean-models/.githooks/pre-commit=
+  behaves identically without the monorepo root dispatcher.
+- Root =pre-push= blocks non-fast-forward force pushes to =refs/heads/main= and
+  dispatches affected subtree =pre-push= hooks.
+- =scripts/install-git-hooks.sh --worktree= configures worktree-scoped
+  =core.hooksPath= without altering the parent repo's local config.
+- =.github/workflows/publish-packages.yml= enforces all four package manifests,
+  =concurrency= locking, branch-to-branch isolation, and fast-forward-only pushes.
