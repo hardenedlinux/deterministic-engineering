@@ -216,6 +216,14 @@ const MECHANISM_DIRECTIVES: Record<AgingMechanism, AgingRemediationDirective> = 
     antiEvasionWarning:
       'Do NOT evade by storing capability grants decoratively without consulting them on enable_panel, blindly calling self.releases.insert() across versions/publishers, leaving entry_path unvalidated, allowing forged lease_id updates to evict registered devices, or returning cached receipts on mismatched action payloads.',
   },
+  'SM29-governance-policy-latch-antirollback': {
+    mechanism: 'SM29-governance-policy-latch-antirollback',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Evaluate Cedar unless_clauses effect-sensitively (forbid waived ONLY on Some(true); permit suppressed on None or Some(true)), reject same-epoch lower policy_revision replays and same-epoch tripped un-denial in synchronize_proof_envelope, reject same-epoch pre-trip checkpoint untrip in ExecutionCircuitBreaker::restore_durable_state while holding gate lock atomically across restore, preserve retracted_derivations across rearm_by_verified_human, verify durable checkpoint SHA-256 tags in constant time, and enforce bounded lease/derivation capacities.',
+    antiEvasionWarning:
+      'Do NOT evade by testing missing context only on permit-when clauses while leaving forbid-unless fail-open on None, checking only revocation_epoch < floor without same-epoch policy_revision anti-rollback, allowing same-epoch pre-trip durable restore to clear E-Stop, clearing retracted_derivations on human re-arm, or keeping short-circuit `!=` on SHA-256 checkpoint tags.',
+  },
 };
 
 export function getAgingRemediation(finding: AgingFinding): AgingRemediationDirective {

@@ -34,7 +34,8 @@ export type AgingMechanism =
   | 'SM25-single-owner-graph-governance'
   | 'SM26-control-plane-auth-governance'
   | 'SM27-policy-gate-blindspot-confinement'
-  | 'SM28-plugin-grant-rollback-lease';
+  | 'SM28-plugin-grant-rollback-lease'
+  | 'SM29-governance-policy-latch-antirollback';
 
 export interface AgingFinding {
   ruleId: string;
@@ -1406,6 +1407,93 @@ function auditRust(clean: string): AgingFinding[] {
     }
   }
 
+  // 42. Rust CompiledCedarPolicy::matches evaluates `unless_clauses` with `!= Some(false)` unconditionally,
+  //     making `forbid ... unless` fail OPEN when a required exemption context key is missing (None) (ADV-L4, SM29).
+  const cedarMatchesMatch = /\bfn\s+matches\s*\(\s*&self\s*,\s*\w+\s*:\s*&CedarEvaluationRequest\s*\)/.exec(clean);
+  if (cedarMatchesMatch) {
+    const fnBody = extractBraceBlock(clean, cedarMatchesMatch.index);
+    const hasUnlessLoop = /\bunless_clauses\b[\s\S]{0,220}\beval_condition_block\s*\([^)]*\)\s*!=\s*Some\s*\(\s*false\s*\)/.test(fnBody);
+    const handlesForbidStrict =
+      /\bCedarEffect::Forbid\b/.test(fnBody) &&
+      /\beval_condition_block\s*\([^)]*\)\s*==\s*Some\s*\(\s*true\s*\)/.test(fnBody);
+    if (hasUnlessLoop && !handlesForbidStrict) {
+      findings.push({
+        ruleId: 'rust-cedar-forbid-unless-missing-key-failopen',
+        mechanism: 'SM29-governance-policy-latch-antirollback',
+        language: 'rust',
+        line: lineOfIndex(clean, cedarMatchesMatch.index),
+        message: 'CompiledCedarPolicy::matches evaluates unless_clauses with != Some(false) for all effects, silently waiving forbid policies when a context key is missing (None -> fail-open, ADV-L4, SM29).',
+      });
+    }
+  }
+
+  // 43. Rust rearm_by_verified_human clears retracted_derivations, resurrecting invalidated Bi-Temporal TM conclusions (ADV-L4, SM29).
+  const rearmHumanMatch = /\bfn\s+rearm_by_verified_human\s*\([^)]*\)/.exec(clean);
+  if (rearmHumanMatch) {
+    const fnBody = extractBraceBlock(clean, rearmHumanMatch.index);
+    if (/\bretracted_(?:derivations|conclusions)\s*\.\s*clear\s*\(\s*\)/.test(fnBody)) {
+      findings.push({
+        ruleId: 'rust-governance-rearm-clears-retracted-derivations',
+        mechanism: 'SM29-governance-policy-latch-antirollback',
+        language: 'rust',
+        line: lineOfIndex(clean, rearmHumanMatch.index),
+        message: 'rearm_by_verified_human clears retracted_derivations, allowing permanently invalidated Bi-Temporal Truth Maintenance derivations to be resurrected after re-arm (ADV-L4, SM29).',
+      });
+    }
+  }
+
+  // 44. Rust synchronize_proof_envelope checks only revocation_epoch < floor without rejecting same-epoch policy_revision rollback (ADV-L4, SM29).
+  const syncProofMatch = /\bfn\s+synchronize_proof_envelope\s*\([^)]*\)/.exec(clean);
+  if (syncProofMatch) {
+    const fnBody = extractBraceBlock(clean, syncProofMatch.index);
+    const assignsRevision = /\bpolicy_revision\s*=\s*envelope\.policy_revision\b/.test(fnBody);
+    const checksRevisionRollback = /\benvelope\.policy_revision\s*<\s*\w+\.policy_revision\b/.test(fnBody);
+    if (assignsRevision && !checksRevisionRollback) {
+      findings.push({
+        ruleId: 'rust-governance-sync-ignores-same-epoch-revision-rollback',
+        mechanism: 'SM29-governance-policy-latch-antirollback',
+        language: 'rust',
+        line: lineOfIndex(clean, syncProofMatch.index),
+        message: 'synchronize_proof_envelope overwrites policy_revision and fences without rejecting same-epoch lower policy_revision replays, enabling rollback of ASCENT fences and Cedar forbids (ADV-L4, SM29).',
+      });
+    }
+  }
+
+  // 45. Rust ExecutionCircuitBreaker::restore_durable_state allows same-epoch pre-trip replay to clear active E-Stop latch (ADV-L4, SM29).
+  const restoreDurableMatch = /\bfn\s+restore_durable_state\s*\([^)]*\)/.exec(clean);
+  if (restoreDurableMatch) {
+    const fnBody = extractBraceBlock(clean, restoreDurableMatch.index);
+    const overwritesTripped = /\b\w+\.tripped\s*=\s*tripped\s*;/.test(fnBody);
+    const blocksSameEpochUntrip =
+      /\btrip_epoch\s*==\s*\w+\.trip_epoch\b[\s\S]{0,120}\b\w+\.tripped\b[\s\S]{0,80}!\s*tripped\b/.test(fnBody);
+    if (overwritesTripped && !blocksSameEpochUntrip) {
+      findings.push({
+        ruleId: 'rust-breaker-restore-untrips-same-epoch-estop',
+        mechanism: 'SM29-governance-policy-latch-antirollback',
+        language: 'rust',
+        line: lineOfIndex(clean, restoreDurableMatch.index),
+        message: 'restore_durable_state overwrites guard.tripped without forbidding same-epoch (trip_epoch == guard.trip_epoch) pre-trip checkpoints from silently clearing an active E-Stop latch (ADV-L4, SM29).',
+      });
+    }
+  }
+
+  // 46. Rust durable checkpoint from_canonical_bytes compares SHA-256 integrity tag via non-constant-time `!=` (ADV-L4, SM29).
+  const fromCanonicalMatch = /\bfn\s+from_canonical_bytes\s*\([^)]*\)/.exec(clean);
+  if (fromCanonicalMatch) {
+    const fnBody = extractBraceBlock(clean, fromCanonicalMatch.index);
+    const usesSha256 = /\bsha256_bytes\s*\(/.test(fnBody);
+    const shortCircuitTagCmp = /\bif\s+(?:tag\s*!=\s*expected_tag|expected_tag\s*!=\s*tag)\b/.test(fnBody);
+    if (usesSha256 && shortCircuitTagCmp) {
+      findings.push({
+        ruleId: 'rust-checkpoint-sha256-non-constant-time-tag',
+        mechanism: 'SM29-governance-policy-latch-antirollback',
+        language: 'rust',
+        line: lineOfIndex(clean, fromCanonicalMatch.index),
+        message: 'from_canonical_bytes verifies durable checkpoint SHA-256 integrity tag using short-circuit `!=` instead of constant-time full-length byte comparison (ADV-L4, SM29).',
+      });
+    }
+  }
+
   return findings;
 }
 
@@ -1685,6 +1773,25 @@ function auditTypeScript(clean: string): AgingFinding[] {
         language: 'ts',
         line: lineOfIndex(clean, tsFindIdemMatch.index),
         message: 'findIdempotentAction matches idempotencyKey without verifying actionName and argsDigest, allowing conflicting payload replay (ADV-L4, SM28).',
+      });
+    }
+  }
+
+  // 18. TS Cedar policy matcher waives forbid-unless on undefined/null missing context keys (ADV-L4, SM29).
+  const tsCedarMatch = /\bfunction\s+matchesCedarPolicy\s*\([^)]*\)/.exec(clean);
+  if (tsCedarMatch) {
+    const fnBody = extractBraceBlock(clean, tsCedarMatch.index + tsCedarMatch[0].length);
+    const hasUnless = /\bunlessClauses\b[\s\S]{0,220}evalConditionBlock\s*\([^)]*\)\s*!==\s*false\b/.test(fnBody);
+    const handlesForbidStrict =
+      /['"]forbid['"]/.test(fnBody) &&
+      /\bevalConditionBlock\s*\([^)]*\)\s*===\s*true\b/.test(fnBody);
+    if (hasUnless && !handlesForbidStrict) {
+      findings.push({
+        ruleId: 'ts-cedar-forbid-unless-failopen',
+        mechanism: 'SM29-governance-policy-latch-antirollback',
+        language: 'ts',
+        line: lineOfIndex(clean, tsCedarMatch.index),
+        message: 'matchesCedarPolicy waives unlessClauses whenever evalConditionBlock !== false, silently disabling forbid policies when a context key is missing (ADV-L4, SM29).',
       });
     }
   }

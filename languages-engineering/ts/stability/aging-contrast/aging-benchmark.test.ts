@@ -2489,10 +2489,204 @@ export function findIdempotentAction(
   return hit;
 }`,
   },
+  // --- SM29: ADV-L4 governance policy-eval fail-closed, revision/latch anti-rollback & retraction persistence (SA163-SA172) ---
+  {
+    id: 'SA163',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-cedar-forbid-unless-missing-key-failopen',
+    source: `
+impl CompiledCedarPolicy {
+  pub fn matches(&self, req: &CedarEvaluationRequest) -> bool {
+    for block in &self.unless_clauses {
+      if eval_condition_block(block, &req.context) != Some(false) {
+        return false;
+      }
+    }
+    true
+  }
+}`,
+  },
+  {
+    id: 'SA164',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-governance-rearm-clears-retracted-derivations',
+    source: `
+impl GovernanceAdmissionGate {
+  pub fn rearm_by_verified_human(&self, actor: BreakerActor) -> Result<(), GovernanceAdmissionError> {
+    let mut guard = self.inner.lock().unwrap();
+    guard.last_admitted = true;
+    guard.retracted_derivations.clear();
+    Ok(())
+  }
+}`,
+  },
+  {
+    id: 'SA165',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-governance-sync-ignores-same-epoch-revision-rollback',
+    source: `
+impl GovernanceAdmissionGate {
+  pub fn synchronize_proof_envelope(&self, envelope: &GovernanceProofEnvelope) -> Result<(), GovernanceAdmissionError> {
+    let mut guard = self.inner.lock().unwrap();
+    if envelope.revocation_epoch < guard.min_revocation_epoch {
+      return Err(GovernanceAdmissionError::StaleProofEpoch { supplied: envelope.revocation_epoch, current_floor: guard.min_revocation_epoch });
+    }
+    guard.min_revocation_epoch = envelope.revocation_epoch;
+    guard.policy_revision = envelope.policy_revision;
+    Ok(())
+  }
+}`,
+  },
+  {
+    id: 'SA166',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-breaker-restore-untrips-same-epoch-estop',
+    source: `
+impl ExecutionCircuitBreaker {
+  pub fn restore_durable_state(&self, tripped: bool, trip_epoch: BreakerTripEpoch, budget_used: u32) -> Result<(), BreakerRejectionReason> {
+    let mut guard = self.inner.lock().unwrap();
+    if trip_epoch < guard.trip_epoch {
+      return Err(BreakerRejectionReason::StaleLeaseEpoch { lease_epoch: trip_epoch, current_epoch: guard.trip_epoch });
+    }
+    guard.tripped = tripped;
+    guard.trip_epoch = trip_epoch;
+    Ok(())
+  }
+}`,
+  },
+  {
+    id: 'SA167',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-checkpoint-sha256-non-constant-time-tag',
+    source: `
+impl GovernanceDurableCheckpoint {
+  pub fn from_canonical_bytes(bytes: &[u8]) -> Result<Self, GovernanceAdmissionError> {
+    let (body, tag) = bytes.split_at(bytes.len() - 32);
+    let expected_tag = sha256_bytes(body);
+    if tag != expected_tag {
+      return Err(GovernanceAdmissionError::CorruptDurableCheckpoint("mismatch".to_owned()));
+    }
+    Ok(Self::default())
+  }
+}`,
+  },
+  {
+    id: 'SA168',
+    language: 'ts',
+    expectedPass: false,
+    expectedRuleId: 'ts-cedar-forbid-unless-failopen',
+    source: `
+export function matchesCedarPolicy(policy: {effect: 'permit' | 'forbid'; unlessClauses: unknown[]}, ctx: Record<string, unknown>): boolean {
+  for (const block of policy.unlessClauses) {
+    if (evalConditionBlock(block, ctx) !== false) {
+      return false;
+    }
+  }
+  return true;
+}`,
+  },
+  {
+    id: 'SA169',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+impl CompiledCedarPolicy {
+  pub fn matches(&self, req: &CedarEvaluationRequest) -> bool {
+    for block in &self.unless_clauses {
+      let waived = match self.effect {
+        CedarEffect::Forbid => eval_condition_block(block, &req.context) == Some(true),
+        CedarEffect::Permit => eval_condition_block(block, &req.context) != Some(false),
+      };
+      if waived {
+        return false;
+      }
+    }
+    true
+  }
+}`,
+  },
+  {
+    id: 'SA170',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+impl GovernanceAdmissionGate {
+  pub fn rearm_by_verified_human(&self, actor: BreakerActor) -> Result<(), GovernanceAdmissionError> {
+    let mut guard = self.inner.lock().map_err(|_| GovernanceAdmissionError::LockPoisoned)?;
+    guard.last_admitted = true;
+    guard.rejection_reasons.clear();
+    Ok(())
+  }
+  pub fn synchronize_proof_envelope(&self, envelope: &GovernanceProofEnvelope) -> Result<(), GovernanceAdmissionError> {
+    let mut guard = self.inner.lock().map_err(|_| GovernanceAdmissionError::LockPoisoned)?;
+    if envelope.revocation_epoch < guard.min_revocation_epoch {
+      return Err(GovernanceAdmissionError::StaleProofEpoch { supplied: envelope.revocation_epoch, current_floor: guard.min_revocation_epoch });
+    }
+    if envelope.revocation_epoch == guard.min_revocation_epoch && envelope.policy_revision < guard.policy_revision {
+      return Err(GovernanceAdmissionError::ProofEnvelopeRejected(vec!["stale-policy-revision".to_owned()]));
+    }
+    guard.min_revocation_epoch = envelope.revocation_epoch;
+    guard.policy_revision = envelope.policy_revision;
+    Ok(())
+  }
+}
+impl GovernanceDurableCheckpoint {
+  pub fn from_canonical_bytes(bytes: &[u8]) -> Result<Self, GovernanceAdmissionError> {
+    let (body, tag) = bytes.split_at(bytes.len() - 32);
+    let expected_tag = sha256_bytes(body);
+    if !constant_time_eq_32(tag, &expected_tag) {
+      return Err(GovernanceAdmissionError::CorruptDurableCheckpoint("mismatch".to_owned()));
+    }
+    Ok(Self::default())
+  }
+}`,
+  },
+  {
+    id: 'SA171',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+impl ExecutionCircuitBreaker {
+  pub fn restore_durable_state(&self, tripped: bool, trip_epoch: BreakerTripEpoch, budget_used: u32) -> Result<(), BreakerRejectionReason> {
+    let mut guard = self.inner.lock().map_err(|_| BreakerRejectionReason::LockPoisoned)?;
+    if trip_epoch < guard.trip_epoch {
+      return Err(BreakerRejectionReason::StaleLeaseEpoch { lease_epoch: trip_epoch, current_epoch: guard.trip_epoch });
+    }
+    if trip_epoch == guard.trip_epoch && guard.tripped && !tripped {
+      return Err(BreakerRejectionReason::BreakerTripped { trip_epoch: guard.trip_epoch, reason: guard.last_trip_reason.clone() });
+    }
+    guard.tripped = tripped;
+    guard.trip_epoch = trip_epoch;
+    Ok(())
+  }
+}`,
+  },
+  {
+    id: 'SA172',
+    language: 'ts',
+    expectedPass: true,
+    source: `
+export function matchesCedarPolicy(policy: {effect: 'permit' | 'forbid'; unlessClauses: unknown[]}, ctx: Record<string, unknown>): boolean {
+  for (const block of policy.unlessClauses) {
+    const waived = policy.effect === 'forbid'
+      ? evalConditionBlock(block, ctx) === true
+      : evalConditionBlock(block, ctx) !== false;
+    if (waived) {
+      return false;
+    }
+  }
+  return true;
+}`,
+  },
 ];
 
-describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA162)', () => {
-  test('achieves 162/162 exact independent-gold match (tp=91, tn=71, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
+describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA172)', () => {
+  test('achieves 172/172 exact independent-gold match (tp=97, tn=75, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
     let tp = 0;
     let tn = 0;
     let fp = 0;
@@ -2515,7 +2709,7 @@ describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA162)', () 
       }
     }
 
-    expect({tp, tn, fp, fn}).toEqual({tp: 91, tn: 71, fp: 0, fn: 0});
+    expect({tp, tn, fp, fn}).toEqual({tp: 97, tn: 75, fp: 0, fn: 0});
   });
 
   test('clean Rust deterministic buffer pool & bounded retry passes with 0 findings', () => {

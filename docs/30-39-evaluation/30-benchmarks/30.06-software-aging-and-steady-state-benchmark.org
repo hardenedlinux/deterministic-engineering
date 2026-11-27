@@ -33,9 +33,11 @@ governance confinement, and hostile (=ADV-L4=) control-plane entrypoint
 Bearer authentication, empty-Bearer prefix rejection, mutating RPC E-Stop
 governance confinement, scrubbed bounded release-gate shell execution, and
 hostile (=ADV-L4=) policy-gate blind-spot, dependency-cycle masking & thin
-entrypoint confinement, and hostile (=ADV-L4=) plugin grant, release
+entrypoint confinement, hostile (=ADV-L4=) plugin grant, release
 anti-rollback, confined =entry_path=, bound device-lease & idempotency-digest
-confinement defects* (=SM1=–=SM28= in
+confinement, and hostile (=ADV-L4=) governance policy-evaluation fail-closed,
+monotonic revision/latch anti-rollback & causal retraction persistence defects*
+(=SM1=–=SM29= in
 [[file:../../40-49-research/40-reference-studies/40.04-software-aging-and-steady-state-stability.org][40.04]],
 [[file:../../40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org][40.05]],
 and [[file:../../40-49-research/40-reference-studies/40.06-ci-cd-scientific-caching-and-subdomain-sharding.org][40.06]])
@@ -44,7 +46,7 @@ realistic multi-layer agent/UI architectures (**Marlin Rust/Scheme Host + MyGo
 Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
 
 - *Independent Gold & Mandatory Adversarial Pressure Floor (=>= ADV-L3=, Target =ADV-L4=)*:
-  Every static case (=SA01=–=SA162=), closed-loop persona, formal countermodel,
+  Every static case (=SA01=–=SA172=), closed-loop persona, formal countermodel,
   metamorphic search property (=MR1=–=MR6=), structure-aware / hostile fuzz
   property, and runtime soak/exploit assertion carries a fixed independent
   expected outcome (=pass= vs. =refuse= + exact mechanism / rule / ITF
@@ -52,8 +54,8 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
   =ADV-L1= happy-path-only suites are formally rejected in Lean 4).
 - *Five Coupled Verification Layers*:
   1. *Formal Finite-State Models (Quint + Apalache 0.62.1 + 100% =--mbt=)*:
-     29 stability & AI-defensive models (85 auto-derived countermodels — with
-     =SM22= marking the 100th and =SM28= marking the **106th Quint formal
+     30 stability & AI-defensive models (89 auto-derived countermodels — with
+     =SM22= marking the 100th and =SM29= marking the **107th Quint formal
      model** in the repository!) + 3 UI concurrency kernel models (7
      auto-derived countermodels) covering cyclic
      drain, buffer ratchet, metastable retry collapse, GC headroom pacing,
@@ -97,12 +99,16 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
      =ADV-L4= plugin capability-grant enforcement & revocation closure, signed
      release anti-rollback & publisher continuity, confined =entry_path=, bound
      device-lease verification under E-Stop, and digest-verified idempotency
-     replay (=SM28=).
+     replay (=SM28=), and hostile =ADV-L4= governance policy-evaluation
+     fail-closed (Cedar =forbid ... unless= missing-key defense), monotonic
+     same-epoch =policy_revision= anti-rollback, same-epoch E-Stop checkpoint
+     anti-untrip, Bi-Temporal TM retraction persistence across human re-arm,
+     constant-time SHA-256 verification & bounded lease registration (=SM29=).
   2. *Unbounded Algebraic & LeanPoo Object Proofs (Lean 4)*:
      [[file:../../../packages/lean-models/DeterministicEngineering/Core/Stability.lean][Core/Stability.lean]]
-     (Sections 1–17, 51 theorems, zero =sorry=) plus 12 dedicated objectified
-     =LeanPoo= domain modules (138 theorems, zero =sorry=, 189 total stability
-     & AI-defensive theorems; 548 audited theorems across all 46 Lean modules):
+     (Sections 1–17, 51 theorems, zero =sorry=) plus 13 dedicated objectified
+     =LeanPoo= domain modules (152 theorems, zero =sorry=, 203 total stability
+     & AI-defensive theorems; 566 audited theorems across all 47 Lean modules):
      [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/StreamingOutputBudget.lean][Engineering/StreamingOutputBudget.lean]]
      (=SM17=, 10 theorems),
      [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/CiCacheSoundness.lean][Engineering/CiCacheSoundness.lean]]
@@ -145,7 +151,14 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
      closure, monotonic version anti-rollback & publisher continuity with
      confined =entry_path=, bound device-lease verification under E-Stop,
      digest-checked idempotency replay, live countermodels, and
-     regression-invalidated =LeanPoo.Proof.reuse=),
+     regression-invalidated =LeanPoo.Proof.reuse=), and
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/GovernancePolicyAndLatchAntirollback.lean][Engineering/GovernancePolicyAndLatchAntirollback.lean]]
+     (=SM29=, 14 theorems proving fail-closed Cedar =forbid ... unless= &
+     =permit ... unless= under missing context keys, monotonic same-epoch
+     =policy_revision= anti-rollback & tripped un-denial refusal, same-epoch
+     E-Stop checkpoint anti-untrip, Bi-Temporal TM retraction persistence across
+     human re-arm, live countermodels, and regression-invalidated
+     =LeanPoo.Proof.reuse=),
      proving arbitrary-cycle zero drift, ARB linear exhaustion, spike-independent
      capped pool ceilings, GC headroom cycle bounds, bounded fan-out retention,
      bounded-projection idle-eviction liveness, lag-resync/coalesced
@@ -181,7 +194,7 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
        soak, and native OLS Slope Oracle.
      - TypeScript / Bun: Reusable Independent Steady-State Slope Oracle
        ([[file:../../../languages-engineering/ts/stability/aging-contrast/slope-oracle.ts][slope-oracle.ts]]),
-       live Quint =--mbt= ITF state-machine refinement across all 29 formal
+       live Quint =--mbt= ITF state-machine refinement across all 30 formal
        stability & AI-defensive models
        ([[file:../../../languages-engineering/ts/stability/aging-contrast/mbt-stability-replay.test.ts][mbt-stability-replay.test.ts]],
        [[file:../../../languages-engineering/ts/stability/aging-contrast/ipc-ime-chaos-fuzz.test.ts][ipc-ime-chaos-fuzz.test.ts]],
@@ -198,29 +211,30 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
        [[file:../../../languages-engineering/ts/stability/aging-contrast/single-owner-graph-governance-confinement-fuzz.test.ts][single-owner-graph-governance-confinement-fuzz.test.ts]],
        [[file:../../../languages-engineering/ts/stability/aging-contrast/control-plane-auth-and-governance-confinement-fuzz.test.ts][control-plane-auth-and-governance-confinement-fuzz.test.ts]],
        [[file:../../../languages-engineering/ts/stability/aging-contrast/policy-gate-blindspot-and-cycle-confinement-fuzz.test.ts][policy-gate-blindspot-and-cycle-confinement-fuzz.test.ts]],
-       and [[file:../../../languages-engineering/ts/stability/aging-contrast/plugin-grant-rollback-and-lease-confinement-fuzz.test.ts][plugin-grant-rollback-and-lease-confinement-fuzz.test.ts]]),
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/plugin-grant-rollback-and-lease-confinement-fuzz.test.ts][plugin-grant-rollback-and-lease-confinement-fuzz.test.ts]],
+       and [[file:../../../languages-engineering/ts/stability/aging-contrast/governance-policy-and-latch-antirollback-fuzz.test.ts][governance-policy-and-latch-antirollback-fuzz.test.ts]]),
        500-case parametric search metamorphic fuzzing across =MR1=–=MR6= with
        3 deterministic refutations ([[file:../../../languages-engineering/ts/stability/aging-contrast/search-metamorphic-fuzz.test.ts][search-metamorphic-fuzz.test.ts]]),
-       6,000-trial structure-aware & hostile =ADV-L4= fuzzing (250 trials each
-       across =SM12=–=SM21= + 500 hostile =ADV-L4= trials each for =SM22=–=SM28=
-       + 102 live Quint ITF MBT traces), live self-auditing CI workflow/CAS tests,
+       6,500-trial structure-aware & hostile =ADV-L4= fuzzing (250 trials each
+       across =SM12=–=SM21= + 500 hostile =ADV-L4= trials each for =SM22=–=SM29=
+       + 108 live Quint ITF MBT traces), live self-auditing CI workflow/CAS tests,
        and the 4-layer Marlin + MyGo + WebView UI soak suite
        ([[file:../../../languages-engineering/ts/stability/aging-contrast/marlin-mygo-fullstack-soak.test.ts][marlin-mygo-fullstack-soak.test.ts]]).
-  4. *162-Case Multi-Language Aging, Stability & AI-Defensive AST Auditor (=SA01=–=SA162=)*:
+  4. *172-Case Multi-Language Aging, Stability & AI-Defensive AST Auditor (=SA01=–=SA172=)*:
      [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-ast-auditor.ts][aging-ast-auditor.ts]]
      & [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-benchmark.test.ts][aging-benchmark.test.ts]]
-     (=tp=91, tn=71, fp=0, fn=0=), empirically calibrated across full 3-repo
-     production sweeps (**0 SM22–SM28 findings in =marlin-agent-app-server= &
-     =marlin-agent-runtime=**).
+     (=tp=97, tn=75, fp=0, fn=0=), empirically calibrated across full 3-repo
+     production sweeps (**0 SM22–SM29 findings in =marlin-agent-kernel=,
+     =marlin-agent-app-server=, & =marlin-agent-runtime=**).
   5. *Closed-Loop AI Aging & Defensive Governance Harness & CLI*:
      [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-governance-harness.ts][aging-governance-harness.ts]],
      [[file:../../../languages-engineering/ts/stability/aging-contrast/agent-stability-audit.ts][agent-stability-audit.ts]]
      (=just audit-agent-stability=), emitting SARIF 2.1.0 and structured C2
-     repair packets across =SM2=–=SM5=, =SM7=–=SM9=, and =SM12=–=SM28=,
+     repair packets across =SM2=–=SM5=, =SM7=–=SM9=, and =SM12=–=SM29=,
      validated against 3 AI agent personas plus a full-stack Marlin/MyGo C2
      convergence scenario.
 
-* One-Hundred-Sixty-Two-Case Static Aging, Stability & AI-Defensive Cohort (=SA01=–=SA162=)
+* One-Hundred-Seventy-Two-Case Static Aging, Stability & AI-Defensive Cohort (=SA01=–=SA172=)
 :PROPERTIES:
 :CUSTOM_ID: bench3006-cohort
 :END:
@@ -389,6 +403,16 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
 | =SA160= | Rust | Clean control | Pass (0 findings) | =UnifiedPanelManifest::validate= calling =validate_confined_entry_path= + =find_idempotent_action= verifying exact =action_name= & =args_digest= |
 | =SA161= | Rust | Clean control | Pass (0 findings) | =BridgeState::update_device_capabilities= verifying bound =active_leases= + =ApprovalGateService= enforcing =ensure_governance_live= |
 | =SA162= | TypeScript | Clean control | Pass (0 findings) | TS =findIdempotentAction= rejecting conflicting =actionName= or =argsDigest= on =idempotencyKey= reuse |
+| =SA163= | Rust | =SM29= (=ADV-L4=) | Refuse (=rust-cedar-forbid-unless-missing-key-failopen=) | =CompiledCedarPolicy::matches= evaluating =unless_clauses= with =!= Some(false)= unconditionally, silently disabling =forbid= on missing context key (=None=) |
+| =SA164= | Rust | =SM29= (=ADV-L4=) | Refuse (=rust-governance-rearm-clears-retracted-derivations=) | =rearm_by_verified_human= calling =retracted_derivations.clear()=, resurrecting permanently invalidated Bi-Temporal TM conclusions |
+| =SA165= | Rust | =SM29= (=ADV-L4=) | Refuse (=rust-governance-sync-ignores-same-epoch-revision-rollback=) | =synchronize_proof_envelope= overwriting =policy_revision= and fences without rejecting same-epoch lower =policy_revision= replays |
+| =SA166= | Rust | =SM29= (=ADV-L4=) | Refuse (=rust-breaker-restore-untrips-same-epoch-estop=) | =ExecutionCircuitBreaker::restore_durable_state= allowing same-epoch pre-trip checkpoint replay to overwrite active =guard.tripped = false= |
+| =SA167= | Rust | =SM29= (=ADV-L4=) | Refuse (=rust-checkpoint-sha256-non-constant-time-tag=) | =GovernanceDurableCheckpoint::from_canonical_bytes= verifying SHA-256 tag via short-circuit =!= instead of constant-time comparison |
+| =SA168= | TypeScript | =SM29= (=ADV-L4=) | Refuse (=ts-cedar-forbid-unless-failopen=) | TS =matchesCedarPolicy= waiving =forbid ... unless= on missing (=undefined=) context key via =!== false= |
+| =SA169= | Rust | Clean control | Pass (0 findings) | =CompiledCedarPolicy::matches= matching =CedarEffect::Forbid= (=Some(true)= waives) vs =CedarEffect::Permit= (=!= Some(false)= waives) |
+| =SA170= | Rust | Clean control | Pass (0 findings) | Hardened =rearm_by_verified_human= (preserving retractions), =synchronize_proof_envelope= (same-epoch revision anti-rollback) & =from_canonical_bytes= (=constant_time_eq_32=) |
+| =SA171= | Rust | Clean control | Pass (0 findings) | =ExecutionCircuitBreaker::restore_durable_state= refusing =trip_epoch == guard.trip_epoch && guard.tripped && !tripped= |
+| =SA172= | TypeScript | Clean control | Pass (0 findings) | TS =matchesCedarPolicy= waiving ='forbid'= only on ==== true= and ='permit'= on =!== false= |
 
 * Empirical Adversarial Challenge Receipts on Downstream Packages
 :PROPERTIES:
@@ -431,14 +455,15 @@ package-domain adversarial test suites:
 | =marlin-agent-core= | =crates/marlin-agent-app-server/src/{ui_grpc,grpc,bin/marlin_mygo_host}.rs=, =crates/marlin-agent-app-server/examples/mygo_bridge_server.rs=, =crates/marlin-agent-core/src/release.rs=, plus workspace =asp-rust= restoration across 29 crates | =SM26= (=ADV-L4=, 104th Quint Model — Control-Plane Entrypoint Auth, E-Stop Mediation, Release Shell Scrubbing & =asp-rust= Cycle Restoration) | Hostile =ADV-L4= LIVE RED proved **3/3 live runtime exploits + 5/5 real-file static catches** (=SA133=–=SA136=): =marlin_mygo_host.rs= & =examples/mygo_bridge_server.rs= bypassed canonical =MyGoBridgeHost::check_bearer_header= with shadow =fn check_bearer= using short-circuit === and hardcoded ="marlin-dev-token"= fallback; =ui_grpc.rs::check_bearer_header= admitted empty ="Bearer "= prefix payload; mutating control-plane RPCs in =ui_grpc.rs= (10 RPCs) & =grpc.rs= (=AppServer::stream_turn= invoked LLM gateway =calls=1=) bypassed active Operator E-Stop; =crates/marlin-agent-core/src/release.rs= (=sh -lc ... .output()=) leaked live host =OPENAI_API_KEY= + =MARLIN_BRIDGE_TOKEN= straight into =output.stdout=. Architectural audit also confirmed =marlin-agent-app-server= lacked =asp-rust= gating AND 3 local Cargo =[dev-dependencies]= cycles (=storage<->sessions=, =runtime<->test-support<->kernel=, =stream<->harness/gerbil-scheme=) had blinded =just rust-dev-gate= (=workspace_policy=) | Deleted shadow auth & ="marlin-dev-token"= fallback in favor of single-owner =MyGoBridgeHost::{resolve_bridge_auth_header,check_bearer_header}= (rejecting bare ="Bearer"= & ="Bearer "= empty payloads fail-closed), wired fail-closed =ensure_governance_live= across all 10 =ui_grpc.rs= & 4 =grpc.rs= control-plane RPCs plus shared =GovernanceAdmissionGate= in all 3 =marlin_mygo_host= modes, hardened =release.rs= (=sh -c= + =env_clear()= 17-var allowlist + =Stdio::null()= + 256 KiB concurrent pipe drain + 60s timeout), mounted =asp-rust= gate on =marlin-agent-app-server=, and broke all 3 Cargo dev-dep cycles (**29/29 crates acyclic, =cyclic_sccs=0=**) restoring =workspace_policy= (exposing =207 Warning / 337 Info=, with =marlin-agent-kernel= (82) + =marlin-agent-app-server= (54) accounting for 65.7% of all warnings!): =app-server --lib= **22/22 PASS**, =marlin-mygo-host= **6/6 PASS**, =ui_grpc_stability= HTTP/2 **2/2 PASS**, =app-server asp-rust= **1/1 PASS**, =marlin-agent-core release= **1/1 + 7/7 PASS**, =sessions= **6/6 PASS**, =stream= **20/20 PASS**, =harness runtime_repair_loop= **5/5 PASS**, =clippy -D warnings= clean, **3-repo 1,041-file sweep (=493 marlin-agent-core + 283 marlin-mygo + 265 weaver=) = 0 SM22–SM26 findings (=SA01=–=SA142=)** |
 | =marlin-agent-core= & =deterministic-engineering= | =crates/marlin-agent-app-server/src/{mygo_host,scheme_ctl,wire}/=, =crates/marlin-agent-app-server/src/bin/{marlin_mygo_host,marlin_scheme_ctl}.rs=, =crates/marlin-agent-kernel/tests/integration/*_mbt.rs=, =.github/workflows/ci.yaml=, =languages-engineering/go/concurrency/stability_soak_test.go= | =SM27= (=ADV-L4=, 105th Quint Model — Policy-Gate Blind-Spot, Dependency-Cycle Masking & Entrypoint Confinement) | Live =c98c303= CI audit confirmed 5/6 code workflows GREEN after =bun.lock= fix and caught 1 real =floor-weakening/go-test-skip= finding in =stability_soak_test.go:150= (=t.Skipf= on missing =quint=). In =marlin-agent-core=, restored =workspace_policy= (after breaking 3 dev-dep cycles) & =SA143=–=SA148= caught **207 workspace Warnings** concentrated in =marlin-agent-kernel= (82, incl. 65 in 4 fat root MBT test files) and =marlin-agent-app-server= (54, incl. 33 =RUST-MOD-R005= fat binary functions + =SM27 SA144= live hit in =marlin_scheme_ctl.rs= & 1 =RUST-MOD-R008= inline =wire.rs=) | Replaced =t.Skipf= in =stability_soak_test.go= with local =node_modules/.bin/quint= fallback + fail-closed =t.Fatalf= (G2 self-audit **5/5 = 0 findings**, =go test -race= PASS); extracted =marlin_mygo_host.rs= & =marlin_scheme_ctl.rs= into owned thin-facade library modules (=src/mygo_host/{mod,runner,config}.rs=, =src/scheme_ctl/{mod,runner,args}.rs=) leaving 10-line launchers + moved unit tests to =tests/unit/{mygo_host,scheme_ctl}.rs=, modularized =src/wire/=, moved 4 =marlin-agent-kernel= root MBT suites to =tests/integration/= via =[[test]]=, and wired =unit_test= + bin gates into =ci.yaml=: =marlin-agent-app-server= Warnings **54 -> 13 (-75.9%, 0 =RUST-MOD-R005=/=R008=/=R001=)**, =marlin-agent-kernel= Warnings **82 -> 17 (-79.3%)**, whole-workspace 29-crate Warnings **207 -> 103 (-50.2%)**, =app-server --features ui-grpc --test unit_test= **14/14 PASS (0.97s)**, =clippy -D warnings= clean, =marlin-agent-app-server= **0 SM26+SM27 findings**, **996-file =marlin-agent-core= sweep = 0 SM22–SM26 findings (=SA01=–=SA152=)** |
 | =marlin-agent-core= | =crates/marlin-agent-runtime/src/plugin/{panel_lifecycle,panel_release}.rs=, =crates/marlin-agent-runtime/tests/unit/runtime/panel_plugin.rs=, =crates/marlin-agent-app-server/src/{grpc,scheme_host_client,ui_grpc}/=, =crates/marlin-agent-app-server/tests/{unit,integration/ui_grpc,integration/ui_grpc_stability.rs}= | =SM28= (=ADV-L4=, 106th Quint Model — Plugin Grant, Anti-Rollback, Entry-Path & Bound-Lease Confinement + =app-server= 0-Warning Fail-Closed =asp-rust= Gate) | Hostile =ADV-L4= LIVE RED proved **3/3 runtime exploits + 5/5 real-file static catches** (=SA153=–=SA157=): =PanelPluginHost::enable_panel= activated panels declaring =requires = ["read_tasks"]= with ZERO operator grants (=Ok(gen=1)= vs =Err(MissingCapability)=) and =set_project_grants= never validated declared capabilities or closed revoked generations; =UnifiedPanelManifest::validate= admitted signed traversal =entry_path="../../../etc/passwd"=; =PanelPluginHost::install= blindly overwrote installed releases across versions/publishers; =find_idempotent_action= returned cached receipts on conflicting =action_name=/=args_json=; over live HTTP/2 gRPC, =MyGoBridgeHost::submit_tool_review_decision= claimed =DeviceCapability= gates (=grpc-status: 0, claimed: true=) and dispatched =DeviceInvocationRequest= during active Operator E-Stop while =BridgeState::update_device_capabilities= accepted forged =lease_id=s evicting real registered devices | Hardened =panel_release.rs= (=validate_confined_entry_path= + =has_capability=), =panel_lifecycle.rs= (grant enforcement on =enable_panel=, declared-cap validation + revocation closure in =set_project_grants=, monotonic version anti-rollback + publisher continuity in =install=, exact =(action_name, args_digest)= verification in =find_idempotent_action=, bounded settings/args/activations), and =src/ui_grpc/{state,host,workbench_gate,device_projection_app}.rs= (bound =active_leases= rejecting forged leases with =PermissionDenied= + fail-closed =ensure_governance_live= on =submit_tool_review_decision=, =submit_graph_human_decision=, and =open_device_channel=); extracted all 5 inline test modules to =tests/unit/= and decomposed =grpc/=, =scheme_host_client/=, =ui_grpc/=, and =tests/integration/ui_grpc/= into pure-reexport facades + cohesive leaves, upgrading =tests/unit/policy.rs= to fail-closed =Error=0 / Warning=0=: =marlin-agent-runtime --test unit_test= **161/161 PASS (1.04s, incl. SM28 5/5)**, =marlin-agent-app-server --features ui-grpc --test unit_test= **36/36 PASS (2.31s, fail-closed =enforce_asp_rust_gate= 0 Error / 0 Warning — down from 54 -> 13 -> 0!)**, =ui_grpc_stability= **4/4 PASS (0.11s)**, =ui_grpc= **8/8 PASS (4.82s)**, =clippy --all-targets -D warnings= clean, 29-crate =workspace_policy= Warnings **207 -> 103 -> 91 (-56.0%)**, **984-file =marlin-agent-core= sweep = 0 SM22–SM26 & 0 SM28 findings (=SA01=–=SA162=)** |
+| =marlin-agent-core= | =crates/marlin-agent-kernel/src/{governance_cedar,governance_admission,execution_breaker}.rs=, =crates/marlin-agent-kernel/tests/unit/kernel/sm29_governance_antirollback.rs=, =crates/marlin-agent-kernel/tests/integration/durable_governance_mbt.rs= | =SM29= (=ADV-L4=, 107th Quint Model — Governance Policy-Evaluation Fail-Closed, Monotonic Revision/Latch Anti-Rollback & Causal Retraction Persistence) | Hostile =ADV-L4= LIVE RED proved **5/5 live runtime exploits + 5/5 real-file static catches** (=SA163=–=SA167=): omitting =context.approval_ticket= on a Cedar =forbid ... unless= policy silently disabled the =forbid= and returned =Allow { matching_permits: ["marlin.permit.ops-export"] }=; replaying same-epoch lower =policy_revision= (=epoch=2, rev=1= after =epoch=2, rev=5=) wiped =fenced_actors= & =cedar_policies= to 0; replaying a legitimately signed pre-trip =MGV1= checkpoint at the same epoch silently cleared active Operator E-Stop (=tripped: true -> false=); =rearm_by_verified_human= wiped =retracted_derivations= allowing resurrection of permanently invalidated Bi-Temporal TM derivations; =register_derived_lease= returned =Ok(())= while breaker was tripped; and =from_canonical_bytes= compared SHA-256 tags via short-circuit =!= | Hardened =governance_cedar.rs= (effect-sensitive =unless_clauses=: =Forbid= waived ONLY on =Some(true)=; =Permit= fails closed on =None=), =governance_admission.rs= (same-epoch =policy_revision= anti-rollback & tripped un-denial refusal, atomic single-lock =restore_durable_checkpoint_bytes= with =constant_time_eq_32=, preserved =retracted_derivations= across =rearm_by_verified_human=, tripped/stale/bounded =register_derived_lease=), and =execution_breaker.rs= (same-epoch E-Stop anti-untrip & monotonic budget in =restore_durable_state= + =MAX_ACTIVE_LEASES=4096=): =marlin-agent-kernel --lib= **33/33 PASS (0.08s)**, =--test unit_test= **97/97 PASS (3.40s, incl. SM29 5/5 + =enforce_asp_rust_gate=)**, =durable_governance_mbt= **1/1 PASS (54.39s, all 12 countermodels + SM29 dual missing-key checks)**, =execution_breaker_mbt= **5/5 PASS (49.30s)**, =governance_admission_mbt= **1/1 PASS (25.83s)**, =governance_plane_mbt= **4/4 PASS (118.00s)**, =clippy --all-targets --no-deps -D warnings= clean, **32/32 =marlin-agent-kernel/src= files = 0 findings (=SA01=–=SA172=)** |
 
 * Unified Verification Command
 
 #+begin_src sh
-# Run full 5-language stability & AI-defensive gate (Quint/MBT + Lean 4 / LeanPoo + C/CBMC + C++20 + Rust + Go devenv -race/synctest/runtime-soak + TS Slope Oracle + SA01-SA162 + Metamorphic/ADV-L4 Fuzz + Closed-Loop Governance):
+# Run full 5-language stability & AI-defensive gate (Quint/MBT + Lean 4 / LeanPoo + C/CBMC + C++20 + Rust + Go devenv -race/synctest/runtime-soak + TS Slope Oracle + SA01-SA172 + Metamorphic/ADV-L4 Fuzz + Closed-Loop Governance):
 just check-stability
 
-# Audit current git diff or explicit files for SM2-SM5, SM7-SM9, and SM12-SM28 aging/search/cancellation/pipe/persistence/ADV-L4-confinement hazards:
+# Audit current git diff or explicit files for SM2-SM5, SM7-SM9, and SM12-SM29 aging/search/cancellation/pipe/persistence/ADV-L4-confinement hazards:
 just audit-agent-stability --files languages-engineering/go/stability/aging-contrast/deterministic_steady.go
 #+end_src
 
