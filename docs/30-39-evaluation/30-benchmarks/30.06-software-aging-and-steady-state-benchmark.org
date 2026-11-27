@@ -1,0 +1,215 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 30.06 Cross-Language Software Aging & AI Steady-State Stability Benchmark
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 30.06
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+#+FILETAGS: :evaluation:benchmark:software-aging:steady-state:cross-language:ai-engineering:
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:../../40-49-research/40-reference-studies/40.04-software-aging-and-steady-state-stability.org][40.04 Software Aging Study]] | [[file:../../40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org][40.05 Search Stability & PBT/Fuzzing Study]] | [[file:30.05-agent-defensive-coding-benchmark.org][30.05 Defensive Coding Benchmark]]
+
+* Benchmark Scope and Independent Gold Policy
+:PROPERTIES:
+:CUSTOM_ID: bench3006-scope
+:STATUS: implemented-verified
+:END:
+
+This benchmark evaluates whether a language-agnostic, multi-method engineering
+gate can deterministically detect, refute, and guide AI repair of *long-running
+software aging and interactive search stability defects* (=SM1=–=SM11= in
+[[file:../../40-49-research/40-reference-studies/40.04-software-aging-and-steady-state-stability.org][40.04]] and
+[[file:../../40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org][40.05]]) across five implementation
+languages (**Go, Rust, TypeScript, C, C++**) and realistic multi-layer agent/UI
+architectures (**Marlin Rust/Scheme Host + MyGo Go Bridge + WebView TS UI**)
+without requiring multi-hour soak runs in CI.
+
+- *Independent Gold*: Every static case (=SA01=–=SA68=), closed-loop persona,
+  formal countermodel, metamorphic search property (=MR1=–=MR6=), and runtime
+  soak assertion carries a fixed independent expected outcome (=pass= vs.
+  =refuse= + exact mechanism / rule / ITF predicate).
+- *Five Coupled Verification Layers*:
+  1. *Formal Finite-State Models (Quint + Apalache 0.62.1 + 100% =--mbt=)*:
+     12 stability models (27 auto-derived countermodels) + 3 UI concurrency
+     kernel models (7 auto-derived countermodels) covering cyclic drain, buffer
+     ratchet, metastable retry collapse, GC headroom pacing, slow-consumer
+     fan-out eviction, bounded projection idle eviction & side-map cleanup,
+     broadcast lag snapshot-resync & coalesced checkpoint flushing, UI bounded
+     DOM viewport & $O(1)$ incremental frame budgets, interactive search query
+     generation fencing & selection identity anchoring (=SM8=), single-flight
+     leader cancellation safety & armed notify wakeup (=SM9=), search query
+     metamorphic algebra & clipped viewport hit-testing (=SM10=), and
+     priority-isolated bounded mailboxes & $O(1)$ latest-wins =watch= channels (=SM11=).
+  2. *Unbounded Algebraic Proofs (Lean 4)*:
+     [[file:../../../packages/lean-models/DeterministicEngineering/Core/Stability.lean][Core/Stability.lean]]
+     (Sections 1–12, zero =sorry=) proving arbitrary-cycle zero drift, ARB
+     linear exhaustion of any finite capacity, spike-independent capped pool
+     ceilings, GC headroom cycle bounds, bounded fan-out retention,
+     bounded-projection idle-eviction liveness, lag-resync/coalesced
+     write-amplification bounds, UI viewport/render-budget independence from
+     transcript history length, and =SM8=–=SM11= monotonic generation fencing,
+     single-flight cancellation liveness, metamorphic query algebra, and
+     priority-isolated bounded mailbox headroom & watch-slot monotonicity.
+  3. *Live Runtime, PBT & Structure-Aware Fuzzing Contrasts (5 Languages + Marlin/MyGo Full-Stack)*:
+     - Go 1.26.7 (via modular =devenv=): =testing/synctest= virtual-clock
+       quiescence bubbles, real =runtime.ReadMemStats= sub-slice pinning &
+       =map= never-shrink proof, real =debug.SetMemoryLimit= (=GOMEMLIMIT=
+       20 MiB: =NumGC=96= crowded vs. =NumGC=7= healthy headroom over 48 MiB churn),
+       real =net.Pipe()= slow-consumer eviction under =-race=, plus hardened
+       =languages-engineering/go/concurrency/= UI kernel with worker-panic
+       recovery, map-bucket rotation, live Quint ITF replay, and MyGo coalesced
+       projection soak.
+     - C + CBMC: 238/238 bounded model checking assertions on handle/pool/retry
+       conservation + native paired soak contrast.
+     - C++20: RAII exception-safe handle conservation & =std::vector::capacity()=
+       ratchet contrast.
+     - Rust: RAII =HandleGuard=, =Vec::clear()= watermark contrast, slow-consumer
+       eviction, Marlin =ui_grpc=/=marlin_mygo_host= bounded eviction & lag-resync
+       soak, and native OLS Slope Oracle.
+     - TypeScript / Bun: Reusable Independent Steady-State Slope Oracle
+       ([[file:../../../languages-engineering/ts/stability/aging-contrast/slope-oracle.ts][slope-oracle.ts]]),
+       live Quint =--mbt= ITF state-machine refinement across all 12 formal
+       stability models ([[file:../../../languages-engineering/ts/stability/aging-contrast/mbt-stability-replay.test.ts][mbt-stability-replay.test.ts]]),
+       500-case parametric search metamorphic fuzzing across =MR1=–=MR6= with
+       3 deterministic refutations ([[file:../../../languages-engineering/ts/stability/aging-contrast/search-metamorphic-fuzz.test.ts][search-metamorphic-fuzz.test.ts]]),
+       and the 4-layer Marlin + MyGo + WebView UI soak suite
+       ([[file:../../../languages-engineering/ts/stability/aging-contrast/marlin-mygo-fullstack-soak.test.ts][marlin-mygo-fullstack-soak.test.ts]]).
+  4. *68-Case Multi-Language Aging & Search Concurrency AST Auditor (=SA01=–=SA68=)*:
+     [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-ast-auditor.ts][aging-ast-auditor.ts]]
+     & [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-benchmark.test.ts][aging-benchmark.test.ts]]
+     (=tp=41, tn=27, fp=0, fn=0=), empirically calibrated to **0 findings** across
+     full sweeps of **all 250 Go source files in =marlin-mygo=** and **all 103 Rust
+     source files across =marlin-agent-{tui,search-engine,tooling,app-server,stream}=**.
+  5. *Closed-Loop AI Aging Governance Harness & CLI*:
+     [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-governance-harness.ts][aging-governance-harness.ts]],
+     [[file:../../../languages-engineering/ts/stability/aging-contrast/agent-stability-audit.ts][agent-stability-audit.ts]]
+     (=just audit-agent-stability=), emitting SARIF 2.1.0 and structured C2
+     aging repair packets across =SM2=–=SM5= and =SM7=–=SM9=, validated against
+     3 AI agent personas plus a full-stack Marlin/MyGo C2 convergence scenario.
+
+* Sixty-Eight-Case Static Aging & Search Concurrency Cohort (=SA01=–=SA68=)
+:PROPERTIES:
+:CUSTOM_ID: bench3006-cohort
+:END:
+
+| Case ID | Language | Mechanism | Expected gold | Discriminator tested |
+|---------+----------+-----------+---------------+----------------------|
+| =SA01= | Go | =SM2= | Refuse (=go-time-after-in-loop=) | =time.After()= inside =for/select= loop |
+| =SA02= | Go | =SM2= | Refuse (=go-unclosed-http-body=) | =http.Get= without =Body.Close()= |
+| =SA03= | Go | =SM4= | Refuse (=go-unbuffered-channel-goroutine-leak=) | Live =bad_aging.go= Tu et al. (ASPLOS'19) unbuffered channel leak |
+| =SA04= | Go | =SM3= | Refuse (=go-uncapped-pool-put=) | =sync.Pool.Put= without =cap()= ceiling check |
+| =SA05= | Rust | =SM5= | Refuse (=rust-unbounded-channel=) | =tokio::sync::mpsc::unbounded_channel::<Vec<u8>>()= |
+| =SA06= | Rust | =SM4= | Refuse (=rust-detached-spawn=) | Bare detached =tokio::spawn= dropping =JoinHandle= |
+| =SA07= | Rust | =SM3= | Refuse (=rust-vec-clear-ratchet=) | =buf.clear(); pool.push(buf)= without =capacity()= check |
+| =SA08= | Rust | =SM2= | Refuse (=rust-mem-forget-leak=) | =std::mem::forget(permit)= |
+| =SA09= | TypeScript | =SM2= | Refuse (=ts-unbounded-interval=) | Uncaptured =setInterval= without =clearInterval= |
+| =SA10= | TypeScript | =SM5= | Refuse (=ts-unbounded-retry-loop=) | =while (true)= catch-retry without retry budget |
+| =SA11= | TypeScript | =SM3= | Refuse (=ts-uncapped-pool-push=) | Live =bad_aging.ts= uncapped =this.pool.push(buf)= |
+| =SA12= | TypeScript | =SM2= | Refuse (=ts-unremoved-listener=) | =emitter.on= without removal or =AbortSignal= |
+| =SA13= | C | =SM2= | Refuse (=c-early-return-resource-leak=) | =malloc= + early error =return -1= skipping =free/goto cleanup= |
+| =SA14= | C | =SM3= | Refuse (=c-uncapped-pool-return=) | Live =bad_aging.c= uncapped =pooled_bytes += buf_bytes= |
+| =SA15= | C++ | =SM4= | Refuse (=cpp-detached-thread=) | =std::thread::detach()= breaking scope quiescence |
+| =SA16= | C++ | =SM3= | Refuse (=cpp-vector-clear-ratchet=) | Live =bad_aging.hpp= =std::vector::clear()= pool ratchet |
+| =SA17= | Go | Clean control | Pass (0 findings) | Live =deterministic_steady.go= |
+| =SA18= | TypeScript | Clean control | Pass (0 findings) | Live =deterministic_steady.ts= |
+| =SA19= | C | Clean control | Pass (0 findings) | Live =deterministic_steady.c= |
+| =SA20= | C++ | Clean control | Pass (0 findings) | Live =deterministic_steady.hpp= |
+| =SA21= | Go | =SM3= | Refuse (=go-subslice-pinning=) | =return slab[:16]= pinning large backing array |
+| =SA22= | Go | =SM4= | Refuse (=go-unbounded-goroutine-fanout=) | =for ... { go processItem(item) }= without concurrency cap |
+| =SA23= | Rust | =SM4= | Refuse (=rust-blocking-in-async=) | =std::thread::sleep= inside =async fn= starving executor |
+| =SA24= | TypeScript | =SM5= | Refuse (=ts-unbounded-promise-all-fanout=) | Unbounded =Promise.all(urls.map(...))= fan-out |
+| =SA25= | TypeScript | =SM3= | Refuse (=ts-unbounded-map-cache=) | Unbounded =cache.set(k, v)= without eviction |
+| =SA26= | C++ | =SM3= | Refuse (=cpp-unordered-map-bucket-ratchet=) | =std::unordered_map::clear()= without =rehash(0)/swap= |
+| =SA27= | Go | Clean control | Pass (0 findings) | =bytes.Clone(slab[:16])= detached sub-slice |
+| =SA28= | Rust | Clean control | Pass (0 findings) | =tokio::task::spawn_blocking= offloaded sleep |
+| =SA29= | TypeScript | Clean control | Pass (0 findings) | Bounded =Map= cache with =maxSize= eviction |
+| =SA30= | C++ | Clean control | Pass (0 findings) | =unordered_map::clear()= paired with =rehash(0)= |
+| =SA31= | Rust | =SM3= | Refuse (=rust-unbounded-state-collection=) | Monotonic =st.artifacts.insert(...)= without cap/eviction (=ui_grpc.rs= pattern) |
+| =SA32= | Rust | =SM5= | Refuse (=rust-broadcast-lag-silent-drop=) | =while let Ok(snap) = rx.recv().await= ignoring =RecvError::Lagged= |
+| =SA33= | Rust | =SM3= | Refuse (=rust-bounded-no-eviction-lockout=) | Hard 64-session cap returning =resource_exhausted= with zero eviction path |
+| =SA34= | Go | =SM4= | Refuse (=go-early-return-unjoined-goroutine=) | Early =emit= error =return err= skipping =<-followErr= join (=bridge.go= pattern) |
+| =SA35= | Go | =SM3= | Refuse (=go-unbounded-struct-map=) | Long-lived =m.records[id]= never deleted or evicted (=client/session.go= pattern) |
+| =SA36= | Go | =SM4= | Refuse (=go-sidecar-missing-pgid=) | Sidecar =exec.Command.Start()= + =Process.Signal= without =Setpgid: true= |
+| =SA37= | Go | =SM5= | Refuse (=go-unbudgeted-retry-loop=) | Exponential =backoff *= 2= retry loop without =maxAttempts=/=retryBudget= |
+| =SA38= | TypeScript | =SM7= | Refuse (=ts-streaming-full-innerhtml-reparse=) | Streaming =row.raw += delta= + full =innerHTML = renderMarkdown(row.raw)= |
+| =SA39= | TypeScript | =SM7= | Refuse (=ts-unbounded-dom-append=) | Chat container =messages.appendChild(root)= without DOM viewport window cap |
+| =SA40= | TypeScript | =SM3= | Refuse (=ts-orphan-sidemap-on-delete=) | =drafts.set(...)= never cleaned via =drafts.delete(...)= on =deleteSession= |
+| =SA41= | Rust | Clean control | Pass (0 findings) | Bounded =artifacts= with =pop_first()= + =RecvError::Lagged= snapshot resync |
+| =SA42= | Go | Clean control | Pass (0 findings) | Deferred =cancel(); <-followErr= join barrier on early emit return |
+| =SA43= | Go | Clean control | Pass (0 findings) | Sidecar with =SysProcAttr{Setpgid: true}= and =-pid= process-group signal |
+| =SA44= | TypeScript | Clean control | Pass (0 findings) | Bounded DOM window (=maxVisibleNodes=) + $O(1)$ =renderDeltaBlock= |
+| =SA45= | TypeScript | Clean control | Pass (0 findings) | Cascade =drafts.delete(id)= paired with =deleteSession(id)= |
+| =SA46= | Go | Clean control | Pass (0 findings) | =sync.Once.Do= without HTTP client (eliminates =go-unclosed-http-body= FP) |
+| =SA47= | Go | Clean control | Pass (0 findings) | =ArtifactCAS.Put= without =sync.Pool= (eliminates =go-uncapped-pool-put= FP) |
+| =SA48= | Go | Clean control | Pass (0 findings) | Explicit =len(s.cache) < 512= capacity bound before map write |
+| =SA49= | Go | =SM3= | Refuse (=go-unbounded-struct-map=) | Unbounded =ModuleEngine.cache[sum]= growth without cap or eviction (=wazeroir/runtime.go= pattern) |
+| =SA50= | Go | =SM3= | Refuse (=go-unbounded-struct-map=) | Unbounded =JWKSCache.entries[url]= growth without cap or eviction (=control/auth/oidc.go= pattern) |
+| =SA51= | Rust | =SM9= | Refuse (=rust-async-inflight-no-drop-guard=) | =in_flight.compare_exchange(false, true)= across =.await= without RAII =Drop= guard (=search_scheduler.rs= pattern) |
+| =SA52= | Rust | =SM9= | Refuse (=rust-notify-notified-unarmed-check=) | =let notified = notify.notified()= checked against =in_flight.load()= without =enable()= arming |
+| =SA53= | Rust | =SM8= | Refuse (=rust-unfenced-async-search-apply=) | =apply_dsl_result= overwriting =search_candidates= without =expected_epoch= fence |
+| =SA54= | Go | =SM8= | Refuse (=go-non-monotonic-gen-cancel=) | =QueryAsync(gen)= cancelling =activeCancel= without monotonic =gen < activeGen= fence (=search_bridge.go= pattern) |
+| =SA55= | Go | =SM3= | Refuse (=go-slice-truncate-without-clear=) | =items = items[:0]= retaining pointer backing array without =clear()= or capacity cap (=helm_stream.go= pattern) |
+| =SA56= | Rust | Clean control | Pass (0 findings) | RAII =SyncLeaderGuard= (=impl Drop= clearing =in_flight=) + pinned =notified.as_mut().enable()= |
+| =SA57= | Rust | Clean control | Pass (0 findings) | Epoch-fenced =apply_dsl_result(expected_epoch, rows)= rejecting stale responses |
+| =SA58= | Go | Clean control | Pass (0 findings) | Monotonic =if gen < b.activeGen= guard before cancelling active search context |
+| =SA59= | Go | Clean control | Pass (0 findings) | =clear(items)= + backing-array capacity ceiling reset on =BeginQuery= |
+| =SA60= | TypeScript | Clean control | Pass (0 findings) | Bounded search viewport list enforcing =maxVisibleNodes= cap |
+| =SA61= | Rust | =SM5= / =SM11= | Refuse (=rust-unbounded-vecdeque-mailbox=) | =while let Ok(job) = rx.try_recv()= pushing into unbounded =VecDeque= without capacity ceiling |
+| =SA62= | Go | =SM4= | Refuse (=go-unbounded-goroutine-fanout=) | =ProbeAll= spawning unbounded =go func()= per target inside loop without semaphore (=federation.go= pattern) |
+| =SA63= | Go | Clean control | Pass (0 findings) | =time.After= in separate =Stop()= method after unrelated =Start()= loop (eliminates cross-function FP) |
+| =SA64= | Go | Clean control | Pass (0 findings) | =go func()= in UI click callback closure outside loop (=federation_switch.go= calibration) |
+| =SA65= | Go | Clean control | Pass (0 findings) | Single per-connection heartbeat goroutine joined via =<-hbDone= each iteration (=driver.go= calibration) |
+| =SA66= | Go | Clean control | Pass (0 findings) | Exponential backoff sidecar restart loop bounded by =MaxRestarts= (=resilient_sidecar.go= calibration) |
+| =SA67= | Go | Clean control | Pass (0 findings) | Fixed-size ring-buffer slice =s.history[s.histPos] = d; % len(s.history)= (=scheduler.go= calibration) |
+| =SA68= | Rust | Clean control | Pass (0 findings) | Priority-isolated bounded =VecDeque= mailbox with =MAX_FAST_DSL_JOBS= cap & closed-reply compaction |
+
+* Empirical Adversarial Challenge Receipts on Downstream Packages
+:PROPERTIES:
+:CUSTOM_ID: bench3006-downstream-receipts
+:END:
+
+Every stability model in =@deterministic-engineering/quint-models= is designed
+to be consumed natively by downstream packages via =@quint-extends= overlays and
+package-domain adversarial test suites:
+
+| Downstream package | Overlay / Test suite | Mechanism | RED exposure (before fix) | GREEN verification (after fix) |
+|--------------------+----------------------+-----------+---------------------------+--------------------------------|
+| =marlin-mygo= | =MarlinBoundedProjectionEvictionOverlay.qnt= (100% MBT), =MarlinStreamLagResyncOverlay.qnt= (100% MBT), =MarlinUiRenderWindowOverlay.qnt= (100% MBT) | =SM3c=, =SM5c=, =SM7= | Formal overlays verified (=12 traces / 144 transitions= each) | =PLAN-OK= + =MBT-AUDIT-OK= via =QUINT_RESOLVE_ROOT= |
+| =marlin-mygo= | =runtime/async/mbt_stability_test.go= | =SM3=, =SM4= | =FencedLane.runLoop= crashed process on worker panic; =PermitPool= map buckets never rotated | Hardened =fenced_lane.go= + =permit_pool.go=: =go test -race ./runtime/async= 11/11 PASS |
+| =marlin-mygo= | =runtime/wazeroir/cache_eviction_test.go= | =SM3c= | =ModuleEngine.cache= grew unboundedly to 80 entries (cap=64) | Bounded FIFO eviction (=DefaultMaxCompiledModules=64=): =go test -race ./runtime/wazeroir= PASS |
+| =marlin-mygo= | =control/auth/jwks_eviction_test.go= | =SM3c= | =HTTPJWKSCache.entries= grew unboundedly to 80 entries (cap=64) | Bounded FIFO eviction cascading =entries= + =lastForceRefresh=: =go test -race ./control/auth= ALL PASS; 4 fixed files static re-audit =0 findings= |
+| =marlin-mygo= | =spec/search/MarlinHelmGenerationOverlay.qnt= (100% MBT), =spec/search/MarlinConsultAlgebraOverlay.qnt= (100% MBT) | =SM8=, =SM10= | Formal search overlays verified (=12 traces / 168 transitions= each) | =PLAN-OK= + =MBT-AUDIT-OK= via =QUINT_RESOLVE_ROOT= |
+| =marlin-mygo= | =engine/search/search_metamorphic_fuzz_test.go=, =control/grpcwire/search_bridge_stability_test.go=, =runtime/mygoshell/helm_minibuffer_stability_test.go= | =SM3=, =SM8=, =SM10=, =MR1=–=MR6= | Live RED exposed 8 real search bugs: =@lang:rust= qualifier leak into literal matching, Unicode =İ= reflexivity break, multi-=#=/=!!neg= parse distortion, selection identity jump (=graph:b= -> =dsl:2=), dangling hidden marks on =SetSourceFilter=, 20k slice capacity ratchet on =BeginQuery=, stale =QueryAsync(gen=1)= cancelling =gen=2= + UTF-8 byte-slice corruption (=digest[:10]=), and stale =lastPrevID= suppressing Follow-Mode preview | Hardened =consult_orderless.go=, =helm_stream.go=, =search_bridge.go=, =helm_minibuffer_view.go=: =go test -race ./engine/search= ALL PASS (incl. 250k soak), live coverage-guided =go test -fuzz=FuzzConsultOrderlessMetamorphic -fuzztime=4s= **130,780 execs (43,569/s, 149 new interesting inputs, 0 failures)**, =control/grpcwire= & =runtime/mygoshell= =-race= PASS, 4-file static re-audit =0 findings= |
+| =marlin-agent-core= | =MarlinMyGoBridgeStabilityOverlay.qnt= (100% MBT), =MarlinMyGoLagResyncOverlay.qnt= (100% MBT) | =SM3c=, =SM5c= | Formal overlays verified (=12 traces / 144 transitions= each) | =PLAN-OK= + =MBT-AUDIT-OK= via =QUINT_RESOLVE_ROOT= |
+| =marlin-agent-core= | =crates/marlin-agent-app-server/tests/integration/ui_grpc_stability.rs= | =SM3c=, =SM5c= | Live HTTP/2 gRPC RED (0/2): =UploadArtifact= retained all 80 artifacts unboundedly; =WatchWorkbench= silently dropped stream on =RecvError::Lagged= under 1024B HTTP/2 window backpressure | Hardened =ui_grpc.rs= (=MAX_BRIDGE_ARTIFACTS=64=, =MAX_BRIDGE_ARTIFACT_BYTES=16MiB=, =MAX_BRIDGE_RECORDS=256=, explicit =RecvError::Lagged= snapshot resync across all 5 broadcast streams): =ui_grpc_stability= 2/2 PASS (0.08s), static re-audit =0 findings= |
+| =marlin-agent-core= | =dev/quint/stability/MarlinSearchSyncSafetyOverlay.qnt= (100% MBT), =dev/quint/stability/MarlinHelmSearchBoxOverlay.qnt= (100% MBT) | =SM9=, =SM10= | Formal search overlays verified (=12 traces / 168 transitions= each) | =PLAN-OK= + =MBT-AUDIT-OK= via =QUINT_RESOLVE_ROOT= |
+| =marlin-agent-core= | =crates/marlin-agent-tooling/tests/unit/search_scheduler_stability.rs= | =SM9= | Live RED (0/1, 0.55s): cancelling single-flight sync leader left =in_flight=true= permanently deadlocking all subsequent followers | Hardened =search_scheduler.rs= with RAII =SyncLeaderGuard= (=impl Drop=) + pinned =notified.as_mut().enable()= before =in_flight.load()=: 2/2 PASS (0.04s, incl. 16x40 contention), =clippy -D warnings= clean, static re-audit =0 findings= |
+| =marlin-agent-core= | =crates/marlin-agent-tui/tests/unit/helm_fuzz.rs= | =SM8=, =SM10= | Live RED (0/3): =hit_test_helm_mode_tab= returned =Some(2)= for tabs clipped past narrow width=34; =ScopeDirectory= duplicated =@prefix:= leaving stale prefix parsed; multi-=#= leaked literal ='#'= into =local_tokens= (+ UTF-8 =&hex[..7]= panic hazard & unfenced =apply_dsl_result=) | Hardened =helm/{view,types,actions,overlay,editor}.rs= + =linked_ui.rs=: =marlin-agent-tui --lib helm::= **19/19 PASS** (all proptest fuzz + 4 new SM8/SM10 challenges), static re-audit on all 6 touched Helm/scheduler files =0 findings= |
+| =marlin-agent-core= | =dev/quint/stability/MarlinSearchDslMailboxOverlay.qnt= (100% MBT), =crates/marlin-agent-tui/tests/unit/linked_ui_stability.rs=, =app/asp_supervisor.rs= | =SM4=, =SM5=, =SM11= | Live RED (0/2): 128-job L2 =DusaSolver= flood accepted all 128 unboundedly (0 shed); =dusa_queue= exceeded 32 cap; =asp_supervisor.rs= used =mpsc::unbounded_channel= for progress & leaked orphan child on malformed boot JSON | Hardened =linked_ui.rs= (priority-isolated bounded channels =64/32=, =try_send= load shedding, active zombie compaction, =shrink_to=), =app/asp_supervisor.rs= + =app/state.rs= ($O(1)$ =watch= progress + RAII =SpawnedChildGuard=): =linked_ui::stability_tests= 2/2 PASS, =asp_supervisor::stability_tests= 3/3 PASS, =clippy -D warnings= clean, **83/83 Rust files in tui/search-engine/tooling = 0 findings** |
+| =marlin-agent-core= | =crates/marlin-agent-app-server/src/bin/marlin_mygo_host.rs= | =SM3c= | Live RED (0/1): 65th session permanently locked out with =Code::ResourceExhausted("host session limit reached")= | Hardened =ResidentSessionTable= with bounded LRU eviction (=MAX_RESIDENT_SESSIONS=64=) preserving durable storage rehydration & duplicate-create rejection: 128-session soak + eviction rehydration PASS, =clippy -D warnings= clean, **103/103 Rust files across all 5 core crates = 0 findings** |
+| =marlin-mygo= | =control/transport/{sidecar_pgid_stability,federation_bound}_test.go=, =control/grpcwire/resilience_budget_test.go=, =engine/contextgov/store_eviction_test.go=, =engine/composer/voice_capture.go= | =SM2=, =SM3=, =SM4=, =SM5= | Live RED (0/4): sidecar grandchild PID survived =Stop()=; =ProbeAll= spiked to 64 concurrent pings; =ContinuityCoordinator= spun 26 unbudgeted retries; =GovernanceStore= retained 4,500 entries unboundedly | Hardened =sidecar.go= (+ =Setpgid: true= & =-pid= group signal), =federation.go= (cap=16 semaphore), =resilience_sync.go= (=DefaultMaxConsecutiveSyncFailures=12= + wake reset), =contextgov/store.go= (FIFO cap=4096), =voice_capture.go= (=time.NewTimer= + =Stop=): all 4 packages =-race= PASS, **250/250 own Go files in =marlin-mygo= = 0 findings** |
+
+* Unified Verification Command
+
+#+begin_src sh
+# Run full 5-language stability gate (Quint/MBT + Lean 4 + C/CBMC + C++20 + Rust + Go devenv -race/synctest/runtime-soak + TS Slope Oracle + SA01-SA68 + Metamorphic Fuzz + Closed-Loop Governance):
+just check-stability
+
+# Audit current git diff or explicit files for SM2-SM5 & SM7-SM9 aging/search hazards:
+just audit-agent-stability --files languages-engineering/go/stability/aging-contrast/deterministic_steady.go
+#+end_src
+
+* Explicit Limits
+:PROPERTIES:
+:CUSTOM_ID: bench3006-limits
+:END:
+
+- Structural AST aging rules provide high-precision local pattern detection;
+  they do not perform whole-program interprocedural alias or escape analysis.
+- Compressed-budget Slope Oracles and =testing/synctest= bubbles expose logical
+  leaks, pool ratchets, GC headroom cliffs, and slow-consumer stalls in seconds;
+  long-horizon physical allocator page fragmentation (e.g., =glibc= vs.
+  =jemalloc= RSS decay under production traffic distributions) still requires
+  target-host profiling.

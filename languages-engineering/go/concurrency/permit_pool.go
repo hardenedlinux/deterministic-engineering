@@ -31,12 +31,15 @@ const (
 // cancelled job retains its permit through non-abortable cleanup until
 // FinishCleanup is called.
 type PermitPool struct {
-	mu         sync.Mutex
-	limit      int
-	queueLimit int
-	states     map[uint64]PermitState
-	queued     int
-	nextID     uint64
+	mu                sync.Mutex
+	limit             int
+	queueLimit        int
+	states            map[uint64]PermitState
+	queued            int
+	nextID            uint64
+	drainsSinceRotate int
+	rotateThreshold   int
+	rotations         uint64
 }
 
 // NewPermitPool creates a bounded PermitPool with explicit admission and queue limits.
@@ -47,10 +50,15 @@ func NewPermitPool(limit, queueLimit int) *PermitPool {
 	if queueLimit <= 0 {
 		queueLimit = 1
 	}
+	rotateThreshold := limit * 4
+	if rotateThreshold < 16 {
+		rotateThreshold = 16
+	}
 	return &PermitPool{
-		limit:      limit,
-		queueLimit: queueLimit,
-		states:     make(map[uint64]PermitState, limit),
+		limit:           limit,
+		queueLimit:      queueLimit,
+		states:          make(map[uint64]PermitState, limit),
+		rotateThreshold: rotateThreshold,
 	}
 }
 
@@ -104,6 +112,8 @@ func (p *PermitPool) BeginCancelCleanup(id uint64) bool {
 }
 
 // Drain releases a Returned or Cleanup permit cleanly into Done.
+// At quiescence (len(states) == 0) after sufficient churn, the backing map is
+// rotated to a fresh small allocation so Go map buckets never ratchet forever (SM3).
 func (p *PermitPool) Drain(id uint64) bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -112,7 +122,20 @@ func (p *PermitPool) Drain(id uint64) bool {
 		return false
 	}
 	delete(p.states, id)
+	p.drainsSinceRotate++
+	if len(p.states) == 0 && p.drainsSinceRotate >= p.rotateThreshold {
+		p.states = make(map[uint64]PermitState, p.limit)
+		p.drainsSinceRotate = 0
+		p.rotations++
+	}
 	return true
+}
+
+// Rotations reports how many quiescent map-bucket rotations have been performed.
+func (p *PermitPool) Rotations() uint64 {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.rotations
 }
 
 // Stats returns active (admitted) and queued counts for invariant verification.

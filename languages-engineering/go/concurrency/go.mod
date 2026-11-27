@@ -4,4 +4,4 @@
 
 module github.com/hardenedlinux/deterministic-engineering/languages-engineering/go/concurrency
 
-go 1.24
+go 1.25

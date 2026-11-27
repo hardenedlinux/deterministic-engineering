@@ -25,8 +25,8 @@ function walkFiles(dir: string, predicate: (name: string) => boolean): string[] 
   return found.sort();
 }
 
-function run(cmd: string[], cwd: string) {
-  const proc = Bun.spawnSync(cmd, {cwd, stdout: 'pipe', stderr: 'pipe'});
+function run(cmd: string[], cwd: string, env?: Record<string, string>) {
+  const proc = Bun.spawnSync(cmd, {cwd, env: env ? {...process.env, ...env} : process.env, stdout: 'pipe', stderr: 'pipe'});
   return {
     exitCode: proc.exitCode,
     stdout: proc.stdout.toString(),
@@ -96,15 +96,40 @@ test('all projected pure .qnt models in packages/quint-models pass run-plan with
   expect(planFiles.length).toBe(0);
   expect(receipts.length).toBe(0);
 
-  for (const qntPath of qntFiles) {
-    const res = run(['bun', cliPath, 'run-plan', qntPath], repoRoot);
-    expect(res.exitCode).toBe(0);
-    expect(res.stdout).toContain('PLAN-OK');
-  }
+  const fleet = run(['bun', cliPath, 'run-fleet', modelsRoot, '--concurrency=4', '--json'], repoRoot);
+  expect(fleet.exitCode).toBe(0);
+  const report = JSON.parse(fleet.stdout) as {total: number; passed: number; skipped: number; failed: number};
+  expect(report.total).toBe(qntFiles.length);
+  expect(report.passed).toBe(qntFiles.length);
+  expect(report.failed).toBe(0);
   const ver = run(['bun', cliPath, '--version'], repoRoot);
   expect(ver.exitCode).toBe(0);
   expect(ver.stdout.trim()).toBe('0.33.0');
 }, 300000);
+
+test('QUINT_RESOLVE_ROOT resolves unpublished workspace packages without node_modules', () => {
+  const work = mkdtempSync(join(tmpdir(), 'qmr-resolve-root-'));
+  try {
+    const overlayPath = join(work, 'ExternalOverlay.qnt');
+    writeFileSync(
+      overlayPath,
+      [
+        '// @quint-extends "@deterministic-engineering/quint-models/engineering/concurrency/bounded-projection-eviction/BoundedProjectionEviction"',
+        '// @verify safety max-steps=6',
+        'module external_overlay {',
+        '  type State = { audited: bool }',
+        "  action init = h' = { audited: true }",
+        '  val safety = h.audited',
+        '}',
+        '',
+      ].join('\n'),
+    );
+    const tc = run(['bun', cliPath, 'typecheck', overlayPath], work, {QUINT_RESOLVE_ROOT: repoRoot});
+    expect(tc.exitCode).toBe(0);
+  } finally {
+    rmSync(work, {recursive: true, force: true});
+  }
+}, 30000);
 
 test('test command coerces --seed to BigInt for nondet oneOf() traces', () => {
   const work = mkdtempSync(join(tmpdir(), 'qmr-seed-'));

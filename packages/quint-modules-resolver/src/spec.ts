@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
-import {existsSync, readFileSync} from 'node:fs';
+import {existsSync, readdirSync, readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {dirname, isAbsolute, resolve} from 'node:path';
 
@@ -60,7 +60,33 @@ export function resolveQuintSpec(spec: string, fromDir: string = process.cwd()):
 
   const anchors: string[] = [];
   if (process.env.QUINT_RESOLVE_ROOT) {
-    anchors.push(resolve(process.env.QUINT_RESOLVE_ROOT, '_quint_resolver_.qnt'));
+    const resolveRoot = resolve(process.env.QUINT_RESOLVE_ROOT);
+    // Support resolving workspace packages directly under <QUINT_RESOLVE_ROOT>/packages/*
+    // so downstream overlays can verify against unpublished local upstream models.
+    const packagesDir = resolve(resolveRoot, 'packages');
+    if (existsSync(packagesDir)) {
+      for (const entry of readdirSync(packagesDir, {withFileTypes: true})) {
+        if (!entry.isDirectory()) continue;
+        const pkgRoot = resolve(packagesDir, entry.name);
+        const pkgJson = resolve(pkgRoot, 'package.json');
+        if (!existsSync(pkgJson)) continue;
+        try {
+          const parsed = JSON.parse(readFileSync(pkgJson, 'utf8')) as {name?: string};
+          if (parsed.name && spec.startsWith(`${parsed.name}/`)) {
+            const sub = spec.slice(parsed.name.length + 1);
+            for (const c of sub.endsWith('.qnt') ? [sub] : [sub, `${sub}.qnt`]) {
+              const full = resolve(pkgRoot, c);
+              if (existsSync(full)) {
+                return {fullPath: full, packageName: parsed.name, packageRoot: pkgRoot};
+              }
+            }
+          }
+        } catch {
+          // ignore malformed workspace package.json
+        }
+      }
+    }
+    anchors.push(resolve(resolveRoot, '_quint_resolver_.qnt'));
   }
   if (hasNodeModulesInAncestors(fromDir)) {
     anchors.push(resolve(fromDir, '_quint_resolver_.qnt'));

@@ -1,0 +1,141 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 40.05 Search Stability, Property-Based Testing & Structure-Aware Fuzzing Reference Study
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 40.05
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+#+FILETAGS: :research:search-stability:pbt:fuzzing:metamorphic-testing:adversarial-verification:
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:40.04-software-aging-and-steady-state-stability.org][40.04 Software Aging Study]] | [[file:../../30-39-evaluation/30-benchmarks/30.06-software-aging-and-steady-state-benchmark.org][30.06 Stability Benchmark]]
+
+* Problem Statement: Why Search & Interactive Search-Box Stability Differs from Resource Aging
+:PROPERTIES:
+:CUSTOM_ID: study4005-problem
+:STATUS: implemented-verified
+:END:
+
+Long-running resource stability ([[file:40.04-software-aging-and-steady-state-stability.org][40.04]], =SM1=–=SM7=) proves that memory,
+file descriptors, goroutines/tasks, caches, and render budgets remain conserved
+over arbitrary cycles. *Interactive search engines and live search boxes*
+(typeahead minibuffers, Emacs Consult/Orderless/Helm overlays, multi-tier
+Rust/Scheme workspace search schedulers) fail in *qualitatively different* ways
+even when steady-state heap usage is flat:
+
+1. *Asynchronous Query Racing & Selection Identity Drift (=SM8=)*:
+   Every keystroke creates a new query generation. Out-of-order RPC delivery,
+   non-monotonic cancellation (an older goroutine acquiring the lock after a
+   newer keystroke and cancelling the newer request), stale DSL results arriving
+   without epoch verification, or a higher-priority source batch inserting rows
+   above the user's cursor immediately before =Enter= causes silent wrong-item
+   execution, stale UI flashing, or suppressed Follow-Mode previews.
+2. *Single-Flight Coordinator Deadlocks Under Async Cancellation (=SM9=)*:
+   To avoid =N= concurrent agents or keystrokes triggering =N= disk-sync or
+   index-rebuild storms (Dean & Barroso tail-latency amplification), search
+   schedulers coalesce concurrent callers onto a single leader via atomic
+   =in_flight= flags and =tokio::sync::Notify= / condition variables. Under
+   async cancellation (e.g., =timeout= or future =Drop= mid-=.await=), a leader
+   without a =Drop= guard leaves =in_flight = true= permanently, deadlocking all
+   future searches. Likewise, awaiting =Notify::notified()= without calling
+   =.enable()= before double-checking =in_flight= creates a classic lost-wakeup
+   deadlock.
+3. *Metamorphic Query Algebra, Unicode & Geometry Boundary Bugs (=SM10=)*:
+   Search boxes lack a simple single-input oracle ("is this ranked list right?")
+   and accept unbounded adversarial UTF-8/DSL/qualifier strings:
+   - Axis qualifiers (=@lang:rust=, =@prefix:crates/=, =@ext:rs=) leaking into
+     literal text matchers and silently producing *zero matches*.
+   - Inconsistent case folding (=strings.ToLower= multi-rune expansion of =İ=
+     U+0130 vs. 1-to-1 =unicode.ToLower=) breaking *reflexivity* (a string fails
+     to match itself).
+   - Last-wins qualifier parsing paired with prepend-only UI scoping
+     (=@prefix:new/ @prefix:old/=) causing "Scope to Directory" to silently no-op.
+   - Multi-=#= separators injecting literal =#= as an unsatisfiable filter token,
+     unbounded clipboard pastes triggering synchronous parse/scan stalls, and
+     narrow-viewport clipped tabs still responding to phantom mouse hit-tests.
+
+* Literature Synthesis: Unifying MBT, Stateful PBT, Coverage-Guided Fuzzing & Metamorphic Oracles
+:PROPERTIES:
+:CUSTOM_ID: study4005-literature
+:END:
+
+Every formal model in =@deterministic-engineering/quint-models= exists as an
+*adversarial challenge generator*. Bridging four research lineages closes the
+gap between finite-state proofs and real search-box boundary bugs:
+
+| Research lineage | Primary papers | What it catches | Blind spot alone |
+|------------------+----------------+-----------------+------------------|
+| *Property-Based Testing (PBT)* | Claessen & Hughes, /QuickCheck: A Lightweight Tool for Random Testing of Haskell Programs/ (ACM ICFP 2000); Goldstein, Cutler, Pierce & Head, /Property-Based Testing in Practice/ (IEEE/ACM ICSE 2024 Distinguished Paper) | Algebraic invariants, stateful API sequences, shrinking to minimal counterexamples inside fast unit-test loops | Random generators miss sparse semantic branches and deep parser states |
+| *Coverage-Guided & Structure-Aware Fuzzing* | Lampropoulos, Hicks et al., /Coverage Guided, Property Based Testing (FuzzChick)/ (ACM OOPSLA 2019); Padhye, Lemieux, Sen, Papadakis & Le Traon, /Semantic Fuzzing with Zest & JQF/ (ACM ISSTA 2019) | Branch-coverage feedback mutates parametric/structured inputs across UTF-8, S-expressions, nested qualifiers, and narrow viewport edge cases | Traditional fuzzers only check crashes/panics without domain oracles |
+| *Metamorphic Testing (MT) for Search Engines* | Zhou, Xiang & Chen, /Metamorphic Testing for Software Quality Assessment: A Study of Search Engines/ (IEEE TSE 2016); Chen, Kuo, Liu, Poon, Towey, Tse & Zhou, /Metamorphic Testing: A Review of Challenges and Opportunities/ (ACM CSUR 2018) | Solves the search-engine oracle problem via relational laws: *Reflexivity*, *Orderless Permutation Invariance*, *Qualifier Orthogonality*, *Negation Monotonicity*, and *Scope-Replace Idempotence* | Does not explore concurrent interleavings or async cancellation deadlocks |
+| *Tail-Latency Control & Model-Based Testing (MBT)* | Dean & Barroso, /The Tail at Scale/ (CACM 2013); Lamport fencing tokens; Quint =--mbt= ITF trace replay & Apalache symbolic checking | Exhaustively refutes concurrency interleavings: non-monotonic generation cancellation, leader-drop deadlocks, lost wakeups, and batch-arrival cursor jumps | Finite-state abstractions do not test raw byte/UTF-8 slicing or UI layout arithmetic |
+
+**Unified Adversarial Challenge Architecture (=MBT + Stateful PBT + Structure-Aware Fuzzing + Metamorphic Oracles=)**:
+1. *Upstream Formal Spec (Quint + Apalache + Lean 4)*: Specify the exact safety
+   invariants and auto-derived countermodels (=SM8=–=SM10=) once in
+   =@deterministic-engineering/quint-models= and prove unbounded algebraic
+   corollaries in [[file:../../../packages/lean-models/DeterministicEngineering/Core/Stability.lean][Core/Stability.lean]].
+2. *Downstream Native Consumption (=--mbt= + =@quint-extends=)*: Each downstream
+   package (=marlin-mygo=, =marlin-agent-core=) writes domain overlays via
+   =@quint-extends= and pairs them with language-native adversarial tests:
+   - Go: =go test -race= stateful MBT + =testing.F= coverage-guided metamorphic
+     fuzzing (=FuzzConsultOrderlessMetamorphic=).
+   - Rust: =proptest= stateful & metamorphic search-box fuzzing + Tokio async
+     cancellation/timeout deadlock challenges.
+   - TypeScript: deterministic seedable metamorphic fuzz harness + Quint =--mbt=
+     ITF refinement across all 12 stability models.
+3. *Static Aging & Concurrency Guardrails (=SA51=–=SA68=)*: Encode the exact
+   structural traps discovered by adversarial testing back into
+   [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-ast-auditor.ts][aging-ast-auditor.ts]]
+   so AI coding agents receive immediate C2 repair packets before code merges.
+
+* Taxonomy of Search Stability Mechanisms (=SM8=–=SM11=)
+:PROPERTIES:
+:CUSTOM_ID: study4005-taxonomy
+:END:
+
+| ID | Mechanism | Formal Quint Model | Unbounded Lean 4 Proof | Downstream Challenge Targets |
+|----+-----------+--------------------+------------------------+------------------------------|
+| =SM8= | Search query generation fencing, monotonic cancellation, selection-identity anchoring & mark custody | [[file:../../../packages/quint-models/engineering/concurrency/search-query-generation-fencing/SearchQueryGenerationFencing.qnt][SearchQueryGenerationFencing.qnt]] | =Core.Stability= Section 9 | =marlin-mygo= (=helm_stream.go=, =search_bridge.go=, =helm_minibuffer_view.go=); =marlin-agent-core= (=helm/overlay.rs=) |
+| =SM9= | Single-flight coordinator async cancellation-safety (=Drop= guard) & armed =Notify= wakeup freedom | [[file:../../../packages/quint-models/engineering/concurrency/singleflight-cancellation-safety/SingleFlightCancellationSafety.qnt][SingleFlightCancellationSafety.qnt]] | =Core.Stability= Section 10 | =marlin-agent-core= (=search_scheduler.rs= =DebouncedSyncCoordinator=) |
+| =SM10= | Metamorphic search query algebra (MR1–MR6), qualifier orthogonality, scope replacement & hit-test geometry | [[file:../../../packages/quint-models/engineering/concurrency/search-query-metamorphic-algebra/SearchQueryMetamorphicAlgebra.qnt][SearchQueryMetamorphicAlgebra.qnt]] | =Core.Stability= Section 11 | =marlin-mygo= (=consult_orderless.go=, =match_mask.go=); =marlin-agent-core= (=helm/types.rs=, =helm/actions.rs=, =helm/view.rs=) |
+| =SM11= | Priority-isolated bounded mailbox (SEDA/DAGOR/WFQ), active zombie compaction & $O(1)$ latest-wins =watch= progress | [[file:../../../packages/quint-models/engineering/concurrency/priority-isolated-bounded-mailbox/PriorityIsolatedBoundedMailbox.qnt][PriorityIsolatedBoundedMailbox.qnt]] | =Core.Stability= Section 12 | =marlin-agent-core= (=linked_ui.rs= =LinkedSearchDslMailbox=, =app/asp_supervisor.rs= hydration progress & child guard) |
+
+* Metamorphic Relations Catalog for Interactive Search Boxes (=MR1=–=MR6=)
+:PROPERTIES:
+:CUSTOM_ID: study4005-metamorphic
+:END:
+
+- *MR1 (Unicode Reflexivity)*: For every non-empty printable single-token query
+  $t$ without parser sigils (=@=, =#=, =!=, =(=), $t$ MUST match itself under the
+  same case-folding semantics used for highlighting.
+- *MR2 (Orderless Permutation Invariance)*: For any positive Orderless tokens
+  $a, b$ and candidate text $x$, $\mathrm{match}(\text{"}a\ b\text{"}, x) =
+  \mathrm{match}(\text{"}b\ a\text{"}, x)$.
+- *MR3 (Qualifier Orthogonality)*: Extracting axis qualifiers (=@lang:=,
+  =@doc:=, =@prefix:=, =@ext:=, =@sym:=, =@graph:=) MUST NEVER leak qualifier
+  literals into the local text matcher; a pure qualifier query without free text
+  must match all backend-admitted candidates.
+- *MR4 (Negation Anti-Monotonicity & Separator Resilience)*: Adding a negation
+  token =!n= satisfies $M(q \cup \{\text{!}n\}) \subseteq M(q)$; repeated stage
+  separators (=a # b # c=) MUST NOT inject literal =#= into positive tokens.
+- *MR5 (Scope-Replace Determinism & S-Expr Custody)*: Applying a directory or
+  language scope action replaces any prior conflicting axis token so the newly
+  chosen scope actually takes effect, and never corrupts active S-expression DSL
+  queries.
+- *MR6 (Highlight Partition & Viewport Hit-Test Fidelity)*: Concatenating all
+  rendered highlight spans equals the exact original string on valid UTF-8
+  boundaries, and UI tab hit-testing returns =None= for any tab clipped beyond
+  viewport width.
+
+* Explicit Limits
+:PROPERTIES:
+:CUSTOM_ID: study4005-limits
+:END:
+
+- Metamorphic relations verify *structural consistency* and *ranking/filtering
+  invariants* without requiring human relevance labels; semantic retrieval
+  precision/recall (NDCG@k) still requires domain evaluation corpora.
+- Coverage-guided fuzzing in CI uses time-bounded budgets (seconds per target);
+  long-running corpus fuzzing remains complementary for deep parser internals.

@@ -1,0 +1,179 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 40.04 Software Aging, Steady-State Stability, and Cross-Language Engineering Mechanisms
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 40.04
+#+OPTIONS: toc:3 num:nil
+#+STARTUP: overview
+#+TODO: OPEN SPECIFIED | VERIFIED
+#+FILETAGS: :research:software-aging:steady-state:stability:cross-language:ai-engineering:
+
+[[file:../../../README.org][Overview]] | [[file:../../00-09-project/00-documentation/00.01-index.org][Documentation index]] | [[file:../../10-19-design/10-architecture/10.09-rust-backpressure-memory-library-entry.org][10.09 Backpressure & memory]] | [[file:../../10-19-design/10-architecture/10.14-rust-performance-library-and-mechanism-cases.org][10.14 Mechanism boundaries]] | [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05 AI coding benchmark]] | [[file:../../../packages/quint-models/docs/research-and-papers.org][Canonical papers]]
+
+* Research Problem Statement
+:PROPERTIES:
+:CUSTOM_ID: aging-problem-statement
+:STATUS: mechanism-first-study
+:END:
+
+Long-running software systems routinely pass unit tests, integration suites, and
+short-duration benchmarks, yet progressively degrade over hours or days of
+continuous execution: resident memory climbs without plateau, tail latency
+widens, garbage collection or allocator overhead accelerates, and execution
+units (OS threads, goroutines, async tasks, open descriptors) accumulate until
+stall or OOM termination.
+
+This study grounds long-running stability in *language-agnostic software and
+systems engineering mechanisms* rather than treating it as a Rust-only or
+Go-only tuning problem. The dependency direction follows the repository's core
+ownership boundary ([[file:../../10-19-design/10-architecture/10.14-rust-performance-library-and-mechanism-cases.org][10.14]]):
+
+#+begin_example
+Empirical & Systems Mechanisms
+  -> Language-Agnostic Formal Models (Quint finite countermodels + Lean unbounded laws)
+  -> Language Projections (C, C++, Rust, Go, TypeScript/Node, JVM)
+  -> Independent Mechanical Oracles (CBMC, Static AST Auditors, Compressed-Budget Slope Oracles)
+  -> Closed-Loop AI Agent Evidence & Governance
+#+end_example
+
+The motivating research question for AI-assisted software engineering is sharp:
+*Can AI-authored code achieve long-running, steady-state, high-performance
+stability comparable to—or systematically more dependable than—experienced
+systems engineers?* Empirical studies show that LLMs optimize locally for
+happy-path functional pass rates while systematically under-specifying
+cross-time resource conservation, error/cancellation cleanup paths, watermark
+bounding, and overload feedback stability. Closing this gap requires encoding
+decades of empirical systems-reliability knowledge into *deterministic,
+mechanically verifiable contracts* rather than relying on prompt intuition.
+
+* Six Language-Agnostic Engineering Mechanisms and Canonical Evidence
+:PROPERTIES:
+:CUSTOM_ID: six-stability-mechanisms
+:END:
+
+#+NAME: aging-mechanism-taxonomy
+| ID | Engineering Mechanism | Failure Phenomenon ("Gets Slower Over Hours") | Canonical Literature & Empirical Base | Formal / Verification Target |
+|----+-----------------------+-----------------------------------------------+---------------------------------------+------------------------------|
+| =SM1= | *Software Aging & Aging-Related Bugs (ARBs)* | Monotonic state/error accumulation with uptime or cycle count; failure probability grows over time even without new code faults | Huang et al. (FTCS 1995); Vaidyanathan & Trivedi (ISSRE 1999); Grottke & Trivedi (2005, 2006, IEEE Computer 2022); Cotroneo, Grottke, Natella, Pietrantuono, Trivedi (ISSRE 2013; Perf. Eval. 2013 — Linux, MySQL, Apache, JVM); Avritzer et al. (2020 Handbook) | Distinguish Bohrbugs, Mandelbugs, and ARBs; prove zero-drift steady state rather than relying on blind restart rejuvenation |
+| =SM2= | *Resource Conservation & Error-Path Closure* | Handles, permits, sockets, locks, or memory leaked on rare error, timeout, panic, or early-return paths | Ding Yuan et al. (OSDI 2014 — 198 failures in Cassandra, HBase, HDFS, Redis: mishandled error paths cause catastrophic failures); Calcagno, Distefano, O'Hearn, Yang (POPL 2009 / JACM 2011 — Bi-Abduction / Meta Infer compositional leak analysis) | Exact handle conservation across *all* exits (normal, error, cancel, panic) + strict return to =held == 0= at quiescence |
+| =SM3= | *Memory Bloat, Watermark Ratcheting & Fragmentation* | Memory climbs on traffic spikes and never returns; or live heap stays flat while RSS / GC pause time creeps upward | Jump & McKinley (POPL 2007 — Cork semantic leaks); Guoqing Xu et al. (PLDI/ISSTA — Memory Bloat / LeakChaser); Cotroneo et al. (SRDS 2007 — JVM aging); Powers, Tench, Berger, McGregor (PLDI 2019 — Mesh compacting allocator breaking fragmentation bounds in Redis/Firefox) | Cap reusable pool retention (=max_retain_cap= + =pool_slot_cap=); prove quiescent retained bytes independent of peak burst size =S=; monitor RSS vs. live-bytes divergence |
+| =SM4= | *Structured Concurrency & Cancellation Quiescence* | Orphaned threads, goroutines, or async tasks pile up when callers time out or cancel; blocked channels/locks never drain | Joe Armstrong (2003 PhD Thesis — Erlang/OTP supervision & isolation); Martin Sustrik & N. J. Smith (Structured Concurrency); Shan Lu et al. (ASPLOS 2008 — 92% concurrency bugs reproducible within <=4 accesses); Tengfei Tu et al. (ASPLOS 2019 — Go concurrency bugs in K8s/etcd/Docker/CockroachDB); Boqin Qin et al. (PLDI 2020 — Rust safety & concurrency bugs) | Lexical/structured task lifetimes; mandatory cancel-branch responsiveness; zero residual workers/goroutines/tasks after scope drain |
+| =SM5= | *End-to-End Backpressure, Overload Control & Metastable Immunity* | A transient trigger (GC pause, downstream hiccup, burst) pushes the service into a self-sustaining degraded state that fails to recover after load drops | Matt Welsh et al. (SOSP 2001 — SEDA); Dean & Barroso (CACM 2013 — Tail at Scale); Zhou et al. (SoCC 2018 — DAGOR WeChat queue-delay load shedding); Cho et al. (OSDI 2020 — Breakwater credit admission); Bronson et al. (HotOS 2021) & Huang et al. (OSDI 2022 — 22 cloud/AWS Metastable Failures); Protego & Rajomon (OSDI/NSDI) | Bound total admission + retry amplification budget; shed load based on queueing/congestion state so transient triggers cannot trap the system in permanent overload |
+| =SM6= | *Honest Open-Loop Measurement, DST & Time-Compressed Soak* | Closed-loop tests hide stalls; short runs miss slow leaks; production discovers degradation hours after release | Gil Tene (Coordinated Omission & HDRHistogram); Zhou et al. (SIGMOD 2021 — FoundationDB Deterministic Simulation Testing); Yuan et al. (OSDI 2014 — small-scale reproducibility <=3 nodes); Lu et al. (ASPLOS 2008) | Shrink budgets aggressively (budget compression), inject high-frequency chaotic fault pulses under open-loop schedules, and verify zero discrete drift + flat continuous slope via an independent Slope Oracle |
+| =SM7= | *UI Steady-State Rendering & Cross-Layer Projection Bounds* | Long interactive agent/desktop sessions grow progressively sluggish: DOM nodes accumulate linearly, streaming deltas trigger $O(N^2)$ Markdown/HTML re-parses, broadcast subscribers silently drop on =Lagged=, full-file JSON rewrites amplify disk/GC pressure, and hard session caps without idle eviction lock out new work | Dean & Barroso (CACM 2013); Jump & McKinley (POPL 2007); Rosenblum & Ousterhout (TOCS 1992 — write amplification); W3C RAIL 120Hz (8.33ms) frame budget; Downstream empirical audit of =marlin-agent-core= + MyGo desktop (=ui_grpc.rs=, =marlin_mygo_host.rs=, =bridge.go=, =client/session.go=, =sidecar.go=, =src/main.ts=) | Bound visible DOM viewport (=mountedNodes <= windowCap=), coalesce rAFs (=<= 1=), enforce $O(1)$ incremental block rendering, coalesce streaming checkpoint flushes, resync snapshots on broadcast lag, and prove reclaimable idle eviction with cascade side-map cleanup |
+
+* Cross-Language Projection Matrix
+:PROPERTIES:
+:CUSTOM_ID: cross-language-projection
+:END:
+
+Every mechanism above manifests through distinct language-runtime idioms.
+Fixing one language without capturing the underlying mechanism leaves the same
+structural flaw open in every sibling stack.
+
+#+NAME: cross-language-aging-matrix
+| Mechanism | C / C++ | Rust | Go | TypeScript / Node.js | JVM (Java / Kotlin) |
+|-----------+---------+------+----+----------------------+---------------------|
+| =SM2= Resource & Error-Path Closure | Missed =free/close= on early error returns; non-RAII paths; exception-unsafe raw pointers | Early =?= return skipping manual release; no async =Drop=; permit dropped before payload ([[file:../../../languages-engineering/rust/defense/ownership-boundary-contrast/contrast.rs][contrast.rs]]); =Arc= cycles | Unclosed =http.Response.Body= (leaks TCP conn + read/write goroutines); missing =defer Close()=; =time.Ticker= without =Stop()= | Unclosed streams/sockets; =setInterval=/event listeners never removed on error or abort; swallowed promise rejections | Unclosed JDBC/IO streams outside =try-with-resources=; finalizer/cleaner backlog |
+| =SM3= Bloat, Ratchet & Fragmentation | Allocator arena fragmentation (=glibc= / =jemalloc= dirty pages); =std::vector::clear()= keeping peak =capacity()= forever | =Vec::clear()= / =BytesMut::clear()= retaining spike capacity forever; slab/pool without =max_retain_cap=; allocator RSS drift | =map= never shrinks bucket arrays after =delete()=; sub-slice pinning large backing =[]byte=; =sync.Pool= poisoned by oversized buffers; =GOMEMLIMIT= GC pacing death spiral | Unbounded =Map=/=Set= caches without LRU/byte ceiling; closures capturing large outer buffers; V8 old-space promotion & GC pause spikes | Reachable-but-dead collections (Cork/Xu bloat); oversized =ByteBuffer= pools; Old-Gen fragmentation & Full GC pauses |
+| =SM4= Structured Concurrency & Quiescence | Detached =pthread= / unjoined =std::thread=; thread-pool queue growth without shutdown drain | Detached =tokio::spawn= (dropping =JoinHandle= does NOT cancel!); blocking I/O on async workers; =tokio::select!= cancel-unsafety; Tokio->Rayon orphan work | Blocked goroutine on unbuffered/full channel when caller exits on =ctx.Done()= (Tu et al. ASPLOS'19); =time.After= inside =for { select }= loop | Orphaned async promises after timeout; missing =AbortSignal= propagation; unhandled timer handles pinning event loop | Thread/Executor leaks; uncancelled =Future=; fixed by JEP 453/480 =StructuredTaskScope= |
+| =SM5= Overload & Metastable Immunity | Unbounded accept/work queues; lock-contention convoy; retry loops without budget | =mpsc::unbounded_channel=; D0 queue-only bound ignoring waiting producers ([[file:../../10-19-design/10-architecture/10.09-rust-backpressure-memory-library-entry.org][10.09]]); unbounded retry/cleanup buffers ([[file:../../10-19-design/10-architecture/10.11-live-capacity-full-cleanup-and-joint-budgets.org][10.11]]) | Unbounded =go handle(req)= spawning; retry storms multiplying load under GC/downstream latency spikes | Unbounded =Promise.all= fan-out; retry loops without token bucket or deadline propagation | Unbounded =LinkedBlockingQueue= in =Executors.newFixedThreadPool=; retry amplification into Full GC spiral |
+| Mechanical Oracles & Gates | =clang -Werror=, ASan/LSan, CBMC bounds/leak proofs, compressed-budget soak | =rustc/clippy=, RAII drop-order checks, Tokio/Rayon barrier & slope oracles, =loom=/=madsim= | =go test -race=, =goleak=, =bodyclose=, =testing/synctest=, pprof heap/goroutine diff, slope oracle | Structural AST aging auditor, Quint =--mbt= ITF refinement replay, heap/handle slope oracle | JFR/GC log pause-slope checks, heap-diff (Cork-style), structured-concurrency tests |
+
+* Why AI-Generated Code Fails Long-Running Stability — and Deterministic Remedies
+:PROPERTIES:
+:CUSTOM_ID: ai-aging-remedies
+:END:
+
+Empirical evaluations of LLM code generation show a sharp divergence between
+short-lived functional correctness (e.g., passing unit tests) and production
+long-running reliability:
+
+1. *Local Optimization vs. Global Conservation*: LLMs generate functions token-by-token
+   to satisfy immediate test assertions, omitting cross-boundary ownership transfer,
+   cleanup on rare error/cancel interleavings, and pool-size ceilings.
+2. *Happy-Path & Tutorial Corpus Bias*: Training corpora frequently omit =defer=,
+   =Close()=, =ctx.Done()= channel select branches, =max_retain_cap= checks, and
+   retry budgets for brevity.
+3. *Runtime Surface Illusions*: Models routinely assume =drop(join_handle)= cancels
+   an async task, =vec.clear()= or =delete(m, k)= frees OS memory, bounded queues
+   alone bound resident memory, or defensive retries automatically increase reliability
+   (ignoring metastable amplification).
+4. *Missing Temporal Derivative Checks*: Standard agent verification checks point
+   outputs (=f(x) == y=), never steady-state conservation across fault-injected
+   cycles ($\Delta_{\text{handles}} = 0$, $\text{slope}(\text{retained}) \approx 0$).
+
+To lift AI-authored engineering to deterministic long-running stability, this
+repository pairs five mechanical layers:
+
+1. *Formal Mechanism Contracts (Quint + Lean)*:
+   - Finite-state protocol models with emergent invariants and mandatory
+     guard-pruned countermodels (Apalache =0.62.1= + 100% =--mbt= action coverage):
+     - =engineering.concurrency.quiescence-resource-drain= ([[file:../../../packages/quint-models/engineering/concurrency/quiescence-resource-drain/README.org][QuiescenceResourceDrain.qnt]]) — =SM2= / =SM4=
+     - =engineering.concurrency.buffer-ratchet-reclamation= ([[file:../../../packages/quint-models/engineering/concurrency/buffer-ratchet-reclamation/README.org][BufferRatchetReclamation.qnt]]) — =SM3=
+     - =engineering.concurrency.metastable-retry-collapse= ([[file:../../../packages/quint-models/engineering/concurrency/metastable-retry-collapse/README.org][MetastableRetryCollapse.qnt]]) — =SM5=
+     - =engineering.concurrency.slow-consumer-eviction= ([[file:../../../packages/quint-models/engineering/concurrency/slow-consumer-eviction/README.org][SlowConsumerEviction.qnt]]) — =SM4b= / =SM5b=
+     - =engineering.gc.gc-pacing-thrash-guard= ([[file:../../../packages/quint-models/engineering/gc/gc-pacing-thrash-guard/README.org][GcPacingThrashGuard.qnt]]) — =SM3b=
+     - =engineering.concurrency.bounded-projection-eviction= ([[file:../../../packages/quint-models/engineering/concurrency/bounded-projection-eviction/README.org][BoundedProjectionEviction.qnt]]) — =SM3c= (Marlin =BridgeState= / session LRU / cascade side-map cleanup)
+     - =engineering.concurrency.stream-lag-resync-coalescing= ([[file:../../../packages/quint-models/engineering/concurrency/stream-lag-resync-coalescing/README.org][StreamLagResyncCoalescing.qnt]]) — =SM5c= (broadcast lag snapshot-resync & MyGo coalesced checkpoint flush)
+     - =engineering.concurrency.ui-render-window-budget= ([[file:../../../packages/quint-models/engineering/concurrency/ui-render-window-budget/README.org][UiRenderWindowBudget.qnt]]) — =SM7= (WebView bounded DOM window & $O(1)$ incremental rendering)
+     - Paired with the 3 UI concurrency kernel models (=ui-mainthread-rcu-snapshot=, =fenced-coalescing-mailbox=, =hybrid-webview-focus-lifecycle=) refined directly in Go via [[file:../../../languages-engineering/go/concurrency/stability_soak_test.go][concurrency/stability_soak_test.go]].
+   - Unbounded algebraic proofs in Lean 4 ([[file:../../../packages/lean-models/DeterministicEngineering/Core/Stability.lean][Core/Stability.lean]]):
+     - Arbitrary-cycle zero-drift conservation + proof that *any* positive per-fault
+       leak rate $\ge 1$ exhausts *any* finite capacity $C$ in $\le C$ fault cycles;
+     - Spike-independent quiescent memory ceiling under capped buffer return;
+     - Bounded total load under explicit retry budget vs. unbounded amplification;
+     - GC soft-memory-limit headroom floor & pacing cycle bound;
+     - Slow-consumer fan-out total byte bound vs. single-stalled-consumer budget exhaustion;
+     - Bounded projection idle-eviction liveness (preventing bounded-without-eviction lockout);
+     - Lag snapshot-resync alignment & coalesced write-amplification reduction vs. quadratic per-token rewrites;
+     - UI viewport virtualization cap & $O(1)$ incremental render independence vs. full-transcript re-parse budget breach.
+2. *Multi-Language Paired Contrasts, Go UI Kernel & Real Runtime Telemetry Soak*:
+   - Side-by-side =bad_aging= vs. =deterministic_steady= projections across
+     C (with CBMC formal check), C++, Rust (with slow-consumer eviction, Marlin
+     bridge eviction/lag-resync soak & OLS slope), TypeScript (including
+     [[file:../../../languages-engineering/ts/stability/aging-contrast/marlin-mygo-fullstack-soak.test.ts][marlin-mygo-fullstack-soak.test.ts]]),
+     and Go (via modular =devenv=, covering both =stability/aging-contrast/= and
+     the hardened =concurrency/= UI kernel with =testing/synctest=, live Quint
+     ITF replay, real =runtime.ReadMemStats=, =debug.SetMemoryLimit= =GOMEMLIMIT=,
+     and =net.Pipe()= slow-consumer tests).
+3. *MBT State-Machine Refinement*:
+   - Live Quint =--mbt= ITF traces replayed against stateful TypeScript SUTs
+     across all 8 formal stability models plus Go ITF replay across all 3 UI
+     concurrency models (11 formal models refined end-to-end).
+4. *Time-Compressed Steady-State Slope Oracle (=SM6=)*:
+   - Independent harness running warmup + open-loop chaotic fault/spike/cancel
+     pulse cycles under tightened capacity ceilings, asserting:
+     - exact zero discrete drift ($\Delta = 0$ on handles, timers, active tasks, permits, orphaned side maps);
+     - bounded burst peak and guaranteed quiescent return below baseline ceiling;
+     - non-positive linear regression slope over multi-cycle quiescent snapshots.
+5. *Multi-Language Static Aging-Trap Auditor & Closed-Loop AI Repair Governance*:
+   - Structural AST/pattern auditor + =agent-stability-audit.ts= CLI
+     (=just audit-agent-stability=) flagging high-signal AI aging anti-patterns
+     across Go, Rust, TS, C, and C++ (=SA01=–=SA45= independent gold cohort,
+     SARIF 2.1.0, C2 repair packets including =SM7=, 3-persona closed-loop harness,
+     and live downstream audit calibration against =marlin-agent-core= + MyGo; see
+     [[file:../../30-39-evaluation/30-benchmarks/30.06-software-aging-and-steady-state-benchmark.org][30.06]]).
+
+* Qualification Scope and Explicit Limits
+:PROPERTIES:
+:CUSTOM_ID: aging-limits
+:END:
+
+- Finite Quint models establish bounded protocol safety and guard necessity
+  counterexamples within their declared step bounds; they do not model physical
+  OS virtual-memory allocators, kernel TCP state machines, or real-time hardware
+  clocks.
+- Lean 4 proofs establish unbounded algebraic conservation and exhaustion laws
+  over abstract natural-number models; applying them to a concrete binary still
+  requires source-to-model correspondence and native runtime evidence.
+- Compressed-budget Slope Oracles accelerate logical leaks, watermark ratchets,
+  and metastable retry traps from hours into milliseconds, but physical allocator
+  fragmentation (e.g., =glibc= vs. =jemalloc= page-decay curves under production
+  allocation distributions) additionally requires target-platform RSS/pprof
+  soak measurements.
+- Where a language toolchain is absent on a verification host (for example, if
+  =go= is not installed locally), source-authored language projections remain
+  explicitly distinguished from locally executed verification receipts.

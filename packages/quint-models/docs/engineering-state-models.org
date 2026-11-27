@@ -61,6 +61,36 @@ five formal subdomains corresponding to distinct runtime failure classes:
 - *=saga-compensation-idempotency=* (=SagaCompensationIdempotency.qnt=):
   compensating transactions, idempotency key deduplication under reply loss, and
   durable cancellation tombstones blocking late in-flight retries.
+- *=quiescence-resource-drain=* (=QuiescenceResourceDrain.qnt=): cyclic
+  handle/task conservation across normal, error, and cancellation exits with
+  zero-drift quiescence; auto-derived countermodels drop error-path cleanup or
+  cancellation drain release.
+- *=buffer-ratchet-reclamation=* (=BufferRatchetReclamation.qnt=): bounded
+  reusable buffer pool enforcing per-buffer retain ceilings and slot ceilings so
+  spike payloads never ratchet idle memory; auto-derived countermodels drop the
+  spike retain cap (pool poisoning) or pool slot cap.
+- *=metastable-retry-collapse=* (=MetastableRetryCollapse.qnt=): congestion-aware
+  load shedding and retry-budget admission bounds preventing transient triggers
+  from locking services in metastable overload; auto-derived countermodels drop
+  overload shedding or retry-budget capping.
+- *=slow-consumer-eviction=* (=SlowConsumerEviction.qnt=): bounded per-consumer
+  fan-out buffer with stall eviction and zero-orphan frame drainage; auto-derived
+  countermodels drop the slow-queue cap or eviction buffer drain.
+- *=ui-mainthread-rcu-snapshot=* (=UiMainThreadRcuSnapshot.qnt=): wait-free UI
+  main-thread RCU snapshot publication with off-lock staging.
+- *=fenced-coalescing-mailbox=* (=FencedCoalescingMailbox.qnt=): single-slot
+  latest-wins coalescing mailbox with monotonic generation fencing.
+- *=hybrid-webview-focus-lifecycle=* (=HybridWebViewFocusLifecycle.qnt=): async
+  WebView warmup, focus revocation on tab hide, and Tier-0/Tier-2 trust isolation.
+- *=bounded-projection-eviction=* (=BoundedProjectionEviction.qnt=): bounded
+  long-lived projection/session tables with idle-slot LRU reclaimability (preventing
+  bounded-without-eviction lockout) and cascade side-map deletion.
+- *=stream-lag-resync-coalescing=* (=StreamLagResyncCoalescing.qnt=): broadcast
+  lag snapshot-resync continuity (preventing silent lag disconnect) and coalesced
+  streaming checkpoint flushing (bounding write amplification).
+- *=ui-render-window-budget=* (=UiRenderWindowBudget.qnt=): bounded UI DOM
+  viewport virtualization, coalesced animation frames, and $O(1)$ incremental
+  block rendering preventing $O(N^2)$ streaming re-parse stalls (=SM7=).
 
 * 4. Parallel (=engineering/parallel/=)
 
@@ -83,6 +113,10 @@ five formal subdomains corresponding to distinct runtime failure classes:
 - *=safepoint-handshake=* (=SafepointHandshake.qnt=): asymmetric
   mutator/collector safepoint handshake preventing stale barrier phases during
   collection transitions.
+- *=gc-pacing-thrash-guard=* (=GcPacingThrashGuard.qnt=): soft-memory-limit
+  headroom shedding and GC CPU pacing window bounds preventing live-set growth
+  from triggering GC thrashing death spirals; auto-derived countermodels drop
+  headroom admission shedding or the GC CPU cycle cap.
 
 * Shared Verification Discipline
 

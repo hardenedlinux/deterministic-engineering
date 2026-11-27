@@ -20,9 +20,25 @@ state machines.
 |---------+--------------------+-------------------|
 | =SnapshotStore[T]= | =engineering.concurrency.ui-mainthread-rcu-snapshot= | Lock-free =atomic.Pointer= render reads; off-lock background staging |
 | =FencedLane[Req, Res]= | =engineering.concurrency.fenced-coalescing-mailbox= | Single-slot latest-wins coalescing + monotonic epoch fencing |
-| =PermitPool= | =engineering.concurrency.backpressure-memory= | Disjoint =queued/running/returned/cleanup= permit conservation |
+| =PermitPool= | =engineering.concurrency.backpressure-memory= | Disjoint =queued/running/returned/cleanup= permit conservation + quiescent Go map-bucket epoch rotation (=SM3=) |
 | =StructuredScope= | =engineering.concurrency.structured-cancellation= | Lexical nursery lifetime with child-quiescence barrier |
 | =FramePacer= | =engineering.concurrency.fenced-coalescing-mailbox= | Demand-driven coalesced invalidation + P99 frame telemetry |
 | =WebViewLifecycle= | =engineering.concurrency.hybrid-webview-focus-lifecycle= | Async warmup + focus revocation on hide + Tier-0/Tier-2 isolation |
+
+Hardened with worker-panic quiescence recovery (=FencedLane.PanicCount()=),
+Go 1.25+ =testing/synctest= bubbles, live Quint =--mbt= ITF trace refinement
+against all 3 UI concurrency models, and Marlin/MyGo coalesced-projection soak
+tests in [[file:concurrency/stability_soak_test.go][concurrency/stability_soak_test.go]].
+
+* Software Aging & Steady-State Stability (=languages-engineering/go/stability/aging-contrast/=)
+
+Go projection of [[file:../../docs/40-49-research/40-reference-studies/40.04-software-aging-and-steady-state-stability.org][40.04 Software Aging & Steady-State Stability]]:
+- =BadBlockedChannelWorker= vs. =DeterministicChannelWorker= (=engineering.concurrency.quiescence-resource-drain=): Tu et al. (ASPLOS 2019) unbuffered-channel goroutine leak on =ctx.Done()= verified by Go 1.25+ =testing/synctest= virtual-clock bubbles and =runtime.NumGoroutine()= zero-drift controls.
+- =BadBufferPool= vs. =DeterministicBufferPool= (=engineering.concurrency.buffer-ratchet-reclamation=): spike-payload slice capacity ratcheting vs. =cap(buf) <= maxRetainCap= + =slotCap= bounded reuse.
+- =DeterministicRetryController= (=engineering.concurrency.metastable-retry-collapse=): congestion-aware load shedding and explicit retry budget recovery.
+
+Executed via =just check-stability= (using =go= on =PATH=, the subdir-composed
+=devenv shell= via [[file:devenv.nix][languages-engineering/go/devenv.nix]], or
+=nix-shell -p go= fallback for =go vet ./...= and =go test -race -v ./...=).
 
 Shared Scheme framework/design drivers remain in =library/drivers/=.

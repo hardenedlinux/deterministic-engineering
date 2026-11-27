@@ -238,3 +238,76 @@ informs.
     update conservation, dangerous =rw=-antidependency cycles, post-commit
     =SIREAD= lock retention (§2.2), and read-time =rw=-conflict detection (§3.2)
     directly modeled in =engineering/storage/mvcc-ssi-write-skew=.
+
+* 7. Software Aging, Steady-State Stability, Overload Control & Metastable Failures
+
+- *Yennun Huang, Chandra Kintala, Nick Kolettis, N. Dudley Shih (1995)*,
+  /Software Rejuvenation: Analysis, Module and Applications/, IEEE FTCS 1995;
+  *Kalyan Vaidyanathan & Kishor S. Trivedi (1999)*, /A Measurement-Based Model
+  for Estimation of Resource Exhaustion in Operational Software Systems/, IEEE
+  ISSRE 1999; *Michael Grottke & Kishor S. Trivedi (2006 / 2022)*, /Analysis of
+  Software Aging in a Web Server/ & /Aging, Fast and Slow/, IEEE Computer 55(5);
+  and *Alberto Avritzer, Domenico Cotroneo, Yennun Huang, Kishor S. Trivedi
+  (2020)*, /Handbook of Software Aging and Rejuvenation/, World Scientific.
+  - Foundational taxonomy of Bohrbugs, Mandelbugs, and Aging-Related Bugs (ARBs)
+    where gradual state/resource accumulation drives time-monotonic degradation.
+- *Domenico Cotroneo, Michael Grottke, Roberto Natella, Roberto Pietrantuono,
+  Kishor S. Trivedi (2013)*, /Fault Triggers in Open-Source Software: An
+  Experience Report/, IEEE ISSRE 2013; and *Domenico Cotroneo, Salvatore
+  Orlando, Stefano Russo (2007)*, /Characterizing Aging Phenomena of the Java
+  Virtual Machine/, IEEE SRDS 2007.
+  - Large-scale empirical classification of aging-related bugs across Linux,
+    MySQL, Apache HTTPD, Apache AXIS, and managed JVM runtimes.
+- *Ding Yuan, Yu Luo, Xin Zhuang, Guilherme Renna Rodrigues, Xu Zhao, Yongle
+  Zhang, Pranay U. Jain, Michael Stumm (2014)*, /Simple Testing Can Prevent
+  Most Critical Failures: An Analysis of Production Failures in Distributed
+  Data-Intensive Systems/, USENIX OSDI 2014; and *Cristiano Calcagno, Dino
+  Distefano, Peter W. O'Hearn, Hongseok Yang (2009 / 2011)*, /Compositional
+  Shape Analysis by means of Bi-Abduction/, ACM POPL 2009 / JACM 58(6).
+  - Demonstrates that mishandled error/cleanup paths drive catastrophic
+    failures (reproducible at small scale) and establishes compositional
+    separation-logic leak checking (Meta Infer); directly informs
+    =engineering/concurrency/quiescence-resource-drain=.
+- *Maria Jump & Kathryn S. McKinley (2007)*, /Cork: Dynamic Memory Leak
+  Detection for Garbage-Collected Languages/, ACM POPL 2007; *Guoqing (Harry)
+  Xu et al. (2010)*, /Finding Low-Utility Data Structures/ & /Detecting
+  Inefficiently-Used Containers to Avoid Bloat/, ACM PLDI 2010; and *Bobby
+  Powers, David Tench, Emery D. Berger, Andrew McGregor (2019)*, /Mesh:
+  Compacting Memory Management for C/C++/, ACM PLDI 2019.
+  - Characterizes semantic memory leaks, container/pool bloat, watermark
+    ratcheting, and unmanaged heap fragmentation; directly informs
+    =engineering/concurrency/buffer-ratchet-reclamation=.
+- *Joe Armstrong (2003)*, /Making Reliable Distributed Systems in the Presence
+  of Software Errors/ (PhD Thesis, KTH); *Shan Lu, Soyeon Park, Eunsoo Seo,
+  Yuanyuan Zhou (2008)*, /Learning from Mistakes: A Comprehensive Study on Real
+  World Concurrency Bug Characteristics/, ACM ASPLOS 2008; *Tengfei Tu, Xiaoyu
+  Liu, Linhai Song, Yiying Zhang (2019)*, /Understanding Real-World Concurrency
+  Bugs in Go/, ACM ASPLOS 2019; and *Boqin Qin, Yilun Chen, Zeming Yu, Linhai
+  Song, Yiying Zhang (2020)*, /Understanding Memory and Thread Safety Practices
+  and Issues in Real-World Rust Programs/, ACM PLDI 2020.
+  - Empirical concurrency-bug and goroutine/channel/task leak studies across
+    C/C++, Go (Kubernetes, Docker, etcd, CockroachDB), and Rust; informs
+    =engineering/concurrency/structured-cancellation= and
+    =engineering/concurrency/quiescence-resource-drain=.
+- *Matt Welsh, David Culler, Eric Brewer (2001)*, /SEDA: An Architecture for
+  Well-Conditioned, Scalable Internet Services/, ACM SOSP 2001; *Jeffrey Dean &
+  Luiz André Barroso (2013)*, /The Tail at Scale/, CACM 56(2); *Hao Zhou et al.
+  (2018)*, /Overload Control for Scaling WeChat Microservices/ (DAGOR), ACM
+  SoCC 2018; *Inho Cho et al. (2020)*, /Overload Control for µs-scale RPCs with
+  Breakwater/, USENIX OSDI 2020; *Nathan Bronson, Abutalib Aghayev, Aleksey
+  Charapko, Timothy Zhu (2021)*, /Metastable Failures in Distributed Systems/,
+  ACM HotOS 2021; and *Lexiang Huang et al. (2022)*, /Metastable Failures in
+  the Wild/, USENIX OSDI 2022.
+  - Formalizes how retry amplification, queueing delay, and missing load
+    shedding trap services in self-sustaining degraded states after transient
+    triggers; directly informs =engineering/concurrency/metastable-retry-collapse=.
+- *Gil Tene (2013–2015)*, /How NOT to Measure Latency (Coordinated Omission)/;
+  and *Jingyu Zhou, Meng Xu, Alexander Shraer, Bala Namasivayam, Alex Miller,
+  Evan Tschannen, Steve Atherton, Andrew J. Beamon, Rusty Sears, John Leach,
+  Dave Rosenthal, Xin Dong, Will Wilson, Ben Collins, David Scherer, Alec
+  Grieser, Young Liu, Alvin Moore, Bhaskar Muppana, Xiaoge Su, Vishesh Yadav
+  (2021)*, /FoundationDB: A Distributed Unbundled Transactional Key Value
+  Store/, ACM SIGMOD 2021.
+  - Establishes open-loop latency measurement and single-threaded Deterministic
+    Simulation Testing (DST), underpinning compressed-budget steady-state slope
+    oracles across languages (see [[file:../../../docs/40-49-research/40-reference-studies/40.04-software-aging-and-steady-state-stability.org][40.04]]).

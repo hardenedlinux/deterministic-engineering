@@ -20,6 +20,7 @@ type FencedLane[Req, Res any] struct {
 	mu           sync.Mutex
 	activeEpoch  atomic.Uint64
 	appliedEpoch atomic.Uint64
+	panicCount   atomic.Uint64
 	hasPending   bool
 	pendingReq   Req
 	pendingEpoch uint64
@@ -87,6 +88,9 @@ func (l *FencedLane[Req, Res]) ActiveEpoch() uint64 { return l.activeEpoch.Load(
 // AppliedEpoch returns the highest epoch committed via onCommit or AdvanceEpoch.
 func (l *FencedLane[Req, Res]) AppliedEpoch() uint64 { return l.appliedEpoch.Load() }
 
+// PanicCount returns the number of recovered worker panics safely contained by runLoop.
+func (l *FencedLane[Req, Res]) PanicCount() uint64 { return l.panicCount.Load() }
+
 // Close cancels in-flight work, rejects future Submit calls, and waits until
 // the worker goroutine drains cleanly (quiescence barrier).
 func (l *FencedLane[Req, Res]) Close() {
@@ -111,17 +115,32 @@ func (l *FencedLane[Req, Res]) Close() {
 	}
 }
 
+func (l *FencedLane[Req, Res]) invokeWorkerSafe(ctx context.Context, req Req) (res Res, err error, panicked bool) {
+	defer func() {
+		if r := recover(); r != nil {
+			l.panicCount.Add(1)
+			panicked = true
+		}
+	}()
+	res, err = l.worker(ctx, req)
+	return res, err, false
+}
+
 func (l *FencedLane[Req, Res]) runLoop() {
+	defer func() {
+		l.mu.Lock()
+		l.running = false
+		l.cancelRun = nil
+		ch := l.drained
+		l.mu.Unlock()
+		if ch != nil {
+			close(ch)
+		}
+	}()
 	for {
 		l.mu.Lock()
 		if l.closed || !l.hasPending {
-			l.running = false
-			l.cancelRun = nil
-			ch := l.drained
 			l.mu.Unlock()
-			if ch != nil {
-				close(ch)
-			}
 			return
 		}
 		req := l.pendingReq
@@ -131,10 +150,10 @@ func (l *FencedLane[Req, Res]) runLoop() {
 		l.cancelRun = cancel
 		l.mu.Unlock()
 
-		res, err := l.worker(ctx, req)
+		res, err, panicked := l.invokeWorkerSafe(ctx, req)
 		cancel()
 
-		if err != nil {
+		if panicked || err != nil {
 			continue
 		}
 		// Monotonic epoch fence: commit only if no newer epoch superseded ep.
