@@ -548,9 +548,19 @@
           (check-equal? (hash-get doc "inlinePem") #t)
           (check-equal? (hash-get doc "activeKeyIds") (list kid2))
           (check-equal? (hash-get doc "revokedKeyIds") (list kid1))))
-      ;; Sign a valid report with active K2 before deleting `keys/` from disk.
+      ;; Sign a valid report with active K2 and a valid mixed-key Fleet (root=K2, child=K1)
+      ;; before deleting `keys/` from disk.
       (def rep-k2-ok (path-expand "rep-k2-ok.json" work))
       (build-signed-report rep-k2-ok k2 work "rep-k2-ok" request-id: "req-k2-ok")
+      (def pack-child-ok (path-expand "child/report.json" subfleet-dir))
+      (def pack-child-sha (build-signed-report pack-child-ok k1 work "pack-child-ok" request-id: "req-pack-child"))
+      (def fleet-ok (path-expand "fleet-ok.json" subfleet-dir))
+      (write-signed-fleet fleet-ok
+        (list (hash ("subjectKey" "demo") ("subjectId" "subject.demo")
+                    ("reportRelativePath" "child/report.json")
+                    ("reportPayloadSha256" pack-child-sha)
+                    ("replayValid" #t) ("admitted" #t)))
+        k2 "fl-pack-ok")
 
       ;; Physically delete ALL .pub.pem files from disk before running inline-bundle verification!
       (run-process (list "rm" "-rf" keys-dir))
@@ -590,5 +600,68 @@
                (doc (call-with-input-string json-line (cut read-json <> object-as-hash: #t))))
           (check-equal? (hash-get doc "ok") #t)
           (check-equal? (hash-get doc "mode") "verify-report")))
+
+      ;; Attacks 26-28: Self-Contained Single-File Fleet Evidence Bundle (`--pack-fleet-bundle` &
+      ;;                `--verify-fleet-bundle`) — 2-file air-gapped audit with ZERO directory tree!
+      (def bad-pack-trav (path-expand "bad-pack-trav.json" work))
+      (check-equal? (throws? (lambda () (pack-fleet-bundle-offline fleet-traversal bad-pack-trav))) #t)
+      (check-equal? (file-exists? bad-pack-trav) #f)
+      (def bad-pack-sym (path-expand "bad-pack-sym.json" work))
+      (check-equal? (throws? (lambda () (pack-fleet-bundle-offline fleet-sym-file bad-pack-sym))) #t)
+      (check-equal? (file-exists? bad-pack-sym) #f)
+      (def fleet-bundle-path (path-expand "fleet-bundle.json" work))
+      (check-equal? (pack-fleet-bundle-offline fleet-ok fleet-bundle-path) 1)
+      ;; Physically delete `subfleet/` directory (`keys/` is ALREADY deleted!) so ONLY 2 files remain!
+      (run-process (list "rm" "-rf" subfleet-dir))
+      (check-equal? (file-exists? fleet-ok) #f)
+      (check-equal? (verify-fleet-bundle-offline fleet-bundle-path tp-inline) #t)
+      (check-equal? (verify-fleet-bundle-offline fleet-bundle-path tp-exported) #f)
+      ;; Cross-language live interop: verify Gerbil-packed `fleet-bundle.json` with Bun/TS CLI (<100ms)!
+      (let* ((ts-cmd (string-append
+                       "cd \"" repo-root "\" && "
+                       "bun t/harness/offline-attestation-verifier.ts --json --verify-fleet-bundle "
+                       "\"" fleet-bundle-path "\" \"" ts-inline-path "\""))
+             (proc (open-process
+                     (list path: "/bin/bash"
+                           arguments: (list "-euo" "pipefail" "-c" ts-cmd)
+                           stdin-redirection: #f
+                           stdout-redirection: #t
+                           stderr-redirection: #t)))
+             (out (read-all-as-string proc))
+             (st (process-status proc)))
+        (close-port proc)
+        (check-equal? st 0)
+        (let ((doc (call-with-input-string out (cut read-json <> object-as-hash: #t))))
+          (check-equal? (hash-get doc "ok") #t)
+          (check-equal? (hash-get doc "mode") "verify-fleet-bundle")))
+      ;; Smuggled extra child report -> rejected!
+      (def bdoc (call-with-input-file fleet-bundle-path (cut read-json <> object-as-hash: #t)))
+      (def smuggled-children (make-hash-table))
+      (hash-for-each (lambda (k v) (hash-put! smuggled-children k v)) (hash-get bdoc "childReports"))
+      (hash-put! smuggled-children "child/smuggled.json"
+                 (hash-get (hash-get bdoc "childReports") "child/report.json"))
+      (def bundle-smuggled (path-expand "fleet-bundle-smuggled.json" work))
+      (write-json-file bundle-smuggled
+        (hash ("schema" "de.attestation.fleet-evidence-bundle.v1")
+              ("fleetReport" (hash-get bdoc "fleetReport"))
+              ("childReports" smuggled-children)))
+      (check-equal? (verify-fleet-bundle-offline bundle-smuggled tp-inline) #f)
+      ;; Missing child report -> rejected!
+      (def bundle-missing (path-expand "fleet-bundle-missing.json" work))
+      (write-json-file bundle-missing
+        (hash ("schema" "de.attestation.fleet-evidence-bundle.v1")
+              ("fleetReport" (hash-get bdoc "fleetReport"))
+              ("childReports" (make-hash-table))))
+      (check-equal? (verify-fleet-bundle-offline bundle-missing tp-inline) #f)
+      ;; Tampered/re-signed embedded child report (Merkle digest mismatch) -> rejected!
+      (def tampered-children (make-hash-table))
+      (hash-put! tampered-children "child/report.json"
+                 (call-with-input-file rep-k2-ok (cut read-json <> object-as-hash: #t)))
+      (def bundle-tampered (path-expand "fleet-bundle-tampered.json" work))
+      (write-json-file bundle-tampered
+        (hash ("schema" "de.attestation.fleet-evidence-bundle.v1")
+              ("fleetReport" (hash-get bdoc "fleetReport"))
+              ("childReports" tampered-children)))
+      (check-equal? (verify-fleet-bundle-offline bundle-tampered tp-inline) #f)
 
       (run-process (list "rm" "-rf" work)))))

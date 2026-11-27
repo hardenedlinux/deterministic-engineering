@@ -13,6 +13,8 @@
 ;;;   gxi t/support/offline-attestation-verifier.ss [--json] --verify-cache  <verification-cache.v1.json> <trust-store.json>
 ;;;   gxi t/support/offline-attestation-verifier.ss [--json] --verify-trust-store <trust-store.json>
 ;;;   gxi t/support/offline-attestation-verifier.ss [--json] --export-trust-bundle <out.json> [--revoke <keyId>]... <pub1.pem> [<pub2.pem> ...]
+;;;   gxi t/support/offline-attestation-verifier.ss [--json] --pack-fleet-bundle <fleet-report.json> <out-bundle.json>
+;;;   gxi t/support/offline-attestation-verifier.ss [--json] --verify-fleet-bundle <fleet-bundle.json> <trust-store.json>
 (import
   :std/crypto/digest
   :std/encoding/base64
@@ -23,9 +25,12 @@
 (export
   load-trust-store-json-lite
   export-trust-bundle-offline
+  pack-fleet-bundle-offline
   resolve-contained-child-report-path
+  verify-report-doc-offline
   verify-report-offline
   verify-fleet-offline
+  verify-fleet-bundle-offline
   verify-cache-offline
   main)
 
@@ -165,12 +170,11 @@
   (def revoked (filter string? (or (hash-get doc "revokedKeyIds") '())))
   (cons (reverse trusted) revoked))
 
-(def (verify-report-offline report-path trust-pair)
-  (and (file-exists? report-path)
+(def (verify-report-doc-offline doc trust-pair)
+  (and (hash-table? doc)
        (let* ((trusted (car trust-pair))
               (revoked (cdr trust-pair))
-              (doc (call-with-input-file report-path (cut read-json <> object-as-hash: #t)))
-              (att (and (hash-table? doc) (hash-get doc "attestation")))
+              (att (hash-get doc "attestation"))
               (kid (and (hash-table? att) (hash-get att "keyId")))
               (pub (trust-store-alist-key-admitted? trusted revoked kid)))
          (and pub
@@ -206,6 +210,12 @@
                          tc-pairs)))
                 (and (equal? (sha256-str canonical) expected-sha)
                      (ed25519-verify-raw pub canonical sig)))))))
+
+(def (verify-report-offline report-path trust-pair)
+  (and (file-exists? report-path)
+       (verify-report-doc-offline
+         (call-with-input-file report-path (cut read-json <> object-as-hash: #t))
+         trust-pair)))
 
 (def (verify-fleet-offline fleet-report-path trust-pair)
   (and (file-exists? fleet-report-path)
@@ -357,6 +367,109 @@
       (newline port)))
   (cons active revoked-clean))
 
+;; Packs a 2-level Merkle Fleet report + ALL contained child reports into a single
+;; self-contained `de.attestation.fleet-evidence-bundle.v1` JSON archive.
+(def (pack-fleet-bundle-offline fleet-report-path out-path)
+  (unless (and (string? fleet-report-path) (file-exists? fleet-report-path))
+    (error "Fleet report file not found" fleet-report-path))
+  (unless (and (string? out-path) (> (string-length out-path) 0))
+    (error "Invalid output fleet bundle path" out-path))
+  (def fleet-doc (call-with-input-file fleet-report-path (cut read-json <> object-as-hash: #t)))
+  (def subjects (and (hash-table? fleet-doc) (hash-get fleet-doc "subjects")))
+  (unless (and (list? subjects) (pair? subjects))
+    (error "Invalid or empty fleet report subjects" fleet-report-path))
+  (def fleet-dir (path-directory fleet-report-path))
+  (def child-reports (make-hash-table))
+  (for-each
+    (lambda (s)
+      (unless (hash-table? s)
+        (error "Malformed subject entry in fleet report"))
+      (let* ((rel (hash-get s "reportRelativePath"))
+             (child-path (resolve-contained-child-report-path fleet-dir rel)))
+        (unless (and child-path (string? rel))
+          (error "Refusing to pack uncontained/symlink/missing child report" rel))
+        (when (hash-key? child-reports rel)
+          (error "Duplicate child reportRelativePath in fleet report" rel))
+        (let* ((cdoc (call-with-input-file child-path (cut read-json <> object-as-hash: #t)))
+               (catt (and (hash-table? cdoc) (hash-get cdoc "attestation"))))
+          (unless (and (hash-table? catt)
+                       (equal? (hash-get catt "payloadSha256")
+                               (hash-get s "reportPayloadSha256")))
+            (error "Child report Merkle payloadSha256 mismatch while packing" rel))
+          (hash-put! child-reports rel cdoc))))
+    subjects)
+  (def parent-dir (path-directory out-path))
+  (when (and (> (string-length parent-dir) 0) (not (file-exists? parent-dir)))
+    (create-directory* parent-dir))
+  (def bundle
+    (hash ("schema" "de.attestation.fleet-evidence-bundle.v1")
+          ("fleetReport" fleet-doc)
+          ("childReports" child-reports)))
+  (call-with-output-file out-path
+    (lambda (port)
+      (write-json port bundle)
+      (newline port)))
+  (length subjects))
+
+;; Pure zero-disk-traversal verifier for `de.attestation.fleet-evidence-bundle.v1`.
+;; Enforces root Fleet Ed25519 signature, exact 1-to-1 bijection (blocking missing OR
+;; smuggled extra child reports), child report Ed25519 + semantic admission, and Merkle binding.
+(def (verify-fleet-bundle-offline bundle-path trust-pair)
+  (and (file-exists? bundle-path)
+       (let* ((trusted (car trust-pair))
+              (revoked (cdr trust-pair))
+              (bundle (call-with-input-file bundle-path (cut read-json <> object-as-hash: #t)))
+              (fleet-doc (and (hash-table? bundle)
+                              (equal? (hash-get bundle "schema")
+                                      "de.attestation.fleet-evidence-bundle.v1")
+                              (hash-get bundle "fleetReport")))
+              (child-reports (and (hash-table? bundle) (hash-get bundle "childReports")))
+              (att (and (hash-table? fleet-doc) (hash-get fleet-doc "attestation")))
+              (subjects (and (hash-table? fleet-doc) (hash-get fleet-doc "subjects")))
+              (kid (and (hash-table? att) (hash-get att "keyId")))
+              (fleet-pub (trust-store-alist-key-admitted? trusted revoked kid)))
+         (and fleet-pub
+              (hash-table? child-reports)
+              (list? subjects)
+              (pair? subjects)
+              (= (hash-length child-reports) (length subjects))
+              (equal? (hash-get att "algorithm") "Ed25519")
+              (let* ((expected-sha (hash-get att "payloadSha256"))
+                     (sig (hash-get att "signature"))
+                     (entries
+                       (map (lambda (s)
+                              (list (or (hash-get s "subjectKey") "")
+                                    (or (hash-get s "subjectId") "")
+                                    (or (hash-get s "reportPayloadSha256") "")
+                                    (eq? (hash-get s "replayValid") #t)
+                                    (eq? (hash-get s "admitted") #t)))
+                            subjects))
+                     (canonical
+                       (canonical-fleet-signing-payload
+                         (or (hash-get fleet-doc "fleetId") "")
+                         (or (hash-get fleet-doc "sysmlSha256") "")
+                         entries))
+                     (seen-rels '()))
+                (and (equal? (sha256-str canonical) expected-sha)
+                     (ed25519-verify-raw fleet-pub canonical sig)
+                     (andmap
+                       (lambda (s)
+                         (let* ((rel (and (hash-table? s) (hash-get s "reportRelativePath")))
+                                (expected-child-sha (and (hash-table? s) (hash-get s "reportPayloadSha256")))
+                                (cdoc (and (safe-relative-child-path? rel)
+                                           (not (member rel seen-rels))
+                                           (hash-key? child-reports rel)
+                                           (hash-get child-reports rel))))
+                           (when (and cdoc (string? rel))
+                             (set! seen-rels (cons rel seen-rels)))
+                           (and (hash-table? cdoc)
+                                (verify-report-doc-offline cdoc trust-pair)
+                                (let ((catt (hash-get cdoc "attestation")))
+                                  (and (hash-table? catt)
+                                       (equal? (hash-get catt "payloadSha256") expected-child-sha))))))
+                       subjects)
+                     (= (length seen-rels) (hash-length child-reports))))))))
+
 (def (parse-export-bundle-args rest)
   (let loop ((xs rest) (revoked '()) (pubs '()))
     (cond
@@ -402,6 +515,26 @@
                 (displayln "MULTI-METHOD-EXPORT-TRUST-BUNDLE-OK " out-path
                            " active=" (length active)
                            " revoked=" (length revoked)))))))))
+   ((equal? mode "--pack-fleet-bundle")
+    (unless (= (length clean-args) 3)
+      (error "usage: [--json] --pack-fleet-bundle <fleet-report.json> <out-bundle.json>" args))
+    (let ((fleet-path (list-ref clean-args 1))
+          (out-path (list-ref clean-args 2)))
+      (with-catch
+        (lambda (e)
+          (if json-mode?
+            (begin
+              (emit-json-result! #f "pack-fleet-bundle" fleet-path out-path
+                (string-append "pack-fleet-bundle failed: " (error-message e)))
+              (exit 1))
+            (raise e)))
+        (lambda ()
+          (let ((n (pack-fleet-bundle-offline fleet-path out-path)))
+            (if json-mode?
+              (emit-json-result! #t "pack-fleet-bundle" fleet-path out-path
+                "packed-fleet-evidence-bundle"
+                (list (cons "subjects" n)))
+              (displayln "MULTI-METHOD-PACK-FLEET-BUNDLE-OK " out-path " subjects=" n)))))))
    ((equal? mode "--verify-trust-store")
     (begin
       (unless (= (length clean-args) 2)
@@ -478,6 +611,18 @@
                 (emit-json-result! #f "verify-fleet" target-path store-path "offline fleet verification failed")
                 (exit 1))
               (error "offline fleet verification failed" target-path))))
+         ((equal? mode "--verify-fleet-bundle")
+          (if (verify-fleet-bundle-offline target-path trust-pair)
+            (if json-mode?
+              (emit-json-result! #t "verify-fleet-bundle" target-path store-path
+                "authentic-self-contained-fleet-bundle")
+              (displayln "MULTI-METHOD-VERIFY-FLEET-BUNDLE-OK " target-path))
+            (if json-mode?
+              (begin
+                (emit-json-result! #f "verify-fleet-bundle" target-path store-path
+                  "offline fleet bundle verification failed")
+                (exit 1))
+              (error "offline fleet bundle verification failed" target-path))))
          ((equal? mode "--verify-cache")
           (let ((n (verify-cache-offline target-path trust-pair)))
             (if n

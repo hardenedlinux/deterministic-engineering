@@ -745,4 +745,86 @@ theorem exportBundle_rejects_zeroActiveLockout (cs : List ExportKeyCandidate)
   intro hSafe
   exact allRevoked_contradicts_hasActive cs hAllRev hSafe.2
 
+/-! ## 12. Self-Contained Single-File Fleet Evidence Bundle Integrity (`--verify-fleet-bundle`) -/
+
+structure FleetBundleChildEntry where
+  pathSafe : Bool
+  present : Bool
+  signatureValid : Bool
+  keyUnrevoked : Bool
+  merkleDigestMatches : Bool
+
+structure FleetEvidenceBundleModel where
+  rootValid : Bool
+  declaredCount : Nat
+  embeddedCount : Nat
+  children : List FleetBundleChildEntry
+
+def bundleChildAdmitted (c : FleetBundleChildEntry) : Prop :=
+  c.pathSafe = true ∧
+  c.present = true ∧
+  c.signatureValid = true ∧
+  c.keyUnrevoked = true ∧
+  c.merkleDigestMatches = true
+
+def allBundleChildrenAdmitted : List FleetBundleChildEntry → Prop
+  | [] => True
+  | c :: rest => bundleChildAdmitted c ∧ allBundleChildrenAdmitted rest
+
+def containsBundleChildWith (P : FleetBundleChildEntry → Prop) : List FleetBundleChildEntry → Prop
+  | [] => False
+  | c :: rest => P c ∨ containsBundleChildWith P rest
+
+/-- Constructive zero-axiom verification predicate for `de.attestation.fleet-evidence-bundle.v1`:
+requires valid root Ed25519 signature, non-empty subject set, exact 1-to-1 cardinality bijection
+(`declaredCount = embeddedCount`, blocking smuggled extra entries), and full cryptographic +
+Merkle-binding admission of every embedded child report. -/
+def SafeFleetEvidenceBundle (b : FleetEvidenceBundleModel) : Prop :=
+  b.rootValid = true ∧
+  b.declaredCount > 0 ∧
+  b.declaredCount = b.embeddedCount ∧
+  allBundleChildrenAdmitted b.children
+
+private theorem badChild_contradicts_allBundleAdmitted
+    {P : FleetBundleChildEntry → Prop}
+    (hContra : ∀ c, P c → bundleChildAdmitted c → False) :
+    ∀ cs : List FleetBundleChildEntry,
+      containsBundleChildWith P cs → allBundleChildrenAdmitted cs → False
+  | [], hIn, _ => hIn
+  | c :: _, Or.inl hP, ⟨hAdm, _⟩ => hContra c hP hAdm
+  | _ :: rest, Or.inr hRest, ⟨_, hAll⟩ =>
+      badChild_contradicts_allBundleAdmitted hContra rest hRest hAll
+
+/-- Constructive zero-axiom proof: a Fleet evidence bundle missing ANY declared child report
+is unconditionally rejected. -/
+theorem bundle_rejects_missing_child_entry (b : FleetEvidenceBundleModel)
+    (hMissing : containsBundleChildWith (fun c => c.present = false) b.children) :
+    ¬ SafeFleetEvidenceBundle b := by
+  intro hSafe
+  exact badChild_contradicts_allBundleAdmitted
+    (fun _ hM hAdm => Bool.noConfusion (hM.symm.trans hAdm.2.1))
+    b.children hMissing hSafe.2.2.2
+
+/-- Constructive zero-axiom proof: injecting smuggled/unreferenced extra child reports
+(breaking exact 1-to-1 bijection `declaredCount = embeddedCount`) is unconditionally rejected. -/
+theorem bundle_rejects_smuggled_extra_child (b : FleetEvidenceBundleModel)
+    (hMismatch : b.declaredCount ≠ b.embeddedCount) :
+    ¬ SafeFleetEvidenceBundle b := by
+  intro hSafe
+  exact hMismatch hSafe.2.2.1
+
+/-- Constructive zero-axiom proof: any embedded child report with a revoked key or tampered
+Merkle digest invalidates the entire self-contained Fleet bundle. -/
+theorem bundle_rejects_revoked_or_tampered_embedded_child (b : FleetEvidenceBundleModel)
+    (hBad : containsBundleChildWith
+              (fun c => c.keyUnrevoked = false ∨ c.merkleDigestMatches = false) b.children) :
+    ¬ SafeFleetEvidenceBundle b := by
+  intro hSafe
+  exact badChild_contradicts_allBundleAdmitted
+    (fun _ hOr hAdm =>
+      match hOr with
+      | Or.inl hRev => Bool.noConfusion (hRev.symm.trans hAdm.2.2.2.1)
+      | Or.inr hDig => Bool.noConfusion (hDig.symm.trans hAdm.2.2.2.2))
+    b.children hBad hSafe.2.2.2
+
 end DeterministicEngineering.Core.MetaGovernance

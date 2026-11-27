@@ -31,10 +31,12 @@ import {
   canonicalWitnessSigningPayload,
   exportTrustBundleOffline,
   loadTrustStoreJsonLite,
+  packFleetBundleOffline,
   resolveContainedChildReportPath,
   safeRelativeChildPath,
   sha256Str,
   verifyCacheOffline,
+  verifyFleetBundleOffline,
   verifyFleetOffline,
   verifyReportOffline,
 } from './offline-attestation-verifier.ts';
@@ -668,5 +670,91 @@ describe('Zero-Dependency TS/Bun Offline Attestation Verifier (25 Controls + Ger
     const docCache = JSON.parse(resCliCache.stdout.trim());
     expect(docCache.ok).toBe(true);
     expect(docCache.entries).toBe(2);
+
+    // Controls 26-28: Self-Contained Single-File Fleet Evidence Bundle
+    //   26: `--pack-fleet-bundle` rejects traversal & symlink child reports at pack time,
+    //       and packs valid mixed-key `fleet-ok.json` into `fleet-bundle.json`.
+    const badPackTrav = join(WORK_DIR, 'bad-pack-trav.json');
+    expect(() => packFleetBundleOffline(fleetTrav, badPackTrav)).toThrow();
+    expect(existsSync(badPackTrav)).toBe(false);
+
+    const fleetSymCan = canonicalFleetSigningPayload('f-sym', 'sysmlsha', [
+      ['demo', 'subject.demo', repOkSha, true, true],
+    ]);
+    const fleetSym = writeJson(join(subfleetDir, 'fleet-sym.json'), {
+      schema: 'deterministic-engineering.multi-method-fleet-report.v1',
+      fleetId: 'f-sym',
+      sysmlSha256: 'sysmlsha',
+      subjects: [
+        {
+          subjectKey: 'demo',
+          subjectId: 'subject.demo',
+          reportRelativePath: 'child/escape-link.json',
+          reportPayloadSha256: repOkSha,
+          replayValid: true,
+          admitted: true,
+        },
+      ],
+      attestation: {
+        algorithm: 'Ed25519',
+        keyId: k2.kid,
+        payloadSha256: sha256Str(fleetSymCan),
+        signature: signEd25519(k2.privPem, fleetSymCan),
+      },
+    });
+    const badPackSym = join(WORK_DIR, 'bad-pack-sym.json');
+    expect(() => packFleetBundleOffline(fleetSym, badPackSym)).toThrow();
+    expect(existsSync(badPackSym)).toBe(false);
+
+    const fleetBundlePath = join(WORK_DIR, 'fleet-bundle.json');
+    const resPack = runTsCli(['--json', '--pack-fleet-bundle', fleetOk, fleetBundlePath]);
+    expect(resPack.exitCode).toBe(0);
+    const docPack = JSON.parse(resPack.stdout.trim());
+    expect(docPack.ok).toBe(true);
+    expect(docPack.mode).toBe('pack-fleet-bundle');
+    expect(docPack.subjects).toBe(1);
+
+    //   27: Physically delete the ENTIRE `subfleet/` directory (root fleet + all child reports!)
+    //       while `keys/` is ALREADY deleted -> ONLY TWO FILES (`fleet-bundle.json` +
+    //       `trust-inline-all.json`) remain on disk! Verify `--json --verify-fleet-bundle`!
+    rmSync(subfleetDir, {recursive: true, force: true});
+    expect(existsSync(fleetOk)).toBe(false);
+    expect(existsSync(childOk)).toBe(false);
+
+    expect(verifyFleetBundleOffline(fleetBundlePath, tpInlineAll)).toBe(true);
+    expect(verifyFleetBundleOffline(fleetBundlePath, tpExported)).toBe(false); // K1 child revoked!
+    const resVerifyBundle = runTsCli(['--json', '--verify-fleet-bundle', fleetBundlePath, tsInlineAll]);
+    expect(resVerifyBundle.exitCode).toBe(0);
+    const docVB = JSON.parse(resVerifyBundle.stdout.trim());
+    expect(docVB.ok).toBe(true);
+    expect(docVB.mode).toBe('verify-fleet-bundle');
+
+    //   28A: Smuggled unreferenced extra child report inside `childReports` -> REJECTED!
+    const bundleRaw = JSON.parse(readFileSync(fleetBundlePath, 'utf8'));
+    const bundleSmuggled = writeJson(join(WORK_DIR, 'fleet-bundle-smuggled.json'), {
+      ...bundleRaw,
+      childReports: {
+        ...bundleRaw.childReports,
+        'child/smuggled.json': bundleRaw.childReports['child/report.json'],
+      },
+    });
+    expect(verifyFleetBundleOffline(bundleSmuggled, tpInlineAll)).toBe(false);
+
+    //   28B: Missing child report entry -> REJECTED!
+    const bundleMissing = writeJson(join(WORK_DIR, 'fleet-bundle-missing.json'), {
+      ...bundleRaw,
+      childReports: {},
+    });
+    expect(verifyFleetBundleOffline(bundleMissing, tpInlineAll)).toBe(false);
+
+    //   28C: Tampered/re-signed embedded child report (Merkle digest mismatch) -> REJECTED!
+    const repK2Doc = JSON.parse(readFileSync(repK2Ok, 'utf8'));
+    const bundleTamperedChild = writeJson(join(WORK_DIR, 'fleet-bundle-tampered-child.json'), {
+      ...bundleRaw,
+      childReports: {
+        'child/report.json': repK2Doc,
+      },
+    });
+    expect(verifyFleetBundleOffline(bundleTamperedChild, tpInlineAll)).toBe(false);
   });
 });

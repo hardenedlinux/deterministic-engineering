@@ -33,6 +33,7 @@ export interface ExportBundleResult {
 }
 
 const TRUST_STORE_SCHEMA = 'de.attestation.ed25519-trust-store.v1';
+const FLEET_BUNDLE_SCHEMA = 'de.attestation.fleet-evidence-bundle.v1';
 const VERIFY_RESULT_SCHEMA = 'de.attestation.offline-verify-result.v1';
 const PUBLIC_KEY_HEADER = '-----BEGIN PUBLIC KEY-----';
 const STRICT_BASE64_RE = /^[A-Za-z0-9+/]+={0,2}$/;
@@ -343,10 +344,7 @@ export function loadTrustStoreJsonLite(storePath: string): TrustPair {
   return {trusted, revoked};
 }
 
-export function verifyReportOffline(reportPath: string, trustPair: TrustPair): boolean {
-  if (!existsSync(reportPath)) return false;
-  const doc = readJsonObject(reportPath);
-  if (!doc) return false;
+export function verifyReportDocOffline(doc: Record<string, unknown>, trustPair: TrustPair): boolean {
   const att = doc.attestation;
   if (!isPlainObject(att)) return false;
   const pub = trustStoreKeyAdmitted(trustPair.trusted, trustPair.revoked, att.keyId);
@@ -385,6 +383,13 @@ export function verifyReportOffline(reportPath: string, trustPair: TrustPair): b
   );
   if (sha256Str(canonical) !== att.payloadSha256) return false;
   return ed25519VerifyRaw(pub, canonical, att.signature);
+}
+
+export function verifyReportOffline(reportPath: string, trustPair: TrustPair): boolean {
+  if (!existsSync(reportPath)) return false;
+  const doc = readJsonObject(reportPath);
+  if (!doc) return false;
+  return verifyReportDocOffline(doc, trustPair);
 }
 
 export function verifyFleetOffline(fleetReportPath: string, trustPair: TrustPair): boolean {
@@ -516,6 +521,114 @@ export function exportTrustBundleOffline(
   return {active, revoked};
 }
 
+/**
+ * Packs a 2-level Merkle Fleet report and ALL contained child subject reports into a single
+ * self-contained `de.attestation.fleet-evidence-bundle.v1` JSON archive.
+ * Enforces POSIX `lstat` containment, rejects duplicate paths, and checks Merkle digest binding.
+ */
+export function packFleetBundleOffline(fleetReportPath: string, outPath: string): number {
+  if (typeof fleetReportPath !== 'string' || !existsSync(fleetReportPath)) {
+    throw new Error(`Fleet report file not found: ${String(fleetReportPath)}`);
+  }
+  if (typeof outPath !== 'string' || outPath.length === 0) {
+    throw new Error(`Invalid output fleet bundle path: ${String(outPath)}`);
+  }
+  const fleetDoc = readJsonObject(fleetReportPath);
+  if (!fleetDoc || !Array.isArray(fleetDoc.subjects) || fleetDoc.subjects.length === 0) {
+    throw new Error(`Invalid or empty fleet report subjects: ${fleetReportPath}`);
+  }
+  const fleetDir = dirname(resolve(fleetReportPath));
+  const childReports: Record<string, Record<string, unknown>> = {};
+  for (const s of fleetDoc.subjects) {
+    if (!isPlainObject(s)) {
+      throw new Error('Malformed subject entry in fleet report');
+    }
+    const rel = s.reportRelativePath;
+    const childPath = resolveContainedChildReportPath(fleetDir, rel);
+    if (!childPath || typeof rel !== 'string') {
+      throw new Error(
+        `Refusing to pack uncontained/symlink/missing child report: ${String(rel)}`,
+      );
+    }
+    if (Object.prototype.hasOwnProperty.call(childReports, rel)) {
+      throw new Error(`Duplicate child reportRelativePath in fleet report: ${rel}`);
+    }
+    const childDoc = readJsonObject(childPath);
+    const catt = childDoc && isPlainObject(childDoc.attestation) ? childDoc.attestation : null;
+    if (!childDoc || !catt || catt.payloadSha256 !== s.reportPayloadSha256) {
+      throw new Error(`Child report Merkle payloadSha256 mismatch while packing: ${rel}`);
+    }
+    childReports[rel] = childDoc;
+  }
+  const parentDir = dirname(resolve(outPath));
+  if (!existsSync(parentDir)) {
+    mkdirSync(parentDir, {recursive: true});
+  }
+  const bundle = {
+    schema: FLEET_BUNDLE_SCHEMA,
+    fleetReport: fleetDoc,
+    childReports,
+  };
+  writeFileSync(outPath, `${JSON.stringify(bundle)}\n`, 'utf8');
+  return fleetDoc.subjects.length;
+}
+
+/**
+ * Pure zero-disk-traversal verifier for a self-contained single-file Fleet Evidence Bundle
+ * (`de.attestation.fleet-evidence-bundle.v1`). Verifies root Fleet Ed25519 signature, exact
+ * 1-to-1 bijection of embedded child reports (rejecting missing OR smuggled extra entries),
+ * every child report's Ed25519 signature & semantic admission, and 2-level Merkle digest binding.
+ */
+export function verifyFleetBundleOffline(bundlePath: string, trustPair: TrustPair): boolean {
+  if (!existsSync(bundlePath)) return false;
+  const bundle = readJsonObject(bundlePath);
+  if (!bundle || bundle.schema !== FLEET_BUNDLE_SCHEMA) return false;
+  const fleetDoc = bundle.fleetReport;
+  const childReports = bundle.childReports;
+  if (!isPlainObject(fleetDoc) || !isPlainObject(childReports)) return false;
+  const att = fleetDoc.attestation;
+  const subjects = fleetDoc.subjects;
+  if (!isPlainObject(att) || !Array.isArray(subjects) || subjects.length === 0) return false;
+  const fleetPub = trustStoreKeyAdmitted(trustPair.trusted, trustPair.revoked, att.keyId);
+  if (!fleetPub || att.algorithm !== 'Ed25519') return false;
+
+  const entries: Array<[string, string, string, boolean, boolean]> = subjects.map((s) => {
+    const rec = isPlainObject(s) ? s : {};
+    return [
+      typeof rec.subjectKey === 'string' ? rec.subjectKey : '',
+      typeof rec.subjectId === 'string' ? rec.subjectId : '',
+      typeof rec.reportPayloadSha256 === 'string' ? rec.reportPayloadSha256 : '',
+      rec.replayValid === true,
+      rec.admitted === true,
+    ];
+  });
+  const canonical = canonicalFleetSigningPayload(
+    typeof fleetDoc.fleetId === 'string' ? fleetDoc.fleetId : '',
+    typeof fleetDoc.sysmlSha256 === 'string' ? fleetDoc.sysmlSha256 : '',
+    entries,
+  );
+  if (sha256Str(canonical) !== att.payloadSha256) return false;
+  if (!ed25519VerifyRaw(fleetPub, canonical, att.signature)) return false;
+
+  const embeddedKeys = Object.keys(childReports);
+  if (embeddedKeys.length !== subjects.length) return false;
+  const seenRels = new Set<string>();
+
+  for (const s of subjects) {
+    if (!isPlainObject(s)) return false;
+    const rel = s.reportRelativePath;
+    if (!safeRelativeChildPath(rel) || seenRels.has(rel)) return false;
+    seenRels.add(rel);
+    if (!Object.prototype.hasOwnProperty.call(childReports, rel)) return false;
+    const childDoc = childReports[rel];
+    if (!isPlainObject(childDoc)) return false;
+    if (!verifyReportDocOffline(childDoc, trustPair)) return false;
+    const catt = isPlainObject(childDoc.attestation) ? childDoc.attestation : null;
+    if (!catt || catt.payloadSha256 !== s.reportPayloadSha256) return false;
+  }
+  return seenRels.size === embeddedKeys.length;
+}
+
 // ── 3. Standalone CLI Entrypoint ──
 
 function emitJsonResult(
@@ -591,6 +704,36 @@ export function runCli(argv: string[]): number {
       const msg = err instanceof Error ? err.message : String(err);
       if (jsonMode) {
         emitJsonResult(false, 'export-trust-bundle', outPath, outPath, `export-trust-bundle failed: ${msg}`);
+      } else {
+        process.stderr.write(`ERROR: ${msg}\n`);
+      }
+      return 1;
+    }
+  }
+
+  if (mode === '--pack-fleet-bundle') {
+    if (cleanArgs.length !== 3) {
+      process.stderr.write(
+        'usage: [--json] --pack-fleet-bundle <fleet-report.json> <out-bundle.json>\n',
+      );
+      return 1;
+    }
+    const fleetPath = cleanArgs[1];
+    const outPath = cleanArgs[2];
+    try {
+      const count = packFleetBundleOffline(fleetPath, outPath);
+      if (jsonMode) {
+        emitJsonResult(true, 'pack-fleet-bundle', fleetPath, outPath, 'packed-fleet-evidence-bundle', {
+          subjects: count,
+        });
+      } else {
+        process.stdout.write(`MULTI-METHOD-PACK-FLEET-BUNDLE-OK ${outPath} subjects=${count}\n`);
+      }
+      return 0;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (jsonMode) {
+        emitJsonResult(false, 'pack-fleet-bundle', fleetPath, outPath, `pack-fleet-bundle failed: ${msg}`);
       } else {
         process.stderr.write(`ERROR: ${msg}\n`);
       }
@@ -704,6 +847,35 @@ export function runCli(argv: string[]): number {
       emitJsonResult(false, 'verify-fleet', targetPath, storePath, 'offline fleet verification failed');
     } else {
       process.stderr.write(`ERROR: offline fleet verification failed: ${targetPath}\n`);
+    }
+    return 1;
+  }
+
+  if (mode === '--verify-fleet-bundle') {
+    if (verifyFleetBundleOffline(targetPath, trustPair)) {
+      if (jsonMode) {
+        emitJsonResult(
+          true,
+          'verify-fleet-bundle',
+          targetPath,
+          storePath,
+          'authentic-self-contained-fleet-bundle',
+        );
+      } else {
+        process.stdout.write(`MULTI-METHOD-VERIFY-FLEET-BUNDLE-OK ${targetPath}\n`);
+      }
+      return 0;
+    }
+    if (jsonMode) {
+      emitJsonResult(
+        false,
+        'verify-fleet-bundle',
+        targetPath,
+        storePath,
+        'offline fleet bundle verification failed',
+      );
+    } else {
+      process.stderr.write(`ERROR: offline fleet bundle verification failed: ${targetPath}\n`);
     }
     return 1;
   }

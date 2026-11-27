@@ -188,6 +188,20 @@ theorem trustBundleExport_prevents_privateKeyLeak_symlink_and_lockout
    exportBundle_rejects_symlink_or_nonRegular cs,
    exportBundle_rejects_zeroActiveLockout cs⟩
 
+/-- Instantiated self-contained single-file Fleet Evidence Bundle contract (`--verify-fleet-bundle`):
+constructively proves with zero axioms that missing child entries, smuggled extra entries, and
+revoked or Merkle-tampered embedded child reports are all unconditionally rejected. -/
+theorem fleetEvidenceBundle_rejects_missing_smuggled_and_tampered_children
+    (b : FleetEvidenceBundleModel) :
+    (containsBundleChildWith (fun c => c.present = false) b.children → ¬ SafeFleetEvidenceBundle b) ∧
+    (b.declaredCount ≠ b.embeddedCount → ¬ SafeFleetEvidenceBundle b) ∧
+    (containsBundleChildWith
+      (fun c => c.keyUnrevoked = false ∨ c.merkleDigestMatches = false) b.children →
+      ¬ SafeFleetEvidenceBundle b) :=
+  ⟨bundle_rejects_missing_child_entry b,
+   bundle_rejects_smuggled_extra_child b,
+   bundle_rejects_revoked_or_tampered_embedded_child b⟩
+
 /-! ## One-Line Proof Transport via `Core.Transport` -/
 
 inductive MetaProofKey where
