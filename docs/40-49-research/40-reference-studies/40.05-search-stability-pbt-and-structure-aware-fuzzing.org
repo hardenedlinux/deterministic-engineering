@@ -134,6 +134,24 @@ gap between finite-state proofs and real search-box boundary bugs:
 | =SM19= | Structured async task abort-on-drop, dirty-transaction DB pool lease disposal & semaphore-bounded fan-out with panic-safe correlation IDs | [[file:../../../packages/quint-models/engineering/concurrency/task-and-pool-cancellation-envelope/TaskAndPoolCancellationEnvelope.qnt][TaskAndPoolCancellationEnvelope.qnt]] | =Engineering.TaskAndPoolCancellation= (=LeanPoo=) | =marlin-agent-core= (=marlin-agent-hooks/src/dispatcher.rs=, =marlin-agent-runtime/src/effect_pump.rs=, =marlin-agent-storage/src/{turso_backend.rs,turso_operations.rs}=) |
 | =SM20= | Bounded subprocess pipe capture, drain-to-sink deadlock freedom & bounded single-line framing | [[file:../../../packages/quint-models/engineering/concurrency/subprocess-pipe-capture-envelope/SubprocessPipeCaptureEnvelope.qnt][SubprocessPipeCaptureEnvelope.qnt]] | =Engineering.SubprocessPipeCapture= (=LeanPoo=) | =marlin-agent-core= (=marlin-agent-runtime/src/process/managed.rs=, =marlin-agent-app-server/src/atomic_effect_substrate.rs=, =marlin-agent-tui/src/app/asp_supervisor.rs=) |
 | =SM21= | Crash-safe atomic file persistence, unique temp-file staging & fsync-before-rename ordering (OSDI'14 Pillai et al.) | [[file:../../../packages/quint-models/engineering/storage/atomic-persistence-fsync-envelope/AtomicPersistenceFsyncEnvelope.qnt][AtomicPersistenceFsyncEnvelope.qnt]] | =Engineering.AtomicPersistenceFsync= (=LeanPoo=) | =marlin-agent-core= (=marlin-agent-runtime/src/task_actor.rs=, =marlin-agent-context/src/org/store/release_status.rs=); =marlin-mygo= (=engine/shell/layout_projection.go=, =control/auth/vault.go=, =control/marketplace/package_store.go=) |
+| =SM22= | Hostile (=ADV-L4=) sandbox symlink confinement, untrusted manifest path-traversal containment, canonical duplicate-free archive verification & cumulative decompression budgets (100th Quint Model) | [[file:../../../packages/quint-models/threat/execution/sandbox-symlink-archive-confinement/SandboxSymlinkArchiveConfinement.qnt][SandboxSymlinkArchiveConfinement.qnt]] | =Engineering.SandboxSymlinkArchiveConfinement= (=LeanPoo=, 12 theorems incl. =AdversarialPressureTier=) | =marlin-agent-core= (=marlin-agent-kernel/src/loop_program_side_effects/{file_write.rs,executor.rs}=); =marlin-mygo= (=control/marketplace/{dev_reload.go,ts_bundle.go,publish.go,bundle.go}=) |
+
+* Mandatory Adversarial Pressure Grading Policy (=ADV-L1=–=ADV-L4=)
+:PROPERTIES:
+:CUSTOM_ID: study4005-adversarial-pressure-tiers
+:END:
+
+To eliminate "gentle happy-path theater" in AI defensive programming, every
+formal model, fuzz harness, and downstream verification suite MUST declare and
+enforce an explicit adversarial pressure tier (proven algebraically in
+[[file:../../../packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean][Engineering/SandboxSymlinkArchiveConfinement.lean]]):
+
+| Tier | Label | Pressure Characteristics | Admission Policy |
+|------+-------+--------------------------+------------------|
+| =ADV-L1= | Gentle / Happy-Path | Single well-formed input, zero faults, zero concurrency, zero malicious paths | *REJECTED* as certification evidence |
+| =ADV-L2= | Edge / Single-Fault | Isolated boundary value or single lexical error (e.g. literal =../= only) | *REJECTED* as sole certification evidence |
+| =ADV-L3= | Compound Medium-High | Multi-actor contention, mid-await cancellation, crash/restart, burst overload, non-canonical Unicode/framing | *MINIMUM ADMISSIBLE FLOOR* for stability gates |
+| =ADV-L4= | Hostile Attack / Exploit | Weaponized intermediate/leaf/dangling/chained symlinks, manifest traversal escapes, duplicate tar entry shadowing, non-canonical =./=//= aliases, concatenated multistream gzip, cumulative decompression bombs | *REQUIRED TARGET* for AI-defensive security boundaries & real-repo RED->GREEN exploits |
 
 * Metamorphic Relations Catalog for Interactive Search Boxes (=MR1=–=MR6=)
 :PROPERTIES:

@@ -42,10 +42,12 @@ check_spdx() {
         if [ -f "${file}.license" ]; then
           continue
         fi
+        # REUSE-IgnoreStart
         if ! head -n 15 "$file" | grep -q "SPDX-License-Identifier:"; then
           echo "[githooks/pre-commit] ERROR: missing SPDX-License-Identifier header (or ${file}.license): ${file}" >&2
           missing=1
         fi
+        # REUSE-IgnoreEnd
         ;;
     esac
   done <<< "$STAGED_FILES"

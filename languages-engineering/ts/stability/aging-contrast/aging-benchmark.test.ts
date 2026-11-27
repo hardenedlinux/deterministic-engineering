@@ -1669,10 +1669,137 @@ func SaveLayoutSpecFile(path string, raw []byte) error {
   return writeFileAtomically(path, raw, 0o644)
 }`,
   },
+  // --- SM22: ADV-L4 AI-defensive sandbox symlink, manifest traversal & archive shadowing confinement (SA109-SA114) ---
+  {
+    id: 'SA109',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-sandbox-lexical-only-no-symlink-check',
+    source: `
+pub struct LoopProgramFileSandbox { root: std::path::PathBuf }
+impl LoopProgramFileSandbox {
+  pub fn resolve(&self, relative_path: &std::path::Path) -> Result<std::path::PathBuf, String> {
+    let normalized = relative_path.to_path_buf();
+    Ok(self.root.join(&normalized))
+  }
+}`,
+  },
+  {
+    id: 'SA110',
+    language: 'go',
+    expectedPass: false,
+    expectedRuleId: 'go-filepath-join-unconfined-manifest-entry',
+    source: `
+package marketplace
+import (
+  "os"
+  "path/filepath"
+)
+func stageWasm(tmpDir, wasmEntry string) (string, error) {
+  wasmOut := filepath.Join(tmpDir, filepath.FromSlash(wasmEntry))
+  if err := os.MkdirAll(filepath.Dir(wasmOut), 0o755); err != nil {
+    return "", err
+  }
+  return wasmOut, nil
+}`,
+  },
+  {
+    id: 'SA111',
+    language: 'go',
+    expectedPass: false,
+    expectedRuleId: 'go-tar-duplicate-entry-shadowing-or-no-total-cap',
+    source: `
+package marketplace
+import (
+  "archive/tar"
+  "io"
+)
+func extractArchive(r io.Reader) (map[string][]byte, error) {
+  tr := tar.NewReader(r)
+  assets := make(map[string][]byte)
+  for {
+    hdr, err := tr.Next()
+    if err == io.EOF { break }
+    if err != nil { return nil, err }
+    data, _ := io.ReadAll(io.LimitReader(tr, hdr.Size+1))
+    assets[hdr.Name] = data
+  }
+  return assets, nil
+}`,
+  },
+  {
+    id: 'SA112',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+pub struct LoopProgramFileSandbox { root: std::path::PathBuf }
+impl LoopProgramFileSandbox {
+  pub fn resolve(&self, relative_path: &std::path::Path) -> Result<std::path::PathBuf, String> {
+    let canonical_root = std::fs::canonicalize(&self.root).map_err(|e| e.to_string())?;
+    let mut current = canonical_root.clone();
+    for part in relative_path.components() {
+      current.push(part);
+      if let Ok(meta) = std::fs::symlink_metadata(&current) {
+        if meta.file_type().is_symlink() { return Err("symlink escape".into()); }
+      }
+    }
+    Ok(self.root.join(relative_path))
+  }
+}`,
+  },
+  {
+    id: 'SA113',
+    language: 'go',
+    expectedPass: true,
+    source: `
+package marketplace
+import (
+  "os"
+  "path/filepath"
+)
+func stageWasmSafe(tmpDir, wasmEntry string) (string, error) {
+  wasmOut, err := confineRelativePath(tmpDir, wasmEntry)
+  if err != nil { return "", err }
+  if err := os.MkdirAll(filepath.Dir(wasmOut), 0o755); err != nil {
+    return "", err
+  }
+  return wasmOut, nil
+}`,
+  },
+  {
+    id: 'SA114',
+    language: 'go',
+    expectedPass: true,
+    source: `
+package marketplace
+import (
+  "archive/tar"
+  "fmt"
+  "io"
+)
+func extractArchiveSafe(r io.Reader, maxTotal int64) (map[string][]byte, error) {
+  tr := tar.NewReader(r)
+  assets := make(map[string][]byte)
+  seenEntries := make(map[string]struct{})
+  var totalExtracted int64
+  for {
+    hdr, err := tr.Next()
+    if err == io.EOF { break }
+    if err != nil { return nil, err }
+    if _, dup := seenEntries[hdr.Name]; dup { return nil, fmt.Errorf("duplicate") }
+    seenEntries[hdr.Name] = struct{}{}
+    if totalExtracted+hdr.Size > maxTotal { return nil, fmt.Errorf("overrun") }
+    data, _ := io.ReadAll(io.LimitReader(tr, hdr.Size+1))
+    totalExtracted += int64(len(data))
+    assets[hdr.Name] = data
+  }
+  return assets, nil
+}`,
+  },
 ];
 
-describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA108)', () => {
-  test('achieves 108/108 exact independent-gold match (tp=61, tn=47, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
+describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA114)', () => {
+  test('achieves 114/114 exact independent-gold match (tp=64, tn=50, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
     let tp = 0;
     let tn = 0;
     let fp = 0;
@@ -1695,7 +1822,7 @@ describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA108)', () 
       }
     }
 
-    expect({tp, tn, fp, fn}).toEqual({tp: 61, tn: 47, fp: 0, fn: 0});
+    expect({tp, tn, fp, fn}).toEqual({tp: 64, tn: 50, fp: 0, fn: 0});
   });
 
   test('clean Rust deterministic buffer pool & bounded retry passes with 0 findings', () => {

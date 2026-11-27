@@ -160,6 +160,14 @@ const MECHANISM_DIRECTIVES: Record<AgingMechanism, AgingRemediationDirective> = 
     antiEvasionWarning:
       'Do NOT evade by overwriting state files in-place via os.WriteFile/fs::write, reusing a colliding deterministic path + ".tmp", or omitting fsync before rename.',
   },
+  'SM22-adversarial-sandbox-archive-confinement': {
+    mechanism: 'SM22-adversarial-sandbox-archive-confinement',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Verify every existing path component via symlink_metadata/canonicalize against canonical_root (blocking intermediate/leaf symlink escapes), confine untrusted manifest entry paths via filepath.Rel/canonical checks, disable gzip Multistream, reject duplicate or non-canonical (./, //) tar entries, enforce cumulative decompressed byte budgets, and validate fixes with ADV-L4 hostile exploit suites (never gentle ADV-L1 tests).',
+    antiEvasionWarning:
+      'Do NOT evade by relying on lexical Component::ParentDir checks alone, trusting per-entry tar headers without cumulative byte tracking, or certifying fixes with gentle happy-path unit tests.',
+  },
 };
 
 export function getAgingRemediation(finding: AgingFinding): AgingRemediationDirective {

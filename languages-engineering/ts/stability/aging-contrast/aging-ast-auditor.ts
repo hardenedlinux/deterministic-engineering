@@ -27,7 +27,8 @@ export type AgingMechanism =
   | 'SM17-streaming-output-budget'
   | 'SM19-task-and-pool-cancellation'
   | 'SM20-subprocess-pipe-capture'
-  | 'SM21-atomic-persistence-fsync';
+  | 'SM21-atomic-persistence-fsync'
+  | 'SM22-adversarial-sandbox-archive-confinement';
 
 export interface AgingFinding {
   ruleId: string;
@@ -418,6 +419,40 @@ function auditGo(clean: string): AgingFinding[] {
         language: 'go',
         line: lineOfIndex(clean, goSaveFnMatch.index + directWrite.index),
         message: 'State persistence function overwrites target file in-place via os.WriteFile without unique temp staging, Sync(), and atomic os.Rename (SM21).',
+      });
+    }
+  }
+
+  // 17. Go untrusted manifest entry joined onto staging/root dir without root-confinement validation (SM22).
+  const goJoinEntryMatch = /filepath\.Join\s*\(\s*(\w*(?:tmp|stage|root|dir)\w*)\s*,\s*filepath\.FromSlash\s*\(\s*\w*(?:entry|path)\w*\s*\)\s*\)/i.exec(clean);
+  if (goJoinEntryMatch) {
+    const fnScope = extractEnclosingBlock(clean, goJoinEntryMatch.index);
+    const hasConfinement = /\b(?:confineRelativePath|confinePath|isWithinDir)\b|filepath\.Rel\s*\([\s\S]{0,160}\.\./.test(fnScope);
+    if (!hasConfinement) {
+      findings.push({
+        ruleId: 'go-filepath-join-unconfined-manifest-entry',
+        mechanism: 'SM22-adversarial-sandbox-archive-confinement',
+        language: 'go',
+        line: lineOfIndex(clean, goJoinEntryMatch.index),
+        message: 'Untrusted manifest entry path is joined onto staging directory without strict relative-path and root-confinement validation (ADV-L4 traversal escape, SM22).',
+      });
+    }
+  }
+
+  // 18. Go tar.NewReader extraction assigns assets[...] without rejecting duplicate entries or bounding cumulative decompressed bytes (SM22).
+  const goTarReaderMatch = /\btar\.NewReader\s*\(/.exec(clean);
+  if (goTarReaderMatch) {
+    const fnScope = extractEnclosingBlock(clean, goTarReaderMatch.index);
+    const writesAssets = /\bassets\s*\[\s*[^\]\n]+\s*\]\s*=/.test(fnScope);
+    const rejectsDuplicates = /\bseen\w*\s*\[\s*[^\]\n]+\]\s*|\b_,\s*(?:exists|dup|ok)\s*:=\s*assets\s*\[/.test(fnScope);
+    const capsCumulative = /\btotal(?:Bytes|Extracted|Decompressed)\b/.test(fnScope);
+    if (writesAssets && (!rejectsDuplicates || !capsCumulative)) {
+      findings.push({
+        ruleId: 'go-tar-duplicate-entry-shadowing-or-no-total-cap',
+        mechanism: 'SM22-adversarial-sandbox-archive-confinement',
+        language: 'go',
+        line: lineOfIndex(clean, goTarReaderMatch.index),
+        message: 'Tar archive extraction accepts duplicate/shadowing entries or lacks cumulative decompressed byte cap and Multistream(false) guard (ADV-L4, SM22).',
       });
     }
   }
@@ -865,6 +900,22 @@ function auditRust(clean: string): AgingFinding[] {
         language: 'rust',
         line: lineOfIndex(clean, rustTmpWriteMatch.index),
         message: 'Atomic file persistence uses fs::write to a shared or un-fsynced temp path before fs::rename; use unique create_new(true) temp file + write_all + sync_all() + rename with error cleanup (SM21).',
+      });
+    }
+  }
+
+  // 23. Rust file sandbox resolves target via lexical root.join(&normalized) without symlink_metadata/canonicalize confinement (SM22).
+  const sandboxJoinMatch = /\bself\.root\.join\s*\(\s*&?\w+\s*\)/.exec(clean);
+  if (sandboxJoinMatch && /\bstruct\s+\w*Sandbox\b/.test(clean)) {
+    const fnScope = extractEnclosingBlock(clean, sandboxJoinMatch.index);
+    const checksSymlinkOrCanon = /\b(?:symlink_metadata|canonicalize|is_symlink|resolve_confined\w*|verify_confined\w*)\b/.test(fnScope);
+    if (!checksSymlinkOrCanon) {
+      findings.push({
+        ruleId: 'rust-sandbox-lexical-only-no-symlink-check',
+        mechanism: 'SM22-adversarial-sandbox-archive-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, sandboxJoinMatch.index),
+        message: 'File sandbox relies solely on lexical path normalization without symlink_metadata/canonicalize checks; intermediate or leaf symlinks escape sandbox root (ADV-L4, SM22).',
       });
     }
   }

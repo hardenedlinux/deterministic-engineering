@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Adversarial (ADV-L4) Sandbox Symlink, Path Traversal & Archive Shadowing Confinement
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.execution.sandbox-symlink-archive-confinement=
+- *Subdomain*: =quint.threat.execution=
+- *Quint Module*: =execution_sandbox_symlink_archive_confinement= (=[[file:SandboxSymlinkArchiveConfinement.qnt][SandboxSymlinkArchiveConfinement.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/execution/sandbox-symlink-archive-confinement/SandboxSymlinkArchiveConfinement=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Under ADV-L4 hostile inputs, sandbox file writes never traverse symlinks outside canonical root (symlinkEscapes == 0), manifest entry paths stay confined beneath staging root (traversalEscapes == 0), verified archives reject duplicate or non-canonical alias entries (duplicateShadows == 0), and cumulative decompressed bytes never exceed maxDecompressed (decompressionOverruns == 0).
+
+#+begin_src quint
+val safety = (h.extractedBytes <= h.maxDecompressed and h.extractedBytes >= 0 and h.symlinkEscapes == 0 and h.traversalEscapes == 0 and h.duplicateShadows == 0 and h.decompressionOverruns == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =reject-symlink-escape= | =stepLexicalOnlySymlinkEscape= | =h.symlinkEscapes > 0= |
+| =confine-entry-path-to-root= | =stepManifestPathTraversal= | =h.traversalEscapes > 0= |
+| =reject-duplicate-and-alias-entries= | =stepDuplicateTarShadowing= | =h.duplicateShadows > 0= |
+| =enforce-cumulative-decompressed-cap= | =stepCumulativeZipBomb= | =h.decompressionOverruns > 0= |
+
+* Grounded Papers & Specifications
+
+- *Linux openat2(2) RESOLVE_BENEATH / RESOLVE_NO_SYMLINKS (2020)*: Lexical relative-path checks alone are defeated by intermediate directory or leaf symlinks; every traversed ancestor must remain confined inside canonical root.
+- *Snyk Zip Slip / CVE-2018-1002200 & Archive Ambiguity Research*: Untrusted manifest entry paths and duplicate or non-canonical archive member paths (./, //, shadowing) bypass naive extraction and signature verifiers.
+- *D. Fifield (USENIX WOOT 2019)*: A Better Zip Bomb — single-entry size checks fail against multi-entry or multistream decompression bombs without cumulative decompressed byte caps.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/execution/sandbox-symlink-archive-confinement/SandboxSymlinkArchiveConfinement.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/execution/sandbox-symlink-archive-confinement/SandboxSymlinkArchiveConfinement.qnt --main=execution_sandbox_symlink_archive_confinement --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite 4-unit cumulative extraction cap and canonical path/symlink/archive-entry abstraction (ADV-L4 hostile attack tier); verifies symlink ancestor confinement, manifest entry containment, duplicate/alias archive rejection, and cumulative decompression caps, not OS kernel openat2 VFS race windows or gzip Huffman internals.
