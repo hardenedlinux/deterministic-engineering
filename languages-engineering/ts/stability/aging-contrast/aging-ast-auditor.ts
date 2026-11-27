@@ -38,7 +38,8 @@ export type AgingMechanism =
   | 'SM29-governance-policy-latch-antirollback'
   | 'SM30-stepup-attestation-host-effect'
   | 'SM31-storage-boundary-integrity-sync'
-  | 'SM32-gitops-subprocess-confinement';
+  | 'SM32-gitops-subprocess-confinement'
+  | 'SM33-hook-policy-protocol-confinement';
 
 export interface AgingFinding {
   ruleId: string;
@@ -1590,6 +1591,14 @@ function auditRust(clean: string): AgingFinding[] {
   let serdeNewtypeMatch: RegExpExecArray | null;
   while ((serdeNewtypeMatch = serdeNewtypeRe.exec(clean)) !== null) {
     const attrSlice = serdeNewtypeMatch[0];
+    if (
+      serdeNewtypeMatch[1] === '$name' &&
+      !/(?:Result\s*<\s*Self|Option\s*<\s*Self|trim\s*\(\s*\)\s*\.\s*is_empty|\btry_new\b)/.test(
+        clean.slice(serdeNewtypeMatch.index, serdeNewtypeMatch.index + 600),
+      )
+    ) {
+      continue;
+    }
     if (!/#\[serde\([^)]*\b(?:try_from|deserialize_with)\b/.test(attrSlice)) {
       findings.push({
         ruleId: 'rust-serde-derive-bypasses-validated-newtype',
@@ -1762,6 +1771,117 @@ function auditRust(clean: string): AgingFinding[] {
       line: lineOfIndex(clean, joinNextMatch.index),
       message: 'JoinSet::join_next() calls .expect()/.unwrap() on JoinError, crashing the parallel coordinator when a worker panics instead of emitting a rejected receipt via join_next_with_id() (ADV-L4, SM32).',
     });
+  }
+
+  // 62. Rust HookConfigurationEnvelope / HookPolicyConfiguration omits deny_unknown_fields on fail-open ObserveOnly TOML default or reads TOML unboundedly (ADV-L4, SM33).
+  const hookCfgStructRe = /#\[serde\([^\]]*\bdefault\b[^\]]*\)\]\s*pub\s+struct\s+(HookConfigurationEnvelope|HookPolicyConfiguration|HookRegistrationDefaults)\b/g;
+  let hookCfgMatch: RegExpExecArray | null;
+  while ((hookCfgMatch = hookCfgStructRe.exec(clean)) !== null) {
+    if (!/\bdeny_unknown_fields\b/.test(hookCfgMatch[0])) {
+      findings.push({
+        ruleId: 'rust-hook-config-failopen-unknown-fields',
+        mechanism: 'SM33-hook-policy-protocol-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, hookCfgMatch.index),
+        message: `${hookCfgMatch[1]} uses #[serde(default)] without deny_unknown_fields, letting unknown/misspelled TOML keys silently fall back to ObserveOnly (ADV-L4, SM33).`,
+      });
+    }
+  }
+
+  // 63. Rust HookRegistry::register pushes duplicate hook_id entries leaving sticky ghost hooks after disable/unregister, OR run_permitted_hook_registrations spawns unbounded Async hooks (ADV-L4, SM33).
+  const hookRegImplMatch = /\bimpl\s+HookRegistry\b/.exec(clean);
+  if (hookRegImplMatch) {
+    const implBody = extractBraceBlock(clean, hookRegImplMatch.index);
+    const registerMatch = /\bpub\s+fn\s+register\s*\([^)]*\)/.exec(implBody);
+    if (registerMatch) {
+      const fnBody = extractBraceBlock(implBody, registerMatch.index);
+      const pushes = /self\.registrations\s*\.push\s*\(\s*registration\s*\)/.test(fnBody);
+      const deduplicates = /self\.registrations\s*\.retain\s*\(/.test(fnBody);
+      if (pushes && !deduplicates) {
+        findings.push({
+          ruleId: 'rust-hook-registry-duplicate-shadow-or-unbounded-async',
+          mechanism: 'SM33-hook-policy-protocol-confinement',
+          language: 'rust',
+          line: lineOfIndex(clean, hookRegImplMatch.index + registerMatch.index),
+          message: 'HookRegistry::register pushes duplicate hook_id entries without deduplicating existing IDs, leaving shadow ghost hooks executing after set_enabled(false) or unregister (ADV-L4, SM33).',
+        });
+      }
+    }
+  }
+  const runHooksMatch = /\basync\s+fn\s+run_permitted_hook_registrations\s*\([^)]*\)/.exec(clean);
+  if (runHooksMatch) {
+    const fnBody = extractBraceBlock(clean, runHooksMatch.index);
+    if (
+      /HookExecutionMode::Async/.test(fnBody) &&
+      !/\b(?:Semaphore|MAX_CONCURRENT_ASYNC_HOOKS)\b/.test(fnBody)
+    ) {
+      findings.push({
+        ruleId: 'rust-hook-registry-duplicate-shadow-or-unbounded-async',
+        mechanism: 'SM33-hook-policy-protocol-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, runHooksMatch.index),
+        message: 'run_permitted_hook_registrations spawns unbounded concurrent HookExecutionMode::Async tasks without a Semaphore concurrency cap (ADV-L4, SM33).',
+      });
+    }
+  }
+
+  // 64. Rust apply_dynamic_decision_action overwrites Rust trust-floor rejection reasons (UntrustedRejected / ModifiedRejected) with ExtensionDeferred / ExtensionRejected (ADV-L4, SM33).
+  const dynDecisionMatch = /\bfn\s+apply_dynamic_decision_action\s*\([^)]*\)/.exec(clean);
+  if (dynDecisionMatch) {
+    const fnBody = extractBraceBlock(clean, dynDecisionMatch.index);
+    const mutatesReason = /decision\.reason\s*=/.test(fnBody);
+    const preservesTrustFloor = /\b(?:UntrustedRejected|ModifiedRejected|is_trust_floor_rejection)\b/.test(fnBody);
+    if (mutatesReason && !preservesTrustFloor) {
+      findings.push({
+        ruleId: 'rust-hook-dynamic-action-masks-trust-rejection',
+        mechanism: 'SM33-hook-policy-protocol-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, dynDecisionMatch.index),
+        message: 'apply_dynamic_decision_action overwrites UntrustedRejected/ModifiedRejected audit reasons with extension Defer/Deny reasons instead of keeping Rust trust rejections immutable (ADV-L4, SM33).',
+      });
+    }
+  }
+
+  // 65. Rust SubAgentSpawnConfigSet profile validation omits contradictory read_only+workspace_write and zero-budget checks (ADV-L4, SM33).
+  const validateProfilesMatch = /\bfn\s+validate_unique_profiles\s*\([^)]*\)/.exec(clean);
+  if (validateProfilesMatch) {
+    const fnBody = extractBraceBlock(clean, validateProfilesMatch.index);
+    const checksContradiction = /\b(?:validate_sub_agent_policy|read_only\s*&&[\s\S]{0,40}workspace_write)\b/.test(fnBody);
+    if (!checksContradiction) {
+      findings.push({
+        ruleId: 'rust-subagent-policy-unchecked-contradiction-or-budget',
+        mechanism: 'SM33-hook-policy-protocol-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, validateProfilesMatch.index),
+        message: 'SubAgentSpawnConfigSet profile validation omits contradictory read_only && workspace_write, zero-budget, and recursive max_depth checks (ADV-L4, SM33).',
+      });
+    }
+  }
+
+  // 66. Rust RuntimeSessionId derives Serde Deserialize bypassing try_new, OR ModelEndpoint::validate_selector_boundaries omits control-char/URL-meta refusal (ADV-L4, SM33).
+  const runtimeSessRe = /#\[derive\([^\]]*\bDeserialize\b[^\]]*\)\]\s*(?:#\[[^\]]*\]\s*)*pub\s+struct\s+RuntimeSessionId\s*\(\s*String\s*\)\s*;/g;
+  const runtimeSessMatch = runtimeSessRe.exec(clean);
+  if (runtimeSessMatch && !/#\[serde\([^)]*\b(?:try_from|deserialize_with)\b/.test(runtimeSessMatch[0])) {
+    findings.push({
+      ruleId: 'rust-protocol-session-serde-bypass-or-endpoint-injection',
+      mechanism: 'SM33-hook-policy-protocol-confinement',
+      language: 'rust',
+      line: lineOfIndex(clean, runtimeSessMatch.index),
+      message: 'RuntimeSessionId derives Serde Deserialize directly without try_new validation, admitting empty/blank/control-char/traversal session IDs (ADV-L4, SM33).',
+    });
+  }
+  const selectorBoundariesMatch = /\bfn\s+validate_selector_boundaries\s*\([^)]*\)/.exec(clean);
+  if (selectorBoundariesMatch) {
+    const fnBody = extractBraceBlock(clean, selectorBoundariesMatch.index);
+    if (!/\b(?:is_control|has_unsafe_endpoint_chars)\b/.test(fnBody)) {
+      findings.push({
+        ruleId: 'rust-protocol-session-serde-bypass-or-endpoint-injection',
+        mechanism: 'SM33-hook-policy-protocol-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, selectorBoundariesMatch.index),
+        message: 'ModelEndpoint::validate_selector_boundaries checks only "/" and omits control-character, whitespace, and URL meta-character (?, #, @, \\, ..) injection refusal (ADV-L4, SM33).',
+      });
+    }
   }
 
   return findings;
@@ -2113,6 +2233,21 @@ function auditTypeScript(clean: string): AgingFinding[] {
         language: 'ts',
         line: lineOfIndex(clean, tsGitWtMatch.index),
         message: 'buildGitWorktreeArgs omits core.fsmonitor=false lockdown or fails to reject dash-prefixed branch/baseRef CLI option injection (ADV-L4, SM32).',
+      });
+    }
+  }
+
+  // 26. TS applyHookDynamicDecision overwrites UntrustedRejected/ModifiedRejected audit reasons instead of preserving trust-floor rejections (ADV-L4, SM33).
+  const tsHookDecMatch = /\bfunction\s+applyHookDynamicDecision\s*\([^)]*\)(?:\s*:\s*[^{]+)?\{/.exec(clean);
+  if (tsHookDecMatch) {
+    const fnBody = extractBraceBlock(clean, tsHookDecMatch.index + tsHookDecMatch[0].length - 1);
+    if (!/\b(?:UntrustedRejected|ModifiedRejected)\b/.test(fnBody)) {
+      findings.push({
+        ruleId: 'ts-hook-config-failopen-or-trust-mask',
+        mechanism: 'SM33-hook-policy-protocol-confinement',
+        language: 'ts',
+        line: lineOfIndex(clean, tsHookDecMatch.index),
+        message: 'applyHookDynamicDecision overwrites Rust trust-floor rejection reasons (UntrustedRejected/ModifiedRejected) with extension Defer/Deny reasons (ADV-L4, SM33).',
       });
     }
   }

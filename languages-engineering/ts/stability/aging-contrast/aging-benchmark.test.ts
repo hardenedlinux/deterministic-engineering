@@ -3179,10 +3179,150 @@ export function buildGitWorktreeArgs(branch: string, path: string, baseRef: stri
   return ['-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', 'worktree', 'add', '-b', branch, '--', path, baseRef];
 }`,
   },
+  // --- SM33: ADV-L4 Hook policy confinement, anti-shadowing registry & protocol contract validation (SA203-SA212) ---
+  {
+    id: 'SA203',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-hook-config-failopen-unknown-fields',
+    source: `
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct HookConfigurationEnvelope {
+  pub policy: HookPolicyConfiguration,
+}`,
+  },
+  {
+    id: 'SA204',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-hook-registry-duplicate-shadow-or-unbounded-async',
+    source: `
+impl HookRegistry {
+  pub fn register(&mut self, registration: HookRegistration) {
+    self.registrations.push(registration);
+    self.sort();
+  }
+}`,
+  },
+  {
+    id: 'SA205',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-hook-dynamic-action-masks-trust-rejection',
+    source: `
+fn apply_dynamic_decision_action(decisions: &mut [HookPolicyDecisionReceipt], reason: HookPolicyDecisionReason) {
+  for decision in decisions.iter_mut() {
+    decision.decision = HookPolicyDecision::Rejected;
+    decision.reason = reason.clone();
+  }
+}`,
+  },
+  {
+    id: 'SA206',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-subagent-policy-unchecked-contradiction-or-budget',
+    source: `
+fn validate_unique_profiles(profiles: &[SubAgentSpawnConfig]) -> Result<(), SubAgentSpawnConfigError> {
+  let mut seen = BTreeSet::new();
+  for profile in profiles {
+    if !seen.insert(profile.profile_id.clone()) { return Err(SubAgentSpawnConfigError::DuplicateProfileId { profile_id: profile.profile_id.clone() }); }
+  }
+  Ok(())
+}`,
+  },
+  {
+    id: 'SA207',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-protocol-session-serde-bypass-or-endpoint-injection',
+    source: `
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct RuntimeSessionId(String);
+impl ModelEndpoint {
+  fn validate_selector_boundaries(&self) -> Result<(), ModelEndpointContractError> {
+    if self.provider.as_str().contains('/') { return Err(ModelEndpointContractError::EmptyProvider); }
+    Ok(())
+  }
+}`,
+  },
+  {
+    id: 'SA208',
+    language: 'ts',
+    expectedPass: false,
+    expectedRuleId: 'ts-hook-config-failopen-or-trust-mask',
+    source: `
+export function applyHookDynamicDecision(current: string, action: 'Deny' | 'Defer'): string {
+  return action === 'Deny' ? 'ExtensionRejected' : 'ExtensionDeferred';
+}`,
+  },
+  {
+    id: 'SA209',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct HookConfigurationEnvelope {
+  pub policy: HookPolicyConfiguration,
+}
+impl HookRegistry {
+  pub fn register(&mut self, registration: HookRegistration) {
+    self.registrations.retain(|existing| existing.id != registration.id);
+    self.registrations.push(registration);
+  }
+}`,
+  },
+  {
+    id: 'SA210',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+fn apply_dynamic_decision_action(decisions: &mut [HookPolicyDecisionReceipt], reason: HookPolicyDecisionReason) {
+  for decision in decisions.iter_mut() {
+    if matches!(decision.reason, HookPolicyDecisionReason::UntrustedRejected | HookPolicyDecisionReason::ModifiedRejected) {
+      continue;
+    }
+    decision.decision = HookPolicyDecision::Rejected;
+    decision.reason = reason.clone();
+  }
+}`,
+  },
+  {
+    id: 'SA211',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+fn validate_unique_profiles(profiles: &[SubAgentSpawnConfig]) -> Result<(), SubAgentSpawnConfigError> {
+  for profile in profiles {
+    validate_sub_agent_policy(profile)?;
+  }
+  Ok(())
+}
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct RuntimeSessionId(String);
+impl ModelEndpoint {
+  fn validate_selector_boundaries(&self) -> Result<(), ModelEndpointContractError> {
+    if has_unsafe_endpoint_chars(self.provider.as_str()) { return Err(ModelEndpointContractError::EmptyProvider); }
+    Ok(())
+  }
+}`,
+  },
+  {
+    id: 'SA212',
+    language: 'ts',
+    expectedPass: true,
+    source: `
+export function applyHookDynamicDecision(current: string, action: 'Deny' | 'Defer'): string {
+  if (current === 'UntrustedRejected' || current === 'ModifiedRejected') return current;
+  return action === 'Deny' ? 'ExtensionRejected' : 'ExtensionDeferred';
+}`,
+  },
 ];
 
-describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA202)', () => {
-  test('achieves 202/202 exact independent-gold match (tp=115, tn=87, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
+describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA212)', () => {
+  test('achieves 212/212 exact independent-gold match (tp=121, tn=91, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
     let tp = 0;
     let tn = 0;
     let fp = 0;
@@ -3205,7 +3345,7 @@ describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA202)', () 
       }
     }
 
-    expect({tp, tn, fp, fn}).toEqual({tp: 115, tn: 87, fp: 0, fn: 0});
+    expect({tp, tn, fp, fn}).toEqual({tp: 121, tn: 91, fp: 0, fn: 0});
   });
 
   test('clean Rust deterministic buffer pool & bounded retry passes with 0 findings', () => {

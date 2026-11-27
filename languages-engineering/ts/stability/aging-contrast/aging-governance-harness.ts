@@ -248,6 +248,14 @@ const MECHANISM_DIRECTIVES: Record<AgingMechanism, AgingRemediationDirective> = 
     antiEvasionWarning:
       'Do NOT evade by stripping only GIT_DIR/GIT_CONFIG while leaving GIT_CONFIG_GLOBAL/GIT_EXEC_PATH inherited, disabling core.hooksPath without core.fsmonitor=false, skipping leading "-" validation on worktrunk_switch or snapshot_root path checks in plan_sweep, keeping raw .output().await in provider drivers, or calling .expect() on JoinSet::join_next().',
   },
+  'SM33-hook-policy-protocol-confinement': {
+    mechanism: 'SM33-hook-policy-protocol-confinement',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Add #[serde(deny_unknown_fields)] to HookConfigurationEnvelope, HookPolicyConfiguration, HookRegistrationDefaults, and HookPolicyExtension, bound TOML file reads (256 KiB), and validate GerbilScheme extension module/procedure names; upsert unique hook_id entries in HookRegistry::register and bound concurrent Async hook execution with Arc<Semaphore> (MAX_CONCURRENT_ASYNC_HOOKS=16); preserve UntrustedRejected/ModifiedRejected audit reasons immutably in apply_dynamic_decision_action while bounding dynamic action counts and Rewrite payloads; reject contradictory read_only && workspace_write, zero budgets, runaway max_depth, and invalid Scheme modules in SubAgentSpawnConfigSet; enforce validated custom Deserialize on RuntimeSessionId and reject control/whitespace/?/#/@/\\/.. injection in ModelEndpoint::validate_contract.',
+    antiEvasionWarning:
+      'Do NOT evade by omitting deny_unknown_fields on fail-open ObserveOnly TOML envelopes, leaving duplicate hook_id entries in HookRegistry::registrations, overwriting UntrustedRejected with ExtensionDeferred, accepting read_only=true with workspace_write=true, or deriving Deserialize directly on RuntimeSessionId.',
+  },
 };
 
 export function getAgingRemediation(finding: AgingFinding): AgingRemediationDirective {
