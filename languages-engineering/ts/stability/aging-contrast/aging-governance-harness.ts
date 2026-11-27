@@ -280,6 +280,14 @@ const MECHANISM_DIRECTIVES: Record<AgingMechanism, AgingRemediationDirective> = 
     antiEvasionWarning:
       'Do NOT evade by allowing remote http:// OTLP endpoints, trusting sender-supplied future timestamps in watchdog datagrams, spawning self-reexec sidecars with inherited ambient env, or leaving single-VM module/timer tables and timer delays unbounded.',
   },
+  'SM37-process-signal-ledger-fanout-confinement': {
+    mechanism: 'SM37-process-signal-ledger-fanout-confinement',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Validate every POSIX signal/probe PID and PGID strictly (> 1, <= i32::MAX, != current host PID/PGID) before calling libc::kill(-pgid, ...) or sysinfo kill so pgid=0/1 can never trigger kill(0) or kill(-1); fail closed on missing os_start_time_secs in matches_recorded_start_time and guard protected/self PIDs during orphan reconciliation and reaping; enforce O_NOFOLLOW symlink refusal, MAX_LEDGER_FILE_BYTES read caps, FILE_LEDGER_SCHEMA_VERSION validation, and active/in-memory entry ceilings in FileProcessLedgerStore; and enforce MAX_WORKING_COPY_FANOUT_PARALLELISM with join_next_with_id() panic attribution and async abort-drain quiescence in WorkingCopySubAgentFanoutRunner.',
+    antiEvasionWarning:
+      'Do NOT evade by checking only i32::try_from(pgid) while admitting 0 or 1 into libc::kill(-pgid_i32, sig), returning true on os_start_time_secs: None during reconciliation, reading process ledgers with unbounded read_to_string/symlink following, or calling abort_all() in fanout cancellation without awaiting task drain.',
+  },
 };
 
 export function getAgingRemediation(finding: AgingFinding): AgingRemediationDirective {

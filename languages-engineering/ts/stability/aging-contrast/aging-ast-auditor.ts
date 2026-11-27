@@ -42,7 +42,8 @@ export type AgingMechanism =
   | 'SM33-hook-policy-protocol-confinement'
   | 'SM34-runtime-env-context-confinement'
   | 'SM35-graph-witness-harness-confinement'
-  | 'SM36-telemetry-watchdog-deck-vm-confinement';
+  | 'SM36-telemetry-watchdog-deck-vm-confinement'
+  | 'SM37-process-signal-ledger-fanout-confinement';
 
 export interface AgingFinding {
   ruleId: string;
@@ -2239,6 +2240,93 @@ function auditRust(clean: string): AgingFinding[] {
     }
   }
 
+  // 81. Rust POSIX libc::kill(-pgid, ...) omits > 1 / self-PID / host-PGID guard, exposing kill(0) self-group suicide and kill(-1) user-wide process kill (ADV-L4, SM37).
+  const posixFnRe = /\b(?:pub(?:\s*\([^)]*\))?\s+)?(?:async\s+)?fn\s+\w+\s*(?:<[^>]*>)?\s*\([^)]*\)[^{;]*\{/g;
+  let posixFnMatch: RegExpExecArray | null;
+  while ((posixFnMatch = posixFnRe.exec(clean)) !== null) {
+    const fnBody = extractBraceBlock(clean, posixFnMatch.index + posixFnMatch[0].length - 1);
+    const negKill = /libc::kill\s*\(\s*-\s*\w+\s*,/.exec(fnBody);
+    if (!negKill) continue;
+    const guardsProtected =
+      /\b(?:validate_signalable_unix_target|validate_unix_pgid|validate_signalable_pid|is_protected_pid)\b|(?:<=\s*1|<\s*2)/.test(
+        fnBody,
+      );
+    if (!guardsProtected) {
+      findings.push({
+        ruleId: 'rust-posix-kill-unguarded-zero-or-init',
+        mechanism: 'SM37-process-signal-ledger-fanout-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, posixFnMatch.index + posixFnMatch[0].length - 1 + negKill.index),
+        message: 'libc::kill(-pgid, ...) lacks a > 1 and host-PID/PGID guard; pgid=0 triggers kill(0) killing caller process group and pgid=1 triggers kill(-1) killing every user process (ADV-L4, SM37).',
+      });
+      break;
+    }
+  }
+
+  // 82. Rust matches_recorded_start_time returns true on None (fail-open PID reuse) during post-restart orphan reconciliation (ADV-L4, SM37).
+  const startTimeMatch = /\bfn\s+matches_recorded_start_time\s*\([^)]*\)/.exec(clean);
+  if (startTimeMatch) {
+    const fnBody = extractBraceBlock(clean, startTimeMatch.index);
+    if (/\bNone\s*=>\s*true\b/.test(fnBody)) {
+      findings.push({
+        ruleId: 'rust-reconcile-missing-start-time-failopen',
+        mechanism: 'SM37-process-signal-ledger-fanout-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, startTimeMatch.index),
+        message: 'matches_recorded_start_time returns true when os_start_time_secs is None, allowing unfingerprinted or forged ledger records to signal unrelated live PIDs (ADV-L4, SM37).',
+      });
+    }
+  }
+
+  // 83. Rust FileProcessLedgerStore::read_snapshot_unlocked reads ledger unboundedly or omits O_NOFOLLOW / schema_version checks (ADV-L4, SM37).
+  const ledgerReadMatch = /\bfn\s+read_snapshot_unlocked\s*\([^)]*\)/.exec(clean);
+  if (ledgerReadMatch) {
+    const fnBody = extractBraceBlock(clean, ledgerReadMatch.index);
+    const hasCap = /\bMAX_LEDGER_FILE_BYTES\b/.test(fnBody);
+    const checksSchema = /\bschema_version\s*!=\s*FILE_LEDGER_SCHEMA_VERSION\b/.test(fnBody);
+    const rejectsSymlink = /\b(?:O_NOFOLLOW|open_no_follow|verify_ledger_path_no_symlinks)\b/.test(fnBody);
+    if (!hasCap || !checksSchema || !rejectsSymlink) {
+      findings.push({
+        ruleId: 'rust-process-ledger-symlink-or-unbounded-read',
+        mechanism: 'SM37-process-signal-ledger-fanout-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, ledgerReadMatch.index),
+        message: 'FileProcessLedgerStore::read_snapshot_unlocked lacks O_NOFOLLOW symlink refusal, MAX_LEDGER_FILE_BYTES read cap, or FILE_LEDGER_SCHEMA_VERSION validation (ADV-L4, SM37).',
+      });
+    }
+  }
+
+  // 84. Rust working-copy sub-agent fanout omits hard MAX_WORKING_COPY_FANOUT_PARALLELISM ceiling OR cancel_remaining_work returns after abort_all() without awaiting task drain (ADV-L4, SM37).
+  const fanoutCapMatch = /\bfn\s+effective_working_copy_fanout_parallelism\s*\([^)]*\)/.exec(clean);
+  if (fanoutCapMatch) {
+    const fnBody = extractBraceBlock(clean, fanoutCapMatch.index);
+    if (!/\bMAX_WORKING_COPY_FANOUT_PARALLELISM\b/.test(fnBody)) {
+      findings.push({
+        ruleId: 'rust-fanout-unbounded-parallelism-or-undrained-abort',
+        mechanism: 'SM37-process-signal-ledger-fanout-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, fanoutCapMatch.index),
+        message: 'effective_working_copy_fanout_parallelism omits hard MAX_WORKING_COPY_FANOUT_PARALLELISM ceiling, allowing unbounded concurrent sub-agent spawns (ADV-L4, SM37).',
+      });
+    }
+  }
+  const cancelRemMatch = /\bfn\s+cancel_remaining_work\s*\([^)]*\)/.exec(clean);
+  if (cancelRemMatch) {
+    const fnBody = extractBraceBlock(clean, cancelRemMatch.index);
+    if (
+      /abort_all\s*\(\s*\)/.test(fnBody) &&
+      !/join_next(?:_with_id)?\s*\(\s*\)\s*\.await/.test(fnBody)
+    ) {
+      findings.push({
+        ruleId: 'rust-fanout-unbounded-parallelism-or-undrained-abort',
+        mechanism: 'SM37-process-signal-ledger-fanout-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, cancelRemMatch.index),
+        message: 'cancel_remaining_work calls abort_all() without awaiting join_next to drain aborted tasks before returning (ADV-L4, SM37).',
+      });
+    }
+  }
+
   return findings;
 }
 
@@ -2648,6 +2736,21 @@ function auditTypeScript(clean: string): AgingFinding[] {
         language: 'ts',
         line: lineOfIndex(clean, tsOtlpMatch.index),
         message: 'validateOtlpEndpoint permits remote cleartext http:// collectors without restricting plaintext HTTP to loopback hosts (ADV-L4, SM36).',
+      });
+    }
+  }
+
+  // 30. TS signalProcessGroup calls process.kill(-pgid, ...) without guarding pgid <= 1 (kill(0)/kill(-1)) (ADV-L4, SM37).
+  const tsNegKillMatch = /process\.kill\s*\(\s*-\s*\w+\s*,/.exec(clean);
+  if (tsNegKillMatch) {
+    const fnScope = extractEnclosingBlock(clean, tsNegKillMatch.index);
+    if (!/(?:<=\s*1|<\s*2|\bvalidateSignalTarget\b)/.test(fnScope)) {
+      findings.push({
+        ruleId: 'ts-posix-kill-unguarded-zero-or-init',
+        mechanism: 'SM37-process-signal-ledger-fanout-confinement',
+        language: 'ts',
+        line: lineOfIndex(clean, tsNegKillMatch.index),
+        message: 'process.kill(-pgid, ...) lacks a > 1 guard; pgid=0 kills caller process group and pgid=1 kills all user processes (ADV-L4, SM37).',
       });
     }
   }

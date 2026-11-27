@@ -3714,10 +3714,137 @@ export function validateOtlpEndpoint(raw: string): boolean {
   return false;
 }`,
   },
+  // --- SM37: ADV-L4 Process signal, anti-PID-reuse reconciliation, bounded ledger & fanout drain confinement (SA241-SA248) ---
+  {
+    id: 'SA241',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-posix-kill-unguarded-zero-or-init',
+    source: `
+fn signal_unix_target(pid: u32, pgid: Option<u32>, signal: libc::c_int) -> io::Result<()> {
+  let target_pgid = pgid.unwrap_or(pid);
+  let pgid_i32 = i32::try_from(target_pgid).map_err(|_| io::Error::other("bad"))?;
+  if unsafe { libc::kill(-pgid_i32, signal) } == 0 { return Ok(()); }
+  Err(io::Error::last_os_error())
+}`,
+  },
+  {
+    id: 'SA242',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-reconcile-missing-start-time-failopen',
+    source: `
+fn matches_recorded_start_time(proc_info: &sysinfo::Process, recorded: Option<ProcessStartTimeSeconds>) -> bool {
+  match recorded {
+    Some(expected) => proc_info.start_time().abs_diff(expected.as_u64()) <= 1,
+    None => true,
+  }
+}`,
+  },
+  {
+    id: 'SA243',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-process-ledger-symlink-or-unbounded-read',
+    source: `
+impl FileProcessLedgerStore {
+  fn read_snapshot_unlocked(&self) -> io::Result<Vec<ManagedProcessLedgerEntry>> {
+    let mut raw = String::new();
+    File::open(&self.path)?.read_to_string(&mut raw)?;
+    let snapshot: FileLedgerSnapshot = serde_json::from_str(&raw).map_err(io::Error::other)?;
+    Ok(snapshot.entries)
+  }
+}`,
+  },
+  {
+    id: 'SA244',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-fanout-unbounded-parallelism-or-undrained-abort',
+    source: `
+impl TokioAgentRuntime {
+  fn effective_working_copy_fanout_parallelism(policy: &RuntimeFanoutJoinPolicy, item_count: usize) -> usize {
+    policy.max_parallelism().unwrap_or_else(|| item_count.max(1)).max(1)
+  }
+}
+impl Runner {
+  fn cancel_remaining_work(&mut self) -> Receipt {
+    self.tasks.abort_all();
+    self.take_receipt()
+  }
+}`,
+  },
+  {
+    id: 'SA245',
+    language: 'ts',
+    expectedPass: false,
+    expectedRuleId: 'ts-posix-kill-unguarded-zero-or-init',
+    source: `
+export function signalProcessGroup(pgid: number, sig: NodeJS.Signals): void {
+  process.kill(-pgid, sig);
+}`,
+  },
+  {
+    id: 'SA246',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+fn signal_unix_target(pid: u32, pgid: Option<u32>, signal: libc::c_int) -> io::Result<()> {
+  let (pid_i32, pgid_i32) = validate_signalable_unix_target(pid, pgid)?;
+  if unsafe { libc::kill(-pgid_i32, signal) } == 0 { return Ok(()); }
+  if unsafe { libc::kill(pid_i32, signal) } == 0 { return Ok(()); }
+  Err(io::Error::last_os_error())
+}
+fn matches_recorded_start_time(proc_info: &sysinfo::Process, recorded: Option<ProcessStartTimeSeconds>) -> bool {
+  match recorded {
+    Some(expected) => proc_info.start_time() > 0 && proc_info.start_time().abs_diff(expected.as_u64()) <= 1,
+    None => false,
+  }
+}`,
+  },
+  {
+    id: 'SA247',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+impl FileProcessLedgerStore {
+  fn read_snapshot_unlocked(&self) -> io::Result<Vec<ManagedProcessLedgerEntry>> {
+    verify_ledger_path_no_symlinks(&self.path)?;
+    let file = open_no_follow(&self.path)?;
+    let mut raw = String::new();
+    file.take((MAX_LEDGER_FILE_BYTES + 1) as u64).read_to_string(&mut raw)?;
+    let snapshot: FileLedgerSnapshot = serde_json::from_str(&raw).map_err(io::Error::other)?;
+    if snapshot.schema_version != FILE_LEDGER_SCHEMA_VERSION { return Err(io::Error::other("schema")); }
+    Ok(snapshot.entries)
+  }
+}
+impl TokioAgentRuntime {
+  fn effective_working_copy_fanout_parallelism(policy: &RuntimeFanoutJoinPolicy, item_count: usize) -> usize {
+    policy.max_parallelism().unwrap_or_else(|| item_count.max(1)).clamp(1, MAX_WORKING_COPY_FANOUT_PARALLELISM)
+  }
+}
+impl Runner {
+  async fn cancel_remaining_work(&mut self) -> Receipt {
+    self.tasks.abort_all();
+    while self.tasks.join_next_with_id().await.is_some() {}
+    self.take_receipt()
+  }
+}`,
+  },
+  {
+    id: 'SA248',
+    language: 'ts',
+    expectedPass: true,
+    source: `
+export function signalProcessGroup(pgid: number, sig: NodeJS.Signals): void {
+  if (!Number.isInteger(pgid) || pgid <= 1) throw new Error('protected pgid');
+  process.kill(-pgid, sig);
+}`,
+  },
 ];
 
-describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA240)', () => {
-  test('achieves 240/240 exact independent-gold match (tp=138, tn=102, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
+describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA248)', () => {
+  test('achieves 248/248 exact independent-gold match (tp=143, tn=105, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
     let tp = 0;
     let tn = 0;
     let fp = 0;
@@ -3740,7 +3867,7 @@ describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA240)', () 
       }
     }
 
-    expect({tp, tn, fp, fn}).toEqual({tp: 138, tn: 102, fp: 0, fn: 0});
+    expect({tp, tn, fp, fn}).toEqual({tp: 143, tn: 105, fp: 0, fn: 0});
   });
 
   test('clean Rust deterministic buffer pool & bounded retry passes with 0 findings', () => {
