@@ -249,7 +249,9 @@
                                     ("rel-pq-ots-b" "clean-coder" "human-approver" "log-honest")
                                     ("rel-zk-overdisclose" "clean-coder" "human-approver" "log-honest")
                                     ("rel-zk-replay-a" "clean-coder" "human-approver" "log-honest")
-                                    ("rel-zk-replay-b" "clean-coder" "human-approver" "log-honest")))
+                                    ("rel-zk-replay-b" "clean-coder" "human-approver" "log-honest")
+                                    ("rel-geo-escape" "clean-coder" "human-approver" "log-honest")
+                                    ("rel-geo-nopermit" "clean-coder" "human-approver" "log-honest")))
           (cons 'release_uses_belief '(("rel-clean" "b-clean")
                                        ("rel-clean" "b-oracle-safe")
                                        ("rel-poison-chain" "b-leaf")))
@@ -360,7 +362,17 @@
           (cons 'release_zk_disclosed_field '(("rel-clean" "soDApproved")
                                               ("rel-zk-overdisclose" "customerSsn")
                                               ("rel-zk-replay-a" "soDApproved")
-                                              ("rel-zk-replay-b" "soDApproved")))))
+                                              ("rel-zk-replay-b" "soDApproved")))
+          ;; B19: eu-central-1 & ch-zurich-1 allowed, sanctioned-x sanctioned;
+          ;;      rel-clean stays intra-region eu-central-1 (no permit needed);
+          ;;      rel-geo-escape places in sanctioned-x with us-east-1 inference & invalid att;
+          ;;      rel-geo-nopermit crosses eu-central-1 -> ch-zurich-1 without valid permit!
+          (cons 'geo_allowed_region '(("eu-central-1") ("ch-zurich-1")))
+          (cons 'geo_sanctioned_region '(("sanctioned-x")))
+          (cons 'release_geo_placement '(("rel-clean" "eu-central-1" "eu-central-1" "eu-central-1" "yes")
+                                         ("rel-geo-escape" "eu-central-1" "sanctioned-x" "us-east-1" "no")
+                                         ("rel-geo-nopermit" "eu-central-1" "ch-zurich-1" "ch-zurich-1" "yes")))
+          (cons 'geo_transfer_permit '(("rel-geo-nopermit" "eu-central-1" "ch-zurich-1" "no")))))
 
       (def mres (reason-durable-governance-meta-audit m-facts))
       (def revoked (rows mres 'effectively_revoked))
@@ -386,6 +398,8 @@
       (def pq-ots-v (rows mres 'pq_ots_reuse_violation))
       (def zk-dis-v (rows mres 'zk_disclosure_violation))
       (def zk-rep-v (rows mres 'zk_nullifier_replay_violation))
+      (def geo-res-v (rows mres 'geo_residency_violation))
+      (def geo-xb-v (rows mres 'geo_cross_border_violation))
       (def disq (rows mres 'release_disqualified))
       (def admitted (rows mres 'release_admitted))
 
@@ -472,4 +486,11 @@
       (check-equal? (and (member '("rel-zk-replay-a" "rel-zk-replay-b" "nullifier-dup-48") zk-rep-v) #t) #t)
       (check-equal? (and (member '("rel-zk-overdisclose" "zk-selective-disclosure-violation") disq) #t) #t)
       (check-equal? (and (member '("rel-zk-replay-a" "zk-nullifier-replay") disq) #t) #t)
-      (check-equal? (and (member '("rel-zk-replay-b" "zk-nullifier-replay") disq) #t) #t))))
+      (check-equal? (and (member '("rel-zk-replay-b" "zk-nullifier-replay") disq) #t) #t)
+      ;; 13. B19 sovereign data residency, LLM inference geo-fencing & cross-border permit checks:
+      (check-equal? (and (member '("rel-geo-escape" "sanctioned-x" "sanctioned-target-region") geo-res-v) #t) #t)
+      (check-equal? (and (member '("rel-geo-escape" "us-east-1" "inference-residency-escape") geo-res-v) #t) #t)
+      (check-equal? (and (member '("rel-geo-escape" "sanctioned-x" "region-attestation-invalid") geo-res-v) #t) #t)
+      (check-equal? (and (member '("rel-geo-nopermit" "eu-central-1" "ch-zurich-1" "unapproved-cross-border-egress") geo-xb-v) #t) #t)
+      (check-equal? (and (member '("rel-geo-escape" "geo-residency-violation") disq) #t) #t)
+      (check-equal? (and (member '("rel-geo-nopermit" "unapproved-cross-border-egress") disq) #t) #t))))

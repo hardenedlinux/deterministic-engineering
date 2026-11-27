@@ -2281,6 +2281,76 @@ class BadOverDisclosureSUT extends ZkSelectiveDisclosureSUT {
   }
 }
 
+class GeoResidencySovereigntySUT {
+  targetRegionAllowed = false;
+  inferenceRegionAllowed = false;
+  crossBorderTransfer = false;
+  transferPermitValid = false;
+  admittedPlacements = 0;
+  sanctionedPlacementViolations = 0;
+  inferenceEscapeViolations = 0;
+  unpermittedEgressViolations = 0;
+
+  apply(action: string): void {
+    switch (action) {
+      case 'allowTargetRegion':
+        if (!this.targetRegionAllowed) this.targetRegionAllowed = true;
+        break;
+      case 'allowInferenceRegion':
+        if (!this.inferenceRegionAllowed) this.inferenceRegionAllowed = true;
+        break;
+      case 'markCrossBorderTransfer':
+        if (!this.crossBorderTransfer) this.crossBorderTransfer = true;
+        break;
+      case 'issueCrossBorderPermit':
+        if (this.crossBorderTransfer && !this.transferPermitValid) this.transferPermitValid = true;
+        break;
+      case 'admitGeoPlacement':
+        if (
+          this.admittedPlacements < 2 &&
+          this.targetRegionAllowed &&
+          this.inferenceRegionAllowed &&
+          (!this.crossBorderTransfer || this.transferPermitValid)
+        ) {
+          this.admittedPlacements += 1;
+        }
+        break;
+      default:
+        throw new Error(`Unknown GeoResidencySovereignty action: ${action}`);
+    }
+  }
+
+  snapshot() {
+    return {
+      targetRegionAllowed: this.targetRegionAllowed,
+      inferenceRegionAllowed: this.inferenceRegionAllowed,
+      crossBorderTransfer: this.crossBorderTransfer,
+      transferPermitValid: this.transferPermitValid,
+      admittedPlacements: this.admittedPlacements,
+      sanctionedPlacementViolations: this.sanctionedPlacementViolations,
+      inferenceEscapeViolations: this.inferenceEscapeViolations,
+      unpermittedEgressViolations: this.unpermittedEgressViolations,
+    };
+  }
+}
+
+class BadGeoEscapeSUT extends GeoResidencySovereigntySUT {
+  override apply(action: string): void {
+    if (action === 'admitGeoPlacement' && this.admittedPlacements < 2) {
+      // Anti-pattern: drops target-region, inference-region, and cross-border-permit guards!
+      const dstOk = this.targetRegionAllowed;
+      const infOk = this.inferenceRegionAllowed;
+      const xbOk = !this.crossBorderTransfer || this.transferPermitValid;
+      this.admittedPlacements += 1;
+      if (!dstOk) this.sanctionedPlacementViolations += 1;
+      if (!infOk) this.inferenceEscapeViolations += 1;
+      if (!xbOk) this.unpermittedEgressViolations += 1;
+      return;
+    }
+    super.apply(action);
+  }
+}
+
 const repoRoot = resolve(import.meta.dir, '../../../..');
 
 function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(): Record<string, unknown>}>(
@@ -2333,7 +2403,7 @@ function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(
   }
 }
 
-describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (27 Defense Models)', () => {
+describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (28 Defense Models)', () => {
   test('EpistemicStateLattice ITF actions drive EpistemicLatticeSUT with exact step-by-step state isomorphism', () => {
     const stats = replayModelAgainstSut(
       'packages/quint-models/engineering/defense/epistemic-state-lattice/EpistemicStateLattice.qnt',
@@ -2923,6 +2993,27 @@ describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (27 Defense Models
       () => new ZkSelectiveDisclosureSUT(),
       projectH,
       () => new BadOverDisclosureSUT(),
+    );
+    expect(stats.transitions).toBeGreaterThan(50);
+    expect(stats.brokenDiverged).toBe(true);
+  }, 30_000);
+
+  test('GeoResidencySovereignty ITF actions drive GeoResidencySovereigntySUT with exact state isomorphism and reject BadGeoEscapeSUT', () => {
+    const projectH = (h: Record<string, unknown>) => ({
+      targetRegionAllowed: Boolean(h.targetRegionAllowed),
+      inferenceRegionAllowed: Boolean(h.inferenceRegionAllowed),
+      crossBorderTransfer: Boolean(h.crossBorderTransfer),
+      transferPermitValid: Boolean(h.transferPermitValid),
+      admittedPlacements: asInt(h.admittedPlacements),
+      sanctionedPlacementViolations: asInt(h.sanctionedPlacementViolations),
+      inferenceEscapeViolations: asInt(h.inferenceEscapeViolations),
+      unpermittedEgressViolations: asInt(h.unpermittedEgressViolations),
+    });
+    const stats = replayModelAgainstSut(
+      'packages/quint-models/engineering/defense/geo-residency-sovereignty/GeoResidencySovereignty.qnt',
+      () => new GeoResidencySovereigntySUT(),
+      projectH,
+      () => new BadGeoEscapeSUT(),
     );
     expect(stats.transitions).toBeGreaterThan(50);
     expect(stats.brokenDiverged).toBe(true);

@@ -85,6 +85,10 @@ export interface MetaAuditFactBundle {
   zk_required_public_field: Array<[string]>;
   release_zk_proof: Array<[string, string, string, string, string]>;
   release_zk_disclosed_field: Array<[string, string]>;
+  geo_allowed_region: Array<[string]>;
+  geo_sanctioned_region: Array<[string]>;
+  release_geo_placement: Array<[string, string, string, string, string]>;
+  geo_transfer_permit: Array<[string, string, string, string]>;
 }
 
 export interface AscentMetaAuditOutput {
@@ -112,6 +116,8 @@ export interface AscentMetaAuditOutput {
   pq_ots_reuse_violation: string[][];
   zk_disclosure_violation: string[][];
   zk_nullifier_replay_violation: string[][];
+  geo_residency_violation: string[][];
+  geo_cross_border_violation: string[][];
   release_disqualified: string[][];
   release_admitted: string[][];
 }
@@ -256,6 +262,21 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
   releaseZkDisclosedFields?: ReadonlyArray<{
     releaseId: string;
     fieldId: string;
+  }>;
+  geoAllowedRegions?: readonly string[];
+  geoSanctionedRegions?: readonly string[];
+  releaseGeoPlacements?: ReadonlyArray<{
+    releaseId: string;
+    sourceRegion: string;
+    targetRegion: string;
+    inferenceEndpointRegion: string;
+    attestationOk: boolean;
+  }>;
+  geoTransferPermits?: ReadonlyArray<{
+    releaseId: string;
+    sourceRegion: string;
+    targetRegion: string;
+    permitOk: boolean;
   }>;
   releaseProposals: ReadonlyArray<{
     releaseId: string;
@@ -498,6 +519,20 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
   const release_zk_disclosed_field: Array<[string, string]> = (
     params.releaseZkDisclosedFields ?? []
   ).map(d => [d.releaseId, d.fieldId]);
+  const geo_allowed_region: Array<[string]> = (params.geoAllowedRegions ?? []).map(r => [r]);
+  const geo_sanctioned_region: Array<[string]> = (params.geoSanctionedRegions ?? []).map(r => [r]);
+  const release_geo_placement: Array<[string, string, string, string, string]> = (
+    params.releaseGeoPlacements ?? []
+  ).map(g => [
+    g.releaseId,
+    g.sourceRegion,
+    g.targetRegion,
+    g.inferenceEndpointRegion,
+    g.attestationOk ? 'yes' : 'no',
+  ]);
+  const geo_transfer_permit: Array<[string, string, string, string]> = (
+    params.geoTransferPermits ?? []
+  ).map(p => [p.releaseId, p.sourceRegion, p.targetRegion, p.permitOk ? 'yes' : 'no']);
 
   const bundle: MetaAuditFactBundle = {
     delegation_edge: dedupeTuples(delegation_edge),
@@ -548,6 +583,10 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
     zk_required_public_field: dedupeTuples(zk_required_public_field),
     release_zk_proof: dedupeTuples(release_zk_proof),
     release_zk_disclosed_field: dedupeTuples(release_zk_disclosed_field),
+    geo_allowed_region: dedupeTuples(geo_allowed_region),
+    geo_sanctioned_region: dedupeTuples(geo_sanctioned_region),
+    release_geo_placement: dedupeTuples(release_geo_placement),
+    geo_transfer_permit: dedupeTuples(geo_transfer_permit),
   };
 
   const factBundleMerkleHash = params.kv.putBlob('ascent-meta-audit-fact-bundle', bundle, []);
@@ -611,6 +650,8 @@ export function parseFramedAscentOutput(rawStdout: string): AscentOracleRunVerdi
     'pq_ots_reuse_violation',
     'zk_disclosure_violation',
     'zk_nullifier_replay_violation',
+    'geo_residency_violation',
+    'geo_cross_border_violation',
     'release_disqualified',
     'release_admitted',
   ];
@@ -691,6 +732,7 @@ export function runLiveGerbilAscentMetaAudit(
                key_rotation_write_violation crypto_shred_read_violation
                pq_agility_violation pq_ots_reuse_violation
                zk_disclosure_violation zk_nullifier_replay_violation
+               geo_residency_violation geo_cross_border_violation
                release_disqualified release_admitted)))
   (display "${BEGIN_MARKER}\\n{")
   (let loop ((ks keys) (first #t))

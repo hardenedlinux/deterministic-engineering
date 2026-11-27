@@ -20,7 +20,7 @@ This benchmark evaluates whether AST-level defensive-engineering auditors catch
 all four AI Agent defensive-hallucination classes (=G2= in [[file:../../10-19-design/10-architecture/10.153-defensive-engineering-taxonomy-and-modular-organization.org][10.153]]) without
 generating false positives on clean deterministic-boundary code.
 
-- *Independent Gold*: Every case (=AG01=–=AG260=) has a fixed independent
+- *Independent Gold*: Every case (=AG01=–=AG265=) has a fixed independent
   expected outcome (=pass= vs. =fail= + exact hallucination/anti-evasion/escalation/durable-resume class). Candidate
   auditor output never generates gold.
 - *Native AST, Diff-Delta, Scope-Fencing & Closed-Loop Governance Auditors Evaluated*:
@@ -316,6 +316,11 @@ generating false positives on clean deterministic-boundary code.
 | =AG258= | =B19= 6-Vector Residency Attacks | Sanctioned target, LLM inference escape, revoked authority, forged sig, revoked permit, transplant | Refuse all 6 sovereign residency attack vectors | Blocks LLM inference routing escape, sanctioned storage, forged/revoked permits & transplants |
 | =AG259= | 16/16 =R3= Non-Leakable Caps | All 16 =M3= capability classes (including =GeoResidencySigningKey=) into =M1= | Refuse all 16/16 (=R3 ReachabilityLeakError=) | Mechanically blocks regional sovereignty Ed25519 private signing keys from =M1= persistence |
 | =AG260= | 260-Case & 196-Thm Milestone | 27 Quint × 48×26 ASCENT × 18/196 CLI JSON + Sovereign Geo-Residency -> =cedar-poo-spec= | **260/260 =Proven=** + all =M1= receipts survive GC | Closes 260-case benchmark & 18-module 196-theorem zero-Mathlib/zero-Cedar =LeanPoo= Library |
+| =AG261= | =B19= × 52×28 ASCENT Residency | Live =gxi= ASCENT derives =geo_residency_violation= for sanctioned target, inf escape & bad att | Derive all 3 violations & disqualify; admit local | Catches sanctioned target placement, LLM inference escape & invalid regional att declaratively |
+| =AG262= | =B19= × 52×28 ASCENT Egress | Live =gxi= ASCENT derives =geo_cross_border_violation= on EU->CH without valid permit | Derive unapproved egress; admit permitted EU->CH | Enforces GDPR Ch. V cross-border adequacy permits declaratively across sovereign jurisdictions |
+| =AG263= | =B19= × N-Version Gate | Buggy TS coordinator claims =ADMIT= on inference-escape & unpermitted cross-border egress | Refuse both (=oracle-disagreement-fail-closed=) + GC | Live Scheme ASCENT overrides imperative TS coordinator & pins forensic receipts |
+| =AG264= | 28-Quint × 196-Thm CLI | =leanpoo-fleet-audit --json= verifies 28 Quint × 52×28 ASCENT × 18/196 =LeanPoo= | =quint: 28, ascent: true, modules: 18, thms: 196= | Confirms 28th Quint model (=geo-residency-sovereignty=) + 52×28 ASCENT convergence |
+| =AG265= | 265-Case =B1=–=B19= Closure | Ed25519 adequacy permit + =B10= QC -> dual ASCENT -> 28-Quint cert -> =cedar-poo-spec= | **265/265 =Proven=** + all =M1= receipts survive GC | Seals complete four-paradigm symmetry across all 19 business pillars (=B1=–=B19=) |
 
 * Observed Verification Receipts
 :PROPERTIES:
@@ -370,14 +375,15 @@ generating false positives on clean deterministic-boundary code.
 | =B18= Verifiable ZK Selective-Disclosure Compliance + 17-Module / **186-Theorem =LeanPoo=** & **250-Case Grand Seal** (=AG246=–=AG250=, =10.195=, =90.153=) | =bun test languages-engineering/ts/defense/agent-audit/zk-selective-disclosure.test.ts= + full 44-suite / 5-lang / CBMC / Gerbil seal | **5/5 cases matched gold** (live **186/186** 17-module =LeanPoo= sweep, RFC 3526 MODP-2048 Schnorr Sigma NIZK + salted Merkle disclosure, 6-vector attack matrix, 15/15 =R3= caps & full 44-suite + CBMC 50/50 + C++20 + Rust + Gerbil ASCENT seal) |
 | =B18= Four-Paradigm Symmetry Closure: **27th Quint/Apalache Model** + 27/27 MBT SUT + 48×26 =B1=–=B18= ASCENT (=AG251=–=AG255=, =10.196=) | =bun test languages-engineering/ts/defense/agent-audit/b18-four-paradigm-symmetry.test.ts= + =mbt-replay.test.ts= + =governance-ascent-test.ss= | **5/5 cases matched gold** (model #27 Apalache 6/6 =PLAN-OK= & 3/3 =F3= essential, 27/27 MBT SUT isomorphism, live 48×26 =gxi= ASCENT ZK over-disclosure/replay catch, 27-Quint × 186-Thm CLI + air-gapped =cedar-poo-spec= closure) |
 | =B19= Cross-Region Sovereign Data-Residency & Geo-Fencing + 18-Module / **196-Theorem =LeanPoo=** Library (=AG256=–=AG260=, =10.197=) | =bun test languages-engineering/ts/defense/agent-audit/geo-residency-sovereignty.test.ts= + =just audit-leanpoo-fleet --json= | **5/5 cases matched gold** (live **196/196** 18-module =LeanPoo= sweep, GDPR Ch. V cross-border permit vs. anti-=P4= intra-region, 6-vector residency/LLM-escape attack matrix, 16/16 =R3= caps & 260-case milestone) |
-| Combined **260-case** 5-language, 27-Quint MBT, Full =B1=–=B18= 48×26 ASCENT & **196-Theorem =LeanPoo=** benchmark | =just check-defense= | **260/260 exact gold match** (=tp=167, tn=93, fp=0, fn=0=) |
+| =B19= Four-Paradigm Symmetry Closure: **28th Quint/Apalache Model** + 28/28 MBT SUT + 52×28 =B1=–=B19= ASCENT (=AG261=–=AG265=, =10.198=) | =bun test languages-engineering/ts/defense/agent-audit/b19-four-paradigm-symmetry.test.ts= + =mbt-replay.test.ts= + =governance-ascent-test.ss= | **5/5 cases matched gold** (model #28 Apalache 6/6 =PLAN-OK= & 3/3 =F3= essential, 28/28 MBT SUT isomorphism, live 52×28 =gxi= ASCENT geo-residency/egress catch, 28-Quint × 196-Thm CLI + air-gapped =cedar-poo-spec= closure) |
+| Combined **265-case** 5-language, 28-Quint MBT, Full =B1=–=B19= 52×28 ASCENT & **196-Theorem =LeanPoo=** benchmark | =just check-defense= | **265/265 exact gold match** (=tp=170, tn=95, fp=0, fn=0=) |
 
 * Limits
 :PROPERTIES:
 :CUSTOM_ID: bench3005-limits
 :END:
 
-This 260-case benchmark establishes deterministic AST-level, diff-delta,
+This 265-case benchmark establishes deterministic AST-level, diff-delta,
 scope-fencing, bounded closed-loop, hot-policy co-evolution, async-cut,
 semantic-drift memoization, AEAD-isolated Merkle storage, role-projected
 context, multi-agent SSI concurrency, and business SoD/replay precision and

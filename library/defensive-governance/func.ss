@@ -720,7 +720,11 @@
     zk_forbidden_secret_field
     zk_required_public_field
     release_zk_proof
-    release_zk_disclosed_field)
+    release_zk_disclosed_field
+    geo_allowed_region
+    geo_sanctioned_region
+    release_geo_placement
+    geo_transfer_permit)
   (outputs
     effectively_revoked
     belief_poisoned
@@ -746,6 +750,8 @@
     pq_ots_reuse_violation
     zk_disclosure_violation
     zk_nullifier_replay_violation
+    geo_residency_violation
+    geo_cross_border_violation
     release_disqualified
     release_admitted)
   (relation delegation_edge ((parent string?) (child string?)))
@@ -796,6 +802,10 @@
   (relation zk_required_public_field ((field_id string?)))
   (relation release_zk_proof ((rel_id string?) (prover_id string?) (root_ok string?) (sigma_ok string?) (nullifier string?)))
   (relation release_zk_disclosed_field ((rel_id string?) (field_id string?)))
+  (relation geo_allowed_region ((region_id string?)))
+  (relation geo_sanctioned_region ((region_id string?)))
+  (relation release_geo_placement ((rel_id string?) (src_region string?) (dst_region string?) (inf_region string?) (att_ok string?)))
+  (relation geo_transfer_permit ((rel_id string?) (src_region string?) (dst_region string?) (permit_ok string?)))
 
   ;; Internal stratified helper relations for pure relational identity, cross-log finality, slashing, B11 MCP pinning, B13 wait-graph reachability, B14 artifact equality & B15 release identity:
   (relation same_root ((r1 string?) (r2 string?)))
@@ -807,6 +817,8 @@
   (relation wait_reaches ((session_id string?) (a string?) (b string?)))
   (relation same_artifact ((a1 string?) (a2 string?)))
   (relation same_release ((r1 string?) (r2 string?)))
+  (relation same_region ((r1 string?) (r2 string?)))
+  (relation valid_geo_permit ((rel_id string?) (src_region string?) (dst_region string?)))
 
   (relation effectively_revoked ((principal string?)))
   (relation belief_poisoned ((belief_id string?)))
@@ -832,6 +844,8 @@
   (relation pq_ots_reuse_violation ((rel1 string?) (rel2 string?) (signer_id string?) (leaf_index string?)))
   (relation zk_disclosure_violation ((rel_id string?) (detail string?) (reason string?)))
   (relation zk_nullifier_replay_violation ((rel1 string?) (rel2 string?) (nullifier string?)))
+  (relation geo_residency_violation ((rel_id string?) (region_id string?) (reason string?)))
+  (relation geo_cross_border_violation ((rel_id string?) (src_region string?) (dst_region string?) (reason string?)))
   (relation release_disqualified ((rel_id string?) (reason string?)))
   (relation release_admitted ((rel_id string?)))
 
@@ -1092,7 +1106,42 @@
    (release_zk_proof R2 _ _ _ Nullifier)
    (not (same_release R1 R2)))
 
-  ;; 6. Cross-pillar B1/B3/B5/B6/B8/B9/B10/B10c/B11/B12/B13/B14/B15/B16/B17/B18 release disqualification & clean admission:
+  ;; 5k. B19 Cross-Region Sovereign Data-Residency, LLM Inference Geo-Fencing & Cross-Border Permits:
+  ((same_region R R)
+   <--
+   (release_geo_placement _ R _ _ _))
+  ((same_region R R)
+   <--
+   (release_geo_placement _ _ R _ _))
+  ((valid_geo_permit Rel Src Dst)
+   <--
+   (geo_transfer_permit Rel Src Dst (lit "yes")))
+  ((geo_residency_violation Rel Dst (lit "disallowed-target-region"))
+   <--
+   (release_geo_placement Rel _ Dst _ _)
+   (not (geo_allowed_region Dst)))
+  ((geo_residency_violation Rel Dst (lit "sanctioned-target-region"))
+   <--
+   (release_geo_placement Rel _ Dst _ _)
+   (geo_sanctioned_region Dst))
+  ((geo_residency_violation Rel Inf (lit "inference-residency-escape"))
+   <--
+   (release_geo_placement Rel _ _ Inf _)
+   (not (geo_allowed_region Inf)))
+  ((geo_residency_violation Rel Inf (lit "sanctioned-inference-region"))
+   <--
+   (release_geo_placement Rel _ _ Inf _)
+   (geo_sanctioned_region Inf))
+  ((geo_residency_violation Rel Dst (lit "region-attestation-invalid"))
+   <--
+   (release_geo_placement Rel _ Dst _ (lit "no")))
+  ((geo_cross_border_violation Rel Src Dst (lit "unapproved-cross-border-egress"))
+   <--
+   (release_geo_placement Rel Src Dst _ _)
+   (not (same_region Src Dst))
+   (not (valid_geo_permit Rel Src Dst)))
+
+  ;; 6. Cross-pillar B1/B3/B5/B6/B8/B9/B10/B10c/B11/B12/B13/B14/B15/B16/B17/B18/B19 release disqualification & clean admission:
   ((release_finality_satisfied Rel Ckpt)
    <--
    (release_proposal Rel _ _ Log)
@@ -1185,6 +1234,14 @@
    <--
    (release_proposal Rel _ _ _)
    (zk_nullifier_replay_violation Rel _ _))
+  ((release_disqualified Rel (lit "geo-residency-violation"))
+   <--
+   (release_proposal Rel _ _ _)
+   (geo_residency_violation Rel _ _))
+  ((release_disqualified Rel (lit "unapproved-cross-border-egress"))
+   <--
+   (release_proposal Rel _ _ _)
+   (geo_cross_border_violation Rel _ _ _))
   ((release_admitted Rel)
    <--
    (release_proposal Rel _ _ _)
