@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 import {describe, expect, test} from 'bun:test';
-import {readFileSync} from 'node:fs';
-import {resolve} from 'node:path';
+import {mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join, resolve} from 'node:path';
 import {
   auditDiffObligationDeletions,
   auditSourceByPath,
@@ -536,7 +537,8 @@ func main() {
         let e = cfg.optional_path.clone().unwrap_or_default();
         let f = unicode_width::UnicodeWidthChar::width('a').unwrap_or(0);
         let g = [1, 2].iter().find_map(|x| (*x == 2).then_some(*x)).unwrap_or(0);
-        (a, b + g, c, d, e, f)
+        let h: Vec<&str> = v.get("enum").and_then(Value::as_array).map(|xs| xs.iter().filter_map(Value::as_str).collect()).unwrap_or_default();
+        (a, b + g + h.len(), c, d, e, f)
       }
       async fn async_match(res: Result<u32, String>) -> Result<u32, String> {
         match res {
@@ -603,5 +605,57 @@ func main() {
     expect(goDiffRep.length).toBe(1);
     expect(goDiffRep[0]!.language).toBe('go');
     expect(goDiffRep[0]!.findings.some(f => f.rule === 'diff-deleted-assertion')).toBe(true);
+  });
+
+  test('CLI --dir --lang=... --exclude-tests walks production trees cleanly while skipping .devenv/tests and catching real defects', () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'de-audit-dir-cli-'));
+    try {
+      mkdirSync(join(tmp, 'src'), {recursive: true});
+      mkdirSync(join(tmp, 'tests'), {recursive: true});
+      mkdirSync(join(tmp, '.devenv/profile'), {recursive: true});
+      writeFileSync(
+        join(tmp, 'src/clean.go'),
+        'package app\nimport "errors"\nfunc Check(x int) error { if x < 0 { return errors.New("neg") }; return nil }\n',
+      );
+      writeFileSync(
+        join(tmp, 'src/clean_test.go'),
+        'package app\nimport "testing"\nfunc TestIgnored(t *testing.T) { t.Skip("excluded test file") }\n',
+      );
+      writeFileSync(
+        join(tmp, '.devenv/profile/bad.go'),
+        'package dev\nfunc Bad() error { if err := f(); err != nil { return nil }; return nil }\n',
+      );
+      writeFileSync(
+        join(tmp, 'tests/bad_test.rs'),
+        '#[ignore]\nfn skipped() {}\n',
+      );
+
+      // 1. Clean production tree (ignoring .devenv/, tests/, *_test.go) -> exit 0, audited=1
+      const okProc = Bun.spawnSync(
+        ['bun', cliPath, '--dir', tmp, '--lang=go,rust', '--exclude-tests', '--json'],
+        {cwd: tmp, stdout: 'pipe', stderr: 'pipe'},
+      );
+      expect(okProc.exitCode).toBe(0);
+      const okJson = JSON.parse(okProc.stdout.toString());
+      expect(okJson.passed).toBe(true);
+      expect(okJson.reports.length).toBe(1);
+      expect(okJson.reports[0].fileName).toBe('src/clean.go');
+
+      // 2. Adding a real Rust P1 defect in src/ -> exit 1, caught immediately
+      writeFileSync(
+        join(tmp, 'src/bad.rs'),
+        'pub fn load() -> String { std::env::var("TOKEN").unwrap_or_default() }\n',
+      );
+      const badProc = Bun.spawnSync(
+        ['bun', cliPath, '--dir', tmp, '--lang=go,rust', '--exclude-tests', '--json'],
+        {cwd: tmp, stdout: 'pipe', stderr: 'pipe'},
+      );
+      expect(badProc.exitCode).toBe(1);
+      const badJson = JSON.parse(badProc.stdout.toString());
+      expect(badJson.passed).toBe(false);
+      expect(badJson.totalFindings).toBe(1);
+    } finally {
+      rmSync(tmp, {recursive: true, force: true});
+    }
   });
 });

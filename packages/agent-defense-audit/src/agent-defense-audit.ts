@@ -7,6 +7,7 @@
  *
  * Usage:
  *   bun packages/agent-defense-audit/src/agent-defense-audit.ts --files <path...> [--json]
+ *   bun packages/agent-defense-audit/src/agent-defense-audit.ts --dir <dir...> [--lang=go,rust] [--exclude-tests] [--json]
  *   bun packages/agent-defense-audit/src/agent-defense-audit.ts --diff [--staged] [--json]
  *   bun packages/agent-defense-audit/src/agent-defense-audit.ts --diff-file <patch> [--json]
  *   bun packages/agent-defense-audit/src/agent-defense-audit.ts --probe-quint <file.qnt> --action=<name> --guard=<expr> [--max-steps=6] [--json]
@@ -17,13 +18,15 @@
  *   2 -> Invalid CLI usage / unreadable input
  */
 
-import {existsSync, readFileSync} from 'node:fs';
-import {dirname, resolve} from 'node:path';
+import {existsSync, readdirSync, readFileSync, realpathSync, statSync} from 'node:fs';
+import {dirname, join, relative, resolve} from 'node:path';
 import {
   auditSourceByPath,
   auditUnifiedDiff,
+  detectAuditLanguage,
   parseUnifiedDiffHunks,
   type MultiLangAuditReport,
+  type SupportedAuditLanguage,
 } from './multi-lang-auditor.ts';
 import {
   evaluateScopeFence,
@@ -35,9 +38,12 @@ import {
 } from './remediation-catalog.ts';
 
 interface CliOptions {
-  mode: 'files' | 'diff' | 'diff-file' | 'probe-quint';
+  mode: 'files' | 'dir' | 'diff' | 'diff-file' | 'probe-quint';
   files: string[];
+  dirs: string[];
+  langs: SupportedAuditLanguage[];
   staged: boolean;
+  excludeTests: boolean;
   excludeNegativeFixtures: boolean;
   diffFile?: string;
   scopeGlobs: string[];
@@ -50,12 +56,77 @@ interface CliOptions {
 }
 
 const NEGATIVE_FIXTURE_RE = /(^|\/)(bad[_-]defensive|bad[_-]aging)\.[^/]+$/;
+const TEST_FILE_RE = /(?:_test\.go|_test\.rs|-test\.ss|\.test\.[cm]?[jt]sx?|\.spec\.[cm]?[jt]sx?)$/i;
+const DEFAULT_SKIP_DIRS = new Set([
+  '.git',
+  '.devenv',
+  '.data',
+  '.cache',
+  '.gerbil',
+  '.lake',
+  '.next',
+  'node_modules',
+  'target',
+  'vendor',
+  'dist',
+  'build',
+  'out',
+]);
+const TEST_SKIP_DIRS = new Set(['tests', 'test', 't', 'benches', 'examples', '__tests__']);
+
+export function collectAuditFilesFromDirs(
+  dirs: readonly string[],
+  opts: {
+    cwd?: string;
+    langs?: readonly SupportedAuditLanguage[];
+    excludeTests?: boolean;
+    excludeNegativeFixtures?: boolean;
+  } = {},
+): string[] {
+  const rawCwd = opts.cwd ?? process.cwd();
+  const cwd = existsSync(rawCwd) ? realpathSync(rawCwd) : rawCwd;
+  const langFilter = opts.langs && opts.langs.length > 0 ? new Set(opts.langs) : null;
+  const collected: string[] = [];
+
+  const walk = (absDir: string) => {
+    const entries = readdirSync(absDir, {withFileTypes: true}).sort((a, b) => a.name.localeCompare(b.name));
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        if (entry.name.startsWith('.') || DEFAULT_SKIP_DIRS.has(entry.name)) continue;
+        if (opts.excludeTests && TEST_SKIP_DIRS.has(entry.name)) continue;
+        walk(join(absDir, entry.name));
+      } else if (entry.isFile()) {
+        const full = join(absDir, entry.name);
+        const rel = relative(cwd, full).replaceAll('\\', '/');
+        const lang = detectAuditLanguage(rel);
+        if (!lang) continue;
+        if (langFilter && !langFilter.has(lang)) continue;
+        if (opts.excludeTests && TEST_FILE_RE.test(entry.name)) continue;
+        if ((opts.excludeNegativeFixtures || opts.excludeTests) && NEGATIVE_FIXTURE_RE.test(rel)) continue;
+        collected.push(rel);
+      }
+    }
+  };
+
+  for (const dir of dirs) {
+    const full = resolve(cwd, dir);
+    if (!existsSync(full) || !statSync(full).isDirectory()) {
+      throw new Error(`Directory not found: ${dir}`);
+    }
+    walk(realpathSync(full));
+  }
+
+  return [...new Set(collected)].sort();
+}
 
 function parseArgs(argv: string[]): CliOptions {
   const opts: CliOptions = {
     mode: 'files',
     files: [],
+    dirs: [],
+    langs: [],
     staged: false,
+    excludeTests: false,
     excludeNegativeFixtures: false,
     scopeGlobs: [],
     forbidGlobs: [],
@@ -73,8 +144,23 @@ function parseArgs(argv: string[]): CliOptions {
       opts.mode = 'diff';
     } else if (a === '--staged') {
       opts.staged = true;
+    } else if (a === '--exclude-tests') {
+      opts.excludeTests = true;
     } else if (a === '--exclude-negative-fixtures') {
       opts.excludeNegativeFixtures = true;
+    } else if (a === '--dir') {
+      opts.mode = 'dir';
+    } else if (a.startsWith('--lang=')) {
+      const raw = a.slice('--lang='.length).split(',').filter(Boolean);
+      for (const l of raw) {
+        const norm = l === 'ts' || l === 'js' ? 'typescript' : l === 'c' || l === 'cpp' ? 'c-cpp' : l;
+        if (norm === 'typescript' || norm === 'c-cpp' || norm === 'rust' || norm === 'go' || norm === 'scheme') {
+          opts.langs.push(norm);
+        } else {
+          console.error(`Unsupported --lang value: ${l}`);
+          process.exit(2);
+        }
+      }
     } else if (a === '--diff-file') {
       opts.mode = 'diff-file';
       opts.diffFile = argv[++i];
@@ -94,7 +180,11 @@ function parseArgs(argv: string[]): CliOptions {
     } else if (a === '--files') {
       opts.mode = 'files';
     } else if (!a.startsWith('--')) {
-      opts.files.push(a);
+      if (opts.mode === 'dir') {
+        opts.dirs.push(a);
+      } else {
+        opts.files.push(a);
+      }
     }
   }
   return opts;
@@ -188,9 +278,29 @@ function main(): void {
           })
         : [];
     reports = [...scopeReports, ...diffReports];
+  } else if (opts.mode === 'dir') {
+    const dirs = opts.dirs.length > 0 ? opts.dirs : ['.'];
+    for (const dir of dirs) {
+      const full = resolve(process.cwd(), dir);
+      if (!existsSync(full) || !statSync(full).isDirectory()) {
+        console.error(`Directory not found: ${dir}`);
+        process.exit(2);
+      }
+    }
+    const targetFiles = collectAuditFilesFromDirs(dirs, {
+      cwd: process.cwd(),
+      langs: opts.langs,
+      excludeTests: opts.excludeTests,
+      excludeNegativeFixtures: opts.excludeNegativeFixtures,
+    });
+    for (const file of targetFiles) {
+      const full = resolve(process.cwd(), file);
+      const report = auditSourceByPath(readFileSync(full, 'utf8'), file);
+      if (report) reports.push(report);
+    }
   } else {
     if (opts.files.length === 0) {
-      console.error('Usage: agent-defense-audit.ts --files <path...> | --diff [--staged] | --diff-file <patch> | --probe-quint ...');
+      console.error('Usage: agent-defense-audit.ts --files <path...> | --dir <dir...> [--lang=...] [--exclude-tests] | --diff [--staged] | --diff-file <patch> | --probe-quint ...');
       process.exit(2);
     }
     for (const file of opts.files) {
@@ -217,4 +327,6 @@ function main(): void {
   process.exit(totalFindings === 0 ? 0 : 1);
 }
 
-main();
+if (import.meta.main) {
+  main();
+}

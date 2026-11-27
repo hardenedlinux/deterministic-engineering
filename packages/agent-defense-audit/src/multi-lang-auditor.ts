@@ -542,6 +542,19 @@ function isRustOptionAccessorChain(
       sawDurationSinceEpoch = true;
     }
     if (
+      tk.kind === 'ident' &&
+      code[k - 1]?.value === '::' &&
+      code[k - 2]?.value === 'Value' &&
+      (tk.value === 'as_array' ||
+        tk.value === 'as_object' ||
+        tk.value === 'as_str' ||
+        tk.value === 'as_u64' ||
+        tk.value === 'as_i64' ||
+        tk.value === 'as_bool')
+    ) {
+      sawOptionAccessor = true;
+    }
+    if (
       depthParen === 0 &&
       depthBracket === 0 &&
       depthBrace === 0 &&
