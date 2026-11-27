@@ -22,8 +22,8 @@ gate can deterministically detect, refute, and guide AI repair of *long-running
 software aging, interactive search/IME/input-sanitization stability, chaos/IPC
 reconnect resilience, search-index snapshot isolation, streaming LLM/HTTP
 output-budget, CI/CD scientific caching/sharding, structured async task / DB
-pool cancellation hygiene, and bounded subprocess pipe capture defects*
-(=SM1=–=SM20= in
+pool cancellation hygiene, bounded subprocess pipe capture, and crash-safe
+atomic persistence defects* (=SM1=–=SM21= in
 [[file:../../40-49-research/40-reference-studies/40.04-software-aging-and-steady-state-stability.org][40.04]],
 [[file:../../40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org][40.05]],
 and [[file:../../40-49-research/40-reference-studies/40.06-ci-cd-scientific-caching-and-subdomain-sharding.org][40.06]])
@@ -31,16 +31,16 @@ across five implementation languages (**Go, Rust, TypeScript, C, C++**) and
 realistic multi-layer agent/UI architectures (**Marlin Rust/Scheme Host + MyGo
 Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
 
-- *Independent Gold*: Every static case (=SA01=–=SA102=), closed-loop persona,
+- *Independent Gold*: Every static case (=SA01=–=SA108=), closed-loop persona,
   formal countermodel, metamorphic search property (=MR1=–=MR6=), chaos/IME/IPC,
   snapshot-isolation, search-box sanitization, streaming output-budget, CI/CD
-  CAS soundness, task/pool cancellation, and subprocess pipe-capture
-  structure-aware fuzz property, and runtime soak assertion carries a fixed
-  independent expected outcome (=pass= vs. =refuse= + exact mechanism / rule /
-  ITF predicate).
+  CAS soundness, task/pool cancellation, subprocess pipe-capture, and crash-safe
+  atomic-persistence structure-aware fuzz property, and runtime soak assertion
+  carries a fixed independent expected outcome (=pass= vs. =refuse= + exact
+  mechanism / rule / ITF predicate).
 - *Five Coupled Verification Layers*:
   1. *Formal Finite-State Models (Quint + Apalache 0.62.1 + 100% =--mbt=)*:
-     21 stability models (54 auto-derived countermodels) + 3 UI concurrency
+     22 stability models (57 auto-derived countermodels) + 3 UI concurrency
      kernel models (7 auto-derived countermodels) covering cyclic drain, buffer
      ratchet, metastable retry collapse, GC headroom pacing, slow-consumer
      fan-out eviction, bounded projection idle eviction & side-map cleanup,
@@ -63,8 +63,10 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
      scientific two-layer CAS soundness + disjoint subdomain shard namespaces +
      active-set cache quota GC (=SM18=), structured async task abort-on-drop
      + transaction-safe DB pool lease hygiene + semaphore-bounded fan-out with
-     panic-safe correlation IDs (=SM19=), and bounded subprocess pipe capture
-     with drain-to-sink deadlock freedom & bounded single-line framing (=SM20=).
+     panic-safe correlation IDs (=SM19=), bounded subprocess pipe capture with
+     drain-to-sink deadlock freedom & bounded single-line framing (=SM20=), and
+     crash-safe atomic file persistence with unique per-writer temp staging &
+     fsync-before-rename ordering (=SM21=).
   2. *Unbounded Algebraic & LeanPoo Object Proofs (Lean 4)*:
      [[file:../../../packages/lean-models/DeterministicEngineering/Core/Stability.lean][Core/Stability.lean]]
      (Sections 1–17, 51 theorems, zero =sorry=) plus dedicated objectified
@@ -75,8 +77,10 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
      (=SM18=, 10 theorems with =ObjectContract.refine= & =LeanPoo.Proof.reuse=),
      [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/TaskAndPoolCancellation.lean][Engineering/TaskAndPoolCancellation.lean]]
      (=SM19=, 10 theorems with =ObjectContract.refine= & =LeanPoo.Proof.reuse=),
-     and [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/SubprocessPipeCapture.lean][Engineering/SubprocessPipeCapture.lean]]
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/SubprocessPipeCapture.lean][Engineering/SubprocessPipeCapture.lean]]
      (=SM20=, 11 theorems with =ObjectContract.refine= & =LeanPoo.Proof.reuse=),
+     and [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/AtomicPersistenceFsync.lean][Engineering/AtomicPersistenceFsync.lean]]
+     (=SM21=, 11 theorems with =ObjectContract.refine= & =LeanPoo.Proof.reuse=),
      proving arbitrary-cycle zero drift, ARB linear exhaustion, spike-independent
      capped pool ceilings, GC headroom cycle bounds, bounded fan-out retention,
      bounded-projection idle-eviction liveness, lag-resync/coalesced
@@ -86,9 +90,11 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
      =SM18= cryptographic ActionKey soundness, disjoint shard conflict freedom,
      and active-set cache quota bounds, =SM19= abort-on-drop orphan-zero
      conservation, zero-poison DB pool lease hygiene, semaphore fan-out cap, and
-     caller-owned correlation-ID preservation across worker panics, and =SM20=
+     caller-owned correlation-ID preservation across worker panics, =SM20=
      drain-to-sink byte conservation (`retained + discarded == produced`), peak
-     heap bounding, zero pipe deadlock, and bounded single-line framing.
+     heap bounding, zero pipe deadlock, and bounded single-line framing, and
+     =SM21= crash-consistent monotonic commit durability, disjoint `(pid, seq)`
+     temp staging, and fsync-before-rename certificate transport.
   3. *Live Runtime, PBT & Structure-Aware Fuzzing Contrasts (5 Languages + Marlin/MyGo Full-Stack)*:
      - Go 1.26.7 (via modular =devenv=): =testing/synctest= virtual-clock
        quiescence bubbles, real =runtime.ReadMemStats= sub-slice pinning &
@@ -107,7 +113,7 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
        soak, and native OLS Slope Oracle.
      - TypeScript / Bun: Reusable Independent Steady-State Slope Oracle
        ([[file:../../../languages-engineering/ts/stability/aging-contrast/slope-oracle.ts][slope-oracle.ts]]),
-       live Quint =--mbt= ITF state-machine refinement across all 21 formal
+       live Quint =--mbt= ITF state-machine refinement across all 22 formal
        stability models ([[file:../../../languages-engineering/ts/stability/aging-contrast/mbt-stability-replay.test.ts][mbt-stability-replay.test.ts]],
        [[file:../../../languages-engineering/ts/stability/aging-contrast/ipc-ime-chaos-fuzz.test.ts][ipc-ime-chaos-fuzz.test.ts]],
        [[file:../../../languages-engineering/ts/stability/aging-contrast/search-index-snapshot-fuzz.test.ts][search-index-snapshot-fuzz.test.ts]],
@@ -115,18 +121,19 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
        [[file:../../../languages-engineering/ts/stability/aging-contrast/streaming-output-budget-fuzz.test.ts][streaming-output-budget-fuzz.test.ts]],
        [[file:../../../languages-engineering/ts/stability/aging-contrast/ci-cache-soundness-fuzz.test.ts][ci-cache-soundness-fuzz.test.ts]],
        [[file:../../../languages-engineering/ts/stability/aging-contrast/task-and-pool-cancellation-fuzz.test.ts][task-and-pool-cancellation-fuzz.test.ts]],
-       and [[file:../../../languages-engineering/ts/stability/aging-contrast/subprocess-pipe-capture-fuzz.test.ts][subprocess-pipe-capture-fuzz.test.ts]]),
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/subprocess-pipe-capture-fuzz.test.ts][subprocess-pipe-capture-fuzz.test.ts]],
+       and [[file:../../../languages-engineering/ts/stability/aging-contrast/atomic-persistence-fsync-fuzz.test.ts][atomic-persistence-fsync-fuzz.test.ts]]),
        500-case parametric search metamorphic fuzzing across =MR1=–=MR6= with
        3 deterministic refutations ([[file:../../../languages-engineering/ts/stability/aging-contrast/search-metamorphic-fuzz.test.ts][search-metamorphic-fuzz.test.ts]]),
-       2,250-trial structure-aware IPC/IME/chaos/snapshot/sanitization/streaming/CI-CAS/task-pool/pipe-capture
-       fuzzing (250 trials each across =SM12=–=SM20= + 54 live Quint ITF MBT
+       2,500-trial structure-aware IPC/IME/chaos/snapshot/sanitization/streaming/CI-CAS/task-pool/pipe-capture/atomic-persistence
+       fuzzing (250 trials each across =SM12=–=SM21= + 60 live Quint ITF MBT
        traces), live self-auditing CI workflow/CAS tests, and the 4-layer Marlin
        + MyGo + WebView UI soak suite
        ([[file:../../../languages-engineering/ts/stability/aging-contrast/marlin-mygo-fullstack-soak.test.ts][marlin-mygo-fullstack-soak.test.ts]]).
-  4. *102-Case Multi-Language Aging, Search/IME/Sanitization, IPC/Chaos, Snapshot, Streaming, Cancellation & Pipe-Capture AST Auditor (=SA01=–=SA102=)*:
+  4. *108-Case Multi-Language Aging, Search/IME/Sanitization, IPC/Chaos, Snapshot, Streaming, Cancellation, Pipe-Capture & Atomic-Persistence AST Auditor (=SA01=–=SA108=)*:
      [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-ast-auditor.ts][aging-ast-auditor.ts]]
      & [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-benchmark.test.ts][aging-benchmark.test.ts]]
-     (=tp=58, tn=44, fp=0, fn=0=), empirically calibrated to **0 findings** across
+     (=tp=61, tn=47, fp=0, fn=0=), empirically calibrated to **0 findings** across
      full sweeps of **all 269 tracked non-test Go+TS source files in =marlin-mygo=**
      and **222/222 production Rust source files across 9 =marlin-agent-core= crates
      (=tui,search-engine,tooling,app-server,stream,gerbil-scheme,hooks,runtime,storage/turso=)**
@@ -135,11 +142,11 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
      [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-governance-harness.ts][aging-governance-harness.ts]],
      [[file:../../../languages-engineering/ts/stability/aging-contrast/agent-stability-audit.ts][agent-stability-audit.ts]]
      (=just audit-agent-stability=), emitting SARIF 2.1.0 and structured C2
-     aging repair packets across =SM2=–=SM5=, =SM7=–=SM9=, and =SM12=–=SM20=,
+     aging repair packets across =SM2=–=SM5=, =SM7=–=SM9=, and =SM12=–=SM21=,
      validated against 3 AI agent personas plus a full-stack Marlin/MyGo C2
      convergence scenario.
 
-* One-Hundred-Two-Case Static Aging, Search/IME, IPC, Snapshot, Sanitization, Streaming, Cancellation & Pipe-Capture Cohort (=SA01=–=SA102=)
+* One-Hundred-Eight-Case Static Aging, Search/IME, IPC, Snapshot, Sanitization, Streaming, Cancellation, Pipe-Capture & Atomic-Persistence Cohort (=SA01=–=SA108=)
 :PROPERTIES:
 :CUSTOM_ID: bench3006-cohort
 :END:
@@ -248,6 +255,12 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
 | =SA100= | Rust | Clean control | Pass (0 findings) | =child.wait_with_bounded_output(max_bytes)= retaining <= =max_bytes= while draining excess pipe bytes to sink until EOF |
 | =SA101= | Rust | Clean control | Pass (0 findings) | =BufReader::new(stdout).take(MAX_ASP_BOOT_LINE_BYTES + 1).read_line(&mut line)= rejecting oversize delimiter-free frames |
 | =SA102= | Go | Clean control | Pass (0 findings) | =io.Copy(&buf, io.LimitReader(stdout, maxBytes))= paired with =io.Copy(io.Discard, stdout)= drain-to-sink before =cmd.Wait()= |
+| =SA103= | Rust | =SM21= | Refuse (=rust-atomic-write-shared-tmp-or-no-fsync=) | =fs::write(&tmp, bytes)+fs::rename(&tmp, path)= using colliding =*.tmp= path or missing =sync_all()= (=task_actor.rs= / =release_status.rs= pattern) |
+| =SA104= | Go | =SM21= | Refuse (=go-atomic-write-shared-tmp-or-no-fsync=) | =os.WriteFile(path + ".tmp", ...)+os.Rename= using colliding =.tmp= path without =os.CreateTemp= and =Sync()= (=vault.go= / =package_store.go= / =keychain_windows.go= pattern) |
+| =SA105= | Go | =SM21= | Refuse (=go-state-file-non-atomic-overwrite=) | =SaveLayoutSpecFile= overwriting live state file directly in-place via =os.WriteFile(path, raw, ...)= (=layout_projection.go= pattern) |
+| =SA106= | Rust | Clean control | Pass (0 findings) | Unique =create_new(true)= temp file (PID+atomic seq) + =write_all= + =sync_all()= + atomic =rename= + error cleanup |
+| =SA107= | Go | Clean control | Pass (0 findings) | =os.CreateTemp= + =Write= + =Sync()= + =Close()= + =os.Rename= + deferred cleanup |
+| =SA108= | Go | Clean control | Pass (0 findings) | =SaveLayoutSpecFile= delegating to durable =writeFileAtomicallyDurable= |
 
 * Empirical Adversarial Challenge Receipts on Downstream Packages
 :PROPERTIES:
@@ -281,15 +294,16 @@ package-domain adversarial test suites:
 | =marlin-agent-core= | =crates/marlin-agent-stream/tests/unit/stream_budget_stability.rs= | =SM17= | Live RED (0/4 failed, 2.01s): =WeaverModelGateway::complete= over SSE ignored =stream_output_limit= on both =Text= and hidden =Thinking= floods (96B Anthropic thinking bypassed 32B cap); =OpenAiCompatibleHttpClient::complete_text= buffered all 25,165,824 bytes (24 MiB) via =resp.bytes().await= before checking 4 MiB limit and stalled 2.002s on declared 100 MiB =Content-Length= | Hardened =gateway.rs= + =streaming.rs= (shared =check_stream_output_budget= across =stream()= and =complete()= SSE/Auto for both =Text= & =Thinking= + typed =stream_event_error=) and =openai_http.rs= (=content_length()= fail-fast + incremental =resp.chunk().await= pre-allocation 4 MiB gate): =marlin-agent-stream --lib= **2/2 PASS**, =--test unit_test stream= **20/20 PASS (0.01s)**, =clippy --no-deps -D warnings= clean, **157/157 core Rust files & 272/272 =marlin-mygo= files = 0 findings (=SA01=–=SA90=)** |
 | =deterministic-engineering= | =.github/workflows/*.yml=, =packages/quint-modules-resolver/src/mbt.ts=, =t/harness/verify-framework.ts=, =ci-cache-soundness-fuzz.test.ts= | =SM18= | Cold unsharded CI baseline: 5 workflows had 0 dependency/toolchain/Playwright/Lake/CAS caching (=setup-go cache:false=, ~170 MB Playwright + ~350 MB Lean cold download every push), =conformance.test.ts= duplicated the entire 95-model uncached fleet (=206s= on =Quint Packages=, =233s= on =Render=) | Implemented zero-hardcoding dynamic subdomain matrix (=just verify-matrix quint= -> 5 disjoint shards covering 98/98 models; =stability= -> 2 shards), shared =setup-bun-cached=, SHA-pinned =actions/cache= & =setup-go=, two-layer shard-disjoint SHA-256 CAS with hermetic engine/transitive-dep hashing + active-set GC + dedicated =LeanPoo= modules (=Engineering/{StreamingOutputBudget,CiCacheSoundness,TaskAndPoolCancellation,SubprocessPipeCapture}.lean=): live 10-model shard dropped **12,760 ms cold -> 8 ms warm CAS (1,595× speedup)**, live GitHub Actions =c4fd808= cold -> =4ecf377= warm **5/5 upgraded workflows 100% green**: =Quint Packages= **570s v1 -> 256s v2 -> 132s cold -> 60s warm (9.5×)** (=concurrency= 27 models incl. new SM19: **106s -> 28s**, =defense= 30 models: **95s -> 21s**), =Render= **Ubuntu 218s -> 35s (6.2×), macOS 266s -> 21s (12.7×)**, =Multi-Method= **Lean 4/LeanPoo 102s -> 33s, C/CBMC 46s -> 20s (wall 47s)**, =Stability Native= **60s -> 22s**, =Defense= **56s -> 44s**, =ci-cache-soundness-fuzz.test.ts= **4/4 PASS (36,805 expects)** |
 | =marlin-agent-core= | =crates/marlin-agent-hooks/tests/unit/hooks/cancellation_stability.rs=, =crates/marlin-agent-runtime/tests/unit/runtime/effect_pump.rs=, =crates/marlin-agent-storage/src/turso_backend.rs= (=sm19_pool_tests=) | =SM19= | Live RED across 3 production crates: cancelling =HookDispatcher::dispatch= detached orphan async hook tasks (even naive =AbortOnDropHandle::join= with =self.0.take().await= detached mid-await!); =execute_atomic_effect_batch= spiked unbounded =JoinSet= fan-out to **48 concurrent workers** (limit=16) and fabricated =effect-7= losing caller ID ="sha256:panic-target-7"= on worker panic; =TursoConnectionPool= used =mpsc::unbounded_channel= and =TursoConnectionLease::drop= returned dirty in-transaction connections unconditionally | Hardened =dispatcher.rs= (cancel-safe =AbortOnDropHandle= awaiting =&mut handle= before disarming), =effect_pump.rs= (=MAX_CONCURRENT_ATOMIC_EFFECTS=16= =Arc<Semaphore>= + caller-owned =caller_ids=), and =turso_backend.rs=/=turso_operations.rs= (bounded =mpsc::channel(lanes)= + =tx_active= dirty-drop discard & clean lane replenishment): =marlin-agent-hooks --test unit_test= **24/24 PASS (0.16s)**, =marlin-agent-runtime effect_pump= **2/2 PASS (0.09s)**, =marlin-agent-storage --features turso sm19_pool_tests= **1/1 PASS (0.03s)**, =clippy --no-deps -D warnings= clean across all 3 crates, **222/222 production Rust files across 9 crates & 269/269 =marlin-mygo= files = 0 findings (=SA01=–=SA96=)** |
-| =marlin-agent-core= | =crates/marlin-agent-app-server/src/atomic_effect_substrate.rs=, =crates/marlin-agent-runtime/src/process/managed.rs=, =crates/marlin-agent-tui/src/app/asp_supervisor.rs= | =SM20= | Live RED across 3 production crates: =BoundedTokioSandboxRunner= (=max_output_bytes=4096=) buffered an entire 2 MiB subprocess flood via unbounded =read_to_end(&mut bytes)= spiking =stdout.capacity()= to **4,194,304 bytes (1,024× cap!)** before post-hoc =stdout.truncate(4096)=; =spawn_managed_asp_gateway= accepted a 256 KiB single-line boot frame via unbounded =BufReader::read_line()= | Hardened =managed.rs= (=read_pipe_bounded_drain= with 8 KiB stack scratch drain-to-sink + =wait_with_bounded_output= + =DEFAULT_MAX_CAPTURED_PIPE_BYTES=16MiB=), =atomic_effect_substrate.rs= (=wait_with_bounded_output(max_bytes)=), and =asp_supervisor.rs= (=read_bounded_boot_line= with =MAX_ASP_BOOT_LINE_BYTES=64KiB=): =marlin-agent-app-server --features grpc atomic_effect_substrate= **ALL PASS** (2 MiB flood exits cleanly with =stdout.capacity() <= 8192= & zero pipe deadlock), =marlin-agent-tui asp_supervisor::stability_tests= **4/4 PASS (1.02s)** (256 KiB boot frame rejected & child reaped), =clippy --no-deps -D warnings= clean, **222/222 production Rust files across 9 crates & 269/269 =marlin-mygo= files = 0 findings (=SA01=–=SA102=)** |
+| =marlin-agent-core= | =crates/marlin-agent-app-server/src/atomic_effect_substrate.rs=, =crates/marlin-agent-runtime/src/process/managed.rs=, =crates/marlin-agent-tui/src/app/asp_supervisor.rs= | =SM20= | Live RED across 3 production crates: =BoundedTokioSandboxRunner= (=max_output_bytes=4096=) buffered an entire 2 MiB subprocess flood via unbounded =read_to_end(&mut bytes)= spiking =stdout.capacity()= to **4,194,304 bytes (1,024× cap!)** before post-hoc =stdout.truncate(4096)=; =spawn_managed_asp_gateway= accepted a 256 KiB single-line boot frame via unbounded =BufReader::read_line()= | Hardened =managed.rs= (=read_pipe_bounded_drain= with 8 KiB stack scratch drain-to-sink + =wait_with_bounded_output= + =DEFAULT_MAX_CAPTURED_PIPE_BYTES=16MiB=), =atomic_effect_substrate.rs= (=wait_with_bounded_output(max_bytes)=), and =asp_supervisor.rs= (=read_bounded_boot_line= with =MAX_ASP_BOOT_LINE_BYTES=64KiB=): =marlin-agent-app-server --features grpc atomic_effect_substrate= **3/3 PASS (0.08s)** (2 MiB flood exits cleanly with =stdout.capacity() <= 8192= & zero pipe deadlock), =marlin-agent-tui asp_supervisor::stability_tests= **4/4 PASS (1.02s)** (256 KiB boot frame rejected & child reaped), =clippy --no-deps -D warnings= clean, **222/222 production Rust files across 9 crates & 269/269 =marlin-mygo= files = 0 findings (=SA01=–=SA102=)** |
+| =marlin-agent-core= & =marlin-mygo= | =crates/marlin-agent-runtime/src/task_actor.rs=, =crates/marlin-agent-context/src/org/store/release_status.rs=, =crates/marlin-agent-search-engine/src/asp_http_client/patch_client.rs=, =engine/shell/atomic_persistence_stability_test.go=, =control/marketplace/atomic_persistence_stability_test.go=, =control/auth/{vault,keychain_windows}.go= | =SM21= | Live RED across BOTH Rust and Go (7 real files): =task_actor.rs::save_checkpoint_file= collided on shared =.checkpoint.tmp= crashing 7/8 concurrent writers with =ENOENT= in 0.00s; =layout_projection.go::SaveLayoutSpecFile= overwrote in-place via =os.WriteFile= causing torn JSON reads (=ErrInvalidLayoutSpec= in 0.05s); =package_store.go::writeAtomicBytes=, =vault.go=, =keychain_windows.go=, =release_status.rs=, and =patch_client.rs= collided on shared =.tmp= without =fsync= (=ENOENT= in 0.02s) | Hardened all 7 files with unique per-writer temp staging (Rust =create_new(true)= PID+atomic seq; Go =os.CreateTemp=), =sync_all()/Sync()= before atomic =rename=, parent-dir sync, and error cleanup: =marlin-agent-runtime sm21_atomic_persistence_tests= **1/1 PASS (1.76s)** (8×30 concurrent writers + live JSON reader, 0 collisions/torn/orphan temps), =marlin-agent-context= & =marlin-agent-search-engine= =clippy -D warnings= clean, =marlin-mygo= =go test -race ./engine/shell ./control/auth ./control/marketplace= **ALL PASS** + =GOOS=windows go vet ./control/auth= clean, **223/223 production Rust files across 9 core crates + release_status & 269/269 =marlin-mygo= files = 0 findings (=SA01=–=SA108=)** |
 
 * Unified Verification Command
 
 #+begin_src sh
-# Run full 5-language stability gate (Quint/MBT + Lean 4 / LeanPoo + C/CBMC + C++20 + Rust + Go devenv -race/synctest/runtime-soak + TS Slope Oracle + SA01-SA102 + Metamorphic/Structure-Aware Fuzz + Closed-Loop Governance):
+# Run full 5-language stability gate (Quint/MBT + Lean 4 / LeanPoo + C/CBMC + C++20 + Rust + Go devenv -race/synctest/runtime-soak + TS Slope Oracle + SA01-SA108 + Metamorphic/Structure-Aware Fuzz + Closed-Loop Governance):
 just check-stability
 
-# Audit current git diff or explicit files for SM2-SM5, SM7-SM9, and SM12-SM20 aging/search/cancellation/pipe hazards:
+# Audit current git diff or explicit files for SM2-SM5, SM7-SM9, and SM12-SM21 aging/search/cancellation/pipe/persistence hazards:
 just audit-agent-stability --files languages-engineering/go/stability/aging-contrast/deterministic_steady.go
 #+end_src
 

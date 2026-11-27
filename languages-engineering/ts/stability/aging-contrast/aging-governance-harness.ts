@@ -152,6 +152,14 @@ const MECHANISM_DIRECTIVES: Record<AgingMechanism, AgingRemediationDirective> = 
     antiEvasionWarning:
       'Do NOT evade by buffering full child output via wait_with_output()/read_to_end() before calling .truncate(), nor by stopping pipe reads at the cap without draining (which deadlocks the child writer).',
   },
+  'SM21-atomic-persistence-fsync': {
+    mechanism: 'SM21-atomic-persistence-fsync',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Stage persisted state into a unique per-writer temp file in the target directory (Rust create_new(true) with PID+atomic seq; Go os.CreateTemp), call sync_all()/Sync() before atomic rename, sync parent directory, and remove the staged temp file on any error.',
+    antiEvasionWarning:
+      'Do NOT evade by overwriting state files in-place via os.WriteFile/fs::write, reusing a colliding deterministic path + ".tmp", or omitting fsync before rename.',
+  },
 };
 
 export function getAgingRemediation(finding: AgingFinding): AgingRemediationDirective {

@@ -26,7 +26,8 @@ export type AgingMechanism =
   | 'SM16-search-input-sanitization'
   | 'SM17-streaming-output-budget'
   | 'SM19-task-and-pool-cancellation'
-  | 'SM20-subprocess-pipe-capture';
+  | 'SM20-subprocess-pipe-capture'
+  | 'SM21-atomic-persistence-fsync';
 
 export interface AgingFinding {
   ruleId: string;
@@ -383,6 +384,40 @@ function auditGo(clean: string): AgingFinding[] {
         language: 'go',
         line: lineOfIndex(clean, goSubprocMatch.index),
         message: 'Subprocess output is buffered unboundedly before post-hoc slice truncation; use bounded retain + io.Copy(io.Discard, ...) drain-to-sink (SM20).',
+      });
+    }
+  }
+
+  // 15. Go staged atomic write uses colliding `path + ".tmp"` or os.WriteFile without Sync() before os.Rename (SM21).
+  const goAtomicTmpMatch = /\bos\.WriteFile\s*\(\s*\w*(?:tmp|temp)\w*\s*,/i.exec(clean);
+  if (goAtomicTmpMatch) {
+    const fnScope = extractEnclosingBlock(clean, goAtomicTmpMatch.index);
+    const hasRename = /\bos\.Rename\s*\(/.test(fnScope);
+    const hasUniqueAndSync = /\bos\.CreateTemp\s*\(/.test(fnScope) && /\.Sync\s*\(\s*\)/.test(fnScope);
+    if (hasRename && !hasUniqueAndSync) {
+      findings.push({
+        ruleId: 'go-atomic-write-shared-tmp-or-no-fsync',
+        mechanism: 'SM21-atomic-persistence-fsync',
+        language: 'go',
+        line: lineOfIndex(clean, goAtomicTmpMatch.index),
+        message: 'Atomic file persistence uses os.WriteFile to a shared/un-fsynced temp path before os.Rename; use os.CreateTemp + Sync() + Close() + os.Rename() with failure cleanup (SM21).',
+      });
+    }
+  }
+
+  // 16. Go Save*File / Persist* state writer overwrites target directly via os.WriteFile without atomic rename (SM21).
+  const goSaveFnMatch = /\bfunc\s+(?:\([^)]*\)\s*)?(?:Save\w*(?:File|State|Spec|Vault|Checkpoint)|Persist\w*(?:File|State|Spec|Vault|Checkpoint))\s*\([^)]*\)/.exec(clean);
+  if (goSaveFnMatch) {
+    const fnScope = extractBraceBlock(clean, goSaveFnMatch.index);
+    const directWrite = /\bos\.WriteFile\s*\(/.exec(fnScope);
+    const hasAtomicRename = /\bos\.Rename\s*\(|\bwriteAtomic|writeFileAtomic/i.test(fnScope);
+    if (directWrite && !hasAtomicRename) {
+      findings.push({
+        ruleId: 'go-state-file-non-atomic-overwrite',
+        mechanism: 'SM21-atomic-persistence-fsync',
+        language: 'go',
+        line: lineOfIndex(clean, goSaveFnMatch.index + directWrite.index),
+        message: 'State persistence function overwrites target file in-place via os.WriteFile without unique temp staging, Sync(), and atomic os.Rename (SM21).',
       });
     }
   }
@@ -812,6 +847,24 @@ function auditRust(clean: string): AgingFinding[] {
         language: 'rust',
         line: lineOfIndex(clean, readLineMatch.index),
         message: 'Subprocess BufReader::read_line() lacks a .take(MAX_LINE_BYTES) cap; a delimiter-free runaway line exhausts heap memory (SM20).',
+      });
+    }
+  }
+
+  // 22. Rust atomic write uses fs::write(&tmp, ...) + fs::rename without unique temp name or sync_all() (SM21).
+  const rustTmpWriteMatch = /\b(?:std::)?fs::write\s*\(\s*&?\s*(?:tmp|temp)\w*\s*,/i.exec(clean);
+  if (rustTmpWriteMatch) {
+    const fnScope = extractEnclosingBlock(clean, rustTmpWriteMatch.index);
+    const hasRename = /\b(?:std::)?fs::rename\s*\(/.test(fnScope);
+    const hasSync = /\.sync_all\s*\(\s*\)|\.sync_data\s*\(\s*\)/.test(fnScope);
+    const hasUnique = /\b(?:process::id|AtomicU64|NamedTempFile|create_new\s*\(\s*true\s*\)|subsec_nanos)\b/.test(fnScope);
+    if (hasRename && (!hasSync || !hasUnique)) {
+      findings.push({
+        ruleId: 'rust-atomic-write-shared-tmp-or-no-fsync',
+        mechanism: 'SM21-atomic-persistence-fsync',
+        language: 'rust',
+        line: lineOfIndex(clean, rustTmpWriteMatch.index),
+        message: 'Atomic file persistence uses fs::write to a shared or un-fsynced temp path before fs::rename; use unique create_new(true) temp file + write_all + sync_all() + rename with error cleanup (SM21).',
       });
     }
   }

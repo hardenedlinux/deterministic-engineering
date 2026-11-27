@@ -1564,10 +1564,115 @@ func runBoundedSafe(cmd *exec.Cmd, maxBytes int64) ([]byte, error) {
   return buf.Bytes(), cmd.Wait()
 }`,
   },
+  // --- SM21: Crash-safe atomic persistence, unique temp staging & fsync ordering (SA103-SA108) ---
+  {
+    id: 'SA103',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-atomic-write-shared-tmp-or-no-fsync',
+    source: `
+fn save_checkpoint_file(path: &std::path::Path, bytes: &[u8]) -> std::io::Result<()> {
+  let tmp = path.with_extension("checkpoint.tmp");
+  std::fs::write(&tmp, bytes)?;
+  std::fs::rename(&tmp, path)?;
+  Ok(())
+}`,
+  },
+  {
+    id: 'SA104',
+    language: 'go',
+    expectedPass: false,
+    expectedRuleId: 'go-atomic-write-shared-tmp-or-no-fsync',
+    source: `
+package vault
+import "os"
+func writeAtomicBytes(path string, data []byte) error {
+  tmp := path + ".tmp"
+  if err := os.WriteFile(tmp, data, 0o600); err != nil {
+    return err
+  }
+  return os.Rename(tmp, path)
+}`,
+  },
+  {
+    id: 'SA105',
+    language: 'go',
+    expectedPass: false,
+    expectedRuleId: 'go-state-file-non-atomic-overwrite',
+    source: `
+package shell
+import (
+  "os"
+  "path/filepath"
+)
+func SaveLayoutSpecFile(path string, raw []byte) error {
+  if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+    return err
+  }
+  return os.WriteFile(path, raw, 0o644)
+}`,
+  },
+  {
+    id: 'SA106',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+use std::io::Write;
+use std::sync::atomic::{AtomicU64, Ordering};
+static SEQ: AtomicU64 = AtomicU64::new(0);
+fn save_checkpoint_file_safe(path: &std::path::Path, bytes: &[u8]) -> std::io::Result<()> {
+  let seq = SEQ.fetch_add(1, Ordering::Relaxed);
+  let tmp = path.with_extension(format!("checkpoint.{}.{seq}.tmp", std::process::id()));
+  let mut f = std::fs::OpenOptions::new().write(true).create_new(true).open(&tmp)?;
+  f.write_all(bytes)?;
+  f.sync_all()?;
+  drop(f);
+  std::fs::rename(&tmp, path)?;
+  Ok(())
+}`,
+  },
+  {
+    id: 'SA107',
+    language: 'go',
+    expectedPass: true,
+    source: `
+package vault
+import (
+  "os"
+  "path/filepath"
+)
+func writeAtomicBytesSafe(path string, data []byte) error {
+  f, err := os.CreateTemp(filepath.Dir(path), ".tmp-*")
+  if err != nil { return err }
+  tmp := f.Name()
+  defer os.Remove(tmp)
+  if _, err := f.Write(data); err != nil { _ = f.Close(); return err }
+  if err := f.Sync(); err != nil { _ = f.Close(); return err }
+  if err := f.Close(); err != nil { return err }
+  return os.Rename(tmp, path)
+}`,
+  },
+  {
+    id: 'SA108',
+    language: 'go',
+    expectedPass: true,
+    source: `
+package shell
+import (
+  "os"
+  "path/filepath"
+)
+func SaveLayoutSpecFile(path string, raw []byte) error {
+  if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+    return err
+  }
+  return writeFileAtomically(path, raw, 0o644)
+}`,
+  },
 ];
 
-describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA102)', () => {
-  test('achieves 102/102 exact independent-gold match (tp=58, tn=44, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
+describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA108)', () => {
+  test('achieves 108/108 exact independent-gold match (tp=61, tn=47, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
     let tp = 0;
     let tn = 0;
     let fp = 0;
@@ -1590,7 +1695,7 @@ describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA102)', () 
       }
     }
 
-    expect({tp, tn, fp, fn}).toEqual({tp: 58, tn: 44, fp: 0, fn: 0});
+    expect({tp, tn, fp, fn}).toEqual({tp: 61, tn: 47, fp: 0, fn: 0});
   });
 
   test('clean Rust deterministic buffer pool & bounded retry passes with 0 findings', () => {

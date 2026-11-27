@@ -34,6 +34,11 @@ five formal subdomains corresponding to distinct runtime failure classes:
   Serializable Snapshot Isolation (SSI) with First-Committer-Wins, =SIREAD= lock
   retention across commits, and read-time =rw=-antidependency detection
   (=bound.extended-counterexample=).
+- *=atomic-persistence-fsync-envelope=* (=AtomicPersistenceFsyncEnvelope.qnt=):
+  models crash-safe atomic file persistence with unique per-writer temp staging,
+  =fsync=-before-rename ordering (OSDI'14 Pillai et al.), and atomic live file
+  replacement preventing torn reads, shared-=.tmp= collisions, and zero-length
+  post-crash files (=SM21=).
 
 * 2. Consensus (=engineering/consensus/=)
 
