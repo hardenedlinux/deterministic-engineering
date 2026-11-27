@@ -128,10 +128,10 @@ describe('Layered Subtree Git Hooks & Branch-Mirrored CI Sync', () => {
       expect(blockedSorry.exitCode).not.toBe(0);
       expect(blockedSorry.stderr).toContain('incomplete proof token (sorry/admit)');
 
-      // 3. Clean Lean file (even mentioning sorry in a comment) must succeed.
+      // 3. Clean Lean file (even mentioning sorry/Mathlib in line & block doc comments) must succeed.
       writeFileSync(
         badLean,
-        '-- SPDX-License-Identifier: LGPL-2.1-or-later\n-- Zero sorry and zero Mathlib comment\ntheorem t : True := trivial\n',
+        '/-!\nSPDX-License-Identifier: LGPL-2.1-or-later\nZero sorry, zero Mathlib, zero Cedar block doc comment\n-/\n-- Zero sorry line comment\ntheorem t : True := trivial\n',
       );
       expect(runCmd(['git', 'add', 'packages/lean-models/Bad.lean'], dir).exitCode).toBe(0);
       const okCommit = runCmd(['git', 'commit', '-m', 'good lean proof'], dir);

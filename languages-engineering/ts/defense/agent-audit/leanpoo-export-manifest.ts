@@ -75,7 +75,10 @@ export const LEANPOO_GEO_RESIDENCY_FACADE_MODULE =
 export const LEANPOO_FEDERATED_ORG_FACADE_MODULE =
   'DeterministicEngineering.Engineering.FederatedOrgReciprocity';
 
-export const LEANPOO_TOP_FACADE_MODULE = LEANPOO_FEDERATED_ORG_FACADE_MODULE;
+export const LEANPOO_MODEL_WEIGHT_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.ModelWeightAndInferenceAttestation';
+
+export const LEANPOO_TOP_FACADE_MODULE = LEANPOO_MODEL_WEIGHT_FACADE_MODULE;
 
 export const LEANPOO_LIBRARY_EXPORT_MANIFEST: readonly LeanPooExportModuleSpec[] = [
   {
@@ -417,6 +420,23 @@ export const LEANPOO_LIBRARY_EXPORT_MANIFEST: readonly LeanPooExportModuleSpec[]
       'disablingBilateralReciprocity_invalidates_reuse',
     ],
   },
+  {
+    moduleName: LEANPOO_MODEL_WEIGHT_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/ModelWeightAndInferenceAttestation.lean',
+    pillars: ['B21', 'ModelWeightPinning', 'ReproducibleInference'],
+    theorems: [
+      'unpinned_base_weight_refused',
+      'unauthorized_lora_adapter_refused',
+      'non_deterministic_sampling_temperature_refused',
+      'missing_seed_or_kernel_pin_refused',
+      'forged_or_revoked_model_attestation_refused',
+      'clean_zero_adapter_base_model_admitted',
+      'model_inference_attestation_sound_and_complete',
+      'modelAttestationContract_preserves_rejection',
+      'kvCacheEvictionTuning_preserves_certificate',
+      'disablingWeightRootPinning_invalidates_reuse',
+    ],
+  },
 ];
 
 export const LEANPOO_EXPECTED_MODULE_COUNT = LEANPOO_LIBRARY_EXPORT_MANIFEST.length;
@@ -562,8 +582,10 @@ export function verifyLeanPooLibraryFleet(params?: {
   }
 
   const facadeToImport = manifest.some(
-    m => m.moduleName === LEANPOO_FEDERATED_ORG_FACADE_MODULE,
+    m => m.moduleName === LEANPOO_MODEL_WEIGHT_FACADE_MODULE,
   )
+    ? LEANPOO_MODEL_WEIGHT_FACADE_MODULE
+    : manifest.some(m => m.moduleName === LEANPOO_FEDERATED_ORG_FACADE_MODULE)
     ? LEANPOO_FEDERATED_ORG_FACADE_MODULE
     : manifest.some(m => m.moduleName === LEANPOO_GEO_RESIDENCY_FACADE_MODULE)
     ? LEANPOO_GEO_RESIDENCY_FACADE_MODULE
