@@ -485,13 +485,26 @@ func TestGate(t *testing.T) {
     expect(badGoRep.findings.some(f => f.rule === 'go-test-skip')).toBe(true);
     expect(badGoRep.findings.some(f => f.rule === 'go-nolint-errcheck')).toBe(true);
 
-    // 2. Clean idiomatic Go (propagated err, narrow os.ErrNotExist, CLI os.Exit(1)) => 0 findings:
+    // 2. Clean idiomatic Go (propagated err, narrow os.ErrNotExist, CLI os.Exit(1),
+    //    anonymous void logger closure, and UI SeverityError notification) => 0 findings:
     const cleanGo = `
 package auth
-import ("errors"; "fmt"; "os")
+import ("errors"; "fmt"; "log"; "os")
 func DeleteSecret(path string) error {
   if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
     return fmt.Errorf("delete secret %s: %w", path, err)
+  }
+  logResult := func(reloadErr error) {
+    if reloadErr != nil {
+      fmt.Fprintf(os.Stderr, "reload failed: %v\\n", reloadErr)
+      return
+    }
+    fmt.Println("ok")
+  }
+  logResult(nil)
+  if err := notifyHost(); err != nil {
+    log.Printf("host failed: %v", err)
+    publishToast(SeverityError, err.Error())
   }
   return nil
 }
@@ -505,6 +518,45 @@ func main() {
     const cleanGoRep = auditSourceByPath(cleanGo, 'auth/keychain_clean.go')!;
     expect(cleanGoRep.passed).toBe(true);
     expect(cleanGoRep.findings).toEqual([]);
+
+    // 2b. Calibrated Rust Option chains, async match await, and guarded Err routing => 0 findings,
+    //     while Result serde_json::to_string().unwrap_or_default() is still caught:
+    const calibratedRust = `
+      fn pure_option_chains(m: &HashMap<String, Vec<String>>, v: &serde_json::Value, n: usize) -> (Vec<String>, usize, &str) {
+        let a = m.get("k").map(|s| s.clone()).unwrap_or_default();
+        let b = 100usize.checked_div(n).unwrap_or(0);
+        let c = v.pointer("/a/b").and_then(|x| x.as_str()).unwrap_or("");
+        (a, b, c)
+      }
+      async fn async_match(res: Result<u32, String>) -> Result<u32, String> {
+        match res {
+          Ok(v) => confirm(v).await,
+          Err(e) => Err(e),
+        }
+      }
+      fn guarded_optional_route(res: Result<u32, String>, required: bool) -> Result<(), String> {
+        match res {
+          Ok(_) => Ok(()),
+          Err(err) if required => return Err(err),
+          Err(err) => {
+            eprintln!("skipping optional route: {err}");
+            Ok(())
+          }
+        }
+      }
+    `;
+    const calibratedRustRep = auditSourceByPath(calibratedRust, 'calibrated_clean.rs')!;
+    expect(calibratedRustRep.passed).toBe(true);
+    expect(calibratedRustRep.findings).toEqual([]);
+
+    const badSerdeRust = `
+      fn render_args(v: &serde_json::Value) -> String {
+        serde_json::to_string(v).unwrap_or_default()
+      }
+    `;
+    const badSerdeRep = auditSourceByPath(badSerdeRust, 'bad_serde.rs')!;
+    expect(badSerdeRep.passed).toBe(false);
+    expect(badSerdeRep.findings.some(f => f.rule === 'rust-unwrap-or-default')).toBe(true);
 
     // 3. Upgraded Gerbil Scheme: catches (try ... (catch (_) '())) & (with-catch (lambda (e) (displayln e) 0) ...)
     const badScheme = `

@@ -184,7 +184,12 @@ function tokenizeCLike(src: string, nestedBlockComments: boolean): {code: Tok[];
     }
     if (/[0-9]/.test(ch)) {
       const start = i;
-      while (i < src.length && /[0-9a-zA-Z_.]/.test(src[i]!)) advance();
+      while (
+        i < src.length &&
+        (/[0-9a-zA-Z_]/.test(src[i]!) || (src[i] === '.' && /[0-9]/.test(src[i + 1] ?? '')))
+      ) {
+        advance();
+      }
       code.push({kind: 'num', value: src.slice(start, i), line: startLine, column: startCol});
       continue;
     }
@@ -422,10 +427,21 @@ const RUST_OPTION_ACCESSOR_METHODS = new Set([
   'as_deref',
   'as_ref',
   'as_str',
+  'as_array',
+  'as_object',
+  'as_u64',
+  'as_i64',
+  'as_bool',
   'get',
   'next',
   'first',
   'last',
+  'find',
+  'position',
+  'rposition',
+  'pointer',
+  'pop',
+  'peek',
   'cloned',
   'copied',
   'strip_prefix',
@@ -437,6 +453,10 @@ const RUST_OPTION_ACCESSOR_METHODS = new Set([
   'min',
   'saturating_sub',
   'checked_sub',
+  'checked_div',
+  'checked_add',
+  'checked_mul',
+  'checked_rem',
   'started_at_ms',
   'width',
 ]);
@@ -446,13 +466,16 @@ const RUST_FAIL_CLOSED_PREDICATE_RE =
 
 function isRustOptionAccessorChain(code: readonly Tok[], dotIdx: number): boolean {
   // Scan backwards across the receiver expression up to statement/delimiter boundary.
-  // If `.ok()` appears anywhere in the chain, a Result::Err is being collapsed into Option::None -> NOT a pure Option accessor!
-  const start = Math.max(0, dotIdx - 28);
+  // If `.ok()` appears anywhere in the chain (except `duration_since(UNIX_EPOCH)`),
+  // a Result::Err is being collapsed into Option::None -> NOT a pure Option accessor!
+  const start = Math.max(0, dotIdx - 80);
   let depthParen = 0;
   let depthBracket = 0;
+  let depthBrace = 0;
   let sawOptionAccessor = false;
   let sawDurationSinceEpoch = false;
   let sawTryPropagated = false;
+  let sawDotOk = false;
   for (let k = dotIdx - 1; k >= start; k--) {
     const tk = code[k]!;
     if (tk.value === ')') {
@@ -477,27 +500,55 @@ function isRustOptionAccessorChain(code: readonly Tok[], dotIdx: number): boolea
       }
       break;
     }
-    if (depthParen === 0 && depthBracket === 0 && (tk.value === ';' || tk.value === '{' || tk.value === '}' || tk.value === '=' || tk.value === ',')) {
+    if (tk.value === '}') {
+      depthBrace++;
+      continue;
+    }
+    if (tk.value === '{') {
+      if (depthBrace > 0) {
+        depthBrace--;
+        continue;
+      }
+      break;
+    }
+    if (
+      depthParen === 0 &&
+      depthBracket === 0 &&
+      depthBrace === 0 &&
+      (tk.value === ';' || tk.value === '=' || tk.value === ',' || tk.value === '&&' || tk.value === '||' || tk.value === '=>')
+    ) {
       break;
     }
     // `expr?.unwrap_or_default()` already propagated Err via `?` (only Option remains).
-    if (depthParen === 0 && depthBracket === 0 && tk.value === '?' && k === dotIdx - 1) {
+    if (depthParen === 0 && depthBracket === 0 && depthBrace === 0 && tk.value === '?' && k === dotIdx - 1) {
       sawTryPropagated = true;
     }
     if (tk.kind === 'ident' && tk.value === 'ok' && code[k - 1]?.value === '.' && code[k + 1]?.value === '(') {
-      return false;
+      sawDotOk = true;
     }
     if (tk.kind === 'ident' && tk.value === 'UNIX_EPOCH') {
       sawDurationSinceEpoch = true;
     }
-    if (depthParen === 0 && tk.kind === 'ident' && code[k - 1]?.value === '.' && RUST_OPTION_ACCESSOR_METHODS.has(tk.value)) {
+    if (
+      depthParen === 0 &&
+      depthBracket === 0 &&
+      depthBrace === 0 &&
+      tk.kind === 'ident' &&
+      code[k - 1]?.value === '.' &&
+      RUST_OPTION_ACCESSOR_METHODS.has(tk.value)
+    ) {
       sawOptionAccessor = true;
     }
   }
-  return sawOptionAccessor || sawDurationSinceEpoch || sawTryPropagated;
+  if (sawDurationSinceEpoch) return true;
+  if (sawDotOk) return false;
+  return sawOptionAccessor || sawTryPropagated;
 }
 
-function hasOtherErrArmInEnclosingMatch(code: readonly Tok[], errTokIdx: number): boolean {
+function inspectEnclosingMatch(
+  code: readonly Tok[],
+  errTokIdx: number,
+): {hasOtherErrArm: boolean; hasGuardedReturnErrArm: boolean; hasAwait: boolean} {
   // Walk backwards to find the opening `{` of the enclosing match body.
   let depth = 0;
   let matchOpen = -1;
@@ -512,15 +563,20 @@ function hasOtherErrArmInEnclosingMatch(code: readonly Tok[], errTokIdx: number)
       depth--;
     }
   }
-  if (matchOpen < 0) return false;
+  if (matchOpen < 0) return {hasOtherErrArm: false, hasGuardedReturnErrArm: false, hasAwait: false};
   const matchClose = findMatching(code, matchOpen, '{', '}');
-  if (matchClose <= matchOpen) return false;
+  if (matchClose <= matchOpen) return {hasOtherErrArm: false, hasGuardedReturnErrArm: false, hasAwait: false};
 
-  // Count top-level `Err(...) =>` arms directly inside this match block.
+  // Count top-level `Err(...) =>` arms directly inside this match block and check for guarded return Err / `.await`.
   let innerDepth = 0;
   let errArmCount = 0;
+  let hasGuardedReturnErrArm = false;
+  let hasAwait = false;
   for (let k = matchOpen + 1; k < matchClose; k++) {
     const v = code[k]!.value;
+    if (code[k]!.kind === 'ident' && v === 'await' && code[k - 1]?.value === '.') {
+      hasAwait = true;
+    }
     if (v === '{' || v === '(' || v === '[') {
       innerDepth++;
       continue;
@@ -533,7 +589,9 @@ function hasOtherErrArmInEnclosingMatch(code: readonly Tok[], errTokIdx: number)
       const cp = findMatching(code, k + 1, '(', ')');
       if (cp > k) {
         let arrowIdx = cp + 1;
+        let isGuarded = false;
         if (code[arrowIdx]?.value === 'if') {
+          isGuarded = true;
           let gDepth = 0;
           while (arrowIdx < matchClose) {
             const gv = code[arrowIdx]!.value;
@@ -548,11 +606,14 @@ function hasOtherErrArmInEnclosingMatch(code: readonly Tok[], errTokIdx: number)
         }
         if (code[arrowIdx]?.value === '=>') {
           errArmCount++;
+          if (isGuarded && code[arrowIdx + 1]?.value === 'return' && code[arrowIdx + 2]?.value === 'Err') {
+            hasGuardedReturnErrArm = true;
+          }
         }
       }
     }
   }
-  return errArmCount > 1;
+  return {hasOtherErrArm: errArmCount > 1, hasGuardedReturnErrArm, hasAwait};
 }
 
 export function auditRustAgentSource(sourceText: string, fileName = 'input.rs'): MultiLangAuditReport {
@@ -712,7 +773,10 @@ export function auditRustAgentSource(sourceText: string, fileName = 'input.rs'):
                 (tk.value === 'Rejected' && armBody[idx - 1]?.value === '::'),
             );
             const returnsErr = armBody.some(tk => tk.value === 'Err' || tk.value === 'panic');
-            if (logsErr && !exitsProcess && !returnsTypedFailure && (returnsOkOrDefault || !returnsErr)) {
+            const matchInfo = inspectEnclosingMatch(code, i);
+            const hasScopedErrorRouting =
+              matchInfo.hasOtherErrArm && (isSpecificErrorVariant || matchInfo.hasGuardedReturnErrArm);
+            if (logsErr && !exitsProcess && !returnsTypedFailure && !hasScopedErrorRouting && (returnsOkOrDefault || !returnsErr)) {
               add(
                 'silent-fallback',
                 'rust-err-log-and-swallow',
@@ -727,10 +791,12 @@ export function auditRustAgentSource(sourceText: string, fileName = 'input.rs'):
           rhs?.value === 'Err' &&
           code[rhsIdx + 1]?.value === '(' &&
           code[rhsIdx + 2]?.value === errVar &&
-          code[rhsIdx + 3]?.value === ')' &&
-          !hasOtherErrArmInEnclosingMatch(code, i)
+          code[rhsIdx + 3]?.value === ')'
         ) {
-          add('redundant-defensive-glue', 'rust-noop-err-rethrow', t, `Redundant Err(${errVar}) => Err(${errVar}) glue`);
+          const matchInfo = inspectEnclosingMatch(code, i);
+          if (!matchInfo.hasOtherErrArm && !matchInfo.hasAwait) {
+            add('redundant-defensive-glue', 'rust-noop-err-rethrow', t, `Redundant Err(${errVar}) => Err(${errVar}) glue`);
+          }
         }
       }
     }
@@ -838,11 +904,14 @@ function findEnclosingGoFuncReturnError(code: readonly Tok[], idx: number): {
   for (let i = 0; i < idx; i++) {
     if (code[i]!.kind !== 'ident' || code[i]!.value !== 'func') continue;
     let cursor = i + 1;
-    // Skip optional method receiver `func (r *Recv)`
+    // Skip optional method receiver `func (r *Recv) Name(...)` — only when an identifier follows `)`.
+    // Anonymous closures `func(a T, err error) {` start directly with `(` and have NO following name!
     if (code[cursor]?.value === '(') {
       const recvClose = findMatching(code, cursor, '(', ')');
       if (recvClose < 0) continue;
-      cursor = recvClose + 1;
+      if (code[recvClose + 1]?.kind === 'ident') {
+        cursor = recvClose + 1;
+      }
     }
     let fnName: string | null = null;
     if (code[cursor]?.kind === 'ident') {
@@ -937,7 +1006,16 @@ export function auditGoAgentSource(sourceText: string, fileName = 'input.go'): M
                   body[idx + 1]?.value === '.' &&
                   /^(Print|Printf|Println|Warn|Error|Fprint|Fprintf|Fprintln)/.test(body[idx + 2]?.value ?? ''),
               );
-              const propagatesErr = body.some(
+              const surfacesUiError = body.some(
+                tk =>
+                  tk.value === 'SeverityError' ||
+                  tk.value === 'SeverityWarning' ||
+                  tk.value === 'publishError' ||
+                  tk.value === 'PublishError',
+              );
+              const propagatesErr =
+                surfacesUiError ||
+                body.some(
                 (tk, idx) =>
                   tk.value === 'panic' ||
                   tk.value === 'Fatal' ||
