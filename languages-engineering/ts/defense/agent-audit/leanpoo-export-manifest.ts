@@ -60,7 +60,10 @@ export const LEANPOO_SUPPLY_CHAIN_FACADE_MODULE =
 export const LEANPOO_ENCLAVE_ATTESTATION_FACADE_MODULE =
   'DeterministicEngineering.Engineering.ConfidentialEnclaveAttestation';
 
-export const LEANPOO_TOP_FACADE_MODULE = LEANPOO_ENCLAVE_ATTESTATION_FACADE_MODULE;
+export const LEANPOO_KEY_ROTATION_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.KeyRotationAndCryptoShredding';
+
+export const LEANPOO_TOP_FACADE_MODULE = LEANPOO_KEY_ROTATION_FACADE_MODULE;
 
 export const LEANPOO_LIBRARY_EXPORT_MANIFEST: readonly LeanPooExportModuleSpec[] = [
   {
@@ -317,6 +320,23 @@ export const LEANPOO_LIBRARY_EXPORT_MANIFEST: readonly LeanPooExportModuleSpec[]
       'disablingDebugLockout_invalidates_reuse',
     ],
   },
+  {
+    moduleName: LEANPOO_KEY_ROTATION_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/KeyRotationAndCryptoShredding.lean',
+    pillars: ['B16', 'KeyRotation', 'CryptoShredding'],
+    theorems: [
+      'retired_key_epoch_cannot_encrypt_new_writes',
+      'shredded_key_epoch_permanently_unreadable',
+      'shredded_key_cannot_encrypt_or_rewrap',
+      'rewrap_must_preserve_plaintext_digest',
+      'rewrap_must_strictly_advance_epoch',
+      'aad_tenant_or_epoch_mismatch_refused',
+      'crypto_shred_preserves_merkle_root_integrity',
+      'keyRotationContract_preserves_rejection',
+      'rewrapBatchSizeTuning_preserves_certificate',
+      'disablingCryptoShredTombstone_invalidates_reuse',
+    ],
+  },
 ];
 
 export const LEANPOO_EXPECTED_MODULE_COUNT = LEANPOO_LIBRARY_EXPORT_MANIFEST.length;
@@ -460,10 +480,12 @@ export function verifyLeanPooLibraryFleet(params?: {
   }
 
   const facadeToImport = manifest.some(
-    m => m.moduleName === LEANPOO_ENCLAVE_ATTESTATION_FACADE_MODULE,
+    m => m.moduleName === LEANPOO_KEY_ROTATION_FACADE_MODULE,
   )
-    ? LEANPOO_ENCLAVE_ATTESTATION_FACADE_MODULE
-    : manifest.some(m => m.moduleName === LEANPOO_SUPPLY_CHAIN_FACADE_MODULE)
+    ? LEANPOO_KEY_ROTATION_FACADE_MODULE
+    : manifest.some(m => m.moduleName === LEANPOO_ENCLAVE_ATTESTATION_FACADE_MODULE)
+      ? LEANPOO_ENCLAVE_ATTESTATION_FACADE_MODULE
+      : manifest.some(m => m.moduleName === LEANPOO_SUPPLY_CHAIN_FACADE_MODULE)
       ? LEANPOO_SUPPLY_CHAIN_FACADE_MODULE
       : manifest.some(m => m.moduleName === LEANPOO_FEDERATED_ARBITRATION_FACADE_MODULE)
       ? LEANPOO_FEDERATED_ARBITRATION_FACADE_MODULE
