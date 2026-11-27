@@ -760,4 +760,21 @@
       (check-equal? (verify-fleet-bundle-offline bundle-dup-subject-key tp-inline
                       expected-subject-count: 2) #f)
 
+      ;; Attacks 36-37: Authenticated audit receipt summary (`inspect-fleet-bundle-verified`):
+      ;;   Returns verified `rootKeyId`, `fleetId`, `verifiedSubjects` on pass; `#f` on failure!
+      (let ((summary (inspect-fleet-bundle-verified fleet-bundle-path tp-inline
+                       expected-sysml-sha256: "sysml-sha"
+                       expected-subject-count: 1
+                       required-subjects: '("demo"))))
+        (check (hash-table? summary) => #t)
+        (check-equal? (hash-get summary "fleetId") "fleet-adv")
+        (check-equal? (hash-get summary "rootKeyId") kid2)
+        (check-equal? (hash-get summary "subjectCount") 1)
+        (let ((subs (hash-get summary "verifiedSubjects")))
+          (check-equal? (length subs) 1)
+          (check-equal? (hash-get (car subs) "subjectKey") "demo")
+          (check-equal? (hash-get (car subs) "keyId") kid1)
+          (check-equal? (hash-get (car subs) "evidenceCount") 1)))
+      (check-equal? (inspect-fleet-bundle-verified fleet-bundle-path tp-exported) #f)
+
       (run-process (list "rm" "-rf" work)))))

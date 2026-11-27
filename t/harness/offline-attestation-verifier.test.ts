@@ -30,6 +30,7 @@ import {
   canonicalReportSigningPayload,
   canonicalWitnessSigningPayload,
   exportTrustBundleOffline,
+  inspectFleetBundleVerified,
   loadTrustStoreJsonLite,
   packFleetBundleOffline,
   resolveContainedChildReportPath,
@@ -992,6 +993,17 @@ describe('Zero-Dependency TS/Bun Offline Attestation Verifier (25 Controls + Ger
     expect(docCovOk.ok).toBe(true);
     expect(docCovOk.expectedSubjectCount).toBe(1);
     expect(docCovOk.requiredSubjects).toEqual(['demo']);
+    // Control 36: Authenticated audit receipt summary emitted directly on `--json --verify-fleet-bundle` pass!
+    expect(docCovOk.fleetId).toBe('f-ok');
+    expect(docCovOk.sysmlSha256).toBe('sysmlsha');
+    expect(docCovOk.rootKeyId).toBe(k2.kid);
+    expect(docCovOk.subjectCount).toBe(1);
+    expect(docCovOk.verifiedSubjects).toEqual([
+      {subjectKey: 'demo', subjectId: 'subject.demo', keyId: k1.kid, evidenceCount: 1},
+    ]);
+    const directSummary = inspectFleetBundleVerified(fleetBundlePath, tpInlineAll);
+    expect(directSummary?.rootKeyId).toBe(k2.kid);
+    expect(directSummary?.verifiedSubjects[0]?.keyId).toBe(k1.kid);
 
     const resCovMissing = runTsCli([
       '--json',
@@ -1004,6 +1016,11 @@ describe('Zero-Dependency TS/Bun Offline Attestation Verifier (25 Controls + Ger
       tsInlineAll,
     ]);
     expect(resCovMissing.exitCode).not.toBe(0);
-    expect(JSON.parse(resCovMissing.stdout.trim()).ok).toBe(false);
+    // Control 37: Failed verification NEVER leaks `verifiedSubjects` or `rootKeyId`!
+    const docCovMissing = JSON.parse(resCovMissing.stdout.trim());
+    expect(docCovMissing.ok).toBe(false);
+    expect(docCovMissing.verifiedSubjects).toBeUndefined();
+    expect(docCovMissing.rootKeyId).toBeUndefined();
+    expect(inspectFleetBundleVerified(fleetBundlePath, tpExported)).toBeNull();
   });
 });

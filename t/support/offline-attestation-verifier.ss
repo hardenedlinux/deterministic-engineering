@@ -30,6 +30,7 @@
   verify-report-doc-offline
   verify-report-offline
   verify-fleet-offline
+  inspect-fleet-bundle-verified
   verify-fleet-bundle-offline
   verify-cache-offline
   main)
@@ -445,10 +446,9 @@
       (newline port)))
   (length subjects))
 
-;; Pure zero-disk-traversal verifier for `de.attestation.fleet-evidence-bundle.v1`.
-;; Enforces root Fleet Ed25519 signature, exact 1-to-1 bijection (blocking missing OR
-;; smuggled extra child reports), child report Ed25519 + semantic admission, and Merkle binding.
-(def (verify-fleet-bundle-offline
+;; Pure zero-disk-traversal verifier returning a cryptographically authenticated audit summary
+;; hash-table on full pass, or `#f` on any failure (never leaks unverified metadata).
+(def (inspect-fleet-bundle-verified
        bundle-path
        trust-pair
        expected-sysml-sha256: (expected-sysml-sha256 #f)
@@ -468,6 +468,7 @@
               (kid (and (hash-table? att) (hash-get att "keyId")))
               (fleet-pub (trust-store-alist-key-admitted? trusted revoked kid)))
          (and fleet-pub
+              (string? kid)
               (or (not expected-sysml-sha256)
                   (equal? (hash-get fleet-doc "sysmlSha256") expected-sysml-sha256))
               (hash-table? child-reports)
@@ -478,6 +479,8 @@
               (equal? (hash-get att "algorithm") "Ed25519")
               (let* ((expected-sha (hash-get att "payloadSha256"))
                      (sig (hash-get att "signature"))
+                     (fleet-id (or (hash-get fleet-doc "fleetId") ""))
+                     (sysml-sha (or (hash-get fleet-doc "sysmlSha256") ""))
                      (entries
                        (map (lambda (s)
                               (list (or (hash-get s "subjectKey") "")
@@ -487,11 +490,9 @@
                                     (eq? (hash-get s "admitted") #t)))
                             subjects))
                      (canonical
-                       (canonical-fleet-signing-payload
-                         (or (hash-get fleet-doc "fleetId") "")
-                         (or (hash-get fleet-doc "sysmlSha256") "")
-                         entries))
-                     (seen-rels '()))
+                       (canonical-fleet-signing-payload fleet-id sysml-sha entries))
+                     (seen-rels '())
+                     (summaries '()))
                 (and (equal? (sha256-str canonical) expected-sha)
                      (ed25519-verify-raw fleet-pub canonical sig)
                      (andmap
@@ -506,11 +507,44 @@
                              (set! seen-rels (cons rel seen-rels)))
                            (and (hash-table? cdoc)
                                 (verify-report-doc-offline cdoc trust-pair)
-                                (let ((catt (hash-get cdoc "attestation")))
+                                (let* ((catt (hash-get cdoc "attestation"))
+                                       (ckid (and (hash-table? catt) (hash-get catt "keyId")))
+                                       (cev (or (hash-get cdoc "evidence") '())))
                                   (and (hash-table? catt)
-                                       (equal? (hash-get catt "payloadSha256") expected-child-sha))))))
+                                       (string? ckid)
+                                       (equal? (hash-get catt "payloadSha256") expected-child-sha)
+                                       (begin
+                                         (set! summaries
+                                           (cons (hash ("subjectKey" (or (hash-get s "subjectKey") ""))
+                                                       ("subjectId" (or (hash-get s "subjectId") ""))
+                                                       ("keyId" ckid)
+                                                       ("evidenceCount" (if (list? cev) (length cev) 0)))
+                                                 summaries))
+                                         #t))))))
                        subjects)
-                     (= (length seen-rels) (hash-length child-reports))))))))
+                     (= (length seen-rels) (hash-length child-reports))
+                     (let ((sorted-subs
+                            (sort-by summaries
+                                     (lambda (a b)
+                                       (string<? (hash-get a "subjectKey")
+                                                 (hash-get b "subjectKey"))))))
+                       (hash ("fleetId" fleet-id)
+                             ("sysmlSha256" sysml-sha)
+                             ("rootKeyId" kid)
+                             ("subjectCount" (length sorted-subs))
+                             ("verifiedSubjects" sorted-subs)))))))))
+
+(def (verify-fleet-bundle-offline
+       bundle-path
+       trust-pair
+       expected-sysml-sha256: (expected-sysml-sha256 #f)
+       expected-subject-count: (expected-subject-count #f)
+       required-subjects: (required-subjects '()))
+  (and (inspect-fleet-bundle-verified bundle-path trust-pair
+         expected-sysml-sha256: expected-sysml-sha256
+         expected-subject-count: expected-subject-count
+         required-subjects: required-subjects)
+       #t))
 
 (def (parse-export-bundle-args rest)
   (let loop ((xs rest) (revoked '()) (pubs '()))
@@ -702,24 +736,30 @@
                 (exit 1))
               (error "offline fleet verification failed" target-path))))
          ((equal? mode "--verify-fleet-bundle")
-          (if (verify-fleet-bundle-offline target-path trust-pair
-                expected-sysml-sha256: expected-sysml-sha
-                expected-subject-count: expected-sub-cnt
-                required-subjects: req-subs)
-            (if json-mode?
-              (emit-json-result! #t "verify-fleet-bundle" target-path store-path
-                "authentic-self-contained-fleet-bundle"
-                (append
-                  (if expected-sysml-sha (list (cons "expectedSysmlSha256" expected-sysml-sha)) '())
-                  (if expected-sub-cnt (list (cons "expectedSubjectCount" expected-sub-cnt)) '())
-                  (if (pair? req-subs) (list (cons "requiredSubjects" (sort-by req-subs string<?))) '())))
-              (displayln "MULTI-METHOD-VERIFY-FLEET-BUNDLE-OK " target-path))
-            (if json-mode?
-              (begin
-                (emit-json-result! #f "verify-fleet-bundle" target-path store-path
-                  "offline fleet bundle verification failed")
-                (exit 1))
-              (error "offline fleet bundle verification failed" target-path))))
+          (let ((summary (inspect-fleet-bundle-verified target-path trust-pair
+                           expected-sysml-sha256: expected-sysml-sha
+                           expected-subject-count: expected-sub-cnt
+                           required-subjects: req-subs)))
+            (if summary
+              (if json-mode?
+                (emit-json-result! #t "verify-fleet-bundle" target-path store-path
+                  "authentic-self-contained-fleet-bundle"
+                  (append
+                    (if expected-sysml-sha (list (cons "expectedSysmlSha256" expected-sysml-sha)) '())
+                    (if expected-sub-cnt (list (cons "expectedSubjectCount" expected-sub-cnt)) '())
+                    (if (pair? req-subs) (list (cons "requiredSubjects" (sort-by req-subs string<?))) '())
+                    (list (cons "fleetId" (hash-get summary "fleetId"))
+                          (cons "sysmlSha256" (hash-get summary "sysmlSha256"))
+                          (cons "rootKeyId" (hash-get summary "rootKeyId"))
+                          (cons "subjectCount" (hash-get summary "subjectCount"))
+                          (cons "verifiedSubjects" (hash-get summary "verifiedSubjects")))))
+                (displayln "MULTI-METHOD-VERIFY-FLEET-BUNDLE-OK " target-path))
+              (if json-mode?
+                (begin
+                  (emit-json-result! #f "verify-fleet-bundle" target-path store-path
+                    "offline fleet bundle verification failed")
+                  (exit 1))
+                (error "offline fleet bundle verification failed" target-path)))))
          ((equal? mode "--verify-cache")
           (let* ((eff-now (or now-ep (inexact->exact (floor (time->seconds (current-time))))))
                  (n (verify-cache-offline target-path trust-pair

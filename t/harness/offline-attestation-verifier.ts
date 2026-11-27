@@ -659,33 +659,46 @@ export function packFleetBundleOffline(fleetReportPath: string, outPath: string)
   return fleetDoc.subjects.length;
 }
 
+export interface VerifiedSubjectSummary {
+  subjectKey: string;
+  subjectId: string;
+  keyId: string;
+  evidenceCount: number;
+}
+
+export interface VerifiedFleetBundleSummary {
+  fleetId: string;
+  sysmlSha256: string;
+  rootKeyId: string;
+  subjectCount: number;
+  verifiedSubjects: VerifiedSubjectSummary[];
+}
+
 /**
- * Pure zero-disk-traversal verifier for a self-contained single-file Fleet Evidence Bundle
- * (`de.attestation.fleet-evidence-bundle.v1`). Verifies root Fleet Ed25519 signature, exact
- * 1-to-1 bijection of embedded child reports (rejecting missing OR smuggled extra entries),
- * every child report's Ed25519 signature & semantic admission, and 2-level Merkle digest binding.
+ * Pure zero-disk-traversal verifier returning a cryptographically authenticated audit summary
+ * on full verification pass, or `null` on any failure (never leaks unverified metadata).
  */
-export function verifyFleetBundleOffline(
+export function inspectFleetBundleVerified(
   bundlePath: string,
   trustPair: TrustPair,
   optsOrSha?: string | FleetVerifyOptions,
-): boolean {
+): VerifiedFleetBundleSummary | null {
   const opts = normalizeFleetOpts(optsOrSha);
-  if (!existsSync(bundlePath)) return false;
+  if (!existsSync(bundlePath)) return null;
   const bundle = readJsonObject(bundlePath);
-  if (!bundle || bundle.schema !== FLEET_BUNDLE_SCHEMA) return false;
+  if (!bundle || bundle.schema !== FLEET_BUNDLE_SCHEMA) return null;
   const fleetDoc = bundle.fleetReport;
   const childReports = bundle.childReports;
-  if (!isPlainObject(fleetDoc) || !isPlainObject(childReports)) return false;
+  if (!isPlainObject(fleetDoc) || !isPlainObject(childReports)) return null;
   if (opts.expectedSysmlSha256 !== undefined && fleetDoc.sysmlSha256 !== opts.expectedSysmlSha256) {
-    return false;
+    return null;
   }
   const att = fleetDoc.attestation;
   const subjects = fleetDoc.subjects;
-  if (!isPlainObject(att) || !Array.isArray(subjects) || subjects.length === 0) return false;
-  if (!checkFleetSubjectCoverage(subjects, opts)) return false;
+  if (!isPlainObject(att) || !Array.isArray(subjects) || subjects.length === 0) return null;
+  if (!checkFleetSubjectCoverage(subjects, opts)) return null;
   const fleetPub = trustStoreKeyAdmitted(trustPair.trusted, trustPair.revoked, att.keyId);
-  if (!fleetPub || att.algorithm !== 'Ed25519') return false;
+  if (!fleetPub || att.algorithm !== 'Ed25519' || typeof att.keyId !== 'string') return null;
 
   const entries: Array<[string, string, string, boolean, boolean]> = subjects.map((s) => {
     const rec = isPlainObject(s) ? s : {};
@@ -697,31 +710,59 @@ export function verifyFleetBundleOffline(
       rec.admitted === true,
     ];
   });
-  const canonical = canonicalFleetSigningPayload(
-    typeof fleetDoc.fleetId === 'string' ? fleetDoc.fleetId : '',
-    typeof fleetDoc.sysmlSha256 === 'string' ? fleetDoc.sysmlSha256 : '',
-    entries,
-  );
-  if (sha256Str(canonical) !== att.payloadSha256) return false;
-  if (!ed25519VerifyRaw(fleetPub, canonical, att.signature)) return false;
+  const fleetId = typeof fleetDoc.fleetId === 'string' ? fleetDoc.fleetId : '';
+  const sysmlSha256 = typeof fleetDoc.sysmlSha256 === 'string' ? fleetDoc.sysmlSha256 : '';
+  const canonical = canonicalFleetSigningPayload(fleetId, sysmlSha256, entries);
+  if (sha256Str(canonical) !== att.payloadSha256) return null;
+  if (!ed25519VerifyRaw(fleetPub, canonical, att.signature)) return null;
 
   const embeddedKeys = Object.keys(childReports);
-  if (embeddedKeys.length !== subjects.length) return false;
+  if (embeddedKeys.length !== subjects.length) return null;
   const seenRels = new Set<string>();
+  const verifiedSubjects: VerifiedSubjectSummary[] = [];
 
   for (const s of subjects) {
-    if (!isPlainObject(s)) return false;
+    if (!isPlainObject(s)) return null;
     const rel = s.reportRelativePath;
-    if (!safeRelativeChildPath(rel) || seenRels.has(rel)) return false;
+    if (!safeRelativeChildPath(rel) || seenRels.has(rel)) return null;
     seenRels.add(rel);
-    if (!Object.prototype.hasOwnProperty.call(childReports, rel)) return false;
+    if (!Object.prototype.hasOwnProperty.call(childReports, rel)) return null;
     const childDoc = childReports[rel];
-    if (!isPlainObject(childDoc)) return false;
-    if (!verifyReportDocOffline(childDoc, trustPair)) return false;
+    if (!isPlainObject(childDoc)) return null;
+    if (!verifyReportDocOffline(childDoc, trustPair)) return null;
     const catt = isPlainObject(childDoc.attestation) ? childDoc.attestation : null;
-    if (!catt || catt.payloadSha256 !== s.reportPayloadSha256) return false;
+    if (!catt || catt.payloadSha256 !== s.reportPayloadSha256 || typeof catt.keyId !== 'string') {
+      return null;
+    }
+    const ev = Array.isArray(childDoc.evidence) ? childDoc.evidence : [];
+    verifiedSubjects.push({
+      subjectKey: typeof s.subjectKey === 'string' ? s.subjectKey : '',
+      subjectId: typeof s.subjectId === 'string' ? s.subjectId : '',
+      keyId: catt.keyId,
+      evidenceCount: ev.length,
+    });
   }
-  return seenRels.size === embeddedKeys.length;
+  if (seenRels.size !== embeddedKeys.length) return null;
+  verifiedSubjects.sort((a, b) => codePointCompare(a.subjectKey, b.subjectKey));
+  return {
+    fleetId,
+    sysmlSha256,
+    rootKeyId: att.keyId,
+    subjectCount: verifiedSubjects.length,
+    verifiedSubjects,
+  };
+}
+
+/**
+ * Pure zero-disk-traversal verifier for a self-contained single-file Fleet Evidence Bundle
+ * (`de.attestation.fleet-evidence-bundle.v1`).
+ */
+export function verifyFleetBundleOffline(
+  bundlePath: string,
+  trustPair: TrustPair,
+  optsOrSha?: string | FleetVerifyOptions,
+): boolean {
+  return inspectFleetBundleVerified(bundlePath, trustPair, optsOrSha) !== null;
 }
 
 // ── 3. Standalone CLI Entrypoint ──
@@ -1030,7 +1071,8 @@ export function runCli(argv: string[]): number {
   }
 
   if (mode === '--verify-fleet-bundle') {
-    if (verifyFleetBundleOffline(targetPath, trustPair, fleetOpts)) {
+    const summary = inspectFleetBundleVerified(targetPath, trustPair, fleetOpts);
+    if (summary !== null) {
       if (jsonMode) {
         emitJsonResult(
           true,
@@ -1038,7 +1080,14 @@ export function runCli(argv: string[]): number {
           targetPath,
           storePath,
           'authentic-self-contained-fleet-bundle',
-          fleetJsonExtra(),
+          {
+            ...fleetJsonExtra(),
+            fleetId: summary.fleetId,
+            sysmlSha256: summary.sysmlSha256,
+            rootKeyId: summary.rootKeyId,
+            subjectCount: summary.subjectCount,
+            verifiedSubjects: summary.verifiedSubjects,
+          },
         );
       } else {
         process.stdout.write(`MULTI-METHOD-VERIFY-FLEET-BUNDLE-OK ${targetPath}\n`);

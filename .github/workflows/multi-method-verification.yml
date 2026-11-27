@@ -148,7 +148,7 @@ jobs:
         run: just check-lean --cache=.data/ci-cache/lean
 
   airgapped-offline-verifier-adversarial:
-    name: Zero-Dep Portable Offline Attestation Verifier (35 Adversarial & Gerbil<->TS Interop Controls)
+    name: Zero-Dep Portable Offline Attestation Verifier (37 Adversarial & Gerbil<->TS Interop Controls)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -157,5 +157,5 @@ jobs:
       - uses: ./.github/actions/setup-bun-cached
         with:
           install: 'false'
-      - name: Run 35-control adversarial & Gerbil<->TS golden-vector offline verifier gate
+      - name: Run 37-control adversarial & Gerbil<->TS golden-vector offline verifier gate
         run: just check-offline-verifier

@@ -240,7 +240,7 @@ pack-multi-method-fleet-bundle fleet_report out:
 verify-multi-method-fleet-bundle fleet_bundle trust_store *flags:
     t/harness/run-gxtest.sh script none t/support/offline-attestation-verifier.ss {{flags}} --verify-fleet-bundle "{{fleet_bundle}}" "{{trust_store}}"
 
-# Portable zero-dependency (<100ms, zero Gerbil, zero OpenSSL) Bun/TS offline attestation CLI & 35-control gate.
+# Portable zero-dependency (<100ms, zero Gerbil, zero OpenSSL) Bun/TS offline attestation CLI & 37-control gate.
 verify-multi-method-fast *args:
     bun t/harness/offline-attestation-verifier.ts {{args}}
 

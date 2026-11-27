@@ -45,7 +45,7 @@
 
 (def verification-flow-sysml-compiler-and-lease-fencing-test
   (test-suite "Zero-glue SysML v2 -> Fun-Flow DAG compiler and 3rd subject lease-fencing-token"
-    (yuanxu-test-case/with MultiSubjectCompileBudget "live SysML v2 compiles all 7 subjects (17 engines) into valid Fun-Flow DAGs and manifests with zero Scheme glue"
+    (yuanxu-test-case/with MultiSubjectCompileBudget "live SysML v2 compiles all 8 subjects (19 engines) into valid Fun-Flow DAGs and manifests with zero Scheme glue"
       (def sysml-path
         (path-expand
           "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml"
@@ -53,7 +53,7 @@
       (def json-text (run-process (list "sysml" "-convert" "api-json" sysml-path)))
       (def parsed (call-with-input-string json-text (cut read-json <> object-as-hash: #t)))
       (def projected (sysml-api-json->governance-facts parsed))
-      (check-equal? (length (.get projected subject-specs)) 7)
+      (check-equal? (length (.get projected subject-specs)) 8)
       (for-each
         (lambda (spec-expect)
           (def skey (car spec-expect))
@@ -77,8 +77,9 @@
           (c-boundary-conservation 2)
           (meta-governance-soundness 1)
           (delegated-agent-authz 2)
-          (stepup-attestation-and-host-effect-confinement 2)))
-      ;; Verify static change-impact slicing isolates ONLY the 7th Threat subject for SM30 Quint edits!
+          (stepup-attestation-and-host-effect-confinement 2)
+          (sandbox-symlink-archive-confinement 2)))
+      ;; Verify static change-impact slicing isolates ONLY the 7th & 8th Threat subjects cleanly!
       (let* ((impact
               (changed-files->affected-frontier
                 projected
@@ -86,7 +87,15 @@
              (affected (filter (lambda (s) (pair? (.get s affected-steps))) impact)))
         (check-equal? (map (lambda (s) (.get s subject-key)) affected)
                       '(stepup-attestation-and-host-effect-confinement))
-        (check-equal? (.get (car affected) affected-steps) '("sm30QuintTarget"))))
+        (check-equal? (.get (car affected) affected-steps) '("sm30QuintTarget")))
+      (let* ((impact2
+              (changed-files->affected-frontier
+                projected
+                '("packages/quint-models/threat/execution/sandbox-symlink-archive-confinement/SandboxSymlinkArchiveConfinement.qnt")))
+             (affected2 (filter (lambda (s) (pair? (.get s affected-steps))) impact2)))
+        (check-equal? (map (lambda (s) (.get s subject-key)) affected2)
+                      '(sandbox-symlink-archive-confinement))
+        (check-equal? (.get (car affected2) affected-steps) '("sm22QuintTarget"))))
 
     (yuanxu-test-case/with MultiSubjectCompileBudget "live 2-engine Fun-Flow run on SysML-compiled lease-fencing-token passes Apalache+MBT, LeanPoo Core.Order+Transport, Replay, ER01-ER04, and Cold->Warm cache reuse"
       (def tmp-parent (path-expand ".data/test-runs" repo-root))

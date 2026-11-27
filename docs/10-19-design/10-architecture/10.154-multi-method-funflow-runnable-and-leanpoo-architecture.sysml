@@ -621,6 +621,37 @@ package MultiMethodFunFlowArchitecture {
                 attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean,packages/lean-models/DeterministicEngineering/Engineering/StepUpAttestationAndHostEffectConfinement.lean";
             }
         }
+
+        // Eighth Zero-Glue Subject (Third Threat-Domain Subject: SM22 ADV-L4 Sandbox Symlink & Archive Confinement)
+        part sandboxSymlinkArchiveConfinement {
+            attribute subjectKey : String = "sandbox-symlink-archive-confinement";
+            attribute identity : String = "threat.execution.sandbox-symlink-archive-confinement";
+            attribute tags : String = "threat,execution,sandbox-confinement,defense.mutability.immutable-proof,hazard.symlink-archive-escape";
+            attribute factors : String = "sandbox-symlink-and-archive-confinement";
+
+            part sm22QuintTarget {
+                attribute modelId : String = "threat.execution.sandbox-symlink-archive-confinement";
+                attribute quintFile : String = "packages/quint-models/threat/execution/sandbox-symlink-archive-confinement/SandboxSymlinkArchiveConfinement.qnt";
+                attribute quintMain : String = "execution_sandbox_symlink_archive_confinement";
+                attribute itfSubdir : String = "sandbox-symlink-archive-confinement";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "reject-symlink-escape,confine-entry-path-to-root,reject-duplicate-and-alias-entries,enforce-cumulative-decompressed-cap";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/execution/sandbox-symlink-archive-confinement/SandboxSymlinkArchiveConfinement.qnt,packages/quint-models/threat/execution/sandbox-symlink-archive-confinement/objects.ss,packages/quint-models/threat/execution/sandbox-symlink-archive-confinement/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part sm22LeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.SandboxSymlinkArchiveConfinement";
+                attribute refinesCore : String = "DeterministicEngineering.Core.Conservation,DeterministicEngineering.Core.Containment";
+                attribute transportContract : String = "ObjectContract.refine+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Engineering.SandboxSymlinkArchiveConfinement.sm22_gentle_pressure_rejected,DeterministicEngineering.Engineering.SandboxSymlinkArchiveConfinement.sm22_medium_high_and_hostile_admitted,DeterministicEngineering.Engineering.SandboxSymlinkArchiveConfinement.sm22_hostile_confinement_safety,DeterministicEngineering.Engineering.SandboxSymlinkArchiveConfinement.sm22_cumulative_decompressed_budget,DeterministicEngineering.Engineering.SandboxSymlinkArchiveConfinement.sm22_per_entry_check_defeated_by_two_entry_bomb,DeterministicEngineering.Engineering.SandboxSymlinkArchiveConfinement.marlinAdversarialConfinement_preserves_rejection,DeterministicEngineering.Engineering.SandboxSymlinkArchiveConfinement.marlinAdversarialConfinement_accepts_iff,DeterministicEngineering.Engineering.SandboxSymlinkArchiveConfinement.baselineAdversarialConfinementCertified,DeterministicEngineering.Engineering.SandboxSymlinkArchiveConfinement.confinementUntouchedByBundleCapTuning,DeterministicEngineering.Engineering.SandboxSymlinkArchiveConfinement.confinement_transported_across_bundle_cap_tuning,DeterministicEngineering.Engineering.SandboxSymlinkArchiveConfinement.bundleCapTunedConfinementCertified,DeterministicEngineering.Engineering.SandboxSymlinkArchiveConfinement.downgradeToGentle_invalidates_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Conservation.lean,packages/lean-models/DeterministicEngineering/Core/Containment.lean,packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean";
+            }
+        }
     }
 
     // ── 12. Architectural, Cross-Method, and Requirement Dependencies ──
@@ -664,6 +695,11 @@ package MultiMethodFunFlowArchitecture {
 
     dependency 'sm30-quint-source' from system::stepupAttestationHostConfinement::sm30QuintTarget to system::quintModels;
     dependency 'sm30-lean-source' from system::stepupAttestationHostConfinement::sm30LeanPooTarget to system::leanModels;
+
+    dependency 'sm22-quint-source' from system::sandboxSymlinkArchiveConfinement::sm22QuintTarget to system::quintModels;
+    dependency 'sm22-lean-source' from system::sandboxSymlinkArchiveConfinement::sm22LeanPooTarget to system::leanModels;
+    dependency 'sm22-lean-refines-conservation' from system::sandboxSymlinkArchiveConfinement::sm22LeanPooTarget to system::leanModels::core::conservation;
+    dependency 'sm22-lean-refines-containment' from system::sandboxSymlinkArchiveConfinement::sm22LeanPooTarget to system::leanModels::core::containment;
 
     // Cross-method edges enforced by MR03 & MR04 (zero model duplication)
     dependency 'pt-mbt-itf-edge' from system::processTreeReclamation::rustOracleTarget::traceIn to system::processTreeReclamation::quintTarget::traceOut;
