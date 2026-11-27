@@ -33,7 +33,8 @@ export type AgingMechanism =
   | 'SM24-adversarial-env-scrub-auth-timing'
   | 'SM25-single-owner-graph-governance'
   | 'SM26-control-plane-auth-governance'
-  | 'SM27-policy-gate-blindspot-confinement';
+  | 'SM27-policy-gate-blindspot-confinement'
+  | 'SM28-plugin-grant-rollback-lease';
 
 export interface AgingFinding {
   ruleId: string;
@@ -1224,18 +1225,24 @@ function auditRust(clean: string): AgingFinding[] {
     }
   }
 
-  // 34. Rust ASP policy gate downgraded via `advice = allow` / `mode = off` or `#[ignore]` on enforce_asp_rust (ADV-L4, SM27).
+  // 34. Rust ASP policy gate downgraded via unexplained `advice = allow` / `mode = allow|off` or `#[ignore]` on enforce_asp_rust (ADV-L4, SM27).
   const aspGateDowngradeMatch =
     /\basp_rust_cargo_test_gate!\s*\([^)]*(?:\badvice\s*=\s*allow\b|\bmode\s*=\s*(?:allow|off)\b)/.exec(clean) ||
     /#\[ignore[^\]]*\]\s*(?:pub\s+)?(?:async\s+)?fn\s+enforce_asp_rust/.exec(clean);
   if (aspGateDowngradeMatch) {
-    findings.push({
-      ruleId: 'rust-policy-gate-downgraded-or-ignored',
-      mechanism: 'SM27-policy-gate-blindspot-confinement',
-      language: 'rust',
-      line: lineOfIndex(clean, aspGateDowngradeMatch.index),
-      message: 'ASP Rust policy gate is downgraded (`advice = allow` / `mode = allow`) or disabled via `#[ignore]`, blinding architectural enforcement (ADV-L4, SM27).',
-    });
+    const gateSnippet = clean.slice(aspGateDowngradeMatch.index, aspGateDowngradeMatch.index + 420);
+    const isAuditableInfoOnly =
+      /\bwith_cargo_test_advice_allow_explanation\s*\(/.test(gateSnippet) &&
+      !/\bmode\s*=\s*(?:warn|allow|off)\b/.test(gateSnippet);
+    if (!isAuditableInfoOnly) {
+      findings.push({
+        ruleId: 'rust-policy-gate-downgraded-or-ignored',
+        mechanism: 'SM27-policy-gate-blindspot-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, aspGateDowngradeMatch.index),
+        message: 'ASP Rust policy gate is downgraded (`advice = allow` / `mode = allow`) or disabled via `#[ignore]`, blinding architectural enforcement (ADV-L4, SM27).',
+      });
+    }
   }
 
   // 35. Rust binary entrypoint (`fn main`) carries fat server/control-plane implementation (>= 8 helper fns) instead of delegating to an owned library module (ADV-L4, SM27).
@@ -1266,6 +1273,137 @@ function auditRust(clean: string): AgingFinding[] {
       line: lineOfIndex(clean, maskedPolicyMatch.index),
       message: 'Workspace policy gate invocation masks errors or cycle panics via catch_unwind / `let _ =` instead of failing closed (ADV-L4, SM27).',
     });
+  }
+
+  // 37. Rust PanelPluginHost::enable_panel ignores stored capability grants or set_project_grants omits revocation closure (ADV-L4, SM28).
+  const enablePanelMatch = /\bfn\s+enable_panel\s*\([^)]*\)/.exec(clean);
+  if (enablePanelMatch && /\bgrants\b/.test(clean)) {
+    const fnBody = extractBraceBlock(clean, enablePanelMatch.index);
+    const checksGrants = /\b(?:self\.grants|granted_caps|MissingCapability|ensure_required_capabilities|required_capabilities)\b/.test(fnBody);
+    if (!checksGrants) {
+      findings.push({
+        ruleId: 'rust-panel-enable-ignores-grants',
+        mechanism: 'SM28-plugin-grant-rollback-lease',
+        language: 'rust',
+        line: lineOfIndex(clean, enablePanelMatch.index),
+        message: 'PanelPluginHost::enable_panel activates panel contribution without enforcing required capability grants from self.grants (decorative grant bypass, ADV-L4, SM28).',
+      });
+    }
+  }
+  const setGrantsMatch = /\bfn\s+set_project_grants\s*\([^)]*\)/.exec(clean);
+  if (setGrantsMatch && !findings.some((f) => f.ruleId === 'rust-panel-enable-ignores-grants')) {
+    const fnBody = extractBraceBlock(clean, setGrantsMatch.index);
+    const insertsGrants = /\bself\.grants\.insert\s*\(/.test(fnBody);
+    const validatesAndCloses =
+      /\b(?:has_capability|capabilities\s*\(\s*\)|InvalidDeclaration)\b/.test(fnBody) &&
+      /\b(?:active_by_key|activations|close_revoked\w*|revoke_active\w*|closed\s*=\s*true)\b/.test(fnBody);
+    if (insertsGrants && !validatesAndCloses) {
+      findings.push({
+        ruleId: 'rust-panel-enable-ignores-grants',
+        mechanism: 'SM28-plugin-grant-rollback-lease',
+        language: 'rust',
+        line: lineOfIndex(clean, setGrantsMatch.index),
+        message: 'PanelPluginHost::set_project_grants stores capability grants without validating declared capabilities and atomically closing active generations on revocation (ADV-L4, SM28).',
+      });
+    }
+  }
+
+  // 38. Rust PanelPluginHost::install blindly overwrites installed releases without anti-rollback & publisher continuity (ADV-L4, SM28).
+  const panelInstallMatch = /\bfn\s+install\s*\([^)]*SignedPanelRelease/.exec(clean);
+  if (panelInstallMatch) {
+    const fnBody = extractBraceBlock(clean, panelInstallMatch.index);
+    const overwritesRelease = /\bself\.releases\.insert\s*\(/.test(fnBody);
+    const guardsRollbackAndPublisher =
+      /\b(?:version\s*\(\s*\)|ConflictingRelease)\b/.test(fnBody) &&
+      /\b(?:publisher|attestation\s*\(\s*\))\b/.test(fnBody);
+    if (overwritesRelease && !guardsRollbackAndPublisher) {
+      findings.push({
+        ruleId: 'rust-panel-install-blind-overwrite-no-antirollback',
+        mechanism: 'SM28-plugin-grant-rollback-lease',
+        language: 'rust',
+        line: lineOfIndex(clean, panelInstallMatch.index),
+        message: 'PanelPluginHost::install blindly overwrites self.releases without checking monotonic version anti-rollback and publisher continuity (ADV-L4, SM28).',
+      });
+    }
+  }
+
+  // 39. Rust UnifiedPanelManifest::validate omits entry_path confinement check while PanelDescriptor defines entry_path (ADV-L4, SM28).
+  const unifiedManifestValidateMatch = /\bimpl\s+UnifiedPanelManifest\b[\s\S]{0,120}\bfn\s+validate\s*\(\s*&self\s*\)/.exec(clean);
+  if (unifiedManifestValidateMatch && /\bentry_path\b/.test(clean)) {
+    const fnBody = extractBraceBlock(clean, unifiedManifestValidateMatch.index + unifiedManifestValidateMatch[0].length - 1);
+    const validatesEntryPath = /\b(?:entry_path|validate_confined_entry_path|is_confined_entry_path)\b/.test(fnBody);
+    if (!validatesEntryPath) {
+      findings.push({
+        ruleId: 'rust-panel-manifest-unvalidated-entry-path',
+        mechanism: 'SM28-plugin-grant-rollback-lease',
+        language: 'rust',
+        line: lineOfIndex(clean, unifiedManifestValidateMatch.index),
+        message: 'UnifiedPanelManifest::validate omits entry_path traversal/absolute-path confinement validation, admitting signed traversal paths like ../../etc/passwd (ADV-L4, SM28).',
+      });
+    }
+  }
+
+  // 40. Rust device bridge accepts forged lease_id in update_device_capabilities or omits E-Stop gate on ApprovalGateService / open_device_channel (ADV-L4, SM28).
+  const updateDevCapsMatch = /\bfn\s+update_device_capabilities\s*\([^)]*\)/.exec(clean);
+  if (updateDevCapsMatch) {
+    const fnBody = extractBraceBlock(clean, updateDevCapsMatch.index);
+    const insertsCaps = /\bself\.device_capabilities\.insert\s*\(/.test(fnBody);
+    const checksBoundLease = /\b(?:active_leases|lease_to_device|registered_leases)\b/.test(fnBody);
+    if (insertsCaps && !checksBoundLease) {
+      findings.push({
+        ruleId: 'rust-device-channel-forged-lease-or-estop-bypass',
+        mechanism: 'SM28-plugin-grant-rollback-lease',
+        language: 'rust',
+        line: lineOfIndex(clean, updateDevCapsMatch.index),
+        message: 'update_device_capabilities inserts unverified lease_id directly into device_capabilities without registered active_leases lookup, enabling forged-lease eviction DoS (ADV-L4, SM28).',
+      });
+    }
+  }
+  if (!findings.some((f) => f.ruleId === 'rust-device-channel-forged-lease-or-estop-bypass')) {
+    const isGateOrDeviceService = /\bimpl(?:<[^>]+>)?\s+(?:ApprovalGateService|DeviceBridgeService)\s+for\s+MyGoBridgeHost\b/.test(clean);
+    if (isGateOrDeviceService) {
+      const gateDeviceRpcs = [
+        /\basync\s+fn\s+submit_tool_review_decision\s*\(/g,
+        /\basync\s+fn\s+submit_graph_human_decision\s*\(/g,
+        /\basync\s+fn\s+open_device_channel\s*\(/g,
+      ];
+      for (const re of gateDeviceRpcs) {
+        let m: RegExpExecArray | null;
+        while ((m = re.exec(clean)) !== null) {
+          const fnBody = extractBraceBlock(clean, m.index);
+          const checksAuth = /\bself\.check_auth\s*\(/.test(fnBody);
+          const checksGov = /\b(?:ensure_governance_live|check_governance_admitted|governance_gate)\b/.test(fnBody);
+          if (checksAuth && !checksGov) {
+            findings.push({
+              ruleId: 'rust-device-channel-forged-lease-or-estop-bypass',
+              mechanism: 'SM28-plugin-grant-rollback-lease',
+              language: 'rust',
+              line: lineOfIndex(clean, m.index),
+              message: 'ApprovalGateService / DeviceBridgeService RPC checks Bearer auth but omits fail-closed ensure_governance_live E-Stop enforcement before dispatching device/gate actions (ADV-L4, SM28).',
+            });
+            break;
+          }
+        }
+        if (findings.some((f) => f.ruleId === 'rust-device-channel-forged-lease-or-estop-bypass')) break;
+      }
+    }
+  }
+
+  // 41. Rust find_idempotent_action matches idempotency_key without verifying exact action_name & args_digest (ADV-L4, SM28).
+  const findIdemMatch = /\bfn\s+find_idempotent_action\s*\([^)]*\)/.exec(clean);
+  if (findIdemMatch) {
+    const fnBody = extractBraceBlock(clean, findIdemMatch.index);
+    const checksKey = /\bidempotency_key\b/.test(fnBody);
+    const checksPayload = /\baction_name\b/.test(fnBody) && /\b(?:args_digest|payload_digest)\b/.test(fnBody);
+    if (checksKey && !checksPayload) {
+      findings.push({
+        ruleId: 'rust-idempotency-replay-ignores-payload-digest',
+        mechanism: 'SM28-plugin-grant-rollback-lease',
+        language: 'rust',
+        line: lineOfIndex(clean, findIdemMatch.index),
+        message: 'find_idempotent_action matches only idempotency_key without verifying action_name and args_digest, silently returning stale receipts on conflicting replay payloads (ADV-L4, SM28).',
+      });
+    }
   }
 
   return findings;
@@ -1530,6 +1668,23 @@ function auditTypeScript(clean: string): AgingFinding[] {
         language: 'ts',
         line: lineOfIndex(clean, wsAuditFnMatch.index),
         message: 'Workspace policy auditor returns passed without verifying acyclic workspace dependency graph (cyclicSccs == 0), risking cycle-blinded policy gates (ADV-L4, SM27).',
+      });
+    }
+  }
+
+  // 17. TS plugin/panel activation ignores capability grants or idempotency replay ignores payload digest (ADV-L4, SM28).
+  const tsFindIdemMatch = /\bfunction\s+findIdempotentAction\s*\([^)]*\)/.exec(clean);
+  if (tsFindIdemMatch) {
+    const fnBody = extractBraceBlock(clean, tsFindIdemMatch.index);
+    const matchesKey = /\bidempotencyKey\b/.test(fnBody);
+    const checksPayload = /\bactionName\b/.test(fnBody) && /\b(?:argsDigest|payloadDigest)\b/.test(fnBody);
+    if (matchesKey && !checksPayload) {
+      findings.push({
+        ruleId: 'ts-panel-grant-or-idempotency-bypass',
+        mechanism: 'SM28-plugin-grant-rollback-lease',
+        language: 'ts',
+        line: lineOfIndex(clean, tsFindIdemMatch.index),
+        message: 'findIdempotentAction matches idempotencyKey without verifying actionName and argsDigest, allowing conflicting payload replay (ADV-L4, SM28).',
       });
     }
   }

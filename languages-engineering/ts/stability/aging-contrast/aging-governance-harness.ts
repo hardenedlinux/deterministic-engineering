@@ -208,6 +208,14 @@ const MECHANISM_DIRECTIVES: Record<AgingMechanism, AgingRemediationDirective> = 
     antiEvasionWarning:
       'Do NOT evade by keeping dev-dependency cycles that panic workspace_policy, downgrading gates to `advice = allow` / `#[ignore]`, using `t.Skipf` on missing verification binaries, or masking gate failures with `|| true` / `continue-on-error: true`.',
   },
+  'SM28-plugin-grant-rollback-lease': {
+    mechanism: 'SM28-plugin-grant-rollback-lease',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Enforce required capability grants on panel activation (enable_panel) and atomically close active generations on grant revocation (set_project_grants), enforce monotonic version anti-rollback and publisher continuity on install, validate confined relative entry_path in UnifiedPanelManifest::validate, bind device channel updates to registered active_leases under E-Stop, and require exact (action_name, args_digest) equality on idempotency_key replay.',
+    antiEvasionWarning:
+      'Do NOT evade by storing capability grants decoratively without consulting them on enable_panel, blindly calling self.releases.insert() across versions/publishers, leaving entry_path unvalidated, allowing forged lease_id updates to evict registered devices, or returning cached receipts on mismatched action payloads.',
+  },
 };
 
 export function getAgingRemediation(finding: AgingFinding): AgingRemediationDirective {

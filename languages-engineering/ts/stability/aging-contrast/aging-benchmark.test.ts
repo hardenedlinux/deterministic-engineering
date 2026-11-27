@@ -2314,10 +2314,185 @@ export function auditWorkspacePolicy(crates: string[], edges: [string, string][]
   return { passed: cyclicSccs === 0, cyclicSccs };
 }`,
   },
+  // --- SM28: ADV-L4 plugin grant enforcement, release anti-rollback, entry_path & bound-lease confinement (SA153-SA162) ---
+  {
+    id: 'SA153',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-panel-enable-ignores-grants',
+    source: `
+struct PanelPluginHost { grants: BTreeMap<String, BTreeSet<String>> }
+impl PanelPluginHost {
+  pub fn enable_panel(&mut self, pid: &str, cid: &str) -> Result<(), PluginDenial> {
+    let contrib = self.releases.get(pid).ok_or(PluginDenial::MissingRelease)?;
+    let _ = contrib;
+    Ok(())
+  }
+}`,
+  },
+  {
+    id: 'SA154',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-panel-install-blind-overwrite-no-antirollback',
+    source: `
+impl PanelPluginHost {
+  pub fn install(&mut self, release: SignedPanelRelease<'_>) -> Result<(), PluginDenial> {
+    let verified = self.trust.verify_panel(release)?;
+    self.releases.insert(verified.id().clone(), verified);
+    Ok(())
+  }
+}`,
+  },
+  {
+    id: 'SA155',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-panel-manifest-unvalidated-entry-path',
+    source: `
+struct PanelDescriptor { entry_path: Option<String>, slot_id: SlotId }
+struct UnifiedPanelManifest { contributions: BTreeMap<String, PanelDescriptor> }
+impl UnifiedPanelManifest {
+  fn validate(&self) -> Result<(), PluginDenial> {
+    for c in self.contributions.values() {
+      if c.slot_id.is_restricted() { return Err(PluginDenial::ScopeMismatch); }
+    }
+    Ok(())
+  }
+}`,
+  },
+  {
+    id: 'SA156',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-device-channel-forged-lease-or-estop-bypass',
+    source: `
+impl BridgeState {
+  fn update_device_capabilities(&mut self, lease_id: String, caps: Vec<Cap>) {
+    self.device_capabilities.insert(lease_id, caps);
+  }
+}`,
+  },
+  {
+    id: 'SA157',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-idempotency-replay-ignores-payload-digest',
+    source: `
+fn find_idempotent_action(actions: &[ActionRec], idempotency_key: &str) -> Option<ActionRec> {
+  actions.iter().find(|a| a.idempotency_key == idempotency_key).cloned()
+}`,
+  },
+  {
+    id: 'SA158',
+    language: 'ts',
+    expectedPass: false,
+    expectedRuleId: 'ts-panel-grant-or-idempotency-bypass',
+    source: `
+export function findIdempotentAction(actions: Array<{idempotencyKey: string}>, idempotencyKey: string) {
+  return actions.find((a) => a.idempotencyKey === idempotencyKey) ?? null;
+}`,
+  },
+  {
+    id: 'SA159',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+struct PanelPluginHost { grants: BTreeMap<String, BTreeSet<String>> }
+impl PanelPluginHost {
+  pub fn install(&mut self, release: SignedPanelRelease<'_>) -> Result<(), PluginDenial> {
+    let verified = self.trust.verify_panel(release)?;
+    if let Some(existing) = self.releases.get(verified.id()) {
+      if existing.attestation().publisher != verified.attestation().publisher || verified.version() < existing.version() {
+        return Err(PluginDenial::ConflictingRelease);
+      }
+    }
+    self.releases.insert(verified.id().clone(), verified);
+    Ok(())
+  }
+  pub fn set_project_grants(&mut self, pid: String, granted: BTreeSet<String>) -> Result<(), PluginDenial> {
+    let verified = self.releases.get(&pid).ok_or(PluginDenial::MissingRelease)?;
+    if !granted.iter().all(|c| verified.has_capability(c)) { return Err(PluginDenial::InvalidDeclaration); }
+    self.grants.insert(pid, granted);
+    self.close_revoked_activations();
+    Ok(())
+  }
+  pub fn enable_panel(&mut self, pid: &str) -> Result<(), PluginDenial> {
+    let granted = self.grants.get(pid);
+    if granted.is_none() { return Err(PluginDenial::MissingCapability(cap)); }
+    Ok(())
+  }
+}`,
+  },
+  {
+    id: 'SA160',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+struct PanelDescriptor { entry_path: Option<String>, slot_id: SlotId }
+struct UnifiedPanelManifest { contributions: BTreeMap<String, PanelDescriptor> }
+impl UnifiedPanelManifest {
+  fn validate(&self) -> Result<(), PluginDenial> {
+    for c in self.contributions.values() {
+      if c.slot_id.is_restricted() { return Err(PluginDenial::ScopeMismatch); }
+      if let Some(ref p) = c.entry_path { validate_confined_entry_path(p)?; }
+    }
+    Ok(())
+  }
+}
+fn find_idempotent_action(actions: &[ActionRec], idempotency_key: &str, action_name: &str, args_digest: &[u8; 32]) -> Result<Option<ActionRec>, PluginDenial> {
+  if let Some(found) = actions.iter().find(|a| a.idempotency_key == idempotency_key) {
+    if found.action_name != action_name || &found.args_digest != args_digest {
+      return Err(PluginDenial::ScopeMismatch);
+    }
+    return Ok(Some(found.clone()));
+  }
+  Ok(None)
+}`,
+  },
+  {
+    id: 'SA161',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+impl BridgeState {
+  fn update_device_capabilities(&mut self, lease_id: &str, caps: Vec<Cap>) -> bool {
+    let Some(device_id) = self.active_leases.get(lease_id).cloned() else { return false; };
+    self.device_capabilities.insert(device_id, caps);
+    true
+  }
+}
+impl ApprovalGateService for MyGoBridgeHost {
+  async fn submit_tool_review_decision(&self, request: Request<Req>) -> Result<Response<Resp>, Status> {
+    self.check_auth(&request)?;
+    self.ensure_governance_live("submit_tool_review_decision")?;
+    Ok(Response::new(Resp {}))
+  }
+}`,
+  },
+  {
+    id: 'SA162',
+    language: 'ts',
+    expectedPass: true,
+    source: `
+export function findIdempotentAction(
+  actions: Array<{idempotencyKey: string; actionName: string; argsDigest: string}>,
+  idempotencyKey: string,
+  actionName: string,
+  argsDigest: string,
+) {
+  const hit = actions.find((a) => a.idempotencyKey === idempotencyKey);
+  if (!hit) return null;
+  if (hit.actionName !== actionName || hit.argsDigest !== argsDigest) {
+    throw new Error('conflicting idempotency replay');
+  }
+  return hit;
+}`,
+  },
 ];
 
-describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA152)', () => {
-  test('achieves 152/152 exact independent-gold match (tp=85, tn=67, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
+describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA162)', () => {
+  test('achieves 162/162 exact independent-gold match (tp=91, tn=71, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
     let tp = 0;
     let tn = 0;
     let fp = 0;
@@ -2340,7 +2515,7 @@ describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA152)', () 
       }
     }
 
-    expect({tp, tn, fp, fn}).toEqual({tp: 85, tn: 67, fp: 0, fn: 0});
+    expect({tp, tn, fp, fn}).toEqual({tp: 91, tn: 71, fp: 0, fn: 0});
   });
 
   test('clean Rust deterministic buffer pool & bounded retry passes with 0 findings', () => {
