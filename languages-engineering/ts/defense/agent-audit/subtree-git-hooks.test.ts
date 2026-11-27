@@ -128,10 +128,11 @@ describe('Layered Subtree Git Hooks & Branch-Mirrored CI Sync', () => {
       expect(blockedSorry.exitCode).not.toBe(0);
       expect(blockedSorry.stderr).toContain('incomplete proof token (sorry/admit)');
 
-      // 3. Clean Lean file (even mentioning sorry/Mathlib in line & block doc comments) must succeed.
+      // 3. Clean Lean file (even mentioning sorry/Mathlib in line & block doc comments,
+      //    or defining a dot-qualified method like OwnerPool.admit) must succeed.
       writeFileSync(
         badLean,
-        '/-!\nSPDX-License-Identifier: LGPL-2.1-or-later\nZero sorry, zero Mathlib, zero Cedar block doc comment\n-/\n-- Zero sorry line comment\ntheorem t : True := trivial\n',
+        '/-!\nSPDX-License-Identifier: LGPL-2.1-or-later\nZero sorry, zero Mathlib, zero Cedar block doc comment\n-/\n-- Zero sorry line comment\ndef OwnerPool.admit (n : Nat) : Nat := n\ntheorem t : OwnerPool.admit 1 = 1 := rfl\n',
       );
       expect(runCmd(['git', 'add', 'packages/lean-models/Bad.lean'], dir).exitCode).toBe(0);
       const okCommit = runCmd(['git', 'commit', '-m', 'good lean proof'], dir);
@@ -420,4 +421,26 @@ describe('Layered Subtree Git Hooks & Branch-Mirrored CI Sync', () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  test('H9: scripts/verify-subtree-mirrors.sh verifies all 4 real package mirrors as Git submodules (render, quint-models, quint-modules-resolver, lean-models)', () => {
+    const scriptPath = join(REPO_ROOT, 'scripts/verify-subtree-mirrors.sh');
+    const syntax = runCmd(['bash', '-n', scriptPath], REPO_ROOT);
+    expect(syntax.exitCode).toBe(0);
+
+    // Run real subtree split + bare mirror + git submodule add + pack/import/cross-submodule-typecheck/Lean-hygiene
+    // across all 4 packages in the live repository (using --skip-lake-build here to keep bun test fast;
+    // full CedarHostConsumer lake build is verified directly via scripts/verify-subtree-mirrors.sh --all).
+    const res = runCmd(['bash', scriptPath, '--all', '--skip-lake-build'], REPO_ROOT);
+    expect(res.exitCode).toBe(0);
+    expect(res.stdout).toContain('PASS render');
+    expect(res.stdout).toContain('PASS quint-models');
+    expect(res.stdout).toContain('PASS quint-modules-resolver');
+    expect(res.stdout).toContain('PASS lean-models');
+    expect(res.stdout).toContain('VERIFY_SUBTREE_MIRRORS_OK');
+
+    // Also verify publish-packages.yml enforces 10.205/10.206 mirror invariants before pushing.
+    const workflow = readFileSync(join(REPO_ROOT, '.github/workflows/publish-packages.yml'), 'utf8');
+    expect(workflow).toContain('lean-toolchain');
+    expect(workflow).toContain('10.205 violation');
+  }, 120_000);
 });

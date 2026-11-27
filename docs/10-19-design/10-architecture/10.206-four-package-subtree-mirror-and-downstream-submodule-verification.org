@@ -1,0 +1,40 @@
+#+TITLE: 10.206 Four-Package Subtree Mirror & Downstream Git Submodule Verification
+#+AUTHOR: hardenedlinux Linux Team and Contributors
+#+DATE: 2026-11-27
+#+PROPERTY: JD_ID 10.206
+#+PROPERTY: STATUS accepted-and-verified
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+* Context and Goal
+
+Building on [[file:10.201-subtree-git-hooks-branch-mirrored-sync-and-submodule-boundary.org][10.201]] (layered subtree Git hooks and branch-mirrored CI sync), [[file:10.204-native-qnt-ssot-sealed-schema-and-anti-bloat-gate.org][10.204]] (hard =.qnt= SSOT and sealed =QuintDomainModelShape=), and [[file:10.205-unified-yuanxu-test-framework-and-zero-types-ss-quint-catalog.org][10.205]] (unified =yuanxu-test-case= and zero per-model =types.ss=), this ADR closes **P1**: proving end-to-end that all four publishable packages under =packages/= split cleanly via =git subtree split=, push fast-forward to standalone read-only mirrors, and are consumed cleanly by downstream repositories via **Git Submodule**, Bun/npm packaging, and Lean 4 Lake builds.
+
+* Four-Package Mirror & Downstream Submodule Matrix
+
+The reusable verifier [[file:../../../scripts/verify-subtree-mirrors.sh][scripts/verify-subtree-mirrors.sh]] constructs isolated bare mirror repositories and fresh downstream consumer repositories (mounting each split mirror via real =git submodule add=) and verifies every package against its runtime and governance invariants:
+
+| Package | Split Prefix | Downstream Consumer Proof | Structural & Governance Invariants |
+|---------+--------------+---------------------------+------------------------------------|
+| =render= | =packages/render= | =git submodule add= + =bun pm pack= + real Bun ESM import (=composeDiagram=, =composeFigure=, =defineDesign=, =compileModel=) | =package.json= exports integrity, LGPL-2.1-or-later license, bundled =.githooks/pre-commit= syntax |
+| =quint-models= | =packages/quint-models= | =git submodule add= + inventory audit across all 96 =.qnt= files (30 defense models incl. B21 pioneer) | 10.204 zero duplicated Quint AST slots in any =objects.ss=; 10.205 zero per-model =types.ss= |
+| =quint-modules-resolver= | =packages/quint-modules-resolver= | Dual-submodule mount (=quint-modules-resolver= + =quint-models=) + =bun pm pack= + real =cli.ts parse= & =typecheck= on split =ModelWeightInferenceAttestation.qnt= | All =exports= and =bin= targets verified inside split commit + cross-submodule resolution |
+| =lean-models= | =packages/lean-models= | Real =cedar-poo-spec=-style downstream Lake host (=CedarHostConsumer=) requiring =LeanPoo= + =DeterministicEngineering= at =vendor/lean-models= + full =lake build= + =#print axioms= | Zero =import Mathlib=, zero =import Cedar=, zero =sorry=/=admit= tactics across all 38 =.lean= files (28 engineering modules), clean axiom set =[propext, Quot.sound]= |
+
+* Findings Caught and Hardened During Verification
+
+1. **Dot-Qualified =.admit= False Positive in Lean Pre-Commit Gate**:
+   Running full-mirror hygiene verification across all 38 Lean files in =packages/lean-models= uncovered that =DeterministicEngineering/Core/Conservation.lean= defines a legitimate domain method =OwnerPool.admit= (=p.admit x=). The previous regex =(^|[^[:alnum:]_])(sorry|admit)= in [[file:../../../packages/lean-models/.githooks/pre-commit][packages/lean-models/.githooks/pre-commit]] matched =.admit= as if it were the standalone tactic =admit=. Both the hook and [[file:../../../scripts/verify-subtree-mirrors.sh][scripts/verify-subtree-mirrors.sh]] now exclude dot-qualified identifiers (=[^[:alnum:]_.]=) while continuing to block standalone =sorry= and =admit= tactics, covered by regression test =H1= in [[file:../../../languages-engineering/ts/defense/agent-audit/subtree-git-hooks.test.ts][subtree-git-hooks.test.ts]].
+2. **Pre-Publish Mirror Invariant Checks in CI**:
+   [[file:../../../.github/workflows/publish-packages.yml][.github/workflows/publish-packages.yml]] now enforces two additional split-commit gates before pushing to any read-only mirror:
+   - =lean-models=: verifies =lean-toolchain= is present in the split commit alongside =lakefile.toml= and =.githooks/pre-commit=.
+   - =quint-models=: refuses to publish if the split tree contains any per-model =types.ss= file (enforcing 10.205 at the publish boundary).
+3. **Downstream =cedar-poo-spec= Submodule Consumption Pattern**:
+   Downstream Lake consumers declare their own =[[require]] name = "LeanPoo"= dependency (local submodule, path, or pinned git rev) ahead of =[[require]] name = "DeterministicEngineering" path = "vendor/lean-models"=. Lake's top-level requirement resolution cleanly satisfies =LeanPoo= without modifying the read-only =lean-models= mirror, compiling all 95 Lake jobs and proving =unpinned_base_weight_refused= with zero =sorryAx=.
+
+* Verification Evidence
+
+- =./scripts/verify-subtree-mirrors.sh --all= (full mode including real =CedarHostConsumer= =lake build= & =#print axioms=): =VERIFY_SUBTREE_MIRRORS_OK= across all 4 packages (=render=, =quint-models=, =quint-modules-resolver=, =lean-models=).
+- =bun test languages-engineering/ts/defense/agent-audit/subtree-git-hooks.test.ts=: =H1=--=H9= (9/9 pass, 0 fail), covering layered hooks, standalone mirror hooks, linked worktrees, =pre-push=, CI workflow contract, 10.204 anti-bloat, 10.205 unified Yuanxu testing, dot-qualified =OwnerPool.admit=, and live 4-package mirror verification.
+- =G2= static defense audit (=agent-defense-audit.ts=): 0 findings.
+- Repository organization check (=t/yanxu/Library/project-organization/repository-organization-test.ss=): =OR01=--=OR06= 0 findings.

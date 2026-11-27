@@ -80,7 +80,7 @@ PY
         echo "[lean-models/pre-commit] ERROR: forbidden 'import Cedar' in $rel_path (zero-Cedar policy)" >&2
         failed=1
       fi
-      if printf '%s\n' "$stripped" | grep -Eq '(^|[^[:alnum:]_])(sorry|admit)([^[:alnum:]_]|$)'; then
+      if printf '%s\n' "$stripped" | grep -Eq '(^|[^[:alnum:]_.])(sorry|admit)([^[:alnum:]_]|$)'; then
         echo "[lean-models/pre-commit] ERROR: incomplete proof token (sorry/admit) found in $rel_path" >&2
         failed=1
       fi

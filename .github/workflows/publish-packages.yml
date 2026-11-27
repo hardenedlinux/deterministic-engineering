@@ -177,6 +177,7 @@ jobs:
       - name: Split subtree and verify standalone manifest & bundled hooks
         id: split
         env:
+          PKG: ${{ matrix.pkg }}
           PREFIX: ${{ matrix.prefix }}
           MANIFEST: ${{ matrix.manifest }}
         run: |
@@ -185,6 +186,15 @@ jobs:
           git cat-file -e "${split_sha}:${MANIFEST}"
           if [ -f "${PREFIX}/.githooks/pre-commit" ]; then
             git cat-file -e "${split_sha}:.githooks/pre-commit"
+          fi
+          if [ "$PKG" = "lean-models" ]; then
+            git cat-file -e "${split_sha}:lean-toolchain"
+          fi
+          if [ "$PKG" = "quint-models" ]; then
+            if git ls-tree -r --name-only "${split_sha}" | grep -Eq '(^|/)types\.ss$'; then
+              echo "10.205 violation: split quint-models mirror contains forbidden per-model types.ss" >&2
+              exit 1
+            fi
           fi
           echo "sha=${split_sha}" >> "$GITHUB_OUTPUT"
           echo "Split ${PREFIX} at DE commit ${GITHUB_SHA} -> ${split_sha} (verified ${MANIFEST})"
