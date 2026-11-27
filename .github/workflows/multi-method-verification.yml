@@ -8,6 +8,7 @@ on:
       - 'docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml'
       - 'library/verification-flow/**'
       - 'packages/lean-models/**'
+      - 'packages/quint-models/threat/**'
       - 'languages-engineering/rust/lifecycle/process-tree-guard/**'
       - 'languages-engineering/c/defense/silent-fallback-contrast/**'
       - 'languages-engineering/c/stability/aging-contrast/**'
@@ -24,6 +25,7 @@ on:
       - 'docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml'
       - 'library/verification-flow/**'
       - 'packages/lean-models/**'
+      - 'packages/quint-models/threat/**'
       - 'languages-engineering/rust/lifecycle/process-tree-guard/**'
       - 'languages-engineering/c/defense/silent-fallback-contrast/**'
       - 'languages-engineering/c/stability/aging-contrast/**'
@@ -146,6 +148,33 @@ jobs:
             de-lean-build-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('packages/lean-models/lean-toolchain', 'packages/lean-models/lakefile.toml', 't/harness/verify-framework.ts') }}-${{ steps.leanpoo.outputs.sha }}-
       - name: Auto-discovered Lean 4 build & dynamic #print axioms audit
         run: just check-lean --cache=.data/ci-cache/lean
+      - name: Enforce strictly zero-axiom Core.AiGovernance kernel gate (15/15 AR01-AR05 & AI-SE theorems)
+        run: |
+          cd packages/lean-models
+          OUT="$(lake env lean --stdin <<'EOF'
+          import DeterministicEngineering.Core.AiGovernance
+          open DeterministicEngineering.Core.AiGovernance
+          #print axioms llmJudge_never_deterministic
+          #print axioms nonDeterministicStep_rejects_admission
+          #print axioms aiAuthoredChange_without_deterministicVerifier_rejected
+          #print axioms aiPatch_touching_securityDep_invalidates_proofReuse
+          #print axioms aiPatch_disjoint_from_securityDeps_preserves_proofReuse
+          #print axioms aiToolExecution_missing_confinement_or_countermodel_rejected
+          #print axioms aiDelegation_missing_attenuation_or_currentness_rejected
+          #print axioms aiUntrustedContext_missing_integrity_rejected
+          #print axioms aiAgent_selfApproval_and_missing_humanStepUp_rejected
+          #print axioms aiGovernanceAdmitted_sound
+          #print axioms aiChangeAdmission_rejected_blocks_reuse_and_forces_stepUp
+          #print axioms aiChangeAdmission_affectedStep_forces_reverification
+          #print axioms aiChangeAdmission_securityDepTouch_blocks_reuse_and_requires_humanStepUp
+          #print axioms aiChangeAdmission_hostMutation_always_requires_humanStepUp
+          #print axioms aiChangeAdmission_reusable_sound
+          EOF
+          )"
+          echo "$OUT"
+          COUNT="$(echo "$OUT" | grep -c "does not depend on any axioms")"
+          test "$COUNT" -eq 15
+          ! echo "$OUT" | grep -q "depends on axioms:"
 
   airgapped-offline-verifier-adversarial:
     name: Zero-Dep Portable Offline Attestation Verifier (60 Adversarial, DSSE v1, Role-SoD & Anti-Rollback Policy Controls)

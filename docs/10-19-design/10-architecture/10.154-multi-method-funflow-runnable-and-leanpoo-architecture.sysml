@@ -811,6 +811,71 @@ package MultiMethodFunFlowArchitecture {
                 attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Budget.lean,packages/lean-models/DeterministicEngineering/Core/Order.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Threat/AgentCircuitBreaker.lean";
             }
         }
+
+        // Thirteenth Zero-Glue Subject (Eighth AI-Security Threat Subject: Multi-Party Shared Context Governance, Scope Lattice & Taint Isolation)
+        part sharedContextGovernance {
+            attribute subjectKey : String = "shared-context-governance";
+            attribute identity : String = "threat.zero-trust.shared-context-governance";
+            attribute tags : String = "threat,zero-trust,ai-security,shared-context,taint-isolation,defense.mutability.immutable-proof,hazard.cross-principal-context-leak";
+            attribute factors : String = "shared-context-scope-and-taint-isolation,ai-ingests-untrusted-context,ai-delegates-authority,ai-mutates-host-or-governance";
+            attribute aiControls : String = "context-integrity-or-ifc,monotonic-attenuation,revocation-currentness,human-stepup-and-estop";
+            attribute aiRoleBindings : String = "human-approver:human-approver,ai-agent:ai-proposer";
+
+            part scgQuintTarget {
+                attribute modelId : String = "threat.zero-trust.shared-context-governance";
+                attribute quintFile : String = "packages/quint-models/threat/zero-trust/shared-context-governance/SharedContextGovernance.qnt";
+                attribute quintMain : String = "shared_context_governance";
+                attribute itfSubdir : String = "shared-context-governance";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "private-scope-isolation,owner-only-scope-promotion,share-membership-current,multi-party-taint-gate";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/zero-trust/shared-context-governance/SharedContextGovernance.qnt,packages/quint-models/threat/zero-trust/shared-context-governance/objects.ss,packages/quint-models/threat/zero-trust/shared-context-governance/interface.ss,packages/quint-models/threat/zero-trust/authority-currentness/AuthorityCurrentness.qnt";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part scgLeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Threat.SharedContextConfinement";
+                attribute refinesCore : String = "DeterministicEngineering.Core.Order,DeterministicEngineering.Core.Transport";
+                attribute transportContract : String = "ObjectContract.refine+Patch.frame+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Threat.SharedContextConfinement.privateScope_never_readable_by_peer,DeterministicEngineering.Threat.SharedContextConfinement.confidentialScopePromotion_requires_owner_and_declass,DeterministicEngineering.Threat.SharedContextConfinement.revokedAclEpoch_rejects_all_staleHandles,DeterministicEngineering.Threat.SharedContextConfinement.taintedSharedChannel_blocks_toolExec_without_humanGate,DeterministicEngineering.Threat.SharedContextConfinement.sharedContextContract_preserves_rejection,DeterministicEngineering.Threat.SharedContextConfinement.sharedContextAuditTunedCertified,DeterministicEngineering.Threat.SharedContextConfinement.disableTaintGate_invalidates_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Order.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Threat/SharedContextConfinement.lean";
+            }
+        }
+
+        // Fourteenth Zero-Glue Subject (Ninth AI-Security Threat Subject: SM32 ADV-L4 GitOps Subprocess Environment Neutralization, Fsmonitor Lockdown & Arg-Injection Confinement)
+        part gitopsSubprocessConfinement {
+            attribute subjectKey : String = "gitops-subprocess-confinement-and-arg-injection";
+            attribute identity : String = "threat.execution.gitops-subprocess-confinement-and-arg-injection";
+            attribute tags : String = "threat,execution,ai-security,gitops-confinement,arg-injection,defense.mutability.immutable-proof,hazard.git-env-fsmonitor-arg-injection";
+            attribute factors : String = "gitops-subprocess-and-arg-confinement,ai-executes-tools";
+            attribute aiControls : String = "tool-confinement";
+
+            part sm32QuintTarget {
+                attribute modelId : String = "threat.execution.gitops-subprocess-confinement-and-arg-injection";
+                attribute quintFile : String = "packages/quint-models/threat/execution/gitops-subprocess-confinement-and-arg-injection/GitopsSubprocessConfinementAndArgInjection.qnt";
+                attribute quintMain : String = "execution_gitops_subprocess_confinement_and_arg_injection";
+                attribute itfSubdir : String = "gitops-subprocess-confinement-and-arg-injection";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "forbid-git-env-config-or-exec-path-hijack,forbid-repo-fsmonitor-or-hook-execution,forbid-option-injection-or-snapshot-path-escape,forbid-unbounded-subprocess-or-parallel-worker-panic-crash";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/execution/gitops-subprocess-confinement-and-arg-injection/GitopsSubprocessConfinementAndArgInjection.qnt,packages/quint-models/threat/execution/gitops-subprocess-confinement-and-arg-injection/objects.ss,packages/quint-models/threat/execution/gitops-subprocess-confinement-and-arg-injection/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part sm32LeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.GitopsSubprocessConfinementAndArgInjection";
+                attribute refinesCore : String = "DeterministicEngineering.Engineering.SandboxSymlinkArchiveConfinement";
+                attribute transportContract : String = "ObjectContract.refine+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Engineering.GitopsSubprocessConfinementAndArgInjection.sm32_git_env_confinement_requires_all_guards,DeterministicEngineering.Engineering.GitopsSubprocessConfinementAndArgInjection.sm32_hooks_and_fsmonitor_lockdown_complete,DeterministicEngineering.Engineering.GitopsSubprocessConfinementAndArgInjection.sm32_arg_injection_and_snapshot_escape_refused,DeterministicEngineering.Engineering.GitopsSubprocessConfinementAndArgInjection.sm32_bounded_capture_refuses_overflow_timeout_or_orphan,DeterministicEngineering.Engineering.GitopsSubprocessConfinementAndArgInjection.sm32_parallel_panic_isolation_conserves_receipts,DeterministicEngineering.Engineering.GitopsSubprocessConfinementAndArgInjection.sm32_strict_admission_eliminates_all_exploits,DeterministicEngineering.Engineering.GitopsSubprocessConfinementAndArgInjection.sm32_gentle_pressure_rejected,DeterministicEngineering.Engineering.GitopsSubprocessConfinementAndArgInjection.sm32_defective_configs_expose_live_exploits,DeterministicEngineering.Engineering.GitopsSubprocessConfinementAndArgInjection.sm32_marlin_contract_refinement_laws,DeterministicEngineering.Engineering.GitopsSubprocessConfinementAndArgInjection.sm32_baseline_certified,DeterministicEngineering.Engineering.GitopsSubprocessConfinementAndArgInjection.sm32_obligation_untouched_by_timeout_tuning,DeterministicEngineering.Engineering.GitopsSubprocessConfinementAndArgInjection.sm32_timeout_tuning_reuses_and_closes_certificate,DeterministicEngineering.Engineering.GitopsSubprocessConfinementAndArgInjection.sm32_regressions_invalidate_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean,packages/lean-models/DeterministicEngineering/Engineering/GitopsSubprocessConfinementAndArgInjection.lean";
+            }
+        }
     }
 
     // ── 12. Architectural, Cross-Method, and Requirement Dependencies ──
@@ -876,6 +941,14 @@ package MultiMethodFunFlowArchitecture {
     dependency 'cb-breaker-lean-refines-budget' from system::agentToolCircuitBreaker::cbBreakerLeanPooTarget to system::leanModels::core::budget;
     dependency 'cb-breaker-lean-refines-order' from system::agentToolCircuitBreaker::cbBreakerLeanPooTarget to system::leanModels::core::order;
     dependency 'cb-breaker-lean-refines-transport' from system::agentToolCircuitBreaker::cbBreakerLeanPooTarget to system::leanModels::core::transport;
+
+    dependency 'scg-quint-source' from system::sharedContextGovernance::scgQuintTarget to system::quintModels;
+    dependency 'scg-lean-source' from system::sharedContextGovernance::scgLeanPooTarget to system::leanModels;
+    dependency 'scg-lean-refines-order' from system::sharedContextGovernance::scgLeanPooTarget to system::leanModels::core::order;
+    dependency 'scg-lean-refines-transport' from system::sharedContextGovernance::scgLeanPooTarget to system::leanModels::core::transport;
+
+    dependency 'sm32-quint-source' from system::gitopsSubprocessConfinement::sm32QuintTarget to system::quintModels;
+    dependency 'sm32-lean-source' from system::gitopsSubprocessConfinement::sm32LeanPooTarget to system::leanModels;
 
     // Cross-method edges enforced by MR03 & MR04 (zero model duplication)
     dependency 'pt-mbt-itf-edge' from system::processTreeReclamation::rustOracleTarget::traceIn to system::processTreeReclamation::quintTarget::traceOut;

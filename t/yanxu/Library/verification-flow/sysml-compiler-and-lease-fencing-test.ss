@@ -17,6 +17,7 @@
         (only-in :tao3k/yuanxu/testing
                  yuanxu-test-case
                  yuanxu-test-case/with
+                 yuanxu-test-checkpoint
                  yuanxu-testing-case-profile-prototype)
         :std/encoding/json
         :std/misc/process
@@ -39,13 +40,13 @@
 
 (.def (MultiSubjectCompileBudget @ yuanxu-testing-case-profile-prototype)
   max-idle-milliseconds: 180000
-  max-duration-milliseconds: 240000
+  max-duration-milliseconds: 420000
   sample-interval-milliseconds: 500
   collect-before-sample?: #t)
 
 (def verification-flow-sysml-compiler-and-lease-fencing-test
   (test-suite "Zero-glue SysML v2 -> Fun-Flow DAG compiler and 3rd subject lease-fencing-token"
-    (yuanxu-test-case/with MultiSubjectCompileBudget "live SysML v2 compiles all 12 subjects (27 engines) into valid Fun-Flow DAGs and manifests with zero Scheme glue"
+    (yuanxu-test-case/with MultiSubjectCompileBudget "live SysML v2 compiles all 14 subjects (31 engines) into valid Fun-Flow DAGs and manifests with zero Scheme glue"
       (def sysml-path
         (path-expand
           "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml"
@@ -53,7 +54,7 @@
       (def json-text (run-process (list "sysml" "-convert" "api-json" sysml-path)))
       (def parsed (call-with-input-string json-text (cut read-json <> object-as-hash: #t)))
       (def projected (sysml-api-json->governance-facts parsed))
-      (check-equal? (length (.get projected subject-specs)) 12)
+      (check-equal? (length (.get projected subject-specs)) 14)
       (for-each
         (lambda (spec-expect)
           (def skey (car spec-expect))
@@ -70,6 +71,7 @@
               (check-equal? (cdr (assoc 'kind receipt)) flow-dag-receipt-kind))
             (let ((manifest (subject->dag-runtime-manifest subj (string-append "req-compile-" (symbol->string skey)))))
               (check-equal? (cdr (assoc 'schema manifest)) +flow-dag-runtime-manifest-schema+)))
+          (yuanxu-test-checkpoint skey)
           (##gc))
         '((process-tree-reclamation 4)
           (backpressure-memory 4)
@@ -82,8 +84,26 @@
           (runtime-env-activation-and-context-confinement 2)
           (graph-witness-and-harness-confinement 2)
           (agent-ifc-capability 2)
-          (agent-tool-circuit-breaker 2)))
+          (agent-tool-circuit-breaker 2)
+          (shared-context-governance 2)
+          (gitops-subprocess-confinement-and-arg-injection 2)))
       ;; Verify static change-impact slicing isolates AI-Security subjects cleanly!
+      (let* ((impact7
+              (changed-files->affected-frontier
+                projected
+                '("packages/quint-models/threat/zero-trust/shared-context-governance/SharedContextGovernance.qnt")))
+             (affected7 (filter (lambda (s) (pair? (.get s affected-steps))) impact7)))
+        (check-equal? (map (lambda (s) (.get s subject-key)) affected7)
+                      '(shared-context-governance))
+        (check-equal? (.get (car affected7) affected-steps) '("scgQuintTarget")))
+      (let* ((impact8
+              (changed-files->affected-frontier
+                projected
+                '("packages/quint-models/threat/execution/gitops-subprocess-confinement-and-arg-injection/GitopsSubprocessConfinementAndArgInjection.qnt")))
+             (affected8 (filter (lambda (s) (pair? (.get s affected-steps))) impact8)))
+        (check-equal? (map (lambda (s) (.get s subject-key)) affected8)
+                      '(gitops-subprocess-confinement-and-arg-injection))
+        (check-equal? (.get (car affected8) affected-steps) '("sm32QuintTarget")))
       (let* ((impact5
               (changed-files->affected-frontier
                 projected
@@ -141,10 +161,12 @@
       (create-directory* cache-dir)
 
       ;; Phase 1 — Cold run: executes lfQuintTarget + lfLeanPooTarget compiled directly from SysML v2.
+      (yuanxu-test-checkpoint 'lease-fencing-cold-start)
       (let ((r1 (run-multi-method-verification-pipeline repo-root
                   subject-key: 'lease-fencing-token
                   cache-dir: cache-dir
                   request-id: "req-lf-1-cold")))
+        (yuanxu-test-checkpoint 'lease-fencing-cold-done)
         (def mr-admitted ((.ref (.get r1 mr-result) 'rows-of) 'runnable_admitted))
         (check (and (member '("engineering.lifecycle.process-tree-reclamation") mr-admitted) #t) => #t)
         (check (and (member '("engineering.concurrency.backpressure-memory") mr-admitted) #t) => #t)

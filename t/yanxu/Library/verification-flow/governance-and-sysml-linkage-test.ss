@@ -255,4 +255,6 @@
       (check (and (member '("threat.execution.graph-witness-and-harness-confinement") admitted-subjs) #t) => #t)
       (check (and (member '("threat.execution.agent-ifc-capability") admitted-subjs) #t) => #t)
       (check (and (member '("threat.execution.agent-tool-circuit-breaker") admitted-subjs) #t) => #t)
-      (check-equal? (length (.get projected subject-specs)) 12))))
+      (check (and (member '("threat.zero-trust.shared-context-governance") admitted-subjs) #t) => #t)
+      (check (and (member '("threat.execution.gitops-subprocess-confinement-and-arg-injection") admitted-subjs) #t) => #t)
+      (check-equal? (length (.get projected subject-specs)) 14))))
