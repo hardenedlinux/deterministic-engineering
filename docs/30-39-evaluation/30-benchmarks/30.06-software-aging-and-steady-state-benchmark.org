@@ -48,14 +48,13 @@ concurrent capture & parallel worker panic isolation, and hostile (=ADV-L4=)
 hook TOML fail-closed parsing, anti-shadowing unique hook registry & bounded
 async fan-out, immutable trust-floor audit reasons, contradiction-free
 sub-agent spawn policy, validated protocol session/endpoint contract
-confinement, and hostile (=ADV-L4=) runtime =direnv= activation isolation,
-symlink-safe =.envrc=/home/Org store confinement, monotonic Org/channel ledger
-anti-rollback, and recomputed Two-Zone KV-Prefix integrity, and hostile
-(=ADV-L4=) AgentGraph sealed-witness/epoch Serde parity & =PolicyDecision=
-routing confinement plus live-harness Cedar destructive-tool classification,
-symlink-safe atomic intent-case artifact materialization & bounded Weaver TOML
-config hygiene defects*
-(=SM1=–=SM35= in
+confinement, and hostile (=ADV-L4=) AgentGraph sealed-witness/epoch Serde
+parity & =PolicyDecision= routing confinement plus live-harness Cedar
+destructive-tool classification, symlink-safe atomic intent-case artifact
+materialization & bounded Weaver TOML config hygiene, and hostile (=ADV-L4=)
+telemetry OTLP remote TLS / observer env-scrubbing / watchdog future-timestamp
+anti-blinding & Deck single-VM module/timer/delay capacity confinement defects*
+(=SM1=–=SM36= in
 [[file:../../40-49-research/40-reference-studies/40.04-software-aging-and-steady-state-stability.org][40.04]],
 [[file:../../40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org][40.05]],
 and [[file:../../40-49-research/40-reference-studies/40.06-ci-cd-scientific-caching-and-subdomain-sharding.org][40.06]])
@@ -64,7 +63,7 @@ realistic multi-layer agent/UI architectures (**Marlin Rust/Scheme Host + MyGo
 Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
 
 - *Independent Gold & Mandatory Adversarial Pressure Floor (=>= ADV-L3=, Target =ADV-L4=)*:
-  Every static case (=SA01=–=SA232=), closed-loop persona, formal countermodel,
+  Every static case (=SA01=–=SA240=), closed-loop persona, formal countermodel,
   metamorphic search property (=MR1=–=MR6=), structure-aware / hostile fuzz
   property, and runtime soak/exploit assertion carries a fixed independent
   expected outcome (=pass= vs. =refuse= + exact mechanism / rule / ITF
@@ -72,8 +71,8 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
   =ADV-L1= happy-path-only suites are formally rejected in Lean 4).
 - *Five Coupled Verification Layers*:
   1. *Formal Finite-State Models (Quint + Apalache 0.62.1 + 100% =--mbt=)*:
-     36 stability & AI-defensive models (113 auto-derived countermodels — with
-     =SM22= marking the 100th and =SM35= marking the **113th Quint formal
+     37 stability & AI-defensive models (117 auto-derived countermodels — with
+     =SM22= marking the 100th and =SM36= marking the **114th Quint formal
      model** in the repository!) + 3 UI concurrency kernel models (7
      auto-derived countermodels) covering cyclic
      drain, buffer ratchet, metastable retry collapse, GC headroom pacing,
@@ -160,12 +159,18 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
      confinement, fail-closed harness Cedar destructive-tool classification &
      case-insensitive matching, symlink-safe atomic intent-case artifact
      materialization, and bounded non-symlink =LiveWeaverTomlConfig= loading
-     with timeout/stream caps & safe =credential_env= hygiene (=SM35=).
+     with timeout/stream caps & safe =credential_env= hygiene (=SM35=), and
+     hostile =ADV-L4= TLS-mandatory remote OTLP endpoints (loopback-only
+     =http://=, clean labels), =env_clear()=-scrubbed non-symlink host observer
+     sidecars, monotonic-bounded watchdog heartbeat timestamps preventing
+     =u64::MAX= blinding & non-zero PID/timeout attach guards, and bounded Deck
+     single-VM active module/timer capacities with finite =MAX_TIMER_DELAY_US=
+     ceilings (=SM36=).
   2. *Unbounded Algebraic & LeanPoo Object Proofs (Lean 4)*:
      [[file:../../../packages/lean-models/DeterministicEngineering/Core/Stability.lean][Core/Stability.lean]]
-     (Sections 1–17, 51 theorems, zero =sorry=) plus 19 dedicated objectified
-     =LeanPoo= domain modules (225 theorems, zero =sorry=, 276 total stability
-     & AI-defensive theorems; 663 audited theorems across all 53 Lean modules):
+     (Sections 1–17, 51 theorems, zero =sorry=) plus 20 dedicated objectified
+     =LeanPoo= domain modules (237 theorems, zero =sorry=, 288 total stability
+     & AI-defensive theorems; 685 audited theorems across all 54 Lean modules):
      [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/StreamingOutputBudget.lean][Engineering/StreamingOutputBudget.lean]]
      (=SM17=, 10 theorems),
      [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/CiCacheSoundness.lean][Engineering/CiCacheSoundness.lean]]
@@ -260,6 +265,14 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
      case-insensitive matching, symlink-safe atomic intent-case artifact
      materialization, bounded non-symlink Weaver TOML route loading with timeout
      & =credential_env= allowlist hygiene, live countermodels, and
+     regression-invalidated =LeanPoo.Proof.reuse=), and
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/TelemetryWatchdogAndDeckVmConfinement.lean][Engineering/TelemetryWatchdogAndDeckVmConfinement.lean]]
+     (=SM36=, 54th Lean module, 12 theorems proving TLS-mandatory remote OTLP
+     endpoints with loopback-only =http://= & clean labels, =env_clear()=-scrubbed
+     non-symlink host observer sidecars, monotonic-bounded watchdog heartbeat
+     timestamps preventing =u64::MAX= blinding & non-zero PID/timeout attach
+     guards, bounded Deck single-VM active module/timer capacities with finite
+     =MAX_TIMER_DELAY_US= ceilings, live countermodels, and
      regression-invalidated =LeanPoo.Proof.reuse=),
      proving arbitrary-cycle zero drift, ARB linear exhaustion, spike-independent
      capped pool ceilings, GC headroom cycle bounds, bounded fan-out retention,
@@ -296,7 +309,7 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
        soak, and native OLS Slope Oracle.
      - TypeScript / Bun: Reusable Independent Steady-State Slope Oracle
        ([[file:../../../languages-engineering/ts/stability/aging-contrast/slope-oracle.ts][slope-oracle.ts]]),
-       live Quint =--mbt= ITF state-machine refinement across all 36 formal
+       live Quint =--mbt= ITF state-machine refinement across all 37 formal
        stability & AI-defensive models
        ([[file:../../../languages-engineering/ts/stability/aging-contrast/mbt-stability-replay.test.ts][mbt-stability-replay.test.ts]],
        [[file:../../../languages-engineering/ts/stability/aging-contrast/ipc-ime-chaos-fuzz.test.ts][ipc-ime-chaos-fuzz.test.ts]],
@@ -320,32 +333,31 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
        [[file:../../../languages-engineering/ts/stability/aging-contrast/gitops-subprocess-confinement-and-arg-injection-fuzz.test.ts][gitops-subprocess-confinement-and-arg-injection-fuzz.test.ts]],
        [[file:../../../languages-engineering/ts/stability/aging-contrast/hook-policy-and-protocol-contract-confinement-fuzz.test.ts][hook-policy-and-protocol-contract-confinement-fuzz.test.ts]],
        [[file:../../../languages-engineering/ts/stability/aging-contrast/runtime-env-activation-and-context-confinement-fuzz.test.ts][runtime-env-activation-and-context-confinement-fuzz.test.ts]],
-       and [[file:../../../languages-engineering/ts/stability/aging-contrast/graph-witness-and-harness-confinement-fuzz.test.ts][graph-witness-and-harness-confinement-fuzz.test.ts]]),
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/graph-witness-and-harness-confinement-fuzz.test.ts][graph-witness-and-harness-confinement-fuzz.test.ts]],
+       and [[file:../../../languages-engineering/ts/stability/aging-contrast/telemetry-watchdog-and-deck-vm-confinement-fuzz.test.ts][telemetry-watchdog-and-deck-vm-confinement-fuzz.test.ts]]),
        500-case parametric search metamorphic fuzzing across =MR1=–=MR6= with
        3 deterministic refutations ([[file:../../../languages-engineering/ts/stability/aging-contrast/search-metamorphic-fuzz.test.ts][search-metamorphic-fuzz.test.ts]]),
-       9,500-trial structure-aware & hostile =ADV-L4= fuzzing (250 trials each
-       across =SM12=–=SM21= + 500 hostile =ADV-L4= trials each for =SM22=–=SM35=
-       + 144 live Quint ITF MBT traces), live self-auditing CI workflow/CAS tests,
+       10,000-trial structure-aware & hostile =ADV-L4= fuzzing (250 trials each
+       across =SM12=–=SM21= + 500 hostile =ADV-L4= trials each for =SM22=–=SM36=
+       + 150 live Quint ITF MBT traces), live self-auditing CI workflow/CAS tests,
        and the 4-layer Marlin + MyGo + WebView UI soak suite
        ([[file:../../../languages-engineering/ts/stability/aging-contrast/marlin-mygo-fullstack-soak.test.ts][marlin-mygo-fullstack-soak.test.ts]]).
-  4. *232-Case Multi-Language Aging, Stability & AI-Defensive AST Auditor (=SA01=–=SA232=)*:
+  4. *240-Case Multi-Language Aging, Stability & AI-Defensive AST Auditor (=SA01=–=SA240=)*:
      [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-ast-auditor.ts][aging-ast-auditor.ts]]
      & [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-benchmark.test.ts][aging-benchmark.test.ts]]
-     (=tp=133, tn=99, fp=0, fn=0=), empirically calibrated across full 3-repo
-     production sweeps (**0 SM22–SM35 findings in =marlin-agent-kernel=,
-     =marlin-agent-app-server=, =marlin-agent-runtime=, =marlin-gerbil-scheme=,
-     =marlin-agent-storage=, =marlin-agent-sessions=, =marlin-agent-gitops=,
-     =marlin-agent-hooks=, =marlin-agent-protocol=, =marlin-agent-context=,
-     =marlin-agent-graph=, =marlin-agent-harness=, & =marlin-agent-harness-types=**).
+     (=tp=138, tn=102, fp=0, fn=0=), empirically calibrated across full 3-repo
+     production sweeps (**0 SM22–SM36 findings across all committed production
+     Rust files in =marlin-agent-core=, including =marlin-agent-telemetry= and
+     =marlin-deck-runtime=**).
   5. *Closed-Loop AI Aging & Defensive Governance Harness & CLI*:
      [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-governance-harness.ts][aging-governance-harness.ts]],
      [[file:../../../languages-engineering/ts/stability/aging-contrast/agent-stability-audit.ts][agent-stability-audit.ts]]
-     (=just audit-agent-stability=), emitting SARIF 2.1.0 and structured C2
-     repair packets across =SM2=–=SM5=, =SM7=–=SM9=, and =SM12=–=SM35=,
-     validated against 3 AI agent personas plus a full-stack Marlin/MyGo C2
-     convergence scenario.
+     (=just audit-agent-stability=, supporting =--files=, =--dir --lang --exclude-tests=,
+     and =--diff=), emitting SARIF 2.1.0 and structured C2 repair packets across
+     =SM2=–=SM5=, =SM7=–=SM9=, and =SM12=–=SM36=, validated against 3 AI agent
+     personas plus a full-stack Marlin/MyGo C2 convergence scenario.
 
-* Two-Hundred-Thirty-Two-Case Static Aging, Stability & AI-Defensive Cohort (=SA01=–=SA232=)
+* Two-Hundred-Forty-Case Static Aging, Stability & AI-Defensive Cohort (=SA01=–=SA240=)
 :PROPERTIES:
 :CUSTOM_ID: bench3006-cohort
 :END:
@@ -584,6 +596,14 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
 | =SA230= | Rust | Clean control | Pass (0 findings) | Hardened =classify_capability= checking =is_destructive_tool_name(tool_name)= before =declared_capability= and ="search"= fallback |
 | =SA231= | Rust | Clean control | Pass (0 findings) | Hardened =safe_relative_path= + =verify_confined_no_symlinks= + bounded non-symlink =LiveWeaverTomlConfig::load= (=MAX_WEAVER_CONFIG_BYTES=) |
 | =SA232= | TypeScript | Clean control | Pass (0 findings) | TS =classifyHarnessToolCapability= checking =isDestructiveToolName(toolName)= before =declaredCapability= and ="search"= fallback |
+| =SA233= | Rust | =SM36= (=ADV-L4=) | Refuse (=rust-otlp-cleartext-remote-endpoint=) | =OpenTelemetry::otlp_http= accepting remote cleartext =http://= collectors without loopback-only restriction or label checks |
+| =SA234= | Rust | =SM36= (=ADV-L4=) | Refuse (=rust-host-observer-unscrubbed-env=) | Detached sidecar spawned via =Command::new(env::current_exe()).spawn()= inheriting ambient host secrets without =.env_clear()= |
+| =SA235= | Rust | =SM36= (=ADV-L4=) | Refuse (=rust-watchdog-future-timestamp-blinding=) | =HostObserver::drain_pulses= updating =clock.last= with raw sender timestamp without rejecting future (> =monotonic_ns()=) values |
+| =SA236= | Rust | =SM36= (=ADV-L4=) | Refuse (=rust-deck-vm-unbounded-controls-or-timer-delay=) | =DeckContextModule::timer= omitting =MAX_TIMER_DELAY_US= ceiling or =owner::receive= leaving =Controls.modules=/=Controls.timers= unbounded |
+| =SA237= | TypeScript | =SM36= (=ADV-L4=) | Refuse (=ts-otlp-cleartext-remote-or-watchdog-future-ts=) | TS =validateOtlpEndpoint= accepting non-loopback cleartext =http://= collectors |
+| =SA238= | Rust | Clean control | Pass (0 findings) | Hardened =OpenTelemetry::otlp_http= (=validate_otlp_endpoint=) + =start_host_observer= (=.env_clear()=) |
+| =SA239= | Rust | Clean control | Pass (0 findings) | Hardened =HostObserver::drain_pulses= (=timestamp == 0 \|\| timestamp > now=) + =DeckContextModule::timer= (=MAX_TIMER_DELAY_US=) |
+| =SA240= | TypeScript | Clean control | Pass (0 findings) | TS =validateOtlpEndpoint= enforcing =https:= for remote hosts and =isLoopbackHost= for =http:= |
 
 * Empirical Adversarial Challenge Receipts on Downstream Packages
 :PROPERTIES:
@@ -634,13 +654,15 @@ package-domain adversarial test suites:
 | =marlin-agent-core= | =crates/marlin-agent-runtime/src/environment/{activation,resolver,state_storage}.rs=, =crates/marlin-agent-context/src/{org/store/file,governance,shared_scope,governed_bridge}.rs=, =sm34_env_activation_confinement.rs=, =sm34_context_governance_confinement.rs= | =SM34= (=ADV-L4=, 112th Quint Model, 52nd LeanPoo Module — Runtime Environment Activation Isolation, Symlink-Safe Envrc/Org Store Confinement, Monotonic Org/Channel Ledger Anti-Rollback & Recomputed Two-Zone KV-Prefix Integrity) | Hostile =ADV-L4= LIVE RED proved **5/5 live runtime exploits + 8/8 real-file SM34 static catches** (=SA213=–=SA217= across 6 files): =apply_direnv_json= admitted =LD_PRELOAD=/=DYLD_INSERT_LIBRARIES=/=BASH_ENV=, denylisted =OPENAI_API_KEY=, and malformed/NUL env entries (=status: Applied=), while =direnv_output= buffered stdout unboundedly via =wait_with_output()= and =allow= walked parent dirs; =direnv_cwd= accepted escaping/traversal/symlinked explicit =.envrc= paths, =resolve_sub_agent= admitted escaping =home_path= overrides, and =ensure_layout= followed symlinked state homes; =FileSystemOrgSourceStore= followed intermediate & leaf symlinks to exfiltrate =TOP_SECRET_CREDENTIAL= and write outside store root; =OrgGovernanceLedger::register_snapshot= allowed generation rollback (=1= after =2=) & active-lease staleness, =gov_id!= admitted blank/NUL IDs, and =SharedContextGovernanceLedger::create_channel= reset =acl_epoch= =2 -> 1= and wiped =tainted: true -> false=; =assemble_two_zone_gateway_messages= accepted forged Zone-1 =frozen_prefix= prompt injection (="IGNORE ALL PREVIOUS RULES..."=) with copied =kv_prefix_digest= while =commit_governed_org_subtree= allowed cross-task proxy commits | Hardened =runtime/environment/{activation,resolver,state_storage}.rs= & =context/{org/store/file,governance,shared_scope,governed_bridge}.rs= (loader-hijack/denylist/malformed-key refusal, 1 MiB / 4096-entry / 30s bounded =direnv= capture + =./.envrc= scoping, symlink-safe =confine_explicit_envrc=, =validate_child_home_path=, and state-home symlink refusal; =verify_confined_no_symlinks= + 16 MiB bounded read + =AtomicU64= temp seq in =FileSystemOrgSourceStore=; strict =gov_id!=, monotonic =GenerationRollback= / =ActiveLeasesPresent= / =MAX_GOVERNED_SOURCES= / 1 MiB replacement cap / lease-digest parity / atomic rebase in =OrgGovernanceLedger= + non-resetting =create_channel= in =SharedContextGovernanceLedger=; constant-time recomputed =compute_kv_prefix_digest(&envelope.frozen_prefix)= + =proposal.task_id == cursor.task_id= binding): =marlin-agent-runtime= environment **38/38 PASS (0.11s, SM34 2/2)**, =marlin-agent-context --features org-memory= **41/41 PASS (=--lib= 3/3, SM34 3/3, =org_store= 7/7, =governance= 2/2, =bridge= 1/1, =unit_test= 22/22, =shared_context_mbt= 3/3)**, =clippy --all-targets --no-deps= **0 warnings across all SM34-hardened modules & tests**, **42/42 files (=6 runtime/env + 36 context=) = 0 findings (=SA01=–=SA222=)** |
 | =marlin-agent-core= | =crates/marlin-agent-graph/src/{ids,governed_context,task_actor,planning}.rs=, =crates/marlin-agent-harness/src/{live_weaver/governance,live_weaver/config,intent_case_artifact}.rs=, =crates/marlin-agent-harness-types/src/intent_case.rs=, =sm35_graph_witness_and_routing_confinement.rs=, =sm35_artifact_confinement.rs=, =sm35_live_weaver_governance_and_config.rs= | =SM35= (=ADV-L4=, 113th Quint Model, 53rd LeanPoo Module — AgentGraph Sealed-Witness/Routing Integrity & Live Harness Cedar Governance, Artifact Confinement & Config Hygiene) | Hostile =ADV-L4= LIVE RED proved **5/5 live runtime exploits + 13/13 real-file static catches** (=11 SM35 SA223=–=SA227 + 2 SM3= across 7 files): derived =Deserialize= on =AdmittedGovernedContext=/=AdmittedMarlinDispatch=/=FencingEpoch= admitted forged JSON (=sandbox_admitted: false=, =cedar_handoff_valid: false=, =context_cut: 0=, =has_active_defeater: true= + =L0=, =BlockerActive= + =auto_archive: true=, =FencingEpoch(0)=), while =reconcile_marlin_execution_receipt= settled =Detached= scopes and saturated at =u64::MAX=; =Deterministic= & =CapabilityFirst= graph planning routed =AgentEdgeCondition::PolicyDecision("policy.require-human-escalation")= with zero policy receipt and admitted duplicate =candidate_edges=; =CompiledHarnessGovernanceGate::evaluate_tool_call= classified ="search_exec"= and caller-spoofed =declared_capability=Some("search")= on ="shell_exec"= as non-write ="search"= and matched allow/deny lists case-sensitively; =materialize_gerbil_scripted_intent_case_artifact_bundle= followed intermediate dir symlink =artifacts -> outside_victim= writing all 15 artifacts + =manifest.receipt= outside root and accepted =""=/="."= paths; =LiveWeaverTomlConfig::load= read a 300 KiB TOML file unboundedly without symlink/timeout/stream caps or =credential_env= validation | Hardened =graph/{ids,governed_context,task_actor,planning}.rs=, =harness/{live_weaver/governance,live_weaver/config,intent_case_artifact}.rs=, & =harness-types/intent_case.rs= (control-char-free IDs, custom validated =Deserialize= on =AdmittedGovernedContext=/=AdmittedMarlinDispatch=/=FencingEpoch=, =DetachedScopeCannotSettle=/=FencingEpochExhausted= reconciliation guards; receipt-gated =edge_condition_matches(..., has_policy_receipt)= + =HashSet= duplicate-edge rejection & =DuplicateCandidateEdge=; destructive-tool precedence =is_destructive_tool_name=/=is_shell_tool_name=/=is_write_capability_label= before =declared_capability= & ="search"= + case-insensitive allow/deny + compile-time empty/duplicate/contradictory policy refusal; =verify_confined_no_symlinks=, =BTreeSet= duplicate-path rejection, atomic =create_new+sync_all+rename=, & =MAX_MANIFEST_ARTIFACTS=64= across harness & harness-types; =MAX_WEAVER_CONFIG_BYTES=256KiB= non-symlink bounded read + =MAX_WEAVER_TIMEOUT_SECONDS=600= / =MAX_HARNESS_STREAM_BYTES=32MiB= + =validate_credential_env_name= blocking =PATH=/=HOME=/=LD_*=/=DYLD_*=/=BASH_ENV=/=SSH_*=/=GIT_*=): =marlin-agent-graph --test unit_test= **21/21 PASS (0.00s, SM35 2/2)**, =marlin-agent-harness-types --test unit_test= **8/8 PASS (0.00s)**, =marlin-agent-harness --test unit_test= **68/68 PASS (1.01s, SM35 1/1; 1 pre-existing live-LLM ignored)**, =marlin-agent-harness --features live-weaver= **=sm35_live_weaver_governance_and_config= 2/2 PASS (0.00s) + =live_weaver_search_eval= 1/1 PASS (22.53s, 1 pre-existing live-LLM ignored)**, =clippy --all-targets --no-deps -D warnings= **0 warnings across all 3 crates (incl. =--features live-weaver=)**, **44/44 files (=7 graph + 32 harness + 5 harness-types=) = 0 findings (=SA01=–=SA232=)** |
 
+| =marlin-agent-core= | =crates/marlin-agent-telemetry/src/{otlp,host_observer,host_watchdog}.rs=, =crates/marlin-agent-telemetry/tests/unit/sm36_telemetry_confinement.rs=, =crates/marlin-deck-runtime/src/runtime/{config,module,owner,handle}.rs=, =crates/marlin-deck-runtime/tests/unit/{runtime_queue,module_events}.rs=, =devenv.nix=, =Justfile=, =.github/workflows/defense-audit.yaml= | =SM36= (=ADV-L4=, 114th Quint Model, 54th LeanPoo Module — Telemetry OTLP/Observer/Watchdog Isolation, Deck Single-VM Capacity/Delay Confinement & Cross-Repo Static Gate Closure) | Hostile =ADV-L4= LIVE RED proved **4/4 live runtime exploits + 5/5 real-file SM36 static catches** (=SA233=–=SA236= across 526 prod Rust files, 0 FP): =OpenTelemetry::otlp_http= accepted cleartext remote =http://evil-collector.example:4318/v1/traces= and control/userinfo injection; =start_host_observer= spawned detached =Command::new(env::current_exe()).spawn()= inheriting all ambient host secrets without =.env_clear()= and followed symlinked report dir =escaped -> outside= creating =observer.jsonl= outside root; =HostObserver::attach= accepted =pid == 0= and =drain_pulses= blindly stored sender =u64::MAX= future timestamps blinding the stall watchdog indefinitely; =DeckContextModule::timer= enqueued a 365-day timer straight into the VM queue hanging callers (=Elapsed(())=) while =owner::Controls= left =modules=/=timers= unbounded. Cross-repo root-cause audit also found =marlin-agent-core= only wired G2 (=agent-defense-audit=) and had a Nix type error in =devenv.nix:142= (=excludes= string vs list) without wiring =agent-stability-audit.ts= in CI/Justfile/pre-commit | Hardened =otlp.rs= (=validate_otlp_endpoint= requiring =https://= for remote collectors and loopback-only =http://=, rejecting userinfo/control chars & malformed labels), =host_observer.rs= (=.env_clear()= minimal allowlist + =Stdio::null()= + =verify_report_path_no_symlinks= + bounded 64 KiB JSONL), =host_watchdog.rs= (=pid > 0= + fail-closed rejection of =timestamp == 0 \|\| timestamp > now= future-timestamp pulses), and =marlin-deck-runtime/src/runtime/{config,module,owner,handle}.rs= (=MAX_TIMER_DELAY_US= 24h ceiling enforced at both =module::timer= and =owner::receive=, configurable =max_active_modules=/=max_active_timers= ceilings =256/1024= default, =4096/16384= max with =Backpressure= rejection); upgraded =agent-stability-audit.ts= with =--dir/--lang/--exclude-tests= and closed cross-repo gates in =marlin-agent-core/{devenv.nix,Justfile,.github/workflows/defense-audit.yaml}= (=nix-instantiate --parse= OK): =marlin-agent-telemetry= **--test unit_test 6/6 PASS (0.08s, SM36 3/3), --test integration_test 4/4 PASS (1.37s), --test policy 1/1 PASS (0.16s, fail-closed =asp-rust=), =clippy --all-targets --no-deps -D warnings= 0 warnings**; =marlin-deck-runtime --features actor-runtime= **--lib 13/13 PASS (0.01s, SM36 2/2), --test unit_test 3/3 PASS (0.05s), --test actor_runtime_test 1/1 PASS (1.16s), --test context_text_budget_test 1/1 PASS (1.33s), =clippy --all-targets --no-deps -D warnings= 0 warnings**; =just audit-stability= & =just audit-g2= on both hardened crates **18/18 files = 0 findings**, committed-code 526-file sweep = **0 findings (=SA01=–=SA240=)** |
+
 * Unified Verification Command
 
 #+begin_src sh
-# Run full 5-language stability & AI-defensive gate (Quint/MBT + Lean 4 / LeanPoo + C/CBMC + C++20 + Rust + Go devenv -race/synctest/runtime-soak + TS Slope Oracle + SA01-SA232 + Metamorphic/ADV-L4 Fuzz + Closed-Loop Governance):
+# Run full 5-language stability & AI-defensive gate (Quint/MBT + Lean 4 / LeanPoo + C/CBMC + C++20 + Rust + Go devenv -race/synctest/runtime-soak + TS Slope Oracle + SA01-SA240 + Metamorphic/ADV-L4 Fuzz + Closed-Loop Governance):
 just check-stability
 
-# Audit current git diff or explicit files for SM2-SM5, SM7-SM9, and SM12-SM35 aging/search/cancellation/pipe/persistence/ADV-L4-confinement hazards:
+# Audit current git diff or explicit files for SM2-SM5, SM7-SM9, and SM12-SM36 aging/search/cancellation/pipe/persistence/ADV-L4-confinement hazards:
 just audit-agent-stability --files languages-engineering/go/stability/aging-contrast/deterministic_steady.go
 #+end_src
 

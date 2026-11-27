@@ -3601,10 +3601,123 @@ export function classifyHarnessToolCapability(toolName: string, declaredCapabili
   return toolName.toLowerCase().includes('search') ? 'search' : 'write';
 }`,
   },
+  // --- SM36: ADV-L4 Telemetry/Watchdog & Deck Single-VM Confinement (SA233-SA240) ---
+  {
+    id: 'SA233',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-otlp-cleartext-remote-endpoint',
+    source: `
+impl OpenTelemetry {
+  pub fn otlp_http(service_name: TelemetryServiceName, span_target: TraceTarget, traces_endpoint: &str) -> Result<Self, Err> {
+    let endpoint = traces_endpoint.parse::<http::Uri>()?;
+    if !matches!(endpoint.scheme_str(), Some("http" | "https")) { return Err(Err::InvalidEndpoint); }
+    Ok(Self::build(endpoint))
+  }
+}`,
+  },
+  {
+    id: 'SA234',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-host-observer-unscrubbed-env',
+    source: `
+pub fn start_host_observer(path: &Path) -> io::Result<HostPulse> {
+  let mut child = Command::new(env::current_exe()?).arg("--observer").spawn()?;
+  let _ = child;
+  Ok(send)
+}`,
+  },
+  {
+    id: 'SA235',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-watchdog-future-timestamp-blinding',
+    source: `
+impl HostObserver {
+  fn drain_pulses(&mut self, report: &mut impl FnMut(HostObservation)) {
+    let timestamp = u64::from_le_bytes(pulse[1..9].try_into().unwrap());
+    clock.last = Some(clock.last.unwrap_or(0).max(timestamp));
+  }
+}`,
+  },
+  {
+    id: 'SA236',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-deck-vm-unbounded-controls-or-timer-delay',
+    source: `
+impl DeckContextModule {
+  pub async fn timer(&self, delay: Duration) -> Result<DeckTimerReceipt, DeckRuntimeRejection> {
+    let delay_us = u64::try_from(delay.as_nanos().div_ceil(1000)).ok().filter(|d| *d > 0).ok_or(DeckRuntimeRejection::TimerDelay)?;
+    Ok(arm(delay_us))
+  }
+}`,
+  },
+  {
+    id: 'SA237',
+    language: 'ts',
+    expectedPass: false,
+    expectedRuleId: 'ts-otlp-cleartext-remote-or-watchdog-future-ts',
+    source: `
+export function validateOtlpEndpoint(raw: string): boolean {
+  const u = new URL(raw);
+  return u.protocol === 'http:' || u.protocol === 'https:';
+}`,
+  },
+  {
+    id: 'SA238',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+impl OpenTelemetry {
+  pub fn otlp_http(service_name: TelemetryServiceName, span_target: TraceTarget, traces_endpoint: &str) -> Result<Self, Err> {
+    validate_otlp_endpoint(traces_endpoint)?;
+    Ok(Self::build(traces_endpoint))
+  }
+}
+pub fn start_host_observer(path: &Path) -> io::Result<HostPulse> {
+  let mut child = Command::new(env::current_exe()?).env_clear().arg("--observer").spawn()?;
+  let _ = child;
+  Ok(send)
+}`,
+  },
+  {
+    id: 'SA239',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+impl HostObserver {
+  fn drain_pulses(&mut self, report: &mut impl FnMut(HostObservation)) {
+    let now = monotonic_ns();
+    let timestamp = u64::from_le_bytes(pulse[1..9].try_into().unwrap());
+    if timestamp == 0 || timestamp > now { return; }
+    clock.last = Some(clock.last.unwrap_or(0).max(timestamp));
+  }
+}
+impl DeckContextModule {
+  pub async fn timer(&self, delay: Duration) -> Result<DeckTimerReceipt, DeckRuntimeRejection> {
+    let delay_us = u64::try_from(delay.as_nanos().div_ceil(1000)).ok().filter(|d| *d > 0 && *d <= MAX_TIMER_DELAY_US).ok_or(DeckRuntimeRejection::TimerDelay)?;
+    Ok(arm(delay_us))
+  }
+}`,
+  },
+  {
+    id: 'SA240',
+    language: 'ts',
+    expectedPass: true,
+    source: `
+export function validateOtlpEndpoint(raw: string): boolean {
+  const u = new URL(raw);
+  if (u.protocol === 'https:') return true;
+  if (u.protocol === 'http:') return isLoopbackHost(u.hostname);
+  return false;
+}`,
+  },
 ];
 
-describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA232)', () => {
-  test('achieves 232/232 exact independent-gold match (tp=133, tn=99, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
+describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA240)', () => {
+  test('achieves 240/240 exact independent-gold match (tp=138, tn=102, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
     let tp = 0;
     let tn = 0;
     let fp = 0;
@@ -3627,7 +3740,7 @@ describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA232)', () 
       }
     }
 
-    expect({tp, tn, fp, fn}).toEqual({tp: 133, tn: 99, fp: 0, fn: 0});
+    expect({tp, tn, fp, fn}).toEqual({tp: 138, tn: 102, fp: 0, fn: 0});
   });
 
   test('clean Rust deterministic buffer pool & bounded retry passes with 0 findings', () => {

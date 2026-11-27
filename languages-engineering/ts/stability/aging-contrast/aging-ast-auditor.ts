@@ -41,7 +41,8 @@ export type AgingMechanism =
   | 'SM32-gitops-subprocess-confinement'
   | 'SM33-hook-policy-protocol-confinement'
   | 'SM34-runtime-env-context-confinement'
-  | 'SM35-graph-witness-harness-confinement';
+  | 'SM35-graph-witness-harness-confinement'
+  | 'SM36-telemetry-watchdog-deck-vm-confinement';
 
 export interface AgingFinding {
   ruleId: string;
@@ -2157,6 +2158,87 @@ function auditRust(clean: string): AgingFinding[] {
     }
   }
 
+  // 77. Rust OpenTelemetry::otlp_http admits remote cleartext http:// endpoints without loopback-only restriction (ADV-L4, SM36).
+  const otlpHttpMatch = /\bfn\s+otlp_http\s*\([^)]*\)/.exec(clean);
+  if (otlpHttpMatch) {
+    const fnBody = extractBraceBlock(clean, otlpHttpMatch.index);
+    const checksLoopback = /\b(?:is_loopback_otlp_host|validate_otlp_endpoint|is_loopback)\b/.test(fnBody);
+    if (!checksLoopback) {
+      findings.push({
+        ruleId: 'rust-otlp-cleartext-remote-endpoint',
+        mechanism: 'SM36-telemetry-watchdog-deck-vm-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, otlpHttpMatch.index),
+        message: 'OpenTelemetry::otlp_http admits remote cleartext http:// collectors without restricting plaintext HTTP to loopback hosts or validating service/target labels (ADV-L4, SM36).',
+      });
+    }
+  }
+
+  // 78. Rust self-reexec / host-observer sidecar spawns Command::new(env::current_exe()?) via .spawn() without .env_clear() (ADV-L4, SM36).
+  const selfExecCmdMatch = /Command::new\s*\(\s*(?:std::)?env::current_exe\s*\(\s*\)\??\s*\)/.exec(clean);
+  if (selfExecCmdMatch) {
+    const fnScope = extractEnclosingBlock(clean, selfExecCmdMatch.index);
+    if (
+      /\.spawn\s*\(\s*\)/.test(fnScope) &&
+      !/\.env_clear\s*\(\s*\)|\bapply_scrubbed_env\b|\bscrub_command_env\b/.test(fnScope)
+    ) {
+      findings.push({
+        ruleId: 'rust-host-observer-unscrubbed-env',
+        mechanism: 'SM36-telemetry-watchdog-deck-vm-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, selfExecCmdMatch.index),
+        message: 'Sidecar subprocess spawned via Command::new(env::current_exe()) inherits ambient host secrets and dynamic-loader env vars without .env_clear() (ADV-L4, SM36).',
+      });
+    }
+  }
+
+  // 79. Rust HostObserver::drain_pulses trusts sender-supplied timestamps without rejecting future (> monotonic_ns()) values (ADV-L4, SM36).
+  const drainPulsesMatch = /\bfn\s+drain_pulses\s*\([^)]*\)/.exec(clean);
+  if (drainPulsesMatch) {
+    const fnBody = extractBraceBlock(clean, drainPulsesMatch.index);
+    const updatesLast = /clock\.last\s*=\s*Some\s*\(/.test(fnBody);
+    const boundsFutureTs = /timestamp\s*>\s*now|\bmonotonic_ns\s*\(\s*\)/.test(fnBody);
+    if (updatesLast && !boundsFutureTs) {
+      findings.push({
+        ruleId: 'rust-watchdog-future-timestamp-blinding',
+        mechanism: 'SM36-telemetry-watchdog-deck-vm-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, drainPulsesMatch.index),
+        message: 'HostObserver::drain_pulses trusts sender-supplied timestamps without rejecting future values (> monotonic_ns()), allowing u64::MAX datagrams to permanently blind HeartbeatMissed (ADV-L4, SM36).',
+      });
+    }
+  }
+
+  // 80. Rust Deck single-VM owner::receive inserts into control.modules/timers without capacity bounds, OR DeckContextModule::timer omits MAX_TIMER_DELAY_US ceiling (ADV-L4, SM36).
+  const deckReceiveMatch = /\bfn\s+receive\s*\([\s\S]{0,300}?control:\s*&mut\s+Controls/.exec(clean);
+  if (deckReceiveMatch) {
+    const fnBody = extractBraceBlock(clean, deckReceiveMatch.index);
+    const insertsState = /control\.modules\.insert\s*\(/.test(fnBody) && /control\.timers\.insert\s*\(/.test(fnBody);
+    const hasCaps = /\b(?:max_active_modules|MAX_ACTIVE_MODULES)\b/.test(fnBody) && /\b(?:max_active_timers|MAX_ACTIVE_TIMERS)\b/.test(fnBody);
+    if (insertsState && !hasCaps) {
+      findings.push({
+        ruleId: 'rust-deck-vm-unbounded-controls-or-timer-delay',
+        mechanism: 'SM36-telemetry-watchdog-deck-vm-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, deckReceiveMatch.index),
+        message: 'Deck single-VM owner::receive inserts into control.modules and control.timers without enforcing bounded module/timer capacity ceilings (ADV-L4, SM36).',
+      });
+    }
+  }
+  const deckTimerFnMatch = /\bpub\s+async\s+fn\s+timer\s*\(\s*&self\s*,\s*delay:\s*Duration\s*\)/.exec(clean);
+  if (deckTimerFnMatch) {
+    const fnBody = extractBraceBlock(clean, deckTimerFnMatch.index);
+    if (!/\bMAX_TIMER_DELAY_US\b/.test(fnBody)) {
+      findings.push({
+        ruleId: 'rust-deck-vm-unbounded-controls-or-timer-delay',
+        mechanism: 'SM36-telemetry-watchdog-deck-vm-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, deckTimerFnMatch.index),
+        message: 'DeckContextModule::timer accepts unbounded u64 microsecond delays without MAX_TIMER_DELAY_US ceiling, letting callers pin native VM timer slots indefinitely (ADV-L4, SM36).',
+      });
+    }
+  }
+
   return findings;
 }
 
@@ -2551,6 +2633,21 @@ function auditTypeScript(clean: string): AgingFinding[] {
         language: 'ts',
         line: lineOfIndex(clean, tsClassifyToolMatch.index),
         message: 'classifyHarnessToolCapability trusts declaredCapability or "search" substring without checking isDestructiveToolName first (ADV-L4, SM35).',
+      });
+    }
+  }
+
+  // 29. TS validateOtlpEndpoint allows cleartext remote http:// without loopback check, OR acceptWatchdogPulse omits future timestamp bound (ADV-L4, SM36).
+  const tsOtlpMatch = /\bfunction\s+validateOtlpEndpoint\s*\([^)]*\)(?:\s*:\s*[^{]+)?\{/.exec(clean);
+  if (tsOtlpMatch) {
+    const fnBody = extractBraceBlock(clean, tsOtlpMatch.index + tsOtlpMatch[0].length - 1);
+    if (/['"]http:['"]/.test(fnBody) && !/\b(?:isLoopbackHost|localhost|127\.0\.0\.1)\b/.test(fnBody)) {
+      findings.push({
+        ruleId: 'ts-otlp-cleartext-remote-or-watchdog-future-ts',
+        mechanism: 'SM36-telemetry-watchdog-deck-vm-confinement',
+        language: 'ts',
+        line: lineOfIndex(clean, tsOtlpMatch.index),
+        message: 'validateOtlpEndpoint permits remote cleartext http:// collectors without restricting plaintext HTTP to loopback hosts (ADV-L4, SM36).',
       });
     }
   }

@@ -272,6 +272,14 @@ const MECHANISM_DIRECTIVES: Record<AgingMechanism, AgingRemediationDirective> = 
     antiEvasionWarning:
       'Do NOT evade by deriving Deserialize directly on sealed witness structs, returning true unconditionally for PolicyDecision(_) in edge_condition_matches, trusting caller declared_capability=Some("search") on exec/shell/rm tools, skipping symlink_metadata checks on intent-case artifact writes, or allowing PATH/HOME/LD_PRELOAD as credential_env in Weaver TOML configs.',
   },
+  'SM36-telemetry-watchdog-deck-vm-confinement': {
+    mechanism: 'SM36-telemetry-watchdog-deck-vm-confinement',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Restrict OpenTelemetry::otlp_http plaintext http:// strictly to loopback hosts while requiring https:// for remote collectors and rejecting empty hosts, @/%40 userinfo, query/fragment smuggling, and blank/control service or target labels; scrub detached host-observer sidecar env via .env_clear() with symlink-free parent report paths and strict PID/arg validation; reject future (> monotonic_ns()) or zero heartbeat timestamps and zero PID/timeout in HostObserver; and cap Controls.modules, Controls.timers, and DeckContextModule::timer delays (MAX_TIMER_DELAY_US) in marlin-deck-runtime with clean Backpressure/TimerDelay rejections.',
+    antiEvasionWarning:
+      'Do NOT evade by allowing remote http:// OTLP endpoints, trusting sender-supplied future timestamps in watchdog datagrams, spawning self-reexec sidecars with inherited ambient env, or leaving single-VM module/timer tables and timer delays unbounded.',
+  },
 };
 
 export function getAgingRemediation(finding: AgingFinding): AgingRemediationDirective {
