@@ -2065,6 +2065,76 @@ class BadDebugEnclaveSUT extends ConfidentialEnclaveAttestationSUT {
   }
 }
 
+class KeyRotationCryptoShreddingSUT {
+  activeEpoch = 1;
+  writeEpoch = 1;
+  epoch1Shredded = false;
+  digestPreserved = false;
+  safeOps = 0;
+  staleWriteViolations = 0;
+  shredReadViolations = 0;
+  rewrapMutationViolations = 0;
+
+  apply(action: string): void {
+    switch (action) {
+      case 'rotateToEpoch2':
+        if (this.activeEpoch === 1) this.activeEpoch = 2;
+        break;
+      case 'selectEpoch2Write':
+        if (this.activeEpoch === 2 && this.writeEpoch === 1) this.writeEpoch = 2;
+        break;
+      case 'shredEpoch1Key':
+        if (!this.epoch1Shredded) this.epoch1Shredded = true;
+        break;
+      case 'verifyPlaintextDigest':
+        if (!this.digestPreserved) this.digestPreserved = true;
+        break;
+      case 'commitCryptoOp':
+        if (
+          this.safeOps < 2 &&
+          this.writeEpoch === this.activeEpoch &&
+          !(this.writeEpoch === 1 && this.epoch1Shredded) &&
+          this.digestPreserved
+        ) {
+          this.safeOps += 1;
+        }
+        break;
+      default:
+        throw new Error(`Unknown KeyRotationCryptoShredding action: ${action}`);
+    }
+  }
+
+  snapshot() {
+    return {
+      activeEpoch: this.activeEpoch,
+      writeEpoch: this.writeEpoch,
+      epoch1Shredded: this.epoch1Shredded,
+      digestPreserved: this.digestPreserved,
+      safeOps: this.safeOps,
+      staleWriteViolations: this.staleWriteViolations,
+      shredReadViolations: this.shredReadViolations,
+      rewrapMutationViolations: this.rewrapMutationViolations,
+    };
+  }
+}
+
+class BadStaleKeyWriteSUT extends KeyRotationCryptoShreddingSUT {
+  override apply(action: string): void {
+    if (action === 'commitCryptoOp' && this.safeOps < 2) {
+      // Anti-pattern: drops active-epoch, non-shredded, and digest-preservation guards!
+      const activeOk = this.writeEpoch === this.activeEpoch;
+      const notShred = !(this.writeEpoch === 1 && this.epoch1Shredded);
+      const digOk = this.digestPreserved;
+      this.safeOps += 1;
+      if (!activeOk) this.staleWriteViolations += 1;
+      if (!notShred) this.shredReadViolations += 1;
+      if (!digOk) this.rewrapMutationViolations += 1;
+      return;
+    }
+    super.apply(action);
+  }
+}
+
 const repoRoot = resolve(import.meta.dir, '../../../..');
 
 function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(): Record<string, unknown>}>(
@@ -2117,7 +2187,7 @@ function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(
   }
 }
 
-describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (24 Defense Models)', () => {
+describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (25 Defense Models)', () => {
   test('EpistemicStateLattice ITF actions drive EpistemicLatticeSUT with exact step-by-step state isomorphism', () => {
     const stats = replayModelAgainstSut(
       'packages/quint-models/engineering/defense/epistemic-state-lattice/EpistemicStateLattice.qnt',
@@ -2645,6 +2715,27 @@ describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (24 Defense Models
       () => new ConfidentialEnclaveAttestationSUT(),
       projectH,
       () => new BadDebugEnclaveSUT(),
+    );
+    expect(stats.transitions).toBeGreaterThan(50);
+    expect(stats.brokenDiverged).toBe(true);
+  }, 30_000);
+
+  test('KeyRotationCryptoShredding ITF actions drive KeyRotationCryptoShreddingSUT with exact state isomorphism and reject BadStaleKeyWriteSUT', () => {
+    const projectH = (h: Record<string, unknown>) => ({
+      activeEpoch: asInt(h.activeEpoch),
+      writeEpoch: asInt(h.writeEpoch),
+      epoch1Shredded: Boolean(h.epoch1Shredded),
+      digestPreserved: Boolean(h.digestPreserved),
+      safeOps: asInt(h.safeOps),
+      staleWriteViolations: asInt(h.staleWriteViolations),
+      shredReadViolations: asInt(h.shredReadViolations),
+      rewrapMutationViolations: asInt(h.rewrapMutationViolations),
+    });
+    const stats = replayModelAgainstSut(
+      'packages/quint-models/engineering/defense/key-rotation-crypto-shredding/KeyRotationCryptoShredding.qnt',
+      () => new KeyRotationCryptoShreddingSUT(),
+      projectH,
+      () => new BadStaleKeyWriteSUT(),
     );
     expect(stats.transitions).toBeGreaterThan(50);
     expect(stats.brokenDiverged).toBe(true);

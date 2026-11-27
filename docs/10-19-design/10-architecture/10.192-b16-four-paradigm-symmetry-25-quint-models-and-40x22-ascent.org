@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 10.192 B16 Four-Paradigm Symmetry Closure: 25th Quint/Apalache Model, 25/25 MBT SUTs & 40×22 B1-B16 ASCENT (AG231-AG235)
+#+AUTHOR: Deterministic Engineering
+#+DATE: 2026-11-27
+
+* Executive Summary
+:PROPERTIES:
+:CUSTOM_ID: arch10192-summary
+:STATUS: executed-verified
+:END:
+
+Following the =B16= =LeanPoo= module and AES-256-GCM rotation/crypto-shredding runtime
+in [[file:10.191-leanpoo-b16-key-rotation-crypto-shredding-and-166-theorem-library.org][10.191]], Phase 44 completes **full four-paradigm symmetry across all 16 business
+pillars (=B1=–=B16=)** and reaches the **25-model Quint/Apalache/MBT milestone**:
+
+1. **Paradigm 1 — 25th Quint / Apalache Defense Model & 25/25 MBT SUT Refinement**:
+   - [[file:../../../packages/quint-models/engineering/defense/key-rotation-crypto-shredding/KeyRotationCryptoShredding.qnt][KeyRotationCryptoShredding.qnt]] proves active-epoch write fencing, permanent
+     crypto-shredding non-readability, and lossless re-wrap digest preservation
+     (=PLAN-OK passed=6, skipped=0, verify=true=), with all 3/3 =F3= =guard-probe=
+     checks proven =essential= and paired with =KeyRotationCryptoShreddingSUT= +
+     =BadStaleKeyWriteSUT= in =mbt-replay.test.ts=.
+2. **Paradigm 2 — Gerbil Scheme ASCENT Expanded to =40 sources × 22 outputs= (=B1=–=B16=)**:
+   - =DurableGovernanceMetaAuditProgram= in [[file:../../../library/defensive-governance/func.ss][func.ss]] adds 4 sources
+     (=tenant_active_key_epoch=, =shredded_key_epoch=, =release_aead_write=,
+     =release_aead_read=) and 2 outputs (=key_rotation_write_violation=,
+     =crypto_shred_read_violation=), disqualifying releases with
+     ="key-rotation-write-violation"= or ="crypto-shred-or-rewrap-violation"=.
+3. **Paradigm 3 — 235-Case Benchmark (=AG01=–=AG235=) Across 41 Bun Suites**:
+   - [[file:../../../languages-engineering/ts/defense/agent-audit/b16-four-paradigm-symmetry.test.ts][b16-four-paradigm-symmetry.test.ts]] verifies =AG231=–=AG235= across live =40×22= =gxi=
+     ASCENT, N-Version override of buggy imperative TS coordinators, 25-Quint CLI JSON gate,
+     and AES-256-GCM rotation/shredding + air-gapped Ed25519 =cedar-poo-spec= admission.
+4. **Paradigm 4 — 15-Module / 166-Theorem =LeanPoo= Fleet Attestation**:
+   - [[file:../../../languages-engineering/ts/defense/agent-audit/leanpoo-fleet-audit.ts][leanpoo-fleet-audit.ts]] updates =EXPECTED_QUINT_DEFENSE_MODELS= to **25 models**
+     and enforces live presence of =key_rotation_write_violation= and
+     =crypto_shred_read_violation= alongside single-shot 166/166-theorem =#print axioms=.
+
+* Verification Receipts
+:PROPERTIES:
+:CUSTOM_ID: arch10192-receipts
+:STATUS: executed-verified
+:END:
+
+- Model #25 Qualification: =just test-file t/yanxu/Quint.Engineering.Defense/key-rotation-crypto-shredding/qualification-test.ss= -> =HARNESS-OK=.
+- Apalache + =F3=: =PLAN-OK (passed=6, skipped=0, verify=true)= and 3/3 guards =classification=essential=.
+- 25-Model MBT SUT: =bun test languages-engineering/ts/defense/boundary-contrast/mbt-replay.test.ts= -> 25/25 pass.
+- Live =40×22= Gerbil ASCENT: =just test-file t/yanxu/Library/defensive-governance/governance-ascent-test.ss= -> =HARNESS-OK=.
+- Standalone 4-Paradigm CLI Gate: =just audit-leanpoo-fleet --json= -> =verdict: "Proven", quintModelCount: 25, ascentRulesPresent: true, moduleCount: 15, verifiedTheoremCount: 166, zeroMathlib: true, zeroCedar: true=.
+- Benchmark: [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05]] extended to **235 cases (=AG01=–=AG235=)** across 41 Bun test suites.

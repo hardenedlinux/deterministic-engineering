@@ -80,6 +80,7 @@ export const EXPECTED_QUINT_DEFENSE_MODELS = [
   'epistemic-state-lattice',
   'federated-arbitration-liveness',
   'hitl-durable-approval',
+  'key-rotation-crypto-shredding',
   'partial-order-delivery',
   'policy-admission-sufficiency',
   'release-sod-rollback',
@@ -154,7 +155,9 @@ export function auditFourParadigmCrossConsistency(params?: {
       ascentSrc.includes('supply_chain_dep_violation') &&
       ascentSrc.includes('reproducible_build_violation') &&
       ascentSrc.includes('enclave_attestation_violation') &&
-      ascentSrc.includes('enclave_nonce_replay_violation');
+      ascentSrc.includes('enclave_nonce_replay_violation') &&
+      ascentSrc.includes('key_rotation_write_violation') &&
+      ascentSrc.includes('crypto_shred_read_violation');
   }
   const ascentVerdict: EpistemicVerdict = ascentRulesPresent ? 'Proven' : 'Refuted';
 

@@ -20,7 +20,7 @@ This benchmark evaluates whether AST-level defensive-engineering auditors catch
 all four AI Agent defensive-hallucination classes (=G2= in [[file:../../10-19-design/10-architecture/10.153-defensive-engineering-taxonomy-and-modular-organization.org][10.153]]) without
 generating false positives on clean deterministic-boundary code.
 
-- *Independent Gold*: Every case (=AG01=–=AG230=) has a fixed independent
+- *Independent Gold*: Every case (=AG01=–=AG235=) has a fixed independent
   expected outcome (=pass= vs. =fail= + exact hallucination/anti-evasion/escalation/durable-resume class). Candidate
   auditor output never generates gold.
 - *Native AST, Diff-Delta, Scope-Fencing & Closed-Loop Governance Auditors Evaluated*:
@@ -286,6 +286,11 @@ generating false positives on clean deterministic-boundary code.
 | =AG228= | =B16 × B9= GDPR Crypto-Shred | Shred epoch 1 (=Buffer.fill(0)= + tombstone) while keeping epoch 2 & RFC 6962 log valid | Epoch 1 =Refuted=; Epoch 2 & Merkle proof =Proven= | Resolves GDPR Article 17 erasure vs. immutable Merkle audit log paradox across GC |
 | =AG229= | 13/13 =R3= Non-Leakable Caps | All 13 =M3= capability classes (including =RotatableTenantAeadKeyRing=) into =M1= | Refuse all 13/13 (=R3 ReachabilityLeakError=) | Mechanically blocks multi-epoch AES key rings from entering =M1= persistent storage |
 | =AG230= | 230-Case & 166-Thm Milestone | 24 Quint × 36×20 ASCENT × 15/166 CLI JSON -> Ed25519 cert -> =cedar-poo-spec= | **230/230 =Proven=** + all =M1= receipts survive GC | Closes 230-case benchmark & 15-module 166-theorem zero-Mathlib/zero-Cedar =LeanPoo= Library |
+| =AG231= | =B16= × 40×22 ASCENT Write | Live =gxi= ASCENT derives =key_rotation_write_violation= for stale & shredded writes | Derive both violations & disqualify; admit active | Projects live tenant key-epoch facts into 40×22 Scheme Datalog fixed-point |
+| =AG232= | =B16= × 40×22 ASCENT Shred | Live =gxi= ASCENT derives =crypto_shred_read_violation= for shredded read & mut rewrap | Derive both violations & disqualify; admit clean | Catches post-erasure read attempts & re-wrap plaintext digest mutation declaratively |
+| =AG233= | =B16= × N-Version Gate | Buggy TS coordinator claims =ADMIT= on stale-write & shredded-read releases | Refuse both (=oracle-disagreement-fail-closed=) + GC | Live Scheme ASCENT overrides imperative TS coordinator & pins forensic receipts |
+| =AG234= | 25-Quint × 166-Thm CLI | =leanpoo-fleet-audit --json= verifies 25 Quint × 40×22 ASCENT × 15/166 =LeanPoo= | =quint: 25, ascent: true, modules: 15, thms: 166= | Confirms 25th Quint model (=key-rotation-crypto-shredding=) + 40×22 ASCENT convergence |
+| =AG235= | 235-Case =B1=–=B16= Closure | AES-256-GCM rotation/shred + =B10= QC -> dual ASCENT -> 25-Quint cert -> =cedar-poo-spec= | **235/235 =Proven=** + all =M1= receipts survive GC | Seals complete four-paradigm symmetry across all 16 business pillars (=B1=–=B16=) |
 
 * Observed Verification Receipts
 :PROPERTIES:
@@ -334,14 +339,15 @@ generating false positives on clean deterministic-boundary code.
 | =B15= Confidential Compute / Hardware TEE Attestation + 14-Module / **156-Theorem =LeanPoo=** & **220-Case Regression Seal** (=AG216=–=AG220=, =10.189=, =90.152=) | =bun test languages-engineering/ts/defense/agent-audit/confidential-enclave-attestation.test.ts= + full 38-suite + C/CBMC/C++/Rust/Gerbil seal | **5/5 cases matched gold** (live **156/156** 14-module =LeanPoo= sweep, 9-vector TEE attack matrix, =B14->B15= hardware chain, 12/12 =R3= caps, full 38-suite + CBMC 50/50 + C++20 + Rust + Gerbil ASCENT seal) |
 | =B15= Four-Paradigm Symmetry Closure: 24th Quint/Apalache Model + 24/24 MBT SUT + 36×20 =B1=–=B15= ASCENT (=AG221=–=AG225=, =10.190=) | =bun test languages-engineering/ts/defense/agent-audit/b15-four-paradigm-symmetry.test.ts= + =mbt-replay.test.ts= + =governance-ascent-test.ss= | **5/5 cases matched gold** (model #24 Apalache 6/6 =PLAN-OK= & 3/3 =F3= essential, 24/24 MBT SUT isomorphism, live 36×20 =gxi= ASCENT TEE/replay catch, 24-Quint × 156-Thm CLI + air-gapped =cedar-poo-spec= closure) |
 | =B16= Zero-Downtime AEAD Key Rotation & Cryptographic Erasure + 15-Module / **166-Theorem =LeanPoo=** Library (=AG226=–=AG230=, =10.191=) | =bun test languages-engineering/ts/defense/agent-audit/key-rotation-crypto-shredding.test.ts= + =just audit-leanpoo-fleet --json= | **5/5 cases matched gold** (live **166/166** 15-module =LeanPoo= sweep, AES-256-GCM zero-downtime re-wrap, GDPR crypto-shredding with intact RFC 6962 consistency proof, 13/13 =R3= caps & 230-case milestone) |
-| Combined **230-case** 5-language, 24-Quint MBT, Full =B1=–=B15= 36×20 ASCENT & **166-Theorem =LeanPoo=** benchmark | =just check-defense= | **230/230 exact gold match** (=tp=149, tn=81, fp=0, fn=0=) |
+| =B16= Four-Paradigm Symmetry Closure: **25th Quint/Apalache Model** + 25/25 MBT SUT + 40×22 =B1=–=B16= ASCENT (=AG231=–=AG235=, =10.192=) | =bun test languages-engineering/ts/defense/agent-audit/b16-four-paradigm-symmetry.test.ts= + =mbt-replay.test.ts= + =governance-ascent-test.ss= | **5/5 cases matched gold** (model #25 Apalache 6/6 =PLAN-OK= & 3/3 =F3= essential, 25/25 MBT SUT isomorphism, live 40×22 =gxi= ASCENT key-lifecycle catch, 25-Quint × 166-Thm CLI + air-gapped =cedar-poo-spec= closure) |
+| Combined **235-case** 5-language, 25-Quint MBT, Full =B1=–=B16= 40×22 ASCENT & **166-Theorem =LeanPoo=** benchmark | =just check-defense= | **235/235 exact gold match** (=tp=152, tn=83, fp=0, fn=0=) |
 
 * Limits
 :PROPERTIES:
 :CUSTOM_ID: bench3005-limits
 :END:
 
-This 230-case benchmark establishes deterministic AST-level, diff-delta,
+This 235-case benchmark establishes deterministic AST-level, diff-delta,
 scope-fencing, bounded closed-loop, hot-policy co-evolution, async-cut,
 semantic-drift memoization, AEAD-isolated Merkle storage, role-projected
 context, multi-agent SSI concurrency, and business SoD/replay precision and

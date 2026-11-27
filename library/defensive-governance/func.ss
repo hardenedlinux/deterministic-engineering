@@ -708,7 +708,11 @@
     expected_enclave_measurement
     enclave_quote
     revoked_tee_platform
-    tee_quote_nonce)
+    tee_quote_nonce
+    tenant_active_key_epoch
+    shredded_key_epoch
+    release_aead_write
+    release_aead_read)
   (outputs
     effectively_revoked
     belief_poisoned
@@ -728,6 +732,8 @@
     reproducible_build_violation
     enclave_attestation_violation
     enclave_nonce_replay_violation
+    key_rotation_write_violation
+    crypto_shred_read_violation
     release_disqualified
     release_admitted)
   (relation delegation_edge ((parent string?) (child string?)))
@@ -766,6 +772,10 @@
   (relation enclave_quote ((rel_id string?) (platform_id string?) (measured_digest string?) (debug_disabled string?) (tcb_ok string?)))
   (relation revoked_tee_platform ((platform_id string?)))
   (relation tee_quote_nonce ((rel_id string?) (nonce string?)))
+  (relation tenant_active_key_epoch ((tenant_id string?) (epoch string?)))
+  (relation shredded_key_epoch ((tenant_id string?) (epoch string?)))
+  (relation release_aead_write ((rel_id string?) (tenant_id string?) (write_epoch string?)))
+  (relation release_aead_read ((rel_id string?) (tenant_id string?) (read_epoch string?) (digest_preserved string?)))
 
   ;; Internal stratified helper relations for pure relational identity, cross-log finality, slashing, B11 MCP pinning, B13 wait-graph reachability, B14 artifact equality & B15 release identity:
   (relation same_root ((r1 string?) (r2 string?)))
@@ -796,6 +806,8 @@
   (relation reproducible_build_violation ((rel_id string?) (reason string?)))
   (relation enclave_attestation_violation ((rel_id string?) (reason string?)))
   (relation enclave_nonce_replay_violation ((rel1 string?) (rel2 string?) (nonce string?)))
+  (relation key_rotation_write_violation ((rel_id string?) (tenant_id string?) (write_epoch string?) (reason string?)))
+  (relation crypto_shred_read_violation ((rel_id string?) (tenant_id string?) (read_epoch string?) (reason string?)))
   (relation release_disqualified ((rel_id string?) (reason string?)))
   (relation release_admitted ((rel_id string?)))
 
@@ -986,7 +998,25 @@
    (tee_quote_nonce R2 Nonce)
    (not (same_release R1 R2)))
 
-  ;; 6. Cross-pillar B1/B3/B5/B6/B8/B9/B10/B10c/B11/B12/B13/B14/B15 release disqualification & clean admission:
+  ;; 5h. B16 Zero-Downtime AEAD Key Rotation & Cryptographic Erasure (Crypto-Shredding):
+  ((key_rotation_write_violation Rel Tenant Ep (lit "stale-write-epoch"))
+   <--
+   (release_aead_write Rel Tenant Ep)
+   (tenant_active_key_epoch Tenant _)
+   (not (tenant_active_key_epoch Tenant Ep)))
+  ((key_rotation_write_violation Rel Tenant Ep (lit "write-to-shredded-epoch"))
+   <--
+   (release_aead_write Rel Tenant Ep)
+   (shredded_key_epoch Tenant Ep))
+  ((crypto_shred_read_violation Rel Tenant Ep (lit "read-shredded-key-epoch"))
+   <--
+   (release_aead_read Rel Tenant Ep _)
+   (shredded_key_epoch Tenant Ep))
+  ((crypto_shred_read_violation Rel Tenant Ep (lit "rewrap-digest-mutated"))
+   <--
+   (release_aead_read Rel Tenant Ep (lit "no")))
+
+  ;; 6. Cross-pillar B1/B3/B5/B6/B8/B9/B10/B10c/B11/B12/B13/B14/B15/B16 release disqualification & clean admission:
   ((release_finality_satisfied Rel Ckpt)
    <--
    (release_proposal Rel _ _ Log)
@@ -1055,6 +1085,14 @@
    <--
    (release_proposal Rel _ _ _)
    (enclave_nonce_replay_violation Rel _ _))
+  ((release_disqualified Rel (lit "key-rotation-write-violation"))
+   <--
+   (release_proposal Rel _ _ _)
+   (key_rotation_write_violation Rel _ _ _))
+  ((release_disqualified Rel (lit "crypto-shred-or-rewrap-violation"))
+   <--
+   (release_proposal Rel _ _ _)
+   (crypto_shred_read_violation Rel _ _ _))
   ((release_admitted Rel)
    <--
    (release_proposal Rel _ _ _)
