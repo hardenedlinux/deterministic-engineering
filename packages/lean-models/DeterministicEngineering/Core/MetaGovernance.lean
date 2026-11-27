@@ -1063,4 +1063,49 @@ theorem dsseEnvelope_rejects_subject_predicate_digest_mismatch {Digest : Type}
   | Or.inl hSys => exact hSys hSafe.2.2.1
   | Or.inr hFlt => exact hFlt hSafe.2.2.2.1
 
+/-! ## 18. M-of-N Threshold Quorum Attestation (`--min-signatures` & `--cosign-dsse-statement`) -/
+
+/-- Pure structural pairwise-distinctness predicate over signer key lists (zero axioms, no `List.Mem`). -/
+def pairwiseDistinct {Key : Type} : List Key → Prop
+  | [] => True
+  | k :: rest => ¬ containsKey k rest ∧ pairwiseDistinct rest
+
+/-- Constructive zero-axiom M-of-N threshold quorum predicate:
+requires `requiredQuorum ≥ 1`, all verified signer keys are pairwise distinct (defeating
+duplicate-keyId signature padding attacks), and at least `requiredQuorum` distinct keys verified. -/
+def DsseQuorumSatisfied {Key : Type}
+    (distinctVerifiedKeys : List Key) (requiredQuorum : Nat) : Prop :=
+  1 ≤ requiredQuorum ∧
+  pairwiseDistinct distinctVerifiedKeys ∧
+  requiredQuorum ≤ distinctVerifiedKeys.length
+
+/-- Constructive zero-axiom proof: fewer than `requiredQuorum` distinct verified keys NEVER satisfy
+the M-of-N threshold quorum. -/
+theorem dsseQuorum_rejects_below_threshold {Key : Type}
+    (distinctVerifiedKeys : List Key) (requiredQuorum : Nat)
+    (hBelow : distinctVerifiedKeys.length < requiredQuorum) :
+    ¬ DsseQuorumSatisfied distinctVerifiedKeys requiredQuorum := by
+  intro hQ
+  exact Nat.lt_irrefl _ (Nat.lt_of_lt_of_le hBelow hQ.2.2)
+
+/-- Constructive zero-axiom proof: padding a signature list with a duplicate keyId (`containsKey k rest`)
+is unconditionally rejected by `DsseQuorumSatisfied` regardless of raw list length. -/
+theorem dsseQuorum_rejects_duplicate_key_padding {Key : Type}
+    (k : Key) (rest : List Key) (requiredQuorum : Nat)
+    (hDup : containsKey k rest) :
+    ¬ DsseQuorumSatisfied (k :: rest) requiredQuorum := by
+  intro hQ
+  exact hQ.2.1.1 hDup
+
+/-- Constructive zero-axiom proof: offline counter-signing (`--cosign-dsse-statement`) by a fresh
+distinct admitted key strictly advances M-of-N quorum capacity from `q` to `q + 1`. -/
+theorem dsseQuorum_monotonic_under_fresh_cosigner {Key : Type}
+    (newKey : Key) (existing : List Key) (q : Nat)
+    (hFresh : ¬ containsKey newKey existing)
+    (hQ : DsseQuorumSatisfied existing q) :
+    DsseQuorumSatisfied (newKey :: existing) (q + 1) :=
+  ⟨Nat.le_trans hQ.1 (Nat.le_succ q),
+   ⟨hFresh, hQ.2.1⟩,
+   Nat.succ_le_succ hQ.2.2⟩
+
 end DeterministicEngineering.Core.MetaGovernance

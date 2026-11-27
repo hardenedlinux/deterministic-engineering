@@ -29,6 +29,7 @@ import {
   canonicalFleetSigningPayload,
   canonicalReportSigningPayload,
   canonicalWitnessSigningPayload,
+  cosignDsseStatementOffline,
   dsseV1Pae,
   exportTrustBundleOffline,
   inspectDsseStatementVerified,
@@ -1231,5 +1232,98 @@ describe('Zero-Dependency TS/Bun Offline Attestation Verifier (25 Controls + Ger
     const docDsseFail = JSON.parse(resDsseCliFail.stdout.trim());
     expect(docDsseFail.ok).toBe(false);
     expect(docDsseFail.verifiedKeyIds).toBeUndefined();
+
+    // Controls 43-45: M-of-N Threshold Quorum (`--min-signatures`) & Air-Gapped Counter-Signing (`--cosign-dsse-statement`):
+    //   43: `--min-signatures 2` rejects single-signer envelope, rejects duplicate-keyId padding `[k1, k1]`,
+    //       and rejects `[revoked K1, active K2]` under `tpExported` (only 1 distinct active key)!
+    //   44: `--cosign-dsse-statement` refuses invalid envelopes, revoked cosigners, and mismatched keypairs!
+    //   45: Air-gapped K2 cosign of K1-signed envelope upgrades 1-of-2 -> 2-of-2 quorum (`minSignatures=2`)!
+    const dsseDupK1 = signDsse(
+      'application/vnd.in-toto+json',
+      stmtDoc,
+      [k1, k1],
+      join(WORK_DIR, 'dup-k1-k1.intoto.dsse.json'),
+    );
+    expect(verifyDsseStatementOffline(dsseValidK1, tpInlineAll, {minSignatures: 2})).toBe(false);
+    expect(verifyDsseStatementOffline(dsseDupK1, tpInlineAll, {minSignatures: 2})).toBe(false);
+    expect(verifyDsseStatementOffline(dsseRotatedK1K2, tpExported, {minSignatures: 2})).toBe(false);
+    expect(verifyDsseStatementOffline(dsseRotatedK1K2, tpInlineAll, {minSignatures: 2})).toBe(true);
+
+    const cosignKeysDir = join(WORK_DIR, 'cosign-keys');
+    mkdirSync(cosignKeysDir, {recursive: true});
+    const k1PrivCosign = join(cosignKeysDir, 'k1.pem');
+    const k1PubCosign = join(cosignKeysDir, 'k1.pub.pem');
+    const k2PrivCosign = join(cosignKeysDir, 'k2.pem');
+    const k2PubCosign = join(cosignKeysDir, 'k2.pub.pem');
+    writeFileSync(k1PrivCosign, k1.privPem, {mode: 0o600});
+    writeFileSync(k1PubCosign, k1.pubPem, 'utf8');
+    writeFileSync(k2PrivCosign, k2.privPem, {mode: 0o600});
+    writeFileSync(k2PubCosign, k2.pubPem, 'utf8');
+
+    const badCosignOut = join(WORK_DIR, 'bad-cosign.intoto.dsse.json');
+    expect(() =>
+      cosignDsseStatementOffline(dsseSubjectMismatch, k2PrivCosign, k2PubCosign, tpInlineAll, badCosignOut),
+    ).toThrow();
+    expect(existsSync(badCosignOut)).toBe(false);
+    expect(() =>
+      cosignDsseStatementOffline(dsseRotatedK1K2, k1PrivCosign, k1PubCosign, tpExported, badCosignOut),
+    ).toThrow();
+    expect(() =>
+      cosignDsseStatementOffline(dsseValidK1, k1PrivCosign, k2PubCosign, tpInlineAll, badCosignOut),
+    ).toThrow();
+    expect(existsSync(badCosignOut)).toBe(false);
+
+    const cosignedOut = join(WORK_DIR, 'cosigned-2of2.intoto.dsse.json');
+    const resCosignCli = runTsCli([
+      '--json',
+      '--cosign-dsse-statement',
+      '--expected-sysml-sha256',
+      'sysmlsha',
+      '--expected-subject-count',
+      '1',
+      '--require-subject',
+      'demo',
+      dsseValidK1,
+      k2PrivCosign,
+      k2PubCosign,
+      tsInlineAll,
+      cosignedOut,
+    ]);
+    expect(resCosignCli.exitCode).toBe(0);
+    const docCosign = JSON.parse(resCosignCli.stdout.trim());
+    expect(docCosign.ok).toBe(true);
+    expect(docCosign.cosignerKeyId).toBe(k2.kid);
+    expect(docCosign.verifiedKeyIds.length).toBe(2);
+
+    const resQuorumOk = runTsCli([
+      '--json',
+      '--verify-dsse-statement',
+      '--expected-sysml-sha256',
+      'sysmlsha',
+      '--expected-subject-count',
+      '1',
+      '--require-subject',
+      'demo',
+      '--min-signatures',
+      '2',
+      cosignedOut,
+      tsInlineAll,
+    ]);
+    expect(resQuorumOk.exitCode).toBe(0);
+    const docQuorumOk = JSON.parse(resQuorumOk.stdout.trim());
+    expect(docQuorumOk.ok).toBe(true);
+    expect(docQuorumOk.minSignatures).toBe(2);
+    expect(docQuorumOk.verifiedKeyIds).toEqual([k1.kid, k2.kid].sort());
+
+    const resQuorumFail = runTsCli([
+      '--json',
+      '--verify-dsse-statement',
+      '--min-signatures',
+      '2',
+      dsseDupK1,
+      tsInlineAll,
+    ]);
+    expect(resQuorumFail.exitCode).not.toBe(0);
+    expect(JSON.parse(resQuorumFail.stdout.trim()).ok).toBe(false);
   });
 });

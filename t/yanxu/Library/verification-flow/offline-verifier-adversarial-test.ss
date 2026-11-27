@@ -624,9 +624,11 @@
 
       ;; Sign DSSE v1 in-toto statement envelopes BEFORE deleting `keys/` from disk (Attacks 40-42).
       (def dsse-k1 (path-expand "adv-k1.intoto.dsse.json" work))
+      (def dsse-dup-k1 (path-expand "adv-dup-k1.intoto.dsse.json" work))
       (def dsse-rot (path-expand "adv-rot.intoto.dsse.json" work))
       (def dsse-bad-type (path-expand "adv-bad-type.intoto.dsse.json" work))
       (def dsse-bad-sub (path-expand "adv-bad-sub.intoto.dsse.json" work))
+      (def dsse-cosigned (path-expand "adv-cosigned-2of2.intoto.dsse.json" work))
       (let* ((fok-doc (call-with-input-file fleet-ok (cut read-json <> object-as-hash: #t)))
              (fok-sha (hash-get (hash-get fok-doc "attestation") "payloadSha256"))
              (base-stmt
@@ -651,6 +653,11 @@
           (hash ("payloadType" ptype)
                 ("payload" payload-b64)
                 ("signatures" (list (hash ("keyid" kid1) ("sig" sig-k1))))))
+        (write-json-file dsse-dup-k1
+          (hash ("payloadType" ptype)
+                ("payload" payload-b64)
+                ("signatures" (list (hash ("keyid" kid1) ("sig" sig-k1))
+                                    (hash ("keyid" kid1) ("sig" sig-k1))))))
         (write-json-file dsse-rot
           (hash ("payloadType" ptype)
                 ("payload" payload-b64)
@@ -677,7 +684,28 @@
           (write-json-file dsse-bad-sub
             (hash ("payloadType" ptype)
                   ("payload" (base64-encode (string->utf8 bad-sub-json)))
-                  ("signatures" (list (hash ("keyid" kid2) ("sig" bad-sub-sig))))))))
+                  ("signatures" (list (hash ("keyid" kid2) ("sig" bad-sub-sig)))))))
+        ;; Attack 44 (pre-delete): Offline DSSE counter-signing (`cosign-dsse-statement-offline`):
+        ;;   Refuses invalid envelope, revoked cosigner, and mismatched keypair; succeeds for valid K2!
+        (let ((tp-pre-inline (load-trust-store-json-lite ts-inline-path))
+              (tp-pre-exported (load-trust-store-json-lite exported-bundle-path))
+              (bad-cosign-out (path-expand "bad-cosign.intoto.dsse.json" work)))
+          (check-equal?
+            (throws? (lambda () (cosign-dsse-statement-offline dsse-bad-sub (cadr k2) (caddr k2) tp-pre-inline bad-cosign-out)))
+            #t)
+          (check-equal? (file-exists? bad-cosign-out) #f)
+          (check-equal?
+            (throws? (lambda () (cosign-dsse-statement-offline dsse-rot (cadr k1) (caddr k1) tp-pre-exported bad-cosign-out)))
+            #t)
+          (check-equal?
+            (throws? (lambda () (cosign-dsse-statement-offline dsse-k1 (cadr k1) (caddr k2) tp-pre-inline bad-cosign-out)))
+            #t)
+          (let ((cres (cosign-dsse-statement-offline dsse-k1 (cadr k2) (caddr k2) tp-pre-inline dsse-cosigned
+                        expected-sysml-sha256: "sysml-sha"
+                        expected-subject-count: 1
+                        required-subjects: '("demo"))))
+            (check-equal? (hash-get cres "cosignerKeyId") kid2)
+            (check-equal? (length (hash-get cres "verifiedKeyIds")) 2))))
 
       ;; Physically delete ALL .pub.pem files from disk before running inline-bundle verification!
       (yuanxu-test-checkpoint 'after-export-bundle-attacks)
@@ -940,5 +968,34 @@
       (check-equal? (verify-dsse-statement-offline dsse-bad-sub tp-inline) #f)
       (check-equal? (verify-dsse-statement-offline dsse-rot tp-exported
                       expected-sysml-sha256: "downgraded-sysml") #f)
+
+      ;; Attacks 43 & 45 (post-key-deletion): M-of-N Threshold Quorum (`--min-signatures 2`):
+      ;;   43: Rejects single-signer, rejects duplicate-keyId padding `[k1, k1]`, rejects `[revoked K1, K2]`.
+      ;;   45: Gerbil-cosigned 2-of-2 DSSE envelope passes `--min-signatures 2` in BOTH Gerbil & Bun/TS!
+      (check-equal? (verify-dsse-statement-offline dsse-k1 tp-inline min-signatures: 2) #f)
+      (check-equal? (verify-dsse-statement-offline dsse-dup-k1 tp-inline min-signatures: 2) #f)
+      (check-equal? (verify-dsse-statement-offline dsse-rot tp-exported min-signatures: 2) #f)
+      (check-equal? (verify-dsse-statement-offline dsse-cosigned tp-inline
+                      expected-sysml-sha256: "sysml-sha"
+                      expected-subject-count: 1
+                      required-subjects: '("demo")
+                      min-signatures: 2) #t)
+      (let* ((ts-cmd (string-append
+                       "cd \"" repo-root "\" && bun t/harness/offline-attestation-verifier.ts "
+                       "--json --verify-dsse-statement --expected-sysml-sha256 sysml-sha "
+                       "--expected-subject-count 1 --require-subject demo --min-signatures 2 "
+                       "\"" dsse-cosigned "\" \"" ts-inline-path "\""))
+             (proc (open-process
+                     (list path: "/bin/bash"
+                           arguments: (list "-euo" "pipefail" "-c" ts-cmd)
+                           stdin-redirection: #f
+                           stdout-redirection: #t
+                           stderr-redirection: #t)))
+             (ts-out (read-all-as-string proc))
+             (ts-st (process-status proc)))
+        (close-port proc)
+        (check-equal? ts-st 0)
+        (check (and (string-contains ts-out "\"ok\":true") #t) => #t)
+        (check (and (string-contains ts-out "\"minSignatures\":2") #t) => #t))
 
       (run-process (list "rm" "-rf" work)))))

@@ -18,7 +18,7 @@
  *   bun t/harness/offline-attestation-verifier.ts [--json] --export-trust-bundle <out.json> [--revoke <keyId>]... <pub1.pem>...
  */
 
-import {createHash, createPublicKey, verify as cryptoVerify} from 'node:crypto';
+import {createHash, createPublicKey, sign as cryptoSign, verify as cryptoVerify} from 'node:crypto';
 import {existsSync, lstatSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
 import {dirname, join, resolve} from 'node:path';
 
@@ -414,6 +414,7 @@ export interface FleetVerifyOptions {
   expectedSysmlSha256?: string;
   expectedSubjectCount?: number;
   requiredSubjects?: ReadonlyArray<string>;
+  minSignatures?: number;
 }
 
 function normalizeFleetOpts(
@@ -917,6 +918,8 @@ export function inspectDsseStatementVerified(
   optsOrSha?: string | FleetVerifyOptions,
 ): VerifiedDsseStatementSummary | null {
   const opts = normalizeFleetOpts(optsOrSha);
+  const minSignatures = opts.minSignatures ?? 1;
+  if (!Number.isInteger(minSignatures) || minSignatures < 1) return null;
   if (!existsSync(dssePath)) return null;
   const env = readJsonObject(dssePath);
   if (!env) return null;
@@ -946,7 +949,7 @@ export function inspectDsseStatementVerified(
       if (!verifiedKeyIds.includes(kid)) verifiedKeyIds.push(kid);
     }
   }
-  if (verifiedKeyIds.length === 0) return null;
+  if (verifiedKeyIds.length < minSignatures) return null;
 
   let stmt: unknown;
   try {
@@ -1040,6 +1043,77 @@ export function verifyDsseStatementOffline(
   return inspectDsseStatementVerified(dssePath, trustPair, optsOrSha) !== null;
 }
 
+export interface CosignDsseResult {
+  cosignerKeyId: string;
+  verifiedKeyIds: string[];
+  signatureCount: number;
+}
+
+/**
+ * Air-gapped offline DSSE v1 counter-signer (`--cosign-dsse-statement`):
+ * Verifies the input DSSE envelope against `trustPair`, validates non-symlink keypair & active
+ * admission, signs DSSE v1 PAE, self-verifies, deduplicates `keyid`, and writes `outPath` safely.
+ */
+export function cosignDsseStatementOffline(
+  inDssePath: string,
+  privPath: string,
+  pubPath: string,
+  trustPair: TrustPair,
+  outPath: string,
+  optsOrSha?: string | FleetVerifyOptions,
+): CosignDsseResult {
+  const preSummary = inspectDsseStatementVerified(inDssePath, trustPair, optsOrSha);
+  if (preSummary === null) {
+    throw new Error(`Refusing to cosign unverified or policy-failing DSSE envelope: ${inDssePath}`);
+  }
+  assertSafeStatementOutputPath(outPath);
+  const cwd = process.cwd();
+  const resolvedPriv = resolveTrustedPemPath(cwd, privPath);
+  const resolvedPub = resolveTrustedPemPath(cwd, pubPath);
+  const pubPem = readFileSync(resolvedPub, 'utf8');
+  if (!isInlinePemString(pubPem)) {
+    throw new Error(`Cosigner public key must be a valid PUBLIC KEY PEM: ${pubPath}`);
+  }
+  const cosignerKid = sha256Str(pubPem).slice(0, 16);
+  const admittedPub = trustStoreKeyAdmitted(trustPair.trusted, trustPair.revoked, cosignerKid);
+  if (!admittedPub) {
+    throw new Error(`Refusing to cosign with untrusted or revoked keyId: ${cosignerKid}`);
+  }
+  const env = readJsonObject(inDssePath);
+  if (!env || typeof env.payloadType !== 'string' || typeof env.payload !== 'string') {
+    throw new Error(`Malformed DSSE envelope: ${inDssePath}`);
+  }
+  const payloadBuf = Buffer.from(env.payload, 'base64');
+  const paeBuf = dsseV1Pae(env.payloadType, payloadBuf);
+  const privPem = readFileSync(resolvedPriv, 'utf8');
+  const newSig = cryptoSign(null, paeBuf, privPem).toString('base64');
+  if (!ed25519VerifyBytes(pubPem, paeBuf, newSig)) {
+    throw new Error(`Cosigner private/public keypair mismatch (self-verification failed): ${cosignerKid}`);
+  }
+  const priorSigs = Array.isArray(env.signatures) ? env.signatures : [];
+  const keptSigs = priorSigs.filter((e) => isPlainObject(e) && e.keyid !== cosignerKid);
+  const nextSigs = [...keptSigs, {keyid: cosignerKid, sig: newSig}];
+  const nextEnv = {
+    payloadType: env.payloadType,
+    payload: env.payload,
+    signatures: nextSigs,
+  };
+  const parentDir = dirname(resolve(outPath));
+  if (!existsSync(parentDir)) {
+    mkdirSync(parentDir, {recursive: true});
+  }
+  writeFileSync(outPath, `${JSON.stringify(nextEnv)}\n`, 'utf8');
+  const postSummary = inspectDsseStatementVerified(outPath, trustPair, optsOrSha);
+  if (postSummary === null) {
+    throw new Error(`Post-cosign DSSE self-verification failed: ${outPath}`);
+  }
+  return {
+    cosignerKeyId: cosignerKid,
+    verifiedKeyIds: postSummary.verifiedKeyIds,
+    signatureCount: nextSigs.length,
+  };
+}
+
 // ── 3. Standalone CLI Entrypoint ──
 
 function emitJsonResult(
@@ -1097,6 +1171,7 @@ export function runCli(argv: string[]): number {
   let expectedSubjectCount: number | undefined;
   const requiredSubjects: string[] = [];
   let emitStatementPath: string | undefined;
+  let minSignatures: number | undefined;
   const cleanArgs: string[] = [];
   try {
     for (let i = 0; i < argv.length; i += 1) {
@@ -1137,6 +1212,11 @@ export function runCli(argv: string[]): number {
           throw new Error('--emit-statement requires a non-empty output file path');
         }
         emitStatementPath = val;
+        i += 1;
+      } else if (a === '--min-signatures') {
+        const n = parseNonNegIntFlag('--min-signatures', argv[i + 1]);
+        if (n < 1) throw new Error('--min-signatures must be >= 1');
+        minSignatures = n;
         i += 1;
       } else {
         cleanArgs.push(a);
@@ -1216,6 +1296,61 @@ export function runCli(argv: string[]): number {
       const msg = err instanceof Error ? err.message : String(err);
       if (jsonMode) {
         emitJsonResult(false, 'pack-fleet-bundle', fleetPath, outPath, `pack-fleet-bundle failed: ${msg}`);
+      } else {
+        process.stderr.write(`ERROR: ${msg}\n`);
+      }
+      return 1;
+    }
+  }
+
+  if (mode === '--cosign-dsse-statement') {
+    if (cleanArgs.length !== 6) {
+      process.stderr.write(
+        'usage: [--json] --cosign-dsse-statement <in.dsse.json> <priv.pem> <pub.pem> <trust-store.json> <out.dsse.json>\n',
+      );
+      return 1;
+    }
+    const inDsse = cleanArgs[1];
+    const privPem = cleanArgs[2];
+    const pubPem = cleanArgs[3];
+    const storePath = cleanArgs[4];
+    const outDsse = cleanArgs[5];
+    try {
+      const tp = loadTrustStoreJsonLite(storePath);
+      const res = cosignDsseStatementOffline(inDsse, privPem, pubPem, tp, outDsse, {
+        expectedSysmlSha256,
+        expectedSubjectCount,
+        requiredSubjects: requiredSubjects.length > 0 ? requiredSubjects : undefined,
+      });
+      if (jsonMode) {
+        emitJsonResult(
+          true,
+          'cosign-dsse-statement',
+          outDsse,
+          storePath,
+          'cosigned-dsse-v1-intoto-statement',
+          {
+            cosignerKeyId: res.cosignerKeyId,
+            verifiedKeyIds: res.verifiedKeyIds,
+            signatureCount: res.signatureCount,
+          },
+        );
+      } else {
+        process.stdout.write(
+          `MULTI-METHOD-COSIGN-DSSE-STATEMENT-OK ${outDsse} cosigner=${res.cosignerKeyId} verified=${res.verifiedKeyIds.length}\n`,
+        );
+      }
+      return 0;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (jsonMode) {
+        emitJsonResult(
+          false,
+          'cosign-dsse-statement',
+          inDsse,
+          storePath,
+          `cosign-dsse-statement failed: ${msg}`,
+        );
       } else {
         process.stderr.write(`ERROR: ${msg}\n`);
       }
@@ -1320,12 +1455,14 @@ export function runCli(argv: string[]): number {
     expectedSysmlSha256,
     expectedSubjectCount,
     requiredSubjects: requiredSubjects.length > 0 ? requiredSubjects : undefined,
+    minSignatures,
   };
   const fleetJsonExtra = (): Record<string, unknown> => {
     const extra: Record<string, unknown> = {};
     if (expectedSysmlSha256 !== undefined) extra.expectedSysmlSha256 = expectedSysmlSha256;
     if (expectedSubjectCount !== undefined) extra.expectedSubjectCount = expectedSubjectCount;
     if (requiredSubjects.length > 0) extra.requiredSubjects = [...requiredSubjects].sort(codePointCompare);
+    if (minSignatures !== undefined && minSignatures > 1) extra.minSignatures = minSignatures;
     return extra;
   };
 

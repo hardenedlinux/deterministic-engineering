@@ -273,6 +273,19 @@ theorem dsseStatementEnvelope_enforces_type_binding_trust_and_pinning {Digest : 
    fun hMis => dsseEnvelope_rejects_subject_predicate_digest_mismatch env expectedSysmlDigest hMis,
    fun hPin hSafe => hPin hSafe.2.2.2.2.1⟩
 
+/-- Instantiated M-of-N threshold quorum & offline counter-signing contract (`--min-signatures` &
+`--cosign-dsse-statement`): proves with zero axioms that sub-threshold envelopes and duplicate-key
+padding attacks fail unconditionally, while adding a fresh distinct cosigner advances quorum `q → q+1`. -/
+theorem dsseQuorumAttestation_enforces_threshold_distinctness_and_cosign_monotonicity {Key : Type}
+    (keys : List Key) (q : Nat) :
+    (keys.length < q → ¬ DsseQuorumSatisfied keys q) ∧
+    (∀ k, containsKey k keys → ¬ DsseQuorumSatisfied (k :: keys) q) ∧
+    (∀ newKey, ¬ containsKey newKey keys → DsseQuorumSatisfied keys q →
+      DsseQuorumSatisfied (newKey :: keys) (q + 1)) :=
+  ⟨fun hBelow => dsseQuorum_rejects_below_threshold keys q hBelow,
+   fun k hDup => dsseQuorum_rejects_duplicate_key_padding k keys q hDup,
+   fun newKey hFresh hQ => dsseQuorum_monotonic_under_fresh_cosigner newKey keys q hFresh hQ⟩
+
 /-! ## One-Line Proof Transport via `Core.Transport` -/
 
 inductive MetaProofKey where

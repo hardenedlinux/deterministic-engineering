@@ -35,6 +35,7 @@
   emit-intoto-verification-statement!
   inspect-dsse-statement-verified
   verify-dsse-statement-offline
+  cosign-dsse-statement-offline
   verify-fleet-bundle-offline
   verify-cache-offline
   main)
@@ -88,6 +89,31 @@
   (and (string? val)
        (>= (string-length val) 26)
        (equal? (substring val 0 26) "-----BEGIN PUBLIC KEY-----")))
+
+(def (ed25519-sign-raw priv-pem-path payload-str)
+  (let* ((prefix (next-tmp-prefix))
+         (msg-path (string-append prefix ".msg"))
+         (sig-path (string-append prefix ".sig")))
+    (try
+      (write-bytes-file msg-path (string->utf8 payload-str))
+      (let* ((proc (open-process
+                     (list path: "openssl"
+                           arguments: (list "pkeyutl" "-sign" "-rawin"
+                                            "-inkey" priv-pem-path
+                                            "-in" msg-path
+                                            "-out" sig-path)
+                           stdin-redirection: #f
+                           stdout-redirection: #t
+                           stderr-redirection: #t)))
+             (_out (read-all-as-string proc))
+             (status (process-status proc)))
+        (close-port proc)
+        (unless (= status 0)
+          (error "Ed25519 signing failed" priv-pem-path))
+        (base64-encode (call-with-input-file sig-path read-all-as-u8vector)))
+      (finally
+        (safe-rm! msg-path)
+        (safe-rm! sig-path)))))
 
 (def (ed25519-verify-raw pub-pem payload-str sig-b64)
   (def is-inline? (inline-pem-string? pub-pem))
@@ -642,8 +668,11 @@
        trust-pair
        expected-sysml-sha256: (expected-sysml-sha256 #f)
        expected-subject-count: (expected-subject-count #f)
-       required-subjects: (required-subjects '()))
+       required-subjects: (required-subjects '())
+       min-signatures: (min-signatures 1))
   (and (file-exists? dsse-path)
+       (exact-integer? min-signatures)
+       (>= min-signatures 1)
        (let* ((trusted (car trust-pair))
               (revoked (cdr trust-pair))
               (env (with-catch (lambda (_) #f)
@@ -675,7 +704,7 @@
                                           (not (member kid verified-kids)))
                                  (set! verified-kids (cons kid verified-kids))))))
                          sigs)
-                       (and (pair? verified-kids)
+                       (and (>= (length verified-kids) min-signatures)
                             (let ((stmt (with-catch (lambda (_) #f)
                                           (lambda () (call-with-input-string payload-str
                                                        (cut read-json <> object-as-hash: #t))))))
@@ -719,12 +748,82 @@
        trust-pair
        expected-sysml-sha256: (expected-sysml-sha256 #f)
        expected-subject-count: (expected-subject-count #f)
-       required-subjects: (required-subjects '()))
+       required-subjects: (required-subjects '())
+       min-signatures: (min-signatures 1))
   (and (inspect-dsse-statement-verified dsse-path trust-pair
          expected-sysml-sha256: expected-sysml-sha256
          expected-subject-count: expected-subject-count
-         required-subjects: required-subjects)
+         required-subjects: required-subjects
+         min-signatures: min-signatures)
        #t))
+
+;; Air-gapped offline DSSE v1 counter-signer (`--cosign-dsse-statement`):
+;; Verifies the input DSSE envelope first, validates non-symlink keypair & active admission in
+;; `trust-pair`, signs DSSE v1 PAE, self-verifies against `pub-path`, deduplicates `keyid`,
+;; and writes `out-path` (refusing symlink targets).
+(def (cosign-dsse-statement-offline
+       in-dsse-path
+       priv-path
+       pub-path
+       trust-pair
+       out-path
+       expected-sysml-sha256: (expected-sysml-sha256 #f)
+       expected-subject-count: (expected-subject-count #f)
+       required-subjects: (required-subjects '()))
+  (def pre-summary
+    (inspect-dsse-statement-verified in-dsse-path trust-pair
+      expected-sysml-sha256: expected-sysml-sha256
+      expected-subject-count: expected-subject-count
+      required-subjects: required-subjects))
+  (unless pre-summary
+    (error "Refusing to cosign unverified or policy-failing DSSE envelope" in-dsse-path))
+  (assert-safe-statement-output-path! out-path)
+  (def cwd (current-directory))
+  (def resolved-priv (resolve-trusted-pem-path cwd priv-path))
+  (def resolved-pub (resolve-trusted-pem-path cwd pub-path))
+  (def pub-pem (call-with-input-file resolved-pub read-all-as-string))
+  (unless (inline-pem-string? pub-pem)
+    (error "Cosigner public key must be a valid PUBLIC KEY PEM" pub-path))
+  (def cosigner-kid (substring (sha256-str pub-pem) 0 16))
+  (def admitted-pub (trust-store-alist-key-admitted? (car trust-pair) (cdr trust-pair) cosigner-kid))
+  (unless admitted-pub
+    (error "Refusing to cosign with untrusted or revoked keyId" cosigner-kid))
+  (def env (call-with-input-file in-dsse-path (cut read-json <> object-as-hash: #t)))
+  (def ptype (hash-get env "payloadType"))
+  (def payload-b64 (hash-get env "payload"))
+  (def payload-str (utf8->string (base64-decode payload-b64)))
+  (def pae (dsse-v1-pae ptype payload-str))
+  (def new-sig (ed25519-sign-raw resolved-priv pae))
+  (unless (ed25519-verify-raw pub-pem pae new-sig)
+    (error "Cosigner private/public keypair mismatch (self-verification failed)" cosigner-kid))
+  (def kept-sigs
+    (filter (lambda (entry)
+              (and (hash-table? entry)
+                   (not (equal? (hash-get entry "keyid") cosigner-kid))))
+            (or (hash-get env "signatures") '())))
+  (def next-sigs
+    (append kept-sigs (list (hash ("keyid" cosigner-kid) ("sig" new-sig)))))
+  (def next-env
+    (hash ("payloadType" ptype)
+          ("payload" payload-b64)
+          ("signatures" next-sigs)))
+  (def parent-dir (path-directory out-path))
+  (when (and (> (string-length parent-dir) 0) (not (file-exists? parent-dir)))
+    (create-directory* parent-dir))
+  (call-with-output-file out-path
+    (lambda (port)
+      (write-json port next-env)
+      (newline port)))
+  (def post-summary
+    (inspect-dsse-statement-verified out-path trust-pair
+      expected-sysml-sha256: expected-sysml-sha256
+      expected-subject-count: expected-subject-count
+      required-subjects: required-subjects))
+  (unless post-summary
+    (error "Post-cosign DSSE self-verification failed" out-path))
+  (hash ("cosignerKeyId" cosigner-kid)
+        ("verifiedKeyIds" (hash-get post-summary "verifiedKeyIds"))
+        ("signatureCount" (length next-sigs))))
 
 (def (parse-export-bundle-args rest)
   (let loop ((xs rest) (revoked '()) (pubs '()))
@@ -745,45 +844,50 @@
 
 (def (extract-global-cli-flags args)
   (let loop ((xs args) (json? #f) (max-age #f) (now-ep #f) (max-skew 60)
-             (exp-sysml #f) (exp-cnt #f) (req-subs '()) (emit-stmt #f) (pos '()))
+             (exp-sysml #f) (exp-cnt #f) (req-subs '()) (emit-stmt #f) (min-sigs 1) (pos '()))
     (cond
      ((null? xs)
-      (values json? max-age now-ep max-skew exp-sysml exp-cnt (reverse req-subs) emit-stmt (reverse pos)))
+      (values json? max-age now-ep max-skew exp-sysml exp-cnt (reverse req-subs) emit-stmt min-sigs (reverse pos)))
      ((equal? (car xs) "--json")
-      (loop (cdr xs) #t max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt pos))
+      (loop (cdr xs) #t max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs pos))
      ((equal? (car xs) "--max-age-seconds")
       (unless (pair? (cdr xs)) (error "--max-age-seconds requires an integer argument"))
-      (loop (cddr xs) json? (parse-nonneg-int-flag "--max-age-seconds" (cadr xs)) now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt pos))
+      (loop (cddr xs) json? (parse-nonneg-int-flag "--max-age-seconds" (cadr xs)) now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs pos))
      ((equal? (car xs) "--now-epoch")
       (unless (pair? (cdr xs)) (error "--now-epoch requires an integer argument"))
-      (loop (cddr xs) json? max-age (parse-nonneg-int-flag "--now-epoch" (cadr xs)) max-skew exp-sysml exp-cnt req-subs emit-stmt pos))
+      (loop (cddr xs) json? max-age (parse-nonneg-int-flag "--now-epoch" (cadr xs)) max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs pos))
      ((equal? (car xs) "--max-future-skew-seconds")
       (unless (pair? (cdr xs)) (error "--max-future-skew-seconds requires an integer argument"))
-      (loop (cddr xs) json? max-age now-ep (parse-nonneg-int-flag "--max-future-skew-seconds" (cadr xs)) exp-sysml exp-cnt req-subs emit-stmt pos))
+      (loop (cddr xs) json? max-age now-ep (parse-nonneg-int-flag "--max-future-skew-seconds" (cadr xs)) exp-sysml exp-cnt req-subs emit-stmt min-sigs pos))
      ((equal? (car xs) "--expected-sysml-sha256")
       (unless (and (pair? (cdr xs)) (string? (cadr xs)) (> (string-length (cadr xs)) 0))
         (error "--expected-sysml-sha256 requires a non-empty digest argument"))
-      (loop (cddr xs) json? max-age now-ep max-skew (cadr xs) exp-cnt req-subs emit-stmt pos))
+      (loop (cddr xs) json? max-age now-ep max-skew (cadr xs) exp-cnt req-subs emit-stmt min-sigs pos))
      ((equal? (car xs) "--expected-subject-count")
       (unless (pair? (cdr xs)) (error "--expected-subject-count requires an integer argument"))
       (let ((n (parse-nonneg-int-flag "--expected-subject-count" (cadr xs))))
         (unless (>= n 1) (error "--expected-subject-count must be >= 1" n))
-        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml n req-subs emit-stmt pos)))
+        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml n req-subs emit-stmt min-sigs pos)))
      ((equal? (car xs) "--require-subject")
       (unless (and (pair? (cdr xs)) (string? (cadr xs)) (> (string-length (cadr xs)) 0))
         (error "--require-subject requires a non-empty subjectKey argument"))
       (let ((next-req (if (member (cadr xs) req-subs) req-subs (cons (cadr xs) req-subs))))
-        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt next-req emit-stmt pos)))
+        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt next-req emit-stmt min-sigs pos)))
      ((equal? (car xs) "--emit-statement")
       (unless (and (pair? (cdr xs)) (string? (cadr xs)) (> (string-length (cadr xs)) 0))
         (error "--emit-statement requires a non-empty output file path"))
-      (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs (cadr xs) pos))
+      (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs (cadr xs) min-sigs pos))
+     ((equal? (car xs) "--min-signatures")
+      (unless (pair? (cdr xs)) (error "--min-signatures requires an integer argument"))
+      (let ((n (parse-nonneg-int-flag "--min-signatures" (cadr xs))))
+        (unless (>= n 1) (error "--min-signatures must be >= 1" n))
+        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt n pos)))
      (else
-      (loop (cdr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt (cons (car xs) pos))))))
+      (loop (cdr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs (cons (car xs) pos))))))
 
 (def (main . args)
   (let-values (((json-mode? max-age-sec now-ep max-skew-sec expected-sysml-sha
-                 expected-sub-cnt req-subs emit-stmt-path clean-args)
+                 expected-sub-cnt req-subs emit-stmt-path min-sigs clean-args)
                 (extract-global-cli-flags args)))
   (when (null? clean-args)
     (error "usage: [--json] --verify-report|--verify-fleet|--verify-fleet-bundle|--verify-cache [--max-age-seconds N] [--now-epoch T] <artifact.json> <trust-store.json> | [--json] --verify-trust-store <trust-store.json> | [--json] --export-trust-bundle <out.json> [--revoke <keyId>]... <pub1.pem>... | [--json] --pack-fleet-bundle <fleet-report.json> <out-bundle.json>"
@@ -836,6 +940,38 @@
                 "packed-fleet-evidence-bundle"
                 (list (cons "subjects" n)))
               (displayln "MULTI-METHOD-PACK-FLEET-BUNDLE-OK " out-path " subjects=" n)))))))
+   ((equal? mode "--cosign-dsse-statement")
+    (unless (= (length clean-args) 6)
+      (error "usage: [--json] --cosign-dsse-statement <in.dsse.json> <priv.pem> <pub.pem> <trust-store.json> <out.dsse.json>"
+             args))
+    (let ((in-dsse (list-ref clean-args 1))
+          (priv-pem (list-ref clean-args 2))
+          (pub-pem (list-ref clean-args 3))
+          (store-path (list-ref clean-args 4))
+          (out-dsse (list-ref clean-args 5)))
+      (with-catch
+        (lambda (e)
+          (if json-mode?
+            (begin
+              (emit-json-result! #f "cosign-dsse-statement" in-dsse store-path
+                (string-append "cosign-dsse-statement failed: " (error-message e)))
+              (exit 1))
+            (raise e)))
+        (lambda ()
+          (let* ((tp (load-trust-store-json-lite store-path))
+                 (res (cosign-dsse-statement-offline in-dsse priv-pem pub-pem tp out-dsse
+                        expected-sysml-sha256: expected-sysml-sha
+                        expected-subject-count: expected-sub-cnt
+                        required-subjects: req-subs)))
+            (if json-mode?
+              (emit-json-result! #t "cosign-dsse-statement" out-dsse store-path
+                "cosigned-dsse-v1-intoto-statement"
+                (list (cons "cosignerKeyId" (hash-get res "cosignerKeyId"))
+                      (cons "verifiedKeyIds" (hash-get res "verifiedKeyIds"))
+                      (cons "signatureCount" (hash-get res "signatureCount"))))
+              (displayln "MULTI-METHOD-COSIGN-DSSE-STATEMENT-OK " out-dsse
+                         " cosigner=" (hash-get res "cosignerKeyId")
+                         " verified=" (length (hash-get res "verifiedKeyIds")))))))))
    ((equal? mode "--verify-trust-store")
     (begin
       (unless (= (length clean-args) 2)
@@ -963,7 +1099,8 @@
           (let ((summary (inspect-dsse-statement-verified target-path trust-pair
                            expected-sysml-sha256: expected-sysml-sha
                            expected-subject-count: expected-sub-cnt
-                           required-subjects: req-subs)))
+                           required-subjects: req-subs
+                           min-signatures: min-sigs)))
             (if summary
               (if json-mode?
                 (emit-json-result! #t "verify-dsse-statement" target-path store-path
@@ -972,6 +1109,7 @@
                     (if expected-sysml-sha (list (cons "expectedSysmlSha256" expected-sysml-sha)) '())
                     (if expected-sub-cnt (list (cons "expectedSubjectCount" expected-sub-cnt)) '())
                     (if (pair? req-subs) (list (cons "requiredSubjects" (sort-by req-subs string<?))) '())
+                    (if (> min-sigs 1) (list (cons "minSignatures" min-sigs)) '())
                     (list (cons "fleetId" (hash-get summary "fleetId"))
                           (cons "sysmlSha256" (hash-get summary "sysmlSha256"))
                           (cons "fleetPayloadSha256" (hash-get summary "fleetPayloadSha256"))
