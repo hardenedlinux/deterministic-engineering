@@ -83,6 +83,7 @@ export const EXPECTED_QUINT_DEFENSE_MODELS = [
   'key-rotation-crypto-shredding',
   'partial-order-delivery',
   'policy-admission-sufficiency',
+  'post-quantum-crypto-agility',
   'release-sod-rollback',
   'supply-chain-provenance',
   'tool-sandbox-rpc-boundary',
@@ -157,7 +158,9 @@ export function auditFourParadigmCrossConsistency(params?: {
       ascentSrc.includes('enclave_attestation_violation') &&
       ascentSrc.includes('enclave_nonce_replay_violation') &&
       ascentSrc.includes('key_rotation_write_violation') &&
-      ascentSrc.includes('crypto_shred_read_violation');
+      ascentSrc.includes('crypto_shred_read_violation') &&
+      ascentSrc.includes('pq_agility_violation') &&
+      ascentSrc.includes('pq_ots_reuse_violation');
   }
   const ascentVerdict: EpistemicVerdict = ascentRulesPresent ? 'Proven' : 'Refuted';
 

@@ -712,7 +712,11 @@
     tenant_active_key_epoch
     shredded_key_epoch
     release_aead_write
-    release_aead_read)
+    release_aead_read
+    pq_allowed_suite
+    pq_deprecated_suite
+    release_pq_envelope
+    pq_ots_leaf_use)
   (outputs
     effectively_revoked
     belief_poisoned
@@ -734,6 +738,8 @@
     enclave_nonce_replay_violation
     key_rotation_write_violation
     crypto_shred_read_violation
+    pq_agility_violation
+    pq_ots_reuse_violation
     release_disqualified
     release_admitted)
   (relation delegation_edge ((parent string?) (child string?)))
@@ -776,6 +782,10 @@
   (relation shredded_key_epoch ((tenant_id string?) (epoch string?)))
   (relation release_aead_write ((rel_id string?) (tenant_id string?) (write_epoch string?)))
   (relation release_aead_read ((rel_id string?) (tenant_id string?) (read_epoch string?) (digest_preserved string?)))
+  (relation pq_allowed_suite ((suite_id string?)))
+  (relation pq_deprecated_suite ((suite_id string?)))
+  (relation release_pq_envelope ((rel_id string?) (suite_id string?) (classical_ok string?) (pq_ok string?) (domain_ok string?)))
+  (relation pq_ots_leaf_use ((rel_id string?) (signer_id string?) (leaf_index string?)))
 
   ;; Internal stratified helper relations for pure relational identity, cross-log finality, slashing, B11 MCP pinning, B13 wait-graph reachability, B14 artifact equality & B15 release identity:
   (relation same_root ((r1 string?) (r2 string?)))
@@ -808,6 +818,8 @@
   (relation enclave_nonce_replay_violation ((rel1 string?) (rel2 string?) (nonce string?)))
   (relation key_rotation_write_violation ((rel_id string?) (tenant_id string?) (write_epoch string?) (reason string?)))
   (relation crypto_shred_read_violation ((rel_id string?) (tenant_id string?) (read_epoch string?) (reason string?)))
+  (relation pq_agility_violation ((rel_id string?) (suite_id string?) (reason string?)))
+  (relation pq_ots_reuse_violation ((rel1 string?) (rel2 string?) (signer_id string?) (leaf_index string?)))
   (relation release_disqualified ((rel_id string?) (reason string?)))
   (relation release_admitted ((rel_id string?)))
 
@@ -1016,7 +1028,34 @@
    <--
    (release_aead_read Rel Tenant Ep (lit "no")))
 
-  ;; 6. Cross-pillar B1/B3/B5/B6/B8/B9/B10/B10c/B11/B12/B13/B14/B15/B16 release disqualification & clean admission:
+  ;; 5i. B17 Post-Quantum Hybrid Cryptographic Agility, Anti-Downgrade & OTS Leaf Anti-Reuse:
+  ((same_release R R)
+   <--
+   (pq_ots_leaf_use R _ _))
+  ((pq_agility_violation Rel Suite (lit "algorithm-downgrade-refused"))
+   <--
+   (release_pq_envelope Rel Suite _ _ _)
+   (not (pq_allowed_suite Suite)))
+  ((pq_agility_violation Rel Suite (lit "deprecated-suite-refused"))
+   <--
+   (release_pq_envelope Rel Suite _ _ _)
+   (pq_deprecated_suite Suite))
+  ((pq_agility_violation Rel Suite (lit "classical-leg-failed"))
+   <--
+   (release_pq_envelope Rel Suite (lit "no") _ _))
+  ((pq_agility_violation Rel Suite (lit "pq-leg-failed"))
+   <--
+   (release_pq_envelope Rel Suite _ (lit "no") _))
+  ((pq_agility_violation Rel Suite (lit "domain-separation-mismatch"))
+   <--
+   (release_pq_envelope Rel Suite _ _ (lit "no")))
+  ((pq_ots_reuse_violation R1 R2 Signer Leaf)
+   <--
+   (pq_ots_leaf_use R1 Signer Leaf)
+   (pq_ots_leaf_use R2 Signer Leaf)
+   (not (same_release R1 R2)))
+
+  ;; 6. Cross-pillar B1/B3/B5/B6/B8/B9/B10/B10c/B11/B12/B13/B14/B15/B16/B17 release disqualification & clean admission:
   ((release_finality_satisfied Rel Ckpt)
    <--
    (release_proposal Rel _ _ Log)
@@ -1093,6 +1132,14 @@
    <--
    (release_proposal Rel _ _ _)
    (crypto_shred_read_violation Rel _ _ _))
+  ((release_disqualified Rel (lit "pq-hybrid-agility-violation"))
+   <--
+   (release_proposal Rel _ _ _)
+   (pq_agility_violation Rel _ _))
+  ((release_disqualified Rel (lit "pq-ots-leaf-reuse"))
+   <--
+   (release_proposal Rel _ _ _)
+   (pq_ots_reuse_violation Rel _ _ _))
   ((release_admitted Rel)
    <--
    (release_proposal Rel _ _ _)

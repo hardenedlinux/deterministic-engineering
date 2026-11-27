@@ -243,7 +243,7 @@ describe('Phase 44 — Full B16 Four-Paradigm Symmetry: 25 Quint/MBT Models + 40
   }, 60_000);
 
   test('AG234: Standalone 25-Quint x 40x22 ASCENT x 15-Module / 166-Theorem LeanPoo CLI JSON Gate exits 0', () => {
-    expect(EXPECTED_QUINT_DEFENSE_MODELS.length).toBe(25);
+    expect(EXPECTED_QUINT_DEFENSE_MODELS.length).toBeGreaterThanOrEqual(25);
     expect(EXPECTED_QUINT_DEFENSE_MODELS).toContain('key-rotation-crypto-shredding');
     if (!isLeanToolchainAvailable()) return;
 
@@ -266,7 +266,7 @@ describe('Phase 44 — Full B16 Four-Paradigm Symmetry: 25 Quint/MBT Models + 40
     };
     expect(out.verdict).toBe('Proven');
     expect(out.facadeModule).toBe(LEANPOO_TOP_FACADE_MODULE);
-    expect(out.quintModelCount).toBe(25);
+    expect(out.quintModelCount).toBe(EXPECTED_QUINT_DEFENSE_MODELS.length);
     expect(out.ascentRulesPresent).toBe(true);
     expect(out.multiLangHarnessCount).toBe(8);
     expect(out.moduleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);
@@ -344,7 +344,7 @@ describe('Phase 44 — Full B16 Four-Paradigm Symmetry: 25 Quint/MBT Models + 40
       ? (() => {
           const rep = auditFourParadigmCrossConsistency({kv});
           expect(rep.verdict).toBe('Proven');
-          expect(rep.quintModelCount).toBe(25);
+          expect(rep.quintModelCount).toBe(EXPECTED_QUINT_DEFENSE_MODELS.length);
           expect(rep.leanPooModuleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);
           expect(rep.leanPooTheoremCount).toBe(LEANPOO_EXPECTED_THEOREM_COUNT);
           return rep.releaseAttestationDigest;

@@ -20,7 +20,7 @@ This benchmark evaluates whether AST-level defensive-engineering auditors catch
 all four AI Agent defensive-hallucination classes (=G2= in [[file:../../10-19-design/10-architecture/10.153-defensive-engineering-taxonomy-and-modular-organization.org][10.153]]) without
 generating false positives on clean deterministic-boundary code.
 
-- *Independent Gold*: Every case (=AG01=–=AG240=) has a fixed independent
+- *Independent Gold*: Every case (=AG01=–=AG245=) has a fixed independent
   expected outcome (=pass= vs. =fail= + exact hallucination/anti-evasion/escalation/durable-resume class). Candidate
   auditor output never generates gold.
 - *Native AST, Diff-Delta, Scope-Fencing & Closed-Loop Governance Auditors Evaluated*:
@@ -296,6 +296,11 @@ generating false positives on clean deterministic-boundary code.
 | =AG238= | =B17= Anti-Downgrade & OTS | Classical-only downgrade, =legacy-sha1=, domain mismatch, OTS leaf reuse & exhaustion | Refuse all 5 agility & OTS attacks; fresh leaf passes | Blocks suite downgrade & stateful OTS key-reuse preimage leakage mechanically |
 | =AG239= | 14/14 =R3= Non-Leakable Caps | All 14 =M3= capability classes (including =HybridPqSigningKey=) into =M1= | Refuse all 14/14 (=R3 ReachabilityLeakError=) | Mechanically blocks hybrid Ed25519+Lamport private preimage pools from =M1= storage |
 | =AG240= | 240-Case & 176-Thm Milestone | 25 Quint × 40×22 ASCENT × 16/176 CLI JSON + PQ co-signed cert -> =cedar-poo-spec= | **240/240 =Proven=** + all =M1= receipts survive GC | Closes 240-case benchmark & 16-module 176-theorem zero-Mathlib/zero-Cedar =LeanPoo= Library |
+| =AG241= | =B17= × 44×24 ASCENT Agility | Live =gxi= ASCENT derives =pq_agility_violation= for downgrade, deprecated, leg & domain | Derive all 5 violations & disqualify; admit clean | Catches algorithm downgrade, deprecated suite, single-leg failure & domain mismatch declaratively |
+| =AG242= | =B17= × 44×24 ASCENT OTS Reuse | Live =gxi= ASCENT derives =pq_ots_reuse_violation= across distinct releases sharing leaf #5 | Derive reuse & disqualify both; admit fresh leaf #0 | Catches stateful Lamport/Merkle OTS leaf reuse across releases declaratively |
+| =AG243= | =B17= × N-Version Gate | Buggy TS coordinator claims =ADMIT= on PQ downgrade & OTS leaf reuse releases | Refuse both (=oracle-disagreement-fail-closed=) + GC | Live Scheme ASCENT overrides imperative TS coordinator & pins forensic receipts |
+| =AG244= | 26-Quint × 176-Thm CLI | =leanpoo-fleet-audit --json= verifies 26 Quint × 44×24 ASCENT × 16/176 =LeanPoo= | =quint: 26, ascent: true, modules: 16, thms: 176= | Confirms 26th Quint model (=post-quantum-crypto-agility=) + 44×24 ASCENT convergence |
+| =AG245= | 245-Case =B1=–=B17= Closure | Dual-AND Ed25519+Lamport OTS + =B10= QC -> dual ASCENT -> 26-Quint cert -> =cedar-poo-spec= | **245/245 =Proven=** + all =M1= receipts survive GC | Seals complete four-paradigm symmetry across all 17 business pillars (=B1=–=B17=) |
 
 * Observed Verification Receipts
 :PROPERTIES:
@@ -346,14 +351,15 @@ generating false positives on clean deterministic-boundary code.
 | =B16= Zero-Downtime AEAD Key Rotation & Cryptographic Erasure + 15-Module / **166-Theorem =LeanPoo=** Library (=AG226=–=AG230=, =10.191=) | =bun test languages-engineering/ts/defense/agent-audit/key-rotation-crypto-shredding.test.ts= + =just audit-leanpoo-fleet --json= | **5/5 cases matched gold** (live **166/166** 15-module =LeanPoo= sweep, AES-256-GCM zero-downtime re-wrap, GDPR crypto-shredding with intact RFC 6962 consistency proof, 13/13 =R3= caps & 230-case milestone) |
 | =B16= Four-Paradigm Symmetry Closure: **25th Quint/Apalache Model** + 25/25 MBT SUT + 40×22 =B1=–=B16= ASCENT (=AG231=–=AG235=, =10.192=) | =bun test languages-engineering/ts/defense/agent-audit/b16-four-paradigm-symmetry.test.ts= + =mbt-replay.test.ts= + =governance-ascent-test.ss= | **5/5 cases matched gold** (model #25 Apalache 6/6 =PLAN-OK= & 3/3 =F3= essential, 25/25 MBT SUT isomorphism, live 40×22 =gxi= ASCENT key-lifecycle catch, 25-Quint × 166-Thm CLI + air-gapped =cedar-poo-spec= closure) |
 | =B17= Post-Quantum Hybrid Cryptographic Agility & Anti-Downgrade + 16-Module / **176-Theorem =LeanPoo=** Library (=AG236=–=AG240=, =10.193=) | =bun test languages-engineering/ts/defense/agent-audit/post-quantum-crypto-agility.test.ts= + =just audit-leanpoo-fleet --json= | **5/5 cases matched gold** (live **176/176** 16-module =LeanPoo= sweep, Dual-AND Ed25519 + SHA-256 Lamport-Diffie OTS Merkle verification, anti-downgrade & OTS exhaustion/reuse blocks, 14/14 =R3= caps & 240-case milestone) |
-| Combined **240-case** 5-language, 25-Quint MBT, Full =B1=–=B16= 40×22 ASCENT & **176-Theorem =LeanPoo=** benchmark | =just check-defense= | **240/240 exact gold match** (=tp=155, tn=85, fp=0, fn=0=) |
+| =B17= Four-Paradigm Symmetry Closure: **26th Quint/Apalache Model** + 26/26 MBT SUT + 44×24 =B1=–=B17= ASCENT (=AG241=–=AG245=, =10.194=) | =bun test languages-engineering/ts/defense/agent-audit/b17-four-paradigm-symmetry.test.ts= + =mbt-replay.test.ts= + =governance-ascent-test.ss= | **5/5 cases matched gold** (model #26 Apalache 6/6 =PLAN-OK= & 3/3 =F3= essential, 26/26 MBT SUT isomorphism, live 44×24 =gxi= ASCENT PQ agility/OTS reuse catch, 26-Quint × 176-Thm CLI + air-gapped =cedar-poo-spec= closure) |
+| Combined **245-case** 5-language, 26-Quint MBT, Full =B1=–=B17= 44×24 ASCENT & **176-Theorem =LeanPoo=** benchmark | =just check-defense= | **245/245 exact gold match** (=tp=158, tn=87, fp=0, fn=0=) |
 
 * Limits
 :PROPERTIES:
 :CUSTOM_ID: bench3005-limits
 :END:
 
-This 240-case benchmark establishes deterministic AST-level, diff-delta,
+This 245-case benchmark establishes deterministic AST-level, diff-delta,
 scope-fencing, bounded closed-loop, hot-policy co-evolution, async-cut,
 semantic-drift memoization, AEAD-isolated Merkle storage, role-projected
 context, multi-agent SSI concurrency, and business SoD/replay precision and

@@ -77,6 +77,10 @@ export interface MetaAuditFactBundle {
   shredded_key_epoch: Array<[string, string]>;
   release_aead_write: Array<[string, string, string]>;
   release_aead_read: Array<[string, string, string, string]>;
+  pq_allowed_suite: Array<[string]>;
+  pq_deprecated_suite: Array<[string]>;
+  release_pq_envelope: Array<[string, string, string, string, string]>;
+  pq_ots_leaf_use: Array<[string, string, string]>;
 }
 
 export interface AscentMetaAuditOutput {
@@ -100,6 +104,8 @@ export interface AscentMetaAuditOutput {
   enclave_nonce_replay_violation: string[][];
   key_rotation_write_violation: string[][];
   crypto_shred_read_violation: string[][];
+  pq_agility_violation: string[][];
+  pq_ots_reuse_violation: string[][];
   release_disqualified: string[][];
   release_admitted: string[][];
 }
@@ -217,6 +223,20 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
     tenantId: string;
     readEpoch: number;
     digestPreserved: boolean;
+  }>;
+  pqAllowedSuites?: readonly string[];
+  pqDeprecatedSuites?: readonly string[];
+  releasePqEnvelopes?: ReadonlyArray<{
+    releaseId: string;
+    suiteId: string;
+    classicalOk: boolean;
+    pqOk: boolean;
+    domainOk: boolean;
+  }>;
+  pqOtsLeafUses?: ReadonlyArray<{
+    releaseId: string;
+    signerId: string;
+    leafIndex: number;
   }>;
   releaseProposals: ReadonlyArray<{
     releaseId: string;
@@ -425,6 +445,22 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
   const release_aead_read: Array<[string, string, string, string]> = (
     params.releaseAeadReads ?? []
   ).map(r => [r.releaseId, r.tenantId, String(r.readEpoch), r.digestPreserved ? 'yes' : 'no']);
+  const pq_allowed_suite: Array<[string]> = (params.pqAllowedSuites ?? []).map(s => [s]);
+  const pq_deprecated_suite: Array<[string]> = (params.pqDeprecatedSuites ?? []).map(s => [s]);
+  const release_pq_envelope: Array<[string, string, string, string, string]> = (
+    params.releasePqEnvelopes ?? []
+  ).map(e => [
+    e.releaseId,
+    e.suiteId,
+    e.classicalOk ? 'yes' : 'no',
+    e.pqOk ? 'yes' : 'no',
+    e.domainOk ? 'yes' : 'no',
+  ]);
+  const pq_ots_leaf_use: Array<[string, string, string]> = (params.pqOtsLeafUses ?? []).map(u => [
+    u.releaseId,
+    u.signerId,
+    String(u.leafIndex),
+  ]);
 
   const bundle: MetaAuditFactBundle = {
     delegation_edge: dedupeTuples(delegation_edge),
@@ -467,6 +503,10 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
     shredded_key_epoch: dedupeTuples(shredded_key_epoch),
     release_aead_write: dedupeTuples(release_aead_write),
     release_aead_read: dedupeTuples(release_aead_read),
+    pq_allowed_suite: dedupeTuples(pq_allowed_suite),
+    pq_deprecated_suite: dedupeTuples(pq_deprecated_suite),
+    release_pq_envelope: dedupeTuples(release_pq_envelope),
+    pq_ots_leaf_use: dedupeTuples(pq_ots_leaf_use),
   };
 
   const factBundleMerkleHash = params.kv.putBlob('ascent-meta-audit-fact-bundle', bundle, []);
@@ -526,6 +566,8 @@ export function parseFramedAscentOutput(rawStdout: string): AscentOracleRunVerdi
     'enclave_nonce_replay_violation',
     'key_rotation_write_violation',
     'crypto_shred_read_violation',
+    'pq_agility_violation',
+    'pq_ots_reuse_violation',
     'release_disqualified',
     'release_admitted',
   ];
@@ -604,6 +646,7 @@ export function runLiveGerbilAscentMetaAudit(
                supply_chain_dep_violation reproducible_build_violation
                enclave_attestation_violation enclave_nonce_replay_violation
                key_rotation_write_violation crypto_shred_read_violation
+               pq_agility_violation pq_ots_reuse_violation
                release_disqualified release_admitted)))
   (display "${BEGIN_MARKER}\\n{")
   (let loop ((ks keys) (first #t))

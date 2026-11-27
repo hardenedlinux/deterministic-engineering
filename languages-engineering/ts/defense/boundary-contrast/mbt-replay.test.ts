@@ -2135,6 +2135,82 @@ class BadStaleKeyWriteSUT extends KeyRotationCryptoShreddingSUT {
   }
 }
 
+class PostQuantumCryptoAgilitySUT {
+  suiteLevel = 2;
+  classicalLegValid = false;
+  pqLegValid = false;
+  otsLeafFresh = false;
+  verifiedCerts = 0;
+  downgradeViolations = 0;
+  singleLegBypassViolations = 0;
+  otsReuseViolations = 0;
+
+  apply(action: string): void {
+    switch (action) {
+      case 'attemptSuiteDowngrade':
+        if (this.suiteLevel === 2) this.suiteLevel = 1;
+        break;
+      case 'restoreHybridSuite':
+        if (this.suiteLevel === 1) this.suiteLevel = 2;
+        break;
+      case 'verifyClassicalLeg':
+        if (!this.classicalLegValid) this.classicalLegValid = true;
+        break;
+      case 'verifyPqLeg':
+        if (!this.pqLegValid) this.pqLegValid = true;
+        break;
+      case 'allocateFreshOtsLeaf':
+        if (!this.otsLeafFresh) this.otsLeafFresh = true;
+        break;
+      case 'acceptHybridEnvelope':
+        if (
+          this.verifiedCerts < 2 &&
+          this.suiteLevel >= 2 &&
+          this.classicalLegValid &&
+          this.pqLegValid &&
+          this.otsLeafFresh
+        ) {
+          this.verifiedCerts += 1;
+          this.otsLeafFresh = false;
+        }
+        break;
+      default:
+        throw new Error(`Unknown PostQuantumCryptoAgility action: ${action}`);
+    }
+  }
+
+  snapshot() {
+    return {
+      suiteLevel: this.suiteLevel,
+      classicalLegValid: this.classicalLegValid,
+      pqLegValid: this.pqLegValid,
+      otsLeafFresh: this.otsLeafFresh,
+      verifiedCerts: this.verifiedCerts,
+      downgradeViolations: this.downgradeViolations,
+      singleLegBypassViolations: this.singleLegBypassViolations,
+      otsReuseViolations: this.otsReuseViolations,
+    };
+  }
+}
+
+class BadDowngradeHybridSUT extends PostQuantumCryptoAgilitySUT {
+  override apply(action: string): void {
+    if (action === 'acceptHybridEnvelope' && this.verifiedCerts < 2) {
+      // Anti-pattern: drops hybrid-suite-floor, Dual-AND leg, and fresh-OTS-leaf guards!
+      const suiteOk = this.suiteLevel >= 2;
+      const dualOk = this.classicalLegValid && this.pqLegValid;
+      const otsOk = this.otsLeafFresh;
+      this.verifiedCerts += 1;
+      this.otsLeafFresh = false;
+      if (!suiteOk) this.downgradeViolations += 1;
+      if (!dualOk) this.singleLegBypassViolations += 1;
+      if (!otsOk) this.otsReuseViolations += 1;
+      return;
+    }
+    super.apply(action);
+  }
+}
+
 const repoRoot = resolve(import.meta.dir, '../../../..');
 
 function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(): Record<string, unknown>}>(
@@ -2187,7 +2263,7 @@ function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(
   }
 }
 
-describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (25 Defense Models)', () => {
+describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (26 Defense Models)', () => {
   test('EpistemicStateLattice ITF actions drive EpistemicLatticeSUT with exact step-by-step state isomorphism', () => {
     const stats = replayModelAgainstSut(
       'packages/quint-models/engineering/defense/epistemic-state-lattice/EpistemicStateLattice.qnt',
@@ -2736,6 +2812,27 @@ describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (25 Defense Models
       () => new KeyRotationCryptoShreddingSUT(),
       projectH,
       () => new BadStaleKeyWriteSUT(),
+    );
+    expect(stats.transitions).toBeGreaterThan(50);
+    expect(stats.brokenDiverged).toBe(true);
+  }, 30_000);
+
+  test('PostQuantumCryptoAgility ITF actions drive PostQuantumCryptoAgilitySUT with exact state isomorphism and reject BadDowngradeHybridSUT', () => {
+    const projectH = (h: Record<string, unknown>) => ({
+      suiteLevel: asInt(h.suiteLevel),
+      classicalLegValid: Boolean(h.classicalLegValid),
+      pqLegValid: Boolean(h.pqLegValid),
+      otsLeafFresh: Boolean(h.otsLeafFresh),
+      verifiedCerts: asInt(h.verifiedCerts),
+      downgradeViolations: asInt(h.downgradeViolations),
+      singleLegBypassViolations: asInt(h.singleLegBypassViolations),
+      otsReuseViolations: asInt(h.otsReuseViolations),
+    });
+    const stats = replayModelAgainstSut(
+      'packages/quint-models/engineering/defense/post-quantum-crypto-agility/PostQuantumCryptoAgility.qnt',
+      () => new PostQuantumCryptoAgilitySUT(),
+      projectH,
+      () => new BadDowngradeHybridSUT(),
     );
     expect(stats.transitions).toBeGreaterThan(50);
     expect(stats.brokenDiverged).toBe(true);
