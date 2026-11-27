@@ -14,7 +14,8 @@
   canonical-report-signing-payload
   canonical-fleet-signing-payload
   trust-store-alist-key-admitted?
-  safe-relative-child-path?)
+  safe-relative-child-path?
+  witness-epoch-fresh?)
 
 (def (sym->str x)
   (if (symbol? x) (symbol->string x) x))
@@ -66,6 +67,26 @@
                        (not (equal? seg "."))
                        (not (equal? seg ".."))))
                 segs)))))
+
+;; Pure deterministic anti-replay freshness window predicate for cached witnesses:
+;; When `max-age-seconds` is `#f`, freshness window enforcement is disabled (returns `#t`).
+;; When `max-age-seconds` is a non-negative exact integer, enforces BOTH:
+;;   1. Lower-bound TTL (anti-replay): `now-epoch <= issued-epoch + max-age-seconds`
+;;   2. Upper-bound future-skew guard: `issued-epoch <= now-epoch + max-future-skew-seconds`
+;; Missing or non-integer `issued-epoch` is unconditionally rejected when freshness is active.
+(def (witness-epoch-fresh? issued-epoch now-epoch max-age-seconds (max-future-skew-seconds 60))
+  (if (not max-age-seconds)
+    #t
+    (and (exact-integer? issued-epoch)
+         (>= issued-epoch 0)
+         (exact-integer? now-epoch)
+         (>= now-epoch 0)
+         (exact-integer? max-age-seconds)
+         (>= max-age-seconds 0)
+         (exact-integer? max-future-skew-seconds)
+         (>= max-future-skew-seconds 0)
+         (<= now-epoch (+ issued-epoch max-age-seconds))
+         (<= issued-epoch (+ now-epoch max-future-skew-seconds)))))
 
 ;; Deterministic, collision-free byte representation of a cached verification witness.
 ;; `input-pairs` is an alist of (path-string . sha256-hex-string) sorted lexicographically.

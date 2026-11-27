@@ -377,12 +377,13 @@
                     ("replayValid" #t) ("admitted" #t)))
         k2 "fl-sym-dir")
       (check-equal? (verify-fleet-offline fleet-sym-dir tp-valid) #f)
+      (yuanxu-test-checkpoint 'after-core-adversarial-attacks)
 
       ;; Machine-readable `--json` CLI mode: positive (exit 0, ok=#t) & negative (exit != 0, ok=#f)!
       (def (run-json-cli mode target store)
         (let* ((cmd (string-append
                       "cd \"" repo-root "\" && "
-                      "gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q "
+                      "GERBIL_PATH=\"$PWD/.gerbil\" gxi -:max-heap=2G,debug=q "
                       "t/support/offline-attestation-verifier.ss --json " mode " "
                       "\"" target "\" \"" store "\""))
                (proc (open-process
@@ -439,7 +440,7 @@
       (def (run-ts-audit-cli store)
         (let* ((cmd (string-append
                       "cd \"" repo-root "\" && "
-                      "gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q "
+                      "GERBIL_PATH=\"$PWD/.gerbil\" gxi -:max-heap=2G,debug=q "
                       "t/support/offline-attestation-verifier.ss --json --verify-trust-store "
                       "\"" store "\""))
                (proc (open-process
@@ -522,7 +523,7 @@
       (def (run-offline-cli cli-args-str)
         (let* ((cmd (string-append
                       "cd \"" repo-root "\" && "
-                      "gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q "
+                      "GERBIL_PATH=\"$PWD/.gerbil\" gxi -:max-heap=2G,debug=q "
                       "t/support/offline-attestation-verifier.ss " cli-args-str))
                (proc (open-process
                        (list path: "/bin/bash"
@@ -561,8 +562,42 @@
                     ("reportPayloadSha256" pack-child-sha)
                     ("replayValid" #t) ("admitted" #t)))
         k2 "fl-pack-ok")
+      ;; Sign future-dated & missing-timestamp caches BEFORE deleting `keys/` from disk (Attacks 29-30).
+      (def p-future
+        (canonical-witness-signing-payload
+          "stepFuture" "oblF" "de-quint" "bounded-interleaving" "pass" "ok" "q=0.33"
+          '(("f1" . "aaa")) "1700005000"))
+      (def cache-future (path-expand "cache-future.json" work))
+      (write-json-file cache-future
+        (hash ("schema" "deterministic-engineering.verification-cache.v2")
+              ("entries"
+               (hash ("stepFuture"
+                      (hash ("obligation" "oblF") ("method" "de-quint")
+                            ("claimKind" "bounded-interleaving") ("outcome" "pass")
+                            ("detail" "ok") ("issuedAtEpoch" 1700005000)
+                            ("toolchainFingerprint" "q=0.33")
+                            ("inputDigests" (hash ("f1" "aaa")))
+                            ("keyId" kid1)
+                            ("signature" (sign-ed25519-local (cadr k1) p-future work "sig-future"))))))))
+      (def p-no-epoch
+        (canonical-witness-signing-payload
+          "stepNoEpoch" "oblN" "de-quint" "bounded-interleaving" "pass" "ok" "q=0.33"
+          '(("f1" . "aaa")) ""))
+      (def cache-no-epoch (path-expand "cache-no-epoch.json" work))
+      (write-json-file cache-no-epoch
+        (hash ("schema" "deterministic-engineering.verification-cache.v2")
+              ("entries"
+               (hash ("stepNoEpoch"
+                      (hash ("obligation" "oblN") ("method" "de-quint")
+                            ("claimKind" "bounded-interleaving") ("outcome" "pass")
+                            ("detail" "ok")
+                            ("toolchainFingerprint" "q=0.33")
+                            ("inputDigests" (hash ("f1" "aaa")))
+                            ("keyId" kid1)
+                            ("signature" (sign-ed25519-local (cadr k1) p-no-epoch work "sig-no-ep"))))))))
 
       ;; Physically delete ALL .pub.pem files from disk before running inline-bundle verification!
+      (yuanxu-test-checkpoint 'after-export-bundle-attacks)
       (run-process (list "rm" "-rf" keys-dir))
       (check-equal? (file-exists? (caddr k1)) #f)
       (check-equal? (file-exists? (caddr k2)) #f)
@@ -663,5 +698,21 @@
               ("fleetReport" (hash-get bdoc "fleetReport"))
               ("childReports" tampered-children)))
       (check-equal? (verify-fleet-bundle-offline bundle-tampered tp-inline) #f)
+
+      ;; Attacks 29-30: Deterministic Anti-Replay Freshness Window (`--max-age-seconds` / `--now-epoch`):
+      ;;   29: Passes at exact TTL boundary `now=1700000400, max-age=300`; rejects stale replay at `1700000401`.
+      ;;   30: Rejects future-dated clock forgery (`1700005000` at `now=1700000200`) & missing `issuedAtEpoch`!
+      (check-equal? (witness-epoch-fresh? 1700000100 1700000400 300 60) #t)
+      (check-equal? (witness-epoch-fresh? 1700000100 1700000401 300 60) #f)
+      (check-equal? (witness-epoch-fresh? 1700005000 1700000200 600 60) #f)
+      (check-equal? (witness-epoch-fresh? #f 1700000200 600 60) #f)
+      (check-equal? (verify-cache-offline cache-ok tp-inline max-age-seconds: 300 now-epoch: 1700000400) 2)
+      (check-equal? (verify-cache-offline cache-ok tp-inline max-age-seconds: 300 now-epoch: 1700000401) #f)
+      (check-equal? (verify-cache-offline cache-future tp-inline) 1)
+      (check-equal? (verify-cache-offline cache-future tp-inline
+                      max-age-seconds: 600 now-epoch: 1700000200 max-future-skew-seconds: 60) #f)
+      (check-equal? (verify-cache-offline cache-no-epoch tp-inline) 1)
+      (check-equal? (verify-cache-offline cache-no-epoch tp-inline
+                      max-age-seconds: 600 now-epoch: 1700000200) #f)
 
       (run-process (list "rm" "-rf" work)))))

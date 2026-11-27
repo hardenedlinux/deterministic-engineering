@@ -434,18 +434,56 @@ export function verifyFleetOffline(fleetReportPath: string, trustPair: TrustPair
   return true;
 }
 
-export function verifyCacheOffline(cachePath: string, trustPair: TrustPair): number | null {
+export interface CacheFreshnessOptions {
+  maxAgeSeconds?: number;
+  nowEpoch?: number;
+  maxFutureSkewSeconds?: number;
+}
+
+/**
+ * Pure deterministic anti-replay freshness window predicate matching `witness-epoch-fresh?` in
+ * `library/verification-flow/attestation.ss`:
+ *   - Lower bound (TTL expiry): `nowEpoch <= issuedEpoch + maxAgeSeconds`
+ *   - Upper bound (future-clock forgery): `issuedEpoch <= nowEpoch + maxFutureSkewSeconds`
+ */
+export function witnessEpochFresh(
+  issuedEpoch: unknown,
+  nowEpoch: number,
+  maxAgeSeconds?: number,
+  maxFutureSkewSeconds = 60,
+): boolean {
+  if (maxAgeSeconds === undefined) return true;
+  if (typeof issuedEpoch !== 'number' || !Number.isInteger(issuedEpoch) || issuedEpoch < 0) {
+    return false;
+  }
+  if (!Number.isInteger(nowEpoch) || nowEpoch < 0) return false;
+  if (!Number.isInteger(maxAgeSeconds) || maxAgeSeconds < 0) return false;
+  if (!Number.isInteger(maxFutureSkewSeconds) || maxFutureSkewSeconds < 0) return false;
+  return nowEpoch <= issuedEpoch + maxAgeSeconds && issuedEpoch <= nowEpoch + maxFutureSkewSeconds;
+}
+
+export function verifyCacheOffline(
+  cachePath: string,
+  trustPair: TrustPair,
+  freshness: CacheFreshnessOptions = {},
+): number | null {
   if (!existsSync(cachePath)) return null;
   const doc = readJsonObject(cachePath);
   if (!doc || !isPlainObject(doc.entries)) return null;
   const entries = Object.entries(doc.entries);
   if (entries.length === 0) return null;
 
+  const effectiveNow = freshness.nowEpoch ?? Math.floor(Date.now() / 1000);
+  const maxSkew = freshness.maxFutureSkewSeconds ?? 60;
+
   for (const [stepStr, rec] of entries) {
     if (!isPlainObject(rec)) return null;
     const pub = trustStoreKeyAdmitted(trustPair.trusted, trustPair.revoked, rec.keyId);
     if (!pub) return null;
     if (typeof rec.toolchainFingerprint !== 'string' || typeof rec.signature !== 'string') {
+      return null;
+    }
+    if (!witnessEpochFresh(rec.issuedAtEpoch, effectiveNow, freshness.maxAgeSeconds, maxSkew)) {
       return null;
     }
     const issuedStr =
@@ -666,12 +704,53 @@ function parseExportArgs(rest: string[]): {pubPaths: string[]; revokedIds: strin
   return {pubPaths, revokedIds};
 }
 
+function parseNonNegIntFlag(flagName: string, raw: string | undefined): number {
+  if (raw === undefined || !/^\d+$/.test(raw)) {
+    throw new Error(`${flagName} requires a non-negative integer, got: ${String(raw)}`);
+  }
+  const n = Number(raw);
+  if (!Number.isSafeInteger(n) || n < 0) {
+    throw new Error(`${flagName} out of safe non-negative integer range: ${raw}`);
+  }
+  return n;
+}
+
 export function runCli(argv: string[]): number {
-  const jsonMode = argv.includes('--json');
-  const cleanArgs = argv.filter((a) => a !== '--json');
+  let jsonMode = false;
+  let maxAgeSeconds: number | undefined;
+  let nowEpoch: number | undefined;
+  let maxFutureSkewSeconds = 60;
+  const cleanArgs: string[] = [];
+  try {
+    for (let i = 0; i < argv.length; i += 1) {
+      const a = argv[i];
+      if (a === '--json') {
+        jsonMode = true;
+      } else if (a === '--max-age-seconds') {
+        maxAgeSeconds = parseNonNegIntFlag('--max-age-seconds', argv[i + 1]);
+        i += 1;
+      } else if (a === '--now-epoch') {
+        nowEpoch = parseNonNegIntFlag('--now-epoch', argv[i + 1]);
+        i += 1;
+      } else if (a === '--max-future-skew-seconds') {
+        maxFutureSkewSeconds = parseNonNegIntFlag('--max-future-skew-seconds', argv[i + 1]);
+        i += 1;
+      } else {
+        cleanArgs.push(a);
+      }
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (jsonMode) {
+      emitJsonResult(false, 'cli-parse', '', '', msg);
+    } else {
+      process.stderr.write(`ERROR: ${msg}\n`);
+    }
+    return 1;
+  }
   if (cleanArgs.length === 0) {
     process.stderr.write(
-      'usage: [--json] --verify-report|--verify-fleet|--verify-cache <artifact.json> <trust-store.json> | [--json] --verify-trust-store <trust-store.json> | [--json] --export-trust-bundle <out.json> [--revoke <keyId>]... <pub1.pem>...\n',
+      'usage: [--json] --verify-report|--verify-fleet|--verify-fleet-bundle|--verify-cache [--max-age-seconds N] [--now-epoch T] <artifact.json> <trust-store.json> | [--json] --verify-trust-store <trust-store.json> | [--json] --export-trust-bundle <out.json> [--revoke <keyId>]... <pub1.pem>... | [--json] --pack-fleet-bundle <fleet-report.json> <out-bundle.json>\n',
     );
     return 1;
   }
@@ -881,12 +960,19 @@ export function runCli(argv: string[]): number {
   }
 
   if (mode === '--verify-cache') {
-    const n = verifyCacheOffline(targetPath, trustPair);
+    const effNow = nowEpoch ?? Math.floor(Date.now() / 1000);
+    const n = verifyCacheOffline(targetPath, trustPair, {
+      maxAgeSeconds,
+      nowEpoch: effNow,
+      maxFutureSkewSeconds,
+    });
     if (n !== null) {
       if (jsonMode) {
-        emitJsonResult(true, 'verify-cache', targetPath, storePath, 'all-cache-witnesses-verified', {
-          entries: n,
-        });
+        const extra: Record<string, unknown> =
+          maxAgeSeconds !== undefined
+            ? {entries: n, maxAgeSeconds, nowEpoch: effNow}
+            : {entries: n};
+        emitJsonResult(true, 'verify-cache', targetPath, storePath, 'all-cache-witnesses-verified', extra);
       } else {
         process.stdout.write(`MULTI-METHOD-VERIFY-CACHE-OK ${targetPath} entries=${n}\n`);
       }

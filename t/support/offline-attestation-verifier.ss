@@ -263,8 +263,17 @@
                        subjects)))))))
 
 ;; Verifies EVERY witness entry in a signed `verification-cache.v1.json` against the Trust Store.
-;; Returns verified entry count (exact integer) on full pass, or `#f` if any entry is invalid/revoked.
-(def (verify-cache-offline cache-path trust-pair)
+;; Optional anti-replay freshness window (`max-age-seconds`, `now-epoch`, `max-future-skew-seconds`):
+;; when `max-age-seconds` is set, rejects expired witnesses AND future-dated clock forgeries.
+;; Returns verified entry count (exact integer) on full pass, or `#f` if any entry is invalid/revoked/stale.
+(def (verify-cache-offline
+       cache-path
+       trust-pair
+       max-age-seconds: (max-age-seconds #f)
+       now-epoch: (now-epoch #f)
+       max-future-skew-seconds: (max-future-skew-seconds 60))
+  (def effective-now
+    (or now-epoch (inexact->exact (floor (time->seconds (current-time))))))
   (and (file-exists? cache-path)
        (let* ((trusted (car trust-pair))
               (revoked (cdr trust-pair))
@@ -291,6 +300,8 @@
                                    (and pub
                                         (string? tc)
                                         (string? sig)
+                                        (witness-epoch-fresh?
+                                          issued effective-now max-age-seconds max-future-skew-seconds)
                                         (ed25519-verify-raw
                                           pub
                                           (canonical-witness-signing-payload
@@ -481,11 +492,36 @@
      (else
       (loop (cdr xs) revoked (cons (car xs) pubs))))))
 
+(def (parse-nonneg-int-flag flag-name raw)
+  (let ((n (and (string? raw) (string->number raw))))
+    (unless (and (exact-integer? n) (>= n 0))
+      (error (string-append flag-name " requires a non-negative integer") raw))
+    n))
+
+(def (extract-global-cli-flags args)
+  (let loop ((xs args) (json? #f) (max-age #f) (now-ep #f) (max-skew 60) (pos '()))
+    (cond
+     ((null? xs)
+      (values json? max-age now-ep max-skew (reverse pos)))
+     ((equal? (car xs) "--json")
+      (loop (cdr xs) #t max-age now-ep max-skew pos))
+     ((equal? (car xs) "--max-age-seconds")
+      (unless (pair? (cdr xs)) (error "--max-age-seconds requires an integer argument"))
+      (loop (cddr xs) json? (parse-nonneg-int-flag "--max-age-seconds" (cadr xs)) now-ep max-skew pos))
+     ((equal? (car xs) "--now-epoch")
+      (unless (pair? (cdr xs)) (error "--now-epoch requires an integer argument"))
+      (loop (cddr xs) json? max-age (parse-nonneg-int-flag "--now-epoch" (cadr xs)) max-skew pos))
+     ((equal? (car xs) "--max-future-skew-seconds")
+      (unless (pair? (cdr xs)) (error "--max-future-skew-seconds requires an integer argument"))
+      (loop (cddr xs) json? max-age now-ep (parse-nonneg-int-flag "--max-future-skew-seconds" (cadr xs)) pos))
+     (else
+      (loop (cdr xs) json? max-age now-ep max-skew (cons (car xs) pos))))))
+
 (def (main . args)
-  (def json-mode? (and (member "--json" args) #t))
-  (def clean-args (filter (lambda (a) (not (equal? a "--json"))) args))
+  (let-values (((json-mode? max-age-sec now-ep max-skew-sec clean-args)
+                (extract-global-cli-flags args)))
   (when (null? clean-args)
-    (error "usage: [--json] --verify-report|--verify-fleet|--verify-cache <artifact.json> <trust-store.json> | [--json] --verify-trust-store <trust-store.json> | [--json] --export-trust-bundle <out.json> [--revoke <keyId>]... <pub1.pem>..."
+    (error "usage: [--json] --verify-report|--verify-fleet|--verify-fleet-bundle|--verify-cache [--max-age-seconds N] [--now-epoch T] <artifact.json> <trust-store.json> | [--json] --verify-trust-store <trust-store.json> | [--json] --export-trust-bundle <out.json> [--revoke <keyId>]... <pub1.pem>... | [--json] --pack-fleet-bundle <fleet-report.json> <out-bundle.json>"
            args))
   (def mode (car clean-args))
   (cond
@@ -624,11 +660,19 @@
                 (exit 1))
               (error "offline fleet bundle verification failed" target-path))))
          ((equal? mode "--verify-cache")
-          (let ((n (verify-cache-offline target-path trust-pair)))
+          (let* ((eff-now (or now-ep (inexact->exact (floor (time->seconds (current-time))))))
+                 (n (verify-cache-offline target-path trust-pair
+                      max-age-seconds: max-age-sec
+                      now-epoch: eff-now
+                      max-future-skew-seconds: max-skew-sec)))
             (if n
               (if json-mode?
                 (emit-json-result! #t "verify-cache" target-path store-path "all-cache-witnesses-verified"
-                  (list (cons "entries" n)))
+                  (if max-age-sec
+                    (list (cons "entries" n)
+                          (cons "maxAgeSeconds" max-age-sec)
+                          (cons "nowEpoch" eff-now))
+                    (list (cons "entries" n))))
                 (displayln "MULTI-METHOD-VERIFY-CACHE-OK " target-path " entries=" n))
               (if json-mode?
                 (begin
@@ -636,5 +680,5 @@
                   (exit 1))
                 (error "offline cache verification failed" target-path)))))
          (else
-          (error "usage: [--json] --verify-report|--verify-fleet|--verify-cache <artifact.json> <trust-store.json>"
-                 mode))))))))
+          (error "usage: [--json] --verify-report|--verify-fleet|--verify-fleet-bundle|--verify-cache <artifact.json> <trust-store.json>"
+                 mode)))))))))

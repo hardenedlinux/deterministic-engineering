@@ -202,6 +202,18 @@ theorem fleetEvidenceBundle_rejects_missing_smuggled_and_tampered_children
    bundle_rejects_smuggled_extra_child b,
    bundle_rejects_revoked_or_tampered_embedded_child b⟩
 
+/-- Instantiated offline cache anti-replay freshness contract (`--verify-cache --max-age-seconds`):
+constructively proves with zero axioms that both expired stale replays and future-dated clock
+forgeries are unconditionally rejected. -/
+theorem cacheFreshnessWindow_defeats_staleReplay_and_futureForgery
+    (issuedEpoch nowEpoch maxAge maxFutureSkew : Nat) :
+    (issuedEpoch + maxAge < nowEpoch →
+      ¬ WitnessFreshnessWindow issuedEpoch nowEpoch maxAge maxFutureSkew) ∧
+    (nowEpoch + maxFutureSkew < issuedEpoch →
+      ¬ WitnessFreshnessWindow issuedEpoch nowEpoch maxAge maxFutureSkew) :=
+  ⟨freshnessWindow_rejects_expired_replay issuedEpoch nowEpoch maxAge maxFutureSkew,
+   freshnessWindow_rejects_future_clock_forgery issuedEpoch nowEpoch maxAge maxFutureSkew⟩
+
 /-! ## One-Line Proof Transport via `Core.Transport` -/
 
 inductive MetaProofKey where

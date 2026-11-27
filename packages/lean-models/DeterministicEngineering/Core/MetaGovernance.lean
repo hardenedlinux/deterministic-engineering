@@ -827,4 +827,29 @@ theorem bundle_rejects_revoked_or_tampered_embedded_child (b : FleetEvidenceBund
       | Or.inr hDig => Bool.noConfusion (hDig.symm.trans hAdm.2.2.2.2))
     b.children hBad hSafe.2.2.2
 
+/-! ## 13. Deterministic Anti-Replay Freshness Window (`--max-age-seconds` / `--now-epoch`) -/
+
+/-- Constructive zero-axiom anti-replay freshness window over `Nat` Unix epochs:
+enforces BOTH lower-bound TTL (`nowEpoch ≤ issuedEpoch + maxAge`) AND upper-bound
+future-skew guard (`issuedEpoch ≤ nowEpoch + maxFutureSkew`). -/
+def WitnessFreshnessWindow (issuedEpoch nowEpoch maxAge maxFutureSkew : Nat) : Prop :=
+  nowEpoch ≤ issuedEpoch + maxAge ∧ issuedEpoch ≤ nowEpoch + maxFutureSkew
+
+/-- Constructive zero-axiom proof: any witness older than `maxAge` (stale replay) is rejected. -/
+theorem freshnessWindow_rejects_expired_replay
+    (issuedEpoch nowEpoch maxAge maxFutureSkew : Nat)
+    (hExpired : issuedEpoch + maxAge < nowEpoch) :
+    ¬ WitnessFreshnessWindow issuedEpoch nowEpoch maxAge maxFutureSkew := by
+  intro hFresh
+  exact Nat.lt_irrefl _ (Nat.lt_of_lt_of_le hExpired hFresh.1)
+
+/-- Constructive zero-axiom proof: any witness dated beyond `nowEpoch + maxFutureSkew`
+(future clock forgery attempting to bypass `IR08` expiry) is unconditionally rejected. -/
+theorem freshnessWindow_rejects_future_clock_forgery
+    (issuedEpoch nowEpoch maxAge maxFutureSkew : Nat)
+    (hFuture : nowEpoch + maxFutureSkew < issuedEpoch) :
+    ¬ WitnessFreshnessWindow issuedEpoch nowEpoch maxAge maxFutureSkew := by
+  intro hFresh
+  exact Nat.lt_irrefl _ (Nat.lt_of_lt_of_le hFuture hFresh.2)
+
 end DeterministicEngineering.Core.MetaGovernance

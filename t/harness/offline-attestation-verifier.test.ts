@@ -39,6 +39,7 @@ import {
   verifyFleetBundleOffline,
   verifyFleetOffline,
   verifyReportOffline,
+  witnessEpochFresh,
 } from './offline-attestation-verifier.ts';
 
 const REPO_ROOT = resolve(import.meta.dir, '../..');
@@ -624,9 +625,64 @@ describe('Zero-Dependency TS/Bun Offline Attestation Verifier (25 Controls + Ger
     expect(docExp.activeKeyIds).toEqual([k2.kid]);
     expect(docExp.revokedKeyIds).toEqual([k1.kid]);
 
-    // Build K2-signed report & inline-PEM bundles BEFORE physically deleting `keys/`
+    // Build K2-signed report, future-dated cache & no-timestamp cache BEFORE physically deleting `keys/`
     const repK2Ok = join(WORK_DIR, 'rep-k2-ok.json');
     buildSignedReport(repK2Ok, k2, {requestId: 'req-k2-ok'});
+    const pFuture = canonicalWitnessSigningPayload(
+      'stepFuture',
+      'oblF',
+      'de-quint',
+      'bounded-interleaving',
+      'pass',
+      'ok',
+      'q=0.33',
+      [['f1', 'aaa']],
+      '1700005000',
+    );
+    const cacheFuture = writeJson(join(WORK_DIR, 'cache-future.json'), {
+      schema: 'deterministic-engineering.verification-cache.v2',
+      entries: {
+        stepFuture: {
+          obligation: 'oblF',
+          method: 'de-quint',
+          claimKind: 'bounded-interleaving',
+          outcome: 'pass',
+          detail: 'ok',
+          issuedAtEpoch: 1700005000,
+          toolchainFingerprint: 'q=0.33',
+          inputDigests: {f1: 'aaa'},
+          keyId: k1.kid,
+          signature: signEd25519(k1.privPem, pFuture),
+        },
+      },
+    });
+    const pNoEpoch = canonicalWitnessSigningPayload(
+      'stepNoEpoch',
+      'oblN',
+      'de-quint',
+      'bounded-interleaving',
+      'pass',
+      'ok',
+      'q=0.33',
+      [['f1', 'aaa']],
+      '',
+    );
+    const cacheNoEpoch = writeJson(join(WORK_DIR, 'cache-no-epoch.json'), {
+      schema: 'deterministic-engineering.verification-cache.v2',
+      entries: {
+        stepNoEpoch: {
+          obligation: 'oblN',
+          method: 'de-quint',
+          claimKind: 'bounded-interleaving',
+          outcome: 'pass',
+          detail: 'ok',
+          toolchainFingerprint: 'q=0.33',
+          inputDigests: {f1: 'aaa'},
+          keyId: k1.kid,
+          signature: signEd25519(k1.privPem, pNoEpoch),
+        },
+      },
+    });
     const k1PemStr = readFileSync(k1.pubPath, 'utf8');
     const k2PemStr = readFileSync(k2.pubPath, 'utf8');
     const tsInlineAll = writeJson(join(WORK_DIR, 'trust-inline-all.json'), {
@@ -756,5 +812,73 @@ describe('Zero-Dependency TS/Bun Offline Attestation Verifier (25 Controls + Ger
       },
     });
     expect(verifyFleetBundleOffline(bundleTamperedChild, tpInlineAll)).toBe(false);
+
+    // Controls 29-30: Deterministic Anti-Replay Freshness Window (`--max-age-seconds` / `--now-epoch`)
+    //   29: Authentic cache (`e1=1700000100`, `e2=1700000200`) passes at exact TTL boundary
+    //       `now=1700000400, maxAge=300` (300s <= 300s), and FAILS 1 second later (`now=1700000401`)!
+    expect(witnessEpochFresh(1700000100, 1700000400, 300, 60)).toBe(true);
+    expect(witnessEpochFresh(1700000100, 1700000401, 300, 60)).toBe(false);
+    expect(verifyCacheOffline(cacheOk, tpInlineAll, {maxAgeSeconds: 300, nowEpoch: 1700000400})).toBe(2);
+    expect(verifyCacheOffline(cacheOk, tpInlineAll, {maxAgeSeconds: 300, nowEpoch: 1700000401})).toBeNull();
+    const resFreshOk = runTsCli([
+      '--json',
+      '--verify-cache',
+      '--max-age-seconds',
+      '300',
+      '--now-epoch',
+      '1700000400',
+      cacheOk,
+      tsInlineAll,
+    ]);
+    expect(resFreshOk.exitCode).toBe(0);
+    const docFreshOk = JSON.parse(resFreshOk.stdout.trim());
+    expect(docFreshOk.ok).toBe(true);
+    expect(docFreshOk.entries).toBe(2);
+    expect(docFreshOk.maxAgeSeconds).toBe(300);
+    expect(docFreshOk.nowEpoch).toBe(1700000400);
+
+    const resStaleFail = runTsCli([
+      '--json',
+      '--verify-cache',
+      '--max-age-seconds',
+      '300',
+      '--now-epoch',
+      '1700000401',
+      cacheOk,
+      tsInlineAll,
+    ]);
+    expect(resStaleFail.exitCode).not.toBe(0);
+    expect(JSON.parse(resStaleFail.stdout.trim()).ok).toBe(false);
+
+    //   30: Future-dated Ed25519-signed witness (clock forgery `1700005000` at `now=1700000200`)
+    //       AND validly signed witness missing `issuedAtEpoch` are BOTH unconditionally rejected!
+    expect(witnessEpochFresh(1700005000, 1700000200, 600, 60)).toBe(false);
+    expect(witnessEpochFresh(undefined, 1700000200, 600, 60)).toBe(false);
+    expect(verifyCacheOffline(cacheFuture, tpInlineAll)).toBe(1); // cryptographically authentic
+    expect(
+      verifyCacheOffline(cacheFuture, tpInlineAll, {
+        maxAgeSeconds: 600,
+        nowEpoch: 1700000200,
+        maxFutureSkewSeconds: 60,
+      }),
+    ).toBeNull();
+    expect(verifyCacheOffline(cacheNoEpoch, tpInlineAll)).toBe(1); // cryptographically authentic
+    expect(
+      verifyCacheOffline(cacheNoEpoch, tpInlineAll, {maxAgeSeconds: 600, nowEpoch: 1700000200}),
+    ).toBeNull();
+    const resFutureFail = runTsCli([
+      '--json',
+      '--verify-cache',
+      '--max-age-seconds',
+      '600',
+      '--now-epoch',
+      '1700000200',
+      '--max-future-skew-seconds',
+      '60',
+      cacheFuture,
+      tsInlineAll,
+    ]);
+    expect(resFutureFail.exitCode).not.toBe(0);
+    expect(JSON.parse(resFutureFail.stdout.trim()).ok).toBe(false);
   });
 });
