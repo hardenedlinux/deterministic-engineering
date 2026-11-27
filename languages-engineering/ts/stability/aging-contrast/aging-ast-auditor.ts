@@ -32,7 +32,8 @@ export type AgingMechanism =
   | 'SM23-adversarial-http-redirect-ssrf'
   | 'SM24-adversarial-env-scrub-auth-timing'
   | 'SM25-single-owner-graph-governance'
-  | 'SM26-control-plane-auth-governance';
+  | 'SM26-control-plane-auth-governance'
+  | 'SM27-policy-gate-blindspot-confinement';
 
 export interface AgingFinding {
   ruleId: string;
@@ -539,6 +540,18 @@ function auditGo(clean: string): AgingFinding[] {
         message: 'Go control-plane auth compares Bearer Authorization headers with non-constant-time `==`/`!=` instead of subtle.ConstantTimeCompare (ADV-L4, SM26).',
       });
     }
+  }
+
+  // 23. Go verification / Quint MBT test weakens gate via t.Skip/t.Skipf on missing verification tool (ADV-L4, SM27).
+  const goSkipGateMatch = /\bt\.Skipf?\s*\([^)]*(?:quint|apalache|policy|gate|mbt|itf)/i.exec(clean);
+  if (goSkipGateMatch) {
+    findings.push({
+      ruleId: 'go-test-skip-weakens-gate',
+      mechanism: 'SM27-policy-gate-blindspot-confinement',
+      language: 'go',
+      line: lineOfIndex(clean, goSkipGateMatch.index),
+      message: 'Go verification test calls t.Skip/t.Skipf on missing formal/policy toolchain instead of resolving local binaries and failing closed via t.Fatalf (ADV-L4, SM27).',
+    });
   }
 
   return findings;
@@ -1211,6 +1224,50 @@ function auditRust(clean: string): AgingFinding[] {
     }
   }
 
+  // 34. Rust ASP policy gate downgraded via `advice = allow` / `mode = off` or `#[ignore]` on enforce_asp_rust (ADV-L4, SM27).
+  const aspGateDowngradeMatch =
+    /\basp_rust_cargo_test_gate!\s*\([^)]*(?:\badvice\s*=\s*allow\b|\bmode\s*=\s*(?:allow|off)\b)/.exec(clean) ||
+    /#\[ignore[^\]]*\]\s*(?:pub\s+)?(?:async\s+)?fn\s+enforce_asp_rust/.exec(clean);
+  if (aspGateDowngradeMatch) {
+    findings.push({
+      ruleId: 'rust-policy-gate-downgraded-or-ignored',
+      mechanism: 'SM27-policy-gate-blindspot-confinement',
+      language: 'rust',
+      line: lineOfIndex(clean, aspGateDowngradeMatch.index),
+      message: 'ASP Rust policy gate is downgraded (`advice = allow` / `mode = allow`) or disabled via `#[ignore]`, blinding architectural enforcement (ADV-L4, SM27).',
+    });
+  }
+
+  // 35. Rust binary entrypoint (`fn main`) carries fat server/control-plane implementation (>= 8 helper fns) instead of delegating to an owned library module (ADV-L4, SM27).
+  const mainFnMatch = /\b(?:async\s+)?fn\s+main\s*\(\s*\)/.exec(clean);
+  if (mainFnMatch && !/\b(?:criterion_group!|criterion_main!|Criterion::default)\b/.test(clean)) {
+    const beforeTests = clean.split(/#\[cfg\s*\(\s*test\s*\)\]/)[0] ?? clean;
+    const helperFns = beforeTests.match(/^\s*(?:pub(?:\([^)]*\))?\s+)?(?:async\s+)?fn\s+(?!main\b)[a-zA-Z_]\w*\s*(?:<[^>]*>)?\s*\(/gm) ?? [];
+    const hasControlPlaneSurface = /\b(?:Server::builder|TcpListener::bind|tonic::|AppServer|MyGoBridgeHost|MarlinSchemeHostClient)\b/.test(beforeTests);
+    if (helperFns.length >= 8 && hasControlPlaneSurface) {
+      findings.push({
+        ruleId: 'rust-binary-entrypoint-fat-shadow-logic',
+        mechanism: 'SM27-policy-gate-blindspot-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, mainFnMatch.index),
+        message: `Binary entrypoint defines ${helperFns.length} control-plane helper functions directly alongside fn main(); extract implementation into an owned library module to prevent shadow drift (ADV-L4, SM27).`,
+      });
+    }
+  }
+
+  // 36. Rust policy harness suppresses workspace policy failure or Cargo cycle panic via catch_unwind / .ok() (ADV-L4, SM27).
+  const maskedPolicyMatch =
+    /\b(?:catch_unwind|let\s+_\s*=)[\s\S]{0,160}\b(?:workspace_policy\w*|enforce_asp_rust\w*|run_workspace_policy\w*)\b/.exec(clean);
+  if (maskedPolicyMatch) {
+    findings.push({
+      ruleId: 'rust-workspace-policy-failure-masked',
+      mechanism: 'SM27-policy-gate-blindspot-confinement',
+      language: 'rust',
+      line: lineOfIndex(clean, maskedPolicyMatch.index),
+      message: 'Workspace policy gate invocation masks errors or cycle panics via catch_unwind / `let _ =` instead of failing closed (ADV-L4, SM27).',
+    });
+  }
+
   return findings;
 }
 
@@ -1443,6 +1500,36 @@ function auditTypeScript(clean: string): AgingFinding[] {
         language: 'ts',
         line: lineOfIndex(clean, tsRpcMatch.index),
         message: 'Control-plane RPC handler validates auth token but omits fail-closed E-Stop / governance gate enforcement before admitting mutating actions (ADV-L4, SM26).',
+      });
+    }
+  }
+
+  // 15. TS policy/CI gate runner masks policy gate failure (`|| true`, `continueOnError: true`, or swallowing catch returning passed: true) (ADV-L4, SM27).
+  const tsMaskedGateMatch =
+    /\b(?:workspace_policy|rust-dev-gate|enforce_asp_rust|policyGate)\b[\s\S]{0,180}(?:\|\|\s*true\b|continueOnError\s*:\s*true|catch\s*(?:\([^)]*\))?\s*\{[\s\S]{0,80}return\s+\{\s*passed\s*:\s*true)/.exec(clean);
+  if (tsMaskedGateMatch) {
+    findings.push({
+      ruleId: 'ts-policy-gate-swallows-failure',
+      mechanism: 'SM27-policy-gate-blindspot-confinement',
+      language: 'ts',
+      line: lineOfIndex(clean, tsMaskedGateMatch.index),
+      message: 'Policy-gate runner swallows failure via `|| true`, `continueOnError: true`, or catch-returning `passed: true`, creating a silent blind spot (ADV-L4, SM27).',
+    });
+  }
+
+  // 16. TS workspace policy auditor admits crate graph without checking for cyclic dependency SCCs (ADV-L4, SM27).
+  const wsAuditFnMatch = /\b(?:async\s+)?function\s+auditWorkspacePolicy\s*\([^)]*\)/.exec(clean);
+  if (wsAuditFnMatch) {
+    const fnBody = extractBraceBlock(clean, wsAuditFnMatch.index);
+    const checksCycles = /\b(?:cyclicSccs|countCyclicSccs|detectCycles|hasCycle|toposort)\b/.test(fnBody);
+    const returnsPassed = /\bpassed\s*:\s*true\b|\breturn\s+true\b/.test(fnBody);
+    if (returnsPassed && !checksCycles) {
+      findings.push({
+        ruleId: 'ts-workspace-dep-cycle-unverified',
+        mechanism: 'SM27-policy-gate-blindspot-confinement',
+        language: 'ts',
+        line: lineOfIndex(clean, wsAuditFnMatch.index),
+        message: 'Workspace policy auditor returns passed without verifying acyclic workspace dependency graph (cyclicSccs == 0), risking cycle-blinded policy gates (ADV-L4, SM27).',
       });
     }
   }

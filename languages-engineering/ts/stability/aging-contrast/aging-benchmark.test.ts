@@ -2204,10 +2204,120 @@ export async function submitScopedPanelAction(req: RpcReq, gate: GovernanceGate)
   return { admitted: true };
 }`,
   },
+  // --- SM27: ADV-L4 policy-gate blind-spot, dependency-cycle masking & entrypoint confinement (SA143-SA152) ---
+  {
+    id: 'SA143',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-policy-gate-downgraded-or-ignored',
+    source: `
+asp_rust::asp_rust_cargo_test_gate!(mode = warn, advice = allow);`,
+  },
+  {
+    id: 'SA144',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-binary-entrypoint-fat-shadow-logic',
+    source: `
+use tonic::transport::Server;
+fn h1() {}
+fn h2() {}
+fn h3() {}
+fn h4() {}
+fn h5() {}
+fn h6() {}
+fn h7() {}
+fn h8() {}
+async fn main() { let _ = Server::builder(); }`,
+  },
+  {
+    id: 'SA145',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-workspace-policy-failure-masked',
+    source: `
+fn run_gate() {
+  let _ = std::panic::catch_unwind(|| enforce_asp_rust_workspace_dev_gate());
+}`,
+  },
+  {
+    id: 'SA146',
+    language: 'go',
+    expectedPass: false,
+    expectedRuleId: 'go-test-skip-weakens-gate',
+    source: `
+package concurrency_test
+import ("os/exec"; "testing")
+func generateQuintItf(t *testing.T) {
+  if _, err := exec.LookPath("quint"); err != nil {
+    t.Skipf("quint binary not on PATH: %v", err)
+  }
+}`,
+  },
+  {
+    id: 'SA147',
+    language: 'ts',
+    expectedPass: false,
+    expectedRuleId: 'ts-policy-gate-swallows-failure',
+    source: `
+export function runPolicyStep() {
+  return execCmd('cargo test -p policy --test workspace_policy || true');
+}`,
+  },
+  {
+    id: 'SA148',
+    language: 'ts',
+    expectedPass: false,
+    expectedRuleId: 'ts-workspace-dep-cycle-unverified',
+    source: `
+export function auditWorkspacePolicy(crates: string[]) {
+  return { passed: true, scanned: crates.length };
+}`,
+  },
+  {
+    id: 'SA149',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+  marlin_agent_app_server::mygo_host::run_cli().await
+}`,
+  },
+  {
+    id: 'SA150',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+asp_rust::asp_rust_cargo_test_gate!(mode = fail);`,
+  },
+  {
+    id: 'SA151',
+    language: 'go',
+    expectedPass: true,
+    source: `
+package concurrency_test
+import ("os/exec"; "testing")
+func generateQuintItf(t *testing.T) {
+  if _, err := exec.LookPath("quint"); err != nil {
+    t.Fatalf("quint binary missing (fail-closed): %v", err)
+  }
+}`,
+  },
+  {
+    id: 'SA152',
+    language: 'ts',
+    expectedPass: true,
+    source: `
+export function auditWorkspacePolicy(crates: string[], edges: [string, string][]) {
+  const cyclicSccs = countCyclicSccs(crates, edges);
+  return { passed: cyclicSccs === 0, cyclicSccs };
+}`,
+  },
 ];
 
-describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA142)', () => {
-  test('achieves 142/142 exact independent-gold match (tp=79, tn=63, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
+describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA152)', () => {
+  test('achieves 152/152 exact independent-gold match (tp=85, tn=67, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
     let tp = 0;
     let tn = 0;
     let fp = 0;
@@ -2230,7 +2340,7 @@ describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA142)', () 
       }
     }
 
-    expect({tp, tn, fp, fn}).toEqual({tp: 79, tn: 63, fp: 0, fn: 0});
+    expect({tp, tn, fp, fn}).toEqual({tp: 85, tn: 67, fp: 0, fn: 0});
   });
 
   test('clean Rust deterministic buffer pool & bounded retry passes with 0 findings', () => {

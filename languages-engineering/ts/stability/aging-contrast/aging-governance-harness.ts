@@ -200,6 +200,14 @@ const MECHANISM_DIRECTIVES: Record<AgingMechanism, AgingRemediationDirective> = 
     antiEvasionWarning:
       'Do NOT evade by hardening only library helpers while leaving host binary closures on `==`, checking `!header.trim().is_empty()` on `"Bearer "`, gating only leaf atomic effects while leaving gRPC `stream_turn`/`submit_scoped_panel_action` open during E-Stop, or running release gates under inherited env `sh -lc`.',
   },
+  'SM27-policy-gate-blindspot-confinement': {
+    mechanism: 'SM27-policy-gate-blindspot-confinement',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Keep the local workspace dependency DAG strictly acyclic (0 cyclic SCCs) by relocating cross-crate tests into higher-layer crates, mount fail-closed per-crate policy gates on every control-plane crate, extract fat src/bin/*.rs and root tests/*.rs implementations into owned library/suite modules, remove t.Skipf / `|| true` / `advice = allow` masking, and execute workspace policy gates unconditionally in CI.',
+    antiEvasionWarning:
+      'Do NOT evade by keeping dev-dependency cycles that panic workspace_policy, downgrading gates to `advice = allow` / `#[ignore]`, using `t.Skipf` on missing verification binaries, or masking gate failures with `|| true` / `continue-on-error: true`.',
+  },
 };
 
 export function getAgingRemediation(finding: AgingFinding): AgingRemediationDirective {

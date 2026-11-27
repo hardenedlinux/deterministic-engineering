@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Policy-Gate Blind-Spot, Dependency-Cycle Masking & Entrypoint Confinement (SM27)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.defense.policy-gate-blindspot-and-cycle-confinement=
+- *Subdomain*: =quint.engineering.defense=
+- *Quint Module*: =defense_policy_gate_blindspot_and_cycle_confinement= (=[[file:PolicyGateBlindspotAndCycleConfinement.qnt][PolicyGateBlindspotAndCycleConfinement.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/defense/policy-gate-blindspot-and-cycle-confinement/PolicyGateBlindspotAndCycleConfinement=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+No patch or release is admitted while workspace dev-dependency cycles blind the policy gate (blindedAdmits == 0), while any critical crate is ungated or downgraded out of fail-closed mode (ungatedOrDowngradedAdmits == 0), while fat binary or root-test entrypoints carry shadow implementation (fatEntrypointAdmits == 0), or while CI omits policy-gate execution (ciOmittedReleases == 0).
+
+#+begin_src quint
+val safety = (h.blindedAdmits == 0 and h.ungatedOrDowngradedAdmits == 0 and h.fatEntrypointAdmits == 0 and h.ciOmittedReleases == 0 and h.cyclicSccs >= 0 and h.cyclicSccs <= 2 and h.ungatedCriticalCrates >= 0 and h.fatEntrypoints >= 0 and h.stepCount <= 12)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =forbid-cycle-blinded-admission= | =stepCycleBlindedAdmission= | =h.blindedAdmits > 0= |
+| =forbid-ungated-or-downgraded-admission= | =stepUngatedOrDowngradedAdmission= | =h.ungatedOrDowngradedAdmits > 0= |
+| =forbid-fat-entrypoint-admission= | =stepFatEntrypointAdmission= | =h.fatEntrypointAdmits > 0= |
+| =forbid-ci-omitted-release= | =stepCiOmittedRelease= | =h.ciOmittedReleases > 0= |
+
+* Grounded Papers & Specifications
+
+- *Deterministic Engineering (30.06 / 40.05)*: SM27 ADV-L4 policy-gate blind-spot confinement: acyclic workspace DAGs, universal fail-closed crate gates, thin binary/test entrypoints, and mandatory CI policy enforcement.
+- *Marlin Agent Core Empirical Case Study (2026)*: Three Cargo local dev-dependency cycles blinded workspace_policy while ungated marlin-agent-app-server and marlin-agent-kernel accumulated 65.7% of workspace architectural warnings and repeated SM24-SM26 bypasses.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/defense/policy-gate-blindspot-and-cycle-confinement/PolicyGateBlindspotAndCycleConfinement.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/defense/policy-gate-blindspot-and-cycle-confinement/PolicyGateBlindspotAndCycleConfinement.qnt --main=defense_policy_gate_blindspot_and_cycle_confinement --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite bounded workspace policy-gate governance model (cyclicSccs <= 2, stepCount <= 12); models Cargo dev-dependency cycle blinding, per-crate policy gate coverage & fail-closed mode, thin binary/test entrypoint confinement, and CI policy-gate invocation, without modeling external registry compromise or arbitrary proc-macro code execution.

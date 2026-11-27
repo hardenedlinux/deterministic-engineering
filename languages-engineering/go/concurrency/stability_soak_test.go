@@ -145,13 +145,25 @@ func parseItfInt(raw json.RawMessage) int {
 
 func generateQuintItf(t *testing.T, modelRelPath, mainMod string, maxSteps int) itfTrace {
 	t.Helper()
-	quintBin, err := exec.LookPath("quint")
-	if err != nil {
-		t.Skipf("quint binary not on PATH; skipping live ITF trace generation: %v", err)
-	}
 	repoRoot, err := filepath.Abs(filepath.Join("..", "..", ".."))
 	if err != nil {
 		t.Fatalf("resolve repo root: %v", err)
+	}
+	quintBin, err := exec.LookPath("quint")
+	if err != nil {
+		candidates := []string{
+			filepath.Join(repoRoot, "packages", "quint-modules-resolver", "node_modules", ".bin", "quint"),
+			filepath.Join(repoRoot, "node_modules", ".bin", "quint"),
+		}
+		for _, candidate := range candidates {
+			if info, statErr := os.Stat(candidate); statErr == nil && !info.IsDir() {
+				quintBin = candidate
+				break
+			}
+		}
+		if quintBin == "" {
+			t.Fatalf("quint binary missing on PATH and in local node_modules/.bin (fail-closed, no silent skip): %v", err)
+		}
 	}
 	modelPath := filepath.Join(repoRoot, modelRelPath)
 	outFile := filepath.Join(t.TempDir(), mainMod+".itf.json")
