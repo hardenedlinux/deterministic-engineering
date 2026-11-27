@@ -437,6 +437,7 @@ const RUST_OPTION_ACCESSOR_METHODS = new Set([
   'first',
   'last',
   'find',
+  'find_map',
   'position',
   'rposition',
   'pointer',
@@ -464,7 +465,11 @@ const RUST_OPTION_ACCESSOR_METHODS = new Set([
 const RUST_FAIL_CLOSED_PREDICATE_RE =
   /^is_.*(fenced|retracted|blocked|revoked|tripped|denied|quarantined|expired|stale|corrupt|disabled)/i;
 
-function isRustOptionAccessorChain(code: readonly Tok[], dotIdx: number): boolean {
+function isRustOptionAccessorChain(
+  code: readonly Tok[],
+  dotIdx: number,
+  knownOptionVars?: ReadonlySet<string>,
+): boolean {
   // Scan backwards across the receiver expression up to statement/delimiter boundary.
   // If `.ok()` appears anywhere in the chain (except `duration_since(UNIX_EPOCH)`),
   // a Result::Err is being collapsed into Option::None -> NOT a pure Option accessor!
@@ -476,6 +481,10 @@ function isRustOptionAccessorChain(code: readonly Tok[], dotIdx: number): boolea
   let sawDurationSinceEpoch = false;
   let sawTryPropagated = false;
   let sawDotOk = false;
+  let exprStart = dotIdx;
+  let sawNonTransformCall = false;
+  const OPTION_TRANSFORM_METHODS = new Set(['map', 'and_then', 'or_else', 'filter', 'clone', 'cloned', 'copied', 'as_deref', 'as_ref']);
+
   for (let k = dotIdx - 1; k >= start; k--) {
     const tk = code[k]!;
     if (tk.value === ')') {
@@ -515,13 +524,16 @@ function isRustOptionAccessorChain(code: readonly Tok[], dotIdx: number): boolea
       depthParen === 0 &&
       depthBracket === 0 &&
       depthBrace === 0 &&
-      (tk.value === ';' || tk.value === '=' || tk.value === ',' || tk.value === '&&' || tk.value === '||' || tk.value === '=>')
+      (tk.value === ';' || tk.value === '=' || tk.value === ',' || tk.value === '&&' || tk.value === '||' || tk.value === '=>' || tk.value === ':' || tk.value === '&')
     ) {
       break;
     }
-    // `expr?.unwrap_or_default()` already propagated Err via `?` (only Option remains).
-    if (depthParen === 0 && depthBracket === 0 && depthBrace === 0 && tk.value === '?' && k === dotIdx - 1) {
-      sawTryPropagated = true;
+    exprStart = k;
+    // Any top-level `?` earlier in the chain already propagated Result::Err (only Option remains after `?`).
+    if (depthParen === 0 && depthBracket === 0 && depthBrace === 0 && tk.value === '?') {
+      if (!sawDotOk) {
+        sawTryPropagated = true;
+      }
     }
     if (tk.kind === 'ident' && tk.value === 'ok' && code[k - 1]?.value === '.' && code[k + 1]?.value === '(') {
       sawDotOk = true;
@@ -534,15 +546,39 @@ function isRustOptionAccessorChain(code: readonly Tok[], dotIdx: number): boolea
       depthBracket === 0 &&
       depthBrace === 0 &&
       tk.kind === 'ident' &&
-      code[k - 1]?.value === '.' &&
+      (code[k - 1]?.value === '.' || (code[k - 1]?.value === '::' && tk.value === 'width')) &&
       RUST_OPTION_ACCESSOR_METHODS.has(tk.value)
     ) {
       sawOptionAccessor = true;
     }
+    if (
+      depthParen === 0 &&
+      depthBracket === 0 &&
+      depthBrace === 0 &&
+      tk.kind === 'ident' &&
+      code[k + 1]?.value === '(' &&
+      !OPTION_TRANSFORM_METHODS.has(tk.value)
+    ) {
+      sawNonTransformCall = true;
+    }
   }
   if (sawDurationSinceEpoch) return true;
   if (sawDotOk) return false;
-  return sawOptionAccessor || sawTryPropagated;
+  if (sawOptionAccessor || sawTryPropagated) return true;
+
+  // Check if receiver root is a declared `Option<...>` param/local OR a pure struct field chain
+  // (`obj.field.clone()` / `obj.field.map(...)`) with zero fallible function/method calls.
+  if (exprStart < dotIdx && !sawNonTransformCall) {
+    const rootTok = code[exprStart]!;
+    if (rootTok.kind === 'ident') {
+      if (knownOptionVars?.has(rootTok.value)) return true;
+      // Pure struct field projection: `a.b` or `a.b.c` (at least one `.field` access without `()`).
+      if (code[exprStart + 1]?.value === '.' && code[exprStart + 2]?.kind === 'ident' && code[exprStart + 3]?.value !== '(') {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 function inspectEnclosingMatch(
@@ -652,33 +688,102 @@ export function auditRustAgentSource(sourceText: string, fileName = 'input.rs'):
   }
   const inCfgTest = (idx: number): boolean => cfgTestRanges.some(([s, e]) => idx >= s && idx <= e);
 
-  // Track enclosing `fn <name>` scope for fail-closed predicate detection.
-  const fnRanges: Array<{name: string; start: number; end: number}> = [];
+  // Track enclosing `fn <name>` scope + declared `Option<...>` params/locals for sound Option unwrapping.
+  const fnRanges: Array<{name: string; start: number; end: number; optionVars: Set<string>}> = [];
   for (let i = 0; i + 2 < code.length; i++) {
     if (code[i]!.kind === 'ident' && code[i]!.value === 'fn' && code[i + 1]?.kind === 'ident') {
       const fnName = code[i + 1]!.value;
-      let braceIdx = i + 2;
-      while (braceIdx < code.length && code[braceIdx]!.value !== '{' && code[braceIdx]!.value !== ';') {
-        braceIdx++;
+      const optionVars = new Set<string>();
+      let sigEnd = i + 2;
+      while (sigEnd < code.length && code[sigEnd]!.value !== '{' && code[sigEnd]!.value !== ';') {
+        sigEnd++;
       }
-      if (code[braceIdx]?.value === '{') {
-        const bodyClose = findMatching(code, braceIdx, '{', '}');
-        if (bodyClose > braceIdx) {
-          fnRanges.push({name: fnName, start: braceIdx, end: bodyClose});
+      if (code[sigEnd]?.value === '{') {
+        const bodyClose = findMatching(code, sigEnd, '{', '}');
+        if (bodyClose > sigEnd) {
+          // Extract `param: Option<...>` / `param: &Option<...>` from fn parameter list.
+          const openParen = code.slice(i + 2, sigEnd).findIndex(tk => tk.value === '(');
+          if (openParen >= 0) {
+            const pStart = i + 2 + openParen;
+            const pEnd = findMatching(code, pStart, '(', ')');
+            if (pEnd > pStart) {
+              for (let p = pStart + 1; p < pEnd; p++) {
+                if (code[p]!.value === ':' && code[p - 1]?.kind === 'ident') {
+                  const pname = code[p - 1]!.value;
+                  let tIdx = p + 1;
+                  while (tIdx < pEnd && (code[tIdx]!.value === '&' || code[tIdx]!.value === 'mut' || code[tIdx]!.value.startsWith("'"))) {
+                    tIdx++;
+                  }
+                  if (code[tIdx]?.value === 'Option') {
+                    optionVars.add(pname);
+                  }
+                }
+              }
+            }
+          }
+          // Extract local `let x: Option<...> = ...` or `let x = ...find/get/first/last/find_map(...)` bindings.
+          for (let b = sigEnd + 1; b < bodyClose; b++) {
+            if (code[b]!.kind === 'ident' && code[b]!.value === 'let') {
+              let vIdx = b + 1;
+              if (code[vIdx]?.value === 'mut') vIdx++;
+              if (code[vIdx]?.kind !== 'ident') continue;
+              const vname = code[vIdx]!.value;
+              if (code[vIdx + 1]?.value === ':') {
+                let tIdx = vIdx + 2;
+                while (tIdx < bodyClose && (code[tIdx]!.value === '&' || code[tIdx]!.value === 'mut')) tIdx++;
+                if (code[tIdx]?.value === 'Option') {
+                  optionVars.add(vname);
+                }
+              }
+              // Scan initializer up to `;` at depth 0 for `.find(` / `.find_map(` / `.get(` / `.first(` / `.last(` without `.ok(`.
+              let eqIdx = vIdx + 1;
+              while (eqIdx < bodyClose && code[eqIdx]!.value !== '=' && code[eqIdx]!.value !== ';') eqIdx++;
+              if (code[eqIdx]?.value === '=') {
+                let semi = eqIdx + 1;
+                let d = 0;
+                let sawOptInit = false;
+                let sawOkInit = false;
+                while (semi < bodyClose && semi < eqIdx + 60) {
+                  const sv = code[semi]!.value;
+                  if (sv === '(' || sv === '{' || sv === '[') d++;
+                  else if (sv === ')' || sv === '}' || sv === ']') {
+                    if (d > 0) d--;
+                  } else if (d === 0 && sv === ';') {
+                    break;
+                  }
+                  if (code[semi]!.kind === 'ident' && sv === 'ok' && code[semi - 1]?.value === '.') sawOkInit = true;
+                  if (
+                    d === 0 &&
+                    code[semi]!.kind === 'ident' &&
+                    code[semi - 1]?.value === '.' &&
+                    RUST_OPTION_ACCESSOR_METHODS.has(sv)
+                  ) {
+                    sawOptInit = true;
+                  }
+                  semi++;
+                }
+                if (sawOptInit && !sawOkInit) {
+                  optionVars.add(vname);
+                }
+              }
+            }
+          }
+          fnRanges.push({name: fnName, start: sigEnd, end: bodyClose, optionVars});
         }
       }
     }
   }
-  const enclosingFnName = (idx: number): string | null => {
-    let best: {name: string; span: number} | null = null;
+  const enclosingFn = (idx: number): {name: string; optionVars: Set<string>} | null => {
+    let best: {name: string; optionVars: Set<string>; span: number} | null = null;
     for (const r of fnRanges) {
       if (idx >= r.start && idx <= r.end) {
         const span = r.end - r.start;
-        if (!best || span < best.span) best = {name: r.name, span};
+        if (!best || span < best.span) best = {name: r.name, optionVars: r.optionVars, span};
       }
     }
-    return best?.name ?? null;
+    return best ? {name: best.name, optionVars: best.optionVars} : null;
   };
+  const enclosingFnName = (idx: number): string | null => enclosingFn(idx)?.name ?? null;
 
   for (let i = 0; i < code.length; i++) {
     const t = code[i]!;
@@ -688,7 +793,7 @@ export function auditRustAgentSource(sourceText: string, fileName = 'input.rs'):
     if (!insideTestMod && t.value === '.' && code[i + 1]?.kind === 'ident') {
       const m = code[i + 1]!;
       if (m.value === 'unwrap_or_default' && code[i + 2]?.value === '(') {
-        if (!isRustOptionAccessorChain(code, i)) {
+        if (!isRustOptionAccessorChain(code, i, enclosingFn(i)?.optionVars)) {
           add(
             'silent-fallback',
             'rust-unwrap-or-default',
@@ -708,7 +813,7 @@ export function auditRustAgentSource(sourceText: string, fileName = 'input.rs'):
             })();
           if (
             !isFailClosedPredicate &&
-            !isRustOptionAccessorChain(code, i) &&
+            !isRustOptionAccessorChain(code, i, enclosingFn(i)?.optionVars) &&
             ((arg.kind === 'num' && arg.value === '0') ||
               arg.value === 'true' ||
               (arg.kind === 'str' && arg.value === ''))
@@ -770,6 +875,8 @@ export function auditRustAgentSource(sourceText: string, fileName = 'input.rs'):
                   armBody[idx + 1]?.value === '(') ||
                 tk.value === 'failed_join_summary' ||
                 tk.value === 'rejected_with_actions' ||
+                tk.value === 'publish_message' ||
+                tk.value === 'publish_error' ||
                 (tk.value === 'Rejected' && armBody[idx - 1]?.value === '::'),
             );
             const returnsErr = armBody.some(tk => tk.value === 'Err' || tk.value === 'panic');

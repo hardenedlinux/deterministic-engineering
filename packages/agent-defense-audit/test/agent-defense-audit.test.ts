@@ -522,11 +522,21 @@ func main() {
     // 2b. Calibrated Rust Option chains, async match await, and guarded Err routing => 0 findings,
     //     while Result serde_json::to_string().unwrap_or_default() is still caught:
     const calibratedRust = `
-      fn pure_option_chains(m: &HashMap<String, Vec<String>>, v: &serde_json::Value, n: usize) -> (Vec<String>, usize, &str) {
+      fn pure_option_chains(
+        m: &HashMap<String, Vec<String>>,
+        v: &serde_json::Value,
+        n: usize,
+        initial_query: Option<&str>,
+        cfg: &Cfg,
+      ) -> (Vec<String>, usize, &str, String, String, usize) {
         let a = m.get("k").map(|s| s.clone()).unwrap_or_default();
         let b = 100usize.checked_div(n).unwrap_or(0);
         let c = v.pointer("/a/b").and_then(|x| x.as_str()).unwrap_or("");
-        (a, b, c)
+        let d = initial_query.unwrap_or("").trim().to_owned();
+        let e = cfg.optional_path.clone().unwrap_or_default();
+        let f = unicode_width::UnicodeWidthChar::width('a').unwrap_or(0);
+        let g = [1, 2].iter().find_map(|x| (*x == 2).then_some(*x)).unwrap_or(0);
+        (a, b + g, c, d, e, f)
       }
       async fn async_match(res: Result<u32, String>) -> Result<u32, String> {
         match res {
