@@ -3459,10 +3459,152 @@ export function assembleTwoZonePrompt(envelope: {frozenPrefix: string; kvPrefixD
   return envelope.kvPrefixDigest === admittedDigest && actual === admittedDigest;
 }`,
   },
+  // --- SM35: ADV-L4 AgentGraph sealed-witness/routing integrity & harness Cedar/artifact/config confinement (SA223-SA232) ---
+  {
+    id: 'SA223',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-graph-witness-serde-bypass-or-detached-settle',
+    source: `
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct AdmittedGovernedContext {
+  capsule: GovernedContextCapsule,
+}`,
+  },
+  {
+    id: 'SA224',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-graph-planning-policy-decision-bypass-or-dup-edge',
+    source: `
+fn edge_condition_matches(edge: &AgentEdge, target: &AgentGraphPlanningTarget) -> bool {
+  match &edge.condition {
+    AgentEdgeCondition::Always => true,
+    AgentEdgeCondition::CapabilityRequired(req) => target.required_capability.as_ref().is_some_and(|c| c == req),
+    AgentEdgeCondition::PolicyDecision(_) => true,
+  }
+}`,
+  },
+  {
+    id: 'SA225',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-harness-cedar-capability-spoof-or-case-bypass',
+    source: `
+fn classify_capability(tool_name: &str, declared_capability: Option<&str>) -> String {
+  if let Some(cap) = declared_capability { return cap.to_ascii_lowercase(); }
+  if tool_name.to_ascii_lowercase().contains("search") { "search".to_owned() } else { "write".to_owned() }
+}`,
+  },
+  {
+    id: 'SA226',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-harness-artifact-lexical-only-or-empty-path',
+    source: `
+fn materialized_artifact_path(output_root: &Path, artifact: &IntentCaseArtifactRef) -> Result<PathBuf, ()> {
+  let rel = artifact.path.as_ref().ok_or(())?;
+  safe_relative_path(rel).map(|p| output_root.join(p))
+}`,
+  },
+  {
+    id: 'SA227',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-weaver-config-unbounded-read-or-unsafe-cred-env',
+    source: `
+impl LiveWeaverTomlConfig {
+  pub fn load(path: &Path) -> Result<Self, String> {
+    let raw = fs::read_to_string(path).map_err(|e| e.to_string())?;
+    toml::from_str(&raw).map_err(|e| e.to_string())
+  }
+}`,
+  },
+  {
+    id: 'SA228',
+    language: 'ts',
+    expectedPass: false,
+    expectedRuleId: 'ts-harness-tool-capability-spoof-or-witness-bypass',
+    source: `
+export function classifyHarnessToolCapability(toolName: string, declaredCapability: string | null): string {
+  if (declaredCapability !== null) return declaredCapability.toLowerCase();
+  return toolName.toLowerCase().includes('search') ? 'search' : 'write';
+}`,
+  },
+  {
+    id: 'SA229',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+#[derive(Clone, Debug, Serialize)]
+pub struct AdmittedGovernedContext {
+  capsule: GovernedContextCapsule,
+}
+impl<'de> Deserialize<'de> for AdmittedGovernedContext {
+  fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+    let capsule = GovernedContextCapsule::deserialize(d)?;
+    admit_governed_context_capsule(capsule).map_err(serde::de::Error::custom)
+  }
+}
+fn edge_condition_matches(edge: &AgentEdge, target: &AgentGraphPlanningTarget, has_policy_receipt: bool) -> bool {
+  match &edge.condition {
+    AgentEdgeCondition::Always => true,
+    AgentEdgeCondition::CapabilityRequired(req) => target.required_capability.as_ref().is_some_and(|c| c == req),
+    AgentEdgeCondition::PolicyDecision(_) => has_policy_receipt,
+  }
+}`,
+  },
+  {
+    id: 'SA230',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+fn classify_capability(tool_name: &str, declared_capability: Option<&str>) -> String {
+  if is_destructive_tool_name(tool_name) { return "shell".to_owned(); }
+  if let Some(cap) = declared_capability { return cap.trim().to_ascii_lowercase(); }
+  if tool_name.to_ascii_lowercase().contains("search") { "search".to_owned() } else { "write".to_owned() }
+}`,
+  },
+  {
+    id: 'SA231',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+fn safe_relative_path(path: &str) -> Result<PathBuf, ()> {
+  let mut relative = PathBuf::new();
+  for c in Path::new(path).components() {
+    if let Component::Normal(seg) = c { relative.push(seg); } else { return Err(()); }
+  }
+  if relative.as_os_str().is_empty() { return Err(()); }
+  Ok(relative)
+}
+fn materialized_artifact_path(output_root: &Path, artifact: &IntentCaseArtifactRef) -> Result<PathBuf, ()> {
+  let rel = safe_relative_path(artifact.path.as_ref().ok_or(())?)?;
+  verify_confined_no_symlinks(output_root, &rel)
+}
+impl LiveWeaverTomlConfig {
+  pub fn load(path: &Path) -> Result<Self, String> {
+    let _ = MAX_WEAVER_CONFIG_BYTES;
+    let raw = read_bounded_non_symlink(path)?;
+    toml::from_str(&raw).map_err(|e| e.to_string())
+  }
+}`,
+  },
+  {
+    id: 'SA232',
+    language: 'ts',
+    expectedPass: true,
+    source: `
+export function classifyHarnessToolCapability(toolName: string, declaredCapability: string | null): string {
+  if (isDestructiveToolName(toolName)) return 'shell';
+  if (declaredCapability !== null) return declaredCapability.trim().toLowerCase();
+  return toolName.toLowerCase().includes('search') ? 'search' : 'write';
+}`,
+  },
 ];
 
-describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA222)', () => {
-  test('achieves 222/222 exact independent-gold match (tp=127, tn=95, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
+describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA232)', () => {
+  test('achieves 232/232 exact independent-gold match (tp=133, tn=99, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
     let tp = 0;
     let tn = 0;
     let fp = 0;
@@ -3485,7 +3627,7 @@ describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA222)', () 
       }
     }
 
-    expect({tp, tn, fp, fn}).toEqual({tp: 127, tn: 95, fp: 0, fn: 0});
+    expect({tp, tn, fp, fn}).toEqual({tp: 133, tn: 99, fp: 0, fn: 0});
   });
 
   test('clean Rust deterministic buffer pool & bounded retry passes with 0 findings', () => {

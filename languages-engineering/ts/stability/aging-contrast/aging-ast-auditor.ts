@@ -40,7 +40,8 @@ export type AgingMechanism =
   | 'SM31-storage-boundary-integrity-sync'
   | 'SM32-gitops-subprocess-confinement'
   | 'SM33-hook-policy-protocol-confinement'
-  | 'SM34-runtime-env-context-confinement';
+  | 'SM34-runtime-env-context-confinement'
+  | 'SM35-graph-witness-harness-confinement';
 
 export interface AgingFinding {
   ruleId: string;
@@ -2020,6 +2021,142 @@ function auditRust(clean: string): AgingFinding[] {
     }
   }
 
+  // 72. Rust sealed AgentGraph witness / FencingEpoch derives Serde Deserialize bypassing admission gates, OR reconcile_marlin_execution_receipt admits Settled on Detached scopes (ADV-L4, SM35).
+  const sealedWitnessRe = /#\[derive\([^\]]*\bDeserialize\b[^\]]*\)\]\s*(?:#\[[^\]]*\]\s*)*pub\s+struct\s+(AdmittedGovernedContext|AdmittedMarlinDispatch|FencingEpoch)\b/g;
+  let sealedMatch: RegExpExecArray | null;
+  while ((sealedMatch = sealedWitnessRe.exec(clean)) !== null) {
+    if (!/#\[serde\([^)]*\b(?:try_from|deserialize_with)\b/.test(sealedMatch[0])) {
+      findings.push({
+        ruleId: 'rust-graph-witness-serde-bypass-or-detached-settle',
+        mechanism: 'SM35-graph-witness-harness-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, sealedMatch.index),
+        message: `${sealedMatch[1]} derives Serde Deserialize directly without admission validation, allowing forged JSON to bypass fail-closed graph witness and epoch invariants (ADV-L4, SM35).`,
+      });
+    }
+  }
+  const reconcileMatch = /\bpub\s+fn\s+reconcile_marlin_execution_receipt\s*\([^)]*\)/.exec(clean);
+  if (reconcileMatch) {
+    const fnBody = extractBraceBlock(clean, reconcileMatch.index);
+    if (
+      /ExecutionReceiptStatus::Settled/.test(fnBody) &&
+      !/TaskActorScopeMode::Detached/.test(fnBody)
+    ) {
+      findings.push({
+        ruleId: 'rust-graph-witness-serde-bypass-or-detached-settle',
+        mechanism: 'SM35-graph-witness-harness-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, reconcileMatch.index),
+        message: 'reconcile_marlin_execution_receipt settles TaskActorScopeMode::Detached cursors without refusing Detached settlement or checking fencing epoch exhaustion (ADV-L4, SM35).',
+      });
+    }
+  }
+
+  // 73. Rust AgentGraph planning edge_condition_matches unconditionally returns true for PolicyDecision(_), OR policy_scoped_candidate_edges accepts duplicate edge IDs (ADV-L4, SM35).
+  const edgeCondMatch = /\bfn\s+edge_condition_matches\s*\([^)]*\)/.exec(clean);
+  if (edgeCondMatch) {
+    const fnBody = extractBraceBlock(clean, edgeCondMatch.index);
+    if (/AgentEdgeCondition::PolicyDecision\s*\(\s*_\s*\)\s*=>\s*true\b/.test(fnBody)) {
+      findings.push({
+        ruleId: 'rust-graph-planning-policy-decision-bypass-or-dup-edge',
+        mechanism: 'SM35-graph-witness-harness-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, edgeCondMatch.index),
+        message: 'edge_condition_matches returns true unconditionally for AgentEdgeCondition::PolicyDecision(_), admitting policy-gated edges in Deterministic/CapabilityFirst graphs without any policy receipt (ADV-L4, SM35).',
+      });
+    }
+  }
+  const policyScopedMatch = /\bfn\s+policy_scoped_candidate_edges\s*\([^)]*\)/.exec(clean);
+  if (policyScopedMatch) {
+    const fnBody = extractBraceBlock(clean, policyScopedMatch.index);
+    if (
+      /policy_receipt\.candidate_edges/.test(fnBody) &&
+      !/\b(?:seen_edges|HashSet|BTreeSet)\b/.test(fnBody)
+    ) {
+      findings.push({
+        ruleId: 'rust-graph-planning-policy-decision-bypass-or-dup-edge',
+        mechanism: 'SM35-graph-witness-harness-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, policyScopedMatch.index),
+        message: 'policy_scoped_candidate_edges accepts duplicate candidate_edges or PolicyDecision edges lacking GerbilPolicyReceipt evidence (ADV-L4, SM35).',
+      });
+    }
+  }
+
+  // 74. Rust CompiledHarnessGovernanceGate::classify_capability lets caller declared_capability or "search" substring override destructive tool names (ADV-L4, SM35).
+  const classifyCapMatch = /\bfn\s+classify_capability\s*\([^)]*\)/.exec(clean);
+  if (classifyCapMatch) {
+    const fnBody = extractBraceBlock(clean, classifyCapMatch.index);
+    const hasDestructiveCheck = /\b(?:is_destructive_tool_name|is_write_tool_name)\b/.test(fnBody);
+    if (!hasDestructiveCheck) {
+      findings.push({
+        ruleId: 'rust-harness-cedar-capability-spoof-or-case-bypass',
+        mechanism: 'SM35-graph-witness-harness-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, classifyCapMatch.index),
+        message: 'classify_capability trusts caller declared_capability or "search" substring before checking destructive tool tokens, letting search_exec/exec_command/rm_file bypass read-only Cedar policies (ADV-L4, SM35).',
+      });
+    }
+  }
+
+  // 75. Rust intent_case_artifact safe_relative_path admits empty/"." paths OR materialized_artifact_path writes without symlink confinement (ADV-L4, SM35).
+  const safeRelMatch = /\bfn\s+safe_relative_path\s*\([^)]*\)/.exec(clean);
+  if (safeRelMatch) {
+    const fnBody = extractBraceBlock(clean, safeRelMatch.index);
+    if (!/relative\.as_os_str\(\)\.is_empty\s*\(\s*\)/.test(fnBody)) {
+      findings.push({
+        ruleId: 'rust-harness-artifact-lexical-only-or-empty-path',
+        mechanism: 'SM35-graph-witness-harness-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, safeRelMatch.index),
+        message: 'safe_relative_path accepts empty or "." relative paths, resolving directly to output_root (ADV-L4, SM35).',
+      });
+    }
+  }
+  const matArtMatch = /\bfn\s+materialized_artifact_path\s*\([^)]*\)/.exec(clean);
+  if (matArtMatch) {
+    const fnBody = extractBraceBlock(clean, matArtMatch.index);
+    if (!/\b(?:verify_confined_no_symlinks|symlink_metadata)\b/.test(fnBody)) {
+      findings.push({
+        ruleId: 'rust-harness-artifact-lexical-only-or-empty-path',
+        mechanism: 'SM35-graph-witness-harness-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, matArtMatch.index),
+        message: 'materialized_artifact_path performs lexical-only path joining without symlink confinement, allowing symlink escapes outside output_root (ADV-L4, SM35).',
+      });
+    }
+  }
+
+  // 76. Rust LiveWeaverTomlConfig::load reads unbounded TOML without symlink check, OR resolve_route_with accepts unsafe ambient credential_env / unbounded timeout_seconds (ADV-L4, SM35).
+  const weaverCfgImplMatch = /\bimpl\s+LiveWeaverTomlConfig\b/.exec(clean);
+  if (weaverCfgImplMatch) {
+    const implBody = extractBraceBlock(clean, weaverCfgImplMatch.index);
+    if (
+      /fs::read_to_string/.test(implBody) &&
+      !/\b(?:MAX_WEAVER_CONFIG_BYTES|symlink_metadata)\b/.test(implBody)
+    ) {
+      findings.push({
+        ruleId: 'rust-weaver-config-unbounded-read-or-unsafe-cred-env',
+        mechanism: 'SM35-graph-witness-harness-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, weaverCfgImplMatch.index),
+        message: 'LiveWeaverTomlConfig::load performs unbounded fs::read_to_string without symlink refusal or size cap (ADV-L4, SM35).',
+      });
+    }
+    if (
+      /profile\.credential_env/.test(implBody) &&
+      !/\b(?:validate_credential_env_name|is_safe_credential_env)\b/.test(implBody)
+    ) {
+      findings.push({
+        ruleId: 'rust-weaver-config-unbounded-read-or-unsafe-cred-env',
+        mechanism: 'SM35-graph-witness-harness-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, weaverCfgImplMatch.index),
+        message: 'LiveWeaverTomlConfig::resolve_route_with reads profile.credential_env without rejecting ambient system/loader env names (PATH/HOME/LD_PRELOAD) or invalid timeout_seconds (ADV-L4, SM35).',
+      });
+    }
+  }
+
   return findings;
 }
 
@@ -2399,6 +2536,21 @@ function auditTypeScript(clean: string): AgingFinding[] {
         language: 'ts',
         line: lineOfIndex(clean, tsTwoZoneMatch.index),
         message: 'assembleTwoZonePrompt trusts envelope.kvPrefixDigest without recomputing computeKvPrefixDigest(envelope.frozenPrefix), enabling Zone-1 prompt injection with a copied digest (ADV-L4, SM34).',
+      });
+    }
+  }
+
+  // 28. TS classifyHarnessToolCapability trusts declaredCapability or "search" substring before checking isDestructiveToolName (ADV-L4, SM35).
+  const tsClassifyToolMatch = /\bfunction\s+classifyHarnessToolCapability\s*\([^)]*\)(?:\s*:\s*[^{]+)?\{/.exec(clean);
+  if (tsClassifyToolMatch) {
+    const fnBody = extractBraceBlock(clean, tsClassifyToolMatch.index + tsClassifyToolMatch[0].length - 1);
+    if (!/\bisDestructiveToolName\s*\(/.test(fnBody)) {
+      findings.push({
+        ruleId: 'ts-harness-tool-capability-spoof-or-witness-bypass',
+        mechanism: 'SM35-graph-witness-harness-confinement',
+        language: 'ts',
+        line: lineOfIndex(clean, tsClassifyToolMatch.index),
+        message: 'classifyHarnessToolCapability trusts declaredCapability or "search" substring without checking isDestructiveToolName first (ADV-L4, SM35).',
       });
     }
   }

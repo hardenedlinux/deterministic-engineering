@@ -264,6 +264,14 @@ const MECHANISM_DIRECTIVES: Record<AgingMechanism, AgingRemediationDirective> = 
     antiEvasionWarning:
       'Do NOT evade by isolating only direnv input env while letting direnv JSON re-inject LD_PRELOAD or denylisted vars, checking only lexical path components on .envrc or Org stores, permitting create_channel to reset acl_epoch/taint, or trusting envelope.kv_prefix_digest without recomputing SHA-256 over envelope.frozen_prefix.',
   },
+  'SM35-graph-witness-harness-confinement': {
+    mechanism: 'SM35-graph-witness-harness-confinement',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Replace derived Serde Deserialize on AdmittedGovernedContext, AdmittedMarlinDispatch, and FencingEpoch with validated custom deserializers delegating to admit_governed_context_capsule, admit_marlin_dispatch, and FencingEpoch::new while rejecting Detached settlement and epoch exhaustion in reconcile_marlin_execution_receipt; require explicit policy receipts and GerbilPolicyReceipt evidence for AgentEdgeCondition::PolicyDecision edges while rejecting duplicate candidate edges in planning and routing projection; evaluate destructive tool tokens before declared_capability or "search" substrings with case-insensitive matching and non-empty/non-contradictory Cedar compilation in CompiledHarnessGovernanceGate; enforce symlink-free non-empty atomic artifact materialization with bounded manifest capacity in intent_case_artifact; and bound LiveWeaverTomlConfig reads, timeout_seconds (1..=600), max_stream_bytes, and non-system credential_env identifiers.',
+    antiEvasionWarning:
+      'Do NOT evade by deriving Deserialize directly on sealed witness structs, returning true unconditionally for PolicyDecision(_) in edge_condition_matches, trusting caller declared_capability=Some("search") on exec/shell/rm tools, skipping symlink_metadata checks on intent-case artifact writes, or allowing PATH/HOME/LD_PRELOAD as credential_env in Weaver TOML configs.',
+  },
 };
 
 export function getAgingRemediation(finding: AgingFinding): AgingRemediationDirective {
