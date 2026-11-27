@@ -746,6 +746,71 @@ package MultiMethodFunFlowArchitecture {
                 attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean,packages/lean-models/DeterministicEngineering/Engineering/GraphWitnessAndHarnessConfinement.lean";
             }
         }
+
+        // Eleventh Zero-Glue Subject (Sixth AI-Security Threat Subject: CaMeL/FIDES AI Agent Control/Data Segregation & Capability-Based IFC)
+        part agentIfcCapability {
+            attribute subjectKey : String = "agent-ifc-capability";
+            attribute identity : String = "threat.execution.agent-ifc-capability";
+            attribute tags : String = "threat,execution,ai-security,prompt-injection,ifc,camel-fides,defense.mutability.immutable-proof,hazard.prompt-injection-exfiltration";
+            attribute factors : String = "agent-ifc-capability-confinement,ai-ingests-untrusted-context,ai-executes-tools";
+            attribute aiControls : String = "context-integrity-or-ifc,tool-confinement";
+
+            part ifcQuintTarget {
+                attribute modelId : String = "threat.execution.agent-ifc-capability";
+                attribute quintFile : String = "packages/quint-models/threat/execution/agent-ifc-capability/AgentIfcCapability.qnt";
+                attribute quintMain : String = "agent_ifc_capability";
+                attribute itfSubdir : String = "agent-ifc-capability";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "control-data-segregation,capability-ifc-egress";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/execution/agent-ifc-capability/AgentIfcCapability.qnt,packages/quint-models/threat/execution/agent-ifc-capability/objects.ss,packages/quint-models/threat/execution/agent-ifc-capability/interface.ss,packages/quint-models/threat/zero-trust/authority-currentness/AuthorityCurrentness.qnt";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part ifcLeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Threat.AgentIfcConfinement";
+                attribute refinesCore : String = "DeterministicEngineering.Core.Order,DeterministicEngineering.Core.Transport";
+                attribute transportContract : String = "ObjectContract.refine+Patch.frame+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Threat.AgentIfcConfinement.taintedData_never_elevates_controlIntegrity,DeterministicEngineering.Threat.AgentIfcConfinement.confidentialEgress_blocked_without_declassification,DeterministicEngineering.Threat.AgentIfcConfinement.ifcLatticeFloor_join_never_weakens,DeterministicEngineering.Threat.AgentIfcConfinement.camelFidesContract_preserves_rejection,DeterministicEngineering.Threat.AgentIfcConfinement.ifcTelemetryTunedCertified,DeterministicEngineering.Threat.AgentIfcConfinement.disableDeclassGate_invalidates_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Order.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Threat/AgentIfcConfinement.lean";
+            }
+        }
+
+        // Twelfth Zero-Glue Subject (Seventh AI-Security Threat Subject: AI Tool Execution Circuit Breaker / E-Stop / Lease-Epoch Fencing)
+        part agentToolCircuitBreaker {
+            attribute subjectKey : String = "agent-tool-circuit-breaker";
+            attribute identity : String = "threat.execution.agent-tool-circuit-breaker";
+            attribute tags : String = "threat,execution,ai-security,circuit-breaker,estop,defense.mutability.immutable-proof,hazard.runaway-tool-self-rearm";
+            attribute factors : String = "agent-tool-circuit-breaker-estop,ai-executes-tools,ai-mutates-host-or-governance";
+            attribute aiControls : String = "tool-confinement,human-stepup-and-estop";
+            attribute aiRoleBindings : String = "human-approver:human-approver,ai-agent:ai-proposer";
+
+            part cbBreakerQuintTarget {
+                attribute modelId : String = "threat.execution.agent-tool-circuit-breaker";
+                attribute quintFile : String = "packages/quint-models/threat/execution/agent-tool-circuit-breaker/AgentToolCircuitBreaker.qnt";
+                attribute quintMain : String = "agent_tool_circuit_breaker";
+                attribute itfSubdir : String = "agent-tool-circuit-breaker";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "breaker-closed-at-commit,lease-epoch-current,human-only-rearm,tool-budget-bounded";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/execution/agent-tool-circuit-breaker/AgentToolCircuitBreaker.qnt,packages/quint-models/threat/execution/agent-tool-circuit-breaker/objects.ss,packages/quint-models/threat/execution/agent-tool-circuit-breaker/interface.ss,packages/quint-models/threat/zero-trust/authority-currentness/AuthorityCurrentness.qnt";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part cbBreakerLeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Threat.AgentCircuitBreaker";
+                attribute refinesCore : String = "DeterministicEngineering.Core.Budget,DeterministicEngineering.Core.Order,DeterministicEngineering.Core.Transport";
+                attribute transportContract : String = "ObjectContract.refine+Patch.frame+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Threat.AgentCircuitBreaker.trippedBreaker_blocks_all_toolCommits,DeterministicEngineering.Threat.AgentCircuitBreaker.rearmTripEpoch_rejects_all_preTrip_staleLeases,DeterministicEngineering.Threat.AgentCircuitBreaker.aiAgent_never_selfRearms_trippedBreaker,DeterministicEngineering.Threat.AgentCircuitBreaker.toolCallBudget_bounded_within_armedWindow,DeterministicEngineering.Threat.AgentCircuitBreaker.circuitBreakerContract_preserves_rejection,DeterministicEngineering.Threat.AgentCircuitBreaker.breakerTelemetryTunedCertified,DeterministicEngineering.Threat.AgentCircuitBreaker.allowAgentSelfRearm_invalidates_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Budget.lean,packages/lean-models/DeterministicEngineering/Core/Order.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Threat/AgentCircuitBreaker.lean";
+            }
+        }
     }
 
     // ── 12. Architectural, Cross-Method, and Requirement Dependencies ──
@@ -800,6 +865,17 @@ package MultiMethodFunFlowArchitecture {
 
     dependency 'sm35-quint-source' from system::graphWitnessHarnessConfinement::sm35QuintTarget to system::quintModels;
     dependency 'sm35-lean-source' from system::graphWitnessHarnessConfinement::sm35LeanPooTarget to system::leanModels;
+
+    dependency 'ifc-quint-source' from system::agentIfcCapability::ifcQuintTarget to system::quintModels;
+    dependency 'ifc-lean-source' from system::agentIfcCapability::ifcLeanPooTarget to system::leanModels;
+    dependency 'ifc-lean-refines-order' from system::agentIfcCapability::ifcLeanPooTarget to system::leanModels::core::order;
+    dependency 'ifc-lean-refines-transport' from system::agentIfcCapability::ifcLeanPooTarget to system::leanModels::core::transport;
+
+    dependency 'cb-breaker-quint-source' from system::agentToolCircuitBreaker::cbBreakerQuintTarget to system::quintModels;
+    dependency 'cb-breaker-lean-source' from system::agentToolCircuitBreaker::cbBreakerLeanPooTarget to system::leanModels;
+    dependency 'cb-breaker-lean-refines-budget' from system::agentToolCircuitBreaker::cbBreakerLeanPooTarget to system::leanModels::core::budget;
+    dependency 'cb-breaker-lean-refines-order' from system::agentToolCircuitBreaker::cbBreakerLeanPooTarget to system::leanModels::core::order;
+    dependency 'cb-breaker-lean-refines-transport' from system::agentToolCircuitBreaker::cbBreakerLeanPooTarget to system::leanModels::core::transport;
 
     // Cross-method edges enforced by MR03 & MR04 (zero model duplication)
     dependency 'pt-mbt-itf-edge' from system::processTreeReclamation::rustOracleTarget::traceIn to system::processTreeReclamation::quintTarget::traceOut;

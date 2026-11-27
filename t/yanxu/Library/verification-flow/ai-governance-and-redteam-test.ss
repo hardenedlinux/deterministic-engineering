@@ -64,7 +64,7 @@
       (def res (reason-ai-security-governance ai-sources))
       (check-equal? ((.ref res 'rows-of) 'ar_finding) '())
       (def admitted ((.ref res 'rows-of) 'ai_governance_admitted))
-      (check-equal? (length admitted) 10)
+      (check-equal? (length admitted) 12)
       (for-each
         (lambda (sid)
           (check (and (member (list sid) admitted) #t) => #t))
@@ -72,7 +72,77 @@
           "threat.execution.stepup-attestation-and-host-effect-confinement"
           "threat.execution.sandbox-symlink-archive-confinement"
           "threat.execution.runtime-env-activation-and-context-confinement"
-          "threat.execution.graph-witness-and-harness-confinement")))
+          "threat.execution.graph-witness-and-harness-confinement"
+          "threat.execution.agent-ifc-capability"
+          "threat.execution.agent-tool-circuit-breaker")))
+
+    (yuanxu-test-case "AI-SE Deterministic Change-Admission & Proof-Transport Gate separates safe parameter tuning from security-boundary regressions"
+      (def sysml-path
+        (path-expand
+          "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml"
+          repo-root))
+      (def json-text (run-process (list "sysml" "-convert" "api-json" sysml-path)))
+      (def parsed (call-with-input-string json-text (cut read-json <> object-as-hash: #t)))
+      (def projected (sysml-api-json->governance-facts parsed))
+
+      ;; 1. Safe AI parameter tuning on `agent-ifc-capability` (disjoint from security deps, no Quint edits):
+      ;;    admitted = #t, unaffected steps stay reusable, no forced human step-up!
+      (let ((v1 (evaluate-ai-patch-admission
+                  projected
+                  "threat.execution.agent-ifc-capability"
+                  '()
+                  touched-dep-rows: '(("threat.execution.agent-ifc-capability" "ifcLeanPooTarget" "traceBufferCapacity"))
+                  step-security-dep-rows: '(("ifcLeanPooTarget" "controlDataSegregationChecked")
+                                            ("ifcLeanPooTarget" "declassificationGateChecked"))
+                  claimed-reuse-steps: '("ifcLeanPooTarget"))))
+        (check-equal? (.get v1 admitted?) #t)
+        (check-equal? (.get v1 ar-findings) '())
+        (check-equal? (.get v1 affected-steps) '())
+        (check-equal? (length (.get v1 reusable-steps)) 2)
+        (check-equal? (.get v1 requires-human-stepup?) #f))
+
+      ;; 2. AI patch edits `AgentIfcCapability.qnt`: exact impact closure forces `ifcQuintTarget` re-verification
+      ;;    while preserving `ifcLeanPooTarget` reuse!
+      (let ((v2 (evaluate-ai-patch-admission
+                  projected
+                  "threat.execution.agent-ifc-capability"
+                  '("packages/quint-models/threat/execution/agent-ifc-capability/AgentIfcCapability.qnt"))))
+        (check-equal? (.get v2 admitted?) #t)
+        (check-equal? (.get v2 affected-steps) '("ifcQuintTarget"))
+        (check-equal? (.get v2 reusable-steps) '("ifcLeanPooTarget")))
+
+      ;; 3. Hostile AI-SE regression: AI patch mutates `declassificationGateChecked` while claiming reuse ->
+      ;;    REFUSED fail-closed (`admitted? = #f`, `reusable-steps = '()`, `requires-human-stepup? = #t`)!
+      (let ((v3 (evaluate-ai-patch-admission
+                  projected
+                  "threat.execution.agent-ifc-capability"
+                  '()
+                  touched-dep-rows: '(("threat.execution.agent-ifc-capability" "ifcLeanPooTarget" "declassificationGateChecked"))
+                  step-security-dep-rows: '(("ifcLeanPooTarget" "controlDataSegregationChecked")
+                                            ("ifcLeanPooTarget" "declassificationGateChecked"))
+                  claimed-reuse-steps: '("ifcLeanPooTarget"))))
+        (check-equal? (.get v3 admitted?) #f)
+        (check (pair? (.get v3 ar-findings)) => #t)
+        (check-equal? (.get v3 reusable-steps) '())
+        (check-equal? (.get v3 requires-human-stepup?) #t))
+
+      ;; 4. Host/governance-mutating subject (`agent-tool-circuit-breaker`):
+      ;;    Even clean patches ALWAYS force `requires-human-stepup? = #t`, and injecting
+      ;;    `ai-agent -> human-approver` self-approval is rejected fail-closed by AR05!
+      (let ((v4-clean (evaluate-ai-patch-admission
+                        projected
+                        "threat.execution.agent-tool-circuit-breaker"
+                        '()))
+            (v4-self (evaluate-ai-patch-admission
+                       projected
+                       "threat.execution.agent-tool-circuit-breaker"
+                       '()
+                       extra-role-bindings: '(("threat.execution.agent-tool-circuit-breaker" "ai-agent" "human-approver")))))
+        (check-equal? (.get v4-clean admitted?) #t)
+        (check-equal? (.get v4-clean requires-human-stepup?) #t)
+        (check-equal? (.get v4-self admitted?) #f)
+        (check-equal? (.get v4-self reusable-steps) '())
+        (check-equal? (.get v4-self requires-human-stepup?) #t)))
 
     (yuanxu-test-case "Red-Team Negative Controls: AR01-AR05 block LLM self-certification, invalid AI-SE proof reuse, unconfined tools, unattenuated delegation, untrusted context, and AI self-approval"
       (def sysml-path

@@ -75,21 +75,21 @@ vars: {d2-config: {data: {figure: |json
 |}}}
 direction: down
 
-config: "SysML v2 Single Source of Truth (10.154-*.sysml)\n10 Zero-Glue Subjects (5 Eng + 5 AI-Security) | 23 Engines\nOpenSysML -validate -strict -> api-json"
+config: "SysML v2 Single Source of Truth (10.154-*.sysml)\n12 Zero-Glue Subjects (5 Eng + 7 AI-Security) | 27 Engines\nOpenSysML -validate -strict -> api-json"
 
-ascentGate: "ASCENT Governance (ascent-rules.ss)\nMR01-MR08 Pre-Flight | ER01-ER04 | IR01-IR08 Reuse\nAR01-AR05 AI Security & AI-SE Governance (No AI Self-Cert)\n85 Zero-Axiom Lean 4 Theorems (MetaGovernance + AiGovernance)"
+ascentGate: "Live ASCENT Governance (ascent-rules.ss)\nMR01-MR08 Pre-Flight | ER01-ER04 | IR01-IR08 Reuse\nAR01-AR05 AI Security + AI-SE Change-Admission Gate\n90 Zero-Axiom Lean 4 Theorems (MetaGovernance + AiGovernance)"
 
-funflow: "Fun-Flow Control Plane (library/verification-flow/)\nZero-I/O SysML->DAG Compiler + Parallel Waves\nStatic Change-Impact + TaskFamilyRegistry\nEmits yuanxu.core.flow-dag-runtime-manifest.v1"
+funflow: "Fun-Flow Control Plane (library/verification-flow/)\nZero-I/O SysML->DAG Compiler + Parallel Waves\nAI-SE Patch Admission + Static Change-Impact Slicing\nEmits yuanxu.core.flow-dag-runtime-manifest.v1"
 
-quintModels: "packages/quint-models (Bun / Apalache / MBT)\nClaim: bounded-interleaving, fault-race, mbt-trace\nEngineering: ProcessTree | Backpressure | LeaseFencing\nAI-Security Threat: DelegatedAuthz | SM22 | SM30 | SM34 | SM35"
+quintModels: "packages/quint-models (Bun / Apalache / MBT)\nClaim: bounded-interleaving, fault-race, mbt-trace\nEngineering: ProcessTree | Backpressure | LeaseFencing\nAI-Security (7): Delegated | SM22/30/34/35 | IFC | CircuitBreaker"
 
-leanModels: "packages/lean-models (Lake / LeanPoo 7-Core, 0 sorryAx)\nClaim: unbounded-invariant, refinement, transport\nCore/{Conservation,Budget,Containment,Order,Transport,MetaGov,AiGov}\nRefines -> Engineering + AI-Security Threat LeanPoo Modules"
+leanModels: "packages/lean-models (Lake / LeanPoo 7-Core, 0 sorryAx)\nClaim: unbounded-invariant, refinement, transport\nCore/{Conservation,Budget,Containment,Order,Transport,MetaGov,AiGov}\nThreat/{Capability,Authority,AgentIfc,AgentCircuitBreaker}"
 
 rustSubjects: "languages-engineering/{rust,c} + Source Contracts\nClaim: source-memory-ub (CBMC), api-ban-lint (Clippy)\nProcessTreeGuard (cgroup v2, setsid, Online OS MBT)\nBackpressure Tokio/Rayon | C deterministic_boundary.c"
 
-runtimeAdapter: "Parallel Contained Ops Runner\n(verification-flow-runner.ss --fleet-bundle)\nGambit Green-Thread Waves + SHA-256 + Ed25519 Fleet\n1-Command 2-File Release Gate (release-multi-method-bundle)"
+runtimeAdapter: "Parallel Contained Ops Runner\n(verification-flow-runner.ss --fleet-bundle)\nLive MR01-MR08 + AR01-AR05 Gate + SHA-256 + Ed25519 Fleet\n1-Command 2-File Release Gate (release-multi-method-bundle)"
 
-evidenceSession: "Unified ASCENT Evidence, AI Red-Team & Anti-Rollback DSSE v1\nGerbil + Zero-Dep Bun/TS (<100ms) ai-agent!=human-approver Role-SoD\nCold 23/0 -> Warm 0/23 Reuse | 60 Crypto + AI Red-Team Controls"
+evidenceSession: "Unified ASCENT Evidence, AI Red-Team & Anti-Rollback DSSE v1\nGerbil + Zero-Dep Bun/TS (<100ms) ai-agent!=human-approver Role-SoD\nCold 27/0 -> Warm 0/27 Reuse | 60 Crypto + AI-SE Red-Team Controls"
 
 config -> ascentGate
 config -> funflow

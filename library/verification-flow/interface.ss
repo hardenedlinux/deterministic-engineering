@@ -41,6 +41,7 @@
         evaluate-incremental-reuse: reason-incremental-reuse
         ai-governance-program: AiSecurityGovernanceProgram
         reason-ai-governance: reason-ai-security-governance
+        evaluate-ai-patch: evaluate-ai-patch-admission
         reuse-sources: build-incremental-reuse-sources
         reuse-plan: reuse-result->plan
         project-sysml-json: sysml-api-json->governance-facts

@@ -539,4 +539,121 @@ theorem aiGovernanceAdmitted_sound
       · rw [hEstop] at h5; exact ⟨rfl, h5⟩
     · rw [hSelf] at h5; cases h5
 
+/-! ## 6. AI-SE Deterministic Change-Admission & Proof-Transport Gate (Theorems 11–15) -/
+
+/-- Verdict computed by `evaluate-ai-patch-admission` for an AI-authored patch. -/
+structure AiChangeAdmissionVerdict where
+  admitted : Bool
+  stepReusable : Bool
+  requiresHumanStepUp : Bool
+  deriving DecidableEq, Repr
+
+/-- Pure deterministic AI-SE patch admission gate:
+    - `admitted = true` iff `aiGovernanceAdmitted p = true`
+    - `stepReusable = true` ONLY when `admitted = true` AND the step is unaffected by
+      changed files AND the patch does not touch any security dependency
+    - `requiresHumanStepUp = true` whenever the subject mutates host/governance, the patch
+      touches any security dependency, or admission fails. -/
+def evaluateAiChangeAdmission
+    (p : AiGovernancePosture) (stepAffectedByFiles : Bool) : AiChangeAdmissionVerdict :=
+  let adm := aiGovernanceAdmitted p
+  let touchesSec := patchTouchesSecurityDep p.patchTouchedDeps p.obligationSecurityDeps
+  let reusable :=
+    match adm with
+    | false => false
+    | true =>
+      match stepAffectedByFiles with
+      | true => false
+      | false =>
+        match touchesSec with
+        | true => false
+        | false => true
+  let stepUp :=
+    match p.aiMutatesHostOrGovernance with
+    | true => true
+    | false =>
+      match touchesSec with
+      | true => true
+      | false =>
+        match adm with
+        | false => true
+        | true => false
+  { admitted := adm, stepReusable := reusable, requiresHumanStepUp := stepUp }
+
+/-- Theorem 11 (AI-SE Fail-Closed Reuse): Whenever `AR01`–`AR05` rejects a posture,
+    no proof step may be reused (`stepReusable = false`) and human step-up is forced. -/
+theorem aiChangeAdmission_rejected_blocks_reuse_and_forces_stepUp
+    (p : AiGovernancePosture) (stepAffected : Bool)
+    (hRej : aiGovernanceAdmitted p = false) :
+    (evaluateAiChangeAdmission p stepAffected).admitted = false ∧
+    (evaluateAiChangeAdmission p stepAffected).stepReusable = false ∧
+    (evaluateAiChangeAdmission p stepAffected).requiresHumanStepUp = true := by
+  refine ⟨?_, ?_, ?_⟩
+  · unfold evaluateAiChangeAdmission; exact hRej
+  · unfold evaluateAiChangeAdmission; rw [hRej]
+  · unfold evaluateAiChangeAdmission
+    cases p.aiMutatesHostOrGovernance
+    · cases patchTouchesSecurityDep p.patchTouchedDeps p.obligationSecurityDeps
+      · rw [hRej]
+      · rfl
+    · rfl
+
+/-- Theorem 12 (AI-SE Impact Closure): Any step whose input files are affected by an AI patch
+    can never claim proof reuse (`stepReusable = false`), forcing deterministic re-verification. -/
+theorem aiChangeAdmission_affectedStep_forces_reverification
+    (p : AiGovernancePosture) :
+    (evaluateAiChangeAdmission p true).stepReusable = false := by
+  unfold evaluateAiChangeAdmission
+  cases aiGovernanceAdmitted p
+  · rfl
+  · rfl
+
+/-- Theorem 13 (AI-SE Security-Boundary Escalation): Any AI patch touching a security dependency
+    unconditionally blocks proof reuse AND mandates human step-up review. -/
+theorem aiChangeAdmission_securityDepTouch_blocks_reuse_and_requires_humanStepUp
+    (p : AiGovernancePosture) (stepAffected : Bool)
+    (hTouch : patchTouchesSecurityDep p.patchTouchedDeps p.obligationSecurityDeps = true) :
+    (evaluateAiChangeAdmission p stepAffected).stepReusable = false ∧
+    (evaluateAiChangeAdmission p stepAffected).requiresHumanStepUp = true := by
+  refine ⟨?_, ?_⟩
+  · unfold evaluateAiChangeAdmission
+    cases aiGovernanceAdmitted p
+    · rfl
+    · cases stepAffected
+      · rw [hTouch]
+      · rfl
+  · unfold evaluateAiChangeAdmission
+    cases p.aiMutatesHostOrGovernance
+    · rw [hTouch]
+    · rfl
+
+/-- Theorem 14 (AI-SE Host Mutation Escalation): Any AI patch targeting a host/governance-mutating
+    subject always mandates human step-up approval (`requiresHumanStepUp = true`). -/
+theorem aiChangeAdmission_hostMutation_always_requires_humanStepUp
+    (p : AiGovernancePosture) (stepAffected : Bool)
+    (hMut : p.aiMutatesHostOrGovernance = true) :
+    (evaluateAiChangeAdmission p stepAffected).requiresHumanStepUp = true := by
+  unfold evaluateAiChangeAdmission
+  rw [hMut]
+
+/-- Theorem 15 (AI-SE Sound Proof Reuse): A step is marked reusable ONLY when `AR01`–`AR05`
+    admits the posture, the step is unaffected by changed files, AND the patch is strictly
+    disjoint from all obligation security dependencies. -/
+theorem aiChangeAdmission_reusable_sound
+    (p : AiGovernancePosture) (stepAffected : Bool)
+    (hReuse : (evaluateAiChangeAdmission p stepAffected).stepReusable = true) :
+    aiGovernanceAdmitted p = true ∧
+    stepAffected = false ∧
+    patchTouchesSecurityDep p.patchTouchedDeps p.obligationSecurityDeps = false := by
+  unfold evaluateAiChangeAdmission at hReuse
+  cases hAdm : aiGovernanceAdmitted p
+  · rw [hAdm] at hReuse; cases hReuse
+  · rw [hAdm] at hReuse
+    cases hAff : stepAffected
+    · rw [hAff] at hReuse
+      cases hT : patchTouchesSecurityDep p.patchTouchedDeps p.obligationSecurityDeps
+      · exact ⟨rfl, rfl, rfl⟩
+      · rw [hT] at hReuse; cases hReuse
+    · rw [hAff] at hReuse; cases hReuse
+
 end DeterministicEngineering.Core.AiGovernance

@@ -27,6 +27,7 @@
   AiSecurityGovernanceProgram
   make-ai-security-governance-program
   reason-ai-security-governance
+  evaluate-ai-patch-admission
   build-incremental-reuse-sources
   reuse-result->plan
   governance+evidence->admission-sources
@@ -57,6 +58,76 @@
                       AiSecurityGovernanceDeclaration
                       "ai security governance"
                       replacements))
+
+;; Pure AI-SE Deterministic Change-Admission & Proof-Transport Gate (10.154).
+;; Given a live SysML v2 projection, target subject identity, files modified by
+;; an AI patch, optional touched semantic dependency keys, step security deps,
+;; claimed proof-reuse steps, and optional runtime role bindings, evaluates:
+;;  1. Static change-impact frontier (`changed-files->affected-frontier`),
+;;  2. Phase 4 ASCENT AI Security & AI-SE Governance (`AR01`-`AR05`) with
+;;     `ai-authored-change` factor injected for the target subject,
+;;  3. Whether human Step-Up approval is required (`ai-mutates-host-or-governance`
+;;     or any affected step / security-dependency touch).
+;; Zero I/O, fail-closed: `reusable-steps` is empty whenever `admitted?` is #f.
+(def (evaluate-ai-patch-admission
+       projected
+       subject-id
+       changed-files
+       touched-dep-rows: (touched-dep-rows '())
+       step-security-dep-rows: (step-security-dep-rows '())
+       claimed-reuse-steps: (claimed-reuse-steps '())
+       extra-role-bindings: (extra-role-bindings '())
+       extra-flow-steps: (extra-flow-steps '()))
+  (def sid (sym->str subject-id))
+  (def impacts (changed-files->affected-frontier projected changed-files))
+  (def matching-impacts
+    (filter (lambda (imp) (equal? (sym->str (.get imp identity)) sid)) impacts))
+  (def affected-steps
+    (if (pair? matching-impacts) (.get (car matching-impacts) affected-steps) '()))
+  (def unaffected-steps
+    (if (pair? matching-impacts) (.get (car matching-impacts) unaffected-steps) '()))
+  (def base-ai (filter-ai-governance-sources-for-subject (.get projected ai-governance-sources) sid))
+  (def base-factors (alist-ref base-ai 'subject_factor '()))
+  (def factors-with-ai
+    (if (member (list sid "ai-authored-change") base-factors)
+      base-factors
+      (cons (list sid "ai-authored-change") base-factors)))
+  (def merged-steps (append extra-flow-steps (alist-ref base-ai 'flow_step '())))
+  (def merged-roles (append extra-role-bindings (alist-ref base-ai 'declared_role_binding '())))
+  (def reuse-rows (map (lambda (st) (list sid (sym->str st))) claimed-reuse-steps))
+  (def eval-sources
+    (alist-replace
+      (alist-replace
+        (alist-replace
+          (alist-replace
+            (alist-replace
+              (alist-replace base-ai 'subject_factor factors-with-ai)
+              'flow_step merged-steps)
+            'declared_role_binding merged-roles)
+          'ai_patch_touches_dep touched-dep-rows)
+        'step_security_dep step-security-dep-rows)
+      'ai_claimed_proof_reuse reuse-rows))
+  (def ar-res (reason-ai-security-governance eval-sources))
+  (def findings ((.ref ar-res 'rows-of) 'ar_finding))
+  (def admitted-rows ((.ref ar-res 'rows-of) 'ai_governance_admitted))
+  (def admitted? (and (null? findings) (and (member (list sid) admitted-rows) #t)))
+  (def mutates-host?
+    (and (member (list sid "ai-mutates-host-or-governance") factors-with-ai) #t))
+  (def touches-sec-dep?
+    (ormap (lambda (td)
+             (let ((st (cadr td)) (dk (caddr td)))
+               (and (member (list st dk) step-security-dep-rows) #t)))
+           touched-dep-rows))
+  (def requires-human-stepup?
+    (or mutates-host? touches-sec-dep? (not admitted?)))
+  (.o bind-these: #f
+      subject-id: sid
+      admitted?: admitted?
+      ar-findings: findings
+      ar-result: ar-res
+      affected-steps: affected-steps
+      reusable-steps: (if admitted? unaffected-steps '())
+      requires-human-stepup?: requires-human-stepup?))
 
 ;; Pure projector assembling IR01-IR06 ASCENT sources from governance sources,
 ;; mutability annotations, policy flags, current input digests, cached witnesses,

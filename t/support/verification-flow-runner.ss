@@ -1189,13 +1189,19 @@
   (def sysml-projected (project-sysml-model repo-root))
   (def sysml-gov-sources (.get sysml-projected governance-sources))
 
-  ;; 2. Pre-flight ASCENT MR01-MR06 governance gate directly on ALL SysML v2 subjects.
+  ;; 2. Pre-flight ASCENT MR01-MR08 + Phase 4 AR01-AR05 AI Security governance gates
+  ;;    directly on ALL SysML v2 subjects (fail-closed before any engine spawns).
   (def mr-result (reason-multi-method-governance sysml-gov-sources))
   (def mr-findings ((.ref mr-result 'rows-of) 'mr_finding))
   (def mr-open-premises ((.ref mr-result 'rows-of) 'mr03_open_premise))
   (unless (and (null? mr-findings) (null? mr-open-premises))
-    (error "ASCENT MR01-MR06 pre-flight refused SysML v2 specification"
+    (error "ASCENT MR01-MR08 pre-flight refused SysML v2 specification"
            (list mr-findings mr-open-premises)))
+  (def ar-result (reason-ai-security-governance (.get sysml-projected ai-governance-sources)))
+  (def ar-findings ((.ref ar-result 'rows-of) 'ar_finding))
+  (unless (null? ar-findings)
+    (error "ASCENT AR01-AR05 AI Security pre-flight refused SysML v2 specification"
+           ar-findings))
 
   ;; 3. Compile ONLY the requested target subject directly from live SysML v2 (zero Scheme glue)
   ;;    and slice SysML v2 governance facts to that subject.
