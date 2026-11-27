@@ -2211,6 +2211,76 @@ class BadDowngradeHybridSUT extends PostQuantumCryptoAgilitySUT {
   }
 }
 
+class ZkSelectiveDisclosureSUT {
+  secretFieldExposed = false;
+  sigmaProofValid = false;
+  nullifierFresh = false;
+  verifiedDisclosures = 0;
+  overDisclosureViolations = 0;
+  forgedSigmaViolations = 0;
+  nullifierReplayViolations = 0;
+
+  apply(action: string): void {
+    switch (action) {
+      case 'exposeSecretField':
+        if (!this.secretFieldExposed) this.secretFieldExposed = true;
+        break;
+      case 'redactSecretField':
+        if (this.secretFieldExposed) this.secretFieldExposed = false;
+        break;
+      case 'verifySigmaProof':
+        if (!this.sigmaProofValid) this.sigmaProofValid = true;
+        break;
+      case 'issueFreshNullifier':
+        if (!this.nullifierFresh) this.nullifierFresh = true;
+        break;
+      case 'admitZkDisclosure':
+        if (
+          this.verifiedDisclosures < 2 &&
+          !this.secretFieldExposed &&
+          this.sigmaProofValid &&
+          this.nullifierFresh
+        ) {
+          this.verifiedDisclosures += 1;
+          this.nullifierFresh = false;
+        }
+        break;
+      default:
+        throw new Error(`Unknown ZkSelectiveDisclosure action: ${action}`);
+    }
+  }
+
+  snapshot() {
+    return {
+      secretFieldExposed: this.secretFieldExposed,
+      sigmaProofValid: this.sigmaProofValid,
+      nullifierFresh: this.nullifierFresh,
+      verifiedDisclosures: this.verifiedDisclosures,
+      overDisclosureViolations: this.overDisclosureViolations,
+      forgedSigmaViolations: this.forgedSigmaViolations,
+      nullifierReplayViolations: this.nullifierReplayViolations,
+    };
+  }
+}
+
+class BadOverDisclosureSUT extends ZkSelectiveDisclosureSUT {
+  override apply(action: string): void {
+    if (action === 'admitZkDisclosure' && this.verifiedDisclosures < 2) {
+      // Anti-pattern: drops anti-over-disclosure, Sigma-soundness, and fresh-nullifier guards!
+      const noLeak = !this.secretFieldExposed;
+      const sigmaOk = this.sigmaProofValid;
+      const freshOk = this.nullifierFresh;
+      this.verifiedDisclosures += 1;
+      this.nullifierFresh = false;
+      if (!noLeak) this.overDisclosureViolations += 1;
+      if (!sigmaOk) this.forgedSigmaViolations += 1;
+      if (!freshOk) this.nullifierReplayViolations += 1;
+      return;
+    }
+    super.apply(action);
+  }
+}
+
 const repoRoot = resolve(import.meta.dir, '../../../..');
 
 function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(): Record<string, unknown>}>(
@@ -2263,7 +2333,7 @@ function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(
   }
 }
 
-describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (26 Defense Models)', () => {
+describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (27 Defense Models)', () => {
   test('EpistemicStateLattice ITF actions drive EpistemicLatticeSUT with exact step-by-step state isomorphism', () => {
     const stats = replayModelAgainstSut(
       'packages/quint-models/engineering/defense/epistemic-state-lattice/EpistemicStateLattice.qnt',
@@ -2833,6 +2903,26 @@ describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (26 Defense Models
       () => new PostQuantumCryptoAgilitySUT(),
       projectH,
       () => new BadDowngradeHybridSUT(),
+    );
+    expect(stats.transitions).toBeGreaterThan(50);
+    expect(stats.brokenDiverged).toBe(true);
+  }, 30_000);
+
+  test('ZkSelectiveDisclosure ITF actions drive ZkSelectiveDisclosureSUT with exact state isomorphism and reject BadOverDisclosureSUT', () => {
+    const projectH = (h: Record<string, unknown>) => ({
+      secretFieldExposed: Boolean(h.secretFieldExposed),
+      sigmaProofValid: Boolean(h.sigmaProofValid),
+      nullifierFresh: Boolean(h.nullifierFresh),
+      verifiedDisclosures: asInt(h.verifiedDisclosures),
+      overDisclosureViolations: asInt(h.overDisclosureViolations),
+      forgedSigmaViolations: asInt(h.forgedSigmaViolations),
+      nullifierReplayViolations: asInt(h.nullifierReplayViolations),
+    });
+    const stats = replayModelAgainstSut(
+      'packages/quint-models/engineering/defense/zk-selective-disclosure/ZkSelectiveDisclosure.qnt',
+      () => new ZkSelectiveDisclosureSUT(),
+      projectH,
+      () => new BadOverDisclosureSUT(),
     );
     expect(stats.transitions).toBeGreaterThan(50);
     expect(stats.brokenDiverged).toBe(true);

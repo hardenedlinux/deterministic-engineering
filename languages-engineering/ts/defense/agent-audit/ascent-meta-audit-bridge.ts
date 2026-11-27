@@ -81,6 +81,10 @@ export interface MetaAuditFactBundle {
   pq_deprecated_suite: Array<[string]>;
   release_pq_envelope: Array<[string, string, string, string, string]>;
   pq_ots_leaf_use: Array<[string, string, string]>;
+  zk_forbidden_secret_field: Array<[string]>;
+  zk_required_public_field: Array<[string]>;
+  release_zk_proof: Array<[string, string, string, string, string]>;
+  release_zk_disclosed_field: Array<[string, string]>;
 }
 
 export interface AscentMetaAuditOutput {
@@ -106,6 +110,8 @@ export interface AscentMetaAuditOutput {
   crypto_shred_read_violation: string[][];
   pq_agility_violation: string[][];
   pq_ots_reuse_violation: string[][];
+  zk_disclosure_violation: string[][];
+  zk_nullifier_replay_violation: string[][];
   release_disqualified: string[][];
   release_admitted: string[][];
 }
@@ -237,6 +243,19 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
     releaseId: string;
     signerId: string;
     leafIndex: number;
+  }>;
+  zkForbiddenSecretFields?: readonly string[];
+  zkRequiredPublicFields?: readonly string[];
+  releaseZkProofs?: ReadonlyArray<{
+    releaseId: string;
+    proverId: string;
+    rootOk: boolean;
+    sigmaOk: boolean;
+    nullifier: string;
+  }>;
+  releaseZkDisclosedFields?: ReadonlyArray<{
+    releaseId: string;
+    fieldId: string;
   }>;
   releaseProposals: ReadonlyArray<{
     releaseId: string;
@@ -461,6 +480,24 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
     u.signerId,
     String(u.leafIndex),
   ]);
+  const zk_forbidden_secret_field: Array<[string]> = (params.zkForbiddenSecretFields ?? []).map(
+    f => [f],
+  );
+  const zk_required_public_field: Array<[string]> = (params.zkRequiredPublicFields ?? []).map(
+    f => [f],
+  );
+  const release_zk_proof: Array<[string, string, string, string, string]> = (
+    params.releaseZkProofs ?? []
+  ).map(p => [
+    p.releaseId,
+    p.proverId,
+    p.rootOk ? 'yes' : 'no',
+    p.sigmaOk ? 'yes' : 'no',
+    p.nullifier,
+  ]);
+  const release_zk_disclosed_field: Array<[string, string]> = (
+    params.releaseZkDisclosedFields ?? []
+  ).map(d => [d.releaseId, d.fieldId]);
 
   const bundle: MetaAuditFactBundle = {
     delegation_edge: dedupeTuples(delegation_edge),
@@ -507,6 +544,10 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
     pq_deprecated_suite: dedupeTuples(pq_deprecated_suite),
     release_pq_envelope: dedupeTuples(release_pq_envelope),
     pq_ots_leaf_use: dedupeTuples(pq_ots_leaf_use),
+    zk_forbidden_secret_field: dedupeTuples(zk_forbidden_secret_field),
+    zk_required_public_field: dedupeTuples(zk_required_public_field),
+    release_zk_proof: dedupeTuples(release_zk_proof),
+    release_zk_disclosed_field: dedupeTuples(release_zk_disclosed_field),
   };
 
   const factBundleMerkleHash = params.kv.putBlob('ascent-meta-audit-fact-bundle', bundle, []);
@@ -568,6 +609,8 @@ export function parseFramedAscentOutput(rawStdout: string): AscentOracleRunVerdi
     'crypto_shred_read_violation',
     'pq_agility_violation',
     'pq_ots_reuse_violation',
+    'zk_disclosure_violation',
+    'zk_nullifier_replay_violation',
     'release_disqualified',
     'release_admitted',
   ];
@@ -647,6 +690,7 @@ export function runLiveGerbilAscentMetaAudit(
                enclave_attestation_violation enclave_nonce_replay_violation
                key_rotation_write_violation crypto_shred_read_violation
                pq_agility_violation pq_ots_reuse_violation
+               zk_disclosure_violation zk_nullifier_replay_violation
                release_disqualified release_admitted)))
   (display "${BEGIN_MARKER}\\n{")
   (let loop ((ks keys) (first #t))

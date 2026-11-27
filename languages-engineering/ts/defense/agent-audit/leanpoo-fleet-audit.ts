@@ -91,6 +91,7 @@ export const EXPECTED_QUINT_DEFENSE_MODELS = [
   'unknown-effect-retry',
   'witness-epoch-reconfiguration',
   'witness-quorum-finality',
+  'zk-selective-disclosure',
 ] as const;
 
 export const EXPECTED_MULTILANG_HARNESSES = [
@@ -160,7 +161,9 @@ export function auditFourParadigmCrossConsistency(params?: {
       ascentSrc.includes('key_rotation_write_violation') &&
       ascentSrc.includes('crypto_shred_read_violation') &&
       ascentSrc.includes('pq_agility_violation') &&
-      ascentSrc.includes('pq_ots_reuse_violation');
+      ascentSrc.includes('pq_ots_reuse_violation') &&
+      ascentSrc.includes('zk_disclosure_violation') &&
+      ascentSrc.includes('zk_nullifier_replay_violation');
   }
   const ascentVerdict: EpistemicVerdict = ascentRulesPresent ? 'Proven' : 'Refuted';
 

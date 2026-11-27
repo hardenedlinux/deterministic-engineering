@@ -716,7 +716,11 @@
     pq_allowed_suite
     pq_deprecated_suite
     release_pq_envelope
-    pq_ots_leaf_use)
+    pq_ots_leaf_use
+    zk_forbidden_secret_field
+    zk_required_public_field
+    release_zk_proof
+    release_zk_disclosed_field)
   (outputs
     effectively_revoked
     belief_poisoned
@@ -740,6 +744,8 @@
     crypto_shred_read_violation
     pq_agility_violation
     pq_ots_reuse_violation
+    zk_disclosure_violation
+    zk_nullifier_replay_violation
     release_disqualified
     release_admitted)
   (relation delegation_edge ((parent string?) (child string?)))
@@ -786,6 +792,10 @@
   (relation pq_deprecated_suite ((suite_id string?)))
   (relation release_pq_envelope ((rel_id string?) (suite_id string?) (classical_ok string?) (pq_ok string?) (domain_ok string?)))
   (relation pq_ots_leaf_use ((rel_id string?) (signer_id string?) (leaf_index string?)))
+  (relation zk_forbidden_secret_field ((field_id string?)))
+  (relation zk_required_public_field ((field_id string?)))
+  (relation release_zk_proof ((rel_id string?) (prover_id string?) (root_ok string?) (sigma_ok string?) (nullifier string?)))
+  (relation release_zk_disclosed_field ((rel_id string?) (field_id string?)))
 
   ;; Internal stratified helper relations for pure relational identity, cross-log finality, slashing, B11 MCP pinning, B13 wait-graph reachability, B14 artifact equality & B15 release identity:
   (relation same_root ((r1 string?) (r2 string?)))
@@ -820,6 +830,8 @@
   (relation crypto_shred_read_violation ((rel_id string?) (tenant_id string?) (read_epoch string?) (reason string?)))
   (relation pq_agility_violation ((rel_id string?) (suite_id string?) (reason string?)))
   (relation pq_ots_reuse_violation ((rel1 string?) (rel2 string?) (signer_id string?) (leaf_index string?)))
+  (relation zk_disclosure_violation ((rel_id string?) (detail string?) (reason string?)))
+  (relation zk_nullifier_replay_violation ((rel1 string?) (rel2 string?) (nullifier string?)))
   (relation release_disqualified ((rel_id string?) (reason string?)))
   (relation release_admitted ((rel_id string?)))
 
@@ -1055,7 +1067,32 @@
    (pq_ots_leaf_use R2 Signer Leaf)
    (not (same_release R1 R2)))
 
-  ;; 6. Cross-pillar B1/B3/B5/B6/B8/B9/B10/B10c/B11/B12/B13/B14/B15/B16/B17 release disqualification & clean admission:
+  ;; 5j. B18 Zero-Knowledge Selective-Disclosure Compliance, Anti-Over-Disclosure & Nullifier Anti-Replay:
+  ((same_release R R)
+   <--
+   (release_zk_proof R _ _ _ _))
+  ((zk_disclosure_violation Rel Field (lit "over-disclosure-of-secret-field"))
+   <--
+   (release_zk_disclosed_field Rel Field)
+   (zk_forbidden_secret_field Field))
+  ((zk_disclosure_violation Rel Req (lit "missing-required-public-field"))
+   <--
+   (release_zk_proof Rel _ _ _ _)
+   (zk_required_public_field Req)
+   (not (release_zk_disclosed_field Rel Req)))
+  ((zk_disclosure_violation Rel Prover (lit "commitment-root-mismatch"))
+   <--
+   (release_zk_proof Rel Prover (lit "no") _ _))
+  ((zk_disclosure_violation Rel Prover (lit "zk-sigma-proof-invalid"))
+   <--
+   (release_zk_proof Rel Prover _ (lit "no") _))
+  ((zk_nullifier_replay_violation R1 R2 Nullifier)
+   <--
+   (release_zk_proof R1 _ _ _ Nullifier)
+   (release_zk_proof R2 _ _ _ Nullifier)
+   (not (same_release R1 R2)))
+
+  ;; 6. Cross-pillar B1/B3/B5/B6/B8/B9/B10/B10c/B11/B12/B13/B14/B15/B16/B17/B18 release disqualification & clean admission:
   ((release_finality_satisfied Rel Ckpt)
    <--
    (release_proposal Rel _ _ Log)
@@ -1140,6 +1177,14 @@
    <--
    (release_proposal Rel _ _ _)
    (pq_ots_reuse_violation Rel _ _ _))
+  ((release_disqualified Rel (lit "zk-selective-disclosure-violation"))
+   <--
+   (release_proposal Rel _ _ _)
+   (zk_disclosure_violation Rel _ _))
+  ((release_disqualified Rel (lit "zk-nullifier-replay"))
+   <--
+   (release_proposal Rel _ _ _)
+   (zk_nullifier_replay_violation Rel _ _))
   ((release_admitted Rel)
    <--
    (release_proposal Rel _ _ _)

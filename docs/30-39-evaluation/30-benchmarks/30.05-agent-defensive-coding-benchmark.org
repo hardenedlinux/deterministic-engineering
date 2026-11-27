@@ -20,7 +20,7 @@ This benchmark evaluates whether AST-level defensive-engineering auditors catch
 all four AI Agent defensive-hallucination classes (=G2= in [[file:../../10-19-design/10-architecture/10.153-defensive-engineering-taxonomy-and-modular-organization.org][10.153]]) without
 generating false positives on clean deterministic-boundary code.
 
-- *Independent Gold*: Every case (=AG01=–=AG250=) has a fixed independent
+- *Independent Gold*: Every case (=AG01=–=AG255=) has a fixed independent
   expected outcome (=pass= vs. =fail= + exact hallucination/anti-evasion/escalation/durable-resume class). Candidate
   auditor output never generates gold.
 - *Native AST, Diff-Delta, Scope-Fencing & Closed-Loop Governance Auditors Evaluated*:
@@ -306,6 +306,11 @@ generating false positives on clean deterministic-boundary code.
 | =AG248= | =B18= 6-Vector ZK Attack Matrix | Over-disclosure, nullifier replay, stale nonce, policy drift, missing field, wrong root | Refuse all 6 adversarial ZK compliance vectors | Blocks secret PII leakage, replay, transcript malleability & incomplete compliance proofs |
 | =AG249= | 15/15 =R3= Non-Leakable Caps | All 15 =M3= capability classes (including =ZkProverWitnessKey=) into =M1= | Refuse all 15/15 (=R3 ReachabilityLeakError=) | Mechanically blocks private Schnorr witness scalar =w= & blinding salts from =M1= storage |
 | =AG250= | **250-Case / 186-Thm Grand Seal** | 26 Quint × 44×24 ASCENT × 17/186 CLI + PQ Hybrid + ZK Compliance + =90.153= -> =cedar-poo-spec= | **250/250 =Proven=** + full 44-suite / 5-lang / CBMC seal | Closes 250-case grand milestone across all 4 formal paradigms, 5 languages & 186 =LeanPoo= theorems |
+| =AG251= | =B18= × 48×26 ASCENT Disclosure | Live =gxi= ASCENT derives =zk_disclosure_violation= for over-disclosure, missing field, root & Sigma | Derive all 4 violations & disqualify; admit clean | Catches confidential field over-disclosure, incomplete disclosure & forged Sigma declaratively |
+| =AG252= | =B18= × 48×26 ASCENT Nullifier | Live =gxi= ASCENT derives =zk_nullifier_replay_violation= across distinct releases sharing nullifier | Derive replay & disqualify both; admit fresh nullifier | Catches single-use ZK proof nullifier replay across releases declaratively |
+| =AG253= | =B18= × N-Version Gate | Buggy TS coordinator claims =ADMIT= on ZK over-disclosure & nullifier-replay releases | Refuse both (=oracle-disagreement-fail-closed=) + GC | Live Scheme ASCENT overrides imperative TS coordinator & pins forensic receipts |
+| =AG254= | 27-Quint × 186-Thm CLI | =leanpoo-fleet-audit --json= verifies 27 Quint × 48×26 ASCENT × 17/186 =LeanPoo= | =quint: 27, ascent: true, modules: 17, thms: 186= | Confirms 27th Quint model (=zk-selective-disclosure=) + 48×26 ASCENT convergence |
+| =AG255= | 255-Case =B1=–=B18= Closure | MODP-2048 Schnorr Sigma + =B10= QC -> dual ASCENT -> 27-Quint cert -> =cedar-poo-spec= | **255/255 =Proven=** + all =M1= receipts survive GC | Seals complete four-paradigm symmetry across all 18 business pillars (=B1=–=B18=) |
 
 * Observed Verification Receipts
 :PROPERTIES:
@@ -358,14 +363,15 @@ generating false positives on clean deterministic-boundary code.
 | =B17= Post-Quantum Hybrid Cryptographic Agility & Anti-Downgrade + 16-Module / **176-Theorem =LeanPoo=** Library (=AG236=–=AG240=, =10.193=) | =bun test languages-engineering/ts/defense/agent-audit/post-quantum-crypto-agility.test.ts= + =just audit-leanpoo-fleet --json= | **5/5 cases matched gold** (live **176/176** 16-module =LeanPoo= sweep, Dual-AND Ed25519 + SHA-256 Lamport-Diffie OTS Merkle verification, anti-downgrade & OTS exhaustion/reuse blocks, 14/14 =R3= caps & 240-case milestone) |
 | =B17= Four-Paradigm Symmetry Closure: **26th Quint/Apalache Model** + 26/26 MBT SUT + 44×24 =B1=–=B17= ASCENT (=AG241=–=AG245=, =10.194=) | =bun test languages-engineering/ts/defense/agent-audit/b17-four-paradigm-symmetry.test.ts= + =mbt-replay.test.ts= + =governance-ascent-test.ss= | **5/5 cases matched gold** (model #26 Apalache 6/6 =PLAN-OK= & 3/3 =F3= essential, 26/26 MBT SUT isomorphism, live 44×24 =gxi= ASCENT PQ agility/OTS reuse catch, 26-Quint × 176-Thm CLI + air-gapped =cedar-poo-spec= closure) |
 | =B18= Verifiable ZK Selective-Disclosure Compliance + 17-Module / **186-Theorem =LeanPoo=** & **250-Case Grand Seal** (=AG246=–=AG250=, =10.195=, =90.153=) | =bun test languages-engineering/ts/defense/agent-audit/zk-selective-disclosure.test.ts= + full 44-suite / 5-lang / CBMC / Gerbil seal | **5/5 cases matched gold** (live **186/186** 17-module =LeanPoo= sweep, RFC 3526 MODP-2048 Schnorr Sigma NIZK + salted Merkle disclosure, 6-vector attack matrix, 15/15 =R3= caps & full 44-suite + CBMC 50/50 + C++20 + Rust + Gerbil ASCENT seal) |
-| Combined **250-case** 5-language, 26-Quint MBT, Full =B1=–=B17= 44×24 ASCENT & **186-Theorem =LeanPoo=** grand milestone | =just check-defense= | **250/250 exact gold match** (=tp=161, tn=89, fp=0, fn=0=) |
+| =B18= Four-Paradigm Symmetry Closure: **27th Quint/Apalache Model** + 27/27 MBT SUT + 48×26 =B1=–=B18= ASCENT (=AG251=–=AG255=, =10.196=) | =bun test languages-engineering/ts/defense/agent-audit/b18-four-paradigm-symmetry.test.ts= + =mbt-replay.test.ts= + =governance-ascent-test.ss= | **5/5 cases matched gold** (model #27 Apalache 6/6 =PLAN-OK= & 3/3 =F3= essential, 27/27 MBT SUT isomorphism, live 48×26 =gxi= ASCENT ZK over-disclosure/replay catch, 27-Quint × 186-Thm CLI + air-gapped =cedar-poo-spec= closure) |
+| Combined **255-case** 5-language, 27-Quint MBT, Full =B1=–=B18= 48×26 ASCENT & **186-Theorem =LeanPoo=** benchmark | =just check-defense= | **255/255 exact gold match** (=tp=164, tn=91, fp=0, fn=0=) |
 
 * Limits
 :PROPERTIES:
 :CUSTOM_ID: bench3005-limits
 :END:
 
-This 250-case benchmark establishes deterministic AST-level, diff-delta,
+This 255-case benchmark establishes deterministic AST-level, diff-delta,
 scope-fencing, bounded closed-loop, hot-policy co-evolution, async-cut,
 semantic-drift memoization, AEAD-isolated Merkle storage, role-projected
 context, multi-agent SSI concurrency, and business SoD/replay precision and
