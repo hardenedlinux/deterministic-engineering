@@ -38,6 +38,9 @@
            execution-request-plan-id
            execution-request-node-id
            receipt->run-summary)
+  (only-in :deterministic-engineering/library/verification-flow/attestation
+           dsse-v1-pae
+           sort-by)
   :deterministic-engineering/library/verification-flow/types
   :deterministic-engineering/library/verification-flow/objects
   :deterministic-engineering/library/verification-flow/func
@@ -1481,6 +1484,7 @@
       (newline port)))
   (def fleet-bundle-path #f)
   (def trust-bundle-path #f)
+  (def dsse-statement-path #f)
   (when (and emit-bundles? all-admitted?)
     (set! fleet-bundle-path (path-expand "fleet-evidence-bundle.v1.json" resolved-out))
     (call-with-output-file fleet-bundle-path
@@ -1493,11 +1497,59 @@
     (set! trust-bundle-path (path-expand "trust-bundle.v1.json" resolved-out))
     (let ((effective-ts (or trust-store
                             (make-ed25519-trust-store (list (.get keypair public-key))))))
-      (write-ed25519-trust-store-json effective-ts trust-bundle-path inline-pem?: #t)))
+      (write-ed25519-trust-store-json effective-ts trust-bundle-path inline-pem?: #t))
+    ;; Emit standard DSSE v1 signed in-toto Verification Summary Statement (<2KB single-file receipt).
+    (set! dsse-statement-path (path-expand "verification-summary.intoto.dsse.json" resolved-out))
+    (let* ((ver-subs
+             (sort-by
+               (map (lambda (s)
+                      (let* ((rel (hash-get s "reportRelativePath"))
+                             (cdoc (hash-get child-docs-ht rel))
+                             (catt (and (hash-table? cdoc) (hash-get cdoc "attestation")))
+                             (cev (and (hash-table? cdoc) (hash-get cdoc "evidence"))))
+                        (hash ("subjectKey" (hash-get s "subjectKey"))
+                              ("subjectId" (hash-get s "subjectId"))
+                              ("keyId" (or (and (hash-table? catt) (hash-get catt "keyId"))
+                                           (.get keypair key-id)))
+                              ("evidenceCount" (if (list? cev) (length cev) 0)))))
+                    (reverse subject-hashes))
+               (lambda (a b) (string<? (hash-get a "subjectKey") (hash-get b "subjectKey")))))
+           (stmt
+             (hash ("_type" "https://in-toto.io/Statement/v1")
+                   ("subject"
+                    (list (hash ("name" "sysml:10.154-multi-method-funflow-runnable-architecture")
+                                ("digest" (hash ("sha256" sysml-sha))))
+                          (hash ("name" (string-append "fleet:" fleet-id))
+                                ("digest" (hash ("sha256" fleet-sha))))))
+                   ("predicateType"
+                    "https://deterministic-engineering.hardenedlinux.org/attestation/fleet-verification-summary/v1")
+                   ("predicate"
+                    (hash ("verifier" "de.offline-attestation-verifier.v1")
+                          ("fleetId" fleet-id)
+                          ("sysmlSha256" sysml-sha)
+                          ("fleetPayloadSha256" fleet-sha)
+                          ("rootKeyId" (.get keypair key-id))
+                          ("subjectCount" (length ver-subs))
+                          ("verifiedSubjects" ver-subs)))))
+           (stmt-json (call-with-output-string (lambda (p) (write-json p stmt))))
+           (ptype "application/vnd.in-toto+json")
+           (pae (dsse-v1-pae ptype stmt-json))
+           (dsse-sig (ed25519-sign-string (.get keypair private-key) pae))
+           (dsse-env
+             (hash ("payloadType" ptype)
+                   ("payload" (base64-encode (string->utf8 stmt-json)))
+                   ("signatures"
+                    (list (hash ("keyid" (.get keypair key-id))
+                                ("sig" dsse-sig)))))))
+      (call-with-output-file dsse-statement-path
+        (lambda (port)
+          (write-json port dsse-env)
+          (newline port)))))
   (.o bind-these: #f
       fleet-report-path: fleet-report-path
       fleet-bundle-path: fleet-bundle-path
       trust-bundle-path: trust-bundle-path
+      dsse-statement-path: dsse-statement-path
       sysml-sha256: sysml-sha
       public-key-path: (.get keypair public-key)
       key-id: (.get keypair key-id)
@@ -1682,6 +1734,7 @@
         (error "multi-method fleet bundle verification refused admission" (.get res fleet-report-path)))
       (displayln "MULTI-METHOD-FLEET-BUNDLE-OK " (.get res fleet-bundle-path)
                  " trust=" (.get res trust-bundle-path)
+                 " dsse=" (.get res dsse-statement-path)
                  " subjects=" (length (.get res subject-keys))
                  " executed=" (.get res total-executed)
                  " reused=" (.get res total-reused)

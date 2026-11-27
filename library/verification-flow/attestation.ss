@@ -13,6 +13,7 @@
   canonical-witness-signing-payload
   canonical-report-signing-payload
   canonical-fleet-signing-payload
+  dsse-v1-pae
   trust-store-alist-key-admitted?
   safe-relative-child-path?
   witness-epoch-fresh?)
@@ -172,3 +173,14 @@
                (frame-canonical-kv "sub.replayValid" (list-ref e 3))
                (frame-canonical-kv "sub.admitted" (list-ref e 4))))
            sorted-entries))))
+
+;; Standard DSSE v1 Pre-Authentication Encoding (PAE) using exact UTF-8 byte lengths:
+;;   "DSSEv1 " + utf8ByteLen(payloadType) + " " + payloadType + " " + utf8ByteLen(payload) + " " + payload
+(def (dsse-v1-pae payload-type payload-str)
+  (def pt (sym->str payload-type))
+  (def body (sym->str payload-str))
+  (def pt-bytes (u8vector-length (string->utf8 pt)))
+  (def body-bytes (u8vector-length (string->utf8 body)))
+  (string-append "DSSEv1 "
+                 (number->string pt-bytes) " " pt " "
+                 (number->string body-bytes) " " body))

@@ -35,8 +35,26 @@ export interface ExportBundleResult {
 const TRUST_STORE_SCHEMA = 'de.attestation.ed25519-trust-store.v1';
 const FLEET_BUNDLE_SCHEMA = 'de.attestation.fleet-evidence-bundle.v1';
 const VERIFY_RESULT_SCHEMA = 'de.attestation.offline-verify-result.v1';
+const INTOTO_DSSE_PAYLOAD_TYPE = 'application/vnd.in-toto+json';
+const INTOTO_STATEMENT_TYPE = 'https://in-toto.io/Statement/v1';
+const INTOTO_PREDICATE_TYPE =
+  'https://deterministic-engineering.hardenedlinux.org/attestation/fleet-verification-summary/v1';
+const INTOTO_SYSML_SUBJECT_NAME = 'sysml:10.154-multi-method-funflow-runnable-architecture';
 const PUBLIC_KEY_HEADER = '-----BEGIN PUBLIC KEY-----';
 const STRICT_BASE64_RE = /^[A-Za-z0-9+/]+={0,2}$/;
+
+/**
+ * Standard DSSE v1 Pre-Authentication Encoding (PAE) using exact UTF-8 byte lengths:
+ *   "DSSEv1 " + utf8ByteLen(payloadType) + " " + payloadType + " " + utf8ByteLen(payload) + " " + payload
+ */
+export function dsseV1Pae(payloadType: string, payloadBytes: Buffer | string): Buffer {
+  const typeBuf = Buffer.from(payloadType, 'utf8');
+  const bodyBuf =
+    typeof payloadBytes === 'string' ? Buffer.from(payloadBytes, 'utf8') : payloadBytes;
+  const prefix = Buffer.from(`DSSEv1 ${typeBuf.length} `, 'utf8');
+  const mid = Buffer.from(` ${bodyBuf.length} `, 'utf8');
+  return Buffer.concat([prefix, typeBuf, mid, bodyBuf]);
+}
 
 // ── 1. Pure Canonical Framing (Byte-for-Byte Isomorphic to attestation.ss) ──
 
@@ -856,6 +874,172 @@ export function verifyFleetBundleOffline(
   return inspectFleetBundleVerified(bundlePath, trustPair, optsOrSha) !== null;
 }
 
+export interface VerifiedDsseStatementSummary extends VerifiedFleetBundleSummary {
+  verifiedKeyIds: string[];
+}
+
+function ed25519VerifyBytes(pubPemOrPath: string, payloadBuf: Buffer, sigB64: unknown): boolean {
+  if (typeof sigB64 !== 'string' || sigB64.length === 0) return false;
+  if (sigB64.length % 4 !== 0 || !STRICT_BASE64_RE.test(sigB64)) return false;
+  try {
+    const pemStr = isInlinePemString(pubPemOrPath)
+      ? pubPemOrPath
+      : readFileSync(pubPemOrPath, 'utf8');
+    const pubKey = createPublicKey(pemStr);
+    const sigBuf = Buffer.from(sigB64, 'base64');
+    if (sigBuf.length !== 64) return false;
+    return cryptoVerify(null, payloadBuf, pubKey, sigBuf);
+  } catch {
+    return false;
+  }
+}
+
+function intotoSubjectDigestMatches(
+  subjects: unknown,
+  targetName: string,
+  expectedSha: string,
+): boolean {
+  if (!Array.isArray(subjects) || expectedSha.length === 0) return false;
+  return subjects.some((s) => {
+    if (!isPlainObject(s)) return false;
+    const dig = s.digest;
+    return s.name === targetName && isPlainObject(dig) && dig.sha256 === expectedSha;
+  });
+}
+
+/**
+ * Strict offline verifier for a standard DSSE v1 signed in-toto Verification Summary Statement.
+ * Returns cryptographically authenticated summary on pass, or `null` on any failure (zero leakage).
+ */
+export function inspectDsseStatementVerified(
+  dssePath: string,
+  trustPair: TrustPair,
+  optsOrSha?: string | FleetVerifyOptions,
+): VerifiedDsseStatementSummary | null {
+  const opts = normalizeFleetOpts(optsOrSha);
+  if (!existsSync(dssePath)) return null;
+  const env = readJsonObject(dssePath);
+  if (!env) return null;
+  if (env.payloadType !== INTOTO_DSSE_PAYLOAD_TYPE) return null;
+  const payloadB64 = env.payload;
+  const sigs = env.signatures;
+  if (
+    typeof payloadB64 !== 'string' ||
+    payloadB64.length === 0 ||
+    payloadB64.length % 4 !== 0 ||
+    !STRICT_BASE64_RE.test(payloadB64)
+  ) {
+    return null;
+  }
+  if (!Array.isArray(sigs) || sigs.length === 0) return null;
+
+  const payloadBuf = Buffer.from(payloadB64, 'base64');
+  const paeBuf = dsseV1Pae(INTOTO_DSSE_PAYLOAD_TYPE, payloadBuf);
+
+  const verifiedKeyIds: string[] = [];
+  for (const sigEntry of sigs) {
+    if (!isPlainObject(sigEntry)) continue;
+    const kid = sigEntry.keyid;
+    const sig = sigEntry.sig;
+    const pub = trustStoreKeyAdmitted(trustPair.trusted, trustPair.revoked, kid);
+    if (pub && typeof kid === 'string' && ed25519VerifyBytes(pub, paeBuf, sig)) {
+      if (!verifiedKeyIds.includes(kid)) verifiedKeyIds.push(kid);
+    }
+  }
+  if (verifiedKeyIds.length === 0) return null;
+
+  let stmt: unknown;
+  try {
+    stmt = JSON.parse(payloadBuf.toString('utf8'));
+  } catch {
+    return null;
+  }
+  if (!isPlainObject(stmt)) return null;
+  if (stmt._type !== INTOTO_STATEMENT_TYPE || stmt.predicateType !== INTOTO_PREDICATE_TYPE) {
+    return null;
+  }
+  const pred = stmt.predicate;
+  if (!isPlainObject(pred)) return null;
+  if (pred.verifier !== 'de.offline-attestation-verifier.v1') return null;
+
+  const fleetId = pred.fleetId;
+  const sysmlSha256 = pred.sysmlSha256;
+  const fleetPayloadSha256 = pred.fleetPayloadSha256;
+  const rootKeyId = pred.rootKeyId;
+  const subjectCount = pred.subjectCount;
+  const verifiedSubjectsRaw = pred.verifiedSubjects;
+
+  if (
+    typeof fleetId !== 'string' ||
+    fleetId.length === 0 ||
+    typeof sysmlSha256 !== 'string' ||
+    sysmlSha256.length === 0 ||
+    typeof fleetPayloadSha256 !== 'string' ||
+    fleetPayloadSha256.length === 0 ||
+    typeof rootKeyId !== 'string' ||
+    rootKeyId.length === 0 ||
+    typeof subjectCount !== 'number' ||
+    !Number.isInteger(subjectCount) ||
+    subjectCount < 1 ||
+    !Array.isArray(verifiedSubjectsRaw) ||
+    verifiedSubjectsRaw.length !== subjectCount
+  ) {
+    return null;
+  }
+
+  if (!intotoSubjectDigestMatches(stmt.subject, INTOTO_SYSML_SUBJECT_NAME, sysmlSha256)) {
+    return null;
+  }
+  if (!intotoSubjectDigestMatches(stmt.subject, `fleet:${fleetId}`, fleetPayloadSha256)) {
+    return null;
+  }
+  if (opts.expectedSysmlSha256 !== undefined && sysmlSha256 !== opts.expectedSysmlSha256) {
+    return null;
+  }
+  if (!checkFleetSubjectCoverage(verifiedSubjectsRaw, opts)) {
+    return null;
+  }
+
+  const verifiedSubjects: VerifiedSubjectSummary[] = [];
+  for (const s of verifiedSubjectsRaw) {
+    if (
+      !isPlainObject(s) ||
+      typeof s.subjectKey !== 'string' ||
+      typeof s.subjectId !== 'string' ||
+      typeof s.keyId !== 'string' ||
+      typeof s.evidenceCount !== 'number' ||
+      !Number.isInteger(s.evidenceCount) ||
+      s.evidenceCount < 0
+    ) {
+      return null;
+    }
+    verifiedSubjects.push({
+      subjectKey: s.subjectKey,
+      subjectId: s.subjectId,
+      keyId: s.keyId,
+      evidenceCount: s.evidenceCount,
+    });
+  }
+  verifiedKeyIds.sort(codePointCompare);
+  return {
+    fleetId,
+    sysmlSha256,
+    fleetPayloadSha256,
+    rootKeyId,
+    verifiedKeyIds,
+    subjectCount,
+    verifiedSubjects,
+  };
+}
+
+export function verifyDsseStatementOffline(
+  dssePath: string,
+  trustPair: TrustPair,
+  optsOrSha?: string | FleetVerifyOptions,
+): boolean {
+  return inspectDsseStatementVerified(dssePath, trustPair, optsOrSha) !== null;
+}
+
 // ── 3. Standalone CLI Entrypoint ──
 
 function emitJsonResult(
@@ -1225,6 +1409,48 @@ export function runCli(argv: string[]): number {
       );
     } else {
       process.stderr.write(`ERROR: offline fleet bundle verification failed: ${targetPath}\n`);
+    }
+    return 1;
+  }
+
+  if (mode === '--verify-dsse-statement') {
+    const summary = inspectDsseStatementVerified(targetPath, trustPair, fleetOpts);
+    if (summary !== null) {
+      if (jsonMode) {
+        emitJsonResult(
+          true,
+          'verify-dsse-statement',
+          targetPath,
+          storePath,
+          'authentic-dsse-v1-intoto-statement',
+          {
+            ...fleetJsonExtra(),
+            fleetId: summary.fleetId,
+            sysmlSha256: summary.sysmlSha256,
+            fleetPayloadSha256: summary.fleetPayloadSha256,
+            rootKeyId: summary.rootKeyId,
+            verifiedKeyIds: summary.verifiedKeyIds,
+            subjectCount: summary.subjectCount,
+            verifiedSubjects: summary.verifiedSubjects,
+          },
+        );
+      } else {
+        process.stdout.write(`MULTI-METHOD-VERIFY-DSSE-STATEMENT-OK ${targetPath}\n`);
+      }
+      return 0;
+    }
+    if (jsonMode) {
+      emitJsonResult(
+        false,
+        'verify-dsse-statement',
+        targetPath,
+        storePath,
+        'offline DSSE v1 in-toto statement verification failed',
+      );
+    } else {
+      process.stderr.write(
+        `ERROR: offline DSSE v1 in-toto statement verification failed: ${targetPath}\n`,
+      );
     }
     return 1;
   }

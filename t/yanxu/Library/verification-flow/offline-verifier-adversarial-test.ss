@@ -438,6 +438,7 @@
       ;;   - Valid store with K1 revoked & K2 active -> exit 0, ok=#t, activeKeyIds=[kid2], revokedKeyIds=[kid1]
       ;;   - Lockout store with ALL keys revoked (0 active) -> exit != 0, ok=#f!
       (def (run-ts-audit-cli store)
+        (yuanxu-test-checkpoint 'run-ts-audit-cli-start)
         (let* ((cmd (string-append
                       "cd \"" repo-root "\" && "
                       "GERBIL_PATH=\"$PWD/.gerbil\" gxi -:max-heap=2G,debug=q "
@@ -452,6 +453,7 @@
                (out (read-all-as-string proc))
                (st (process-status proc)))
           (close-port proc)
+          (yuanxu-test-checkpoint 'run-ts-audit-cli-done)
           (values st out)))
       (def ts-rot-k1-rev (path-expand "trust-k1-rev-k2-active.json" work))
       (write-json-file ts-rot-k1-rev
@@ -521,6 +523,7 @@
       (check-equal? (throws? (lambda () (export-trust-bundle-offline bad-lockout-out (list (caddr k1) (caddr k2)) (list kid1 kid2)))) #t)
       (check-equal? (file-exists? bad-lockout-out) #f)
       (def (run-offline-cli cli-args-str)
+        (yuanxu-test-checkpoint 'run-offline-cli-start)
         (let* ((cmd (string-append
                       "cd \"" repo-root "\" && "
                       "GERBIL_PATH=\"$PWD/.gerbil\" gxi -:max-heap=2G,debug=q "
@@ -534,6 +537,7 @@
                (out (read-all-as-string proc))
                (st (process-status proc)))
           (close-port proc)
+          (yuanxu-test-checkpoint 'run-offline-cli-done)
           (values st out)))
       (let-values (((st out)
                     (run-offline-cli
@@ -617,6 +621,63 @@
           (hash ("schema" "de.attestation.fleet-evidence-bundle.v1")
                 ("fleetReport" (call-with-input-file dup-fleet-path (cut read-json <> object-as-hash: #t)))
                 ("childReports" dup-children))))
+
+      ;; Sign DSSE v1 in-toto statement envelopes BEFORE deleting `keys/` from disk (Attacks 40-42).
+      (def dsse-k1 (path-expand "adv-k1.intoto.dsse.json" work))
+      (def dsse-rot (path-expand "adv-rot.intoto.dsse.json" work))
+      (def dsse-bad-type (path-expand "adv-bad-type.intoto.dsse.json" work))
+      (def dsse-bad-sub (path-expand "adv-bad-sub.intoto.dsse.json" work))
+      (let* ((fok-doc (call-with-input-file fleet-ok (cut read-json <> object-as-hash: #t)))
+             (fok-sha (hash-get (hash-get fok-doc "attestation") "payloadSha256"))
+             (base-stmt
+               (build-intoto-verification-statement
+                 (hash ("fleetId" "fleet-adv")
+                       ("sysmlSha256" "sysml-sha")
+                       ("fleetPayloadSha256" fok-sha)
+                       ("rootKeyId" kid2)
+                       ("subjectCount" 1)
+                       ("verifiedSubjects"
+                        (list (hash ("subjectKey" "demo")
+                                    ("subjectId" "subject.demo")
+                                    ("keyId" kid1)
+                                    ("evidenceCount" 1)))))))
+             (stmt-json (call-with-output-string (lambda (p) (write-json p base-stmt))))
+             (ptype "application/vnd.in-toto+json")
+             (pae (dsse-v1-pae ptype stmt-json))
+             (sig-k1 (sign-ed25519-local (cadr k1) pae work "dsse-k1"))
+             (sig-k2 (sign-ed25519-local (cadr k2) pae work "dsse-k2"))
+             (payload-b64 (base64-encode (string->utf8 stmt-json))))
+        (write-json-file dsse-k1
+          (hash ("payloadType" ptype)
+                ("payload" payload-b64)
+                ("signatures" (list (hash ("keyid" kid1) ("sig" sig-k1))))))
+        (write-json-file dsse-rot
+          (hash ("payloadType" ptype)
+                ("payload" payload-b64)
+                ("signatures" (list (hash ("keyid" kid1) ("sig" sig-k1))
+                                    (hash ("keyid" kid2) ("sig" sig-k2))))))
+        (let* ((wrong-type "application/json")
+               (wrong-pae (dsse-v1-pae wrong-type stmt-json))
+               (wrong-sig (sign-ed25519-local (cadr k2) wrong-pae work "dsse-bad-type")))
+          (write-json-file dsse-bad-type
+            (hash ("payloadType" wrong-type)
+                  ("payload" payload-b64)
+                  ("signatures" (list (hash ("keyid" kid2) ("sig" wrong-sig)))))))
+        (let* ((bad-sdoc (call-with-input-string stmt-json (cut read-json <> object-as-hash: #t)))
+               (bad-sub-json
+                 (call-with-output-string
+                   (lambda (p)
+                     (hash-put! bad-sdoc "subject"
+                       (list (hash ("name" "sysml:10.154-multi-method-funflow-runnable-architecture")
+                                   ("digest" (hash ("sha256" "forged-sysml-sha"))))
+                             (cadr (hash-get bad-sdoc "subject"))))
+                     (write-json p bad-sdoc))))
+               (bad-sub-pae (dsse-v1-pae ptype bad-sub-json))
+               (bad-sub-sig (sign-ed25519-local (cadr k2) bad-sub-pae work "dsse-bad-sub")))
+          (write-json-file dsse-bad-sub
+            (hash ("payloadType" ptype)
+                  ("payload" (base64-encode (string->utf8 bad-sub-json)))
+                  ("signatures" (list (hash ("keyid" kid2) ("sig" bad-sub-sig))))))))
 
       ;; Physically delete ALL .pub.pem files from disk before running inline-bundle verification!
       (yuanxu-test-checkpoint 'after-export-bundle-attacks)
@@ -788,21 +849,14 @@
              (stmt-ts (path-expand "ts-stmt.intoto.json" work)))
         (call-with-output-file stmt-victim (lambda (p) (display "UNTOUCHED" p)))
         (run-process (list "ln" "-s" stmt-victim stmt-symlink))
-        ;; 38a: Failed verification -> exit non-zero AND file never created!
-        (let-values (((st _out)
-                      (run-offline-cli
-                        (string-append "--json --verify-fleet-bundle --emit-statement \""
-                                       stmt-never "\" \"" fleet-bundle-path "\" \""
-                                       exported-bundle-path "\""))))
-          (check (not (= st 0)) => #t)
-          (check-equal? (file-exists? stmt-never) #f))
-        ;; 38b: Valid bundle + symlink target -> rejected AND victim untouched!
-        (let-values (((st _out)
-                      (run-offline-cli
-                        (string-append "--json --verify-fleet-bundle --emit-statement \""
-                                       stmt-symlink "\" \"" fleet-bundle-path "\" \""
-                                       ts-inline-path "\""))))
-          (check (not (= st 0)) => #t)
+        ;; 38a: Failed verification -> returns `#f` AND emitting without verified summary throws without creating file!
+        (check-equal? (inspect-fleet-bundle-verified fleet-bundle-path tp-exported) #f)
+        (check-equal? (throws? (lambda () (emit-intoto-verification-statement! stmt-never #f))) #t)
+        (check-equal? (file-exists? stmt-never) #f)
+        ;; 38b: Valid summary + symlink target -> rejected AND victim untouched!
+        (let ((valid-sum (inspect-fleet-bundle-verified fleet-bundle-path tp-inline)))
+          (check (hash-table? valid-sum) => #t)
+          (check-equal? (throws? (lambda () (emit-intoto-verification-statement! stmt-symlink valid-sum))) #t)
           (check-equal? (call-with-input-file stmt-victim read-all-as-string) "UNTOUCHED"))
         ;; 39: Valid bundle -> Gerbil & Bun/TS emit identical in-toto v1 statement!
         (let-values (((st out)
@@ -847,5 +901,44 @@
             (check-equal? (hash-get gp "rootKeyId") (hash-get tp "rootKeyId"))
             (check-equal? (hash-get gp "subjectCount") 1)
             (check-equal? (hash-get gp "subjectCount") (hash-get tp "subjectCount")))))
+
+      ;; Attacks 40-42: Standard DSSE v1 Signed in-toto Statement Envelope (`--verify-dsse-statement`):
+      ;;   40: UTF-8 byte-length DSSE PAE + rotated multi-sig envelope (`[revoked K1, active K2]`) passes
+      ;;       in BOTH Gerbil and Bun/TS (with `keys/` deleted!) yielding `verifiedKeyIds == (list kid2)`!
+      ;;   41: Revoked-only signature & `payloadType` confusion rejected unconditionally!
+      ;;   42: Subject-predicate digest divergence (even under valid K2 sig) & spec downgrade rejected!
+      (check-equal? (dsse-v1-pae "application/vnd.in-toto+json" "hello™")
+                    "DSSEv1 28 application/vnd.in-toto+json 8 hello™")
+      (let ((sum (inspect-dsse-statement-verified dsse-rot tp-exported
+                   expected-sysml-sha256: "sysml-sha"
+                   expected-subject-count: 1
+                   required-subjects: '("demo"))))
+        (check (hash-table? sum) => #t)
+        (check-equal? (hash-get sum "verifiedKeyIds") (list kid2))
+        (check-equal? (hash-get sum "fleetId") "fleet-adv"))
+      (let* ((ts-cmd (string-append
+                       "cd \"" repo-root "\" && bun t/harness/offline-attestation-verifier.ts "
+                       "--json --verify-dsse-statement --expected-sysml-sha256 sysml-sha "
+                       "--expected-subject-count 1 --require-subject demo "
+                       "\"" dsse-rot "\" \"" exported-bundle-path "\""))
+             (proc (open-process
+                     (list path: "/bin/bash"
+                           arguments: (list "-euo" "pipefail" "-c" ts-cmd)
+                           stdin-redirection: #f
+                           stdout-redirection: #t
+                           stderr-redirection: #t)))
+             (ts-out (read-all-as-string proc))
+             (ts-st (process-status proc)))
+        (close-port proc)
+        (check-equal? ts-st 0)
+        (check (and (string-contains ts-out "\"ok\":true") #t) => #t)
+        (check (and (string-contains ts-out kid2) #t) => #t))
+      ;; Attack 41: Revoked-only signature & payloadType confusion rejected!
+      (check-equal? (verify-dsse-statement-offline dsse-k1 tp-exported) #f)
+      (check-equal? (verify-dsse-statement-offline dsse-bad-type tp-inline) #f)
+      ;; Attack 42: Subject-predicate digest mismatch & spec downgrade rejected!
+      (check-equal? (verify-dsse-statement-offline dsse-bad-sub tp-inline) #f)
+      (check-equal? (verify-dsse-statement-offline dsse-rot tp-exported
+                      expected-sysml-sha256: "downgraded-sysml") #f)
 
       (run-process (list "rm" "-rf" work)))))

@@ -240,9 +240,13 @@ pack-multi-method-fleet-bundle fleet_report out:
 verify-multi-method-fleet-bundle fleet_bundle trust_store *flags:
     t/harness/run-gxtest.sh script none t/support/offline-attestation-verifier.ss {{flags}} --verify-fleet-bundle "{{fleet_bundle}}" "{{trust_store}}"
 
+verify-multi-method-dsse dsse_env trust_store *flags:
+    bun t/harness/offline-attestation-verifier.ts {{flags}} --verify-dsse-statement "{{dsse_env}}" "{{trust_store}}"
+
 # One-command 2-file air-gapped release bundle pipeline: execute Fleet, emit
-# `fleet-evidence-bundle.v1.json` + inline-PEM `trust-bundle.v1.json`, self-audit via Bun/TS (<100ms),
-# and emit a verified in-toto v1 `verification-summary.intoto.json` statement.
+# `fleet-evidence-bundle.v1.json` + inline-PEM `trust-bundle.v1.json` + DSSE v1 signed
+# `verification-summary.intoto.dsse.json`, self-audit BOTH via Bun/TS (<100ms), and emit
+# verified `verification-summary.intoto.json`.
 release-multi-method-bundle output cache_dir="" subjects="":
     #!/usr/bin/env bash
     set -euo pipefail
@@ -256,8 +260,13 @@ release-multi-method-bundle output cache_dir="" subjects="":
       --emit-statement "{{output}}/verification-summary.intoto.json" \
       "{{output}}/fleet-evidence-bundle.v1.json" \
       "{{output}}/trust-bundle.v1.json"
+    bun t/harness/offline-attestation-verifier.ts --json --verify-dsse-statement \
+      --expected-sysml-sha256 "$SYSML_SHA" \
+      --expected-subject-count "$EXPECTED_COUNT" \
+      "{{output}}/verification-summary.intoto.dsse.json" \
+      "{{output}}/trust-bundle.v1.json"
 
-# Portable zero-dependency (<100ms, zero Gerbil, zero OpenSSL) Bun/TS offline attestation CLI & 39-control gate.
+# Portable zero-dependency (<100ms, zero Gerbil, zero OpenSSL) Bun/TS offline attestation CLI & 42-control gate.
 verify-multi-method-fast *args:
     bun t/harness/offline-attestation-verifier.ts {{args}}
 

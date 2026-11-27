@@ -29,7 +29,9 @@ import {
   canonicalFleetSigningPayload,
   canonicalReportSigningPayload,
   canonicalWitnessSigningPayload,
+  dsseV1Pae,
   exportTrustBundleOffline,
+  inspectDsseStatementVerified,
   inspectFleetBundleVerified,
   loadTrustStoreJsonLite,
   packFleetBundleOffline,
@@ -37,6 +39,7 @@ import {
   safeRelativeChildPath,
   sha256Str,
   verifyCacheOffline,
+  verifyDsseStatementOffline,
   verifyFleetBundleOffline,
   verifyFleetOffline,
   verifyReportOffline,
@@ -1106,5 +1109,127 @@ describe('Zero-Dependency TS/Bun Offline Attestation Verifier (25 Controls + Ger
         {subjectKey: 'demo', subjectId: 'subject.demo', keyId: k1.kid, evidenceCount: 1},
       ],
     });
+
+    // Controls 40-42: Standard DSSE v1 Signed in-toto Statement Envelope (`--verify-dsse-statement`):
+    //   40: Exact DSSE v1 PAE UTF-8 byte-length framing (including multi-byte UTF-8) + valid Ed25519
+    //       single-key & rotated multi-key (`[revoked K1, active K2]`) envelopes verify cleanly.
+    //   41: Rejects payloadType confusion, revoked-only signatures, and tampered payload bytes.
+    //   42: Rejects subject-predicate digest divergence (even under VALID Ed25519 signature!) as well
+    //       as anti-downgrade `--expected-sysml-sha256` & missing `--require-subject` violations.
+    expect(dsseV1Pae('application/vnd.in-toto+json', 'hello™').toString('utf8')).toBe(
+      'DSSEv1 28 application/vnd.in-toto+json 8 hello™',
+    );
+    const signDsse = (
+      payloadType: string,
+      payloadObj: Record<string, unknown>,
+      signers: Array<typeof k1>,
+      outFile: string,
+    ): string => {
+      const payloadStr = JSON.stringify(payloadObj);
+      const payloadBuf = Buffer.from(payloadStr, 'utf8');
+      const paeBuf = dsseV1Pae(payloadType, payloadBuf);
+      const signatures = signers.map((kp) => ({
+        keyid: kp.kid,
+        sig: cryptoSign(null, paeBuf, kp.privPem).toString('base64'),
+      }));
+      return writeJson(outFile, {
+        payloadType,
+        payload: payloadBuf.toString('base64'),
+        signatures,
+      });
+    };
+
+    const dsseValidK1 = signDsse(
+      'application/vnd.in-toto+json',
+      stmtDoc,
+      [k1],
+      join(WORK_DIR, 'valid-k1.intoto.dsse.json'),
+    );
+    const dsseRotatedK1K2 = signDsse(
+      'application/vnd.in-toto+json',
+      stmtDoc,
+      [k1, k2],
+      join(WORK_DIR, 'rotated-k1-k2.intoto.dsse.json'),
+    );
+    const dsseWrongType = signDsse(
+      'application/json',
+      stmtDoc,
+      [k2],
+      join(WORK_DIR, 'wrong-type.intoto.dsse.json'),
+    );
+    const badSubjectStmt = {
+      ...stmtDoc,
+      subject: [
+        {
+          name: 'sysml:10.154-multi-method-funflow-runnable-architecture',
+          digest: {sha256: 'forged-subject-sha'},
+        },
+        stmtDoc.subject[1],
+      ],
+    };
+    const dsseSubjectMismatch = signDsse(
+      'application/vnd.in-toto+json',
+      badSubjectStmt,
+      [k2],
+      join(WORK_DIR, 'subject-mismatch.intoto.dsse.json'),
+    );
+
+    // Control 40: Valid single-key & multi-key rotation envelopes pass; revoked K1 excluded from verifiedKeyIds!
+    expect(verifyDsseStatementOffline(dsseValidK1, tpInlineAll, {expectedSysmlSha256: 'sysmlsha', expectedSubjectCount: 1, requiredSubjects: ['demo']})).toBe(true);
+    const dsseRotSummary = inspectDsseStatementVerified(dsseRotatedK1K2, tpExported, {
+      expectedSysmlSha256: 'sysmlsha',
+      expectedSubjectCount: 1,
+      requiredSubjects: ['demo'],
+    });
+    expect(dsseRotSummary).not.toBeNull();
+    expect(dsseRotSummary?.verifiedKeyIds).toEqual([k2.kid]);
+    expect(dsseRotSummary?.fleetId).toBe('f-ok');
+
+    // Control 41: Revoked-only signature & payloadType confusion rejected!
+    expect(verifyDsseStatementOffline(dsseValidK1, tpExported)).toBe(false);
+    expect(verifyDsseStatementOffline(dsseWrongType, tpInlineAll)).toBe(false);
+
+    // Control 42: Subject-predicate digest mismatch, spec downgrade & missing required subject rejected!
+    expect(verifyDsseStatementOffline(dsseSubjectMismatch, tpInlineAll)).toBe(false);
+    expect(
+      verifyDsseStatementOffline(dsseRotatedK1K2, tpExported, {
+        expectedSysmlSha256: 'downgraded-older-sysml',
+      }),
+    ).toBe(false);
+    expect(
+      verifyDsseStatementOffline(dsseRotatedK1K2, tpExported, {
+        requiredSubjects: ['demo', 'meta-governance-soundness'],
+      }),
+    ).toBe(false);
+
+    const resDsseCliOk = runTsCli([
+      '--json',
+      '--verify-dsse-statement',
+      '--expected-sysml-sha256',
+      'sysmlsha',
+      '--expected-subject-count',
+      '1',
+      '--require-subject',
+      'demo',
+      dsseRotatedK1K2,
+      exportedBundle,
+    ]);
+    expect(resDsseCliOk.exitCode).toBe(0);
+    const docDsseOk = JSON.parse(resDsseCliOk.stdout.trim());
+    expect(docDsseOk.ok).toBe(true);
+    expect(docDsseOk.mode).toBe('verify-dsse-statement');
+    expect(docDsseOk.verifiedKeyIds).toEqual([k2.kid]);
+    expect(docDsseOk.subjectCount).toBe(1);
+
+    const resDsseCliFail = runTsCli([
+      '--json',
+      '--verify-dsse-statement',
+      dsseSubjectMismatch,
+      tsInlineAll,
+    ]);
+    expect(resDsseCliFail.exitCode).not.toBe(0);
+    const docDsseFail = JSON.parse(resDsseCliFail.stdout.trim());
+    expect(docDsseFail.ok).toBe(false);
+    expect(docDsseFail.verifiedKeyIds).toBeUndefined();
   });
 });

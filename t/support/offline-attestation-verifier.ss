@@ -33,6 +33,8 @@
   inspect-fleet-bundle-verified
   build-intoto-verification-statement
   emit-intoto-verification-statement!
+  inspect-dsse-statement-verified
+  verify-dsse-statement-offline
   verify-fleet-bundle-offline
   verify-cache-offline
   main)
@@ -606,6 +608,124 @@
          required-subjects: required-subjects)
        #t))
 
+(def *intoto-dsse-payload-type* "application/vnd.in-toto+json")
+(def *intoto-statement-type* "https://in-toto.io/Statement/v1")
+(def *intoto-predicate-type*
+  "https://deterministic-engineering.hardenedlinux.org/attestation/fleet-verification-summary/v1")
+(def *intoto-sysml-subject-name* "sysml:10.154-multi-method-funflow-runnable-architecture")
+
+(def (intoto-subject-digest-matches? subjects target-name expected-sha)
+  (and (list? subjects)
+       (string? expected-sha)
+       (> (string-length expected-sha) 0)
+       (let loop ((xs subjects))
+         (if (null? xs)
+           #f
+           (let* ((s (car xs))
+                  (nm (and (hash-table? s) (hash-get s "name")))
+                  (dig (and (hash-table? s) (hash-get s "digest")))
+                  (sha (and (hash-table? dig) (hash-get dig "sha256"))))
+             (if (and (equal? nm target-name) (equal? sha expected-sha))
+               #t
+               (loop (cdr xs))))))))
+
+;; Strict offline verifier for a standard DSSE v1 signed in-toto Verification Summary Statement.
+;; Enforces:
+;;   1. Exact `payloadType == "application/vnd.in-toto+json"` (blocks type confusion).
+;;   2. Strict Base64 decoding & valid UTF-8 JSON in-toto v1 Statement schema.
+;;   3. At least one valid Ed25519 signature over DSSE v1 PAE from an admitted unrevoked key in Trust Store.
+;;   4. Exact digest agreement between `subject` bindings (`sysml:...` and `fleet:...`) and `predicate`.
+;;   5. Optional anti-downgrade `--expected-sysml-sha256` & subject-coverage completeness gates.
+;; Returns authenticated summary hash-table on pass, or `#f` on any failure (zero leakage).
+(def (inspect-dsse-statement-verified
+       dsse-path
+       trust-pair
+       expected-sysml-sha256: (expected-sysml-sha256 #f)
+       expected-subject-count: (expected-subject-count #f)
+       required-subjects: (required-subjects '()))
+  (and (file-exists? dsse-path)
+       (let* ((trusted (car trust-pair))
+              (revoked (cdr trust-pair))
+              (env (with-catch (lambda (_) #f)
+                     (lambda () (call-with-input-file dsse-path (cut read-json <> object-as-hash: #t)))))
+              (ptype (and (hash-table? env) (hash-get env "payloadType")))
+              (payload-b64 (and (hash-table? env) (hash-get env "payload")))
+              (sigs (and (hash-table? env) (hash-get env "signatures"))))
+         (and (equal? ptype *intoto-dsse-payload-type*)
+              (string? payload-b64)
+              (> (string-length payload-b64) 0)
+              (list? sigs)
+              (pair? sigs)
+              (let* ((payload-bytes (with-catch (lambda (_) #f) (lambda () (base64-decode payload-b64))))
+                     (payload-str (and (u8vector? payload-bytes)
+                                       (with-catch (lambda (_) #f) (lambda () (utf8->string payload-bytes)))))
+                     (pae (and (string? payload-str) (dsse-v1-pae ptype payload-str))))
+                (and (string? pae)
+                     (let ((verified-kids '()))
+                       (for-each
+                         (lambda (sig-entry)
+                           (when (hash-table? sig-entry)
+                             (let* ((kid (hash-get sig-entry "keyid"))
+                                    (sig-b64 (hash-get sig-entry "sig"))
+                                    (pub (trust-store-alist-key-admitted? trusted revoked kid)))
+                               (when (and pub
+                                          (string? kid)
+                                          (string? sig-b64)
+                                          (ed25519-verify-raw pub pae sig-b64)
+                                          (not (member kid verified-kids)))
+                                 (set! verified-kids (cons kid verified-kids))))))
+                         sigs)
+                       (and (pair? verified-kids)
+                            (let ((stmt (with-catch (lambda (_) #f)
+                                          (lambda () (call-with-input-string payload-str
+                                                       (cut read-json <> object-as-hash: #t))))))
+                              (and (hash-table? stmt)
+                                   (equal? (hash-get stmt "_type") *intoto-statement-type*)
+                                   (equal? (hash-get stmt "predicateType") *intoto-predicate-type*)
+                                   (let* ((subjects (hash-get stmt "subject"))
+                                          (pred (hash-get stmt "predicate"))
+                                          (fleet-id (and (hash-table? pred) (hash-get pred "fleetId")))
+                                          (sysml-sha (and (hash-table? pred) (hash-get pred "sysmlSha256")))
+                                          (fleet-sha (and (hash-table? pred) (hash-get pred "fleetPayloadSha256")))
+                                          (root-kid (and (hash-table? pred) (hash-get pred "rootKeyId")))
+                                          (sub-cnt (and (hash-table? pred) (hash-get pred "subjectCount")))
+                                          (ver-subs (and (hash-table? pred) (hash-get pred "verifiedSubjects"))))
+                                     (and (hash-table? pred)
+                                          (equal? (hash-get pred "verifier") "de.offline-attestation-verifier.v1")
+                                          (string? fleet-id) (> (string-length fleet-id) 0)
+                                          (string? sysml-sha) (> (string-length sysml-sha) 0)
+                                          (string? fleet-sha) (> (string-length fleet-sha) 0)
+                                          (string? root-kid) (> (string-length root-kid) 0)
+                                          (exact-integer? sub-cnt) (>= sub-cnt 1)
+                                          (list? ver-subs) (= (length ver-subs) sub-cnt)
+                                          (intoto-subject-digest-matches?
+                                            subjects *intoto-sysml-subject-name* sysml-sha)
+                                          (intoto-subject-digest-matches?
+                                            subjects (string-append "fleet:" fleet-id) fleet-sha)
+                                          (or (not expected-sysml-sha256)
+                                              (equal? sysml-sha expected-sysml-sha256))
+                                          (fleet-subject-coverage-ok?
+                                            ver-subs expected-subject-count required-subjects)
+                                          (hash ("fleetId" fleet-id)
+                                                ("sysmlSha256" sysml-sha)
+                                                ("fleetPayloadSha256" fleet-sha)
+                                                ("rootKeyId" root-kid)
+                                                ("verifiedKeyIds" (sort-by verified-kids string<?))
+                                                ("subjectCount" sub-cnt)
+                                                ("verifiedSubjects" ver-subs))))))))))))))
+
+(def (verify-dsse-statement-offline
+       dsse-path
+       trust-pair
+       expected-sysml-sha256: (expected-sysml-sha256 #f)
+       expected-subject-count: (expected-subject-count #f)
+       required-subjects: (required-subjects '()))
+  (and (inspect-dsse-statement-verified dsse-path trust-pair
+         expected-sysml-sha256: expected-sysml-sha256
+         expected-subject-count: expected-subject-count
+         required-subjects: required-subjects)
+       #t))
+
 (def (parse-export-bundle-args rest)
   (let loop ((xs rest) (revoked '()) (pubs '()))
     (cond
@@ -839,6 +959,33 @@
                     "offline fleet bundle verification failed")
                   (exit 1))
                 (error "offline fleet bundle verification failed" target-path)))))
+         ((equal? mode "--verify-dsse-statement")
+          (let ((summary (inspect-dsse-statement-verified target-path trust-pair
+                           expected-sysml-sha256: expected-sysml-sha
+                           expected-subject-count: expected-sub-cnt
+                           required-subjects: req-subs)))
+            (if summary
+              (if json-mode?
+                (emit-json-result! #t "verify-dsse-statement" target-path store-path
+                  "authentic-dsse-v1-intoto-statement"
+                  (append
+                    (if expected-sysml-sha (list (cons "expectedSysmlSha256" expected-sysml-sha)) '())
+                    (if expected-sub-cnt (list (cons "expectedSubjectCount" expected-sub-cnt)) '())
+                    (if (pair? req-subs) (list (cons "requiredSubjects" (sort-by req-subs string<?))) '())
+                    (list (cons "fleetId" (hash-get summary "fleetId"))
+                          (cons "sysmlSha256" (hash-get summary "sysmlSha256"))
+                          (cons "fleetPayloadSha256" (hash-get summary "fleetPayloadSha256"))
+                          (cons "rootKeyId" (hash-get summary "rootKeyId"))
+                          (cons "verifiedKeyIds" (hash-get summary "verifiedKeyIds"))
+                          (cons "subjectCount" (hash-get summary "subjectCount"))
+                          (cons "verifiedSubjects" (hash-get summary "verifiedSubjects")))))
+                (displayln "MULTI-METHOD-VERIFY-DSSE-STATEMENT-OK " target-path))
+              (if json-mode?
+                (begin
+                  (emit-json-result! #f "verify-dsse-statement" target-path store-path
+                    "offline DSSE v1 in-toto statement verification failed")
+                  (exit 1))
+                (error "offline DSSE v1 in-toto statement verification failed" target-path)))))
          ((equal? mode "--verify-cache")
           (let* ((eff-now (or now-ep (inexact->exact (floor (time->seconds (current-time))))))
                  (n (verify-cache-offline target-path trust-pair

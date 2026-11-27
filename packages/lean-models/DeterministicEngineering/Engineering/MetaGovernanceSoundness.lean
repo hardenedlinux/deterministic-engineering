@@ -256,6 +256,23 @@ theorem intotoStatementExport_enforces_failClosed_and_faithful_summary {Digest K
    fun fleetOk => intotoStatement_rejects_unsafe_symlink_target fleetOk sysmlDigest rootKey subjectCount verifiedSubjects,
    fun _ _ _ hEmit => intotoStatement_some_implies_verified_and_faithful hEmit⟩
 
+/-- Instantiated DSSE v1 signed in-toto Verification Summary Envelope contract
+(`--verify-dsse-statement`): proves with zero axioms that payload-type confusion, revoked/invalid
+signatures, subject-predicate digest divergence, and SysML spec downgrade are all rejected. -/
+theorem dsseStatementEnvelope_enforces_type_binding_trust_and_pinning {Digest : Type}
+    (env : DsseStatementEnvelopeModel Digest) (expectedSysmlDigest : Digest) :
+    (env.payloadTypeMatchesIntoto = false → ¬ SafeDsseStatementEnvelope env expectedSysmlDigest) ∧
+    (allDsseSigsRejected env.signatures → ¬ SafeDsseStatementEnvelope env expectedSysmlDigest) ∧
+    ((env.subjectSysmlDigest ≠ env.predicateSysmlDigest ∨
+      env.subjectFleetDigest ≠ env.predicateFleetDigest) →
+      ¬ SafeDsseStatementEnvelope env expectedSysmlDigest) ∧
+    (env.predicateSysmlDigest ≠ expectedSysmlDigest →
+      ¬ SafeDsseStatementEnvelope env expectedSysmlDigest) :=
+  ⟨fun hType => dsseEnvelope_rejects_payloadType_confusion env expectedSysmlDigest hType,
+   fun hRej => dsseEnvelope_rejects_when_all_signatures_revoked_or_invalid env expectedSysmlDigest hRej,
+   fun hMis => dsseEnvelope_rejects_subject_predicate_digest_mismatch env expectedSysmlDigest hMis,
+   fun hPin hSafe => hPin hSafe.2.2.2.2.1⟩
+
 /-! ## One-Line Proof Transport via `Core.Transport` -/
 
 inductive MetaProofKey where

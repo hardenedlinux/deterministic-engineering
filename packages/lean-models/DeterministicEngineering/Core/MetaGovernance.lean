@@ -987,4 +987,80 @@ theorem intotoStatement_some_implies_verified_and_faithful {Digest Key : Type}
       cases hEmit
       exact ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩
 
+/-! ## 17. Standard DSSE v1 Signed in-toto Statement Envelope (`--verify-dsse-statement`) -/
+
+structure DsseSignatureCheck where
+  keyAdmitted : Bool
+  paeSignatureValid : Bool
+
+def dsseSigVerified (s : DsseSignatureCheck) : Prop :=
+  s.keyAdmitted = true ∧ s.paeSignatureValid = true
+
+def hasVerifiedDsseSig : List DsseSignatureCheck → Prop
+  | [] => False
+  | s :: rest => dsseSigVerified s ∨ hasVerifiedDsseSig rest
+
+def allDsseSigsRejected : List DsseSignatureCheck → Prop
+  | [] => True
+  | s :: rest => (s.keyAdmitted = false ∨ s.paeSignatureValid = false) ∧ allDsseSigsRejected rest
+
+structure DsseStatementEnvelopeModel (Digest : Type) where
+  payloadTypeMatchesIntoto : Bool
+  statementSchemaValid : Bool
+  subjectSysmlDigest : Digest
+  predicateSysmlDigest : Digest
+  subjectFleetDigest : Digest
+  predicateFleetDigest : Digest
+  signatures : List DsseSignatureCheck
+
+/-- Constructive zero-axiom verification predicate for standard DSSE v1 signed in-toto statements:
+requires exact `application/vnd.in-toto+json` payloadType (blocking type confusion), valid in-toto v1
+statement schema, exact digest agreement between `subject` and `predicate`, at least one admitted
+unrevoked Ed25519 PAE signature, and exact pinning to `expectedSysmlDigest`. -/
+def SafeDsseStatementEnvelope {Digest : Type}
+    (env : DsseStatementEnvelopeModel Digest) (expectedSysmlDigest : Digest) : Prop :=
+  env.payloadTypeMatchesIntoto = true ∧
+  env.statementSchemaValid = true ∧
+  env.subjectSysmlDigest = env.predicateSysmlDigest ∧
+  env.subjectFleetDigest = env.predicateFleetDigest ∧
+  env.predicateSysmlDigest = expectedSysmlDigest ∧
+  hasVerifiedDsseSig env.signatures
+
+/-- Constructive zero-axiom proof: DSSE payload-type confusion (e.g. non-in-toto `payloadType`)
+is unconditionally rejected even when Ed25519 signatures are valid. -/
+theorem dsseEnvelope_rejects_payloadType_confusion {Digest : Type}
+    (env : DsseStatementEnvelopeModel Digest) (expectedSysmlDigest : Digest)
+    (hBadType : env.payloadTypeMatchesIntoto = false) :
+    ¬ SafeDsseStatementEnvelope env expectedSysmlDigest := by
+  intro hSafe
+  exact Bool.noConfusion (hBadType.symm.trans hSafe.1)
+
+private theorem allRejected_contradicts_hasVerified :
+    ∀ sigs : List DsseSignatureCheck, allDsseSigsRejected sigs → hasVerifiedDsseSig sigs → False
+  | [], _, hHas => hHas
+  | _ :: _, ⟨Or.inl hRev, _⟩, Or.inl ⟨hAdm, _⟩ => Bool.noConfusion (hRev.symm.trans hAdm)
+  | _ :: _, ⟨Or.inr hBadSig, _⟩, Or.inl ⟨_, hVal⟩ => Bool.noConfusion (hBadSig.symm.trans hVal)
+  | _ :: rest, ⟨_, hAll⟩, Or.inr hRest => allRejected_contradicts_hasVerified rest hAll hRest
+
+/-- Constructive zero-axiom proof: a DSSE envelope whose signatures are all revoked, untrusted,
+or cryptographically invalid is unconditionally rejected. -/
+theorem dsseEnvelope_rejects_when_all_signatures_revoked_or_invalid {Digest : Type}
+    (env : DsseStatementEnvelopeModel Digest) (expectedSysmlDigest : Digest)
+    (hAllRej : allDsseSigsRejected env.signatures) :
+    ¬ SafeDsseStatementEnvelope env expectedSysmlDigest := by
+  intro hSafe
+  exact allRejected_contradicts_hasVerified env.signatures hAllRej hSafe.2.2.2.2.2
+
+/-- Constructive zero-axiom proof: any digest divergence between the in-toto `subject` bindings
+and `predicate` fields invalidates the DSSE statement even under a valid Ed25519 signature. -/
+theorem dsseEnvelope_rejects_subject_predicate_digest_mismatch {Digest : Type}
+    (env : DsseStatementEnvelopeModel Digest) (expectedSysmlDigest : Digest)
+    (hMismatch : env.subjectSysmlDigest ≠ env.predicateSysmlDigest ∨
+                 env.subjectFleetDigest ≠ env.predicateFleetDigest) :
+    ¬ SafeDsseStatementEnvelope env expectedSysmlDigest := by
+  intro hSafe
+  match hMismatch with
+  | Or.inl hSys => exact hSys hSafe.2.2.1
+  | Or.inr hFlt => exact hFlt hSafe.2.2.2.1
+
 end DeterministicEngineering.Core.MetaGovernance
