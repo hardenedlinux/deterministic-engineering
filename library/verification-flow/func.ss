@@ -34,6 +34,7 @@
   alist-ref
   alist-replace
   filter-governance-sources-for-subject
+  filter-ai-governance-sources-for-subject
   canonical-witness-signing-payload
   canonical-report-signing-payload
   canonical-fleet-signing-payload
@@ -98,6 +99,29 @@
           (filter (lambda (r) (in-steps? (car r))) (alist-ref gov-sources 'step_countermodel '())))
     (cons 'declared_os_containment
           (filter (lambda (r) (equal? (car r) sid)) (alist-ref gov-sources 'declared_os_containment '())))))
+
+;; Pure multi-subject slicer for Phase 4 AI Security Governance sources (AR01-AR05).
+(def (filter-ai-governance-sources-for-subject ai-sources subject-id)
+  (def sid (sym->str subject-id))
+  (def steps (filter (lambda (r) (equal? (cadr r) sid)) (alist-ref ai-sources 'flow_step '())))
+  (def step-names (map car steps))
+  (def (in-steps? s) (and (member s step-names) #t))
+  (list
+    (cons 'subject_factor
+          (filter (lambda (r) (equal? (car r) sid)) (alist-ref ai-sources 'subject_factor '())))
+    (cons 'flow_step steps)
+    (cons 'step_countermodel
+          (filter (lambda (r) (in-steps? (car r))) (alist-ref ai-sources 'step_countermodel '())))
+    (cons 'declared_ai_control
+          (filter (lambda (r) (equal? (car r) sid)) (alist-ref ai-sources 'declared_ai_control '())))
+    (cons 'declared_role_binding
+          (filter (lambda (r) (equal? (car r) sid)) (alist-ref ai-sources 'declared_role_binding '())))
+    (cons 'ai_patch_touches_dep
+          (filter (lambda (r) (equal? (car r) sid)) (alist-ref ai-sources 'ai_patch_touches_dep '())))
+    (cons 'step_security_dep
+          (filter (lambda (r) (in-steps? (car r))) (alist-ref ai-sources 'step_security_dep '())))
+    (cons 'ai_claimed_proof_reuse
+          (filter (lambda (r) (equal? (car r) sid)) (alist-ref ai-sources 'ai_claimed_proof_reuse '())))))
 
 ;; ── Injection-proof canonical payload framing for Ed25519 cache & report attestation ──
 

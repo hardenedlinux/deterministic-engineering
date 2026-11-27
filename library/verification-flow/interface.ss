@@ -39,6 +39,8 @@
         admission-sources: governance+evidence->admission-sources
         incremental-reuse-program: IncrementalReuseProgram
         evaluate-incremental-reuse: reason-incremental-reuse
+        ai-governance-program: AiSecurityGovernanceProgram
+        reason-ai-governance: reason-ai-security-governance
         reuse-sources: build-incremental-reuse-sources
         reuse-plan: reuse-result->plan
         project-sysml-json: sysml-api-json->governance-facts

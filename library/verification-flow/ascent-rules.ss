@@ -17,7 +17,10 @@
   make-verification-evidence-admission-program
   IncrementalReuseDeclaration
   IncrementalReuseProgram
-  make-incremental-reuse-program)
+  make-incremental-reuse-program
+  AiSecurityGovernanceDeclaration
+  AiSecurityGovernanceProgram
+  make-ai-security-governance-program)
 
 ;; ── Phase 1: Pre-Execution Multi-Method Governance Rules (MR01-MR06) ──
 (define-program
@@ -421,3 +424,133 @@
 
 (def IncrementalReuseDeclaration (make-incremental-reuse-program))
 (def IncrementalReuseProgram (rule-module-program IncrementalReuseDeclaration))
+
+;; ── Phase 4: AI Security & AI-SE Governance Rules (AR01-AR05) ──
+;; Enforces deterministic non-self-certification for AI-authored changes,
+;; fail-closed tool execution confinement, multi-agent authority attenuation &
+;; revocation currentness, untrusted context integrity/IFC, and human-in-the-loop
+;; Separation of Duties (ai-agent cannot self-approve human-approver/policy-admin).
+(define-program
+  (make-ai-security-governance-program)
+  (sources
+   subject_factor
+   flow_step
+   step_countermodel
+   declared_ai_control
+   declared_role_binding
+   ai_patch_touches_dep
+   step_security_dep
+   ai_claimed_proof_reuse)
+  (outputs
+   deterministic_step
+   has_deterministic_verifier
+   has_countermodel
+   ar01_finding
+   ar02_finding
+   ar03_finding
+   ar04_finding
+   ar05_finding
+   ar_finding
+   ai_governance_admitted)
+  (relation subject_factor ((subject string?) (factor string?)))
+  (relation flow_step ((step string?) (subject string?) (obligation string?) (method string?) (claim_kind string?)))
+  (relation step_countermodel ((step string?) (guard_id string?)))
+  (relation declared_ai_control ((subject string?) (control string?)))
+  (relation declared_role_binding ((subject string?) (role string?) (authority string?)))
+  (relation ai_patch_touches_dep ((subject string?) (step string?) (dep_key string?)))
+  (relation step_security_dep ((step string?) (dep_key string?)))
+  (relation ai_claimed_proof_reuse ((subject string?) (step string?)))
+
+  (relation deterministic_step ((step string?) (subject string?)))
+  (relation has_deterministic_verifier ((subject string?)))
+  (relation has_countermodel ((subject string?)))
+  (relation ar01_finding ((subject string?) (target string?) (reason string?)))
+  (relation ar02_finding ((subject string?) (target string?) (reason string?)))
+  (relation ar03_finding ((subject string?) (target string?) (reason string?)))
+  (relation ar04_finding ((subject string?) (target string?) (reason string?)))
+  (relation ar05_finding ((subject string?) (target string?) (reason string?)))
+  (relation ar_finding ((rule string?) (subject string?) (detail string?)))
+  (relation ai_governance_admitted ((subject string?)))
+
+  ;; Only the 4 deterministic formal/source/oracle method families qualify as
+  ;; authoritative verifiers; llm-judge / ai-self-review are never deterministic.
+  ((deterministic_step Step S) <-- (flow_step Step S _ (lit "de-quint") _))
+  ((deterministic_step Step S) <-- (flow_step Step S _ (lit "de-lean-poo") _))
+  ((deterministic_step Step S) <-- (flow_step Step S _ (lit "de-source-contract") _))
+  ((deterministic_step Step S) <-- (flow_step Step S _ (lit "de-native-oracle") _))
+  ((has_deterministic_verifier S) <-- (deterministic_step _ S))
+  ((has_countermodel S) <-- (flow_step Step S _ _ _) (step_countermodel Step _))
+
+  ;; AR01: No AI self-certification / reject LLM-as-a-Judge & invalid AI-SE proof reuse.
+  ((ar01_finding S Step (lit "untrusted-non-deterministic-verifier"))
+   <--
+   (flow_step Step S _ _ _)
+   (not (deterministic_step Step S)))
+  ((ar01_finding S S (lit "ai-change-missing-deterministic-verifier"))
+   <--
+   (subject_factor S (lit "ai-authored-change"))
+   (not (has_deterministic_verifier S)))
+  ((ar01_finding S Step (lit "ai-patch-invalidates-proof-reuse"))
+   <--
+   (ai_patch_touches_dep S Step Dep)
+   (step_security_dep Step Dep)
+   (ai_claimed_proof_reuse S Step))
+
+  ;; AR02: AI tool execution requires declared tool-confinement + negative countermodels.
+  ((ar02_finding S S (lit "missing-tool-confinement"))
+   <--
+   (subject_factor S (lit "ai-executes-tools"))
+   (not (declared_ai_control S (lit "tool-confinement"))))
+  ((ar02_finding S S (lit "missing-tool-attack-countermodel"))
+   <--
+   (subject_factor S (lit "ai-executes-tools"))
+   (not (has_countermodel S)))
+
+  ;; AR03: Multi-agent authority delegation requires monotonic attenuation + revocation currentness.
+  ((ar03_finding S S (lit "missing-monotonic-attenuation"))
+   <--
+   (subject_factor S (lit "ai-delegates-authority"))
+   (not (declared_ai_control S (lit "monotonic-attenuation"))))
+  ((ar03_finding S S (lit "missing-revocation-currentness"))
+   <--
+   (subject_factor S (lit "ai-delegates-authority"))
+   (not (declared_ai_control S (lit "revocation-currentness"))))
+
+  ;; AR04: Untrusted context / prompt ingestion requires context integrity or IFC taint confinement.
+  ((ar04_finding S S (lit "missing-context-integrity-or-ifc"))
+   <--
+   (subject_factor S (lit "ai-ingests-untrusted-context"))
+   (not (declared_ai_control S (lit "context-integrity-or-ifc"))))
+
+  ;; AR05: Host/governance mutation requires human Step-Up + E-Stop and strict human-approver SoD
+  ;;       (ai-agent may never self-approve human-approver or policy-admin authorities).
+  ((ar05_finding S S (lit "missing-human-stepup-and-estop"))
+   <--
+   (subject_factor S (lit "ai-mutates-host-or-governance"))
+   (not (declared_ai_control S (lit "human-stepup-and-estop"))))
+  ((ar05_finding S (lit "human-approver") (lit "ai-agent-self-approval-forbidden"))
+   <--
+   (declared_role_binding S (lit "ai-agent") (lit "human-approver")))
+  ((ar05_finding S (lit "policy-admin") (lit "ai-agent-self-approval-forbidden"))
+   <--
+   (declared_role_binding S (lit "ai-agent") (lit "policy-admin")))
+  ((ar05_finding S S (lit "missing-human-approver-binding"))
+   <--
+   (subject_factor S (lit "ai-mutates-host-or-governance"))
+   (not (declared_role_binding S (lit "human-approver") (lit "human-approver"))))
+
+  ;; Unified AI governance finding summary & admission predicate.
+  ((ar_finding (lit "AR01") S Target) <-- (ar01_finding S Target _))
+  ((ar_finding (lit "AR02") S Target) <-- (ar02_finding S Target _))
+  ((ar_finding (lit "AR03") S Target) <-- (ar03_finding S Target _))
+  ((ar_finding (lit "AR04") S Target) <-- (ar04_finding S Target _))
+  ((ar_finding (lit "AR05") S Target) <-- (ar05_finding S Target _))
+
+  ((ai_governance_admitted S)
+   <--
+   (subject_factor S _)
+   (not (ar_finding _ S _)))
+  (bounds 4096 4096 4096))
+
+(def AiSecurityGovernanceDeclaration (make-ai-security-governance-program))
+(def AiSecurityGovernanceProgram (rule-module-program AiSecurityGovernanceDeclaration))

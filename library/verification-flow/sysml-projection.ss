@@ -195,6 +195,8 @@
   (def scm-rows '())
   (def os-rows '())
   (def bridge-rows '())
+  (def ai-ctrl-rows '())
+  (def ai-role-rows '())
   (def subject-specs '())
 
   (def (parse-bridge-entries raw)
@@ -202,6 +204,13 @@
       (lambda (item)
         (let ((parts (map trim-ws (string-split item #\:))))
           (and (= (length parts) 3) parts)))
+      (split-csv raw)))
+
+  (def (parse-role-binding-entries raw)
+    (filter-map
+      (lambda (item)
+        (let ((parts (map trim-ws (string-split item #\:))))
+          (and (= (length parts) 2) parts)))
       (split-csv raw)))
 
   (for-each
@@ -215,6 +224,8 @@
             (let ((skey (or (part-attr pid "subjectKey") pname))
                   (fac-list (split-csv facs))
                   (subj-bridges (parse-bridge-entries (part-attr pid "correspondenceBridges")))
+                  (subj-ai-ctrls (split-csv (part-attr pid "aiControls")))
+                  (subj-ai-roles (parse-role-binding-entries (part-attr pid "aiRoleBindings")))
                   (child-ids '())
                   (target-specs '())
                   (subj-edges '())
@@ -222,6 +233,11 @@
               (for-each (lambda (b) (set! bridge-rows (cons b bridge-rows))) subj-bridges)
               (for-each (lambda (f) (set! subj-factors (cons (list sid f) subj-factors)))
                         fac-list)
+              (for-each (lambda (c) (set! ai-ctrl-rows (cons (list sid c) ai-ctrl-rows)))
+                        subj-ai-ctrls)
+              (for-each (lambda (rb)
+                          (set! ai-role-rows (cons (list sid (car rb) (cadr rb)) ai-role-rows)))
+                        subj-ai-roles)
               (for-each
                 (lambda (child)
                   (when (and (hash-table? child)
@@ -365,6 +381,8 @@
                           subject-key: skey
                           identity: sid
                           factors: fac-list
+                          ai-controls: subj-ai-ctrls
+                          ai-role-bindings: subj-ai-roles
                           os-containment: (reverse subj-os)
                           dag-edges: (reverse subj-edges)
                           correspondence-bridges: subj-bridges
@@ -396,4 +414,14 @@
         (cons 'correspondence_bridge (reverse bridge-rows))
         (cons 'stateful_quint_step (reverse sq-steps))
         (cons 'step_countermodel (reverse scm-rows))
-        (cons 'declared_os_containment (reverse os-rows)))))
+        (cons 'declared_os_containment (reverse os-rows)))
+      ai-governance-sources:
+      (list
+        (cons 'subject_factor (reverse subj-factors))
+        (cons 'flow_step (reverse fsteps))
+        (cons 'step_countermodel (reverse scm-rows))
+        (cons 'declared_ai_control (reverse ai-ctrl-rows))
+        (cons 'declared_role_binding (reverse ai-role-rows))
+        (cons 'ai_patch_touches_dep '())
+        (cons 'step_security_dep '())
+        (cons 'ai_claimed_proof_reuse '()))))

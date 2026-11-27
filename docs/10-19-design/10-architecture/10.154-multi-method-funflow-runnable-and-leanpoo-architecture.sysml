@@ -185,12 +185,12 @@ package MultiMethodFunFlowArchitecture {
         }
     }
 
-    // ── 5. ASCENT Multi-Method Governance Program (MR01-MR08, ER01-ER04, IR01-IR08) ──
+    // ── 5. ASCENT Multi-Method & AI Security Governance Program (MR01-MR08, ER01-ER04, IR01-IR08, AR01-AR05) ──
 
     part def AscentGovernanceProgram {
         attribute dslModule : String = ":gerbil-ascent/rules/func";
         attribute yuanxuLayer : String = "de.layer.governance";
-        attribute rules : String = "MR01-claim-routing,MR02-anti-duplication,MR03-premise-handoff,MR04-artifact-dag-closure,MR05-mandatory-countermodels,MR06-subprocess-containment,MR07-cyclic-premise-dependency,MR08-cyclic-flow-dag,ER01-ER04-evidence-admission,IR01-IR04-incremental-reuse,IR05-toolchain-drift,IR06-attestation-invalid,IR07-premise-supporter-invalidated,IR08-witness-ttl-expired";
+        attribute rules : String = "MR01-claim-routing,MR02-anti-duplication,MR03-premise-handoff,MR04-artifact-dag-closure,MR05-mandatory-countermodels,MR06-subprocess-containment,MR07-cyclic-premise-dependency,MR08-cyclic-flow-dag,ER01-ER04-evidence-admission,IR01-IR04-incremental-reuse,IR05-toolchain-drift,IR06-attestation-invalid,IR07-premise-supporter-invalidated,IR08-witness-ttl-expired,AR01-no-ai-self-certification,AR02-ai-tool-confinement,AR03-ai-delegation-attenuation-currentness,AR04-ai-context-integrity-ifc,AR05-ai-human-stepup-sod";
         attribute evidenceSession : String = "library/evidence/func.ss::make-resource-evidence";
 
         port gatePort : GovernanceGatePort;
@@ -217,6 +217,7 @@ package MultiMethodFunFlowArchitecture {
         part order          { attribute role : String = "fencing-token-version-governance-floor-lattice"; }
         part transport      { attribute role : String = "ObjectContract.refine-Patch.frame-Proof.reuse"; }
         part metaGovernance { attribute role : String = "mechanized-ascent-MR-ER-IR-meta-soundness"; }
+        part aiGovernance   { attribute role : String = "strict-zero-axiom-AR01-AR05-ai-security-and-aise-soundness"; }
     }
 
     // ── 8. Formal Architecture & Anti-Leak Requirements ──
@@ -257,6 +258,21 @@ package MultiMethodFunFlowArchitecture {
         }
         requirement <'PT-R04'> crashSafeOsFateSharing {
             doc /* OS boundary law: external SIGKILL to supervisor (exit 137) or test-body panic must still terminate all grandchildren within bounded time via cgroup.kill/PID-ns (Linux) or killpg+Pipe-EOF/kqueue (Darwin). */
+        }
+        requirement <'AI-R01'> noAiSelfCertification {
+            doc /* AR01: AI-authored changes cannot be certified by LLM-as-a-Judge or ai-self-review; they require deterministic formal/source/oracle verifiers and invalidate silent proof reuse whenever an AI patch touches a security dependency. */
+        }
+        requirement <'AI-R02'> aiToolExecutionConfinement {
+            doc /* AR02: Any AI subject with factor ai-executes-tools must declare tool-confinement and at least one executable attack countermodel. */
+        }
+        requirement <'AI-R03'> aiDelegationAttenuationAndCurrentness {
+            doc /* AR03: Any AI subject with factor ai-delegates-authority must declare both monotonic-attenuation and revocation-currentness. */
+        }
+        requirement <'AI-R04'> aiUntrustedContextIsolation {
+            doc /* AR04: Any AI subject with factor ai-ingests-untrusted-context must declare context-integrity-or-ifc confinement. */
+        }
+        requirement <'AI-R05'> aiHumanInTheLoopSeparation {
+            doc /* AR05: Any AI subject with factor ai-mutates-host-or-governance must declare human-stepup-and-estop plus a genuine human-approver role binding; ai-agent identities are strictly forbidden from satisfying human-approver or policy-admin authority. */
         }
     }
 
@@ -303,6 +319,16 @@ package MultiMethodFunFlowArchitecture {
                 verify requirements::noPrematureSigkill;
                 verify requirements::crashSafeOsFateSharing;
                 verify requirements::subprocessContainmentObligation;
+            }
+        }
+        verification <'MM-V06'> aiSecurityGovernanceAndRedTeamGate {
+            doc /* Planned ASCENT AR01-AR05 + Lean Core.AiGovernance + Role-SoD AI Red-Team verification suite; unexecuted design obligation. */
+            objective {
+                verify requirements::noAiSelfCertification;
+                verify requirements::aiToolExecutionConfinement;
+                verify requirements::aiDelegationAttenuationAndCurrentness;
+                verify requirements::aiUntrustedContextIsolation;
+                verify requirements::aiHumanInTheLoopSeparation;
             }
         }
     }
@@ -560,12 +586,13 @@ package MultiMethodFunFlowArchitecture {
             }
         }
 
-        // Sixth Zero-Glue Subject (First Threat-Domain Subject: cross-domain reuse of Core.Containment + Core.Order + Core.Transport)
+        // Sixth Zero-Glue Subject (First AI-Security Threat Subject: cross-domain reuse of Core.Containment + Core.Order + Core.Transport)
         part delegatedAgentAuthz {
             attribute subjectKey : String = "delegated-agent-authz";
             attribute identity : String = "threat.identity.delegated-agent-authz";
-            attribute tags : String = "threat,identity,delegation,defense.mutability.immutable-proof,hazard.scope-amplification";
-            attribute factors : String = "delegated-capability-containment";
+            attribute tags : String = "threat,identity,delegation,ai-security,defense.mutability.immutable-proof,hazard.scope-amplification";
+            attribute factors : String = "delegated-capability-containment,ai-delegates-authority";
+            attribute aiControls : String = "monotonic-attenuation,revocation-currentness";
 
             part daQuintTarget {
                 attribute modelId : String = "threat.identity.delegated-agent-authz";
@@ -591,12 +618,14 @@ package MultiMethodFunFlowArchitecture {
             }
         }
 
-        // Seventh Zero-Glue Subject (Second Threat-Domain Subject: SM30 Step-Up MFA Attestation & Host Effect Confinement)
+        // Seventh Zero-Glue Subject (Second AI-Security Threat Subject: SM30 Step-Up MFA Attestation & Host Effect Confinement)
         part stepupAttestationHostConfinement {
             attribute subjectKey : String = "stepup-attestation-and-host-effect-confinement";
             attribute identity : String = "threat.execution.stepup-attestation-and-host-effect-confinement";
-            attribute tags : String = "threat,execution,stepup-mfa,defense.mutability.immutable-proof,hazard.host-effect-escape";
-            attribute factors : String = "stepup-mfa-and-host-effect-confinement";
+            attribute tags : String = "threat,execution,stepup-mfa,ai-security,defense.mutability.immutable-proof,hazard.host-effect-escape";
+            attribute factors : String = "stepup-mfa-and-host-effect-confinement,ai-mutates-host-or-governance";
+            attribute aiControls : String = "human-stepup-and-estop";
+            attribute aiRoleBindings : String = "human-approver:human-approver,ai-agent:ai-proposer";
 
             part sm30QuintTarget {
                 attribute modelId : String = "threat.execution.stepup-attestation-and-host-effect-confinement";
@@ -622,12 +651,13 @@ package MultiMethodFunFlowArchitecture {
             }
         }
 
-        // Eighth Zero-Glue Subject (Third Threat-Domain Subject: SM22 ADV-L4 Sandbox Symlink & Archive Confinement)
+        // Eighth Zero-Glue Subject (Third AI-Security Threat Subject: SM22 ADV-L4 Sandbox Symlink & Archive Confinement)
         part sandboxSymlinkArchiveConfinement {
             attribute subjectKey : String = "sandbox-symlink-archive-confinement";
             attribute identity : String = "threat.execution.sandbox-symlink-archive-confinement";
-            attribute tags : String = "threat,execution,sandbox-confinement,defense.mutability.immutable-proof,hazard.symlink-archive-escape";
-            attribute factors : String = "sandbox-symlink-and-archive-confinement";
+            attribute tags : String = "threat,execution,sandbox-confinement,ai-security,defense.mutability.immutable-proof,hazard.symlink-archive-escape";
+            attribute factors : String = "sandbox-symlink-and-archive-confinement,ai-executes-tools";
+            attribute aiControls : String = "tool-confinement";
 
             part sm22QuintTarget {
                 attribute modelId : String = "threat.execution.sandbox-symlink-archive-confinement";
@@ -653,12 +683,13 @@ package MultiMethodFunFlowArchitecture {
             }
         }
 
-        // Ninth Zero-Glue Subject (Fourth Threat-Domain Subject: SM34 ADV-L4 Runtime Environment Activation & Governed Context Confinement)
+        // Ninth Zero-Glue Subject (Fourth AI-Security Threat Subject: SM34 ADV-L4 Runtime Environment Activation & Governed Context Confinement)
         part runtimeEnvActivationContextConfinement {
             attribute subjectKey : String = "runtime-env-activation-and-context-confinement";
             attribute identity : String = "threat.execution.runtime-env-activation-and-context-confinement";
-            attribute tags : String = "threat,execution,runtime-env-context,defense.mutability.immutable-proof,hazard.direnv-symlink-rollback-prompt-spoof";
-            attribute factors : String = "runtime-env-activation-and-context-confinement";
+            attribute tags : String = "threat,execution,runtime-env-context,ai-security,defense.mutability.immutable-proof,hazard.direnv-symlink-rollback-prompt-spoof";
+            attribute factors : String = "runtime-env-activation-and-context-confinement,ai-ingests-untrusted-context,ai-executes-tools";
+            attribute aiControls : String = "context-integrity-or-ifc,tool-confinement";
 
             part sm34QuintTarget {
                 attribute modelId : String = "threat.execution.runtime-env-activation-and-context-confinement";
@@ -681,6 +712,38 @@ package MultiMethodFunFlowArchitecture {
                 attribute transportContract : String = "ObjectContract.refine+Proof.reuse";
                 attribute theorems : String = "DeterministicEngineering.Engineering.RuntimeEnvActivationAndContextConfinement.sm34_direnv_export_fail_closed,DeterministicEngineering.Engineering.RuntimeEnvActivationAndContextConfinement.sm34_confined_path_refuses_traversal_escape_and_symlink,DeterministicEngineering.Engineering.RuntimeEnvActivationAndContextConfinement.sm34_snapshot_rollback_and_active_lease_swap_refused,DeterministicEngineering.Engineering.RuntimeEnvActivationAndContextConfinement.sm34_two_zone_recomputed_digest_and_task_binding,DeterministicEngineering.Engineering.RuntimeEnvActivationAndContextConfinement.sm34_strict_admission_eliminates_all_exploits,DeterministicEngineering.Engineering.RuntimeEnvActivationAndContextConfinement.sm34_gentle_pressure_rejected,DeterministicEngineering.Engineering.RuntimeEnvActivationAndContextConfinement.sm34_defective_configs_expose_live_exploits,DeterministicEngineering.Engineering.RuntimeEnvActivationAndContextConfinement.sm34_marlin_contract_refinement_laws,DeterministicEngineering.Engineering.RuntimeEnvActivationAndContextConfinement.sm34_baseline_certified,DeterministicEngineering.Engineering.RuntimeEnvActivationAndContextConfinement.sm34_obligation_untouched_by_byte_cap_tuning,DeterministicEngineering.Engineering.RuntimeEnvActivationAndContextConfinement.sm34_byte_cap_tuning_reuses_and_closes_certificate,DeterministicEngineering.Engineering.RuntimeEnvActivationAndContextConfinement.sm34_regressions_invalidate_reuse";
                 attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean,packages/lean-models/DeterministicEngineering/Engineering/RuntimeEnvActivationAndContextConfinement.lean";
+            }
+        }
+
+        // Tenth Zero-Glue Subject (Fifth AI-Security Threat Subject: SM35 ADV-L4 AgentGraph Witness/Routing & Harness Governance/Artifact Confinement)
+        part graphWitnessHarnessConfinement {
+            attribute subjectKey : String = "graph-witness-and-harness-confinement";
+            attribute identity : String = "threat.execution.graph-witness-and-harness-confinement";
+            attribute tags : String = "threat,execution,agent-graph-harness,ai-security,defense.mutability.immutable-proof,hazard.witness-serde-cedar-spoof-artifact-escape";
+            attribute factors : String = "graph-witness-and-harness-confinement,ai-executes-tools,ai-ingests-untrusted-context";
+            attribute aiControls : String = "tool-confinement,context-integrity-or-ifc";
+
+            part sm35QuintTarget {
+                attribute modelId : String = "threat.execution.graph-witness-and-harness-confinement";
+                attribute quintFile : String = "packages/quint-models/threat/execution/graph-witness-and-harness-confinement/GraphWitnessAndHarnessConfinement.qnt";
+                attribute quintMain : String = "execution_graph_witness_and_harness_confinement";
+                attribute itfSubdir : String = "graph-witness-and-harness-confinement";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "forbid-sealed-witness-or-epoch-serde-forgery,forbid-policy-decision-routing-or-dup-edge-bypass,forbid-harness-cedar-capability-spoof-or-case-bypass,forbid-artifact-symlink-escape-or-config-env-exfil";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/execution/graph-witness-and-harness-confinement/GraphWitnessAndHarnessConfinement.qnt,packages/quint-models/threat/execution/graph-witness-and-harness-confinement/objects.ss,packages/quint-models/threat/execution/graph-witness-and-harness-confinement/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part sm35LeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.GraphWitnessAndHarnessConfinement";
+                attribute refinesCore : String = "DeterministicEngineering.Engineering.SandboxSymlinkArchiveConfinement";
+                attribute transportContract : String = "ObjectContract.refine+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Engineering.GraphWitnessAndHarnessConfinement.sm35_sealed_witness_and_epoch_fail_closed,DeterministicEngineering.Engineering.GraphWitnessAndHarnessConfinement.sm35_policy_scoped_routing_fail_closed,DeterministicEngineering.Engineering.GraphWitnessAndHarnessConfinement.sm35_cedar_harness_tool_classification_fail_closed,DeterministicEngineering.Engineering.GraphWitnessAndHarnessConfinement.sm35_artifact_symlink_and_config_bounds_fail_closed,DeterministicEngineering.Engineering.GraphWitnessAndHarnessConfinement.sm35_strict_admission_eliminates_all_exploits,DeterministicEngineering.Engineering.GraphWitnessAndHarnessConfinement.sm35_gentle_pressure_rejected,DeterministicEngineering.Engineering.GraphWitnessAndHarnessConfinement.sm35_defective_configs_expose_live_exploits,DeterministicEngineering.Engineering.GraphWitnessAndHarnessConfinement.sm35_marlin_contract_refinement_laws,DeterministicEngineering.Engineering.GraphWitnessAndHarnessConfinement.sm35_baseline_certified,DeterministicEngineering.Engineering.GraphWitnessAndHarnessConfinement.sm35_obligation_untouched_by_timeout_tuning,DeterministicEngineering.Engineering.GraphWitnessAndHarnessConfinement.sm35_timeout_tuning_reuses_and_closes_certificate,DeterministicEngineering.Engineering.GraphWitnessAndHarnessConfinement.sm35_regressions_invalidate_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean,packages/lean-models/DeterministicEngineering/Engineering/GraphWitnessAndHarnessConfinement.lean";
             }
         }
     }
@@ -735,6 +798,9 @@ package MultiMethodFunFlowArchitecture {
     dependency 'sm34-quint-source' from system::runtimeEnvActivationContextConfinement::sm34QuintTarget to system::quintModels;
     dependency 'sm34-lean-source' from system::runtimeEnvActivationContextConfinement::sm34LeanPooTarget to system::leanModels;
 
+    dependency 'sm35-quint-source' from system::graphWitnessHarnessConfinement::sm35QuintTarget to system::quintModels;
+    dependency 'sm35-lean-source' from system::graphWitnessHarnessConfinement::sm35LeanPooTarget to system::leanModels;
+
     // Cross-method edges enforced by MR03 & MR04 (zero model duplication)
     dependency 'pt-mbt-itf-edge' from system::processTreeReclamation::rustOracleTarget::traceIn to system::processTreeReclamation::quintTarget::traceOut;
     dependency 'pt-premise-handoff-edge' from system::processTreeReclamation::leanPooTarget::premiseIn to system::processTreeReclamation::rustOracleTarget::premiseOut;
@@ -748,6 +814,7 @@ package MultiMethodFunFlowArchitecture {
     dependency 'alloc-quint-check' from obligations::quintProcessTreeCheck to system::processTreeReclamation::quintTarget;
     dependency 'alloc-lean-proof' from obligations::leanPooContainmentProof to system::processTreeReclamation::leanPooTarget;
     dependency 'alloc-rust-oracle' from obligations::rustSigkillLeakOracle to system::processTreeReclamation::rustOracleTarget;
+    dependency 'alloc-ai-gov-gate' from obligations::aiSecurityGovernanceAndRedTeamGate to system::governance;
 
     // Design specification only. Does not modify live project.sysml or claim qualification.
 }

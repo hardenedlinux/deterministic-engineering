@@ -239,8 +239,8 @@
       (check-equal? (cadr (assoc "quintModels" pkgs)) "quint-model-content")
       ;; Verify workflow DAG edges, requirements, and verifications extracted from SysML v2.
       (check (= (length (.get projected workflow-edges)) 8) => #t)
-      (check (>= (length (.get projected requirements)) 12) => #t)
-      (check (= (length (.get projected verifications)) 5) => #t)
+      (check (>= (length (.get projected requirements)) 17) => #t)
+      (check (= (length (.get projected verifications)) 6) => #t)
       ;; Run ASCENT MR01-MR06 directly on SysML v2 projected facts (admits all declared subjects!).
       (def gov-res (reason-multi-method-governance (.get projected governance-sources)))
       (check-equal? ((.ref gov-res 'rows-of) 'mr_finding) '())
@@ -252,4 +252,5 @@
       (check (and (member '("engineering.defense.c-boundary-conservation") admitted-subjs) #t) => #t)
       (check (and (member '("engineering.governance.meta-governance-soundness") admitted-subjs) #t) => #t)
       (check (and (member '("threat.execution.runtime-env-activation-and-context-confinement") admitted-subjs) #t) => #t)
-      (check-equal? (length (.get projected subject-specs)) 9))))
+      (check (and (member '("threat.execution.graph-witness-and-harness-confinement") admitted-subjs) #t) => #t)
+      (check-equal? (length (.get projected subject-specs)) 10))))

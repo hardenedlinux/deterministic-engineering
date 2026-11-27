@@ -23,6 +23,10 @@
   IncrementalReuseProgram
   make-incremental-reuse-program
   reason-incremental-reuse
+  AiSecurityGovernanceDeclaration
+  AiSecurityGovernanceProgram
+  make-ai-security-governance-program
+  reason-ai-security-governance
   build-incremental-reuse-sources
   reuse-result->plan
   governance+evidence->admission-sources
@@ -46,6 +50,12 @@
   (run-ascent-program IncrementalReuseProgram
                       IncrementalReuseDeclaration
                       "incremental cache reuse"
+                      replacements))
+
+(def (reason-ai-security-governance replacements)
+  (run-ascent-program AiSecurityGovernanceProgram
+                      AiSecurityGovernanceDeclaration
+                      "ai security governance"
                       replacements))
 
 ;; Pure projector assembling IR01-IR06 ASCENT sources from governance sources,

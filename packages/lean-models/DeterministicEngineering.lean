@@ -9,6 +9,7 @@ import DeterministicEngineering.Core.Containment
 import DeterministicEngineering.Core.Order
 import DeterministicEngineering.Core.Transport
 import DeterministicEngineering.Core.MetaGovernance
+import DeterministicEngineering.Core.AiGovernance
 import DeterministicEngineering.Core.Stability
 import DeterministicEngineering.Engineering.ProcessTree
 import DeterministicEngineering.Engineering.Backpressure
