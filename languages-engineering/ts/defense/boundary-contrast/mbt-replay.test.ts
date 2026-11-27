@@ -2351,6 +2351,80 @@ class BadGeoEscapeSUT extends GeoResidencySovereigntySUT {
   }
 }
 
+class FederatedOrgReciprocitySUT {
+  treatyRatified = false;
+  originOrgSigned = false;
+  targetOrgSigned = false;
+  disputeFreezeActive = false;
+  admittedFedOps = 0;
+  unratifiedTreatyViolations = 0;
+  unilateralSignViolations = 0;
+  disputeFreezeViolations = 0;
+
+  apply(action: string): void {
+    switch (action) {
+      case 'ratifyBilateralTreaty':
+        if (!this.treatyRatified) this.treatyRatified = true;
+        break;
+      case 'originOrgSign':
+        if (!this.originOrgSigned) this.originOrgSigned = true;
+        break;
+      case 'targetOrgSign':
+        if (!this.targetOrgSigned) this.targetOrgSigned = true;
+        break;
+      case 'raiseDisputeFreeze':
+        if (!this.disputeFreezeActive) this.disputeFreezeActive = true;
+        break;
+      case 'resolveDisputeFreeze':
+        if (this.disputeFreezeActive) this.disputeFreezeActive = false;
+        break;
+      case 'admitFederatedOp':
+        if (
+          this.admittedFedOps < 2 &&
+          this.treatyRatified &&
+          this.originOrgSigned &&
+          this.targetOrgSigned &&
+          !this.disputeFreezeActive
+        ) {
+          this.admittedFedOps += 1;
+        }
+        break;
+      default:
+        throw new Error(`Unknown FederatedOrgReciprocity action: ${action}`);
+    }
+  }
+
+  snapshot() {
+    return {
+      treatyRatified: this.treatyRatified,
+      originOrgSigned: this.originOrgSigned,
+      targetOrgSigned: this.targetOrgSigned,
+      disputeFreezeActive: this.disputeFreezeActive,
+      admittedFedOps: this.admittedFedOps,
+      unratifiedTreatyViolations: this.unratifiedTreatyViolations,
+      unilateralSignViolations: this.unilateralSignViolations,
+      disputeFreezeViolations: this.disputeFreezeViolations,
+    };
+  }
+}
+
+class BadUnilateralFedSUT extends FederatedOrgReciprocitySUT {
+  override apply(action: string): void {
+    if (action === 'admitFederatedOp' && this.admittedFedOps < 2) {
+      // Anti-pattern: drops treaty-ratified, bilateral-countersigs, and no-dispute-freeze guards!
+      const treatyOk = this.treatyRatified;
+      const biOk = this.originOrgSigned && this.targetOrgSigned;
+      const noFreeze = !this.disputeFreezeActive;
+      this.admittedFedOps += 1;
+      if (!treatyOk) this.unratifiedTreatyViolations += 1;
+      if (!biOk) this.unilateralSignViolations += 1;
+      if (!noFreeze) this.disputeFreezeViolations += 1;
+      return;
+    }
+    super.apply(action);
+  }
+}
+
 const repoRoot = resolve(import.meta.dir, '../../../..');
 
 function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(): Record<string, unknown>}>(
@@ -2403,7 +2477,7 @@ function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(
   }
 }
 
-describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (28 Defense Models)', () => {
+describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (29 Defense Models)', () => {
   test('EpistemicStateLattice ITF actions drive EpistemicLatticeSUT with exact step-by-step state isomorphism', () => {
     const stats = replayModelAgainstSut(
       'packages/quint-models/engineering/defense/epistemic-state-lattice/EpistemicStateLattice.qnt',
@@ -3014,6 +3088,27 @@ describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (28 Defense Models
       () => new GeoResidencySovereigntySUT(),
       projectH,
       () => new BadGeoEscapeSUT(),
+    );
+    expect(stats.transitions).toBeGreaterThan(50);
+    expect(stats.brokenDiverged).toBe(true);
+  }, 30_000);
+
+  test('FederatedOrgReciprocity ITF actions drive FederatedOrgReciprocitySUT with exact state isomorphism and reject BadUnilateralFedSUT', () => {
+    const projectH = (h: Record<string, unknown>) => ({
+      treatyRatified: Boolean(h.treatyRatified),
+      originOrgSigned: Boolean(h.originOrgSigned),
+      targetOrgSigned: Boolean(h.targetOrgSigned),
+      disputeFreezeActive: Boolean(h.disputeFreezeActive),
+      admittedFedOps: asInt(h.admittedFedOps),
+      unratifiedTreatyViolations: asInt(h.unratifiedTreatyViolations),
+      unilateralSignViolations: asInt(h.unilateralSignViolations),
+      disputeFreezeViolations: asInt(h.disputeFreezeViolations),
+    });
+    const stats = replayModelAgainstSut(
+      'packages/quint-models/engineering/defense/federated-org-reciprocity/FederatedOrgReciprocity.qnt',
+      () => new FederatedOrgReciprocitySUT(),
+      projectH,
+      () => new BadUnilateralFedSUT(),
     );
     expect(stats.transitions).toBeGreaterThan(50);
     expect(stats.brokenDiverged).toBe(true);

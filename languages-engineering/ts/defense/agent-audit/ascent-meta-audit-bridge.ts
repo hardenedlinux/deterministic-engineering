@@ -89,6 +89,10 @@ export interface MetaAuditFactBundle {
   geo_sanctioned_region: Array<[string]>;
   release_geo_placement: Array<[string, string, string, string, string]>;
   geo_transfer_permit: Array<[string, string, string, string]>;
+  fed_ratified_treaty: Array<[string]>;
+  fed_revoked_org: Array<[string]>;
+  fed_dispute_freeze: Array<[string]>;
+  release_fed_reciprocity: Array<[string, string, string, string, string]>;
 }
 
 export interface AscentMetaAuditOutput {
@@ -118,6 +122,8 @@ export interface AscentMetaAuditOutput {
   zk_nullifier_replay_violation: string[][];
   geo_residency_violation: string[][];
   geo_cross_border_violation: string[][];
+  fed_reciprocity_violation: string[][];
+  fed_dispute_freeze_violation: string[][];
   release_disqualified: string[][];
   release_admitted: string[][];
 }
@@ -277,6 +283,16 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
     sourceRegion: string;
     targetRegion: string;
     permitOk: boolean;
+  }>;
+  fedRatifiedTreaties?: readonly string[];
+  fedRevokedOrgs?: readonly string[];
+  fedDisputeFreezes?: readonly string[];
+  releaseFedReciprocities?: ReadonlyArray<{
+    releaseId: string;
+    treatyId: string;
+    originOrgId: string;
+    targetOrgId: string;
+    bilateralOk: boolean;
   }>;
   releaseProposals: ReadonlyArray<{
     releaseId: string;
@@ -533,6 +549,18 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
   const geo_transfer_permit: Array<[string, string, string, string]> = (
     params.geoTransferPermits ?? []
   ).map(p => [p.releaseId, p.sourceRegion, p.targetRegion, p.permitOk ? 'yes' : 'no']);
+  const fed_ratified_treaty: Array<[string]> = (params.fedRatifiedTreaties ?? []).map(t => [t]);
+  const fed_revoked_org: Array<[string]> = (params.fedRevokedOrgs ?? []).map(o => [o]);
+  const fed_dispute_freeze: Array<[string]> = (params.fedDisputeFreezes ?? []).map(t => [t]);
+  const release_fed_reciprocity: Array<[string, string, string, string, string]> = (
+    params.releaseFedReciprocities ?? []
+  ).map(f => [
+    f.releaseId,
+    f.treatyId,
+    f.originOrgId,
+    f.targetOrgId,
+    f.bilateralOk ? 'yes' : 'no',
+  ]);
 
   const bundle: MetaAuditFactBundle = {
     delegation_edge: dedupeTuples(delegation_edge),
@@ -587,6 +615,10 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
     geo_sanctioned_region: dedupeTuples(geo_sanctioned_region),
     release_geo_placement: dedupeTuples(release_geo_placement),
     geo_transfer_permit: dedupeTuples(geo_transfer_permit),
+    fed_ratified_treaty: dedupeTuples(fed_ratified_treaty),
+    fed_revoked_org: dedupeTuples(fed_revoked_org),
+    fed_dispute_freeze: dedupeTuples(fed_dispute_freeze),
+    release_fed_reciprocity: dedupeTuples(release_fed_reciprocity),
   };
 
   const factBundleMerkleHash = params.kv.putBlob('ascent-meta-audit-fact-bundle', bundle, []);
@@ -652,6 +684,8 @@ export function parseFramedAscentOutput(rawStdout: string): AscentOracleRunVerdi
     'zk_nullifier_replay_violation',
     'geo_residency_violation',
     'geo_cross_border_violation',
+    'fed_reciprocity_violation',
+    'fed_dispute_freeze_violation',
     'release_disqualified',
     'release_admitted',
   ];
@@ -733,6 +767,7 @@ export function runLiveGerbilAscentMetaAudit(
                pq_agility_violation pq_ots_reuse_violation
                zk_disclosure_violation zk_nullifier_replay_violation
                geo_residency_violation geo_cross_border_violation
+               fed_reciprocity_violation fed_dispute_freeze_violation
                release_disqualified release_admitted)))
   (display "${BEGIN_MARKER}\\n{")
   (let loop ((ks keys) (first #t))

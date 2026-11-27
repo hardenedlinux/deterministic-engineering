@@ -79,6 +79,7 @@ export const EXPECTED_QUINT_DEFENSE_MODELS = [
   'durable-saga-budget',
   'epistemic-state-lattice',
   'federated-arbitration-liveness',
+  'federated-org-reciprocity',
   'geo-residency-sovereignty',
   'hitl-durable-approval',
   'key-rotation-crypto-shredding',
@@ -166,7 +167,9 @@ export function auditFourParadigmCrossConsistency(params?: {
       ascentSrc.includes('zk_disclosure_violation') &&
       ascentSrc.includes('zk_nullifier_replay_violation') &&
       ascentSrc.includes('geo_residency_violation') &&
-      ascentSrc.includes('geo_cross_border_violation');
+      ascentSrc.includes('geo_cross_border_violation') &&
+      ascentSrc.includes('fed_reciprocity_violation') &&
+      ascentSrc.includes('fed_dispute_freeze_violation');
   }
   const ascentVerdict: EpistemicVerdict = ascentRulesPresent ? 'Proven' : 'Refuted';
 

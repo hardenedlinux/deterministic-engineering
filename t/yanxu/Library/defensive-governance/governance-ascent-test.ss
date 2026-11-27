@@ -251,7 +251,9 @@
                                     ("rel-zk-replay-a" "clean-coder" "human-approver" "log-honest")
                                     ("rel-zk-replay-b" "clean-coder" "human-approver" "log-honest")
                                     ("rel-geo-escape" "clean-coder" "human-approver" "log-honest")
-                                    ("rel-geo-nopermit" "clean-coder" "human-approver" "log-honest")))
+                                    ("rel-geo-nopermit" "clean-coder" "human-approver" "log-honest")
+                                    ("rel-fed-spoof" "clean-coder" "human-approver" "log-honest")
+                                    ("rel-fed-frozen" "clean-coder" "human-approver" "log-honest")))
           (cons 'release_uses_belief '(("rel-clean" "b-clean")
                                        ("rel-clean" "b-oracle-safe")
                                        ("rel-poison-chain" "b-leaf")))
@@ -372,7 +374,16 @@
           (cons 'release_geo_placement '(("rel-clean" "eu-central-1" "eu-central-1" "eu-central-1" "yes")
                                          ("rel-geo-escape" "eu-central-1" "sanctioned-x" "us-east-1" "no")
                                          ("rel-geo-nopermit" "eu-central-1" "ch-zurich-1" "ch-zurich-1" "yes")))
-          (cons 'geo_transfer_permit '(("rel-geo-nopermit" "eu-central-1" "ch-zurich-1" "no")))))
+          (cons 'geo_transfer_permit '(("rel-geo-nopermit" "eu-central-1" "ch-zurich-1" "no")))
+          ;; B20: treaty-ab ratified, treaty-frozen under dispute freeze, org-revoked revoked;
+          ;;      rel-clean uses ratified treaty-ab between org-a & org-b with bilateral sigs;
+          ;;      rel-fed-spoof self-reciprocity + unratified + unilateral; rel-fed-frozen hits dispute freeze!
+          (cons 'fed_ratified_treaty '(("treaty-ab") ("treaty-frozen")))
+          (cons 'fed_revoked_org '(("org-revoked")))
+          (cons 'fed_dispute_freeze '(("treaty-frozen")))
+          (cons 'release_fed_reciprocity '(("rel-clean" "treaty-ab" "org-a" "org-b" "yes")
+                                           ("rel-fed-spoof" "treaty-unrat" "org-revoked" "org-revoked" "no")
+                                           ("rel-fed-frozen" "treaty-frozen" "org-a" "org-b" "yes")))))
 
       (def mres (reason-durable-governance-meta-audit m-facts))
       (def revoked (rows mres 'effectively_revoked))
@@ -400,6 +411,8 @@
       (def zk-rep-v (rows mres 'zk_nullifier_replay_violation))
       (def geo-res-v (rows mres 'geo_residency_violation))
       (def geo-xb-v (rows mres 'geo_cross_border_violation))
+      (def fed-rec-v (rows mres 'fed_reciprocity_violation))
+      (def fed-frz-v (rows mres 'fed_dispute_freeze_violation))
       (def disq (rows mres 'release_disqualified))
       (def admitted (rows mres 'release_admitted))
 
@@ -493,4 +506,12 @@
       (check-equal? (and (member '("rel-geo-escape" "sanctioned-x" "region-attestation-invalid") geo-res-v) #t) #t)
       (check-equal? (and (member '("rel-geo-nopermit" "eu-central-1" "ch-zurich-1" "unapproved-cross-border-egress") geo-xb-v) #t) #t)
       (check-equal? (and (member '("rel-geo-escape" "geo-residency-violation") disq) #t) #t)
-      (check-equal? (and (member '("rel-geo-nopermit" "unapproved-cross-border-egress") disq) #t) #t))))
+      (check-equal? (and (member '("rel-geo-nopermit" "unapproved-cross-border-egress") disq) #t) #t)
+      ;; 14. B20 multi-org federated reciprocity, revocation & dispute-freeze preemption:
+      (check-equal? (and (member '("rel-fed-spoof" "org-revoked" "self-reciprocity-spoof") fed-rec-v) #t) #t)
+      (check-equal? (and (member '("rel-fed-spoof" "treaty-unrat" "unratified-federation-treaty") fed-rec-v) #t) #t)
+      (check-equal? (and (member '("rel-fed-spoof" "org-revoked" "revoked-origin-org") fed-rec-v) #t) #t)
+      (check-equal? (and (member '("rel-fed-spoof" "treaty-unrat" "unilateral-countersignature") fed-rec-v) #t) #t)
+      (check-equal? (and (member '("rel-fed-frozen" "treaty-frozen") fed-frz-v) #t) #t)
+      (check-equal? (and (member '("rel-fed-spoof" "federated-reciprocity-violation") disq) #t) #t)
+      (check-equal? (and (member '("rel-fed-frozen" "federated-dispute-freeze") disq) #t) #t))))

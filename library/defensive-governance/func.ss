@@ -724,7 +724,11 @@
     geo_allowed_region
     geo_sanctioned_region
     release_geo_placement
-    geo_transfer_permit)
+    geo_transfer_permit
+    fed_ratified_treaty
+    fed_revoked_org
+    fed_dispute_freeze
+    release_fed_reciprocity)
   (outputs
     effectively_revoked
     belief_poisoned
@@ -752,6 +756,8 @@
     zk_nullifier_replay_violation
     geo_residency_violation
     geo_cross_border_violation
+    fed_reciprocity_violation
+    fed_dispute_freeze_violation
     release_disqualified
     release_admitted)
   (relation delegation_edge ((parent string?) (child string?)))
@@ -806,6 +812,10 @@
   (relation geo_sanctioned_region ((region_id string?)))
   (relation release_geo_placement ((rel_id string?) (src_region string?) (dst_region string?) (inf_region string?) (att_ok string?)))
   (relation geo_transfer_permit ((rel_id string?) (src_region string?) (dst_region string?) (permit_ok string?)))
+  (relation fed_ratified_treaty ((treaty_id string?)))
+  (relation fed_revoked_org ((org_id string?)))
+  (relation fed_dispute_freeze ((treaty_id string?)))
+  (relation release_fed_reciprocity ((rel_id string?) (treaty_id string?) (origin_org string?) (target_org string?) (bilateral_ok string?)))
 
   ;; Internal stratified helper relations for pure relational identity, cross-log finality, slashing, B11 MCP pinning, B13 wait-graph reachability, B14 artifact equality & B15 release identity:
   (relation same_root ((r1 string?) (r2 string?)))
@@ -846,6 +856,8 @@
   (relation zk_nullifier_replay_violation ((rel1 string?) (rel2 string?) (nullifier string?)))
   (relation geo_residency_violation ((rel_id string?) (region_id string?) (reason string?)))
   (relation geo_cross_border_violation ((rel_id string?) (src_region string?) (dst_region string?) (reason string?)))
+  (relation fed_reciprocity_violation ((rel_id string?) (detail string?) (reason string?)))
+  (relation fed_dispute_freeze_violation ((rel_id string?) (treaty_id string?)))
   (relation release_disqualified ((rel_id string?) (reason string?)))
   (relation release_admitted ((rel_id string?)))
 
@@ -1141,7 +1153,31 @@
    (not (same_region Src Dst))
    (not (valid_geo_permit Rel Src Dst)))
 
-  ;; 6. Cross-pillar B1/B3/B5/B6/B8/B9/B10/B10c/B11/B12/B13/B14/B15/B16/B17/B18/B19 release disqualification & clean admission:
+  ;; 5l. B20 Multi-Org Federated Reciprocity, Member Revocation & Dispute-Freeze Preemption:
+  ((fed_reciprocity_violation Rel Same (lit "self-reciprocity-spoof"))
+   <--
+   (release_fed_reciprocity Rel _ Same Same _))
+  ((fed_reciprocity_violation Rel Treaty (lit "unratified-federation-treaty"))
+   <--
+   (release_fed_reciprocity Rel Treaty _ _ _)
+   (not (fed_ratified_treaty Treaty)))
+  ((fed_reciprocity_violation Rel Origin (lit "revoked-origin-org"))
+   <--
+   (release_fed_reciprocity Rel _ Origin _ _)
+   (fed_revoked_org Origin))
+  ((fed_reciprocity_violation Rel Target (lit "revoked-target-org"))
+   <--
+   (release_fed_reciprocity Rel _ _ Target _)
+   (fed_revoked_org Target))
+  ((fed_reciprocity_violation Rel Treaty (lit "unilateral-countersignature"))
+   <--
+   (release_fed_reciprocity Rel Treaty _ _ (lit "no")))
+  ((fed_dispute_freeze_violation Rel Treaty)
+   <--
+   (release_fed_reciprocity Rel Treaty _ _ _)
+   (fed_dispute_freeze Treaty))
+
+  ;; 6. Cross-pillar B1/B3/B5/B6/B8/B9/B10/B10c/B11/B12/B13/B14/B15/B16/B17/B18/B19/B20 release disqualification & clean admission:
   ((release_finality_satisfied Rel Ckpt)
    <--
    (release_proposal Rel _ _ Log)
@@ -1242,6 +1278,14 @@
    <--
    (release_proposal Rel _ _ _)
    (geo_cross_border_violation Rel _ _ _))
+  ((release_disqualified Rel (lit "federated-reciprocity-violation"))
+   <--
+   (release_proposal Rel _ _ _)
+   (fed_reciprocity_violation Rel _ _))
+  ((release_disqualified Rel (lit "federated-dispute-freeze"))
+   <--
+   (release_proposal Rel _ _ _)
+   (fed_dispute_freeze_violation Rel _))
   ((release_admitted Rel)
    <--
    (release_proposal Rel _ _ _)

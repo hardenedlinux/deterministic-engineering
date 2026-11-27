@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Multi-Org Federated Reciprocity & Cross-Domain Dispute Arbitration
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.defense.federated-org-reciprocity=
+- *Subdomain*: =quint.engineering.defense=
+- *Quint Module*: =federated_org_reciprocity= (=[[file:FederatedOrgReciprocity.qnt][FederatedOrgReciprocity.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/defense/federated-org-reciprocity/FederatedOrgReciprocity=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Cross-org federated operation admission requires a ratified bilateral treaty (unratifiedTreatyViolations == 0), countersignatures from BOTH origin and target orgs (unilateralSignViolations == 0), and no active dispute freeze (disputeFreezeViolations == 0).
+
+#+begin_src quint
+val safety = (h.unratifiedTreatyViolations == 0 and h.unilateralSignViolations == 0 and h.disputeFreezeViolations == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =require-treaty-ratified= | =stepUnratifiedTreaty= | =h.unratifiedTreatyViolations > 0= |
+| =require-bilateral-countersigs= | =stepUnilateralSign= | =h.unilateralSignViolations > 0= |
+| =require-no-dispute-freeze= | =stepDisputeFreeze= | =h.disputeFreezeViolations > 0= |
+
+* Grounded Papers & Specifications
+
+- *OASIS Cross-Enterprise Trust & Federated Governance Protocols*: Bilateral reciprocity agreements and multi-org cryptographic countersigning.
+- *BFT Multi-Domain Interoperability & Dispute-Freeze Arbitration*: Fail-closed preemption of cross-organization execution during active legal/compliance disputes.
+- *Deterministic Engineering (10.199 / 10.200)*: Bilateral Ed25519 reciprocity, ratified treaties, and dispute-freeze preemption.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/defense/federated-org-reciprocity/FederatedOrgReciprocity.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/defense/federated-org-reciprocity/FederatedOrgReciprocity.qnt --main=federated_org_reciprocity --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Bounded bilateral reciprocity and dispute-freeze state machine; arbitrary member org registries, self-reciprocity anti-spoofing, and treaty epoch expiration are proved unboundedly in FederatedOrgReciprocity.lean.
