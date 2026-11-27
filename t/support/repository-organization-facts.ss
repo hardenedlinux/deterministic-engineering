@@ -14,11 +14,14 @@
 
 (def ignored-top-entries
   '(".git" ".github" ".githooks" ".gitignore" ".gerbil" ".data" ".cache" "node_modules"
+    ".devenv" ".devenv.flake.nix" ".direnv" ".envrc" ".pre-commit-config.yaml"
     "LICENSE" "LICENSES" "LICENSING.org" "README.org" "bun.lock" "bun.lock.license"
+    "devenv.lock" "devenv.lock.license"
     "package.json.license" "project.sysml"))
 
 (def infrastructure-files
-  '("gerbil.pkg" "init.ss" "build.ss" "types.ss" "config.ss" "manifest.ss" "Justfile" "package.json"))
+  '("gerbil.pkg" "init.ss" "build.ss" "types.ss" "config.ss" "manifest.ss"
+    "Justfile" "package.json" "devenv.nix" "devenv.yaml"))
 
 (def (classify-top-entry name)
   (cond

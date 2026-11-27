@@ -71,21 +71,32 @@
                (and (eq? ftype 'regular) cur)
                (and (eq? ftype 'directory) (loop rest cur))))))))
 
+(def (inline-pem-string? val)
+  (and (string? val)
+       (>= (string-length val) 26)
+       (equal? (substring val 0 26) "-----BEGIN PUBLIC KEY-----")))
+
 (def (ed25519-verify-raw pub-pem payload-str sig-b64)
-  (if (and (string? pub-pem) (file-exists? pub-pem)
+  (def is-inline? (inline-pem-string? pub-pem))
+  (if (and (string? pub-pem)
+           (or is-inline? (file-exists? pub-pem))
            (string? sig-b64) (> (string-length sig-b64) 0))
     (let ((sig-bytes (with-catch (lambda (_) #f) (lambda () (base64-decode sig-b64)))))
       (if (u8vector? sig-bytes)
         (let* ((prefix (next-tmp-prefix))
                (msg-path (string-append prefix ".msg"))
-               (sig-path (string-append prefix ".sig")))
+               (sig-path (string-append prefix ".sig"))
+               (tmp-pub-path (and is-inline? (string-append prefix ".pub.pem")))
+               (inkey-path (or tmp-pub-path pub-pem)))
           (try
             (write-bytes-file msg-path (string->utf8 payload-str))
             (write-bytes-file sig-path sig-bytes)
+            (when tmp-pub-path
+              (write-bytes-file tmp-pub-path (string->utf8 pub-pem)))
             (let* ((proc (open-process
                            (list path: "openssl"
                                  arguments: (list "pkeyutl" "-verify" "-rawin" "-pubin"
-                                                  "-inkey" pub-pem
+                                                  "-inkey" inkey-path
                                                   "-sigfile" sig-path
                                                   "-in" msg-path)
                                  stdin-redirection: #f
@@ -97,7 +108,8 @@
               (= status 0))
             (finally
               (safe-rm! msg-path)
-              (safe-rm! sig-path))))
+              (safe-rm! sig-path)
+              (when tmp-pub-path (safe-rm! tmp-pub-path)))))
         #f))
     #f))
 
@@ -131,15 +143,21 @@
     (error "Ed25519 trust store missing trustedKeys map" store-path))
   (def trusted '())
   (hash-for-each
-    (lambda (declared-kid raw-path)
-      (unless (and (string? declared-kid) (string? raw-path))
-        (error "Invalid trustedKeys entry" declared-kid raw-path))
-      (let* ((resolved (resolve-trusted-pem-path base-dir raw-path))
-             (actual-kid (substring (sha256-file resolved) 0 16)))
-        (unless (equal? actual-kid declared-kid)
-          (error "Trusted public keyId mismatch (possible spoofing)"
-                 declared-kid actual-kid resolved))
-        (set! trusted (cons (cons declared-kid resolved) trusted))))
+    (lambda (declared-kid raw-val)
+      (unless (and (string? declared-kid) (string? raw-val))
+        (error "Invalid trustedKeys entry" declared-kid raw-val))
+      (if (inline-pem-string? raw-val)
+        (let ((actual-kid (substring (sha256-str raw-val) 0 16)))
+          (unless (equal? actual-kid declared-kid)
+            (error "Inline trusted public keyId mismatch (possible spoofing)"
+                   declared-kid actual-kid))
+          (set! trusted (cons (cons declared-kid raw-val) trusted)))
+        (let* ((resolved (resolve-trusted-pem-path base-dir raw-val))
+               (actual-kid (substring (sha256-file resolved) 0 16)))
+          (unless (equal? actual-kid declared-kid)
+            (error "Trusted public keyId mismatch (possible spoofing)"
+                   declared-kid actual-kid resolved))
+          (set! trusted (cons (cons declared-kid resolved) trusted)))))
     keys-ht)
   (def revoked (filter string? (or (hash-get doc "revokedKeyIds") '())))
   (cons (reverse trusted) revoked))

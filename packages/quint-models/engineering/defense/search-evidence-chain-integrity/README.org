@@ -1,0 +1,53 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Scenario B Search Evidence-Chain Integrity: Structural Drift, KV-Cache Fencing & ATMS Poison Retraction
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.defense.search-evidence-chain-integrity=
+- *Subdomain*: =quint.engineering.defense=
+- *Quint Module*: =search_evidence_chain_integrity= (=[[file:SearchEvidenceChainIntegrity.qnt][SearchEvidenceChainIntegrity.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/defense/search-evidence-chain-integrity/SearchEvidenceChainIntegrity=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=7=
+
+* Emergent Safety Invariant
+
+No stale structural evidence is reused after AST drift, no negative-scope claim is reused after domain expansion, no stale or unpinned KV-cached conclusion is served, no unverified or tombstoned claim enters M1 evidence, and no zombie derived chain is consumed after sole-support retraction.
+
+#+begin_src quint
+val safety = (h.staleStructuralReuseViolations == 0 and h.staleNegDomainReuseViolations == 0 and h.kvCacheContaminationViolations == 0 and h.poisonedPromotionViolations == 0 and h.zombieCascadeViolations == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =require-fresh-structural-epoch= | =stepStaleStructuralReuse= | =h.staleStructuralReuseViolations > 0= |
+| =require-neg-domain-unexpanded= | =stepStaleNegDomainReuse= | =h.staleNegDomainReuseViolations > 0= |
+| =require-kv-epoch-and-pins= | =stepKvCacheContamination= | =h.kvCacheContaminationViolations > 0= |
+| =require-oracle-and-no-tombstone= | =stepPoisonedEvidencePromotion= | =h.poisonedPromotionViolations > 0= |
+| =forbid-zombie-derived-chain= | =stepZombieEvidenceCascade= | =h.zombieCascadeViolations > 0= |
+
+* Grounded Papers & Specifications
+
+- *J. Doyle (Artificial Intelligence 1979) / J. de Kleer (AIJ 1986)*: TMS & ATMS causal justification graphs and multi-support belief revision.
+- *C. Martens, R. Simmons, M. Arntzenius (POPL 2025)*: Dusa: Finite-Choice Logic Programming with deduction vs branch provenance.
+- *Deterministic Engineering (10.165 / 20.17 / Marlin Scenario B)*: Bi-temporal search evidence chains with structural vs comment fingerprinting, DE01 negative-domain revalidation, KV-cache epoch fencing, and ATMS poison tombstones.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/defense/search-evidence-chain-integrity/SearchEvidenceChainIntegrity.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/defense/search-evidence-chain-integrity/SearchEvidenceChainIntegrity.qnt --main=search_evidence_chain_integrity --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite single-root/single-derived Scenario B evidence-chain abstraction over comment vs structural AST drift, DE01 negative-domain expansion, KV-cache epoch/pin fencing, and ATMS multi-justification retraction; unbounded multi-file dependency graphs and cryptographic SHA-256 receipts are verified in Marlin's executable ASCENT/Dusa truth-maintenance suite.

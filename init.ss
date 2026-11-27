@@ -84,6 +84,7 @@
   (durable-saga-budget profiles: (bound.compact))
   (difc-exfiltration-fence profiles: (bound.compact))
   (durable-memory-tms profiles: (bound.compact))
+  (search-evidence-chain-integrity profiles: (bound.compact))
   (transparency-log-equivocation profiles: (bound.compact))
   (witness-quorum-finality profiles: (bound.compact))
   (witness-epoch-reconfiguration profiles: (bound.compact))

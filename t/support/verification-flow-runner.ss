@@ -827,14 +827,19 @@
               (pair? (hash-get doc "verificationAdmitted"))))))
 
 ;; Serialize a Multi-Key Ed25519 Trust Store POO object to a portable JSON manifest.
-(def (write-ed25519-trust-store-json trust-store out-path)
+;; Pass `inline-pem?: #t` to embed raw PEM contents directly for a single-file air-gapped bundle.
+(def (write-ed25519-trust-store-json trust-store out-path inline-pem?: (inline-pem? #f))
   (def parent-dir (path-directory out-path))
   (unless (file-exists? parent-dir)
     (create-directory* parent-dir))
   (def keys-ht (make-hash-table))
   (for-each
     (lambda (pair)
-      (hash-put! keys-ht (car pair) (cdr pair)))
+      (def val (cdr pair))
+      (hash-put! keys-ht (car pair)
+        (if (and inline-pem? (string? val) (file-exists? val))
+          (call-with-input-file val read-all-as-string)
+          val)))
     (.get trust-store trusted-keys))
   (def doc
     (hash ("schema" "de.attestation.ed25519-trust-store.v1")

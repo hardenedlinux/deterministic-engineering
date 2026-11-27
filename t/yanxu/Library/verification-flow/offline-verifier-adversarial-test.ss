@@ -21,19 +21,19 @@
 ;;; 13. Validly re-signed child report with mismatched 2-level Merkle digest rejection
 ;;; 14. Missing child report path rejection
 (import :std/test
+        :tao3k/yuanxu/testing
         :std/crypto/digest
         :std/encoding/base64
         :std/encoding/hex
         :std/encoding/json
         :std/misc/ports
         :std/misc/process
-        (only-in :std/source this-source-file)
         :deterministic-engineering/library/verification-flow/attestation
+        "../../../support/repo-paths.ss"
         "../../../support/offline-attestation-verifier.ss")
 (export verification-flow-offline-verifier-adversarial-test)
 
-(def repo-root
-  (path-normalize (path-expand "../../../.." (path-directory (this-source-file)))))
+(def repo-root (resolve-repo-root))
 
 (def (sha256-str-local s) (hex-encode (sha256 (string->utf8 s))))
 (def (sha256-file-local p) (hex-encode (sha256 (call-with-input-file p read-all-as-u8vector))))
@@ -113,7 +113,7 @@
 
 (def verification-flow-offline-verifier-adversarial-test
   (test-suite "Adversarial cryptographic & boundary security controls for attestation.ss and offline-attestation-verifier.ss"
-    (test-case "canonical length-prefixed framing defeats delimiter injection, preserves order independence, and binds issuedAt"
+    (yuanxu-test-case "canonical length-prefixed framing defeats delimiter injection, preserves order independence, and binds issuedAt"
       ;; Delimiter injection: embedding `\ninputCount=1:...\n` inside detail MUST NOT collide!
       (def p-injected
         (canonical-witness-signing-payload
@@ -143,7 +143,7 @@
           '(("a.qnt" . "111") ("b.qnt" . "222")) "1700000001"))
       (check (not (equal? p-ord1 p-ts2)) => #t))
 
-    (test-case "trust-store anti-spoofing, semantic admission bypass, cache poisoning, and 2-level Merkle forgery are all rejected"
+    (yuanxu-test-case "trust-store anti-spoofing, semantic admission bypass, cache poisoning, and 2-level Merkle forgery are all rejected"
       (def work (path-expand ".data/test-runs/m5-offline-adversarial" repo-root))
       (when (file-exists? work) (run-process (list "rm" "-rf" work)))
       (create-directory* work)
@@ -478,5 +478,50 @@
                (doc (call-with-input-string json-line (cut read-json <> object-as-hash: #t))))
           (check-equal? (hash-get doc "ok") #f)
           (check-equal? (hash-get doc "activeKeyIds") '())))
+
+      ;; Attack 21: Single-file Inline-PEM Trust Bundle (`-----BEGIN PUBLIC KEY-----`)!
+      ;;            Delete the entire `keys/` directory from disk so ZERO `.pub.pem` files exist;
+      ;;            verify report, mixed-key cache, `--json --verify-trust-store`, and K1 revocation!
+      (def k1-pem-str (call-with-input-file (caddr k1) read-all-as-string))
+      (def k2-pem-str (call-with-input-file (caddr k2) read-all-as-string))
+      (def tk-inline (make-hash-table))
+      (hash-put! tk-inline kid1 k1-pem-str)
+      (hash-put! tk-inline kid2 k2-pem-str)
+      (def ts-inline-path (path-expand "trust-inline-bundle.json" work))
+      (write-json-file ts-inline-path
+        (hash ("schema" "de.attestation.ed25519-trust-store.v1")
+              ("trustedKeys" tk-inline) ("revokedKeyIds" '())))
+      (def ts-inline-rev-path (path-expand "trust-inline-rev-k1.json" work))
+      (write-json-file ts-inline-rev-path
+        (hash ("schema" "de.attestation.ed25519-trust-store.v1")
+              ("trustedKeys" tk-inline) ("revokedKeyIds" (list kid1))))
+      ;; Attack 22: Inline-PEM keyId spoofing (embed k2 PEM under kid1) -> MUST throw!
+      (def tk-inline-spoof (make-hash-table))
+      (hash-put! tk-inline-spoof kid1 k2-pem-str)
+      (def ts-inline-spoof-path (path-expand "trust-inline-spoof.json" work))
+      (write-json-file ts-inline-spoof-path
+        (hash ("schema" "de.attestation.ed25519-trust-store.v1")
+              ("trustedKeys" tk-inline-spoof) ("revokedKeyIds" '())))
+
+      ;; Physically delete ALL .pub.pem files from disk before running inline-bundle verification!
+      (run-process (list "rm" "-rf" keys-dir))
+      (check-equal? (file-exists? (caddr k1)) #f)
+      (check-equal? (file-exists? (caddr k2)) #f)
+
+      (def tp-inline (load-trust-store-json-lite ts-inline-path))
+      (def tp-inline-rev (load-trust-store-json-lite ts-inline-rev-path))
+      (check-equal? (verify-report-offline rep-ok tp-inline) #t)
+      (check-equal? (verify-cache-offline cache-ok tp-inline) 2)
+      (check-equal? (verify-report-offline rep-ok tp-inline-rev) #f)
+      (check-equal? (verify-cache-offline cache-ok tp-inline-rev) #f)
+      (check-equal? (throws? (lambda () (load-trust-store-json-lite ts-inline-spoof-path))) #t)
+      (let-values (((st out) (run-ts-audit-cli ts-inline-path)))
+        (check-equal? st 0)
+        (let* ((json-line (car (filter (lambda (ln) (and (> (string-length ln) 0)
+                                                         (char=? (string-ref ln 0) #\{)))
+                                       (string-split out #\newline))))
+               (doc (call-with-input-string json-line (cut read-json <> object-as-hash: #t))))
+          (check-equal? (hash-get doc "ok") #t)
+          (check-equal? (length (hash-get doc "activeKeyIds")) 2)))
 
       (run-process (list "rm" "-rf" work)))))
