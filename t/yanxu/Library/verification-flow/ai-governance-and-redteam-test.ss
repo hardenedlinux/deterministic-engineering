@@ -19,7 +19,11 @@
 ;;;    while co-signing with `human-approver` satisfies `--min-signatures 2 --require-role ai-agent --require-role human-approver`.
 (import :std/test
         (only-in "../../../support/repo-paths.ss" resolve-repo-root)
-        (only-in :tao3k/yuanxu/testing yuanxu-test-case yuanxu-test-checkpoint)
+        (only-in :tao3k/yuanxu/testing
+                 yuanxu-test-case
+                 yuanxu-test-case/with
+                 yuanxu-test-checkpoint
+                 yuanxu-testing-case-profile-prototype)
         :std/encoding/json
         :std/misc/ports
         :std/misc/process
@@ -48,6 +52,24 @@
          (st (process-status proc)))
     (close-port proc)
     (yuanxu-test-checkpoint 'after-ts-ai-sod-cli)
+    (values st out)))
+
+(def (run-ai-patch-cli args-str)
+  (yuanxu-test-checkpoint 'before-ai-patch-cli)
+  (let* ((cmd (string-append
+                "cd \"" repo-root "\" && GERBIL_PATH=\"$PWD/.gerbil\" "
+                "gxi -:max-heap=2G,debug=q t/support/verification-flow-runner.ss "
+                "--check-ai-patch " args-str))
+         (proc (open-process
+                 (list path: "/bin/bash"
+                       arguments: (list "-euo" "pipefail" "-c" cmd)
+                       stdin-redirection: #f
+                       stdout-redirection: #t
+                       stderr-redirection: #f)))
+         (out (read-all-as-string proc))
+         (st (process-status proc)))
+    (close-port proc)
+    (yuanxu-test-checkpoint 'after-ai-patch-cli)
     (values st out)))
 
 (def verification-flow-ai-governance-and-redteam-test
@@ -403,4 +425,70 @@
                         "\"" cosigned-path "\" \"" bundle-ts-path "\""))))
         (check-equal? st 0)
         (check (and (string-contains out "\"ok\":true") #t) => #t))
-      (run-process (list "rm" "-rf" work-dir)))))
+      (run-process (list "rm" "-rf" work-dir)))
+
+    (yuanxu-test-case/with
+      (.o (:: @ yuanxu-testing-case-profile-prototype)
+          max-idle-milliseconds: 120000
+          max-duration-milliseconds: 240000
+          sample-interval-milliseconds: 500
+          collect-before-sample?: #t)
+      "End-to-End Hostile AI Red-Team CLI (--check-ai-patch) admits safe tuning and blocks LLM-judge, security regressions, and AI self-approval fail-closed"
+      ;; 1. Live subprocess positive control: safe AI parameter tuning on CaMeL/FIDES IFC -> exit 0, ok=true!
+      (let-values (((st out)
+                    (run-ai-patch-cli
+                      "agent-ifc-capability --json --require-no-stepup --touch-dep ifcLeanPooTarget:traceBufferCapacity --sec-dep ifcLeanPooTarget:declassificationGateChecked --claim-reuse ifcLeanPooTarget")))
+        (check-equal? st 0)
+        (let ((doc (call-with-input-string out (cut read-json <> object-as-hash: #t))))
+          (check-equal? (hash-get doc "schema") "de.ai-se.patch-admission-verdict.v1")
+          (check-equal? (hash-get doc "ok") #t)
+          (check-equal? (hash-get doc "admitted") #t)
+          (check-equal? (hash-get doc "requiresHumanStepUp") #f)
+          (check-equal? (length (hash-get doc "reusableSteps")) 2)))
+
+      ;; 2. Live subprocess negative control: hostile AI injects `llm-judge` -> NON-ZERO EXIT, AR01 refusal!
+      (let-values (((st out)
+                    (run-ai-patch-cli
+                      "agent-ifc-capability --json --extra-step llm-rubber:safety:llm-judge:bounded-interleaving")))
+        (check (not (= st 0)) => #t)
+        (let ((doc (call-with-input-string out (cut read-json <> object-as-hash: #t))))
+          (check-equal? (hash-get doc "ok") #f)
+          (check-equal? (hash-get doc "admitted") #f)
+          (check-equal? (hash-get doc "requiresHumanStepUp") #t)
+          (check-equal? (hash-get doc "reusableSteps") '())
+          (check (pair? (hash-get doc "arFindings")) => #t)))
+
+      ;; 3. In-process exact CLI parser & JSON verdict matrix (zero cold-gxi overhead):
+      ;; 3a) AI patch edits SM35 Quint file -> exact impact closure isolates sm35QuintTarget!
+      (let* ((r3a (run-check-ai-patch-verdict repo-root "graph-witness-and-harness-confinement"
+                    '("--json" "--file" "packages/quint-models/threat/execution/graph-witness-and-harness-confinement/GraphWitnessAndHarnessConfinement.qnt")))
+             (doc (.get r3a json-doc)))
+        (check-equal? (hash-get doc "ok") #t)
+        (check-equal? (hash-get doc "affectedSteps") '("sm35QuintTarget"))
+        (check-equal? (hash-get doc "reusableSteps") '("sm35LeanPooTarget")))
+
+      ;; 3b) Hostile AI mutates IFC `declassificationGateChecked` + claims reuse -> ok=#f, AR01!
+      (let* ((r3b (run-check-ai-patch-verdict repo-root "agent-ifc-capability"
+                    '("--json" "--touch-dep" "ifcLeanPooTarget:declassificationGateChecked"
+                      "--sec-dep" "ifcLeanPooTarget:declassificationGateChecked"
+                      "--claim-reuse" "ifcLeanPooTarget")))
+             (doc (.get r3b json-doc)))
+        (check-equal? (hash-get doc "ok") #f)
+        (check-equal? (hash-get doc "admitted") #f)
+        (check-equal? (hash-get doc "reusableSteps") '())
+        (check (pair? (hash-get doc "arFindings")) => #t))
+
+      ;; 3c) Hostile AI attempts `ai-agent:human-approver` self-approval on E-Stop breaker -> ok=#f, AR05!
+      ;;     And `--require-no-stepup` rejects even clean host-mutating E-Stop patches without human step-up!
+      (let* ((r3c (run-check-ai-patch-verdict repo-root "agent-tool-circuit-breaker"
+                    '("--json" "--role-binding" "ai-agent:human-approver")))
+             (doc-c (.get r3c json-doc))
+             (r3d (run-check-ai-patch-verdict repo-root "agent-tool-circuit-breaker"
+                    '("--json" "--require-no-stepup")))
+             (doc-d (.get r3d json-doc)))
+        (check-equal? (hash-get doc-c "ok") #f)
+        (check-equal? (hash-get doc-c "admitted") #f)
+        (check-equal? (hash-get doc-c "reusableSteps") '())
+        (check-equal? (hash-get doc-d "ok") #f)
+        (check-equal? (hash-get doc-d "admitted") #t)
+        (check-equal? (hash-get doc-d "requiresHumanStepUp") #t)))))

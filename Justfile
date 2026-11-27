@@ -219,6 +219,12 @@ plan-multi-method-fleet cache_dir="":
 impact-multi-method *files:
     t/harness/run-gxtest.sh script none t/support/verification-flow-runner.ss --impact {{files}}
 
+check-ai-governance:
+    t/harness/run-gxtest.sh file t/yanxu/Library/verification-flow/ai-governance-and-redteam-test.ss ".*" 180s
+
+check-ai-patch subject *args:
+    t/harness/run-gxtest.sh script none t/support/verification-flow-runner.ss --check-ai-patch "{{subject}}" {{args}}
+
 verify-multi-method-report report trust_store:
     t/harness/run-gxtest.sh script none t/support/offline-attestation-verifier.ss --verify-report "{{report}}" "{{trust_store}}"
 

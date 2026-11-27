@@ -74,6 +74,7 @@
   run-multi-method-fleet
   run-impacted-multi-method-fleet
   predict-fleet-reuse-plan
+  run-check-ai-patch-verdict
   main)
 
 ;; ── Zero-Glue SysML v2 -> Fun-Flow DAG Compilation (Single Source of Truth) ──
@@ -1673,9 +1674,155 @@
         total-pending: total-pending
         total-reusable: total-reusable)))
 
+(def (split-colon-parts s expected-n label)
+  (def parts (string-split s #\:))
+  (unless (= (length parts) expected-n)
+    (error (string-append "invalid " label " format (expected "
+                          (number->string expected-n) " colon-separated fields)")
+           s))
+  parts)
+
+(def (parse-check-ai-patch-args subject-arg raw-args)
+  (let loop ((xs raw-args)
+             (json? #f)
+             (require-no-stepup? #f)
+             (files '())
+             (touch-deps '())
+             (sec-deps '())
+             (claim-reuse '())
+             (role-bindings '())
+             (extra-steps '()))
+    (cond
+     ((null? xs)
+      (.o bind-these: #f
+          subject-arg: subject-arg
+          json?: json?
+          require-no-stepup?: require-no-stepup?
+          files: (reverse files)
+          touch-deps: (reverse touch-deps)
+          sec-deps: (reverse sec-deps)
+          claim-reuse: (reverse claim-reuse)
+          role-bindings: (reverse role-bindings)
+          extra-steps: (reverse extra-steps)))
+     ((equal? (car xs) "--json")
+      (loop (cdr xs) #t require-no-stepup? files touch-deps sec-deps claim-reuse role-bindings extra-steps))
+     ((equal? (car xs) "--require-no-stepup")
+      (loop (cdr xs) json? #t files touch-deps sec-deps claim-reuse role-bindings extra-steps))
+     ((and (equal? (car xs) "--file") (pair? (cdr xs)))
+      (loop (cddr xs) json? require-no-stepup?
+            (cons (cadr xs) files) touch-deps sec-deps claim-reuse role-bindings extra-steps))
+     ((and (equal? (car xs) "--touch-dep") (pair? (cdr xs)))
+      (loop (cddr xs) json? require-no-stepup?
+            files (cons (split-colon-parts (cadr xs) 2 "--touch-dep") touch-deps)
+            sec-deps claim-reuse role-bindings extra-steps))
+     ((and (equal? (car xs) "--sec-dep") (pair? (cdr xs)))
+      (loop (cddr xs) json? require-no-stepup?
+            files touch-deps (cons (split-colon-parts (cadr xs) 2 "--sec-dep") sec-deps)
+            claim-reuse role-bindings extra-steps))
+     ((and (equal? (car xs) "--claim-reuse") (pair? (cdr xs)))
+      (loop (cddr xs) json? require-no-stepup?
+            files touch-deps sec-deps (cons (cadr xs) claim-reuse) role-bindings extra-steps))
+     ((and (equal? (car xs) "--role-binding") (pair? (cdr xs)))
+      (loop (cddr xs) json? require-no-stepup?
+            files touch-deps sec-deps claim-reuse
+            (cons (split-colon-parts (cadr xs) 2 "--role-binding") role-bindings) extra-steps))
+     ((and (equal? (car xs) "--extra-step") (pair? (cdr xs)))
+      (loop (cddr xs) json? require-no-stepup?
+            files touch-deps sec-deps claim-reuse role-bindings
+            (cons (split-colon-parts (cadr xs) 4 "--extra-step") extra-steps)))
+     (else
+      (error "unknown or incomplete --check-ai-patch argument" (car xs))))))
+
+(def (resolve-subject-spec-by-key-or-id projected key-or-id)
+  (let loop ((specs (.get projected subject-specs)))
+    (cond
+     ((null? specs)
+      (error "unknown subject key or identity in SysML v2 specification" key-or-id))
+     ((or (equal? (.get (car specs) subject-key) key-or-id)
+          (equal? (.get (car specs) identity) key-or-id))
+      (car specs))
+     (else (loop (cdr specs))))))
+
+(def (run-check-ai-patch-verdict repo-root subject-arg raw-args)
+  (validate-sysml-strict-cached repo-root)
+  (let* ((opts (parse-check-ai-patch-args subject-arg raw-args))
+         (projected (project-sysml-model repo-root))
+         (spec (resolve-subject-spec-by-key-or-id projected (.get opts subject-arg)))
+         (skey (.get spec subject-key))
+         (sid (.get spec identity))
+         (touched-rows (map (lambda (p) (list sid (car p) (cadr p))) (.get opts touch-deps)))
+         (sec-rows (.get opts sec-deps))
+         (role-rows (map (lambda (p) (list sid (car p) (cadr p))) (.get opts role-bindings)))
+         (extra-step-rows
+           (map (lambda (p) (list (car p) sid (cadr p) (caddr p) (cadddr p)))
+                (.get opts extra-steps)))
+         (verdict
+           (evaluate-ai-patch-admission
+             projected
+             sid
+             (.get opts files)
+             touched-dep-rows: touched-rows
+             step-security-dep-rows: sec-rows
+             claimed-reuse-steps: (.get opts claim-reuse)
+             extra-role-bindings: role-rows
+             extra-flow-steps: extra-step-rows))
+         (admitted? (.get verdict admitted?))
+         (stepup? (.get verdict requires-human-stepup?))
+         (ok? (and admitted? (or (not (.get opts require-no-stepup?)) (not stepup?))))
+         (findings (.get verdict ar-findings))
+         (affected (.get verdict affected-steps))
+         (reusable (.get verdict reusable-steps))
+         (doc (make-hash-table)))
+    (hash-put! doc "schema" "de.ai-se.patch-admission-verdict.v1")
+    (hash-put! doc "ok" ok?)
+    (hash-put! doc "subjectKey" skey)
+    (hash-put! doc "subjectId" sid)
+    (hash-put! doc "admitted" admitted?)
+    (hash-put! doc "requiresHumanStepUp" stepup?)
+    (hash-put! doc "arFindings"
+               (map (lambda (r)
+                      (let ((f (make-hash-table)))
+                        (hash-put! f "rule" (car r))
+                        (hash-put! f "subject" (cadr r))
+                        (hash-put! f "target" (caddr r))
+                        f))
+                    findings))
+    (hash-put! doc "affectedSteps" affected)
+    (hash-put! doc "reusableSteps" reusable)
+    (.o bind-these: #f
+        opts: opts
+        ok?: ok?
+        admitted?: admitted?
+        requires-human-stepup?: stepup?
+        subject-key: skey
+        subject-id: sid
+        ar-findings: findings
+        affected-steps: affected
+        reusable-steps: reusable
+        json-doc: doc)))
+
 (def (main mode-or-output . rest)
   (def repo-root (path-normalize (path-expand "../.." (path-directory (this-source-file)))))
   (cond
+   ((equal? mode-or-output "--check-ai-patch")
+    (unless (pair? rest)
+      (error "usage: --check-ai-patch <subject-key|identity> [--json] [--require-no-stepup] [--file <path>]... [--touch-dep <step>:<dep>]... [--sec-dep <step>:<dep>]... [--claim-reuse <step>]... [--role-binding <role>:<auth>]... [--extra-step <step>:<obl>:<method>:<claim>]..."))
+    (let* ((res (run-check-ai-patch-verdict repo-root (car rest) (cdr rest)))
+           (opts (.get res opts))
+           (ok? (.get res ok?)))
+      (if (.get opts json?)
+        (begin
+          (write-json (current-output-port) (.get res json-doc))
+          (newline))
+        (displayln (if ok? "AI-PATCH-ADMISSION-OK " "AI-PATCH-ADMISSION-REFUSED ")
+                   (.get res subject-key)
+                   " admitted=" (.get res admitted?)
+                   " requiresHumanStepUp=" (.get res requires-human-stepup?)
+                   " affected=" (.get res affected-steps)
+                   " reusable=" (.get res reusable-steps)
+                   " findings=" (.get res ar-findings)))
+      (unless ok?
+        (exit 1))))
    ((equal? mode-or-output "--verify-report")
     (unless (and (pair? rest) (pair? (cdr rest)))
       (error "usage: --verify-report <report.json> <trust-store.json>"))
