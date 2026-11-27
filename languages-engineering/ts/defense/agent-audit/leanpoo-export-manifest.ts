@@ -63,7 +63,10 @@ export const LEANPOO_ENCLAVE_ATTESTATION_FACADE_MODULE =
 export const LEANPOO_KEY_ROTATION_FACADE_MODULE =
   'DeterministicEngineering.Engineering.KeyRotationAndCryptoShredding';
 
-export const LEANPOO_TOP_FACADE_MODULE = LEANPOO_KEY_ROTATION_FACADE_MODULE;
+export const LEANPOO_PQ_AGILITY_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.PostQuantumCryptoAgility';
+
+export const LEANPOO_TOP_FACADE_MODULE = LEANPOO_PQ_AGILITY_FACADE_MODULE;
 
 export const LEANPOO_LIBRARY_EXPORT_MANIFEST: readonly LeanPooExportModuleSpec[] = [
   {
@@ -337,6 +340,23 @@ export const LEANPOO_LIBRARY_EXPORT_MANIFEST: readonly LeanPooExportModuleSpec[]
       'disablingCryptoShredTombstone_invalidates_reuse',
     ],
   },
+  {
+    moduleName: LEANPOO_PQ_AGILITY_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/PostQuantumCryptoAgility.lean',
+    pillars: ['B17', 'PostQuantumHybrid', 'CryptoAgility'],
+    theorems: [
+      'algorithm_downgrade_always_refused',
+      'deprecated_suite_always_refused',
+      'classical_failure_blocks_hybrid_combiner',
+      'pq_failure_blocks_hybrid_combiner',
+      'ots_leaf_reuse_always_refused',
+      'domain_separation_mismatch_refused',
+      'hybrid_combiner_sound_and_complete',
+      'pqAgilityContract_preserves_rejection',
+      'otsPoolRefillWatermarkTuning_preserves_certificate',
+      'disablingPqHybridFloor_invalidates_reuse',
+    ],
+  },
 ];
 
 export const LEANPOO_EXPECTED_MODULE_COUNT = LEANPOO_LIBRARY_EXPORT_MANIFEST.length;
@@ -480,10 +500,12 @@ export function verifyLeanPooLibraryFleet(params?: {
   }
 
   const facadeToImport = manifest.some(
-    m => m.moduleName === LEANPOO_KEY_ROTATION_FACADE_MODULE,
+    m => m.moduleName === LEANPOO_PQ_AGILITY_FACADE_MODULE,
   )
-    ? LEANPOO_KEY_ROTATION_FACADE_MODULE
-    : manifest.some(m => m.moduleName === LEANPOO_ENCLAVE_ATTESTATION_FACADE_MODULE)
+    ? LEANPOO_PQ_AGILITY_FACADE_MODULE
+    : manifest.some(m => m.moduleName === LEANPOO_KEY_ROTATION_FACADE_MODULE)
+      ? LEANPOO_KEY_ROTATION_FACADE_MODULE
+      : manifest.some(m => m.moduleName === LEANPOO_ENCLAVE_ATTESTATION_FACADE_MODULE)
       ? LEANPOO_ENCLAVE_ATTESTATION_FACADE_MODULE
       : manifest.some(m => m.moduleName === LEANPOO_SUPPLY_CHAIN_FACADE_MODULE)
       ? LEANPOO_SUPPLY_CHAIN_FACADE_MODULE

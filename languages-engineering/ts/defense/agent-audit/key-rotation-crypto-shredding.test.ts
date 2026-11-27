@@ -56,11 +56,10 @@ const KEY_ROTATION_THEOREMS = LEANPOO_LIBRARY_EXPORT_MANIFEST.find(
 )!.theorems;
 
 describe('Phase 43 — B16 Zero-Downtime AEAD Key Rotation & Cryptographic Erasure + 15-Module / 166-Theorem LeanPoo Library (10.191 / 30.05 AG226-AG230)', () => {
-  test('AG226: Live Lean 4 / LeanPoo verifies all 10 KeyRotationAndCryptoShredding theorems + single-shot 166/166-theorem 15-module fleet attestation', () => {
+  test('AG226: Live Lean 4 / LeanPoo verifies all 10 KeyRotationAndCryptoShredding theorems + single-shot fleet attestation', () => {
     expect(KEY_ROTATION_THEOREMS.length).toBe(10);
-    expect(LEANPOO_EXPECTED_MODULE_COUNT).toBe(15);
-    expect(LEANPOO_EXPECTED_THEOREM_COUNT).toBe(166);
-    expect(LEANPOO_TOP_FACADE_MODULE).toBe(LEANPOO_KEY_ROTATION_FACADE_MODULE);
+    expect(LEANPOO_EXPECTED_MODULE_COUNT).toBeGreaterThanOrEqual(15);
+    expect(LEANPOO_EXPECTED_THEOREM_COUNT).toBeGreaterThanOrEqual(166);
 
     const kv = new ContentAddressedKvStore();
     if (!isLeanToolchainAvailable()) {
@@ -88,8 +87,8 @@ describe('Phase 43 — B16 Zero-Downtime AEAD Key Rotation & Cryptographic Erasu
     const fleet = verifyLeanPooLibraryFleet({kv});
     expect(fleet.kind).toBe('Proven');
     if (fleet.kind !== 'Proven') throw new Error('expected Proven');
-    expect(fleet.moduleCount).toBe(15);
-    expect(fleet.verifiedTheoremCount).toBe(166);
+    expect(fleet.moduleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);
+    expect(fleet.verifiedTheoremCount).toBe(LEANPOO_EXPECTED_THEOREM_COUNT);
 
     kv.gcUnreferenced();
     expect(kv.hasBlob(modRes.pinnedCertificateHash!)).toBe(true);
@@ -267,12 +266,12 @@ describe('Phase 43 — B16 Zero-Downtime AEAD Key Rotation & Cryptographic Erasu
         zeroCedar: boolean;
       };
       expect(out.verdict).toBe('Proven');
-      expect(out.facadeModule).toBe(LEANPOO_KEY_ROTATION_FACADE_MODULE);
+      expect(out.facadeModule).toBe(LEANPOO_TOP_FACADE_MODULE);
       expect(out.quintModelCount).toBe(EXPECTED_QUINT_DEFENSE_MODELS.length);
       expect(out.ascentRulesPresent).toBe(true);
       expect(out.multiLangHarnessCount).toBe(8);
-      expect(out.moduleCount).toBe(15);
-      expect(out.verifiedTheoremCount).toBe(166);
+      expect(out.moduleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);
+      expect(out.verifiedTheoremCount).toBe(LEANPOO_EXPECTED_THEOREM_COUNT);
       expect(out.zeroMathlib).toBe(true);
       expect(out.zeroCedar).toBe(true);
     }
