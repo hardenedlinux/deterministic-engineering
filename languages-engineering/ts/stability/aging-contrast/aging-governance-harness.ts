@@ -144,6 +144,14 @@ const MECHANISM_DIRECTIVES: Record<AgingMechanism, AgingRemediationDirective> = 
     antiEvasionWarning:
       'Do NOT evade by detaching JoinHandles in Vecs, spawning unbounded JoinSet batches, or returning dirty in-transaction connections into shared pools on Drop.',
   },
+  'SM20-subprocess-pipe-capture': {
+    mechanism: 'SM20-subprocess-pipe-capture',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Capture subprocess stdout/stderr via incremental chunk reads retaining at most max_output_bytes in heap while continuously draining excess pipe bytes into a fixed scratch sink until EOF (preventing both OOM and kernel pipe deadlock), and cap BufReader::read_line() with .take(MAX_LINE_BYTES + 1).',
+    antiEvasionWarning:
+      'Do NOT evade by buffering full child output via wait_with_output()/read_to_end() before calling .truncate(), nor by stopping pipe reads at the cap without draining (which deadlocks the child writer).',
+  },
 };
 
 export function getAgingRemediation(finding: AgingFinding): AgingRemediationDirective {

@@ -1416,7 +1416,9 @@ async fn dispatch_hooks(regs: Vec<Reg>) -> Vec<Summary> {
   }
   let mut out = Vec::new();
   for (r, mut task) in async_runs {
-    if let Ok(s) = task.0.take().unwrap().await { out.push(s); }
+    let res = task.0.as_mut().unwrap().await;
+    task.0 = None;
+    if let Ok(s) = res { out.push(s); }
   }
   out
 }`,
@@ -1467,10 +1469,105 @@ async fn begin_tx(conn: &Conn) {
   let _ = conn.execute("BEGIN CONCURRENT", ()).await;
 }`,
   },
+  // --- SM20: Bounded subprocess pipe capture, drain-to-sink & bounded line framing (SA97-SA102) ---
+  {
+    id: 'SA97',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-subprocess-buffer-before-truncate',
+    source: `
+async fn run_sandbox(child: ManagedChild, max_bytes: usize) -> (Vec<u8>, Vec<u8>) {
+  let output = child.wait_with_output().await.unwrap();
+  let mut stdout = output.stdout;
+  let mut stderr = output.stderr;
+  stdout.truncate(max_bytes);
+  stderr.truncate(max_bytes);
+  (stdout, stderr)
+}`,
+  },
+  {
+    id: 'SA98',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-subprocess-unbounded-read-line',
+    source: `
+fn read_boot_handshake(stdout: std::process::ChildStdout) -> Option<String> {
+  let mut reader = std::io::BufReader::new(stdout);
+  let mut line = String::new();
+  if reader.read_line(&mut line).ok().unwrap_or(0) == 0 {
+    return None;
+  }
+  Some(line)
+}`,
+  },
+  {
+    id: 'SA99',
+    language: 'go',
+    expectedPass: false,
+    expectedRuleId: 'go-subprocess-unbounded-output',
+    source: `
+package runner
+import "os/exec"
+func runBounded(cmd *exec.Cmd, maxBytes int) ([]byte, error) {
+  out, err := cmd.CombinedOutput()
+  if len(out) > maxBytes {
+    out = out[:maxBytes]
+  }
+  return out, err
+}`,
+  },
+  {
+    id: 'SA100',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+async fn run_sandbox_safe(child: ManagedChild, max_bytes: usize) -> (Vec<u8>, Vec<u8>) {
+  let output = child.wait_with_bounded_output(max_bytes).await.unwrap();
+  (output.stdout, output.stderr)
+}`,
+  },
+  {
+    id: 'SA101',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+const MAX_ASP_BOOT_LINE_BYTES: u64 = 64 * 1024;
+fn read_boot_handshake_safe(stdout: std::process::ChildStdout) -> Option<String> {
+  use std::io::{BufRead, Read};
+  let mut reader = std::io::BufReader::new(stdout).take(MAX_ASP_BOOT_LINE_BYTES + 1);
+  let mut line = String::new();
+  let n = reader.read_line(&mut line).ok()?;
+  if n == 0 || (n as u64) > MAX_ASP_BOOT_LINE_BYTES {
+    return None;
+  }
+  Some(line)
+}`,
+  },
+  {
+    id: 'SA102',
+    language: 'go',
+    expectedPass: true,
+    source: `
+package runner
+import (
+  "bytes"
+  "io"
+  "os/exec"
+)
+func runBoundedSafe(cmd *exec.Cmd, maxBytes int64) ([]byte, error) {
+  stdout, err := cmd.StdoutPipe()
+  if err != nil { return nil, err }
+  if err := cmd.Start(); err != nil { return nil, err }
+  var buf bytes.Buffer
+  _, _ = io.Copy(&buf, io.LimitReader(stdout, maxBytes))
+  _, _ = io.Copy(io.Discard, stdout)
+  return buf.Bytes(), cmd.Wait()
+}`,
+  },
 ];
 
-describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA96)', () => {
-  test('achieves 96/96 exact independent-gold match (tp=55, tn=41, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
+describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA102)', () => {
+  test('achieves 102/102 exact independent-gold match (tp=58, tn=44, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
     let tp = 0;
     let tn = 0;
     let fp = 0;
@@ -1493,7 +1590,7 @@ describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA96)', () =
       }
     }
 
-    expect({tp, tn, fp, fn}).toEqual({tp: 55, tn: 41, fp: 0, fn: 0});
+    expect({tp, tn, fp, fn}).toEqual({tp: 58, tn: 44, fp: 0, fn: 0});
   });
 
   test('clean Rust deterministic buffer pool & bounded retry passes with 0 findings', () => {

@@ -25,7 +25,8 @@ export type AgingMechanism =
   | 'SM15-search-snapshot-isolation'
   | 'SM16-search-input-sanitization'
   | 'SM17-streaming-output-budget'
-  | 'SM19-task-and-pool-cancellation';
+  | 'SM19-task-and-pool-cancellation'
+  | 'SM20-subprocess-pipe-capture';
 
 export interface AgingFinding {
   ruleId: string;
@@ -365,6 +366,23 @@ function auditGo(clean: string): AgingFinding[] {
         language: 'go',
         line: lineOfIndex(clean, goReconnectMatch.index),
         message: 'Reconnect replaces active stream/connection without closing or canceling the previous half-open handle (SM12).',
+      });
+    }
+  }
+
+  // 14. Subprocess stdout/stderr captured unboundedly via Output()/CombinedOutput()/io.ReadAll then truncated post-hoc (SM20).
+  const goSubprocMatch = /\b(?:\w+\.(?:Output|CombinedOutput)\s*\(\s*\)|io\.ReadAll\s*\(\s*(?:stdout|stderr|pipe)\w*\s*\))/.exec(clean);
+  if (goSubprocMatch) {
+    const fnScope = extractEnclosingBlock(clean, goSubprocMatch.index);
+    const hasPostTruncate = /\[\s*:\s*\w*(?:max|limit|cap)\w*\s*\]/i.test(fnScope);
+    const hasBoundedDrain = /\b(?:io\.LimitReader|io\.Discard|LimitedBuffer|BoundedPipe|maxRetain)\b/.test(fnScope);
+    if (hasPostTruncate && !hasBoundedDrain) {
+      findings.push({
+        ruleId: 'go-subprocess-unbounded-output',
+        mechanism: 'SM20-subprocess-pipe-capture',
+        language: 'go',
+        line: lineOfIndex(clean, goSubprocMatch.index),
+        message: 'Subprocess output is buffered unboundedly before post-hoc slice truncation; use bounded retain + io.Copy(io.Discard, ...) drain-to-sink (SM20).',
       });
     }
   }
@@ -744,6 +762,56 @@ function auditRust(clean: string): AgingFinding[] {
         language: 'rust',
         line: lineOfIndex(clean, leaseDropMatch.index),
         message: 'ConnectionLease::drop unconditionally returns DB connection to pool without discarding or rolling back uncommitted transactions cancelled mid-flight (SM19).',
+      });
+    }
+  }
+
+  // 20. Subprocess stdout/stderr buffered unboundedly via wait_with_output()+truncate() or pipe read_to_end() without cap/drain-to-sink (SM20).
+  const waitTruncMatch = /\bwait_with_output\s*\(\s*\)/.exec(clean);
+  if (waitTruncMatch) {
+    const fnScope = extractEnclosingBlock(clean, waitTruncMatch.index);
+    const postTruncates = /\b(?:stdout|stderr)\.truncate\s*\(/.test(fnScope);
+    const usesBoundedWait = /\bwait_with_bounded_output\b/.test(fnScope);
+    if (postTruncates && !usesBoundedWait) {
+      findings.push({
+        ruleId: 'rust-subprocess-buffer-before-truncate',
+        mechanism: 'SM20-subprocess-pipe-capture',
+        language: 'rust',
+        line: lineOfIndex(clean, waitTruncMatch.index),
+        message: 'wait_with_output() buffers unbounded subprocess stdout/stderr into heap before calling .truncate(); enforce bounded capture with drain-to-sink (SM20).',
+      });
+    }
+  } else {
+    const pipeReadEndMatch = /\b(?:stdout|stderr|stream)\w*(?:\.inner)?\.read_to_end\s*\(\s*&mut\s+\w+\s*\)/.exec(clean);
+    if (pipeReadEndMatch) {
+      const fnScope = extractEnclosingBlock(clean, pipeReadEndMatch.index);
+      const isChildPipe = /\b(?:child\.stdout|child\.stderr|ChildStdout|ChildStderr|LeasedPipe)\b/.test(clean);
+      const hasBound = /\.take\s*\(\s*[^)\s]|\b(?:max_bytes|max_output_bytes|MAX_\w*OUTPUT|drain_to_sink|read_bounded)\b/i.test(fnScope);
+      if (isChildPipe && !hasBound) {
+        findings.push({
+          ruleId: 'rust-subprocess-buffer-before-truncate',
+          mechanism: 'SM20-subprocess-pipe-capture',
+          language: 'rust',
+          line: lineOfIndex(clean, pipeReadEndMatch.index),
+          message: 'Child process pipe uses unbounded read_to_end(&mut bytes) without byte cap and drain-to-sink; runaway stdout/stderr causes OOM (SM20).',
+        });
+      }
+    }
+  }
+
+  // 21. Subprocess stdout/stderr BufReader::read_line without .take(MAX_*) single-line cap (SM20).
+  const readLineMatch = /\.read_line\s*\(\s*&mut\s+\w+\s*\)/.exec(clean);
+  if (readLineMatch) {
+    const fnScope = extractEnclosingBlock(clean, readLineMatch.index);
+    const isPipeReader = /\bBufReader::new\s*\(\s*(?:stdout|stderr|child_out|pipe)\b/.test(fnScope);
+    const hasTakeCap = /\.take\s*\(\s*[^)\s]|\b(?:MAX_\w*LINE|max_line_bytes|read_bounded_line)\b/i.test(fnScope);
+    if (isPipeReader && !hasTakeCap) {
+      findings.push({
+        ruleId: 'rust-subprocess-unbounded-read-line',
+        mechanism: 'SM20-subprocess-pipe-capture',
+        language: 'rust',
+        line: lineOfIndex(clean, readLineMatch.index),
+        message: 'Subprocess BufReader::read_line() lacks a .take(MAX_LINE_BYTES) cap; a delimiter-free runaway line exhausts heap memory (SM20).',
       });
     }
   }
