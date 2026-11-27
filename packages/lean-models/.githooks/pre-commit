@@ -37,10 +37,12 @@ while IFS= read -r rel_path; do
   [ -f "$PKG_ROOT/$rel_path" ] || continue
   case "$rel_path" in
     *.lean)
+      # REUSE-IgnoreStart
       if [ ! -f "$PKG_ROOT/${rel_path}.license" ] && ! head -n 15 "$PKG_ROOT/$rel_path" | grep -q "SPDX-License-Identifier:"; then
         echo "[lean-models/pre-commit] ERROR: missing SPDX header in $rel_path" >&2
         failed=1
       fi
+      # REUSE-IgnoreEnd
       # Strip both Lean block comments (/- ... -/) and single-line comments (-- ...)
       # before checking forbidden imports and incomplete proof tokens.
       if command -v python3 >/dev/null 2>&1; then

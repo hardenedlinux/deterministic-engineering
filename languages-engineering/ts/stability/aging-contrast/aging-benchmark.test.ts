@@ -1796,10 +1796,122 @@ func extractArchiveSafe(r io.Reader, maxTotal int64) (map[string][]byte, error) 
   return assets, nil
 }`,
   },
+  // --- SM23: ADV-L4 outbound HTTP redirect, SSRF, cleartext remote Bearer & symlink ServeFile confinement (SA115-SA120) ---
+  {
+    id: 'SA115',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-reqwest-client-default-redirects',
+    source: `
+pub fn build_llm_client(timeout: std::time::Duration) -> Result<reqwest::Client, reqwest::Error> {
+  reqwest::Client::builder()
+    .timeout(timeout)
+    .build()
+}`,
+  },
+  {
+    id: 'SA116',
+    language: 'go',
+    expectedPass: false,
+    expectedRuleId: 'go-http-client-default-redirects',
+    source: `
+package marketplace
+import (
+  "context"
+  "net/http"
+  "time"
+)
+func newClient() *http.Client {
+  return &http.Client{Timeout: 15 * time.Second}
+}
+func fetch(ctx context.Context, c *http.Client, u string) (*http.Response, error) {
+  req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+  if err != nil { return nil, err }
+  return c.Do(req)
+}`,
+  },
+  {
+    id: 'SA117',
+    language: 'go',
+    expectedPass: false,
+    expectedRuleId: 'go-http-servefile-stat-follows-symlink',
+    source: `
+package marketplace
+import (
+  "net/http"
+  "os"
+  "path/filepath"
+)
+func serveCatalog(dir string) http.Handler {
+  return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    fullPath := filepath.Join(dir, "catalog.json")
+    info, err := os.Stat(fullPath)
+    if err != nil || info.IsDir() { http.NotFound(w, r); return }
+    http.ServeFile(w, r, fullPath)
+  })
+}`,
+  },
+  {
+    id: 'SA118',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+pub fn build_llm_client_safe(timeout: std::time::Duration) -> Result<reqwest::Client, reqwest::Error> {
+  reqwest::Client::builder()
+    .timeout(timeout)
+    .redirect(reqwest::redirect::Policy::none())
+    .build()
+}`,
+  },
+  {
+    id: 'SA119',
+    language: 'go',
+    expectedPass: true,
+    source: `
+package marketplace
+import (
+  "context"
+  "errors"
+  "net/http"
+  "time"
+)
+var errRedirectBlocked = errors.New("redirect blocked")
+func newClientSafe() *http.Client {
+  return &http.Client{
+    Timeout: 15 * time.Second,
+    CheckRedirect: func(*http.Request, []*http.Request) error { return errRedirectBlocked },
+  }
+}
+func fetchSafe(ctx context.Context, c *http.Client, u string) (*http.Response, error) {
+  req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+  if err != nil { return nil, err }
+  return c.Do(req)
+}`,
+  },
+  {
+    id: 'SA120',
+    language: 'go',
+    expectedPass: true,
+    source: `
+package marketplace
+import (
+  "net/http"
+  "os"
+  "path/filepath"
+)
+func serveCatalogSafe(dir string) http.Handler {
+  return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    fullPath := filepath.Join(dir, "catalog.json")
+    info, err := os.Lstat(fullPath)
+    if err != nil || info.IsDir() || info.Mode()&os.ModeSymlink != 0 { http.NotFound(w, r); return }
+    http.ServeFile(w, r, fullPath)
+  })
+}`,
+  },
 ];
 
-describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA114)', () => {
-  test('achieves 114/114 exact independent-gold match (tp=64, tn=50, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
+describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA120)', () => {
+  test('achieves 120/120 exact independent-gold match (tp=67, tn=53, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
     let tp = 0;
     let tn = 0;
     let fp = 0;
@@ -1822,7 +1934,7 @@ describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA114)', () 
       }
     }
 
-    expect({tp, tn, fp, fn}).toEqual({tp: 64, tn: 50, fp: 0, fn: 0});
+    expect({tp, tn, fp, fn}).toEqual({tp: 67, tn: 53, fp: 0, fn: 0});
   });
 
   test('clean Rust deterministic buffer pool & bounded retry passes with 0 findings', () => {

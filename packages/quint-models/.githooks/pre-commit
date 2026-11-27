@@ -45,10 +45,12 @@ while IFS= read -r rel_path; do
   [ -f "$PKG_ROOT/$rel_path" ] || continue
   case "$rel_path" in
     *.qnt)
+      # REUSE-IgnoreStart
       if [ ! -f "$PKG_ROOT/${rel_path}.license" ] && ! head -n 15 "$PKG_ROOT/$rel_path" | grep -q "SPDX-License-Identifier:"; then
         echo "[quint-models/pre-commit] ERROR: missing SPDX header in $rel_path" >&2
         failed=1
       fi
+      # REUSE-IgnoreEnd
       if ! grep -Eq '^[[:space:]]*module[[:space:]]+[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\{' "$PKG_ROOT/$rel_path"; then
         echo "[quint-models/pre-commit] ERROR: missing Quint module declaration in $rel_path" >&2
         failed=1
@@ -59,10 +61,12 @@ while IFS= read -r rel_path; do
       failed=1
       ;;
     */objects.ss|objects.ss)
+      # REUSE-IgnoreStart
       if [ ! -f "$PKG_ROOT/${rel_path}.license" ] && ! head -n 15 "$PKG_ROOT/$rel_path" | grep -q "SPDX-License-Identifier:"; then
         echo "[quint-models/pre-commit] ERROR: missing SPDX header in $rel_path" >&2
         failed=1
       fi
+      # REUSE-IgnoreEnd
       # Hard unconditional 10.204 .qnt-SSOT anti-bloat gate (zero legacy exemptions):
       # Quint state/guards/transitions/safety/traces/countermodels live EXCLUSIVELY in .qnt.
       if grep -Eq '^[[:space:]]*(state|guards|transitions|safety|traces|countermodels|parameters|quint-imports|verify-depth|countermodel-depth|verify-const-bindings|guard-classifications|derive-from-transition|counter-action):' "$PKG_ROOT/$rel_path"; then

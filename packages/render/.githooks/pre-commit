@@ -56,10 +56,12 @@ while IFS= read -r rel_path; do
   [ -f "$PKG_ROOT/$rel_path" ] || continue
   case "$rel_path" in
     *.ts|*.js|*.mjs|*.sh)
+      # REUSE-IgnoreStart
       if [ ! -f "$PKG_ROOT/${rel_path}.license" ] && ! head -n 15 "$PKG_ROOT/$rel_path" | grep -q "SPDX-License-Identifier:"; then
         echo "[render/pre-commit] ERROR: missing SPDX header in $rel_path" >&2
         failed=1
       fi
+      # REUSE-IgnoreEnd
       ;;
   esac
 done <<< "$CHANGED_FILES"

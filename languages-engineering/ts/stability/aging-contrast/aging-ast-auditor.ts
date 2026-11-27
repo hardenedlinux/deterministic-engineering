@@ -28,7 +28,8 @@ export type AgingMechanism =
   | 'SM19-task-and-pool-cancellation'
   | 'SM20-subprocess-pipe-capture'
   | 'SM21-atomic-persistence-fsync'
-  | 'SM22-adversarial-sandbox-archive-confinement';
+  | 'SM22-adversarial-sandbox-archive-confinement'
+  | 'SM23-adversarial-http-redirect-ssrf';
 
 export interface AgingFinding {
   ruleId: string;
@@ -453,6 +454,44 @@ function auditGo(clean: string): AgingFinding[] {
         language: 'go',
         line: lineOfIndex(clean, goTarReaderMatch.index),
         message: 'Tar archive extraction accepts duplicate/shadowing entries or lacks cumulative decompressed byte cap and Multistream(false) guard (ADV-L4, SM22).',
+      });
+    }
+  }
+
+  // 19. Go outbound &http.Client{...} constructed without fail-closed CheckRedirect policy (ADV-L4, SM23).
+  if (/\bhttp\.NewRequest(?:WithContext)?\s*\(/.test(clean)) {
+    const httpClientRe = /&http\.Client\s*\{/g;
+    let hcMatch: RegExpExecArray | null;
+    while ((hcMatch = httpClientRe.exec(clean)) !== null) {
+      const litBlock = extractBraceBlock(clean, hcMatch.index);
+      const fnScope = extractEnclosingBlock(clean, hcMatch.index);
+      const hasRedirectGuard = /\bCheckRedirect\b/.test(litBlock) || /\b(?:CheckRedirect|noRedirectHTTPClient|newNoRedirectHTTPClient)\b/.test(fnScope);
+      if (!hasRedirectGuard) {
+        findings.push({
+          ruleId: 'go-http-client-default-redirects',
+          mechanism: 'SM23-adversarial-http-redirect-ssrf',
+          language: 'go',
+          line: lineOfIndex(clean, hcMatch.index),
+          message: 'Outbound http.Client omits fail-closed CheckRedirect policy; 301/302/307 redirects bypass origin/HTTPS gates and enable SSRF or credential exfiltration (ADV-L4, SM23).',
+        });
+        break;
+      }
+    }
+  }
+
+  // 20. Go HTTP static file handler validates with os.Stat before http.ServeFile instead of os.Lstat symlink refusal (ADV-L4, SM23).
+  const serveFileMatch = /\bhttp\.ServeFile\s*\(/.exec(clean);
+  if (serveFileMatch) {
+    const fnScope = extractEnclosingBlock(clean, serveFileMatch.index);
+    const usesStat = /\bos\.Stat\s*\(/.test(fnScope);
+    const rejectsSymlink = /\bos\.Lstat\s*\(/.test(fnScope) && /\bModeSymlink\b/.test(fnScope);
+    if (usesStat && !rejectsSymlink) {
+      findings.push({
+        ruleId: 'go-http-servefile-stat-follows-symlink',
+        mechanism: 'SM23-adversarial-http-redirect-ssrf',
+        language: 'go',
+        line: lineOfIndex(clean, serveFileMatch.index),
+        message: 'HTTP handler checks os.Stat before http.ServeFile without os.Lstat ModeSymlink rejection; planted symlinks inside served directories leak arbitrary host files (ADV-L4, SM23).',
       });
     }
   }
@@ -916,6 +955,22 @@ function auditRust(clean: string): AgingFinding[] {
         language: 'rust',
         line: lineOfIndex(clean, sandboxJoinMatch.index),
         message: 'File sandbox relies solely on lexical path normalization without symlink_metadata/canonicalize checks; intermediate or leaf symlinks escape sandbox root (ADV-L4, SM22).',
+      });
+    }
+  }
+
+  // 24. Rust reqwest::Client::builder() constructed without explicit fail-closed redirect::Policy::none()/custom (ADV-L4, SM23).
+  const reqwestBuilderMatch = /\breqwest::Client::builder\s*\(\s*\)/.exec(clean);
+  if (reqwestBuilderMatch) {
+    const fnScope = extractEnclosingBlock(clean, reqwestBuilderMatch.index);
+    const hasRedirectPolicy = /\.redirect\s*\(\s*[\s\S]{0,80}(?:Policy::none|Policy::custom|redirect_policy)/.test(fnScope);
+    if (!hasRedirectPolicy) {
+      findings.push({
+        ruleId: 'rust-reqwest-client-default-redirects',
+        mechanism: 'SM23-adversarial-http-redirect-ssrf',
+        language: 'rust',
+        line: lineOfIndex(clean, reqwestBuilderMatch.index),
+        message: 'reqwest::Client::builder() inherits default 10-hop redirect following; 307/302 redirects leak prompts/Bearer credentials and enable internal SSRF (ADV-L4, SM23).',
       });
     }
   }

@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
+// REUSE-IgnoreStart
 import { describe, expect, test } from 'bun:test';
 import { chmodSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -444,3 +445,4 @@ describe('Layered Subtree Git Hooks & Branch-Mirrored CI Sync', () => {
     expect(workflow).toContain('10.205 violation');
   }, 120_000);
 });
+// REUSE-IgnoreEnd

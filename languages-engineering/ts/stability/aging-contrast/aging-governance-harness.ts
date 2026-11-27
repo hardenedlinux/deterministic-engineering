@@ -168,6 +168,14 @@ const MECHANISM_DIRECTIVES: Record<AgingMechanism, AgingRemediationDirective> = 
     antiEvasionWarning:
       'Do NOT evade by relying on lexical Component::ParentDir checks alone, trusting per-entry tar headers without cumulative byte tracking, or certifying fixes with gentle happy-path unit tests.',
   },
+  'SM23-adversarial-http-redirect-ssrf': {
+    mechanism: 'SM23-adversarial-http-redirect-ssrf',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Configure outbound HTTP clients with fail-closed redirect policies (Rust reqwest::redirect::Policy::none(), Go CheckRedirect returning ErrRedirectBlocked), require HTTPS for non-loopback authenticated endpoints, reject URL userinfo (@) and control bytes, confine DownloadURLs to pinned scheme/origin (blocking loopback/metadata SSRF), verify static HTTP file handlers via os.Lstat rejecting ModeSymlink, and prove fixes against ADV-L4 live redirect/SSRF exploit tests.',
+    antiEvasionWarning:
+      'Do NOT evade by validating only the initial URL while leaving default redirect following enabled, allowing cleartext http:// Bearer credentials to remote hosts, or relying on os.Stat before http.ServeFile.',
+  },
 };
 
 export function getAgingRemediation(finding: AgingFinding): AgingRemediationDirective {
