@@ -64,6 +64,7 @@ package 'DeterministicEngineering' {
         part 'source-load';
     }
     part 'placements' {
+        part 'agentDefenseAudit' : 'RepositoryOrganization'::'DistributionPackage';
         part 'documents' : 'RepositoryOrganization'::'DocumentItem';
         part 'examples' : 'RepositoryOrganization'::'UserExample';
         part 'infrastructure' : 'RepositoryOrganization'::'PackageInfrastructure';

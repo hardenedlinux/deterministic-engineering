@@ -1,0 +1,688 @@
+// SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+// SPDX-License-Identifier: LGPL-2.1-or-later
+
+/**
+ * Phase 30 (10.178): Machine-Verifiable LeanPoo Library Export Manifest &
+ * Single-Shot 76-Theorem Fleet Attestation Gate (`deterministic-engineering-qnt` -> `cedar-poo-spec`).
+ *
+ * Enforces the Library <-> Consuming Authorization Host separation mechanically:
+ *   1. ZERO Mathlib imports across all 6 exported LeanPoo modules.
+ *   2. ZERO Cedar imports across all 6 exported LeanPoo modules (concrete policies
+ *      live strictly in `cedar-poo-spec`).
+ *   3. ZERO `sorry` / `admit` / custom `axiom` / `unsafe` / `implemented_by` backdoors.
+ *   4. Single-shot batched `lake env lean --stdin` `#print axioms` verification via
+ *      `LibraryExportContract` transitive import, pinning an immutable `M1` fleet
+ *      attestation receipt in `ContentAddressedKvStore`.
+ */
+
+import {spawnSync} from 'node:child_process';
+import {existsSync, readFileSync} from 'node:fs';
+import {resolve} from 'node:path';
+import {ContentAddressedKvStore, sha256Digest} from './durable-merkle-store.ts';
+import {
+  auditLeanSourceAntiFabrication,
+  parseLeanPrintAxiomsOutput,
+  type LeanAxiomAuditVerdict,
+  type LeanSourceFinding,
+} from './lean-proof-oracle.ts';
+
+export interface LeanPooExportModuleSpec {
+  readonly moduleName: string;
+  readonly relativeLeanPath: string;
+  readonly pillars: readonly string[];
+  readonly theorems: readonly string[];
+}
+
+export const LEANPOO_EXPORT_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.LibraryExportContract';
+
+export const LEANPOO_FOUR_PARADIGM_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.FourParadigmConsistency';
+
+export const LEANPOO_RELEASE_CERT_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.ReleaseCertificateReplay';
+
+export const LEANPOO_MERKLE_ASYNC_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.MerkleConsistencyAndAsyncCut';
+
+export const LEANPOO_TOOL_SANDBOX_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.ToolSandboxAndRpcBoundary';
+
+export const LEANPOO_CONTEXT_DISTILLATION_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.ContextDistillationAndProvenance';
+
+export const LEANPOO_FEDERATED_ARBITRATION_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.FederatedArbitrationLiveness';
+
+export const LEANPOO_SUPPLY_CHAIN_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.SupplyChainProvenance';
+
+export const LEANPOO_ENCLAVE_ATTESTATION_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.ConfidentialEnclaveAttestation';
+
+export const LEANPOO_KEY_ROTATION_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.KeyRotationAndCryptoShredding';
+
+export const LEANPOO_PQ_AGILITY_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.PostQuantumCryptoAgility';
+
+export const LEANPOO_ZK_DISCLOSURE_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.ZeroKnowledgeSelectiveDisclosure';
+
+export const LEANPOO_GEO_RESIDENCY_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.GeoResidencyAndSovereignty';
+
+export const LEANPOO_FEDERATED_ORG_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.FederatedOrgReciprocity';
+
+export const LEANPOO_MODEL_WEIGHT_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.ModelWeightAndInferenceAttestation';
+
+export const LEANPOO_TOP_FACADE_MODULE = LEANPOO_MODEL_WEIGHT_FACADE_MODULE;
+
+export const LEANPOO_LIBRARY_EXPORT_MANIFEST: readonly LeanPooExportModuleSpec[] = [
+  {
+    moduleName: 'DeterministicEngineering.Engineering.DurableGovernanceQuorum',
+    relativeLeanPath: 'DeterministicEngineering/Engineering/DurableGovernanceQuorum.lean',
+    pillars: ['B3', 'B6', 'B10', 'B10b', 'B10c', 'R3'],
+    theorems: [
+      'bft_quorum_intersection_honest_witness',
+      'bft_no_conflicting_finality',
+      'handover_chain_monotonic',
+      'handover_chain_rejects_all_retired_epochs',
+      'm1_persistable_forbids_any_m3_descendant',
+      'm3_leak_always_refused',
+      'split_preserves_total_budget',
+      'spend_preserves_total_budget',
+      'attenuation_chain_bounded_by_root',
+      'ancestor_revocation_invalidates_chain',
+      'durableQuorumContract_preserves_rejection',
+      'hostPolicyRefinement_preserves_library_rejection',
+      'gossipTuning_preserves_quorum_certificate',
+      'batchSizeTuning_preserves_quorum_certificate',
+      'droppingExternalPolicyHost_invalidates_reuse',
+      'slashed_witness_is_byzantine',
+      'slashed_witness_never_reenters_future_epochs',
+      'hostPolicyOverSlashing_preserves_library_rejection',
+      'droppingSlashReentryGuard_invalidates_reuse',
+    ],
+  },
+  {
+    moduleName: 'DeterministicEngineering.Engineering.HostAuthorizationBridge',
+    relativeLeanPath: 'DeterministicEngineering/Engineering/HostAuthorizationBridge.lean',
+    pillars: ['DualSovereignty', 'R1', 'R3'],
+    theorems: [
+      'forbid_always_overrides_permit',
+      'default_deny_when_no_permit',
+      'cedar_permit_cannot_bypass_library_refusal',
+      'library_finalized_cannot_bypass_host_forbid',
+      'library_finalized_cannot_bypass_host_pending',
+      'cross_operation_permit_replay_blocked',
+      'stale_policy_snapshot_permit_blocked',
+      'revoked_use_time_authority_blocked',
+      'dualSovereignBridge_preserves_library_rejection',
+      'disjointHostPolicyEvolution_preserves_bridge_certificate',
+      'weakeningBoundOperation_invalidates_reuse',
+    ],
+  },
+  {
+    moduleName: 'DeterministicEngineering.Engineering.InformationFlowAndTms',
+    relativeLeanPath: 'DeterministicEngineering/Engineering/InformationFlowAndTms.lean',
+    pillars: ['B7', 'B8'],
+    theorems: [
+      'difc_secrecy_monotonic_without_declass',
+      'difc_no_write_down_blocks_exfiltration',
+      'difc_failed_declass_preserves_taint',
+      'camel_integrity_meet_never_elevates',
+      'camel_control_slot_blocks_untrusted',
+      'doyle_single_justification_retraction_cascades',
+      'atms_clean_alternative_justification_survives',
+      'poison_immunization_tombstone_blocks_reproposal',
+      'difcAtmsContract_preserves_rejection',
+      'retentionTuning_preserves_difc_atms_certificate',
+      'disablingCamelIntegrity_invalidates_reuse',
+    ],
+  },
+  {
+    moduleName: 'DeterministicEngineering.Engineering.SagaAndSsi',
+    relativeLeanPath: 'DeterministicEngineering/Engineering/SagaAndSsi.lean',
+    pillars: ['B4', 'B6', 'DE01'],
+    theorems: [
+      'post_pivot_rollback_always_forbidden',
+      'pending_unknown_fences_both_forward_and_rollback',
+      'reverse_compensation_covers_all_executed_steps',
+      'second_pivot_breaks_at_most_one_pivot',
+      'mutual_write_skew_always_blocked',
+      'direct_ww_conflict_always_blocked',
+      'de01_independent_peer_always_admitted',
+      'read_only_agents_never_conflict',
+      'sagaSsiContract_preserves_rejection',
+      'retryBackoffTuning_preserves_saga_ssi_certificate',
+      'disablingPivotFence_invalidates_reuse',
+    ],
+  },
+  {
+    moduleName: 'DeterministicEngineering.Engineering.HitlAndCoevolution',
+    relativeLeanPath: 'DeterministicEngineering/Engineering/HitlAndCoevolution.lean',
+    pillars: ['B1', 'B2', 'B5', 'R1', 'R5'],
+    theorems: [
+      'sod_forbids_requester_self_approval',
+      'duplicate_approver_rejected_in_quorum',
+      'baseline_drift_invalidates_hitl_resume',
+      'intersecting_policy_drift_invalidates_approval',
+      'disjoint_policy_upgrade_preserves_approval',
+      'veto_tombstone_blocks_nagging_retry_forever',
+      'cross_tenant_aead_read_always_refused',
+      'ciphertext_transplant_across_row_or_tenant_refused',
+      'unrevoked_m3_or_veto_or_freeze_blocks_resume',
+      'hitlCoevolutionContract_preserves_rejection',
+      'briefRenderLimitTuning_preserves_hitl_certificate',
+      'disablingVetoPersistence_invalidates_reuse',
+    ],
+  },
+  {
+    moduleName: LEANPOO_EXPORT_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/LibraryExportContract.lean',
+    pillars: ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B9', 'B10', 'B10b', 'B10c', 'R1', 'R2', 'R3', 'R4', 'R5', 'LibraryExport'],
+    theorems: [
+      'unifiedLibraryContract_accepts_all_enabled',
+      'missing_quorum_slashing_rejected',
+      'missing_difc_atms_rejected',
+      'missing_saga_ssi_rejected',
+      'missing_hitl_aead_rejected',
+      'missing_r3_budget_rejected',
+      'consumingHost_oneStep_refinement_preserves_library_rejection',
+      'consumingHost_twoStep_cedar_governance_refinement_preserves_rejection',
+      'consumingHost_threeStep_full_cedar_stack_preserves_rejection',
+      'unifiedLibrary_telemetryTuning_preserves_certificate',
+      'unifiedLibrary_hostPolicyBundlePatch_preserves_certificate',
+      'unifiedLibrary_disablingDualSovereignty_invalidates_reuse',
+    ],
+  },
+  {
+    moduleName: LEANPOO_FOUR_PARADIGM_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/FourParadigmConsistency.lean',
+    pillars: ['FourParadigmConsistency', 'NVersionGate'],
+    theorems: [
+      'any_paradigm_refuted_blocks_library_admit',
+      'any_paradigm_pending_blocks_library_admit',
+      'any_paradigm_setup_defect_blocks_library_admit',
+      'host_permit_cannot_override_four_paradigm_failure',
+      'four_paradigm_proven_cannot_override_host_refusal',
+      'four_paradigm_admit_iff_all_proven',
+      'paradigm_list_convergence_requires_every_entry_proven',
+      'fourParadigmContract_preserves_rejection',
+      'reportFormatTuning_preserves_fourParadigm_certificate',
+      'disablingLeanPooGate_invalidates_reuse',
+    ],
+  },
+  {
+    moduleName: LEANPOO_RELEASE_CERT_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/ReleaseCertificateReplay.lean',
+    pillars: ['OfflineReleaseCert', 'AirGappedReplay'],
+    theorems: [
+      'forged_signature_always_rejected',
+      'downgraded_theorem_count_always_rejected',
+      'nonzero_mathlib_or_cedar_always_rejected',
+      'expired_or_revoked_release_epoch_rejected',
+      'insufficient_witness_quorum_rejected',
+      'mismatched_expected_digest_rejected',
+      'offline_verify_sound_and_complete',
+      'releaseCertContract_preserves_rejection',
+      'cacheTtlTuning_preserves_releaseCert_certificate',
+      'disablingAntiDowngrade_invalidates_reuse',
+    ],
+  },
+  {
+    moduleName: LEANPOO_MERKLE_ASYNC_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/MerkleConsistencyAndAsyncCut.lean',
+    pillars: ['B9', 'R2', 'R4'],
+    theorems: [
+      'append_only_prefix_preserved',
+      'retroactive_leaf_mutation_breaks_prefix',
+      'size_rollback_breaks_append_only',
+      'split_view_same_size_different_root_is_equivocation',
+      'r2_disjoint_branch_merge_preserves_both_agents',
+      'r2_divergent_concurrent_edit_always_surfaces_conflict',
+      'r4_any_upstream_axis_drift_invalidates_llm_memo',
+      'merkleAsyncMemoContract_preserves_rejection',
+      'merkleCacheDepthTuning_preserves_certificate',
+      'disablingSplitViewCheck_invalidates_reuse',
+    ],
+  },
+  {
+    moduleName: LEANPOO_TOOL_SANDBOX_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/ToolSandboxAndRpcBoundary.lean',
+    pillars: ['B11', 'McpSandbox', 'RpcBoundary'],
+    theorems: [
+      'unpinned_shadow_tool_always_refused',
+      'mcp_schema_rug_pull_always_refused',
+      'sandbox_scope_escalation_always_refused',
+      'side_effecting_tool_without_idempotency_key_refused',
+      'ambiguous_rpc_timeout_blocks_blind_retry',
+      'oversized_or_untagged_tool_output_refused',
+      'tool_response_admit_iff_bounded_and_tainted',
+      'toolSandboxContract_preserves_rejection',
+      'rpcLogSampleRateTuning_preserves_toolSandbox_certificate',
+      'disablingSchemaPinning_invalidates_reuse',
+    ],
+  },
+  {
+    moduleName: LEANPOO_CONTEXT_DISTILLATION_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/ContextDistillationAndProvenance.lean',
+    pillars: ['B12', 'ContextDistillation', 'Provenance'],
+    theorems: [
+      'dropping_pinned_m1_constraint_always_refused',
+      'hallucinated_citation_always_refused',
+      'secrecy_tag_stripping_by_summarizer_refused',
+      'integrity_laundering_untrusted_to_trusted_refused',
+      'distilled_context_exceeding_token_budget_refused',
+      'empty_sources_with_zero_citations_and_budget_admitted',
+      'retained_pinned_subset_monotonic_under_append',
+      'distillationContract_preserves_rejection',
+      'summaryPromptVersionTuning_preserves_distillation_certificate',
+      'disablingPinnedRetention_invalidates_reuse',
+    ],
+  },
+  {
+    moduleName: LEANPOO_FEDERATED_ARBITRATION_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/FederatedArbitrationLiveness.lean',
+    pillars: ['B13', 'FederatedArbitration', 'BoundedLiveness'],
+    theorems: [
+      'retry_budget_exhaustion_blocks_auto_retry',
+      'deadlock_immediately_blocks_auto_retry',
+      'exhausted_or_deadlocked_leaves_active_phase',
+      'routed_escalation_reaches_human_phase',
+      'unrouted_escalation_fails_closed_to_safe_abort',
+      'terminal_phases_are_absorbing',
+      'bounded_transition_never_auto_admits_on_failure',
+      'federatedArbitrationContract_preserves_rejection',
+      'escalationAlertDelayTuning_preserves_certificate',
+      'disablingRetryCap_invalidates_reuse',
+    ],
+  },
+  {
+    moduleName: LEANPOO_SUPPLY_CHAIN_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/SupplyChainProvenance.lean',
+    pillars: ['B14', 'SupplyChainProvenance', 'ReproducibleBuilds'],
+    theorems: [
+      'unpinned_dependency_always_refused',
+      'tombstoned_cve_dependency_always_refused',
+      'non_hermetic_network_build_always_refused',
+      'reproducible_build_mismatch_always_refused',
+      'forged_or_revoked_builder_signature_refused',
+      'mismatched_source_or_toolchain_digest_refused',
+      'hermetic_provenance_admit_sound_and_complete',
+      'supplyChainContract_preserves_rejection',
+      'buildLogVerbosityTuning_preserves_certificate',
+      'disablingLockfilePinning_invalidates_reuse',
+    ],
+  },
+  {
+    moduleName: LEANPOO_ENCLAVE_ATTESTATION_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/ConfidentialEnclaveAttestation.lean',
+    pillars: ['B15', 'ConfidentialCompute', 'TeeAttestation'],
+    theorems: [
+      'debug_enclave_always_refused',
+      'enclave_measurement_mismatch_always_refused',
+      'tcb_svn_rollback_always_refused',
+      'replayed_or_mismatched_nonce_always_refused',
+      'forged_or_revoked_hardware_quote_refused',
+      'b14_to_b15_end_to_end_chain_binds_running_binary',
+      'enclave_key_release_sound_and_complete',
+      'enclaveAttestationContract_preserves_rejection',
+      'quoteCacheTtlTuning_preserves_certificate',
+      'disablingDebugLockout_invalidates_reuse',
+    ],
+  },
+  {
+    moduleName: LEANPOO_KEY_ROTATION_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/KeyRotationAndCryptoShredding.lean',
+    pillars: ['B16', 'KeyRotation', 'CryptoShredding'],
+    theorems: [
+      'retired_key_epoch_cannot_encrypt_new_writes',
+      'shredded_key_epoch_permanently_unreadable',
+      'shredded_key_cannot_encrypt_or_rewrap',
+      'rewrap_must_preserve_plaintext_digest',
+      'rewrap_must_strictly_advance_epoch',
+      'aad_tenant_or_epoch_mismatch_refused',
+      'crypto_shred_preserves_merkle_root_integrity',
+      'keyRotationContract_preserves_rejection',
+      'rewrapBatchSizeTuning_preserves_certificate',
+      'disablingCryptoShredTombstone_invalidates_reuse',
+    ],
+  },
+  {
+    moduleName: LEANPOO_PQ_AGILITY_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/PostQuantumCryptoAgility.lean',
+    pillars: ['B17', 'PostQuantumHybrid', 'CryptoAgility'],
+    theorems: [
+      'algorithm_downgrade_always_refused',
+      'deprecated_suite_always_refused',
+      'classical_failure_blocks_hybrid_combiner',
+      'pq_failure_blocks_hybrid_combiner',
+      'ots_leaf_reuse_always_refused',
+      'domain_separation_mismatch_refused',
+      'hybrid_combiner_sound_and_complete',
+      'pqAgilityContract_preserves_rejection',
+      'otsPoolRefillWatermarkTuning_preserves_certificate',
+      'disablingPqHybridFloor_invalidates_reuse',
+    ],
+  },
+  {
+    moduleName: LEANPOO_ZK_DISCLOSURE_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/ZeroKnowledgeSelectiveDisclosure.lean',
+    pillars: ['B18', 'ZkSelectiveDisclosure', 'PrivacyCompliance'],
+    theorems: [
+      'commitment_mismatch_always_refused',
+      'over_disclosure_of_secret_field_refused',
+      'sigma_proof_failure_blocks_zk_disclosure',
+      'replayed_nullifier_always_refused',
+      'stale_verifier_nonce_or_policy_refused',
+      'missing_required_predicate_field_refused',
+      'zk_selective_disclosure_sound_and_complete',
+      'zkDisclosureContract_preserves_rejection',
+      'proofBatchSizeTuning_preserves_certificate',
+      'disablingOverDisclosureFence_invalidates_reuse',
+    ],
+  },
+  {
+    moduleName: LEANPOO_GEO_RESIDENCY_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/GeoResidencyAndSovereignty.lean',
+    pillars: ['B19', 'GeoResidency', 'DataSovereignty'],
+    theorems: [
+      'forbidden_region_placement_refused',
+      'unapproved_cross_border_egress_refused',
+      'unverified_region_attestation_refused',
+      'revoked_jurisdiction_cert_refused',
+      'model_inference_residency_escape_refused',
+      'same_region_local_transfer_no_egress_permit_needed',
+      'geo_residency_admit_sound_and_complete',
+      'geoResidencyContract_preserves_rejection',
+      'regionHealthPollTuning_preserves_certificate',
+      'disablingCrossBorderFence_invalidates_reuse',
+    ],
+  },
+  {
+    moduleName: LEANPOO_FEDERATED_ORG_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/FederatedOrgReciprocity.lean',
+    pillars: ['B20', 'FederatedReciprocity', 'DisputeArbitration'],
+    theorems: [
+      'unilateral_org_approval_always_refused',
+      'self_federated_same_org_spoof_refused',
+      'revoked_or_suspended_org_always_refused',
+      'active_dispute_freeze_always_blocks',
+      'unratified_federation_treaty_refused',
+      'expired_reciprocity_epoch_refused',
+      'federated_reciprocity_sound_and_complete',
+      'federatedOrgContract_preserves_rejection',
+      'federationHeartbeatTuning_preserves_certificate',
+      'disablingBilateralReciprocity_invalidates_reuse',
+    ],
+  },
+  {
+    moduleName: LEANPOO_MODEL_WEIGHT_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/ModelWeightAndInferenceAttestation.lean',
+    pillars: ['B21', 'ModelWeightPinning', 'ReproducibleInference'],
+    theorems: [
+      'unpinned_base_weight_refused',
+      'unauthorized_lora_adapter_refused',
+      'non_deterministic_sampling_temperature_refused',
+      'missing_seed_or_kernel_pin_refused',
+      'forged_or_revoked_model_attestation_refused',
+      'clean_zero_adapter_base_model_admitted',
+      'model_inference_attestation_sound_and_complete',
+      'modelAttestationContract_preserves_rejection',
+      'kvCacheEvictionTuning_preserves_certificate',
+      'disablingWeightRootPinning_invalidates_reuse',
+    ],
+  },
+];
+
+export const LEANPOO_EXPECTED_MODULE_COUNT = LEANPOO_LIBRARY_EXPORT_MANIFEST.length;
+export const LEANPOO_EXPECTED_THEOREM_COUNT = LEANPOO_LIBRARY_EXPORT_MANIFEST.reduce(
+  (acc, m) => acc + m.theorems.length,
+  0,
+);
+
+export interface LibraryBoundaryAuditResult {
+  passed: boolean;
+  moduleCount: number;
+  theoremCount: number;
+  violations: Array<{
+    moduleName: string;
+    kind: 'mathlib-import' | 'cedar-import' | 'missing-spdx' | 'anti-fabrication';
+    detail: string;
+    findings?: LeanSourceFinding[];
+  }>;
+}
+
+const DEFAULT_LEAN_DIR = resolve(import.meta.dir, '../../lean-models');
+
+/**
+ * Statically verifies that all 6 exported LeanPoo modules strictly respect:
+ *   - ZERO Mathlib imports
+ *   - ZERO Cedar imports (host policies stay in `cedar-poo-spec`)
+ *   - Valid SPDX headers
+ *   - Zero `sorry`/`admit`/custom `axiom`/`unsafe` backdoors
+ */
+export function auditLeanPooLibraryBoundaries(
+  leanDir = DEFAULT_LEAN_DIR,
+  manifest: readonly LeanPooExportModuleSpec[] = LEANPOO_LIBRARY_EXPORT_MANIFEST,
+): LibraryBoundaryAuditResult {
+  const violations: LibraryBoundaryAuditResult['violations'] = [];
+  let theoremCount = 0;
+
+  for (const mod of manifest) {
+    theoremCount += mod.theorems.length;
+    const fullPath = resolve(leanDir, mod.relativeLeanPath);
+    const src = readFileSync(fullPath, 'utf8');
+
+    // REUSE-IgnoreStart
+    if (!src.slice(0, 400).includes('SPDX-License-Identifier:')) {
+      violations.push({
+        moduleName: mod.moduleName,
+        kind: 'missing-spdx',
+        detail: `${mod.relativeLeanPath} is missing SPDX-License-Identifier header`,
+      });
+    }
+    // REUSE-IgnoreEnd
+
+    for (const line of src.split('\n')) {
+      const trimmed = line.trim();
+      if (/^import\s+Mathlib\b/.test(trimmed)) {
+        violations.push({
+          moduleName: mod.moduleName,
+          kind: 'mathlib-import',
+          detail: `Forbidden Mathlib dependency: ${trimmed}`,
+        });
+      }
+      if (/^import\s+Cedar\b/.test(trimmed)) {
+        violations.push({
+          moduleName: mod.moduleName,
+          kind: 'cedar-import',
+          detail: `Forbidden Cedar host dependency in reusable Library: ${trimmed}`,
+        });
+      }
+    }
+
+    const antiFab = auditLeanSourceAntiFabrication(src);
+    if (!antiFab.passed) {
+      violations.push({
+        moduleName: mod.moduleName,
+        kind: 'anti-fabrication',
+        detail: `Anti-fabrication findings (${antiFab.findings.length})`,
+        findings: antiFab.findings,
+      });
+    }
+  }
+
+  return {
+    passed: violations.length === 0,
+    moduleCount: manifest.length,
+    theoremCount,
+    violations,
+  };
+}
+
+export type LeanPooFleetAttestationVerdict =
+  | {
+      kind: 'Proven';
+      facadeModule: string;
+      moduleCount: number;
+      verifiedTheoremCount: number;
+      theoremAxioms: Record<string, string[]>;
+      fleetAttestationDigest: string;
+      pinnedReceiptHash?: string;
+    }
+  | {
+      kind: 'Refuted';
+      reason:
+        | 'library-boundary-violation'
+        | 'unverified-sorry-or-custom-axiom'
+        | 'missing-theorem-axiom-report';
+      details: unknown;
+    }
+  | {kind: 'PendingMethod'; reason: 'lean-toolchain-unavailable'}
+  | {kind: 'SetupDefect'; reason: string};
+
+/**
+ * Single-shot live `lake env lean --stdin` attestation across the ENTIRE 6-module,
+ * 76-theorem `LeanPoo` Library via the single `LibraryExportContract` facade import.
+ * Pins an immutable `M1` attestation receipt in `kv` for downstream `cedar-poo-spec` consumption.
+ */
+export function verifyLeanPooLibraryFleet(params?: {
+  kv?: ContentAddressedKvStore;
+  leanDir?: string;
+  lakeBinary?: string;
+  manifest?: readonly LeanPooExportModuleSpec[];
+}): LeanPooFleetAttestationVerdict {
+  const leanDir = params?.leanDir ?? DEFAULT_LEAN_DIR;
+  const lakeBin = params?.lakeBinary ?? 'lake';
+  const manifest = params?.manifest ?? LEANPOO_LIBRARY_EXPORT_MANIFEST;
+
+  const boundary = auditLeanPooLibraryBoundaries(leanDir, manifest);
+  if (!boundary.passed) {
+    return {
+      kind: 'Refuted',
+      reason: 'library-boundary-violation',
+      details: boundary.violations,
+    };
+  }
+
+  if (!existsSync(resolve(leanDir, 'lakefile.toml'))) {
+    return {kind: 'PendingMethod', reason: 'lean-toolchain-unavailable'};
+  }
+
+  const fullyQualifiedTheorems: string[] = [];
+  for (const mod of manifest) {
+    for (const thm of mod.theorems) {
+      fullyQualifiedTheorems.push(`${mod.moduleName}.${thm}`);
+    }
+  }
+
+  const facadeToImport = manifest.some(
+    m => m.moduleName === LEANPOO_MODEL_WEIGHT_FACADE_MODULE,
+  )
+    ? LEANPOO_MODEL_WEIGHT_FACADE_MODULE
+    : manifest.some(m => m.moduleName === LEANPOO_FEDERATED_ORG_FACADE_MODULE)
+    ? LEANPOO_FEDERATED_ORG_FACADE_MODULE
+    : manifest.some(m => m.moduleName === LEANPOO_GEO_RESIDENCY_FACADE_MODULE)
+    ? LEANPOO_GEO_RESIDENCY_FACADE_MODULE
+    : manifest.some(m => m.moduleName === LEANPOO_ZK_DISCLOSURE_FACADE_MODULE)
+    ? LEANPOO_ZK_DISCLOSURE_FACADE_MODULE
+    : manifest.some(m => m.moduleName === LEANPOO_PQ_AGILITY_FACADE_MODULE)
+    ? LEANPOO_PQ_AGILITY_FACADE_MODULE
+    : manifest.some(m => m.moduleName === LEANPOO_KEY_ROTATION_FACADE_MODULE)
+      ? LEANPOO_KEY_ROTATION_FACADE_MODULE
+      : manifest.some(m => m.moduleName === LEANPOO_ENCLAVE_ATTESTATION_FACADE_MODULE)
+      ? LEANPOO_ENCLAVE_ATTESTATION_FACADE_MODULE
+      : manifest.some(m => m.moduleName === LEANPOO_SUPPLY_CHAIN_FACADE_MODULE)
+      ? LEANPOO_SUPPLY_CHAIN_FACADE_MODULE
+      : manifest.some(m => m.moduleName === LEANPOO_FEDERATED_ARBITRATION_FACADE_MODULE)
+      ? LEANPOO_FEDERATED_ARBITRATION_FACADE_MODULE
+      : manifest.some(m => m.moduleName === LEANPOO_CONTEXT_DISTILLATION_FACADE_MODULE)
+      ? LEANPOO_CONTEXT_DISTILLATION_FACADE_MODULE
+      : manifest.some(m => m.moduleName === LEANPOO_TOOL_SANDBOX_FACADE_MODULE)
+        ? LEANPOO_TOOL_SANDBOX_FACADE_MODULE
+        : manifest.some(m => m.moduleName === LEANPOO_MERKLE_ASYNC_FACADE_MODULE)
+          ? LEANPOO_MERKLE_ASYNC_FACADE_MODULE
+          : manifest.some(m => m.moduleName === LEANPOO_RELEASE_CERT_FACADE_MODULE)
+            ? LEANPOO_RELEASE_CERT_FACADE_MODULE
+            : manifest.some(m => m.moduleName === LEANPOO_FOUR_PARADIGM_FACADE_MODULE)
+              ? LEANPOO_FOUR_PARADIGM_FACADE_MODULE
+              : LEANPOO_EXPORT_FACADE_MODULE;
+
+  const stdinScript = [
+    `import ${facadeToImport}`,
+    ...fullyQualifiedTheorems.map(fqn => `#print axioms ${fqn}`),
+    '',
+  ].join('\n');
+
+  const proc = spawnSync(lakeBin, ['env', 'lean', '--stdin'], {
+    cwd: leanDir,
+    input: stdinScript,
+    encoding: 'utf8',
+    maxBuffer: 8 * 1024 * 1024,
+  });
+
+  if (proc.error) {
+    const code = (proc.error as NodeJS.ErrnoException).code;
+    if (code === 'ENOENT') {
+      return {kind: 'PendingMethod', reason: 'lean-toolchain-unavailable'};
+    }
+    return {kind: 'SetupDefect', reason: `lake-spawn-error: ${proc.error.message}`};
+  }
+  if (proc.status !== 0) {
+    return {
+      kind: 'SetupDefect',
+      reason: `lean-exit-${proc.status}: ${(proc.stderr || proc.stdout).slice(0, 300)}`,
+    };
+  }
+
+  const parsed: LeanAxiomAuditVerdict = parseLeanPrintAxiomsOutput(
+    proc.stdout,
+    fullyQualifiedTheorems,
+  );
+  if (parsed.kind !== 'Proven') {
+    return {
+      kind: 'Refuted',
+      reason: parsed.kind === 'Refuted' ? parsed.reason : 'missing-theorem-axiom-report',
+      details: parsed,
+    };
+  }
+
+  const fleetAttestationDigest = sha256Digest({
+    facadeModule: LEANPOO_EXPORT_FACADE_MODULE,
+    moduleCount: manifest.length,
+    verifiedTheoremCount: fullyQualifiedTheorems.length,
+    theoremAxioms: parsed.theoremAxioms,
+  });
+
+  let pinnedReceiptHash: string | undefined;
+  if (params?.kv) {
+    pinnedReceiptHash = params.kv.putBlob(
+      'leanpoo-library-fleet-attestation',
+      {
+        facadeModule: LEANPOO_EXPORT_FACADE_MODULE,
+        moduleCount: manifest.length,
+        verifiedTheoremCount: fullyQualifiedTheorems.length,
+        fleetAttestationDigest,
+        zeroMathlib: true,
+        zeroCedar: true,
+      },
+      [],
+    );
+    params.kv.pinHistoricalCut(pinnedReceiptHash);
+  }
+
+  return {
+    kind: 'Proven',
+    facadeModule: LEANPOO_EXPORT_FACADE_MODULE,
+    moduleCount: manifest.length,
+    verifiedTheoremCount: fullyQualifiedTheorems.length,
+    theoremAxioms: parsed.theoremAxioms,
+    fleetAttestationDigest,
+    pinnedReceiptHash,
+  };
+}

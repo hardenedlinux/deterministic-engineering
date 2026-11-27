@@ -86,7 +86,7 @@
     (yuanxu-test-case "organization declaration with placements and package families validates"
       (def model (validate (.get OrganizationModelContract value-contract) ProjectOrganization))
       (check-equal? (length (.get model placements)) 9)
-      (check-equal? (length (.get model package-families)) 3))
+      (check-equal? (length (.get model package-families)) 4))
 
     (yuanxu-test-case "actual repository yields zero OR01-OR06 findings after L2 repair"
       (def facts (capture-repository-organization-facts repo-root ProjectOrganization))

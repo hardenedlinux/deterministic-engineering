@@ -752,7 +752,9 @@
           (def pkg-json-path (path-join pkg-dir "package.json"))
           (when (regular-file? pkg-json-path)
             (let* ((pj (call-with-input-file pkg-json-path (cut read-json <> object-as-hash: #t)))
-                   (scripts (and (hash-table? pj) (hash-get pj "scripts"))))
+                   (scripts (and (hash-table? pj) (hash-get pj "scripts")))
+                   (keywords (and (hash-table? pj) (hash-get pj "keywords")))
+                   (defense? (and (list? keywords) (member "defense" keywords) #t)))
               (when (hash-table? scripts)
                 (let* ((quint? (string-prefix? "quint" pkg-name))
                        (domain (if quint? "quint" pkg-name))
@@ -767,19 +769,25 @@
                          ((equal? sname "test:export") "export")
                          ((equal? sname "test:examples") "examples-test")
                          (else sname)))
+                      (def extra-tags
+                        (if (and defense? (equal? sname "test"))
+                          '("defense" "domain:defense")
+                          '()))
                       (def script
                         (string-append "export PATH=\"$HOME/.bun/bin:$PATH\"\nbun run --cwd "
                                        (shell-quote rel-pkg) " " (shell-quote sname)))
                       (set! acc
                         (cons (make-unit (string-append kind-str ":" domain "/" sname)
                                          kind "Packages" pkg-name domain
-                                         (list kind-str (string-append "lang:" kind-str)
-                                               domain (string-append "domain:" domain)
-                                               (string-append kind-str ":" domain)
-                                               "mount:Packages" (string-append "module:" pkg-name)
-                                               (string-append "step:" sname) (string-append "step:" step-alias)
-                                               sname step-alias)
-                                         inputs rel-pkg 300 script)
+                                         (append
+                                           (list kind-str (string-append "lang:" kind-str)
+                                                 domain (string-append "domain:" domain)
+                                                 (string-append kind-str ":" domain)
+                                                 "mount:Packages" (string-append "module:" pkg-name)
+                                                 (string-append "step:" sname) (string-append "step:" step-alias)
+                                                 sname step-alias)
+                                           extra-tags)
+                                         inputs rel-pkg (if defense? 600 300) script)
                               acc)))
                     (sort-strings (hash-keys scripts))))))))
         (list-dir-sorted pkgs-dir))

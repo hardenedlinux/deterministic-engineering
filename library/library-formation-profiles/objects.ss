@@ -74,6 +74,7 @@
                         ("render" "DistributionPackage" "packages/render/")
                         ("quintModels" "DistributionPackage" "packages/quint-models/")
                         ("quintModulesResolver" "DistributionPackage" "packages/quint-modules-resolver/")
+                        ("agentDefenseAudit" "DistributionPackage" "packages/agent-defense-audit/")
                         ("projects" "ProjectEntry" "projects/<project>/")
                         ("examples" "UserExample" "examples/")
                         ("tests" "DevelopmentVerification" "t/")

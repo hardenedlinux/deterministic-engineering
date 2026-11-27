@@ -703,8 +703,10 @@ function discoverPackageUnits(): VerificationUnit[] {
     if (!existsSync(pkgJsonPath)) continue;
     const pkgJson = JSON.parse(readFileSync(pkgJsonPath, 'utf8')) as {
       scripts?: Record<string, string>;
+      keywords?: string[];
     };
     const isQuintPkg = pkgName.startsWith('quint');
+    const isDefensePkg = Array.isArray(pkgJson.keywords) && pkgJson.keywords.includes('defense');
     const domain = isQuintPkg ? 'quint' : pkgName;
     const kind: UnitKind = isQuintPkg ? 'quint' : 'pkg';
     const relPkgDir = relative(REPO_ROOT, pkgDir);
@@ -719,6 +721,7 @@ function discoverPackageUnits(): VerificationUnit[] {
             ? 'examples-test'
             : scriptName;
       const isResolverTest = isQuintPkg && scriptName === 'test' && existsSync(join(pkgDir, 'test'));
+      const extraTags = isDefensePkg && scriptName === 'test' ? ['defense', 'domain:defense'] : [];
       units.push({
         id: `${kind}:${domain}/${scriptName}`,
         kind,
@@ -726,21 +729,24 @@ function discoverPackageUnits(): VerificationUnit[] {
         module: pkgName,
         domain,
         tags: [
-          kind,
-          `lang:${kind}`,
-          domain,
-          `domain:${domain}`,
-          `${kind}:${domain}`,
-          'mount:Packages',
-          `module:${pkgName}`,
-          `step:${scriptName}`,
-          `step:${stepAlias}`,
-          scriptName,
-          stepAlias,
+          ...new Set([
+            kind,
+            `lang:${kind}`,
+            domain,
+            `domain:${domain}`,
+            `${kind}:${domain}`,
+            'mount:Packages',
+            `module:${pkgName}`,
+            `step:${scriptName}`,
+            `step:${stepAlias}`,
+            scriptName,
+            stepAlias,
+            ...extraTags,
+          ]),
         ].sort(),
         inputs,
         conflictKey: relPkgDir,
-        timeoutSec: 300,
+        timeoutSec: isDefensePkg ? 600 : 300,
         meta: {
           mode: isResolverTest ? 'quint-resolver-tests' : 'pkg-script',
           cwd: relPkgDir,

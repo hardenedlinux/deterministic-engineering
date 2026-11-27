@@ -214,5 +214,8 @@
                          "tool-code,rendering,other-language-models")
                         ("@deterministic-engineering/quint-modules-resolver" "verification-tooling" "packages/quint-modules-resolver"
                          "package-aware-quint-resolution"
-                         "model-content,quint-redistribution"))
+                         "model-content,quint-redistribution")
+                        ("@deterministic-engineering/agent-defense-audit" "agent-governance" "packages/agent-defense-audit"
+                         "multi-language-g2-auditor,scope-fence-harness,leanpoo-fleet-audit"
+                         "language-contrast-demos,quint-model-content"))
     ))

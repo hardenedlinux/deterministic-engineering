@@ -15,6 +15,7 @@ on:
       - 'quint-models-v*'
       - 'quint-modules-resolver-v*'
       - 'lean-models-v*'
+      - 'agent-defense-audit-v*'
   workflow_dispatch:
     inputs:
       package:
@@ -28,6 +29,7 @@ on:
           - quint-models
           - quint-modules-resolver
           - lean-models
+          - agent-defense-audit
       target_branch:
         description: 'Mirror branch to update (blank = mirror current branch; main -> main)'
         required: false
@@ -89,6 +91,7 @@ jobs:
               "quint-models": "package.json",
               "quint-modules-resolver": "package.json",
               "lean-models": "lakefile.toml",
+              "agent-defense-audit": "package.json",
           }
 
           event_name = os.environ["EVENT_NAME"]

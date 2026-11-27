@@ -9,7 +9,7 @@ set -euo pipefail
 
 PKG_ROOT="$(pwd)"
 if [ "${DE_HOOK_MODE:-standalone}" = "monorepo" ] && [ -n "${DE_REPO_ROOT:-}" ]; then
-  FLEET_AUDIT="$DE_REPO_ROOT/languages-engineering/ts/defense/agent-audit/leanpoo-fleet-audit.ts"
+  FLEET_AUDIT="$DE_REPO_ROOT/packages/agent-defense-audit/src/leanpoo-fleet-audit.ts"
   if [ -f "$FLEET_AUDIT" ] && command -v bun >/dev/null 2>&1; then
     echo "[lean-models/pre-push] Running LeanPoo fleet audit gate..." >&2
     (cd "$DE_REPO_ROOT" && bun "$FLEET_AUDIT" --json >/dev/null)

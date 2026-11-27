@@ -1,0 +1,41 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#+TITLE: @deterministic-engineering/agent-defense-audit
+
+* Purpose
+
+Standalone, zero-dependency, cross-language AI Coding Anti-Defensive-Programming
+auditor and closed-loop patch governance package.
+
+While the authoritative semantic specifications live in language-neutral
+Gerbil Scheme POO/ASCENT (=library/defensive-boundaries/=,
+=library/defensive-governance/=, =library/defense-profiles/=), Quint
+(=packages/quint-models/engineering/defense/=), and Lean 4
+(=packages/lean-models/=), this package provides the portable multi-language
+execution engine usable by any Rust, Go, C, C++, Scheme, or TypeScript
+repository without requiring a local Gerbil or Lean build.
+
+* Supported Languages (G2 Static + Diff-Delta Gate)
+
+- TypeScript / JavaScript (=ts-ast-auditor.ts=)
+- C / C++ (=multi-lang-auditor.ts=)
+- Rust (=multi-lang-auditor.ts=)
+- Go (=multi-lang-auditor.ts=)
+- Gerbil Scheme (=multi-lang-auditor.ts=)
+
+* CLI Usage
+
+#+begin_src sh
+# Audit staged git diff (CI / pre-commit gate)
+bun packages/agent-defense-audit/src/agent-defense-audit.ts --diff --staged
+
+# Audit explicit source files across any of the 6 languages
+bun packages/agent-defense-audit/src/agent-defense-audit.ts --files path/to/file.rs path/to/file.go path/to/file.ss
+
+# Emit SARIF 2.1.0 or structured AI repair packet
+bun packages/agent-defense-audit/src/agent-defense-audit.ts --diff --sarif
+bun packages/agent-defense-audit/src/agent-defense-audit.ts --diff --agent-feedback
+
+# Run the LeanPoo + Quint + ASCENT fleet attestation gate
+bun packages/agent-defense-audit/src/leanpoo-fleet-audit.ts --json
+#+end_src

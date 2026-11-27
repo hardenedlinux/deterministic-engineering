@@ -7,6 +7,7 @@ on:
     paths:
       - 'languages-engineering/**'
       - 'library/**'
+      - 'packages/agent-defense-audit/**'
       - 'packages/quint-models/**'
       - 'packages/quint-modules-resolver/**'
       - 't/harness/**'
@@ -17,6 +18,7 @@ on:
     branches: [main]
     paths:
       - 'languages-engineering/*/defense/**'
+      - 'packages/agent-defense-audit/**'
       - 'packages/quint-models/engineering/defense/**'
       - 't/harness/**'
       - 'Justfile'
@@ -49,7 +51,7 @@ jobs:
             de-defense-cas-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('bun.lock', 't/harness/verify-framework.ts') }}-
       - name: Auto-discovered defense verification gate (TS + C + C++20 + Rust)
         run: just check-defense --skip=cbmc,scheme --jobs=4 --cache=.data/ci-cache/defense
-      - name: PR diff AI Agent defensive-hallucination gate (TS/C/C++/Rust/Scheme)
+      - name: PR diff AI Agent defensive-hallucination gate (TS/C/C++/Rust/Go/Scheme)
         if: github.event_name == 'pull_request'
         run: |
           git diff -U0 "origin/${{ github.base_ref }}...HEAD" > /tmp/pr-defense.patch

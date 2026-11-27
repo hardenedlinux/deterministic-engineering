@@ -1,0 +1,40 @@
+{
+  "name": "@deterministic-engineering/agent-defense-audit",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "license": "LGPL-2.1-or-later",
+  "description": "Zero-dependency 6-language (TS/C/C++/Rust/Go/Scheme) AI coding anti-defensive-programming G2 auditor, scope-fenced repair harness, and LeanPoo fleet attestation CLI.",
+  "keywords": [
+    "defense",
+    "ai-governance",
+    "static-analysis",
+    "sarif",
+    "deterministic-engineering"
+  ],
+  "engines": {
+    "bun": ">=1.3.11"
+  },
+  "bin": {
+    "agent-defense-audit": "./src/agent-defense-audit.ts",
+    "leanpoo-fleet-audit": "./src/leanpoo-fleet-audit.ts"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./cli": "./src/agent-defense-audit.ts",
+    "./multi-lang-auditor": "./src/multi-lang-auditor.ts",
+    "./ts-ast-auditor": "./src/ts-ast-auditor.ts",
+    "./remediation-catalog": "./src/remediation-catalog.ts",
+    "./governance-harness": "./src/governance-harness.ts",
+    "./leanpoo-fleet-audit": "./src/leanpoo-fleet-audit.ts",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "README.org",
+    "package.json.license"
+  ],
+  "scripts": {
+    "test": "bun test ./test"
+  }
+}

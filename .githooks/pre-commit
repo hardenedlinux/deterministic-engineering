@@ -83,21 +83,24 @@ check_yuanxu_tests() {
 
 check_yuanxu_tests
 
-# 2. Run G2 agent-defense static audit when defense TypeScript files are staged.
-if printf '%s\n' "$STAGED_FILES" | grep -q '^languages-engineering/ts/defense/.*\.ts$'; then
-  AUDIT_SCRIPT="$REPO_ROOT/languages-engineering/ts/defense/agent-audit/agent-defense-audit.ts"
+# 2. Run G2 agent-defense static audit when defense source files (TS/C/C++/Rust/Go/Scheme) are staged.
+if printf '%s\n' "$STAGED_FILES" | grep -Eq '^languages-engineering/[^/]+/defense/.*\.(ts|tsx|js|mjs|cjs|c|h|cpp|cc|cxx|hpp|hh|rs|go|ss)$'; then
+  AUDIT_SCRIPT="$REPO_ROOT/packages/agent-defense-audit/src/agent-defense-audit.ts"
   if [ -f "$AUDIT_SCRIPT" ] && command -v bun >/dev/null 2>&1; then
     DEFENSE_FILES=()
     while IFS= read -r file; do
       case "$file" in
-        languages-engineering/ts/defense/*.ts)
+        *bad_defensive.*|*bad-defensive.*)
+          continue
+          ;;
+        languages-engineering/*/defense/*.ts|languages-engineering/*/defense/*.tsx|languages-engineering/*/defense/*.js|languages-engineering/*/defense/*.mjs|languages-engineering/*/defense/*.cjs|languages-engineering/*/defense/*.c|languages-engineering/*/defense/*.h|languages-engineering/*/defense/*.cpp|languages-engineering/*/defense/*.cc|languages-engineering/*/defense/*.cxx|languages-engineering/*/defense/*.hpp|languages-engineering/*/defense/*.hh|languages-engineering/*/defense/*.rs|languages-engineering/*/defense/*.go|languages-engineering/*/defense/*.ss)
           [ -f "$file" ] && DEFENSE_FILES+=("$file")
           ;;
       esac
     done <<< "$STAGED_FILES"
     if [ "${#DEFENSE_FILES[@]}" -gt 0 ]; then
       log "Running G2 agent-defense-audit on ${#DEFENSE_FILES[@]} staged defense file(s)"
-      bun "$AUDIT_SCRIPT" "${DEFENSE_FILES[@]}"
+      bun "$AUDIT_SCRIPT" --files "${DEFENSE_FILES[@]}"
     fi
   fi
 fi

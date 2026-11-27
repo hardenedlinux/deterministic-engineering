@@ -54,6 +54,9 @@
     "presentation")
    ((equal? dir "packages/quint-models") "quint-model-content")
    ((equal? dir "packages/quint-modules-resolver") "verification-tooling")
+   ((or (string-contains target "agent-defense-audit")
+        (equal? dir "packages/agent-defense-audit"))
+    "agent-governance")
    (else "unknown")))
 
 (def (extract-rendered-placements sysml-text placement-names)

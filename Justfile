@@ -122,13 +122,13 @@ mbt-quint:
 # ── 4. AI Agent PR & Library Auditors ─────────────────────────────────────────
 
 audit-agent-patch *args:
-    bun languages-engineering/ts/defense/agent-audit/agent-defense-audit.ts {{ if args == "" { "--diff" } else { args } }}
+    bun packages/agent-defense-audit/src/agent-defense-audit.ts {{ if args == "" { "--diff" } else { args } }}
 
 audit-agent-stability *args:
     bun languages-engineering/ts/stability/aging-contrast/agent-stability-audit.ts {{ if args == "" { "--diff" } else { args } }}
 
 audit-leanpoo-fleet *args:
-    bun languages-engineering/ts/defense/agent-audit/leanpoo-fleet-audit.ts {{ args }}
+    bun packages/agent-defense-audit/src/leanpoo-fleet-audit.ts {{ args }}
 
 # ── 5. Atomic Gerbil / Yuanxu Scheme Runners ──────────────────────────────────
 
