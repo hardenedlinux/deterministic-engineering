@@ -342,6 +342,29 @@ theorem declarativePolicyManifest_prevents_cli_weakening {Subject Key Role : Typ
        pMinSigs eMinSigs hPPos pReqSubjects eReqSubjects pReqSigners eReqSigners pReqRoles eReqRoles
        hTight hRole hSub hSig⟩
 
+/-- Instantiated cryptographically signed audit policy envelope contract (`--signed-policy` &
+`--require-policy-role`, 72nd strictly zero-axiom meta-theorem!): proves with zero axioms that
+policy payloadType confusion, revoked/tampered signatures, and unprivileged signer roles are
+unconditionally rejected, closing the on-disk plaintext policy tamper gap. -/
+theorem signedAuditPolicyEnvelope_closes_policy_tamper_gap {Key Role : Type}
+    (keyHasRole : Key → Role → Prop)
+    (payloadTypeMatchesPolicy policySchemaValid : Bool)
+    (signatures : List DsseSignatureCheck)
+    (verifiedPolicyKeys : List Key)
+    (requiredPolicyRoles : List Role) :
+    (payloadTypeMatchesPolicy = false →
+      ¬ SafeSignedAuditPolicy keyHasRole payloadTypeMatchesPolicy policySchemaValid
+          signatures verifiedPolicyKeys requiredPolicyRoles) ∧
+    (allDsseSigsRejected signatures →
+      ¬ SafeSignedAuditPolicy keyHasRole payloadTypeMatchesPolicy policySchemaValid
+          signatures verifiedPolicyKeys requiredPolicyRoles) ∧
+    (∀ reqRole, containsKey reqRole requiredPolicyRoles →
+      ¬ roleSatisfiedByKeys keyHasRole reqRole verifiedPolicyKeys →
+      ¬ SafeSignedAuditPolicy keyHasRole payloadTypeMatchesPolicy policySchemaValid
+          signatures verifiedPolicyKeys requiredPolicyRoles) :=
+  signedPolicy_rejects_typeConfusion_revoked_and_unprivilegedRole
+    keyHasRole payloadTypeMatchesPolicy policySchemaValid signatures verifiedPolicyKeys requiredPolicyRoles
+
 /-! ## One-Line Proof Transport via `Core.Transport` -/
 
 inductive MetaProofKey where

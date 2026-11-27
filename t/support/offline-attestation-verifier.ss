@@ -25,6 +25,8 @@
 (export
   load-trust-store-json-lite
   load-audit-policy-json
+  load-signed-audit-policy-json
+  sign-audit-policy-offline
   merge-audit-policy-strict
   export-trust-bundle-offline
   pack-fleet-bundle-offline
@@ -234,6 +236,7 @@
   (list (reverse trusted) revoked roles-ht))
 
 (def *audit-policy-schema* "de.attestation.policy.v1")
+(def *audit-policy-dsse-payload-type* "application/vnd.de.attestation-policy+json")
 (def *audit-policy-allowed-keys*
   '("schema" "expectedSysmlSha256" "expectedSubjectCount"
     "requiredSubjects" "minSignatures" "requiredSigners" "requiredRoles"))
@@ -250,24 +253,14 @@
       raw)
     (sort-by acc string<?)))
 
-;; Strict loader for declarative `de.attestation.policy.v1` manifests:
-;; Enforces POSIX lstat non-symlink regular file, exact schema, strict allowlisted keys
-;; (rejecting typos that would silently disable controls), and valid field types.
-(def (load-audit-policy-json policy-path)
-  (unless (and (string? policy-path) (> (string-length policy-path) 0))
-    (error "Invalid audit policy path" policy-path))
-  (let ((ftype (with-catch (lambda (_) #f)
-                 (lambda () (file-info-type (file-info policy-path #f))))))
-    (unless (eq? ftype 'regular)
-      (error "Audit policy must be an existing regular non-symlink file" policy-path)))
-  (def doc (call-with-input-file policy-path (cut read-json <> object-as-hash: #t)))
+(def (parse-audit-policy-doc doc source-label)
   (unless (and (hash-table? doc)
                (equal? (hash-get doc "schema") *audit-policy-schema*))
-    (error "Invalid audit policy schema (expected de.attestation.policy.v1)" policy-path))
+    (error "Invalid audit policy schema (expected de.attestation.policy.v1)" source-label))
   (hash-for-each
     (lambda (k _v)
       (unless (member k *audit-policy-allowed-keys*)
-        (error "Unknown key in audit policy manifest (fail-closed typo guard)" k policy-path)))
+        (error "Unknown key in audit policy manifest (fail-closed typo guard)" k source-label)))
     doc)
   (def exp-sysml (hash-get doc "expectedSysmlSha256"))
   (when exp-sysml
@@ -296,6 +289,115 @@
         ("minSignatures" min-sigs)
         ("requiredSigners" req-signers)
         ("requiredRoles" req-roles)))
+
+;; Strict loader for declarative `de.attestation.policy.v1` manifests:
+;; Enforces POSIX lstat non-symlink regular file, exact schema, strict allowlisted keys
+;; (rejecting typos that would silently disable controls), and valid field types.
+(def (load-audit-policy-json policy-path)
+  (unless (and (string? policy-path) (> (string-length policy-path) 0))
+    (error "Invalid audit policy path" policy-path))
+  (let ((ftype (with-catch (lambda (_) #f)
+                 (lambda () (file-info-type (file-info policy-path #f))))))
+    (unless (eq? ftype 'regular)
+      (error "Audit policy must be an existing regular non-symlink file" policy-path)))
+  (def doc (call-with-input-file policy-path (cut read-json <> object-as-hash: #t)))
+  (parse-audit-policy-doc doc policy-path))
+
+;; Strict verifier & loader for a DSSE v1 signed audit policy envelope (`--signed-policy`):
+;; Enforces distinct `payloadType == application/vnd.de.attestation-policy+json`,
+;; admitted unrevoked Ed25519 PAE signature(s), optional `--require-policy-role` authority,
+;; and allowlisted `de.attestation.policy.v1` payload schema.
+;; Returns `(hash ("policy" policy-ht) ("verifiedKeyIds" ...) ("verifiedRoles" ...))`.
+(def (load-signed-audit-policy-json
+       signed-policy-path
+       trust-pair
+       required-policy-roles: (required-policy-roles '()))
+  (unless (and (string? signed-policy-path) (> (string-length signed-policy-path) 0))
+    (error "Invalid signed audit policy path" signed-policy-path))
+  (let ((ftype (with-catch (lambda (_) #f)
+                 (lambda () (file-info-type (file-info signed-policy-path #f))))))
+    (unless (eq? ftype 'regular)
+      (error "Signed audit policy must be an existing regular non-symlink file" signed-policy-path)))
+  (def env (call-with-input-file signed-policy-path (cut read-json <> object-as-hash: #t)))
+  (unless (and (hash-table? env)
+               (equal? (hash-get env "payloadType") *audit-policy-dsse-payload-type*))
+    (error "Invalid signed audit policy DSSE payloadType" signed-policy-path))
+  (def payload-b64 (hash-get env "payload"))
+  (def sigs (hash-get env "signatures"))
+  (unless (and (string? payload-b64) (> (string-length payload-b64) 0) (list? sigs) (pair? sigs))
+    (error "Malformed signed audit policy DSSE envelope" signed-policy-path))
+  (def payload-bytes (with-catch (lambda (_) #f) (lambda () (base64-decode payload-b64))))
+  (def payload-str (and (u8vector? payload-bytes)
+                        (with-catch (lambda (_) #f) (lambda () (utf8->string payload-bytes)))))
+  (unless (string? payload-str)
+    (error "Invalid base64/UTF-8 payload in signed audit policy envelope" signed-policy-path))
+  (def pae (dsse-v1-pae *audit-policy-dsse-payload-type* payload-str))
+  (def trusted (trust-pair-trusted trust-pair))
+  (def revoked (trust-pair-revoked trust-pair))
+  (def key-roles (trust-pair-key-roles trust-pair))
+  (def verified-kids '())
+  (for-each
+    (lambda (sig-entry)
+      (when (hash-table? sig-entry)
+        (let* ((kid (hash-get sig-entry "keyid"))
+               (sig-b64 (hash-get sig-entry "sig"))
+               (pub (trust-store-alist-key-admitted? trusted revoked kid)))
+          (when (and pub
+                     (string? kid)
+                     (string? sig-b64)
+                     (ed25519-verify-raw pub pae sig-b64)
+                     (not (member kid verified-kids)))
+            (set! verified-kids (cons kid verified-kids))))))
+    sigs)
+  (unless (pair? verified-kids)
+    (error "Signed audit policy has zero valid admitted signatures" signed-policy-path))
+  (def verified-roles (collect-verified-roles verified-kids key-roles))
+  (for-each
+    (lambda (req-role)
+      (unless (member req-role verified-roles)
+        (error "Signed audit policy missing required policy-authority role" req-role verified-roles)))
+    required-policy-roles)
+  (def doc (call-with-input-string payload-str (cut read-json <> object-as-hash: #t)))
+  (def policy-ht (parse-audit-policy-doc doc signed-policy-path))
+  (hash ("policy" policy-ht)
+        ("verifiedKeyIds" (sort-by verified-kids string<?))
+        ("verifiedRoles" verified-roles)))
+
+;; Offline DSSE v1 signer for a declarative `de.attestation.policy.v1` manifest (`--sign-policy`):
+(def (sign-audit-policy-offline in-policy-path priv-path pub-path trust-pair out-path)
+  (load-audit-policy-json in-policy-path)
+  (assert-safe-statement-output-path! out-path)
+  (def cwd (current-directory))
+  (def resolved-priv (resolve-trusted-pem-path cwd priv-path))
+  (def resolved-pub (resolve-trusted-pem-path cwd pub-path))
+  (def pub-pem (call-with-input-file resolved-pub read-all-as-string))
+  (unless (inline-pem-string? pub-pem)
+    (error "Policy signer public key must be a valid PUBLIC KEY PEM" pub-path))
+  (def signer-kid (substring (sha256-str pub-pem) 0 16))
+  (def admitted-pub
+    (trust-store-alist-key-admitted? (trust-pair-trusted trust-pair) (trust-pair-revoked trust-pair) signer-kid))
+  (unless admitted-pub
+    (error "Refusing to sign audit policy with untrusted or revoked keyId" signer-kid))
+  (def policy-raw (call-with-input-file in-policy-path read-all-as-string))
+  (def pae (dsse-v1-pae *audit-policy-dsse-payload-type* policy-raw))
+  (def sig-b64 (ed25519-sign-raw resolved-priv pae))
+  (unless (ed25519-verify-raw pub-pem pae sig-b64)
+    (error "Policy signer private/public keypair mismatch (self-verification failed)" signer-kid))
+  (def env
+    (hash ("payloadType" *audit-policy-dsse-payload-type*)
+          ("payload" (base64-encode (string->utf8 policy-raw)))
+          ("signatures" (list (hash ("keyid" signer-kid) ("sig" sig-b64))))))
+  (def parent-dir (path-directory out-path))
+  (when (and (> (string-length parent-dir) 0) (not (file-exists? parent-dir)))
+    (create-directory* parent-dir))
+  (call-with-output-file out-path
+    (lambda (port)
+      (write-json port env)
+      (newline port)))
+  (def verified (load-signed-audit-policy-json out-path trust-pair))
+  (hash ("signerKeyId" signer-kid)
+        ("verifiedKeyIds" (hash-get verified "verifiedKeyIds"))
+        ("verifiedRoles" (hash-get verified "verifiedRoles"))))
 
 (def (union-sorted-strings a b)
   (let ((acc '()))
@@ -1033,67 +1135,85 @@
 (def (extract-global-cli-flags args)
   (let loop ((xs args) (json? #f) (max-age #f) (now-ep #f) (max-skew 60)
              (exp-sysml #f) (exp-cnt #f) (req-subs '()) (emit-stmt #f) (min-sigs #f)
-             (req-signers '()) (req-roles '()) (policy-path #f) (pos '()))
+             (req-signers '()) (req-roles '()) (policy-path #f) (signed-policy-path #f)
+             (req-policy-roles '()) (pos '()))
     (cond
      ((null? xs)
       (values json? max-age now-ep max-skew exp-sysml exp-cnt (reverse req-subs) emit-stmt min-sigs
-              (reverse req-signers) (reverse req-roles) policy-path (reverse pos)))
+              (reverse req-signers) (reverse req-roles) policy-path signed-policy-path
+              (reverse req-policy-roles) (reverse pos)))
      ((equal? (car xs) "--json")
-      (loop (cdr xs) #t max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers req-roles policy-path pos))
+      (loop (cdr xs) #t max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers req-roles policy-path signed-policy-path req-policy-roles pos))
      ((equal? (car xs) "--max-age-seconds")
       (unless (pair? (cdr xs)) (error "--max-age-seconds requires an integer argument"))
-      (loop (cddr xs) json? (parse-nonneg-int-flag "--max-age-seconds" (cadr xs)) now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers req-roles policy-path pos))
+      (loop (cddr xs) json? (parse-nonneg-int-flag "--max-age-seconds" (cadr xs)) now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers req-roles policy-path signed-policy-path req-policy-roles pos))
      ((equal? (car xs) "--now-epoch")
       (unless (pair? (cdr xs)) (error "--now-epoch requires an integer argument"))
-      (loop (cddr xs) json? max-age (parse-nonneg-int-flag "--now-epoch" (cadr xs)) max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers req-roles policy-path pos))
+      (loop (cddr xs) json? max-age (parse-nonneg-int-flag "--now-epoch" (cadr xs)) max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers req-roles policy-path signed-policy-path req-policy-roles pos))
      ((equal? (car xs) "--max-future-skew-seconds")
       (unless (pair? (cdr xs)) (error "--max-future-skew-seconds requires an integer argument"))
-      (loop (cddr xs) json? max-age now-ep (parse-nonneg-int-flag "--max-future-skew-seconds" (cadr xs)) exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers req-roles policy-path pos))
+      (loop (cddr xs) json? max-age now-ep (parse-nonneg-int-flag "--max-future-skew-seconds" (cadr xs)) exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers req-roles policy-path signed-policy-path req-policy-roles pos))
      ((equal? (car xs) "--expected-sysml-sha256")
       (unless (and (pair? (cdr xs)) (string? (cadr xs)) (> (string-length (cadr xs)) 0))
         (error "--expected-sysml-sha256 requires a non-empty digest argument"))
-      (loop (cddr xs) json? max-age now-ep max-skew (cadr xs) exp-cnt req-subs emit-stmt min-sigs req-signers req-roles policy-path pos))
+      (loop (cddr xs) json? max-age now-ep max-skew (cadr xs) exp-cnt req-subs emit-stmt min-sigs req-signers req-roles policy-path signed-policy-path req-policy-roles pos))
      ((equal? (car xs) "--expected-subject-count")
       (unless (pair? (cdr xs)) (error "--expected-subject-count requires an integer argument"))
       (let ((n (parse-nonneg-int-flag "--expected-subject-count" (cadr xs))))
         (unless (>= n 1) (error "--expected-subject-count must be >= 1" n))
-        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml n req-subs emit-stmt min-sigs req-signers req-roles policy-path pos)))
+        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml n req-subs emit-stmt min-sigs req-signers req-roles policy-path signed-policy-path req-policy-roles pos)))
      ((equal? (car xs) "--require-subject")
       (unless (and (pair? (cdr xs)) (string? (cadr xs)) (> (string-length (cadr xs)) 0))
         (error "--require-subject requires a non-empty subjectKey argument"))
       (let ((next-req (if (member (cadr xs) req-subs) req-subs (cons (cadr xs) req-subs))))
-        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt next-req emit-stmt min-sigs req-signers req-roles policy-path pos)))
+        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt next-req emit-stmt min-sigs req-signers req-roles policy-path signed-policy-path req-policy-roles pos)))
      ((equal? (car xs) "--emit-statement")
       (unless (and (pair? (cdr xs)) (string? (cadr xs)) (> (string-length (cadr xs)) 0))
         (error "--emit-statement requires a non-empty output file path"))
-      (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs (cadr xs) min-sigs req-signers req-roles policy-path pos))
+      (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs (cadr xs) min-sigs req-signers req-roles policy-path signed-policy-path req-policy-roles pos))
      ((equal? (car xs) "--min-signatures")
       (unless (pair? (cdr xs)) (error "--min-signatures requires an integer argument"))
       (let ((n (parse-nonneg-int-flag "--min-signatures" (cadr xs))))
         (unless (>= n 1) (error "--min-signatures must be >= 1" n))
-        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt n req-signers req-roles policy-path pos)))
+        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt n req-signers req-roles policy-path signed-policy-path req-policy-roles pos)))
      ((equal? (car xs) "--require-signer")
       (unless (and (pair? (cdr xs)) (string? (cadr xs)) (> (string-length (cadr xs)) 0))
         (error "--require-signer requires a non-empty keyId argument"))
       (let ((next-signers (if (member (cadr xs) req-signers) req-signers (cons (cadr xs) req-signers))))
-        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs next-signers req-roles policy-path pos)))
+        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs next-signers req-roles policy-path signed-policy-path req-policy-roles pos)))
      ((equal? (car xs) "--require-role")
       (unless (and (pair? (cdr xs)) (string? (cadr xs)) (> (string-length (cadr xs)) 0))
         (error "--require-role requires a non-empty role name"))
       (let ((next-roles (if (member (cadr xs) req-roles) req-roles (cons (cadr xs) req-roles))))
-        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers next-roles policy-path pos)))
+        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers next-roles policy-path signed-policy-path req-policy-roles pos)))
      ((equal? (car xs) "--policy")
       (unless (and (pair? (cdr xs)) (string? (cadr xs)) (> (string-length (cadr xs)) 0))
         (error "--policy requires a non-empty policy manifest path"))
-      (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers req-roles (cadr xs) pos))
+      (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers req-roles (cadr xs) signed-policy-path req-policy-roles pos))
+     ((equal? (car xs) "--signed-policy")
+      (unless (and (pair? (cdr xs)) (string? (cadr xs)) (> (string-length (cadr xs)) 0))
+        (error "--signed-policy requires a non-empty signed policy envelope path"))
+      (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers req-roles policy-path (cadr xs) req-policy-roles pos))
+     ((equal? (car xs) "--require-policy-role")
+      (unless (and (pair? (cdr xs)) (string? (cadr xs)) (> (string-length (cadr xs)) 0))
+        (error "--require-policy-role requires a non-empty role name"))
+      (let ((next-proles (if (member (cadr xs) req-policy-roles) req-policy-roles (cons (cadr xs) req-policy-roles))))
+        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers req-roles policy-path signed-policy-path next-proles pos)))
      (else
-      (loop (cdr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers req-roles policy-path (cons (car xs) pos))))))
+      (loop (cdr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers req-roles policy-path signed-policy-path req-policy-roles (cons (car xs) pos))))))
 
 (def (main . args)
   (let-values (((json-mode? max-age-sec now-ep max-skew-sec raw-expected-sysml-sha
                  raw-expected-sub-cnt raw-req-subs emit-stmt-path raw-min-sigs raw-req-signers
-                 raw-req-roles policy-path clean-args)
+                 raw-req-roles policy-path signed-policy-path req-policy-roles clean-args)
                 (extract-global-cli-flags args)))
+  (when (and policy-path signed-policy-path)
+    (if json-mode?
+      (begin
+        (emit-json-result! #f "policy-load" signed-policy-path policy-path
+          "Cannot combine --policy and --signed-policy")
+        (exit 1))
+      (error "Cannot combine --policy and --signed-policy" policy-path signed-policy-path)))
   (def loaded-policy
     (if policy-path
       (with-catch
@@ -1202,6 +1322,34 @@
               (displayln "MULTI-METHOD-COSIGN-DSSE-STATEMENT-OK " out-dsse
                          " cosigner=" (hash-get res "cosignerKeyId")
                          " verified=" (length (hash-get res "verifiedKeyIds")))))))))
+   ((equal? mode "--sign-policy")
+    (unless (= (length clean-args) 6)
+      (error "usage: [--json] --sign-policy <in-policy.json> <priv.pem> <pub.pem> <trust-store.json> <out-policy.dsse.json>"
+             args))
+    (let ((in-pol (list-ref clean-args 1))
+          (priv-pem (list-ref clean-args 2))
+          (pub-pem (list-ref clean-args 3))
+          (store-path (list-ref clean-args 4))
+          (out-dsse (list-ref clean-args 5)))
+      (with-catch
+        (lambda (e)
+          (if json-mode?
+            (begin
+              (emit-json-result! #f "sign-policy" in-pol store-path
+                (string-append "sign-policy failed: " (error-message e)))
+              (exit 1))
+            (raise e)))
+        (lambda ()
+          (let* ((tp (load-trust-store-json-lite store-path))
+                 (res (sign-audit-policy-offline in-pol priv-pem pub-pem tp out-dsse)))
+            (if json-mode?
+              (emit-json-result! #t "sign-policy" out-dsse store-path
+                "signed-dsse-v1-audit-policy"
+                (list (cons "signerKeyId" (hash-get res "signerKeyId"))
+                      (cons "verifiedKeyIds" (hash-get res "verifiedKeyIds"))
+                      (cons "verifiedRoles" (hash-get res "verifiedRoles"))))
+              (displayln "MULTI-METHOD-SIGN-POLICY-OK " out-dsse
+                         " signer=" (hash-get res "signerKeyId"))))))))
    ((equal? mode "--verify-trust-store")
     (begin
       (unless (= (length clean-args) 2)
@@ -1262,6 +1410,40 @@
                        (exit 1))
                      (raise e)))
                  (lambda () (load-trust-store-json-lite store-path)))))
+        (def signed-policy-meta #f)
+        (when signed-policy-path
+          (let ((sp-res
+                  (with-catch
+                    (lambda (e)
+                      (if json-mode?
+                        (begin
+                          (emit-json-result! #f "signed-policy-load" signed-policy-path store-path
+                            (string-append "signed audit policy failed: " (error-message e)))
+                          (exit 1))
+                        (raise e)))
+                    (lambda ()
+                      (load-signed-audit-policy-json signed-policy-path trust-pair
+                        required-policy-roles: req-policy-roles)))))
+            (set! signed-policy-meta sp-res)
+            (let-values (((m-sha m-cnt m-subs m-min m-signers m-roles)
+                          (with-catch
+                            (lambda (e)
+                              (if json-mode?
+                                (begin
+                                  (emit-json-result! #f "policy-merge" signed-policy-path store-path
+                                    (string-append "signed audit policy merge failed: " (error-message e)))
+                                  (exit 1))
+                                (raise e)))
+                            (lambda ()
+                              (merge-audit-policy-strict
+                                (hash-get sp-res "policy") raw-expected-sysml-sha raw-expected-sub-cnt
+                                raw-req-subs raw-min-sigs raw-req-signers raw-req-roles)))))
+              (set! expected-sysml-sha m-sha)
+              (set! expected-sub-cnt m-cnt)
+              (set! req-subs m-subs)
+              (set! min-sigs m-min)
+              (set! req-signers m-signers)
+              (set! req-roles m-roles))))
         (cond
          ((equal? mode "--verify-report")
           (if (verify-report-offline target-path trust-pair)
@@ -1351,6 +1533,14 @@
                       (if (pair? req-signers) (list (cons "requiredSigners" (sort-by req-signers string<?))) '())
                       (if (pair? req-roles) (list (cons "requiredRoles" (sort-by req-roles string<?))) '())
                       (if policy-path (list (cons "policyPath" policy-path)) '())
+                      (if signed-policy-path
+                        (append
+                          (list (cons "signedPolicyPath" signed-policy-path)
+                                (cons "policySignerKeyIds" (hash-get signed-policy-meta "verifiedKeyIds")))
+                          (if (pair? (hash-get signed-policy-meta "verifiedRoles"))
+                            (list (cons "policySignerRoles" (hash-get signed-policy-meta "verifiedRoles")))
+                            '()))
+                        '())
                       (if (or (pair? vroles) (pair? req-roles)) (list (cons "verifiedRoles" vroles)) '())
                       (list (cons "fleetId" (hash-get summary "fleetId"))
                             (cons "sysmlSha256" (hash-get summary "sysmlSha256"))

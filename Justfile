@@ -246,6 +246,9 @@ verify-multi-method-dsse dsse_env trust_store *flags:
 cosign-multi-method-dsse in_dsse priv_pem pub_pem trust_store out_dsse *flags:
     bun t/harness/offline-attestation-verifier.ts {{flags}} --cosign-dsse-statement "{{in_dsse}}" "{{priv_pem}}" "{{pub_pem}}" "{{trust_store}}" "{{out_dsse}}"
 
+sign-multi-method-policy in_policy priv_pem pub_pem trust_store out_dsse *flags:
+    bun t/harness/offline-attestation-verifier.ts {{flags}} --sign-policy "{{in_policy}}" "{{priv_pem}}" "{{pub_pem}}" "{{trust_store}}" "{{out_dsse}}"
+
 # One-command 2-file air-gapped release bundle pipeline: execute Fleet, emit
 # `fleet-evidence-bundle.v1.json` + inline-PEM `trust-bundle.v1.json` + DSSE v1 signed
 # `verification-summary.intoto.dsse.json`, self-audit BOTH via Bun/TS (<100ms), and emit
@@ -269,7 +272,7 @@ release-multi-method-bundle output cache_dir="" subjects="":
       "{{output}}/verification-summary.intoto.dsse.json" \
       "{{output}}/trust-bundle.v1.json"
 
-# Portable zero-dependency (<100ms, zero Gerbil, zero OpenSSL) Bun/TS offline attestation CLI & 53-control gate.
+# Portable zero-dependency (<100ms, zero Gerbil, zero OpenSSL) Bun/TS offline attestation CLI & 56-control gate.
 verify-multi-method-fast *args:
     bun t/harness/offline-attestation-verifier.ts {{args}}
 

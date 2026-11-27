@@ -725,7 +725,27 @@
           role-rot-bundle-path (list (caddr k1) (caddr k2) (caddr k3)) (list kid1)
           (list (cons kid1 "ci-builder") (cons kid3 "ci-builder") (cons kid2 "security-auditor")))
         (let ((tp-pre-rot (load-trust-store-json-lite role-rot-bundle-path)))
-          (cosign-dsse-statement-offline dsse-cosigned (cadr k3) (caddr k3) tp-pre-rot dsse-cosigned-k2k3)))
+          (cosign-dsse-statement-offline dsse-cosigned (cadr k3) (caddr k3) tp-pre-rot dsse-cosigned-k2k3)
+          ;; Attacks 54-56 (pre-delete setup): Sign policy manifest with k2 (security-auditor) & k3 (ci-builder)!
+          (let ((pre-pol (path-expand "pre-release-policy.v1.json" work))
+                (sp-k2 (path-expand "release-policy-k2.dsse.json" work))
+                (sp-k3 (path-expand "release-policy-k3.dsse.json" work)))
+            (write-json-file pre-pol
+              (hash ("schema" "de.attestation.policy.v1")
+                    ("expectedSysmlSha256" "sysml-sha")
+                    ("expectedSubjectCount" 1)
+                    ("requiredSubjects" '("demo"))
+                    ("minSignatures" 2)
+                    ("requiredRoles" '("ci-builder" "security-auditor"))))
+            ;; Revoked k1 MUST be refused from signing policy:
+            (check-equal?
+              (throws? (lambda ()
+                         (sign-audit-policy-offline
+                           pre-pol (cadr k1) (caddr k1) tp-pre-rot
+                           (path-expand "revoked-pol.dsse.json" work))))
+              #t)
+            (sign-audit-policy-offline pre-pol (cadr k2) (caddr k2) tp-pre-rot sp-k2)
+            (sign-audit-policy-offline pre-pol (cadr k3) (caddr k3) tp-pre-rot sp-k3))))
 
       ;; Physically delete ALL .pub.pem files from disk before running inline-bundle verification!
       (yuanxu-test-checkpoint 'after-export-bundle-attacks)
@@ -1170,6 +1190,45 @@
                  (_o2 (read-all-as-string p2))
                  (s2 (process-status p2)))
             (close-port p2)
-            (check (not (= s2 0)) => #t))))
+            (check (not (= s2 0)) => #t)))
+
+        ;; Attacks 54-56 (post-key-deletion!): Cryptographically Signed DSSE v1 Audit Policy Envelopes:
+        ;;   54: Gerbil-signed `release-policy-k2.dsse.json` verifies under `--require-policy-role security-auditor`
+        ;;       in BOTH Gerbil AND zero-dependency Bun/TS (`<100ms`)!
+        ;;   55: Tampered payload & in-toto DSSE payloadType confusion rejected!
+        ;;   56: Unprivileged `ci-builder` (`k3`) policy rejected when `security-auditor` policy role is required!
+        (let* ((sp-k2 (path-expand "release-policy-k2.dsse.json" work))
+               (sp-k3 (path-expand "release-policy-k3.dsse.json" work))
+               (sp-tampered (path-expand "release-policy-tampered.dsse.json" work))
+               (tp-rr (load-trust-store-json-lite role-rot-bundle-path))
+               (sp-res (load-signed-audit-policy-json sp-k2 tp-rr required-policy-roles: '("security-auditor"))))
+          (check-equal? (hash-get sp-res "verifiedRoles") '("security-auditor"))
+          (check-equal? (hash-get (hash-get sp-res "policy") "minSignatures") 2)
+          ;; Attack 55: Tampered payload & payloadType confusion rejected!
+          (let ((orig (call-with-input-file sp-k2 (cut read-json <> object-as-hash: #t))))
+            (hash-put! orig "payload"
+              (base64-encode (string->utf8 "{\"schema\":\"de.attestation.policy.v1\",\"minSignatures\":1}")))
+            (write-json-file sp-tampered orig))
+          (check-equal? (throws? (lambda () (load-signed-audit-policy-json sp-tampered tp-rr))) #t)
+          (check-equal? (throws? (lambda () (load-signed-audit-policy-json dsse-cosigned-k2k3 tp-rr))) #t)
+          ;; Attack 56: Unprivileged ci-builder (k3) policy rejected when security-auditor role required!
+          (check-equal?
+            (throws? (lambda ()
+                       (load-signed-audit-policy-json sp-k3 tp-rr required-policy-roles: '("security-auditor"))))
+            #t)
+          ;; Cross-language Bun/TS `--signed-policy --require-policy-role security-auditor` verification:
+          (let* ((ts-sp-cmd (string-append
+                              "cd \"" repo-root "\" && bun t/harness/offline-attestation-verifier.ts "
+                              "--json --verify-dsse-statement --signed-policy \"" sp-k2 "\" "
+                              "--require-policy-role security-auditor "
+                              "\"" dsse-cosigned-k2k3 "\" \"" role-rot-bundle-path "\""))
+                 (p3 (open-process (list path: "/bin/bash" arguments: (list "-euo" "pipefail" "-c" ts-sp-cmd)
+                                         stdin-redirection: #f stdout-redirection: #t stderr-redirection: #t)))
+                 (o3 (read-all-as-string p3))
+                 (s3 (process-status p3)))
+            (close-port p3)
+            (check-equal? s3 0)
+            (check (and (string-contains o3 "\"ok\":true") #t) => #t)
+            (check (and (string-contains o3 "\"policySignerRoles\":[\"security-auditor\"]") #t) => #t))))
 
       (run-process (list "rm" "-rf" work)))))

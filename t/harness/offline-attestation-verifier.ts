@@ -37,6 +37,7 @@ const TRUST_STORE_SCHEMA = 'de.attestation.ed25519-trust-store.v1';
 const FLEET_BUNDLE_SCHEMA = 'de.attestation.fleet-evidence-bundle.v1';
 const VERIFY_RESULT_SCHEMA = 'de.attestation.offline-verify-result.v1';
 const AUDIT_POLICY_SCHEMA = 'de.attestation.policy.v1';
+const AUDIT_POLICY_DSSE_PAYLOAD_TYPE = 'application/vnd.de.attestation-policy+json';
 const AUDIT_POLICY_ALLOWED_KEYS = new Set([
   'schema',
   'expectedSysmlSha256',
@@ -475,21 +476,12 @@ function validatePolicyStringArray(fieldName: string, raw: unknown): string[] {
   return [...set].sort(codePointCompare);
 }
 
-/**
- * Strict loader for declarative `de.attestation.policy.v1` audit policy manifests.
- * Enforces POSIX lstat non-symlink regular file, exact schema, strict allowlisted keys
- * (blocking silent typos), and valid field types.
- */
-export function loadAuditPolicyJson(policyPath: string): AuditPolicyManifest {
-  if (typeof policyPath !== 'string' || policyPath.length === 0) {
-    throw new Error(`Invalid audit policy path: ${String(policyPath)}`);
-  }
-  if (lstatKind(policyPath) !== 'regular') {
-    throw new Error(`Audit policy must be an existing regular non-symlink file: ${policyPath}`);
-  }
-  const doc = readJsonObject(policyPath);
+function parseAuditPolicyDoc(
+  doc: Record<string, unknown> | null,
+  sourceLabel: string,
+): AuditPolicyManifest {
   if (!doc || doc.schema !== AUDIT_POLICY_SCHEMA) {
-    throw new Error(`Invalid audit policy schema (expected ${AUDIT_POLICY_SCHEMA}): ${policyPath}`);
+    throw new Error(`Invalid audit policy schema (expected ${AUDIT_POLICY_SCHEMA}): ${sourceLabel}`);
   }
   for (const k of Object.keys(doc)) {
     if (!AUDIT_POLICY_ALLOWED_KEYS.has(k)) {
@@ -544,6 +536,162 @@ export function loadAuditPolicyJson(policyPath: string): AuditPolicyManifest {
     minSignatures,
     requiredSigners,
     requiredRoles,
+  };
+}
+
+/**
+ * Strict loader for declarative `de.attestation.policy.v1` audit policy manifests.
+ * Enforces POSIX lstat non-symlink regular file, exact schema, strict allowlisted keys
+ * (blocking silent typos), and valid field types.
+ */
+export function loadAuditPolicyJson(policyPath: string): AuditPolicyManifest {
+  if (typeof policyPath !== 'string' || policyPath.length === 0) {
+    throw new Error(`Invalid audit policy path: ${String(policyPath)}`);
+  }
+  if (lstatKind(policyPath) !== 'regular') {
+    throw new Error(`Audit policy must be an existing regular non-symlink file: ${policyPath}`);
+  }
+  return parseAuditPolicyDoc(readJsonObject(policyPath), policyPath);
+}
+
+export interface VerifiedSignedAuditPolicy {
+  policy: AuditPolicyManifest;
+  verifiedKeyIds: string[];
+  verifiedRoles: string[];
+}
+
+export interface SignAuditPolicyResult {
+  signerKeyId: string;
+  verifiedKeyIds: string[];
+  verifiedRoles: string[];
+}
+
+/**
+ * Strict verifier & loader for a DSSE v1 signed audit policy envelope (`--signed-policy`):
+ * Enforces distinct `payloadType == application/vnd.de.attestation-policy+json`,
+ * admitted unrevoked Ed25519 PAE signature(s), optional `requiredPolicyRoles`, and
+ * allowlisted `de.attestation.policy.v1` payload schema.
+ */
+export function loadSignedAuditPolicyJson(
+  signedPolicyPath: string,
+  trustPair: TrustPair,
+  requiredPolicyRoles: ReadonlyArray<string> = [],
+): VerifiedSignedAuditPolicy {
+  if (typeof signedPolicyPath !== 'string' || signedPolicyPath.length === 0) {
+    throw new Error(`Invalid signed audit policy path: ${String(signedPolicyPath)}`);
+  }
+  if (lstatKind(signedPolicyPath) !== 'regular') {
+    throw new Error(
+      `Signed audit policy must be an existing regular non-symlink file: ${signedPolicyPath}`,
+    );
+  }
+  const env = readJsonObject(signedPolicyPath);
+  if (!env || env.payloadType !== AUDIT_POLICY_DSSE_PAYLOAD_TYPE) {
+    throw new Error(`Invalid signed audit policy DSSE payloadType: ${signedPolicyPath}`);
+  }
+  const payloadB64 = env.payload;
+  const sigs = env.signatures;
+  if (
+    typeof payloadB64 !== 'string' ||
+    payloadB64.length === 0 ||
+    payloadB64.length % 4 !== 0 ||
+    !STRICT_BASE64_RE.test(payloadB64) ||
+    !Array.isArray(sigs) ||
+    sigs.length === 0
+  ) {
+    throw new Error(`Malformed signed audit policy DSSE envelope: ${signedPolicyPath}`);
+  }
+  const payloadBuf = Buffer.from(payloadB64, 'base64');
+  const paeBuf = dsseV1Pae(AUDIT_POLICY_DSSE_PAYLOAD_TYPE, payloadBuf);
+  const verifiedKeyIds: string[] = [];
+  for (const sigEntry of sigs) {
+    if (!isPlainObject(sigEntry)) continue;
+    const kid = sigEntry.keyid;
+    const sig = sigEntry.sig;
+    const pub = trustStoreKeyAdmitted(trustPair.trusted, trustPair.revoked, kid);
+    if (pub && typeof kid === 'string' && ed25519VerifyBytes(pub, paeBuf, sig)) {
+      if (!verifiedKeyIds.includes(kid)) verifiedKeyIds.push(kid);
+    }
+  }
+  if (verifiedKeyIds.length === 0) {
+    throw new Error(`Signed audit policy has zero valid admitted signatures: ${signedPolicyPath}`);
+  }
+  const roleSet = new Set<string>();
+  const keyRoles = trustPair.keyRoles ?? {};
+  for (const kid of verifiedKeyIds) {
+    const roles = keyRoles[kid];
+    if (Array.isArray(roles)) {
+      for (const r of roles) {
+        if (typeof r === 'string' && r.length > 0) roleSet.add(r);
+      }
+    }
+  }
+  const verifiedRoles = [...roleSet].sort(codePointCompare);
+  for (const reqRole of requiredPolicyRoles) {
+    if (!roleSet.has(reqRole)) {
+      throw new Error(
+        `Signed audit policy missing required policy-authority role: ${reqRole} (have: ${JSON.stringify(verifiedRoles)})`,
+      );
+    }
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(payloadBuf.toString('utf8'));
+  } catch {
+    throw new Error(`Invalid JSON payload inside signed audit policy: ${signedPolicyPath}`);
+  }
+  const policy = parseAuditPolicyDoc(isPlainObject(parsed) ? parsed : null, signedPolicyPath);
+  verifiedKeyIds.sort(codePointCompare);
+  return {policy, verifiedKeyIds, verifiedRoles};
+}
+
+/**
+ * Offline DSSE v1 signer for a declarative `de.attestation.policy.v1` manifest (`--sign-policy`).
+ */
+export function signAuditPolicyOffline(
+  inPolicyPath: string,
+  privPath: string,
+  pubPath: string,
+  trustPair: TrustPair,
+  outPath: string,
+): SignAuditPolicyResult {
+  loadAuditPolicyJson(inPolicyPath);
+  assertSafeStatementOutputPath(outPath);
+  const cwd = process.cwd();
+  const resolvedPriv = resolveTrustedPemPath(cwd, privPath);
+  const resolvedPub = resolveTrustedPemPath(cwd, pubPath);
+  const pubPem = readFileSync(resolvedPub, 'utf8');
+  if (!isInlinePemString(pubPem)) {
+    throw new Error(`Policy signer public key must be a valid PUBLIC KEY PEM: ${pubPath}`);
+  }
+  const signerKid = sha256Str(pubPem).slice(0, 16);
+  const admittedPub = trustStoreKeyAdmitted(trustPair.trusted, trustPair.revoked, signerKid);
+  if (!admittedPub) {
+    throw new Error(`Refusing to sign audit policy with untrusted or revoked keyId: ${signerKid}`);
+  }
+  const policyRaw = readFileSync(inPolicyPath, 'utf8');
+  const payloadBuf = Buffer.from(policyRaw, 'utf8');
+  const paeBuf = dsseV1Pae(AUDIT_POLICY_DSSE_PAYLOAD_TYPE, payloadBuf);
+  const privPem = readFileSync(resolvedPriv, 'utf8');
+  const sigB64 = cryptoSign(null, paeBuf, privPem).toString('base64');
+  if (!ed25519VerifyBytes(pubPem, paeBuf, sigB64)) {
+    throw new Error(`Policy signer private/public keypair mismatch: ${signerKid}`);
+  }
+  const env = {
+    payloadType: AUDIT_POLICY_DSSE_PAYLOAD_TYPE,
+    payload: payloadBuf.toString('base64'),
+    signatures: [{keyid: signerKid, sig: sigB64}],
+  };
+  const parentDir = dirname(resolve(outPath));
+  if (!existsSync(parentDir)) {
+    mkdirSync(parentDir, {recursive: true});
+  }
+  writeFileSync(outPath, `${JSON.stringify(env)}\n`, 'utf8');
+  const verified = loadSignedAuditPolicyJson(outPath, trustPair);
+  return {
+    signerKeyId: signerKid,
+    verifiedKeyIds: verified.verifiedKeyIds,
+    verifiedRoles: verified.verifiedRoles,
   };
 }
 
@@ -1418,6 +1566,8 @@ export function runCli(argv: string[]): number {
   const requiredSigners: string[] = [];
   const requiredRoles: string[] = [];
   let policyPath: string | undefined;
+  let signedPolicyPath: string | undefined;
+  const requiredPolicyRoles: string[] = [];
   const cleanArgs: string[] = [];
   try {
     for (let i = 0; i < argv.length; i += 1) {
@@ -1485,6 +1635,20 @@ export function runCli(argv: string[]): number {
         }
         policyPath = val;
         i += 1;
+      } else if (a === '--signed-policy') {
+        const val = argv[i + 1];
+        if (typeof val !== 'string' || val.length === 0) {
+          throw new Error('--signed-policy requires a non-empty signed policy envelope path');
+        }
+        signedPolicyPath = val;
+        i += 1;
+      } else if (a === '--require-policy-role') {
+        const val = argv[i + 1];
+        if (typeof val !== 'string' || val.length === 0) {
+          throw new Error('--require-policy-role requires a non-empty role name');
+        }
+        if (!requiredPolicyRoles.includes(val)) requiredPolicyRoles.push(val);
+        i += 1;
       } else {
         cleanArgs.push(a);
       }
@@ -1504,8 +1668,16 @@ export function runCli(argv: string[]): number {
     );
     return 1;
   }
-  let loadedPolicy: AuditPolicyManifest | null = null;
-  let mergedPolicyOpts: FleetVerifyOptions = {
+  if (policyPath !== undefined && signedPolicyPath !== undefined) {
+    const msg = 'Cannot combine --policy and --signed-policy';
+    if (jsonMode) {
+      emitJsonResult(false, 'policy-load', signedPolicyPath, policyPath, msg);
+    } else {
+      process.stderr.write(`ERROR: ${msg}\n`);
+    }
+    return 1;
+  }
+  const rawCliPolicyOpts: FleetVerifyOptions = {
     expectedSysmlSha256,
     expectedSubjectCount,
     requiredSubjects: requiredSubjects.length > 0 ? requiredSubjects : undefined,
@@ -1513,6 +1685,8 @@ export function runCli(argv: string[]): number {
     requiredSigners: requiredSigners.length > 0 ? requiredSigners : undefined,
     requiredRoles: requiredRoles.length > 0 ? requiredRoles : undefined,
   };
+  let loadedPolicy: AuditPolicyManifest | null = null;
+  let mergedPolicyOpts: FleetVerifyOptions = rawCliPolicyOpts;
   if (policyPath !== undefined) {
     try {
       loadedPolicy = loadAuditPolicyJson(policyPath);
@@ -1644,6 +1818,42 @@ export function runCli(argv: string[]): number {
     }
   }
 
+  if (mode === '--sign-policy') {
+    if (cleanArgs.length !== 6) {
+      process.stderr.write(
+        'usage: [--json] --sign-policy <in-policy.json> <priv.pem> <pub.pem> <trust-store.json> <out-policy.dsse.json>\n',
+      );
+      return 1;
+    }
+    const inPol = cleanArgs[1];
+    const privPem = cleanArgs[2];
+    const pubPem = cleanArgs[3];
+    const storePath = cleanArgs[4];
+    const outDsse = cleanArgs[5];
+    try {
+      const tp = loadTrustStoreJsonLite(storePath);
+      const res = signAuditPolicyOffline(inPol, privPem, pubPem, tp, outDsse);
+      if (jsonMode) {
+        emitJsonResult(true, 'sign-policy', outDsse, storePath, 'signed-dsse-v1-audit-policy', {
+          signerKeyId: res.signerKeyId,
+          verifiedKeyIds: res.verifiedKeyIds,
+          verifiedRoles: res.verifiedRoles,
+        });
+      } else {
+        process.stdout.write(`MULTI-METHOD-SIGN-POLICY-OK ${outDsse} signer=${res.signerKeyId}\n`);
+      }
+      return 0;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (jsonMode) {
+        emitJsonResult(false, 'sign-policy', inPol, storePath, `sign-policy failed: ${msg}`);
+      } else {
+        process.stderr.write(`ERROR: ${msg}\n`);
+      }
+      return 1;
+    }
+  }
+
   if (mode === '--verify-trust-store') {
     if (cleanArgs.length !== 2) {
       process.stderr.write('usage: [--json] --verify-trust-store <trust-store.json>\n');
@@ -1742,6 +1952,28 @@ export function runCli(argv: string[]): number {
     return 1;
   }
 
+  let signedPolicyMeta: VerifiedSignedAuditPolicy | null = null;
+  if (signedPolicyPath !== undefined) {
+    try {
+      signedPolicyMeta = loadSignedAuditPolicyJson(signedPolicyPath, trustPair, requiredPolicyRoles);
+      mergedPolicyOpts = mergeAuditPolicyStrict(signedPolicyMeta.policy, rawCliPolicyOpts);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (jsonMode) {
+        emitJsonResult(
+          false,
+          'signed-policy-load',
+          signedPolicyPath,
+          storePath,
+          `signed audit policy error: ${msg}`,
+        );
+      } else {
+        process.stderr.write(`ERROR: ${msg}\n`);
+      }
+      return 1;
+    }
+  }
+
   const fleetOpts: FleetVerifyOptions = mergedPolicyOpts;
   const fleetJsonExtra = (): Record<string, unknown> => {
     const extra: Record<string, unknown> = {};
@@ -1760,6 +1992,13 @@ export function runCli(argv: string[]): number {
       extra.requiredRoles = [...fleetOpts.requiredRoles].sort(codePointCompare);
     }
     if (policyPath !== undefined) extra.policyPath = policyPath;
+    if (signedPolicyPath !== undefined && signedPolicyMeta !== null) {
+      extra.signedPolicyPath = signedPolicyPath;
+      extra.policySignerKeyIds = signedPolicyMeta.verifiedKeyIds;
+      if (signedPolicyMeta.verifiedRoles.length > 0) {
+        extra.policySignerRoles = signedPolicyMeta.verifiedRoles;
+      }
+    }
     return extra;
   };
 

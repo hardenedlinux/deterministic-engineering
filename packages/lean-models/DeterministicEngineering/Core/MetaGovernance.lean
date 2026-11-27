@@ -1281,4 +1281,46 @@ theorem monotonicPolicyTightening_implies_baseline_satisfied {Subject Key Role :
    allRequiredKeys_subset_mono actualSubjects eReqSubjects hEffSub pReqSubjects hTighter.2.1,
    allRequiredKeys_subset_mono verifiedKeys eReqSigners hEffSig pReqSigners hTighter.2.2.1⟩
 
+/-! ## 22. Cryptographically Signed DSSE v1 Audit Policy Envelopes (`--signed-policy`) -/
+
+/-- Constructive zero-axiom authenticity predicate for a DSSE v1 signed audit policy envelope
+(`payloadType = application/vnd.de.attestation-policy+json`): requires distinct policy
+payloadType (preventing in-toto statement confusion), valid `de.attestation.policy.v1` schema,
+at least one admitted unrevoked Ed25519 PAE signature, and satisfaction of every auditor-mandated
+policy-authority role (e.g. `policy-admin`). -/
+def SafeSignedAuditPolicy {Key Role : Type}
+    (keyHasRole : Key → Role → Prop)
+    (payloadTypeMatchesPolicy policySchemaValid : Bool)
+    (signatures : List DsseSignatureCheck)
+    (verifiedPolicyKeys : List Key)
+    (requiredPolicyRoles : List Role) : Prop :=
+  payloadTypeMatchesPolicy = true ∧
+  policySchemaValid = true ∧
+  hasVerifiedDsseSig signatures ∧
+  allRequiredRolesSatisfied keyHasRole verifiedPolicyKeys requiredPolicyRoles
+
+/-- Constructive zero-axiom proof: signed policy verification unconditionally rejects
+DSSE payloadType confusion, revoked/invalid signatures, and unprivileged signer roles
+(e.g. `ci-builder` attempting to forge a policy when `policy-admin` is required). -/
+theorem signedPolicy_rejects_typeConfusion_revoked_and_unprivilegedRole {Key Role : Type}
+    (keyHasRole : Key → Role → Prop)
+    (payloadTypeMatchesPolicy policySchemaValid : Bool)
+    (signatures : List DsseSignatureCheck)
+    (verifiedPolicyKeys : List Key)
+    (requiredPolicyRoles : List Role) :
+    (payloadTypeMatchesPolicy = false →
+      ¬ SafeSignedAuditPolicy keyHasRole payloadTypeMatchesPolicy policySchemaValid
+          signatures verifiedPolicyKeys requiredPolicyRoles) ∧
+    (allDsseSigsRejected signatures →
+      ¬ SafeSignedAuditPolicy keyHasRole payloadTypeMatchesPolicy policySchemaValid
+          signatures verifiedPolicyKeys requiredPolicyRoles) ∧
+    (∀ reqRole, containsKey reqRole requiredPolicyRoles →
+      ¬ roleSatisfiedByKeys keyHasRole reqRole verifiedPolicyKeys →
+      ¬ SafeSignedAuditPolicy keyHasRole payloadTypeMatchesPolicy policySchemaValid
+          signatures verifiedPolicyKeys requiredPolicyRoles) :=
+  ⟨fun hBadType hSafe => Bool.noConfusion (hBadType.symm.trans hSafe.1),
+   fun hAllRej hSafe => allRejected_contradicts_hasVerified signatures hAllRej hSafe.2.2.1,
+   fun _ hReq hNo hSafe =>
+     missingRole_contradicts_allRoles keyHasRole verifiedPolicyKeys _ hNo requiredPolicyRoles hReq hSafe.2.2.2⟩
+
 end DeterministicEngineering.Core.MetaGovernance

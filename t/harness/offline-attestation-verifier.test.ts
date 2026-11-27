@@ -35,12 +35,14 @@ import {
   inspectDsseStatementVerified,
   inspectFleetBundleVerified,
   loadAuditPolicyJson,
+  loadSignedAuditPolicyJson,
   loadTrustStoreJsonLite,
   mergeAuditPolicyStrict,
   packFleetBundleOffline,
   resolveContainedChildReportPath,
   safeRelativeChildPath,
   sha256Str,
+  signAuditPolicyOffline,
   verifyCacheOffline,
   verifyDsseStatementOffline,
   verifyFleetBundleOffline,
@@ -1559,5 +1561,100 @@ describe('Zero-Dependency TS/Bun Offline Attestation Verifier (25 Controls + Ger
     ]);
     expect(resPolicyTightenFail.exitCode).not.toBe(0);
     expect(JSON.parse(resPolicyTightenFail.stdout.trim()).ok).toBe(false);
+
+    // Controls 54-56: Cryptographically Signed DSSE v1 Audit Policy Envelopes (`--sign-policy`,
+    // `--signed-policy`, `--require-policy-role`):
+    //   54: `--sign-policy` signs `release-policy.v1.json` with `k2` (`security-auditor`);
+    //       `--signed-policy` + `--require-policy-role security-auditor` verifies cleanly and echoes metadata!
+    //   55: Tampered signed policy payload, in-toto DSSE payloadType confusion, and revoked policy signer fail!
+    //   56: Unprivileged `ci-builder` (`k3`) signing policy FAILS under `--require-policy-role security-auditor`,
+    //       and combining `--policy` + `--signed-policy` is rejected fail-closed!
+    const signedPolicyK2 = join(WORK_DIR, 'release-policy-k2.dsse.json');
+    const resSignPolOk = runTsCli([
+      '--json',
+      '--sign-policy',
+      validPolicyPath,
+      k2PrivCosign,
+      k2PubCosign,
+      roleRotatedBundlePath,
+      signedPolicyK2,
+    ]);
+    expect(resSignPolOk.exitCode).toBe(0);
+    const docSignPolOk = JSON.parse(resSignPolOk.stdout.trim());
+    expect(docSignPolOk.ok).toBe(true);
+    expect(docSignPolOk.signerKeyId).toBe(k2.kid);
+    expect(docSignPolOk.verifiedRoles).toEqual(['security-auditor']);
+
+    const resSignedPolVerifyOk = runTsCli([
+      '--json',
+      '--verify-dsse-statement',
+      '--signed-policy',
+      signedPolicyK2,
+      '--require-policy-role',
+      'security-auditor',
+      cosignedK2K3,
+      roleRotatedBundlePath,
+    ]);
+    expect(resSignedPolVerifyOk.exitCode).toBe(0);
+    const docSignedPolOk = JSON.parse(resSignedPolVerifyOk.stdout.trim());
+    expect(docSignedPolOk.ok).toBe(true);
+    expect(docSignedPolOk.signedPolicyPath).toBe(signedPolicyK2);
+    expect(docSignedPolOk.policySignerKeyIds).toEqual([k2.kid]);
+    expect(docSignedPolOk.policySignerRoles).toEqual(['security-auditor']);
+
+    // Control 55: Tampered payload (weakened minSignatures=1), payloadType confusion, revoked signer:
+    const tamperedPolEnv = JSON.parse(readFileSync(signedPolicyK2, 'utf8'));
+    const weakenedPolJson = JSON.stringify({
+      schema: 'de.attestation.policy.v1',
+      expectedSysmlSha256: 'sysmlsha',
+      minSignatures: 1,
+    });
+    const signedPolicyTampered = writeJson(join(WORK_DIR, 'release-policy-tampered.dsse.json'), {
+      ...tamperedPolEnv,
+      payload: Buffer.from(weakenedPolJson, 'utf8').toString('base64'),
+    });
+    expect(() => loadSignedAuditPolicyJson(signedPolicyTampered, tpRotRoles)).toThrow();
+    expect(() => loadSignedAuditPolicyJson(cosignedK2K3, tpRotRoles)).toThrow(); // payloadType confusion!
+    expect(() =>
+      signAuditPolicyOffline(
+        validPolicyPath,
+        k1PrivCosign,
+        k1PubCosign,
+        tpRotRoles,
+        join(WORK_DIR, 'revoked-pol.dsse.json'),
+      ),
+    ).toThrow();
+
+    // Control 56: Unprivileged `ci-builder` (`k3`) policy rejected when `security-auditor` role required!
+    const signedPolicyK3 = join(WORK_DIR, 'release-policy-k3.dsse.json');
+    signAuditPolicyOffline(validPolicyPath, k3.privPath, k3.pubPath, tpRotRoles, signedPolicyK3);
+    expect(() =>
+      loadSignedAuditPolicyJson(signedPolicyK3, tpRotRoles, ['security-auditor']),
+    ).toThrow();
+    const resUnprivPol = runTsCli([
+      '--json',
+      '--verify-dsse-statement',
+      '--signed-policy',
+      signedPolicyK3,
+      '--require-policy-role',
+      'security-auditor',
+      cosignedK2K3,
+      roleRotatedBundlePath,
+    ]);
+    expect(resUnprivPol.exitCode).not.toBe(0);
+    expect(JSON.parse(resUnprivPol.stdout.trim()).ok).toBe(false);
+
+    const resBothPol = runTsCli([
+      '--json',
+      '--verify-dsse-statement',
+      '--policy',
+      validPolicyPath,
+      '--signed-policy',
+      signedPolicyK2,
+      cosignedK2K3,
+      roleRotatedBundlePath,
+    ]);
+    expect(resBothPol.exitCode).not.toBe(0);
+    expect(JSON.parse(resBothPol.stdout.trim()).ok).toBe(false);
   });
 });
