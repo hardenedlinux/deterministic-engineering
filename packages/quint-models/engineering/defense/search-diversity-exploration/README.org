@@ -1,0 +1,57 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Diverse Multi-Hypothesis Search Exploration: Anti-Mode-Collapse, Backtracking & Bounded Frontier
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.defense.search-diversity-exploration=
+- *Subdomain*: =quint.engineering.defense=
+- *Quint Module*: =search_diversity_exploration= (=[[file:SearchDiversityExploration.qnt][SearchDiversityExploration.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/defense/search-diversity-exploration/SearchDiversityExploration=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=7=
+
+* Emergent Safety Invariant
+
+Search expansion preserves multi-niche diversity against mode collapse, dead-end branches backtrack before further expansion, promoted findings carry verified execution witnesses, and active choice frontiers remain within declared state bounds.
+
+#+begin_src quint
+val safety = (
+    h.modeCollapseViolations == 0 and
+    h.deadEndLoopViolations == 0 and
+    h.ungroundedPromotionViolations == 0 and
+    h.frontierExplosionViolations == 0
+  )
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =require-niche-diversity= | =stepModeCollapse= | =h.modeCollapseViolations > 0= |
+| =require-backtrack-on-deadend= | =stepDeadEndLoop= | =h.deadEndLoopViolations > 0= |
+| =require-witness-before-promote= | =stepUngroundedPromotion= | =h.ungroundedPromotionViolations > 0= |
+| =require-bounded-frontier= | =stepFrontierExplosion= | =h.frontierExplosionViolations > 0= |
+
+* Grounded Papers & Specifications
+
+- *J.-B. Mouret & J. Clune (2015) / DeepMind AlphaEvolve (2025)*: MAP-Elites quality-diversity archives and evolutionary multi-island program search countering mode collapse.
+- *A. Antoniades et al. (ICLR 2025) / A. Zhou et al. (ICML 2024)*: SWE-Search and LATS: tree-search exploration with self-feedback, dead-end backtracking, and verified witnesses.
+- *J. Carbonell & J. Goldstein (SIGIR 1998) / C. Martens et al. (POPL 2025)*: Maximal Marginal Relevance (MMR) diversity selection and Dusa finite-choice bounded-frontier search.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/defense/search-diversity-exploration/SearchDiversityExploration.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/defense/search-diversity-exploration/SearchDiversityExploration.qnt --main=search_diversity_exploration --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite 2-niche bounded-frontier abstraction of Quality-Diversity (MAP-Elites / MMR), SWE-Search / LATS dead-end backtracking, grounded witness admission, and Dusa bounded choice branching; full multi-file code graphs and continuous DPP/MMR scoring execute in library/search-engine and Marlin's live Search DSL runtime.

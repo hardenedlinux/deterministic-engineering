@@ -1,0 +1,40 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Deterministic Engineering Search Engine Domain (=library/search-engine=)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Purpose & Layer Position
+
+=library/search-engine= is a =de.layer.domain= (rank 2) module capturing the
+domain semantics, Quality-Diversity exploration primitives (MAP-Elites / MMR),
+tier routing, and *Human-Oriented vs AI-Native Search Engine Countermodels*
+shared by downstream AI agents (such as Marlin).
+
+* Human-Oriented vs AI-Native Countermodels & Scenario Entry Points
+
+Search engines designed for human visual browsing and pagination rely on
+assumptions that break down under autonomous AI-native execution. Every
+countermodel below is paired with a formal Quint refutation model in
+=packages/quint-models/engineering/defense/= and the sound entry point for each
+scenario:
+
+| ID | Human-Oriented Engine Assumption | AI-Native Failure Mode (Countermodel) | Formal Quint Refutation | Correct Scenario Entry Point |
+|----+----------------------------------+---------------------------------------+-------------------------+------------------------------|
+| =CM01= | Flat top-K frequency/path pagination | Truncated context mode-collapses onto one dominant niche, starving minority symbols/roles | =search-diversity-exploration::stepModeCollapse= | =l1-relational-ascent= + =select-niche-diverse-rows= / =select-mmr-diverse-items= |
+| =CM02= | Serial =ls=/=find=/=rg=/=cat= probing | Consumes 7+ full-context rounds and loops on zero-hit dead ends without backtracking | =search-diversity-exploration::stepDeadEndLoop= | Parallel multi-tier fan-out + one-shot structural closure (=find-impact=) |
+| =CM03= | Monolithic tool manual + unverified mental synthesis | Small models fall back to text grep or promote claims without grounded execution receipts | =search-diversity-exploration::stepUngroundedPromotion= | Focused 3-tier tool surface + deterministic repair diagnostics + witness gate |
+| =CM04= | Pure lexical/vector RAG or manual IDE Go-To-Definition | Cannot satisfy global architecture forbid constraints; naive branching blows state budget | =search-diversity-exploration::stepFrontierExplosion= | =l2-dusa-choice= (Dusa POPL 2025 + static closed-forbid deduction + bounded frontier) |
+| =CM05= | Static unfenced caching across edits | Reuses stale facts after AST structural drift, ignores DE01 negative-domain expansion, serves contaminated KV | =search-evidence-chain-integrity::*= | Bi-temporal structural-vs-comment fingerprinting + DE01 + KV fencing + ATMS retraction |
+
+* When Human-Oriented vs AI-Native Entry Points Apply
+
+- *Exact literal / regex / line-range inspection (known path or identifier)*:
+  enter at =l0-fast-ram= (<1ms trigram/BM25/regex, AST outline, bounded line reader).
+- *Cross-file impact blast radius, naming collisions, call graphs, trait impls*:
+  enter directly at =l1-relational-ascent= with relational path predicates and
+  niche-diverse truncation (=select-niche-diverse-rows=).
+- *Callsite disambiguation, architecture placement under forbidden constraints, multi-world provenance*:
+  enter directly at =l2-dusa-choice= with bounded frontier and bi-temporal evidence fencing.
