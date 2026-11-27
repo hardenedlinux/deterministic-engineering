@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Adversarial (ADV-L4) Single-Owner Graph Execution Convergence & Reachable Production Governance Confinement
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.execution.single-owner-graph-governance-confinement=
+- *Subdomain*: =quint.threat.execution=
+- *Quint Module*: =execution_single_owner_graph_governance_confinement= (=[[file:SingleOwnerGraphGovernanceConfinement.qnt][SingleOwnerGraphGovernanceConfinement.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/execution/single-owner-graph-governance-confinement/SingleOwnerGraphGovernanceConfinement=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Under ADV-L4 hostile split-brain and governance-evasion probes, every production GraphEngine effect and TaskActor dispatch traverses the active GovernanceAdmissionGate and ExecutionCircuitBreaker fail-closed (disconnectedGovBypasses == 0 and trippedBreakerBypasses == 0), unretired legacy shadow loops cannot execute production side effects (shadowLegacyExecutions == 0), and superseded fencing/governance epochs are deterministically rejected (staleEpochDualDispatches == 0).
+
+#+begin_src quint
+val safety = (h.disconnectedGovBypasses == 0 and h.shadowLegacyExecutions == 0 and h.trippedBreakerBypasses == 0 and h.staleEpochDualDispatches == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =wire-prod-executor-governance-gate= | =stepDisconnectedGovernanceBypass= | =h.disconnectedGovBypasses > 0= |
+| =retire-shadow-legacy-engine= | =stepShadowLegacySplitBrain= | =h.shadowLegacyExecutions > 0= |
+| =fail-closed-tripped-breaker= | =stepTrippedBreakerFallthrough= | =h.trippedBreakerBypasses > 0= |
+| =bind-fencing-and-governance-epoch= | =stepStaleEpochDualDispatch= | =h.staleEpochDualDispatches > 0= |
+
+* Grounded Papers & Specifications
+
+- *Saltzer & Schroeder (1975) Complete Mediation & Economy of Mechanism*: Every production physical side effect (sandbox command, CAS write, LLM dispatch) must pass through one authoritative governance mediation point; keeping an unretired shadow Loop engine creates split-brain bypasses and governance theater.
+- *Miller (2006) Robust Composition & Single Authoritative Owner Principle*: Attaching Cedar/ASCENT governance gates and E-Stop circuit breakers solely to a legacy Loop engine while the production GraphEngine (TaskActorControlPlane + CompositeAtomicEffectExecutor) executes ungated breaks complete mediation.
+- *AI Defensive Programming Anti-Pattern: Additive Defensive Accretion (Real-Repo Marlin Case)*: When AI coding agents migrate from a legacy Loop FSM to a GraphEngine without retiring the legacy engine or wiring governance into the new production binary, unit tests pass green while live production tools bypass E-Stop and Cedar forbid rules.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/execution/single-owner-graph-governance-confinement/SingleOwnerGraphGovernanceConfinement.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/execution/single-owner-graph-governance-confinement/SingleOwnerGraphGovernanceConfinement.qnt --main=execution_single_owner_graph_governance_confinement --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite single-owner GraphEngine execution convergence and production-reachable governance admission abstraction (ADV-L4 hostile attack tier); proves every production atomic effect and TaskActor dispatch traverses the active GovernanceAdmissionGate/ExecutionCircuitBreaker with zero legacy-loop shadow execution, not arbitrary OS kernel bypasses.

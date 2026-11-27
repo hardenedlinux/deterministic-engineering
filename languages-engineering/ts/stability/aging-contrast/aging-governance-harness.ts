@@ -184,6 +184,14 @@ const MECHANISM_DIRECTIVES: Record<AgingMechanism, AgingRemediationDirective> = 
     antiEvasionWarning:
       'Do NOT evade by blocklisting only a few secret variable names (like OPENAI_API_KEY) while inheriting os.Environ(), or keeping short-circuit `==` on Bearer token headers.',
   },
+  'SM25-single-owner-graph-governance': {
+    mechanism: 'SM25-single-owner-graph-governance',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Wire GovernanceAdmissionGate and ExecutionCircuitBreaker fail-closed directly into the canonical production GraphEngine path (CompositeAtomicEffectExecutor + TaskActorKernelExecutor + marlin_mygo_host) and mark superseded legacy LoopProgram surfaces #[deprecated] for retirement.',
+    antiEvasionWarning:
+      'Do NOT evade by attaching Cedar/E-Stop governance gates only to legacy LoopProgram unit-test executors while leaving the production GraphEngine host path ungated or keeping unretired shadow execution surfaces.',
+  },
 };
 
 export function getAgingRemediation(finding: AgingFinding): AgingRemediationDirective {

@@ -1991,10 +1991,90 @@ func buildPluginSafe(ctx context.Context, out string) error {
   return cmd.Run()
 }`,
   },
+  // --- SM25: ADV-L4 single-owner GraphEngine convergence & reachable production governance (SA127-SA132) ---
+  {
+    id: 'SA127',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-production-effect-executor-missing-governance-gate',
+    source: `
+impl<S, G, R> AtomicEffectExecutor for CompositeAtomicEffectExecutor<S, G, R> {
+  fn execute_atomic<'a>(&'a self, effect: AtomicEffect) -> BoxFut<'a> {
+    Box::pin(async move {
+      match effect {
+        AtomicEffect::SandboxRun(p) => self.sandbox.run_sandbox(p).await,
+      }
+    })
+  }
+}`,
+  },
+  {
+    id: 'SA128',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-task-actor-kernel-missing-governance-gate',
+    source: `
+impl<H: TaskActorStepHandler> TaskActorKernelExecutor<H> {
+  pub async fn dispatch_and_reconcile(&self, env: Envelope) -> Result<Decision, Err> {
+    self.registry.execute_and_reconcile(env, |a| self.handler.execute(a)).await
+  }
+}`,
+  },
+  {
+    id: 'SA129',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-legacy-loop-engine-unretired-shadow-surface',
+    source: `
+pub use loop_machine::{GenericLoopMachine};
+pub use loop_program_side_effects::{LoopProgramRuntimeSideEffectExecutor};
+pub use task_actor_executor::{TaskActorKernelExecutor};`,
+  },
+  {
+    id: 'SA130',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+impl<S, G, R> AtomicEffectExecutor for CompositeAtomicEffectExecutor<S, G, R> {
+  fn execute_atomic<'a>(&'a self, effect: AtomicEffect) -> BoxFut<'a> {
+    Box::pin(async move {
+      if let Err(msg) = self.authorize_atomic_effect(&effect) {
+        return AtomicEffectReceipt::EffectError(msg);
+      }
+      match effect {
+        AtomicEffect::SandboxRun(p) => self.sandbox.run_sandbox(p).await,
+      }
+    })
+  }
+}`,
+  },
+  {
+    id: 'SA131',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+impl<H: TaskActorStepHandler> TaskActorKernelExecutor<H> {
+  pub async fn dispatch_and_reconcile(&self, env: Envelope) -> Result<Decision, Err> {
+    self.authorize_dispatch(&env)?;
+    self.registry.execute_and_reconcile(env, |a| self.handler.execute(a)).await
+  }
+}`,
+  },
+  {
+    id: 'SA132',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+#[deprecated(note = "SM25: superseded by GraphEngine TaskActorKernelExecutor")]
+pub use loop_machine::{GenericLoopMachine};
+#[deprecated(note = "SM25: superseded by GraphEngine CompositeAtomicEffectExecutor")]
+pub use loop_program_side_effects::{LoopProgramRuntimeSideEffectExecutor};
+pub use task_actor_executor::{TaskActorKernelExecutor};`,
+  },
 ];
 
-describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA126)', () => {
-  test('achieves 126/126 exact independent-gold match (tp=70, tn=56, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
+describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA132)', () => {
+  test('achieves 132/132 exact independent-gold match (tp=73, tn=59, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
     let tp = 0;
     let tn = 0;
     let fp = 0;
@@ -2017,7 +2097,7 @@ describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA126)', () 
       }
     }
 
-    expect({tp, tn, fp, fn}).toEqual({tp: 70, tn: 56, fp: 0, fn: 0});
+    expect({tp, tn, fp, fn}).toEqual({tp: 73, tn: 59, fp: 0, fn: 0});
   });
 
   test('clean Rust deterministic buffer pool & bounded retry passes with 0 findings', () => {

@@ -30,7 +30,8 @@ export type AgingMechanism =
   | 'SM21-atomic-persistence-fsync'
   | 'SM22-adversarial-sandbox-archive-confinement'
   | 'SM23-adversarial-http-redirect-ssrf'
-  | 'SM24-adversarial-env-scrub-auth-timing';
+  | 'SM24-adversarial-env-scrub-auth-timing'
+  | 'SM25-single-owner-graph-governance';
 
 export interface AgingFinding {
   ruleId: string;
@@ -1025,6 +1026,58 @@ function auditRust(clean: string): AgingFinding[] {
         line: lineOfIndex(clean, bearerFnMatch.index),
         message: 'Bearer authorization header verification uses short-circuit `==` instead of constant-time byte comparison and non-empty guard (CWE-208, ADV-L4, SM24).',
       });
+    }
+  }
+
+  // 27. Rust production AtomicEffectExecutor executes SandboxRun without GovernanceAdmissionGate / ExecutionCircuitBreaker authorization (ADV-L4, SM25).
+  const atomicExecImplMatch = /\bimpl(?:<[^>]+>)?\s+AtomicEffectExecutor\s+for\s+\w*CompositeAtomicEffectExecutor\b/.exec(clean);
+  if (atomicExecImplMatch) {
+    const implBody = extractBraceBlock(clean, atomicExecImplMatch.index);
+    const runsSandbox = /\bAtomicEffect::SandboxRun\b/.test(implBody);
+    const gatesGovernance = /\b(?:authorize_side_effect|authorize_atomic_effect|governance_gate|execution_breaker)\b/.test(implBody);
+    if (runsSandbox && !gatesGovernance) {
+      findings.push({
+        ruleId: 'rust-production-effect-executor-missing-governance-gate',
+        mechanism: 'SM25-single-owner-graph-governance',
+        language: 'rust',
+        line: lineOfIndex(clean, atomicExecImplMatch.index),
+        message: 'Production CompositeAtomicEffectExecutor executes AtomicEffect::SandboxRun without consulting GovernanceAdmissionGate or ExecutionCircuitBreaker (disconnected governance bypass, ADV-L4, SM25).',
+      });
+    }
+  }
+
+  // 28. Rust GraphEngine TaskActorKernelExecutor dispatches steps without GovernanceAdmissionGate / ExecutionCircuitBreaker enforcement (ADV-L4, SM25).
+  const taskActorImplMatch = /\bimpl(?:<[^>]+>)?\s+TaskActorKernelExecutor\b/.exec(clean);
+  if (taskActorImplMatch) {
+    const implBody = extractBraceBlock(clean, taskActorImplMatch.index);
+    const dispatches = /\bfn\s+dispatch_and_reconcile\b/.test(implBody);
+    const gatesGovernance = /\b(?:authorize_dispatch|authorize_side_effect|governance_gate|execution_breaker)\b/.test(implBody);
+    if (dispatches && !gatesGovernance) {
+      findings.push({
+        ruleId: 'rust-task-actor-kernel-missing-governance-gate',
+        mechanism: 'SM25-single-owner-graph-governance',
+        language: 'rust',
+        line: lineOfIndex(clean, taskActorImplMatch.index),
+        message: 'GraphEngine TaskActorKernelExecutor dispatches admitted TaskActor steps without consulting GovernanceAdmissionGate or ExecutionCircuitBreaker (ADV-L4, SM25).',
+      });
+    }
+  }
+
+  // 29. Rust kernel facade re-exports legacy LoopProgram engine un-deprecated alongside canonical GraphEngine TaskActorKernelExecutor (ADV-L4, SM25).
+  if (/\bpub\s+use\s+task_actor_executor::/.test(clean)) {
+    const legacyExportMatch = /\bpub\s+use\s+(?:loop_machine|loop_program_side_effects)::\{/.exec(clean);
+    if (legacyExportMatch) {
+      const prefix = clean.slice(Math.max(0, legacyExportMatch.index - 220), legacyExportMatch.index);
+      const isDeprecated = /#\[deprecated\b/.test(prefix);
+      if (!isDeprecated) {
+        findings.push({
+          ruleId: 'rust-legacy-loop-engine-unretired-shadow-surface',
+          mechanism: 'SM25-single-owner-graph-governance',
+          language: 'rust',
+          line: lineOfIndex(clean, legacyExportMatch.index),
+          message: 'Kernel exports legacy LoopProgram engine alongside canonical GraphEngine TaskActorKernelExecutor without #[deprecated] retirement boundary, inviting additive dual-engine drift (ADV-L4, SM25).',
+        });
+      }
     }
   }
 

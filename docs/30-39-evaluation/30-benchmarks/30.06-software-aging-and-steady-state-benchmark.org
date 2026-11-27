@@ -25,10 +25,12 @@ output-budget, CI/CD scientific caching/sharding, structured async task / DB
 pool cancellation hygiene, bounded subprocess pipe capture, crash-safe atomic
 persistence, hostile (=ADV-L4=) sandbox symlink / manifest traversal /
 archive shadowing confinement, hostile (=ADV-L4=) outbound HTTP redirect /
-SSRF / cleartext remote credential / symlink static-serve confinement, and
+SSRF / cleartext remote credential / symlink static-serve confinement,
 hostile (=ADV-L4=) subprocess ambient secret environment scrubbing &
-constant-time non-blank Bearer auth verification defects*
-(=SM1=–=SM24= in
+constant-time non-blank Bearer auth verification, and hostile (=ADV-L4=)
+single-owner GraphEngine execution convergence & production-reachable
+governance confinement defects*
+(=SM1=–=SM25= in
 [[file:../../40-49-research/40-reference-studies/40.04-software-aging-and-steady-state-stability.org][40.04]],
 [[file:../../40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org][40.05]],
 and [[file:../../40-49-research/40-reference-studies/40.06-ci-cd-scientific-caching-and-subdomain-sharding.org][40.06]])
@@ -37,7 +39,7 @@ realistic multi-layer agent/UI architectures (**Marlin Rust/Scheme Host + MyGo
 Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
 
 - *Independent Gold & Mandatory Adversarial Pressure Floor (=>= ADV-L3=, Target =ADV-L4=)*:
-  Every static case (=SA01=–=SA126=), closed-loop persona, formal countermodel,
+  Every static case (=SA01=–=SA132=), closed-loop persona, formal countermodel,
   metamorphic search property (=MR1=–=MR6=), structure-aware / hostile fuzz
   property, and runtime soak/exploit assertion carries a fixed independent
   expected outcome (=pass= vs. =refuse= + exact mechanism / rule / ITF
@@ -101,7 +103,12 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
      [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/SubprocessEnvScrubAndAuthTiming.lean][Engineering/SubprocessEnvScrubAndAuthTiming.lean]]
      (=SM24=, 12 theorems proving unbounded default-deny allowlist env scrubbing
      drops every secret key disjoint from allowlist, fail-closed blank Bearer
-     rejection, and regression-invalidated =LeanPoo.Proof.reuse=),
+     rejection, and regression-invalidated =LeanPoo.Proof.reuse=), and
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/SingleOwnerGraphGovernanceConfinement.lean][Engineering/SingleOwnerGraphGovernanceConfinement.lean]]
+     (=SM25=, 12 theorems proving production GraphEngine complete mediation under
+     tripped E-Stop and Cedar/ASCENT =forbid=, counterexample proving
+     disconnected legacy-loop governance leaks production bypasses, shadow-loop
+     retirement, and regression-invalidated =LeanPoo.Proof.reuse=),
      proving arbitrary-cycle zero drift, ARB linear exhaustion, spike-independent
      capped pool ceilings, GC headroom cycle bounds, bounded fan-out retention,
      bounded-projection idle-eviction liveness, lag-resync/coalesced
@@ -150,30 +157,31 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
        [[file:../../../languages-engineering/ts/stability/aging-contrast/atomic-persistence-fsync-fuzz.test.ts][atomic-persistence-fsync-fuzz.test.ts]],
        [[file:../../../languages-engineering/ts/stability/aging-contrast/sandbox-symlink-archive-confinement-fuzz.test.ts][sandbox-symlink-archive-confinement-fuzz.test.ts]],
        [[file:../../../languages-engineering/ts/stability/aging-contrast/outbound-http-redirect-ssrf-confinement-fuzz.test.ts][outbound-http-redirect-ssrf-confinement-fuzz.test.ts]],
-       and [[file:../../../languages-engineering/ts/stability/aging-contrast/subprocess-env-scrub-and-auth-timing-fuzz.test.ts][subprocess-env-scrub-and-auth-timing-fuzz.test.ts]]),
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/subprocess-env-scrub-and-auth-timing-fuzz.test.ts][subprocess-env-scrub-and-auth-timing-fuzz.test.ts]],
+       and [[file:../../../languages-engineering/ts/stability/aging-contrast/single-owner-graph-governance-confinement-fuzz.test.ts][single-owner-graph-governance-confinement-fuzz.test.ts]]),
        500-case parametric search metamorphic fuzzing across =MR1=–=MR6= with
        3 deterministic refutations ([[file:../../../languages-engineering/ts/stability/aging-contrast/search-metamorphic-fuzz.test.ts][search-metamorphic-fuzz.test.ts]]),
-       4,000-trial structure-aware & hostile =ADV-L4= fuzzing (250 trials each
-       across =SM12=–=SM21= + 500 hostile =ADV-L4= trials each for =SM22=–=SM24=
-       + 78 live Quint ITF MBT traces), live self-auditing CI workflow/CAS tests,
+       4,500-trial structure-aware & hostile =ADV-L4= fuzzing (250 trials each
+       across =SM12=–=SM21= + 500 hostile =ADV-L4= trials each for =SM22=–=SM25=
+       + 84 live Quint ITF MBT traces), live self-auditing CI workflow/CAS tests,
        and the 4-layer Marlin + MyGo + WebView UI soak suite
        ([[file:../../../languages-engineering/ts/stability/aging-contrast/marlin-mygo-fullstack-soak.test.ts][marlin-mygo-fullstack-soak.test.ts]]).
-  4. *126-Case Multi-Language Aging, Stability & AI-Defensive AST Auditor (=SA01=–=SA126=)*:
+  4. *132-Case Multi-Language Aging, Stability & AI-Defensive AST Auditor (=SA01=–=SA132=)*:
      [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-ast-auditor.ts][aging-ast-auditor.ts]]
      & [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-benchmark.test.ts][aging-benchmark.test.ts]]
-     (=tp=70, tn=56, fp=0, fn=0=), empirically calibrated across full 3-repo
+     (=tp=73, tn=59, fp=0, fn=0=), empirically calibrated across full 3-repo
      production sweeps (**971 non-test source files** across =marlin-agent-core=,
-     =marlin-mygo=, and =weaver= with **0 SM22/SM23/SM24 findings** and **0
+     =marlin-mygo=, and =weaver= with **0 SM22/SM23/SM24/SM25 findings** and **0
      findings across all 258 =marlin-mygo= and 238 =weaver= production files**).
   5. *Closed-Loop AI Aging & Defensive Governance Harness & CLI*:
      [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-governance-harness.ts][aging-governance-harness.ts]],
      [[file:../../../languages-engineering/ts/stability/aging-contrast/agent-stability-audit.ts][agent-stability-audit.ts]]
      (=just audit-agent-stability=), emitting SARIF 2.1.0 and structured C2
-     repair packets across =SM2=–=SM5=, =SM7=–=SM9=, and =SM12=–=SM24=,
+     repair packets across =SM2=–=SM5=, =SM7=–=SM9=, and =SM12=–=SM25=,
      validated against 3 AI agent personas plus a full-stack Marlin/MyGo C2
      convergence scenario.
 
-* One-Hundred-Twenty-Six-Case Static Aging, Stability & AI-Defensive Cohort (=SA01=–=SA126=)
+* One-Hundred-Thirty-Two-Case Static Aging, Stability & AI-Defensive Cohort (=SA01=–=SA132=)
 :PROPERTIES:
 :CUSTOM_ID: bench3006-cohort
 :END:
@@ -306,6 +314,12 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
 | =SA124= | Rust | Clean control | Pass (0 findings) | Tool subprocess applying =.env_clear()= + explicit minimal toolchain allowlist + =Stdio::null()= stdin |
 | =SA125= | Rust | Clean control | Pass (0 findings) | =check_bearer_header= rejecting blank expected tokens fail-closed and comparing bytes via =constant_time_eq= |
 | =SA126= | Go | Clean control | Pass (0 findings) | Plugin build/perf subprocess using default-deny =sanitizedBuildEnv(...)= allowlist without =os.Environ()= |
+| =SA127= | Rust | =SM25= (=ADV-L4=) | Refuse (=rust-production-effect-executor-missing-governance-gate=) | Production =CompositeAtomicEffectExecutor= executing =AtomicEffect::SandboxRun= without =GovernanceAdmissionGate= / =ExecutionCircuitBreaker= (=atomic_effect_substrate.rs= pattern) |
+| =SA128= | Rust | =SM25= (=ADV-L4=) | Refuse (=rust-task-actor-kernel-missing-governance-gate=) | GraphEngine =TaskActorKernelExecutor::dispatch_and_reconcile= executing steps without =GovernanceAdmissionGate= (=task_actor_executor.rs= pattern) |
+| =SA129= | Rust | =SM25= (=ADV-L4=) | Refuse (=rust-legacy-loop-engine-unretired-shadow-surface=) | Kernel exporting legacy =LoopProgram= engine un-deprecated alongside canonical GraphEngine =TaskActorKernelExecutor= (=marlin-agent-kernel/src/lib.rs= pattern) |
+| =SA130= | Rust | Clean control | Pass (0 findings) | =CompositeAtomicEffectExecutor= authorizing mutating effects fail-closed via =authorize_atomic_effect= + =GovernanceAdmissionGate= |
+| =SA131= | Rust | Clean control | Pass (0 findings) | =TaskActorKernelExecutor= calling =authorize_dispatch= against =GovernanceAdmissionGate= before step execution |
+| =SA132= | Rust | Clean control | Pass (0 findings) | Legacy =LoopProgram= re-exports marked =#[deprecated]= for retirement alongside canonical GraphEngine |
 
 * Empirical Adversarial Challenge Receipts on Downstream Packages
 :PROPERTIES:
@@ -344,6 +358,7 @@ package-domain adversarial test suites:
 | =marlin-agent-core= & =marlin-mygo= | =crates/marlin-agent-kernel/tests/unit/kernel/loop_program_side_effects.rs= (=sm22_adv_l4_symlink_escape_tests=), =control/marketplace/adversarial_confinement_test.go= (=TestSM22AdvL4*=) | =SM22= (=ADV-L4=, 100th Quint Model) | Hostile =ADV-L4= LIVE RED across BOTH Rust and Go (**8/8 real exploits succeeded live!**): =LoopProgramFileSandbox::resolve= (=file_write.rs:69=) suffered intermediate dir symlink escape, leaf symlink overwrite + digest leak (=TOP_SECRET_CREDENTIAL= -> =OVERWRITTEN=), dangling leaf symlink creation outside root, and multi-hop symlink chain escape (0/4 failed in 0.02s); =dev_reload.go:357= created escaped directory outside staging =tmpDir= via =entry_path="../probe/nested/escaped.wasm"=; =ts_bundle.go:51= & =publish.go:176,372= (bonus catch by =SA110= sweep!) accepted unconfined =entry_path= / =<script src>= traversal; =bundle.go:215= accepted duplicate shadowing =assets/index.html=, non-canonical =assets/./index.html= & =assets//index.html=, and split concatenated multistream gzip archives (0/4 failed in 0.84s). Live Wave-13 CI audit (=46a8538=) also caught Ubuntu 26.04 =packages.microsoft.com= 403 APT flake in =.github/actions/setup-just/action.yml= | Hardened all 6 real production files (=file_write.rs= =verify_confined_no_symlinks= + =executor.rs= TOCTOU re-verify & atomic =create_new+sync_all+rename=; =dev_reload.go=, =ts_bundle.go= & =publish.go= =confineRelativePath=; =bundle.go= =gr.Multistream(false)= + trailing unread check + =validateCanonicalArchivePath= + =seenEntries= duplicate refusal + cumulative =totalExtracted+hdr.Size > MaxBundleBytes=) and fixed =setup-just/action.yml= APT source hygiene: =marlin-agent-kernel --test unit_test= **91/91 PASS (1.20s)** + =clippy -D warnings= clean, =marlin-mygo= =go vet= clean & =go test -race -count=1 ./control/marketplace= **ALL PASS**, **233/233 production Rust files & 280/280 =marlin-mygo= files = 0 findings (=SA01=–=SA114=)** |
 | =marlin-agent-core=, =marlin-mygo= & =weaver= | =crates/marlin-agent-stream/src/openai_http.rs= (=sm23_adv_l4_*=), =control/marketplace/adversarial_http_ssrf_test.go= (=TestSM23AdvL4*=) | =SM23= (=ADV-L4=, 101st Quint Model) | Hostile =ADV-L4= LIVE RED across Rust & Go (**6/6 exploits succeeded live!**): =marlin-agent-stream/src/openai_http.rs= bypassed canonical owner =weaver-llm= with a raw =reqwest::Client::builder()= lacking =Policy::none()= -> followed 307 redirect exfiltrating prompt to internal victim, accepted remote cleartext =http://= Bearer keys, and accepted =https://api.openai.com@evil.example= userinfo smuggling (0/3 failed in 0.01s); =official_sync.go:106= & =registry.go:64= lacked =CheckRedirect= -> followed 302 HTTPS->HTTP redirects to plaintext internal victim; =registry.go:157= fetched cross-origin/downgraded =entry.DownloadURL=; =registry.go:207= =ServeCatalogHandler= used =os.Stat= leaking outside =host-secret.key= via symlink (`200 OK`, 0.89s). Meanwhile canonical owner =weaver= (=weaver-llm=) ALREADY enforced =Policy::none()=, =retry::never()=, =no_proxy()=, remote HTTPS & 4 MiB caps (236/236 Rust files = 0 findings!) | Eliminated duplicate raw =reqwest= client in =openai_http.rs= by delegating 100% directly to canonical owner =weaver_llm::Client= + =weaver_llm::Endpoint= (fixing =SM17= & =SM23= in one stroke); hardened =official_sync.go= & =registry.go= with =noRedirectMarketplaceHTTPClient=, =validateCatalogDownloadURL= (same-origin/no-downgrade/no-userinfo), =os.Lstat= symlink rejection in =ServeCatalogHandler=, =confineRelativePath= on local sync, and =tmp.Sync()= in =atomicWriteFile=: =marlin-agent-stream --lib= **5/5 PASS**, =--test unit_test= **20/20 PASS**, =clippy -D warnings= clean, =marlin-mygo= =go vet= clean & =go test -race ./control/marketplace= **13/13 PASS (3.09s)**, **3-repo sweep across 749 real production files (=233 marlin-agent-core + 280 marlin-mygo + 236 weaver=) = 0 findings (=SA01=–=SA120=)** |
 | =marlin-agent-core= & =marlin-mygo= | =crates/marlin-agent-app-server/src/{atomic_effect_substrate,ui_grpc}.rs= (=sm24_adv_l4_*=), =crates/marlin-agent-kernel/tests/unit/kernel/loop_program_side_effects.rs=, =control/marketplace/adversarial_env_scrub_test.go= (=TestSM24AdvL4*=) | =SM24= (=ADV-L4=, 102nd Quint Model) | Hostile =ADV-L4= LIVE RED across Rust & Go (**5/5 runtime exploits + 8/8 static catches across 7 real files!**): =BoundedTokioSandboxRunner= (=atomic_effect_substrate.rs:107=) leaked all 4 ambient host secrets to sandboxed child; =spawn_loop_program_tool_process= (=tool_process.rs:121=) leaked both ambient host secrets and inherited stdin; =MyGoBridgeHost::check_bearer_header= (=ui_grpc.rs:335=) used short-circuit =actual == expected= AND admitted empty =Some("")= Bearer bypass; =plugin_perf.go:456= let untrusted =src/perf.ts= steal all 4 host secrets (=OPENAI_API_KEY=, =MARLIN_BRIDGE_TOKEN=, =AWS_SECRET_ACCESS_KEY=, custom secret) via inherited =process.env=; =ts_bundle.go:176= let a real **Bun build-time macro** (=with { type: "macro" }=) bake host =OPENAI_API_KEY= straight into compiled =bundle.js=; =dev_reload.go:373=, =publish.go:299=, and =plugin_perf.go:225= forwarded raw =os.Environ()= into untrusted plugin Go builds (+ =plugin_perf.go:514= omitted =confineRelativePath=). Live Wave-15 CI audit (=77760c4=) confirmed =REUSE licensing= flipped 100% GREEN and caught Linux =SIGPIPE= (exit 141) in =scripts/verify-subtree-mirrors.sh= (=H9=) | Hardened all 7 real production files: =atomic_effect_substrate.rs= & =tool_process.rs= (=apply_scrubbed_env= with =.env_clear()= + explicit toolchain allowlist + =Stdio::null()=); =ui_grpc.rs= (fail-closed blank check + full-length =constant_time_eq= with =std::hint::black_box=); =dev_reload.go=, =ts_bundle.go=, =publish.go=, and =plugin_perf.go= (default-deny =sanitizedBuildEnv= without =os.Environ()= + =confineRelativePath= on declarative =EntryPath=); fixed =verify-subtree-mirrors.sh= =SIGPIPE= (H9 PASS): =marlin-agent-app-server --features ui-grpc --lib= **18/18 PASS**, =marlin-agent-kernel --test unit_test= **92/92 PASS**, =clippy -D warnings= clean, =marlin-mygo= =go vet= clean & entire =control/marketplace= suite **100% PASS under =-race= (59.6s)**, **0 SM24 findings across 971 production files in =marlin-agent-core= + =marlin-mygo= + =weaver=** |
+| =marlin-agent-core= | =crates/marlin-agent-app-server/src/{atomic_effect_substrate,task_actors,ui_grpc,grpc}.rs=, =crates/marlin-agent-app-server/src/bin/marlin_mygo_host.rs=, =crates/marlin-agent-kernel/src/{task_actor_executor,lib}.rs=, =crates/marlin-agent-runtime/src/task_actor.rs= | =SM25= (=ADV-L4=, 103rd Quint Model — Real-Repo AI Additive Dual-Engine Split-Brain Case) | Forensics uncovered **3 overlapping execution stacks (5,564 LOC)** inside =marlin-agent-kernel= where =GovernanceAdmissionGate= (Cedar/ASCENT/TMS) & =ExecutionCircuitBreaker= (E-Stop) were wired **ONLY onto the legacy June-2026 Loop engine** (=LoopProgramRuntimeSideEffectExecutor=, 3,618 LOC, 0 production bin callers!) while the live production GraphEngine host (=marlin_mygo_host= -> =TaskActorControlPlane= + =CompositeAtomicEffectExecutor=) & =TaskActorKernelExecutor= had **0 references** to governance! Hostile =ADV-L4= LIVE RED proved BOTH live bypasses: production =CompositeAtomicEffectExecutor= executed =/bin/sh= writing marker file to disk despite active operator E-Stop (=SandboxExited(0)=), and =TaskActorKernelExecutor= invoked step handler (=calls=1=) despite active E-Stop (+ **3/3 LIVE STATIC RED** under =SA127=–=SA129=) | Mounted shared fail-closed =Arc<GovernanceAdmissionGate>= across the entire canonical GraphEngine (=CompositeAtomicEffectExecutor= gating =SandboxRun=/=CasPut=/=LlmComplete=, =TaskActorKernelExecutor= gating =dispatch_and_reconcile*=, =TaskActorControlPlane::admit_dispatch=, =MyGoBridgeHost=, and =marlin_mygo_host= boot in both Turso & InMemory modes), added =TaskActorRuntimeError::GovernanceDenied= mapped to gRPC =PERMISSION_DENIED=, and marked all 7 legacy =LoopProgram= re-export groups =#[deprecated]= in =marlin-agent-kernel/src/lib.rs=: =marlin-agent-kernel --lib= **17/17 PASS**, =--test unit_test= **92/92 PASS**, =marlin-agent-app-server --features ui-grpc --lib= **20/20 PASS** (proving E-Stop + Cedar =forbid= + human re-arm + clean governed run), =marlin-mygo-host --features turso-host= compiles clean, **3-repo 971-file sweep = 0 SM22–SM25 findings (=SA01=–=SA132=)** |
 
 * Unified Verification Command
 
