@@ -3319,10 +3319,150 @@ export function applyHookDynamicDecision(current: string, action: 'Deny' | 'Defe
   return action === 'Deny' ? 'ExtensionRejected' : 'ExtensionDeferred';
 }`,
   },
+  // --- SM34: ADV-L4 Runtime environment activation & governed context confinement (SA213-SA222) ---
+  {
+    id: 'SA213',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-direnv-export-loader-hijack-or-unbounded-output',
+    source: `
+fn apply_direnv_json(base: &BTreeMap<String, String>, json: &str) -> Result<BTreeMap<String, String>, ()> {
+  let mut env = base.clone();
+  for (k, v) in obj {
+    if let Value::String(s) = v { env.insert(k.clone(), s.clone()); }
+  }
+  Ok(env)
+}`,
+  },
+  {
+    id: 'SA214',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-envrc-unconfined-explicit-path-or-subagent-home',
+    source: `
+fn direnv_cwd(env: &RuntimeEnvironment, envrc: &RuntimeEnvrcPolicy) -> Result<PathBuf, ()> {
+  match envrc {
+    RuntimeEnvrcPolicy::Project => env.cwd.clone().ok_or(()),
+    RuntimeEnvrcPolicy::Explicit { file } => file.parent().map(Path::to_path_buf).ok_or(()),
+  }
+}`,
+  },
+  {
+    id: 'SA215',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-org-store-lexical-only-no-symlink-check',
+    source: `
+impl OrgSourceStore for FileSystemOrgSourceStore {
+  fn read_document(&self, document: &str) -> Result<Option<String>, ()> {
+    let path = self.document_path(document)?;
+    Ok(Some(fs::read_to_string(path).map_err(|_| ())?))
+  }
+}`,
+  },
+  {
+    id: 'SA216',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-org-governance-snapshot-rollback-or-channel-reset',
+    source: `
+impl OrgGovernanceLedger<V> {
+  pub fn register_snapshot(&mut self, snapshot: GovernedOrgSnapshot) -> Result<(), ()> {
+    self.sources.insert(snapshot.source_id.clone(), snapshot);
+    Ok(())
+  }
+}`,
+  },
+  {
+    id: 'SA217',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-two-zone-kv-prefix-unverified-content-digest',
+    source: `
+pub fn assemble_two_zone_gateway_messages(envelope: &TwoZonePromptEnvelope, admitted: &AdmittedGovernedContext) -> Result<(), ()> {
+  let cap = admitted.capsule();
+  if envelope.kv_prefix_digest != cap.kv_prefix_digest { return Err(()); }
+  Ok(())
+}`,
+  },
+  {
+    id: 'SA218',
+    language: 'ts',
+    expectedPass: false,
+    expectedRuleId: 'ts-two-zone-prefix-or-direnv-loader-bypass',
+    source: `
+export function assembleTwoZonePrompt(envelope: {frozenPrefix: string; kvPrefixDigest: string}, admittedDigest: string): boolean {
+  return envelope.kvPrefixDigest === admittedDigest;
+}`,
+  },
+  {
+    id: 'SA219',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+fn apply_direnv_json(base: &BTreeMap<String, String>, json: &str) -> Result<BTreeMap<String, String>, ()> {
+  let mut env = base.clone();
+  for (k, v) in obj {
+    if is_disallowed_direnv_export_key(k) { return Err(()); }
+    if let Value::String(s) = v { env.insert(k.clone(), s.clone()); }
+  }
+  Ok(env)
+}
+fn direnv_cwd(env: &RuntimeEnvironment, envrc: &RuntimeEnvrcPolicy) -> Result<PathBuf, ()> {
+  match envrc {
+    RuntimeEnvrcPolicy::Project => env.cwd.clone().ok_or(()),
+    RuntimeEnvrcPolicy::Explicit { file } => confine_explicit_envrc(env.cwd.as_deref(), file),
+  }
+}`,
+  },
+  {
+    id: 'SA220',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+impl OrgSourceStore for FileSystemOrgSourceStore {
+  fn read_document(&self, document: &str) -> Result<Option<String>, ()> {
+    let path = self.verify_confined_no_symlinks(document)?;
+    let _ = MAX_ORG_DOCUMENT_BYTES;
+    Ok(Some(read_bounded_document(&path)?))
+  }
+}`,
+  },
+  {
+    id: 'SA221',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+impl OrgGovernanceLedger<V> {
+  pub fn register_snapshot(&mut self, snapshot: GovernedOrgSnapshot) -> Result<(), OrgGovernanceError> {
+    if let Some(existing) = self.sources.get(&snapshot.source_id) {
+      if existing.generation >= snapshot.generation { return Err(OrgGovernanceError::GenerationRollback); }
+    }
+    self.sources.insert(snapshot.source_id.clone(), snapshot);
+    Ok(())
+  }
+}
+pub fn assemble_two_zone_gateway_messages(envelope: &TwoZonePromptEnvelope, admitted: &AdmittedGovernedContext) -> Result<(), ()> {
+  let cap = admitted.capsule();
+  let actual = compute_kv_prefix_digest(&envelope.frozen_prefix);
+  if envelope.kv_prefix_digest != cap.kv_prefix_digest || actual != cap.kv_prefix_digest { return Err(()); }
+  Ok(())
+}`,
+  },
+  {
+    id: 'SA222',
+    language: 'ts',
+    expectedPass: true,
+    source: `
+export function assembleTwoZonePrompt(envelope: {frozenPrefix: string; kvPrefixDigest: string}, admittedDigest: string): boolean {
+  const actual = computeKvPrefixDigest(envelope.frozenPrefix);
+  return envelope.kvPrefixDigest === admittedDigest && actual === admittedDigest;
+}`,
+  },
 ];
 
-describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA212)', () => {
-  test('achieves 212/212 exact independent-gold match (tp=121, tn=91, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
+describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA222)', () => {
+  test('achieves 222/222 exact independent-gold match (tp=127, tn=95, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
     let tp = 0;
     let tn = 0;
     let fp = 0;
@@ -3345,7 +3485,7 @@ describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA212)', () 
       }
     }
 
-    expect({tp, tn, fp, fn}).toEqual({tp: 121, tn: 91, fp: 0, fn: 0});
+    expect({tp, tn, fp, fn}).toEqual({tp: 127, tn: 95, fp: 0, fn: 0});
   });
 
   test('clean Rust deterministic buffer pool & bounded retry passes with 0 findings', () => {

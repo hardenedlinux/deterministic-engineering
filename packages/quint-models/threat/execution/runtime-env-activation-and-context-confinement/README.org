@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Runtime Environment Activation & Governed Context Confinement (SM34)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.execution.runtime-env-activation-and-context-confinement=
+- *Subdomain*: =quint.threat.execution=
+- *Quint Module*: =execution_runtime_env_activation_and_context_confinement= (=[[file:RuntimeEnvActivationAndContextConfinement.qnt][RuntimeEnvActivationAndContextConfinement.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/execution/runtime-env-activation-and-context-confinement/RuntimeEnvActivationAndContextConfinement=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Direnv exports refuse loader-hijack, denylisted, and malformed env entries under bounded subprocess capture (direnvHijackBreaches == 0 and direnvFilterEnforced), explicit .envrc, sub-agent homes, state-home layout, and Org source stores refuse symlink and root escapes (symlinkEscapeBreaches == 0 and symlinkConfinementEnforced), Org snapshot generations and shared-channel ACL epochs/taint advance monotonically with atomic lease rebasing (rollbackBreaches == 0 and monotonicRollbackGuardEnforced and orgGen >= 1 and channelEpoch >= 1), and Two-Zone KV-Prefix assembly recomputes SHA-256 over frozen_prefix while binding proposal.task_id to cursor.task_id (prefixOrTaskBreaches == 0 and twoZoneDigestVerified).
+
+#+begin_src quint
+val safety = (h.direnvHijackBreaches == 0 and h.symlinkEscapeBreaches == 0 and h.rollbackBreaches == 0 and h.prefixOrTaskBreaches == 0 and h.direnvFilterEnforced and h.symlinkConfinementEnforced and h.monotonicRollbackGuardEnforced and h.twoZoneDigestVerified and h.orgGen >= 1 and h.orgGen <= 12 and h.channelEpoch >= 1 and h.channelEpoch <= 12 and h.activeLeases >= 0 and h.activeLeases <= 4 and h.stepCount <= 12)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =forbid-direnv-loader-hijack-or-denylist-bypass= | =stepDirenvLoaderHijack= | =h.direnvHijackBreaches > 0= |
+| =forbid-envrc-or-org-store-symlink-escape= | =stepPathSymlinkEscape= | =h.symlinkEscapeBreaches > 0= |
+| =forbid-org-snapshot-or-channel-epoch-rollback= | =stepGovernanceRollback= | =h.rollbackBreaches > 0= |
+| =forbid-two-zone-prefix-tamper-or-cross-task-proxy= | =stepPrefixOrTaskBypass= | =h.prefixOrTaskBreaches > 0= |
+
+* Grounded Papers & Specifications
+
+- *Deterministic Engineering (30.06 / 40.05)*: SM34 ADV-L4 direnv export loader-hijack & denylist filtering with bounded subprocess capture, symlink-safe .envrc / sub-agent home / state-home / Org source store confinement, monotonic OrgGovernanceLedger & SharedContextGovernanceLedger anti-rollback with atomic rebase, and recomputed Two-Zone KV-Prefix SHA-256 verification with cursor/proposal task_id parity.
+- *Marlin Agent Core Empirical Case Study (2026)*: marlin-agent-runtime/environment admitted LD_PRELOAD/DYLD_INSERT_LIBRARIES/denylisted direnv exports, unbounded direnv wait_with_output(), escaping/symlinked explicit .envrc paths, and unconfined sub-agent home_path overrides; marlin-agent-context suffered symlink read/write escapes in FileSystemOrgSourceStore, generation/epoch/taint rollbacks in OrgGovernanceLedger & SharedContextGovernanceLedger, and forged Zone-1 frozen_prefix prompt injection with copied kv_prefix_digest in assemble_two_zone_gateway_messages.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/execution/runtime-env-activation-and-context-confinement/RuntimeEnvActivationAndContextConfinement.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/execution/runtime-env-activation-and-context-confinement/RuntimeEnvActivationAndContextConfinement.qnt --main=execution_runtime_env_activation_and_context_confinement --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite bounded runtime environment activation, Org store confinement & governed context bridge state machine (activeLeases <= 4, orgGen <= 12, channelEpoch <= 12, stepCount <= 12); models direnv export loader-hijack/denylist/size filtering + bounded subprocess stdout/timeout, explicit .envrc/sub-agent home/Org store symlink confinement, monotonic OrgGovernanceLedger snapshot generation + atomic commit rebasing + non-resetting SharedContextGovernanceLedger channel epoch/taint, and recomputed Two-Zone KV-Prefix frozen_prefix digest + cursor/proposal task_id binding, without modeling OS kernel VFS race internals or cryptographic hash preimage resistance.

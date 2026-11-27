@@ -39,7 +39,8 @@ export type AgingMechanism =
   | 'SM30-stepup-attestation-host-effect'
   | 'SM31-storage-boundary-integrity-sync'
   | 'SM32-gitops-subprocess-confinement'
-  | 'SM33-hook-policy-protocol-confinement';
+  | 'SM33-hook-policy-protocol-confinement'
+  | 'SM34-runtime-env-context-confinement';
 
 export interface AgingFinding {
   ruleId: string;
@@ -1884,6 +1885,141 @@ function auditRust(clean: string): AgingFinding[] {
     }
   }
 
+  // 67. Rust apply_direnv_json admits loader hijacks (LD_PRELOAD/DYLD_INSERT_LIBRARIES/BASH_ENV) or denylisted vars, OR direnv_output buffers stdout unboundedly without timeout (ADV-L4, SM34).
+  const applyDirenvMatch = /\bfn\s+apply_direnv_json\s*\([^)]*\)/.exec(clean);
+  if (applyDirenvMatch) {
+    const fnBody = extractBraceBlock(clean, applyDirenvMatch.index);
+    if (
+      /Value::String/.test(fnBody) &&
+      !/\b(?:is_disallowed_direnv_export_key|LD_PRELOAD|DYLD_INSERT_LIBRARIES)\b/.test(fnBody)
+    ) {
+      findings.push({
+        ruleId: 'rust-direnv-export-loader-hijack-or-unbounded-output',
+        mechanism: 'SM34-runtime-env-context-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, applyDirenvMatch.index),
+        message: 'apply_direnv_json blindly inserts direnv JSON exports without rejecting loader hijacks (LD_PRELOAD/DYLD_INSERT_LIBRARIES/BASH_ENV), shell denylist vars, or malformed env keys/values (ADV-L4, SM34).',
+      });
+    }
+  }
+  const direnvOutMatch = /\basync\s+fn\s+direnv_output\s*\([^)]*\)/.exec(clean);
+  if (direnvOutMatch) {
+    const fnBody = extractBraceBlock(clean, direnvOutMatch.index);
+    if (/\.wait_with_output\s*\(\s*\)\s*\.await/.test(fnBody)) {
+      findings.push({
+        ruleId: 'rust-direnv-export-loader-hijack-or-unbounded-output',
+        mechanism: 'SM34-runtime-env-context-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, direnvOutMatch.index),
+        message: 'direnv_output calls unbounded child.wait_with_output().await without stdout byte cap or execution timeout (ADV-L4, SM34).',
+      });
+    }
+  }
+
+  // 68. Rust direnv_cwd accepts escaping/symlinked Explicit .envrc paths, OR resolve_sub_agent accepts escaping home_path overrides (ADV-L4, SM34).
+  const direnvCwdMatch = /\bfn\s+direnv_cwd\s*\([^)]*\)/.exec(clean);
+  if (direnvCwdMatch) {
+    const fnBody = extractBraceBlock(clean, direnvCwdMatch.index);
+    if (
+      /RuntimeEnvrcPolicy::Explicit/.test(fnBody) &&
+      !/\b(?:symlink_metadata|confine_explicit_envrc|validate_envrc_file)\b/.test(fnBody)
+    ) {
+      findings.push({
+        ruleId: 'rust-envrc-unconfined-explicit-path-or-subagent-home',
+        mechanism: 'SM34-runtime-env-context-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, direnvCwdMatch.index),
+        message: 'direnv_cwd accepts RuntimeEnvrcPolicy::Explicit paths without confining to cwd/project root or rejecting symlinked .envrc files (ADV-L4, SM34).',
+      });
+    }
+  }
+  const resolveSubAgentMatch = /\bpub\s+fn\s+resolve_sub_agent\s*\([^)]*\)/.exec(clean);
+  if (resolveSubAgentMatch) {
+    const fnBody = extractBraceBlock(clean, resolveSubAgentMatch.index);
+    if (
+      /request\.home_path/.test(fnBody) &&
+      !/\b(?:validate_child_home_path|UnsafeChildHomePath|Component::ParentDir)\b/.test(fnBody)
+    ) {
+      findings.push({
+        ruleId: 'rust-envrc-unconfined-explicit-path-or-subagent-home',
+        mechanism: 'SM34-runtime-env-context-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, resolveSubAgentMatch.index),
+        message: 'resolve_sub_agent accepts arbitrary request.home_path overrides without confining child home under parent_home (ADV-L4, SM34).',
+      });
+    }
+  }
+
+  // 69. Rust FileSystemOrgSourceStore reads/writes documents with lexical-only validation without symlink_metadata confinement or document size cap (ADV-L4, SM34).
+  const fsOrgStoreImplMatch = /\bimpl\s+OrgSourceStore\s+for\s+FileSystemOrgSourceStore\b/.exec(clean);
+  if (fsOrgStoreImplMatch) {
+    const implBody = extractBraceBlock(clean, fsOrgStoreImplMatch.index);
+    if (
+      /fs::read_to_string/.test(implBody) &&
+      !/\b(?:verify_confined_no_symlinks|symlink_metadata|MAX_ORG_DOCUMENT_BYTES)\b/.test(implBody)
+    ) {
+      findings.push({
+        ruleId: 'rust-org-store-lexical-only-no-symlink-check',
+        mechanism: 'SM34-runtime-env-context-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, fsOrgStoreImplMatch.index),
+        message: 'FileSystemOrgSourceStore uses lexical-only path resolution and unbounded fs::read_to_string without symlink confinement, allowing outside-root read/write escapes (ADV-L4, SM34).',
+      });
+    }
+  }
+
+  // 70. Rust OrgGovernanceLedger::register_snapshot permits generation rollback/stale leases, OR SharedContextGovernanceLedger::create_channel resets existing channel epoch/taint (ADV-L4, SM34).
+  const regSnapMatch = /\bpub\s+fn\s+register_snapshot\s*\([^)]*\)/.exec(clean);
+  if (regSnapMatch) {
+    const fnBody = extractBraceBlock(clean, regSnapMatch.index);
+    if (
+      /self\.sources\.insert\s*\(/.test(fnBody) &&
+      !/\b(?:GenerationRollback|existing\.generation\s*>=)\b/.test(fnBody)
+    ) {
+      findings.push({
+        ruleId: 'rust-org-governance-snapshot-rollback-or-channel-reset',
+        mechanism: 'SM34-runtime-env-context-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, regSnapMatch.index),
+        message: 'OrgGovernanceLedger::register_snapshot overwrites self.sources without rejecting same/lower generation rollbacks or active-lease staleness (ADV-L4, SM34).',
+      });
+    }
+  }
+  const createChanMatch = /\bpub\s+fn\s+create_channel\s*(?:<[^>]+>)?\s*\([^)]*\)/.exec(clean);
+  if (createChanMatch) {
+    const fnBody = extractBraceBlock(clean, createChanMatch.index);
+    if (
+      /self\.channels\.insert\s*\(/.test(fnBody) &&
+      !/self\.channels\s*\.\s*(?:get|contains_key|entry)\s*\(/.test(fnBody)
+    ) {
+      findings.push({
+        ruleId: 'rust-org-governance-snapshot-rollback-or-channel-reset',
+        mechanism: 'SM34-runtime-env-context-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, createChanMatch.index),
+        message: 'SharedContextGovernanceLedger::create_channel unconditionally overwrites existing channel state, resetting acl_epoch to 1 and wiping tainted=true (ADV-L4, SM34).',
+      });
+    }
+  }
+
+  // 71. Rust assemble_two_zone_gateway_messages compares envelope.kv_prefix_digest without recomputing compute_kv_prefix_digest(&envelope.frozen_prefix) (ADV-L4, SM34).
+  const twoZoneMatch = /\bpub\s+fn\s+assemble_two_zone_gateway_messages\s*\([^)]*\)/.exec(clean);
+  if (twoZoneMatch) {
+    const fnBody = extractBraceBlock(clean, twoZoneMatch.index);
+    if (
+      /envelope\.kv_prefix_digest/.test(fnBody) &&
+      !/compute_kv_prefix_digest\s*\(\s*&envelope\.frozen_prefix\s*\)/.test(fnBody)
+    ) {
+      findings.push({
+        ruleId: 'rust-two-zone-kv-prefix-unverified-content-digest',
+        mechanism: 'SM34-runtime-env-context-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, twoZoneMatch.index),
+        message: 'assemble_two_zone_gateway_messages trusts envelope.kv_prefix_digest without recomputing compute_kv_prefix_digest(&envelope.frozen_prefix), enabling Zone-1 System prompt injection with a copied digest (ADV-L4, SM34).',
+      });
+    }
+  }
+
   return findings;
 }
 
@@ -2248,6 +2384,21 @@ function auditTypeScript(clean: string): AgingFinding[] {
         language: 'ts',
         line: lineOfIndex(clean, tsHookDecMatch.index),
         message: 'applyHookDynamicDecision overwrites Rust trust-floor rejection reasons (UntrustedRejected/ModifiedRejected) with extension Defer/Deny reasons (ADV-L4, SM33).',
+      });
+    }
+  }
+
+  // 27. TS assembleTwoZonePrompt compares kvPrefixDigest without recomputing computeKvPrefixDigest(envelope.frozenPrefix) (ADV-L4, SM34).
+  const tsTwoZoneMatch = /\bfunction\s+assembleTwoZonePrompt\s*\([^)]*\)(?:\s*:\s*[^{]+)?\{/.exec(clean);
+  if (tsTwoZoneMatch) {
+    const fnBody = extractBraceBlock(clean, tsTwoZoneMatch.index + tsTwoZoneMatch[0].length - 1);
+    if (!/computeKvPrefixDigest\s*\(\s*envelope\.frozenPrefix\s*\)/.test(fnBody)) {
+      findings.push({
+        ruleId: 'ts-two-zone-prefix-or-direnv-loader-bypass',
+        mechanism: 'SM34-runtime-env-context-confinement',
+        language: 'ts',
+        line: lineOfIndex(clean, tsTwoZoneMatch.index),
+        message: 'assembleTwoZonePrompt trusts envelope.kvPrefixDigest without recomputing computeKvPrefixDigest(envelope.frozenPrefix), enabling Zone-1 prompt injection with a copied digest (ADV-L4, SM34).',
       });
     }
   }

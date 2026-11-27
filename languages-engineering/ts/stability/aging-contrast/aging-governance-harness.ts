@@ -256,6 +256,14 @@ const MECHANISM_DIRECTIVES: Record<AgingMechanism, AgingRemediationDirective> = 
     antiEvasionWarning:
       'Do NOT evade by omitting deny_unknown_fields on fail-open ObserveOnly TOML envelopes, leaving duplicate hook_id entries in HookRegistry::registrations, overwriting UntrustedRejected with ExtensionDeferred, accepting read_only=true with workspace_write=true, or deriving Deserialize directly on RuntimeSessionId.',
   },
+  'SM34-runtime-env-context-confinement': {
+    mechanism: 'SM34-runtime-env-context-confinement',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Filter direnv JSON exports against loader-hijack variables (LD_PRELOAD/DYLD_INSERT_LIBRARIES/BASH_ENV/NODE_OPTIONS), shell denylists, and malformed/NUL env keys while executing direnv with bounded stdout capture, timeout, and `./.envrc` scoping; confine explicit .envrc files, sub-agent home overrides, state-home directories, and FileSystemOrgSourceStore paths against symlink and root escapes with bounded reads and atomic sequence temp files; enforce monotonic snapshot generation, active-lease conflict checks, lease-digest parity, and atomic rebase in OrgGovernanceLedger plus non-resetting channel epochs/taint in SharedContextGovernanceLedger; and recompute compute_kv_prefix_digest(&envelope.frozen_prefix) in assemble_two_zone_gateway_messages while binding proposal.task_id == cursor.task_id.',
+    antiEvasionWarning:
+      'Do NOT evade by isolating only direnv input env while letting direnv JSON re-inject LD_PRELOAD or denylisted vars, checking only lexical path components on .envrc or Org stores, permitting create_channel to reset acl_epoch/taint, or trusting envelope.kv_prefix_digest without recomputing SHA-256 over envelope.frozen_prefix.',
+  },
 };
 
 export function getAgingRemediation(finding: AgingFinding): AgingRemediationDirective {
