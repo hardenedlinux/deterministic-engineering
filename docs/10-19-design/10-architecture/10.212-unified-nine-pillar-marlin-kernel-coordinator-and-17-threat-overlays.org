@@ -1,0 +1,71 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#+TITLE: 10.212 Unified 9-Pillar Marlin Kernel Coordinator (B9..B21), B15/B20 Overlays (17/17) & 1,017-File Zero-G2 Closure
+#+PROPERTY: JD_ID 10.212
+
+* Overview
+
+Building on [[file:10.211-real-repo-zero-g2-closure-and-b14-b16-b17-b19-kernel-validation.org][10.211]], this record captures the next dual-track formal-to-Rust
+expansion on =tao3k/marlin-agent-core= (commit =17805f7c=):
+
+1. Adding Rust kernel admission gates and Quint threat overlays for **B15**
+   (Confidential Compute / Hardware TEE Attestation) and **B20** (Multi-Org
+   Federated Reciprocity & Dispute Arbitration), raising the live production
+   threat overlay suite to **17/17** =dev/quint/threat/*.qnt= overlays.
+2. Composing **9 defense pillars** (=B9= + =B12= + =B14= + =B15= + =B16= + =B17=
+   + =B19= + =B20= + =B21=) into an atomic, fail-closed
+   =UnifiedDefensePillarCoordinator= that requires every gate to succeed before
+   anchoring a unified release certificate into the =B9= RFC 6962 transparency
+   log, rolling back all state mutations if any single pillar fails.
+3. Re-verifying **1,017 live production files** across =marlin-mygo= (247 Go
+   files) and =marlin-agent-core= (770 Rust + Gerbil Scheme files) at **0 G2
+   defensive-hallucination findings**.
+
+* New Formal-to-Rust Kernel Modules & Overlays (=tao3k/marlin-agent-core@17805f7c=)
+
+- *B15 Confidential Compute / Hardware TEE Attestation*
+  - Rust gate: =crates/marlin-agent-kernel/src/confidential_enclave.rs=
+    (=ConfidentialEnclaveGate=, =EnclaveAttestationQuote=,
+    =EnclaveKeyReleaseReceipt=, =ConfidentialEnclaveRejection=).
+  - Enforces non-debug enclave execution, hardware measurement allowlist, minimum
+    TCB security version, =B14= supply-chain artifact measurement binding, and
+    single-use attestation nonce replay blocking.
+  - Quint threat overlay:
+    =dev/quint/threat/MarlinBackendConfidentialEnclaveOverlay.qnt=
+    - =run-plan=: =PLAN-OK= (=passed=2, skipped=7, verify=false=)
+    - =mbt-audit=: =MBT-AUDIT-OK marlin_backend_confidential_enclave_overlay
+      coverage=6/6 (100.0%) traces=12 transitions=120 uniqueStates=16=
+- *B20 Multi-Org Federated Reciprocity & Dispute Arbitration*
+  - Rust gate: =crates/marlin-agent-kernel/src/federated_org_reciprocity.rs=
+    (=FederatedOrgReciprocityGate=, =BilateralTreaty=, =FederatedOpClaim=,
+    =FederatedOpReceipt=, =FederatedOrgRejection=).
+  - Enforces bilateral treaty ratification, prohibits unilateral execution and
+    self-org spoofing, freezes cross-org operations immediately during active
+    disputes, and restores admission only after ratified dispute resolution.
+  - Quint threat overlay:
+    =dev/quint/threat/MarlinBackendFederatedOrgOverlay.qnt=
+    - =run-plan=: =PLAN-OK= (=passed=2, skipped=7, verify=false=)
+    - =mbt-audit=: =MBT-AUDIT-OK marlin_backend_federated_org_overlay
+      coverage=7/7 (100.0%) traces=12 transitions=120 uniqueStates=15=
+- *Unified 9-Pillar Coordinator (=defense_pillar_coordinator.rs=)*
+  - Atomically composes =B14= (supply chain), =B15= (TEE enclave), =B16= (key
+    rotation/shredding), =B17= (post-quantum hybrid agility), =B19=
+    (geo-residency sovereignty), =B20= (federated org reciprocity), =B12=
+    (context distillation), =B21= (deterministic model-weight inference), and
+    =B9= (RFC 6962 Merkle transparency log).
+  - Uses transactional snapshot-and-commit semantics so any failure in any
+    single pillar leaves all 9 sub-gates and the =B9= Merkle log completely
+    untouched; successful admission emits a =UnifiedDefenseReleaseCertificate=
+    backed by a verifiable RFC 6962 inclusion proof.
+
+* Verification Summary
+
+- =cargo test -p marlin-agent-kernel --lib=: **39 passed, 0 failed** (0.12s),
+  covering =B9=, =B12=, =B14=, =B15=, =B16=, =B17=, =B19=, =B20=, =B21=,
+  =UnifiedDefensePillarCoordinator=, =SM25= E-Stop, and Cedar policy admission.
+- Quint threat overlays (=dev/quint/threat/*.qnt=): **17/17** overlays pass
+  =quint-modules-resolver typecheck= (=ALL_17_THREAT_OVERLAYS_TYPECHECK_OK=).
+- Standalone =@deterministic-engineering/agent-defense-audit= live sweep:
+  - =marlin-mygo= (=just audit-g2=): =Summary: audited=247 findings=0=
+  - =marlin-agent-core= (=just audit-g2=): =Summary: audited=770 findings=0=
+  - Combined live production total: **1,017 files, 0 G2 findings**.
