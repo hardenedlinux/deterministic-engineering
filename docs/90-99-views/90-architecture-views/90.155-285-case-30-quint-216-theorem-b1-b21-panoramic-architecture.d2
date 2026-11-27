@@ -1,0 +1,91 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+direction: right
+
+title: {
+  label: "285-Case / 30-Quint / 216-Theorem B1-B21 Panoramic Governance & Subtree-to-Submodule Architecture (10.207 / 90.155)"
+  near: top-center
+  shape: text
+  style.font-size: 20
+  style.bold: true
+}
+
+library: "Monorepo SSOT Formal Library (deterministic-engineering-qnt — ZERO Mathlib, ZERO Cedar)" {
+  style.fill: "#F4F8FB"
+  style.stroke: "#2C5E8A"
+  style.stroke-width: 2
+
+  p1: "Paradigm 1: Quint / Apalache + F3 + MBT (Native .qnt SSOT)" {
+    style.fill: "#E8F1FA"
+    style.stroke: "#2C5E8A"
+    q30: "30 Defense Models (B1-B21) / 96 Total .qnt\nApalache PLAN-OK + 100% F3 Guard Necessity\n30/30 MBT SUT Isomorphism | 10.204 Sealed Schema | 0 types.ss (10.205)"
+  }
+
+  p2: "Paradigm 2: Gerbil Scheme ASCENT & Unified Yuanxu Testing" {
+    style.fill: "#E9F7EF"
+    style.stroke: "#1E8449"
+    ascent: "60 Sources x 32 Outputs (B1-B21)\nLive gxi Stratified Datalog Oracle\nUnified yuanxu-test-case + resolve-repo-root (10.205)"
+  }
+
+  p3: "Paradigm 3: CBMC & 5-Language Defense Harnesses" {
+    style.fill: "#FEF9E7"
+    style.stroke: "#B7950B"
+    langs: "C (CBMC) | C++20 | Rust | TypeScript (50 Suites) | Scheme\n285-Case Benchmark (AG01-AG285: tp=182, tn=103, fp=0, fn=0)\n18/18 R3 Non-Leakable M3 Capabilities"
+  }
+
+  p4: "Paradigm 4: Pure Lean 4 + LeanPoo (20 Modules / 216 Theorems)" {
+    style.fill: "#F5EEF8"
+    style.stroke: "#7D3C98"
+    m1_18: "Modules 1-18 (196 Theorems)\nB1-B19, R1-R5, Export, 4-Paradigm, Offline Cert, TEE, PQ, ZK, Geo"
+    m19: "Module 19: FederatedOrgReciprocity\n(B20: 10 Theorems — Bilateral Reciprocity + Dispute Freeze)"
+    m20: "Module 20: ModelWeightAndInferenceAttestation\n(B21: 10 Theorems — Shard Merkle Pinning + LoRA Allowlist)"
+    m1_18 -> m19 -> m20
+  }
+
+  gate: "Single-Shot 216-Theorem Fleet Gate\njust audit-leanpoo-fleet --json\n(30 Quint x 60x32 ASCENT x 216/216 Axioms)" {
+    style.fill: "#D6EAF8"
+    style.stroke: "#1B4F72"
+    style.bold: true
+  }
+
+  p1 -> gate
+  p2 -> gate
+  p3 -> gate
+  p4.m20 -> gate
+}
+
+supply: "Layered Hooks & 4-Package Subtree-to-Submodule Mirrors (10.201 / 10.206)" {
+  style.fill: "#FDF2E9"
+  style.stroke: "#AF601A"
+  style.stroke-width: 2
+
+  hooks: "Root + Per-Package .githooks (H1-H9)\nBlocks Mathlib/Cedar/sorry, 10.204 AST bloat, 10.205 raw test-case & types.ss"
+  mirrors: "One-Way Fast-Forward Mirrors (publish-packages.yml)\nrender | quint-models | quint-modules-resolver | lean-models\nVerified End-to-End via scripts/verify-subtree-mirrors.sh"
+  hooks -> mirrors: "Branch-Isolated FF Sync"
+}
+
+custody: "Air-Gapped Sovereign & Model-Weight Inference Custody" {
+  style.fill: "#FDEDEC"
+  style.stroke: "#922B21"
+  style.stroke-width: 2
+
+  cert: "SignedLibraryReleaseCertificate\nPublisher Ed25519 + 3-of-4 Witness QC\n+ B17 PQ Hybrid + B18 ZK Compliance + B19 Geo-Residency"
+  b20_b21: "B20 Multi-Org Reciprocity + B21 Model-Weight Pinning\nBilateral Countersignatures + Pinned Tensor Merkle Root + LoRA Allowlist"
+  cert -> b20_b21: "Binds Verified Library -> Reproducible Inference"
+}
+
+host: "Downstream Authorization Host (cedar-poo-spec)" {
+  style.fill: "#EAFAF1"
+  style.stroke: "#145A32"
+  style.stroke-width: 2
+
+  submod: "Git Submodule Consumption (vendor/lean-models)\nCedarHostConsumer Lake Build (95 Jobs)\n#print axioms: [propext, Quot.sound] (0 sorryAx)"
+  dual: "Dual-Sovereign Release Gate\nLibrary Finality AND Host Cedar Permit\n(Monotonic LeanPoo ObjectContract.refine | 0 Cedar in Library)"
+  submod -> dual
+}
+
+library.gate -> supply.hooks: "G2 + LeanPoo + Subtree Gates"
+library.gate -> custody.cert: "M1 Pinned 216-Theorem Digest"
+supply.mirrors -> host.submod: "Read-Only Git Submodule Pin"
+custody.b20_b21 -> host.dual: "Verified Sovereign + Model-Weight Receipts"

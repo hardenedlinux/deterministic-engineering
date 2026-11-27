@@ -371,4 +371,77 @@ void sync_state() {
     expect(parsedFeedback.decision).toBe('ADMIT');
     expect(parsedFeedback.totalFindings).toBe(0);
   });
+
+  test('Real-world Rust precision (calibrated on 490-file marlin-agent-core): zero FP on fail-closed/typed-failure/Option/match-guard while preserving all silent-fallback catches', () => {
+    // 1. Clean real-world Rust patterns observed in marlin-agent-core MUST produce 0 findings:
+    const cleanMarlinRust = `
+      pub fn is_actor_fenced(&self, actor: &str) -> bool {
+        self.inner.lock().map(|g| g.fenced.contains(actor)).unwrap_or(true)
+      }
+      fn handle_exec(res: Result<Receipt, ExecErr>) -> Outcome {
+        match res {
+          Ok(r) => Outcome::completed(r),
+          Err(error) => {
+            log_receipt(Receipt::failed(error));
+            Outcome::failed(error)
+          }
+        }
+      }
+      fn read_opt(path: &Path) -> Result<Option<String>, io::Error> {
+        match fs::read_to_string(path) {
+          Ok(text) => Ok(Some(text)),
+          Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
+          Err(error) => Err(error),
+        }
+      }
+      fn grpc_gate(res: Result<Ack, Denial>) -> Result<Response<Reply>, Status> {
+        match res {
+          Ok(ack) => Ok(Response::new(Reply::ok(ack))),
+          Err(denial) => Ok(Response::new(Reply::denied(denial))),
+        }
+      }
+      fn cli_main(res: Result<(), String>) {
+        match res {
+          Ok(()) => std::process::exit(0),
+          Err(err) => {
+            eprintln!("fatal: {err}");
+            std::process::exit(1);
+          }
+        }
+      }
+      fn render_label(opt: Option<&str>, map: &HashMap<String, String>) -> String {
+        let a = opt.as_deref().unwrap_or("");
+        let b = map.get("k").cloned().unwrap_or_default();
+        format!("{a}:{b}")
+      }
+    `;
+    const cleanReport = auditSourceByPath(cleanMarlinRust, 'marlin_clean.rs')!;
+    expect(cleanReport.passed).toBe(true);
+    expect(cleanReport.findings).toEqual([]);
+
+    // 2. Real-world Marlin silent-fallback defects MUST STILL BE CAUGHT:
+    const badMarlinRust = `
+      fn boot_bridge() -> String {
+        let token = std::env::var("MARLIN_BRIDGE_TOKEN").unwrap_or_default();
+        token
+      }
+      fn parse_epoch(facets: &HashMap<String, String>) -> u64 {
+        facets.get("revocation_epoch").and_then(|v| v.parse::<u64>().ok()).unwrap_or(0)
+      }
+      fn reconcile(owner: &Owner) -> Option<Report> {
+        match owner.reconcile_persisted_processes() {
+          Ok(r) => Some(r),
+          Err(error) => {
+            eprintln!("reconcile failed: {error}");
+            None
+          }
+        }
+      }
+    `;
+    const badReport = auditSourceByPath(badMarlinRust, 'marlin_defects.rs')!;
+    expect(badReport.passed).toBe(false);
+    expect(badReport.findings.some(f => f.rule === 'rust-unwrap-or-default')).toBe(true);
+    expect(badReport.findings.some(f => f.rule === 'rust-unwrap-or-constant')).toBe(true);
+    expect(badReport.findings.some(f => f.rule === 'rust-err-log-and-swallow')).toBe(true);
+  });
 });

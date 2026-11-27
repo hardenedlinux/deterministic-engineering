@@ -407,6 +407,143 @@ export function auditCCppAgentSource(sourceText: string, fileName = 'input.cpp')
 
 // ── Rust Auditor ────────────────────────────────────────────────────────────
 
+const RUST_OPTION_ACCESSOR_METHODS = new Set([
+  'as_deref',
+  'as_ref',
+  'as_str',
+  'get',
+  'next',
+  'first',
+  'last',
+  'cloned',
+  'copied',
+  'strip_prefix',
+  'strip_suffix',
+  'file_name',
+  'extension',
+  'parent',
+  'max',
+  'min',
+  'saturating_sub',
+  'checked_sub',
+  'started_at_ms',
+  'width',
+]);
+
+const RUST_FAIL_CLOSED_PREDICATE_RE =
+  /^is_.*(fenced|retracted|blocked|revoked|tripped|denied|quarantined|expired|stale|corrupt|disabled)/i;
+
+function isRustOptionAccessorChain(code: readonly Tok[], dotIdx: number): boolean {
+  // Scan backwards across the receiver expression up to statement/delimiter boundary.
+  // If `.ok()` appears anywhere in the chain, a Result::Err is being collapsed into Option::None -> NOT a pure Option accessor!
+  const start = Math.max(0, dotIdx - 28);
+  let depthParen = 0;
+  let depthBracket = 0;
+  let sawOptionAccessor = false;
+  let sawDurationSinceEpoch = false;
+  let sawTryPropagated = false;
+  for (let k = dotIdx - 1; k >= start; k--) {
+    const tk = code[k]!;
+    if (tk.value === ')') {
+      depthParen++;
+      continue;
+    }
+    if (tk.value === '(') {
+      if (depthParen > 0) {
+        depthParen--;
+        continue;
+      }
+      break;
+    }
+    if (tk.value === ']') {
+      depthBracket++;
+      continue;
+    }
+    if (tk.value === '[') {
+      if (depthBracket > 0) {
+        depthBracket--;
+        continue;
+      }
+      break;
+    }
+    if (depthParen === 0 && depthBracket === 0 && (tk.value === ';' || tk.value === '{' || tk.value === '}' || tk.value === '=' || tk.value === ',')) {
+      break;
+    }
+    // `expr?.unwrap_or_default()` already propagated Err via `?` (only Option remains).
+    if (depthParen === 0 && depthBracket === 0 && tk.value === '?' && k === dotIdx - 1) {
+      sawTryPropagated = true;
+    }
+    if (tk.kind === 'ident' && tk.value === 'ok' && code[k - 1]?.value === '.' && code[k + 1]?.value === '(') {
+      return false;
+    }
+    if (tk.kind === 'ident' && tk.value === 'UNIX_EPOCH') {
+      sawDurationSinceEpoch = true;
+    }
+    if (depthParen === 0 && tk.kind === 'ident' && code[k - 1]?.value === '.' && RUST_OPTION_ACCESSOR_METHODS.has(tk.value)) {
+      sawOptionAccessor = true;
+    }
+  }
+  return sawOptionAccessor || sawDurationSinceEpoch || sawTryPropagated;
+}
+
+function hasOtherErrArmInEnclosingMatch(code: readonly Tok[], errTokIdx: number): boolean {
+  // Walk backwards to find the opening `{` of the enclosing match body.
+  let depth = 0;
+  let matchOpen = -1;
+  for (let k = errTokIdx - 1; k >= 0; k--) {
+    const v = code[k]!.value;
+    if (v === '}') depth++;
+    else if (v === '{') {
+      if (depth === 0) {
+        matchOpen = k;
+        break;
+      }
+      depth--;
+    }
+  }
+  if (matchOpen < 0) return false;
+  const matchClose = findMatching(code, matchOpen, '{', '}');
+  if (matchClose <= matchOpen) return false;
+
+  // Count top-level `Err(...) =>` arms directly inside this match block.
+  let innerDepth = 0;
+  let errArmCount = 0;
+  for (let k = matchOpen + 1; k < matchClose; k++) {
+    const v = code[k]!.value;
+    if (v === '{' || v === '(' || v === '[') {
+      innerDepth++;
+      continue;
+    }
+    if (v === '}' || v === ')' || v === ']') {
+      if (innerDepth > 0) innerDepth--;
+      continue;
+    }
+    if (innerDepth === 0 && code[k]!.kind === 'ident' && v === 'Err' && code[k + 1]?.value === '(') {
+      const cp = findMatching(code, k + 1, '(', ')');
+      if (cp > k) {
+        let arrowIdx = cp + 1;
+        if (code[arrowIdx]?.value === 'if') {
+          let gDepth = 0;
+          while (arrowIdx < matchClose) {
+            const gv = code[arrowIdx]!.value;
+            if (gv === '(' || gv === '{' || gv === '[') gDepth++;
+            else if (gv === ')' || gv === '}' || gv === ']') {
+              if (gDepth > 0) gDepth--;
+            } else if (gDepth === 0 && gv === '=>') {
+              break;
+            }
+            arrowIdx++;
+          }
+        }
+        if (code[arrowIdx]?.value === '=>') {
+          errArmCount++;
+        }
+      }
+    }
+  }
+  return errArmCount > 1;
+}
+
 export function auditRustAgentSource(sourceText: string, fileName = 'input.rs'): MultiLangAuditReport {
   const {code, comments} = tokenizeCLike(sourceText, true);
   const findings: AstAuditFinding[] = [];
@@ -414,27 +551,95 @@ export function auditRustAgentSource(sourceText: string, fileName = 'input.rs'):
     findings.push({hallucinationClass, rule, line: tok.line, column: tok.column, detail});
   };
 
+  // Identify inline `#[cfg(test)] mod <name> { ... }` token ranges so production unwrap/Err
+  // heuristics do not spam test helpers (while #[ignore] & assert!(true) remain enforced everywhere).
+  const cfgTestRanges: Array<[number, number]> = [];
+  for (let i = 0; i + 5 < code.length; i++) {
+    if (code[i]!.value === '#' && code[i + 1]?.value === '[') {
+      const attrClose = findMatching(code, i + 1, '[', ']');
+      if (attrClose > i + 1) {
+        const attrSlice = code.slice(i + 2, attrClose);
+        const isCfgTest =
+          attrSlice[0]?.value === 'cfg' &&
+          attrSlice[1]?.value === '(' &&
+          attrSlice.some(tk => tk.value === 'test');
+        if (isCfgTest && code[attrClose + 1]?.value === 'mod') {
+          let braceIdx = attrClose + 2;
+          while (braceIdx < code.length && code[braceIdx]!.value !== '{' && code[braceIdx]!.value !== ';') {
+            braceIdx++;
+          }
+          if (code[braceIdx]?.value === '{') {
+            const modClose = findMatching(code, braceIdx, '{', '}');
+            if (modClose > braceIdx) {
+              cfgTestRanges.push([braceIdx, modClose]);
+            }
+          }
+        }
+      }
+    }
+  }
+  const inCfgTest = (idx: number): boolean => cfgTestRanges.some(([s, e]) => idx >= s && idx <= e);
+
+  // Track enclosing `fn <name>` scope for fail-closed predicate detection.
+  const fnRanges: Array<{name: string; start: number; end: number}> = [];
+  for (let i = 0; i + 2 < code.length; i++) {
+    if (code[i]!.kind === 'ident' && code[i]!.value === 'fn' && code[i + 1]?.kind === 'ident') {
+      const fnName = code[i + 1]!.value;
+      let braceIdx = i + 2;
+      while (braceIdx < code.length && code[braceIdx]!.value !== '{' && code[braceIdx]!.value !== ';') {
+        braceIdx++;
+      }
+      if (code[braceIdx]?.value === '{') {
+        const bodyClose = findMatching(code, braceIdx, '{', '}');
+        if (bodyClose > braceIdx) {
+          fnRanges.push({name: fnName, start: braceIdx, end: bodyClose});
+        }
+      }
+    }
+  }
+  const enclosingFnName = (idx: number): string | null => {
+    let best: {name: string; span: number} | null = null;
+    for (const r of fnRanges) {
+      if (idx >= r.start && idx <= r.end) {
+        const span = r.end - r.start;
+        if (!best || span < best.span) best = {name: r.name, span};
+      }
+    }
+    return best?.name ?? null;
+  };
+
   for (let i = 0; i < code.length; i++) {
     const t = code[i]!;
+    const insideTestMod = inCfgTest(i);
 
-    // 1. Silent fallback: .unwrap_or_default() or .unwrap_or(0|true|false|""|Vec::new())
-    if (t.value === '.' && code[i + 1]?.kind === 'ident') {
+    // 1. Silent fallback: .unwrap_or_default() or .unwrap_or(0|true|"") on Result/unqualified chains
+    if (!insideTestMod && t.value === '.' && code[i + 1]?.kind === 'ident') {
       const m = code[i + 1]!;
       if (m.value === 'unwrap_or_default' && code[i + 2]?.value === '(') {
-        add(
-          'silent-fallback',
-          'rust-unwrap-or-default',
-          m,
-          '.unwrap_or_default() silently collapses Err/None into a default value',
-        );
+        if (!isRustOptionAccessorChain(code, i)) {
+          add(
+            'silent-fallback',
+            'rust-unwrap-or-default',
+            m,
+            '.unwrap_or_default() silently collapses Err/None into a default value',
+          );
+        }
       } else if (m.value === 'unwrap_or' && code[i + 2]?.value === '(') {
         const closeParen = findMatching(code, i + 2, '(', ')');
         if (closeParen === i + 4) {
           const arg = code[i + 3]!;
+          const isFailClosedPredicate =
+            arg.value === 'true' &&
+            (() => {
+              const fnName = enclosingFnName(i);
+              return fnName !== null && RUST_FAIL_CLOSED_PREDICATE_RE.test(fnName);
+            })();
           if (
-            (arg.kind === 'num' && arg.value === '0') ||
-            arg.value === 'true' ||
-            (arg.kind === 'str' && arg.value === '')
+            !isFailClosedPredicate &&
+            !isRustOptionAccessorChain(code, i) &&
+            ((arg.kind === 'num' && arg.value === '0') ||
+              arg.value === 'true' ||
+              (arg.kind === 'str' && arg.value === ''))
           ) {
             add(
               'silent-fallback',
@@ -448,29 +653,55 @@ export function auditRustAgentSource(sourceText: string, fileName = 'input.rs'):
     }
 
     // 2. Silent fallback or noop glue in `Err(...) => ...`
-    if (t.kind === 'ident' && t.value === 'Err' && code[i + 1]?.value === '(') {
+    if (!insideTestMod && t.kind === 'ident' && t.value === 'Err' && code[i + 1]?.value === '(') {
       const closeParen = findMatching(code, i + 1, '(', ')');
       if (closeParen > i && code[closeParen + 1]?.value === '=>') {
+        const patTokens = code.slice(i + 2, closeParen);
+        const isSpecificErrorVariant = patTokens.some(tk => tk.value === '::');
         const errVar = closeParen === i + 3 ? code[i + 2]!.value : null;
         let rhsIdx = closeParen + 2;
         if (code[rhsIdx]?.value === 'return') rhsIdx++;
         const rhs = code[rhsIdx];
         if (rhs?.value === 'Ok' && code[rhsIdx + 1]?.value === '(') {
-          add('silent-fallback', 'rust-err-arm-returns-ok', t, 'Match arm Err(_) silently converts error into Ok(...)');
+          const okClose = findMatching(code, rhsIdx + 1, '(', ')');
+          const okInner = okClose > rhsIdx + 1 ? code.slice(rhsIdx + 2, okClose) : [];
+          const isGrpcResponsePayload =
+            okInner[0]?.value === 'Response' && okInner[1]?.value === '::' && okInner[2]?.value === 'new';
+          if (!isSpecificErrorVariant && !isGrpcResponsePayload) {
+            add('silent-fallback', 'rust-err-arm-returns-ok', t, 'Match arm Err(_) silently converts error into Ok(...)');
+          }
         } else if (rhs?.value === '{') {
           const armClose = findMatching(code, rhsIdx, '{', '}');
           if (armClose > rhsIdx) {
             const armBody = code.slice(rhsIdx + 1, armClose);
+            // Require macro `!` so a variable named `error` is never mistaken for `error!(...)`.
             const logsErr = armBody.some(
-              tk => tk.value === 'eprintln' || tk.value === 'println' || tk.value === 'error' || tk.value === 'warn',
+              (tk, idx) =>
+                (tk.value === 'eprintln' || tk.value === 'println' || tk.value === 'error' || tk.value === 'warn') &&
+                armBody[idx + 1]?.value === '!',
             );
             const returnsOkOrDefault = armBody.some(
               (tk, idx) =>
                 (tk.value === 'Ok' && armBody[idx + 1]?.value === '(') ||
                 tk.value === 'default',
             );
+            const exitsProcess = armBody.some(
+              (tk, idx) =>
+                tk.value === 'exit' &&
+                armBody[idx + 1]?.value === '(' &&
+                armBody[idx + 2]?.value !== '0',
+            );
+            const returnsTypedFailure = armBody.some(
+              (tk, idx) =>
+                ((tk.value === 'failed' || tk.value === 'denied' || tk.value === 'rejected') &&
+                  armBody[idx - 1]?.value === '::' &&
+                  armBody[idx + 1]?.value === '(') ||
+                tk.value === 'failed_join_summary' ||
+                tk.value === 'rejected_with_actions' ||
+                (tk.value === 'Rejected' && armBody[idx - 1]?.value === '::'),
+            );
             const returnsErr = armBody.some(tk => tk.value === 'Err' || tk.value === 'panic');
-            if (logsErr && (returnsOkOrDefault || !returnsErr)) {
+            if (logsErr && !exitsProcess && !returnsTypedFailure && (returnsOkOrDefault || !returnsErr)) {
               add(
                 'silent-fallback',
                 'rust-err-log-and-swallow',
@@ -485,7 +716,8 @@ export function auditRustAgentSource(sourceText: string, fileName = 'input.rs'):
           rhs?.value === 'Err' &&
           code[rhsIdx + 1]?.value === '(' &&
           code[rhsIdx + 2]?.value === errVar &&
-          code[rhsIdx + 3]?.value === ')'
+          code[rhsIdx + 3]?.value === ')' &&
+          !hasOtherErrArmInEnclosingMatch(code, i)
         ) {
           add('redundant-defensive-glue', 'rust-noop-err-rethrow', t, `Redundant Err(${errVar}) => Err(${errVar}) glue`);
         }
