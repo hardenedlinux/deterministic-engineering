@@ -392,20 +392,61 @@ export function verifyReportOffline(reportPath: string, trustPair: TrustPair): b
   return verifyReportDocOffline(doc, trustPair);
 }
 
+export interface FleetVerifyOptions {
+  expectedSysmlSha256?: string;
+  expectedSubjectCount?: number;
+  requiredSubjects?: ReadonlyArray<string>;
+}
+
+function normalizeFleetOpts(
+  optsOrSha?: string | FleetVerifyOptions,
+): FleetVerifyOptions {
+  if (typeof optsOrSha === 'string') return {expectedSysmlSha256: optsOrSha};
+  return optsOrSha ?? {};
+}
+
+function checkFleetSubjectCoverage(
+  subjects: ReadonlyArray<unknown>,
+  opts: FleetVerifyOptions,
+): boolean {
+  const seenKeys = new Set<string>();
+  for (const s of subjects) {
+    if (!isPlainObject(s) || typeof s.subjectKey !== 'string' || s.subjectKey.length === 0) {
+      return false;
+    }
+    if (seenKeys.has(s.subjectKey)) return false; // reject duplicate subjectKey padding!
+    seenKeys.add(s.subjectKey);
+  }
+  if (opts.expectedSubjectCount !== undefined) {
+    if (!Number.isInteger(opts.expectedSubjectCount) || opts.expectedSubjectCount < 1) {
+      return false;
+    }
+    if (seenKeys.size !== opts.expectedSubjectCount) return false;
+  }
+  if (opts.requiredSubjects !== undefined) {
+    for (const req of opts.requiredSubjects) {
+      if (!seenKeys.has(req)) return false;
+    }
+  }
+  return true;
+}
+
 export function verifyFleetOffline(
   fleetReportPath: string,
   trustPair: TrustPair,
-  expectedSysmlSha256?: string,
+  optsOrSha?: string | FleetVerifyOptions,
 ): boolean {
+  const opts = normalizeFleetOpts(optsOrSha);
   if (!existsSync(fleetReportPath)) return false;
   const doc = readJsonObject(fleetReportPath);
   if (!doc) return false;
-  if (expectedSysmlSha256 !== undefined && doc.sysmlSha256 !== expectedSysmlSha256) {
+  if (opts.expectedSysmlSha256 !== undefined && doc.sysmlSha256 !== opts.expectedSysmlSha256) {
     return false;
   }
   const att = doc.attestation;
   const subjects = doc.subjects;
   if (!isPlainObject(att) || !Array.isArray(subjects) || subjects.length === 0) return false;
+  if (!checkFleetSubjectCoverage(subjects, opts)) return false;
   const fleetPub = trustStoreKeyAdmitted(trustPair.trusted, trustPair.revoked, att.keyId);
   if (!fleetPub) return false;
   if (att.algorithm !== 'Ed25519') return false;
@@ -627,20 +668,22 @@ export function packFleetBundleOffline(fleetReportPath: string, outPath: string)
 export function verifyFleetBundleOffline(
   bundlePath: string,
   trustPair: TrustPair,
-  expectedSysmlSha256?: string,
+  optsOrSha?: string | FleetVerifyOptions,
 ): boolean {
+  const opts = normalizeFleetOpts(optsOrSha);
   if (!existsSync(bundlePath)) return false;
   const bundle = readJsonObject(bundlePath);
   if (!bundle || bundle.schema !== FLEET_BUNDLE_SCHEMA) return false;
   const fleetDoc = bundle.fleetReport;
   const childReports = bundle.childReports;
   if (!isPlainObject(fleetDoc) || !isPlainObject(childReports)) return false;
-  if (expectedSysmlSha256 !== undefined && fleetDoc.sysmlSha256 !== expectedSysmlSha256) {
+  if (opts.expectedSysmlSha256 !== undefined && fleetDoc.sysmlSha256 !== opts.expectedSysmlSha256) {
     return false;
   }
   const att = fleetDoc.attestation;
   const subjects = fleetDoc.subjects;
   if (!isPlainObject(att) || !Array.isArray(subjects) || subjects.length === 0) return false;
+  if (!checkFleetSubjectCoverage(subjects, opts)) return false;
   const fleetPub = trustStoreKeyAdmitted(trustPair.trusted, trustPair.revoked, att.keyId);
   if (!fleetPub || att.algorithm !== 'Ed25519') return false;
 
@@ -735,6 +778,8 @@ export function runCli(argv: string[]): number {
   let nowEpoch: number | undefined;
   let maxFutureSkewSeconds = 60;
   let expectedSysmlSha256: string | undefined;
+  let expectedSubjectCount: number | undefined;
+  const requiredSubjects: string[] = [];
   const cleanArgs: string[] = [];
   try {
     for (let i = 0; i < argv.length; i += 1) {
@@ -756,6 +801,18 @@ export function runCli(argv: string[]): number {
           throw new Error('--expected-sysml-sha256 requires a non-empty digest argument');
         }
         expectedSysmlSha256 = val;
+        i += 1;
+      } else if (a === '--expected-subject-count') {
+        const n = parseNonNegIntFlag('--expected-subject-count', argv[i + 1]);
+        if (n < 1) throw new Error('--expected-subject-count must be >= 1');
+        expectedSubjectCount = n;
+        i += 1;
+      } else if (a === '--require-subject') {
+        const val = argv[i + 1];
+        if (typeof val !== 'string' || val.length === 0) {
+          throw new Error('--require-subject requires a non-empty subjectKey argument');
+        }
+        if (!requiredSubjects.includes(val)) requiredSubjects.push(val);
         i += 1;
       } else {
         cleanArgs.push(a);
@@ -935,12 +992,30 @@ export function runCli(argv: string[]): number {
     return 1;
   }
 
+  const fleetOpts: FleetVerifyOptions = {
+    expectedSysmlSha256,
+    expectedSubjectCount,
+    requiredSubjects: requiredSubjects.length > 0 ? requiredSubjects : undefined,
+  };
+  const fleetJsonExtra = (): Record<string, unknown> => {
+    const extra: Record<string, unknown> = {};
+    if (expectedSysmlSha256 !== undefined) extra.expectedSysmlSha256 = expectedSysmlSha256;
+    if (expectedSubjectCount !== undefined) extra.expectedSubjectCount = expectedSubjectCount;
+    if (requiredSubjects.length > 0) extra.requiredSubjects = [...requiredSubjects].sort(codePointCompare);
+    return extra;
+  };
+
   if (mode === '--verify-fleet') {
-    if (verifyFleetOffline(targetPath, trustPair, expectedSysmlSha256)) {
+    if (verifyFleetOffline(targetPath, trustPair, fleetOpts)) {
       if (jsonMode) {
-        const extra: Record<string, unknown> =
-          expectedSysmlSha256 !== undefined ? {expectedSysmlSha256} : {};
-        emitJsonResult(true, 'verify-fleet', targetPath, storePath, 'authentic-2-level-merkle-fleet', extra);
+        emitJsonResult(
+          true,
+          'verify-fleet',
+          targetPath,
+          storePath,
+          'authentic-2-level-merkle-fleet',
+          fleetJsonExtra(),
+        );
       } else {
         process.stdout.write(`MULTI-METHOD-VERIFY-FLEET-OK ${targetPath}\n`);
       }
@@ -955,17 +1030,15 @@ export function runCli(argv: string[]): number {
   }
 
   if (mode === '--verify-fleet-bundle') {
-    if (verifyFleetBundleOffline(targetPath, trustPair, expectedSysmlSha256)) {
+    if (verifyFleetBundleOffline(targetPath, trustPair, fleetOpts)) {
       if (jsonMode) {
-        const extra: Record<string, unknown> =
-          expectedSysmlSha256 !== undefined ? {expectedSysmlSha256} : {};
         emitJsonResult(
           true,
           'verify-fleet-bundle',
           targetPath,
           storePath,
           'authentic-self-contained-fleet-bundle',
-          extra,
+          fleetJsonExtra(),
         );
       } else {
         process.stdout.write(`MULTI-METHOD-VERIFY-FLEET-BUNDLE-OK ${targetPath}\n`);

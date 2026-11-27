@@ -596,6 +596,28 @@
                             ("keyId" kid1)
                             ("signature" (sign-ed25519-local (cadr k1) p-no-epoch work "sig-no-ep"))))))))
 
+      ;; Build duplicate-subjectKey padding Fleet bundle BEFORE deleting `keys/` (Attack 35).
+      (def dup-fleet-path (path-expand "fleet-dup-raw.json" subfleet-dir))
+      (write-signed-fleet dup-fleet-path
+        (list (hash ("subjectKey" "demo") ("subjectId" "subject.demo")
+                    ("reportRelativePath" "child/report.json")
+                    ("reportPayloadSha256" pack-child-sha)
+                    ("replayValid" #t) ("admitted" #t))
+              (hash ("subjectKey" "demo") ("subjectId" "subject.demo")
+                    ("reportRelativePath" "child/report-dup.json")
+                    ("reportPayloadSha256" pack-child-sha)
+                    ("replayValid" #t) ("admitted" #t)))
+        k2 "fl-dup-key")
+      (def pack-child-doc (call-with-input-file pack-child-ok (cut read-json <> object-as-hash: #t)))
+      (def bundle-dup-subject-key (path-expand "fleet-bundle-dup-key.json" work))
+      (let ((dup-children (make-hash-table)))
+        (hash-put! dup-children "child/report.json" pack-child-doc)
+        (hash-put! dup-children "child/report-dup.json" pack-child-doc)
+        (write-json-file bundle-dup-subject-key
+          (hash ("schema" "de.attestation.fleet-evidence-bundle.v1")
+                ("fleetReport" (call-with-input-file dup-fleet-path (cut read-json <> object-as-hash: #t)))
+                ("childReports" dup-children))))
+
       ;; Physically delete ALL .pub.pem files from disk before running inline-bundle verification!
       (yuanxu-test-checkpoint 'after-export-bundle-attacks)
       (run-process (list "rm" "-rf" keys-dir))
@@ -721,5 +743,21 @@
                       expected-sysml-sha256: "sysml-sha") #t)
       (check-equal? (verify-fleet-bundle-offline fleet-bundle-path tp-inline
                       expected-sysml-sha256: "downgraded-older-sysml-sha") #f)
+
+      ;; Attacks 33-35: Subject-Coverage Completeness Gates (`--expected-subject-count` & `--require-subject`):
+      ;;   33: Matching count=1 passes; partial Fleet against count=7 FAILS!
+      ;;   34: Matching required '("demo") passes; missing "meta-governance-soundness" FAILS!
+      ;;   35: Validly signed duplicate `subjectKey` padding (`"demo"`, `"demo"`) FAILS even for count=2!
+      (check-equal? (verify-fleet-bundle-offline fleet-bundle-path tp-inline
+                      expected-sysml-sha256: "sysml-sha"
+                      expected-subject-count: 1
+                      required-subjects: '("demo")) #t)
+      (check-equal? (verify-fleet-bundle-offline fleet-bundle-path tp-inline
+                      expected-subject-count: 7) #f)
+      (check-equal? (verify-fleet-bundle-offline fleet-bundle-path tp-inline
+                      required-subjects: '("demo" "meta-governance-soundness")) #f)
+      (check-equal? (verify-fleet-bundle-offline bundle-dup-subject-key tp-inline) #f)
+      (check-equal? (verify-fleet-bundle-offline bundle-dup-subject-key tp-inline
+                      expected-subject-count: 2) #f)
 
       (run-process (list "rm" "-rf" work)))))

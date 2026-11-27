@@ -217,10 +217,27 @@
          (call-with-input-file report-path (cut read-json <> object-as-hash: #t))
          trust-pair)))
 
+(def (fleet-subject-coverage-ok? subjects expected-subject-count required-subjects)
+  (let loop ((xs subjects) (seen '()))
+    (if (null? xs)
+      (and (or (not expected-subject-count)
+               (and (exact-integer? expected-subject-count)
+                    (>= expected-subject-count 1)
+                    (= (length seen) expected-subject-count)))
+           (andmap (lambda (req) (and (member req seen) #t)) required-subjects))
+      (let* ((s (car xs))
+             (skey (and (hash-table? s) (hash-get s "subjectKey"))))
+        (and (string? skey)
+             (> (string-length skey) 0)
+             (not (member skey seen))
+             (loop (cdr xs) (cons skey seen)))))))
+
 (def (verify-fleet-offline
        fleet-report-path
        trust-pair
-       expected-sysml-sha256: (expected-sysml-sha256 #f))
+       expected-sysml-sha256: (expected-sysml-sha256 #f)
+       expected-subject-count: (expected-subject-count #f)
+       required-subjects: (required-subjects '()))
   (and (file-exists? fleet-report-path)
        (let* ((trusted (car trust-pair))
               (revoked (cdr trust-pair))
@@ -234,6 +251,7 @@
                   (equal? (hash-get doc "sysmlSha256") expected-sysml-sha256))
               (list? subjects)
               (pair? subjects)
+              (fleet-subject-coverage-ok? subjects expected-subject-count required-subjects)
               (equal? (hash-get att "algorithm") "Ed25519")
               (let* ((expected-sha (hash-get att "payloadSha256"))
                      (sig (hash-get att "signature"))
@@ -433,7 +451,9 @@
 (def (verify-fleet-bundle-offline
        bundle-path
        trust-pair
-       expected-sysml-sha256: (expected-sysml-sha256 #f))
+       expected-sysml-sha256: (expected-sysml-sha256 #f)
+       expected-subject-count: (expected-subject-count #f)
+       required-subjects: (required-subjects '()))
   (and (file-exists? bundle-path)
        (let* ((trusted (car trust-pair))
               (revoked (cdr trust-pair))
@@ -453,6 +473,7 @@
               (hash-table? child-reports)
               (list? subjects)
               (pair? subjects)
+              (fleet-subject-coverage-ok? subjects expected-subject-count required-subjects)
               (= (hash-length child-reports) (length subjects))
               (equal? (hash-get att "algorithm") "Ed25519")
               (let* ((expected-sha (hash-get att "payloadSha256"))
@@ -509,30 +530,42 @@
     n))
 
 (def (extract-global-cli-flags args)
-  (let loop ((xs args) (json? #f) (max-age #f) (now-ep #f) (max-skew 60) (exp-sysml #f) (pos '()))
+  (let loop ((xs args) (json? #f) (max-age #f) (now-ep #f) (max-skew 60)
+             (exp-sysml #f) (exp-cnt #f) (req-subs '()) (pos '()))
     (cond
      ((null? xs)
-      (values json? max-age now-ep max-skew exp-sysml (reverse pos)))
+      (values json? max-age now-ep max-skew exp-sysml exp-cnt (reverse req-subs) (reverse pos)))
      ((equal? (car xs) "--json")
-      (loop (cdr xs) #t max-age now-ep max-skew exp-sysml pos))
+      (loop (cdr xs) #t max-age now-ep max-skew exp-sysml exp-cnt req-subs pos))
      ((equal? (car xs) "--max-age-seconds")
       (unless (pair? (cdr xs)) (error "--max-age-seconds requires an integer argument"))
-      (loop (cddr xs) json? (parse-nonneg-int-flag "--max-age-seconds" (cadr xs)) now-ep max-skew exp-sysml pos))
+      (loop (cddr xs) json? (parse-nonneg-int-flag "--max-age-seconds" (cadr xs)) now-ep max-skew exp-sysml exp-cnt req-subs pos))
      ((equal? (car xs) "--now-epoch")
       (unless (pair? (cdr xs)) (error "--now-epoch requires an integer argument"))
-      (loop (cddr xs) json? max-age (parse-nonneg-int-flag "--now-epoch" (cadr xs)) max-skew exp-sysml pos))
+      (loop (cddr xs) json? max-age (parse-nonneg-int-flag "--now-epoch" (cadr xs)) max-skew exp-sysml exp-cnt req-subs pos))
      ((equal? (car xs) "--max-future-skew-seconds")
       (unless (pair? (cdr xs)) (error "--max-future-skew-seconds requires an integer argument"))
-      (loop (cddr xs) json? max-age now-ep (parse-nonneg-int-flag "--max-future-skew-seconds" (cadr xs)) exp-sysml pos))
+      (loop (cddr xs) json? max-age now-ep (parse-nonneg-int-flag "--max-future-skew-seconds" (cadr xs)) exp-sysml exp-cnt req-subs pos))
      ((equal? (car xs) "--expected-sysml-sha256")
       (unless (and (pair? (cdr xs)) (string? (cadr xs)) (> (string-length (cadr xs)) 0))
         (error "--expected-sysml-sha256 requires a non-empty digest argument"))
-      (loop (cddr xs) json? max-age now-ep max-skew (cadr xs) pos))
+      (loop (cddr xs) json? max-age now-ep max-skew (cadr xs) exp-cnt req-subs pos))
+     ((equal? (car xs) "--expected-subject-count")
+      (unless (pair? (cdr xs)) (error "--expected-subject-count requires an integer argument"))
+      (let ((n (parse-nonneg-int-flag "--expected-subject-count" (cadr xs))))
+        (unless (>= n 1) (error "--expected-subject-count must be >= 1" n))
+        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml n req-subs pos)))
+     ((equal? (car xs) "--require-subject")
+      (unless (and (pair? (cdr xs)) (string? (cadr xs)) (> (string-length (cadr xs)) 0))
+        (error "--require-subject requires a non-empty subjectKey argument"))
+      (let ((next-req (if (member (cadr xs) req-subs) req-subs (cons (cadr xs) req-subs))))
+        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt next-req pos)))
      (else
-      (loop (cdr xs) json? max-age now-ep max-skew exp-sysml (cons (car xs) pos))))))
+      (loop (cdr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs (cons (car xs) pos))))))
 
 (def (main . args)
-  (let-values (((json-mode? max-age-sec now-ep max-skew-sec expected-sysml-sha clean-args)
+  (let-values (((json-mode? max-age-sec now-ep max-skew-sec expected-sysml-sha
+                 expected-sub-cnt req-subs clean-args)
                 (extract-global-cli-flags args)))
   (when (null? clean-args)
     (error "usage: [--json] --verify-report|--verify-fleet|--verify-fleet-bundle|--verify-cache [--max-age-seconds N] [--now-epoch T] <artifact.json> <trust-store.json> | [--json] --verify-trust-store <trust-store.json> | [--json] --export-trust-bundle <out.json> [--revoke <keyId>]... <pub1.pem>... | [--json] --pack-fleet-bundle <fleet-report.json> <out-bundle.json>"
@@ -653,10 +686,15 @@
               (error "offline report verification failed" target-path))))
          ((equal? mode "--verify-fleet")
           (if (verify-fleet-offline target-path trust-pair
-                expected-sysml-sha256: expected-sysml-sha)
+                expected-sysml-sha256: expected-sysml-sha
+                expected-subject-count: expected-sub-cnt
+                required-subjects: req-subs)
             (if json-mode?
               (emit-json-result! #t "verify-fleet" target-path store-path "authentic-2-level-merkle-fleet"
-                (if expected-sysml-sha (list (cons "expectedSysmlSha256" expected-sysml-sha)) '()))
+                (append
+                  (if expected-sysml-sha (list (cons "expectedSysmlSha256" expected-sysml-sha)) '())
+                  (if expected-sub-cnt (list (cons "expectedSubjectCount" expected-sub-cnt)) '())
+                  (if (pair? req-subs) (list (cons "requiredSubjects" (sort-by req-subs string<?))) '())))
               (displayln "MULTI-METHOD-VERIFY-FLEET-OK " target-path))
             (if json-mode?
               (begin
@@ -665,11 +703,16 @@
               (error "offline fleet verification failed" target-path))))
          ((equal? mode "--verify-fleet-bundle")
           (if (verify-fleet-bundle-offline target-path trust-pair
-                expected-sysml-sha256: expected-sysml-sha)
+                expected-sysml-sha256: expected-sysml-sha
+                expected-subject-count: expected-sub-cnt
+                required-subjects: req-subs)
             (if json-mode?
               (emit-json-result! #t "verify-fleet-bundle" target-path store-path
                 "authentic-self-contained-fleet-bundle"
-                (if expected-sysml-sha (list (cons "expectedSysmlSha256" expected-sysml-sha)) '()))
+                (append
+                  (if expected-sysml-sha (list (cons "expectedSysmlSha256" expected-sysml-sha)) '())
+                  (if expected-sub-cnt (list (cons "expectedSubjectCount" expected-sub-cnt)) '())
+                  (if (pair? req-subs) (list (cons "requiredSubjects" (sort-by req-subs string<?))) '())))
               (displayln "MULTI-METHOD-VERIFY-FLEET-BUNDLE-OK " target-path))
             (if json-mode?
               (begin

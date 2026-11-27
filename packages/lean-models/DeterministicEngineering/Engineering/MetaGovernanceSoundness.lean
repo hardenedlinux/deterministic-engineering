@@ -226,6 +226,19 @@ theorem fleetSpecPinning_defeats_sysml_downgrade_replay {Digest : Type}
   ⟨fun hMis => sysmlPinnedBundle_rejects_spec_downgrade b hMis,
    fun hCnt hPin => bundle_rejects_smuggled_extra_child b hCnt hPin.1⟩
 
+/-- Instantiated Fleet subject-coverage completeness contract (`--expected-subject-count` &
+`--require-subject`, 50th zero-axiom meta-theorem!): constructively proves with zero axioms that
+partial Fleets omitting subject count or any required subject key are unconditionally rejected. -/
+theorem fleetCoverageCompleteness_prevents_silent_subject_omission {Key : Type}
+    (b : FleetEvidenceBundleModel) (actualKeys requiredKeys : List Key) (expectedCount : Nat) :
+    (b.declaredCount ≠ expectedCount →
+      ¬ FleetCoverageComplete b actualKeys requiredKeys expectedCount) ∧
+    (∀ req : Key, containsKey req requiredKeys → ¬ containsKey req actualKeys →
+      ¬ FleetCoverageComplete b actualKeys requiredKeys expectedCount) :=
+  ⟨fun hNe => fleetCoverage_rejects_omitted_subject_count b actualKeys requiredKeys hNe,
+   fun _ hReq hAbs =>
+     fleetCoverage_rejects_missing_required_subject b actualKeys requiredKeys expectedCount hReq hAbs⟩
+
 /-! ## One-Line Proof Transport via `Core.Transport` -/
 
 inductive MetaProofKey where

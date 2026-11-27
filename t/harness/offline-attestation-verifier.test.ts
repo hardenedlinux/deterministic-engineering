@@ -696,6 +696,49 @@ describe('Zero-Dependency TS/Bun Offline Attestation Verifier (25 Controls + Ger
       revokedKeyIds: [],
     });
 
+    // Build duplicate-subjectKey padding Fleet bundle BEFORE deleting `keys/` (Control 35)
+    const dupFleetCan = canonicalFleetSigningPayload('f-dup-key', 'sysmlsha', [
+      ['demo', 'subject.demo', childSha, true, true],
+      ['demo', 'subject.demo', childSha, true, true],
+    ]);
+    const childOkDoc = JSON.parse(readFileSync(childOk, 'utf8'));
+    const bundleDupSubjectKey = writeJson(join(WORK_DIR, 'fleet-bundle-dup-key.json'), {
+      schema: 'de.attestation.fleet-evidence-bundle.v1',
+      fleetReport: {
+        schema: 'deterministic-engineering.multi-method-fleet-report.v1',
+        fleetId: 'f-dup-key',
+        sysmlSha256: 'sysmlsha',
+        subjects: [
+          {
+            subjectKey: 'demo',
+            subjectId: 'subject.demo',
+            reportRelativePath: 'child/report.json',
+            reportPayloadSha256: childSha,
+            replayValid: true,
+            admitted: true,
+          },
+          {
+            subjectKey: 'demo',
+            subjectId: 'subject.demo',
+            reportRelativePath: 'child/report-dup.json',
+            reportPayloadSha256: childSha,
+            replayValid: true,
+            admitted: true,
+          },
+        ],
+        attestation: {
+          algorithm: 'Ed25519',
+          keyId: k2.kid,
+          payloadSha256: sha256Str(dupFleetCan),
+          signature: signEd25519(k2.privPem, dupFleetCan),
+        },
+      },
+      childReports: {
+        'child/report.json': childOkDoc,
+        'child/report-dup.json': childOkDoc,
+      },
+    });
+
     // Physically delete ALL `.pub.pem` files from disk!
     rmSync(keysDir, {recursive: true, force: true});
     expect(existsSync(k1.pubPath)).toBe(false);
@@ -911,5 +954,56 @@ describe('Zero-Dependency TS/Bun Offline Attestation Verifier (25 Controls + Ger
     ]);
     expect(resPinFail.exitCode).not.toBe(0);
     expect(JSON.parse(resPinFail.stdout.trim()).ok).toBe(false);
+
+    // Controls 33-35: Subject-Coverage Completeness Gates (`--expected-subject-count` / `--require-subject`):
+    //   33: Matching `--expected-subject-count 1` passes; partial Fleet against `--expected-subject-count 7` FAILS!
+    //   34: Matching `--require-subject demo` passes; missing `--require-subject meta-governance-soundness` FAILS!
+    //   35: Validly signed duplicate `subjectKey` padding (`["demo", "demo"]`) FAILS even for count=2!
+    expect(
+      verifyFleetBundleOffline(fleetBundlePath, tpInlineAll, {
+        expectedSysmlSha256: 'sysmlsha',
+        expectedSubjectCount: 1,
+        requiredSubjects: ['demo'],
+      }),
+    ).toBe(true);
+    expect(verifyFleetBundleOffline(fleetBundlePath, tpInlineAll, {expectedSubjectCount: 7})).toBe(false);
+    expect(
+      verifyFleetBundleOffline(fleetBundlePath, tpInlineAll, {
+        requiredSubjects: ['demo', 'meta-governance-soundness'],
+      }),
+    ).toBe(false);
+    expect(verifyFleetBundleOffline(bundleDupSubjectKey, tpInlineAll)).toBe(false);
+    expect(verifyFleetBundleOffline(bundleDupSubjectKey, tpInlineAll, {expectedSubjectCount: 2})).toBe(false);
+
+    const resCovOk = runTsCli([
+      '--json',
+      '--verify-fleet-bundle',
+      '--expected-sysml-sha256',
+      'sysmlsha',
+      '--expected-subject-count',
+      '1',
+      '--require-subject',
+      'demo',
+      fleetBundlePath,
+      tsInlineAll,
+    ]);
+    expect(resCovOk.exitCode).toBe(0);
+    const docCovOk = JSON.parse(resCovOk.stdout.trim());
+    expect(docCovOk.ok).toBe(true);
+    expect(docCovOk.expectedSubjectCount).toBe(1);
+    expect(docCovOk.requiredSubjects).toEqual(['demo']);
+
+    const resCovMissing = runTsCli([
+      '--json',
+      '--verify-fleet-bundle',
+      '--require-subject',
+      'demo',
+      '--require-subject',
+      'meta-governance-soundness',
+      fleetBundlePath,
+      tsInlineAll,
+    ]);
+    expect(resCovMissing.exitCode).not.toBe(0);
+    expect(JSON.parse(resCovMissing.stdout.trim()).ok).toBe(false);
   });
 });

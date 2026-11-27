@@ -870,4 +870,51 @@ theorem sysmlPinnedBundle_rejects_spec_downgrade {Digest : Type}
   intro hPinned
   exact hMismatch hPinned.2
 
+/-! ## 15. Fleet Subject-Coverage Completeness (`--expected-subject-count` / `--require-subject`) -/
+
+def containsKey {Key : Type} (target : Key) : List Key → Prop
+  | [] => False
+  | x :: rest => x = target ∨ containsKey target rest
+
+def allRequiredKeysPresent {Key : Type} (actual : List Key) : List Key → Prop
+  | [] => True
+  | r :: rest => containsKey r actual ∧ allRequiredKeysPresent actual rest
+
+/-- Constructive zero-axiom subject-coverage completeness predicate for offline Fleet verification:
+requires cryptographic bundle soundness, exact subject count (`declaredCount = expectedCount`),
+and presence of every auditor-required `subjectKey`. -/
+def FleetCoverageComplete {Key : Type}
+    (b : FleetEvidenceBundleModel) (actualKeys requiredKeys : List Key) (expectedCount : Nat) : Prop :=
+  SafeFleetEvidenceBundle b ∧
+  b.declaredCount = expectedCount ∧
+  allRequiredKeysPresent actualKeys requiredKeys
+
+private theorem missingRequiredKey_contradicts_allPresent {Key : Type}
+    (actual : List Key) (req : Key) (hMissing : ¬ containsKey req actual) :
+    ∀ reqs : List Key, containsKey req reqs → allRequiredKeysPresent actual reqs → False
+  | [], hIn, _ => hIn
+  | _ :: _, Or.inl hEq, ⟨hPres, _⟩ => hMissing (hEq ▸ hPres)
+  | _ :: rest, Or.inr hRest, ⟨_, hAll⟩ =>
+      missingRequiredKey_contradicts_allPresent actual req hMissing rest hRest hAll
+
+/-- Constructive zero-axiom proof: a partial Fleet whose subject count diverges from
+`expectedCount` is unconditionally rejected. -/
+theorem fleetCoverage_rejects_omitted_subject_count {Key : Type}
+    (b : FleetEvidenceBundleModel) (actualKeys requiredKeys : List Key) {expectedCount : Nat}
+    (hCountNe : b.declaredCount ≠ expectedCount) :
+    ¬ FleetCoverageComplete b actualKeys requiredKeys expectedCount := by
+  intro hComp
+  exact hCountNe hComp.2.1
+
+/-- Constructive zero-axiom proof: omitting ANY auditor-required subject key invalidates
+the entire Fleet even when all included subjects have valid Ed25519 signatures. -/
+theorem fleetCoverage_rejects_missing_required_subject {Key : Type}
+    (b : FleetEvidenceBundleModel) (actualKeys requiredKeys : List Key)
+    (expectedCount : Nat) {req : Key}
+    (hReq : containsKey req requiredKeys)
+    (hAbsent : ¬ containsKey req actualKeys) :
+    ¬ FleetCoverageComplete b actualKeys requiredKeys expectedCount := by
+  intro hComp
+  exact missingRequiredKey_contradicts_allPresent actualKeys req hAbsent requiredKeys hReq hComp.2.2
+
 end DeterministicEngineering.Core.MetaGovernance
