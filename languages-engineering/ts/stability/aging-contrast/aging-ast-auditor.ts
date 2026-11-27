@@ -37,7 +37,8 @@ export type AgingMechanism =
   | 'SM28-plugin-grant-rollback-lease'
   | 'SM29-governance-policy-latch-antirollback'
   | 'SM30-stepup-attestation-host-effect'
-  | 'SM31-storage-boundary-integrity-sync';
+  | 'SM31-storage-boundary-integrity-sync'
+  | 'SM32-gitops-subprocess-confinement';
 
 export interface AgingFinding {
   ruleId: string;
@@ -1666,6 +1667,103 @@ function auditRust(clean: string): AgingFinding[] {
     }
   }
 
+  // 57. Rust GIT_REPOSITORY_OVERRIDES omits GIT_CONFIG_GLOBAL, GIT_EXEC_PATH, or GIT_SSH_COMMAND, allowing ambient env command execution & URL hijack (ADV-L4, SM32).
+  const gitOverridesMatch = /\bpub\s+const\s+GIT_REPOSITORY_OVERRIDES\s*:\s*&\s*\[\s*&str\s*\]\s*=\s*&\[[\s\S]*?\];/.exec(clean);
+  if (gitOverridesMatch) {
+    const block = gitOverridesMatch[0];
+    if (
+      !block.includes('"GIT_CONFIG_GLOBAL"') ||
+      !block.includes('"GIT_EXEC_PATH"') ||
+      !block.includes('"GIT_SSH_COMMAND"')
+    ) {
+      findings.push({
+        ruleId: 'rust-gitops-incomplete-env-override-strip',
+        mechanism: 'SM32-gitops-subprocess-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, gitOverridesMatch.index),
+        message: 'GIT_REPOSITORY_OVERRIDES omits GIT_CONFIG_GLOBAL, GIT_EXEC_PATH, or GIT_SSH_COMMAND, letting ambient Git config/exec overrides hijack GitOps subprocesses (ADV-L4, SM32).',
+      });
+    }
+  }
+
+  // 58. Rust ProcessWorkingCopyCommandRunner omits core.fsmonitor=false / DISABLED_FSMONITOR lockdown across Git and Worktrunk subprocesses (ADV-L4, SM32).
+  const wcRunnerImplMatch = /\bimpl\s+WorkingCopyCommandRunner\s+for\s+ProcessWorkingCopyCommandRunner\b/.exec(clean);
+  if (wcRunnerImplMatch) {
+    const implBody = extractBraceBlock(clean, wcRunnerImplMatch.index);
+    if (!/\b(?:DISABLED_FSMONITOR|core\.fsmonitor=false)\b/.test(implBody)) {
+      findings.push({
+        ruleId: 'rust-gitops-provider-missing-fsmonitor-lockdown',
+        mechanism: 'SM32-gitops-subprocess-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, wcRunnerImplMatch.index),
+        message: 'ProcessWorkingCopyCommandRunner omits core.fsmonitor=false / DISABLED_FSMONITOR lockdown, allowing hostile repository .git/config fsmonitor commands to execute during worktree operations (ADV-L4, SM32).',
+      });
+    }
+  }
+
+  // 59. Rust working-copy command projection accepts unvalidated dash-prefixed branch/id targets OR retention plan_sweep joins unsanitized working_copy.id into snapshot_root (ADV-L4, SM32).
+  const wtSwitchMatch = /\bfn\s+worktrunk_switch\s*\([^)]*\)/.exec(clean);
+  if (wtSwitchMatch) {
+    const fnBody = extractBraceBlock(clean, wtSwitchMatch.index);
+    const pushesRawTarget = /branch_or_id_target\s*\(\s*working_copy\s*\)/.test(fnBody);
+    const validatesArg = /\b(?:validate_branch_or_id_target|validate_working_copy_target|validate_branch_name|validate_base_ref)\s*\(/.test(fnBody);
+    if (pushesRawTarget && !validatesArg) {
+      findings.push({
+        ruleId: 'rust-gitops-unvalidated-projection-arg-or-snapshot-path',
+        mechanism: 'SM32-gitops-subprocess-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, wtSwitchMatch.index),
+        message: 'worktrunk_switch projects branch_or_id_target without rejecting leading "-" CLI option injection or control characters (ADV-L4, SM32).',
+      });
+    }
+  }
+  const planSweepMatch = /\bpub\s+fn\s+plan_sweep\s*\([^)]*\)/.exec(clean);
+  if (planSweepMatch) {
+    const fnBody = extractBraceBlock(clean, planSweepMatch.index);
+    const rawSnapshotJoin = /snapshot_root\.join\s*\(\s*format!\s*\(\s*"\{\}\.patch"\s*,\s*working_copy\.id\.as_str\(\)\s*\)\s*\)/.test(fnBody);
+    const validatesSnapshotId = /\b(?:confined_snapshot_path|is_safe_snapshot_stem|validate_snapshot_id)\s*\(/.test(fnBody);
+    if (rawSnapshotJoin && !validatesSnapshotId) {
+      findings.push({
+        ruleId: 'rust-gitops-unvalidated-projection-arg-or-snapshot-path',
+        mechanism: 'SM32-gitops-subprocess-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, planSweepMatch.index),
+        message: 'WorkingCopyRetentionPolicy::plan_sweep joins unsanitized working_copy.id into snapshot_root, enabling ../../ and absolute path traversal escapes (ADV-L4, SM32).',
+      });
+    }
+  }
+
+  // 60. Rust working-copy provider runner/probe calls unbounded .output().await without timeout, stdout/stderr byte cap, or kill_on_drop(true) (ADV-L4, SM32).
+  const providerImplRe = /\bimpl(?:\s+WorkingCopyCommandRunner\s+for)?\s+(?:ProcessWorkingCopyCommandRunner|WorkingCopyProviderExecutableProbeCommand)\b/g;
+  let providerImplMatch: RegExpExecArray | null;
+  while ((providerImplMatch = providerImplRe.exec(clean)) !== null) {
+    const implBody = extractBraceBlock(clean, providerImplMatch.index);
+    const rawOutputMatch = /\.output\s*\(\s*\)\s*\.await\b/.exec(implBody);
+    if (rawOutputMatch) {
+      findings.push({
+        ruleId: 'rust-gitops-unbounded-provider-output-no-kill-on-drop',
+        mechanism: 'SM32-gitops-subprocess-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, providerImplMatch.index + rawOutputMatch.index),
+        message: 'Working-copy provider subprocess calls unbounded .output().await without execution timeout, stdout/stderr byte cap, stdin(Stdio::null()), or kill_on_drop(true) (ADV-L4, SM32).',
+      });
+    }
+  }
+
+  // 61. Rust JoinSet::join_next() panic propagation via .expect()/.unwrap() crashes parallel GitOps coordinator instead of isolating failed workers into rejected receipts (ADV-L4, SM32).
+  const joinNextMatch = /\bJoinSet\b/.test(clean)
+    ? /(?:joined\s*\.\s*(?:expect|unwrap)\s*\(|\.\s*join_next\s*\(\s*\)\s*\.await[\s\S]{0,120}\.\s*(?:expect|unwrap)\s*\()/.exec(clean)
+    : null;
+  if (joinNextMatch) {
+    findings.push({
+      ruleId: 'rust-gitops-joinset-worker-panic-expect',
+      mechanism: 'SM32-gitops-subprocess-confinement',
+      language: 'rust',
+      line: lineOfIndex(clean, joinNextMatch.index),
+      message: 'JoinSet::join_next() calls .expect()/.unwrap() on JoinError, crashing the parallel coordinator when a worker panics instead of emitting a rejected receipt via join_next_with_id() (ADV-L4, SM32).',
+    });
+  }
+
   return findings;
 }
 
@@ -1998,6 +2096,23 @@ function auditTypeScript(clean: string): AgingFinding[] {
         language: 'ts',
         line: lineOfIndex(clean, tsSyncUrlMatch.index),
         message: 'parseSyncRemoteUrl accepts remote cleartext http:// URLs or omits @ userinfo smuggling refusal (ADV-L4, SM31).',
+      });
+    }
+  }
+
+  // 25. TS buildGitWorktreeArgs omits core.fsmonitor=false or leading "-" option-injection checks on branch/baseRef (ADV-L4, SM32).
+  const tsGitWtMatch = /\bfunction\s+buildGitWorktreeArgs\s*\([^)]*\)(?:\s*:\s*[^{]+)?\{/.exec(clean);
+  if (tsGitWtMatch) {
+    const fnBody = extractBraceBlock(clean, tsGitWtMatch.index + tsGitWtMatch[0].length - 1);
+    const hasFsmonitorOff = /core\.fsmonitor=false/.test(fnBody);
+    const rejectsDash = /startsWith\s*\(\s*['"]-['"]\s*\)/.test(fnBody);
+    if (!hasFsmonitorOff || !rejectsDash) {
+      findings.push({
+        ruleId: 'ts-gitops-unconfined-env-or-arg-injection',
+        mechanism: 'SM32-gitops-subprocess-confinement',
+        language: 'ts',
+        line: lineOfIndex(clean, tsGitWtMatch.index),
+        message: 'buildGitWorktreeArgs omits core.fsmonitor=false lockdown or fails to reject dash-prefixed branch/baseRef CLI option injection (ADV-L4, SM32).',
       });
     }
   }

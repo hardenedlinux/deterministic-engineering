@@ -3012,10 +3012,177 @@ export function parseSyncRemoteUrl(raw: string): boolean {
   return raw.startsWith('https://') || raw.startsWith('libsql://');
 }`,
   },
+  // --- SM32: ADV-L4 GitOps subprocess confinement, fsmonitor lockdown, arg-injection & panic isolation (SA193-SA202) ---
+  {
+    id: 'SA193',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-gitops-incomplete-env-override-strip',
+    source: `
+pub const GIT_REPOSITORY_OVERRIDES: &[&str] = &[
+    "GIT_DIR",
+    "GIT_COMMON_DIR",
+    "GIT_WORK_TREE",
+    "GIT_CONFIG",
+    "GIT_CONFIG_PARAMETERS",
+];`,
+  },
+  {
+    id: 'SA194',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-gitops-provider-missing-fsmonitor-lockdown',
+    source: `
+impl WorkingCopyCommandRunner for ProcessWorkingCopyCommandRunner {
+  async fn run(&self, invocation: &WorkingCopyCommandInvocation) -> Result<WorkingCopyCommandOutput, DriverErr> {
+    let mut command = provider_command(invocation.program.executable(), &invocation.git_toplevel);
+    if invocation.program == WorkingCopyCommandProgram::Worktrunk {
+      command.env("GIT_CONFIG_PARAMETERS", format!("'{DISABLED_HOOKS}'"));
+    }
+    run_bounded_command(command, invocation.program.executable()).await
+  }
+}`,
+  },
+  {
+    id: 'SA195',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-gitops-unvalidated-projection-arg-or-snapshot-path',
+    source: `
+fn worktrunk_switch(git_toplevel: WorkingCopyGitTopLevel, working_copy: &WorkingCopyHandle) -> WorkingCopyCommandInvocation {
+  let mut args = vec!["switch".to_owned(), "--no-hooks".to_owned()];
+  args.push(branch_or_id_target(working_copy));
+  WorkingCopyCommandInvocation::new(WorkingCopyCommandProgram::Worktrunk, git_toplevel).with_args(args)
+}
+impl WorkingCopyRetentionPolicy {
+  pub fn plan_sweep(&self, working_copy: WorkingCopyHandle, snapshot_root: PathBuf) -> PathBuf {
+    snapshot_root.join(format!("{}.patch", working_copy.id.as_str()))
+  }
+}`,
+  },
+  {
+    id: 'SA196',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-gitops-unbounded-provider-output-no-kill-on-drop',
+    source: `
+impl WorkingCopyProviderExecutableProbeCommand {
+  async fn run(&self) -> Result<std::process::Output, std::io::Error> {
+    let mut command = self.command();
+    command.output().await
+  }
+}`,
+  },
+  {
+    id: 'SA197',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-gitops-joinset-worker-panic-expect',
+    source: `
+pub async fn isolate_parallel(requests: Vec<Req>) -> Vec<Receipt> {
+  let mut tasks = JoinSet::new();
+  for req in requests {
+    tasks.spawn(async move { run_one(req).await });
+  }
+  let mut receipts = Vec::new();
+  while let Some(joined) = tasks.join_next().await {
+    receipts.push(joined.expect("working-copy isolation task should not panic"));
+  }
+  receipts
+}`,
+  },
+  {
+    id: 'SA198',
+    language: 'ts',
+    expectedPass: false,
+    expectedRuleId: 'ts-gitops-unconfined-env-or-arg-injection',
+    source: `
+export function buildGitWorktreeArgs(branch: string, path: string, baseRef: string): string[] {
+  return ['-c', 'core.hooksPath=/dev/null', 'worktree', 'add', '-b', branch, '--', path, baseRef];
+}`,
+  },
+  {
+    id: 'SA199',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+pub const GIT_REPOSITORY_OVERRIDES: &[&str] = &[
+    "GIT_DIR",
+    "GIT_CONFIG",
+    "GIT_CONFIG_GLOBAL",
+    "GIT_CONFIG_SYSTEM",
+    "GIT_EXEC_PATH",
+    "GIT_SSH_COMMAND",
+    "GIT_EXTERNAL_DIFF",
+    "GIT_ASKPASS",
+];
+impl WorkingCopyCommandRunner for ProcessWorkingCopyCommandRunner {
+  async fn run(&self, invocation: &WorkingCopyCommandInvocation) -> Result<WorkingCopyCommandOutput, DriverErr> {
+    let mut command = provider_command(invocation.program.executable(), &invocation.git_toplevel);
+    command.env("GIT_CONFIG_PARAMETERS", format!("'{DISABLED_HOOKS}' '{DISABLED_FSMONITOR}'"));
+    run_bounded_command(command, invocation.program.executable()).await
+  }
+}`,
+  },
+  {
+    id: 'SA200',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+fn worktrunk_switch(git_toplevel: WorkingCopyGitTopLevel, working_copy: &WorkingCopyHandle) -> Result<WorkingCopyCommandInvocation, Err> {
+  let target = validate_branch_or_id_target(working_copy)?;
+  let args = vec!["switch".to_owned(), "--no-hooks".to_owned(), target];
+  Ok(WorkingCopyCommandInvocation::new(WorkingCopyCommandProgram::Worktrunk, git_toplevel).with_args(args))
+}
+impl WorkingCopyRetentionPolicy {
+  pub fn plan_sweep(&self, working_copy: WorkingCopyHandle, snapshot_root: PathBuf) -> Option<PathBuf> {
+    confined_snapshot_path(&snapshot_root, working_copy.id.as_str())
+  }
+}`,
+  },
+  {
+    id: 'SA201',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+pub async fn isolate_parallel(requests: Vec<Req>) -> Vec<Receipt> {
+  let mut tasks = JoinSet::new();
+  let mut in_flight = std::collections::HashMap::new();
+  for req in requests {
+    let meta = req.clone();
+    let handle = tasks.spawn(async move { run_one(req).await });
+    in_flight.insert(handle.id(), meta);
+  }
+  let mut receipts = Vec::new();
+  while let Some(joined) = tasks.join_next_with_id().await {
+    match joined {
+      Ok((id, receipt)) => { in_flight.remove(&id); receipts.push(receipt); }
+      Err(err) => {
+        if let Some(meta) = in_flight.remove(&err.id()) {
+          receipts.push(Receipt::rejected(meta, "worker panicked"));
+        }
+      }
+    }
+  }
+  receipts
+}`,
+  },
+  {
+    id: 'SA202',
+    language: 'ts',
+    expectedPass: true,
+    source: `
+export function buildGitWorktreeArgs(branch: string, path: string, baseRef: string): string[] {
+  if (!branch || branch.startsWith('-') || !baseRef || baseRef.startsWith('-')) {
+    throw new Error('invalid ref');
+  }
+  return ['-c', 'core.hooksPath=/dev/null', '-c', 'core.fsmonitor=false', 'worktree', 'add', '-b', branch, '--', path, baseRef];
+}`,
+  },
 ];
 
-describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA192)', () => {
-  test('achieves 192/192 exact independent-gold match (tp=109, tn=83, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
+describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA202)', () => {
+  test('achieves 202/202 exact independent-gold match (tp=115, tn=87, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
     let tp = 0;
     let tn = 0;
     let fp = 0;
@@ -3038,7 +3205,7 @@ describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA192)', () 
       }
     }
 
-    expect({tp, tn, fp, fn}).toEqual({tp: 109, tn: 83, fp: 0, fn: 0});
+    expect({tp, tn, fp, fn}).toEqual({tp: 115, tn: 87, fp: 0, fn: 0});
   });
 
   test('clean Rust deterministic buffer pool & bounded retry passes with 0 findings', () => {

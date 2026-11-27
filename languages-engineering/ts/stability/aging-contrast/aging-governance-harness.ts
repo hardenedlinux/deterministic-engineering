@@ -240,6 +240,14 @@ const MECHANISM_DIRECTIVES: Record<AgingMechanism, AgingRemediationDirective> = 
     antiEvasionWarning:
       'Do NOT evade by keeping #[derive(Deserialize)] on validated newtypes, validating artifact size only on one backend, allowing remote http:// sync endpoints carrying auth tokens, overwriting applied context_locators on same-receipt rebuild, or using raw INSERT INTO visibility_receipts inside CAS retry loops.',
   },
+  'SM32-gitops-subprocess-confinement': {
+    mechanism: 'SM32-gitops-subprocess-confinement',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Strip GIT_CONFIG_GLOBAL, GIT_CONFIG_SYSTEM, GIT_EXEC_PATH, GIT_TEMPLATE_DIR, GIT_SSH_COMMAND, GIT_EXTERNAL_DIFF, and GIT_ASKPASS in GIT_REPOSITORY_OVERRIDES and pin GIT_CONFIG_NOSYSTEM=1, GIT_CONFIG_GLOBAL=/dev/null, and GIT_TERMINAL_PROMPT=0; enforce dual-layer core.hooksPath=/dev/null and core.fsmonitor=false on all Git and Worktrunk working-copy invocations; reject dash-prefixed/control-char branch/base_ref/id arguments in projection, confine retention snapshot filenames inside snapshot_root, and reject "/" or ".." Worktrunk receipt paths; execute provider commands through concurrent bounded stdout/stderr capture with timeout, stdin(Stdio::null()), and kill_on_drop(true); and isolate parallel worker panics via JoinSet::join_next_with_id() into rejected receipts.',
+    antiEvasionWarning:
+      'Do NOT evade by stripping only GIT_DIR/GIT_CONFIG while leaving GIT_CONFIG_GLOBAL/GIT_EXEC_PATH inherited, disabling core.hooksPath without core.fsmonitor=false, skipping leading "-" validation on worktrunk_switch or snapshot_root path checks in plan_sweep, keeping raw .output().await in provider drivers, or calling .expect() on JoinSet::join_next().',
+  },
 };
 
 export function getAgingRemediation(finding: AgingFinding): AgingRemediationDirective {
