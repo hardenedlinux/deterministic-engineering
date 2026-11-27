@@ -1994,6 +1994,77 @@ class BadUnpinnedSupplyChainSUT extends SupplyChainProvenanceSUT {
   }
 }
 
+class ConfidentialEnclaveAttestationSUT {
+  debugDisabled = false;
+  measurementMatched = false;
+  tcbFloorMet = false;
+  freshNonceBound = false;
+  keysReleased = 0;
+  debugLeakViolations = 0;
+  measurementViolations = 0;
+  tcbOrNonceViolations = 0;
+
+  apply(action: string): void {
+    switch (action) {
+      case 'lockDebugMode':
+        if (!this.debugDisabled) this.debugDisabled = true;
+        break;
+      case 'verifyEnclaveMeasurement':
+        if (!this.measurementMatched) this.measurementMatched = true;
+        break;
+      case 'verifyTcbSvnFloor':
+        if (!this.tcbFloorMet) this.tcbFloorMet = true;
+        break;
+      case 'bindFreshChallengeNonce':
+        if (!this.freshNonceBound) this.freshNonceBound = true;
+        break;
+      case 'releaseEnclaveKey':
+        if (
+          this.keysReleased < 2 &&
+          this.debugDisabled &&
+          this.measurementMatched &&
+          this.tcbFloorMet &&
+          this.freshNonceBound
+        ) {
+          this.keysReleased += 1;
+        }
+        break;
+      default:
+        throw new Error(`Unknown ConfidentialEnclaveAttestation action: ${action}`);
+    }
+  }
+
+  snapshot() {
+    return {
+      debugDisabled: this.debugDisabled,
+      measurementMatched: this.measurementMatched,
+      tcbFloorMet: this.tcbFloorMet,
+      freshNonceBound: this.freshNonceBound,
+      keysReleased: this.keysReleased,
+      debugLeakViolations: this.debugLeakViolations,
+      measurementViolations: this.measurementViolations,
+      tcbOrNonceViolations: this.tcbOrNonceViolations,
+    };
+  }
+}
+
+class BadDebugEnclaveSUT extends ConfidentialEnclaveAttestationSUT {
+  override apply(action: string): void {
+    if (action === 'releaseEnclaveKey' && this.keysReleased < 2) {
+      // Anti-pattern: drops debug-lockout, measurement, and TCB/nonce guards!
+      const dbgOk = this.debugDisabled;
+      const measOk = this.measurementMatched;
+      const tcbOk = this.tcbFloorMet && this.freshNonceBound;
+      this.keysReleased += 1;
+      if (!dbgOk) this.debugLeakViolations += 1;
+      if (!measOk) this.measurementViolations += 1;
+      if (!tcbOk) this.tcbOrNonceViolations += 1;
+      return;
+    }
+    super.apply(action);
+  }
+}
+
 const repoRoot = resolve(import.meta.dir, '../../../..');
 
 function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(): Record<string, unknown>}>(
@@ -2046,7 +2117,7 @@ function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(
   }
 }
 
-describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (23 Defense Models)', () => {
+describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (24 Defense Models)', () => {
   test('EpistemicStateLattice ITF actions drive EpistemicLatticeSUT with exact step-by-step state isomorphism', () => {
     const stats = replayModelAgainstSut(
       'packages/quint-models/engineering/defense/epistemic-state-lattice/EpistemicStateLattice.qnt',
@@ -2553,6 +2624,27 @@ describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (23 Defense Models
       () => new SupplyChainProvenanceSUT(),
       projectH,
       () => new BadUnpinnedSupplyChainSUT(),
+    );
+    expect(stats.transitions).toBeGreaterThan(50);
+    expect(stats.brokenDiverged).toBe(true);
+  }, 30_000);
+
+  test('ConfidentialEnclaveAttestation ITF actions drive ConfidentialEnclaveAttestationSUT with exact state isomorphism and reject BadDebugEnclaveSUT', () => {
+    const projectH = (h: Record<string, unknown>) => ({
+      debugDisabled: Boolean(h.debugDisabled),
+      measurementMatched: Boolean(h.measurementMatched),
+      tcbFloorMet: Boolean(h.tcbFloorMet),
+      freshNonceBound: Boolean(h.freshNonceBound),
+      keysReleased: asInt(h.keysReleased),
+      debugLeakViolations: asInt(h.debugLeakViolations),
+      measurementViolations: asInt(h.measurementViolations),
+      tcbOrNonceViolations: asInt(h.tcbOrNonceViolations),
+    });
+    const stats = replayModelAgainstSut(
+      'packages/quint-models/engineering/defense/confidential-enclave-attestation/ConfidentialEnclaveAttestation.qnt',
+      () => new ConfidentialEnclaveAttestationSUT(),
+      projectH,
+      () => new BadDebugEnclaveSUT(),
     );
     expect(stats.transitions).toBeGreaterThan(50);
     expect(stats.brokenDiverged).toBe(true);

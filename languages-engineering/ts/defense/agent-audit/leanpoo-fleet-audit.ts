@@ -70,6 +70,7 @@ export const EXPECTED_QUINT_DEFENSE_MODELS = [
   'bounded-negative-revalidation',
   'byzantine-encrypted-store',
   'capability-attenuation',
+  'confidential-enclave-attestation',
   'context-distillation-provenance',
   'difc-exfiltration-fence',
   'durable-agent-persistence',
@@ -151,7 +152,9 @@ export function auditFourParadigmCrossConsistency(params?: {
       ascentSrc.includes('distillation_amnesia_violation') &&
       ascentSrc.includes('swarm_deadlock_cycle') &&
       ascentSrc.includes('supply_chain_dep_violation') &&
-      ascentSrc.includes('reproducible_build_violation');
+      ascentSrc.includes('reproducible_build_violation') &&
+      ascentSrc.includes('enclave_attestation_violation') &&
+      ascentSrc.includes('enclave_nonce_replay_violation');
   }
   const ascentVerdict: EpistemicVerdict = ascentRulesPresent ? 'Proven' : 'Refuted';
 

@@ -69,6 +69,10 @@ export interface MetaAuditFactBundle {
   cve_tombstone: Array<[string]>;
   release_sbom_dep: Array<[string, string]>;
   build_attestation: Array<[string, string, string, string]>;
+  expected_enclave_measurement: Array<[string, string]>;
+  enclave_quote: Array<[string, string, string, string, string]>;
+  revoked_tee_platform: Array<[string]>;
+  tee_quote_nonce: Array<[string, string]>;
 }
 
 export interface AscentMetaAuditOutput {
@@ -88,6 +92,8 @@ export interface AscentMetaAuditOutput {
   swarm_deadlock_cycle: string[][];
   supply_chain_dep_violation: string[][];
   reproducible_build_violation: string[][];
+  enclave_attestation_violation: string[][];
+  enclave_nonce_replay_violation: string[][];
   release_disqualified: string[][];
   release_admitted: string[][];
 }
@@ -187,6 +193,16 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
     artifactDigest: string;
     hermetic: boolean;
   }>;
+  expectedEnclaveMeasurements?: ReadonlyArray<{releaseId: string; artifactDigest: string}>;
+  enclaveQuotes?: ReadonlyArray<{
+    releaseId: string;
+    platformId: string;
+    measuredDigest: string;
+    debugDisabled: boolean;
+    tcbOk: boolean;
+  }>;
+  revokedTeePlatforms?: readonly string[];
+  teeQuoteNonces?: ReadonlyArray<{releaseId: string; nonce: string}>;
   releaseProposals: ReadonlyArray<{
     releaseId: string;
     authorId: string;
@@ -364,6 +380,23 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
   const build_attestation: Array<[string, string, string, string]> = (
     params.buildAttestations ?? []
   ).map(ba => [ba.releaseId, ba.builderId, ba.artifactDigest, ba.hermetic ? 'yes' : 'no']);
+  const expected_enclave_measurement: Array<[string, string]> = (
+    params.expectedEnclaveMeasurements ?? []
+  ).map(em => [em.releaseId, em.artifactDigest]);
+  const enclave_quote: Array<[string, string, string, string, string]> = (
+    params.enclaveQuotes ?? []
+  ).map(eq => [
+    eq.releaseId,
+    eq.platformId,
+    eq.measuredDigest,
+    eq.debugDisabled ? 'yes' : 'no',
+    eq.tcbOk ? 'yes' : 'no',
+  ]);
+  const revoked_tee_platform: Array<[string]> = (params.revokedTeePlatforms ?? []).map(p => [p]);
+  const tee_quote_nonce: Array<[string, string]> = (params.teeQuoteNonces ?? []).map(n => [
+    n.releaseId,
+    n.nonce,
+  ]);
 
   const bundle: MetaAuditFactBundle = {
     delegation_edge: dedupeTuples(delegation_edge),
@@ -398,6 +431,10 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
     cve_tombstone: dedupeTuples(cve_tombstone),
     release_sbom_dep: dedupeTuples(release_sbom_dep),
     build_attestation: dedupeTuples(build_attestation),
+    expected_enclave_measurement: dedupeTuples(expected_enclave_measurement),
+    enclave_quote: dedupeTuples(enclave_quote),
+    revoked_tee_platform: dedupeTuples(revoked_tee_platform),
+    tee_quote_nonce: dedupeTuples(tee_quote_nonce),
   };
 
   const factBundleMerkleHash = params.kv.putBlob('ascent-meta-audit-fact-bundle', bundle, []);
@@ -453,6 +490,8 @@ export function parseFramedAscentOutput(rawStdout: string): AscentOracleRunVerdi
     'swarm_deadlock_cycle',
     'supply_chain_dep_violation',
     'reproducible_build_violation',
+    'enclave_attestation_violation',
+    'enclave_nonce_replay_violation',
     'release_disqualified',
     'release_admitted',
   ];
@@ -529,6 +568,7 @@ export function runLiveGerbilAscentMetaAudit(
                slashed_witness_reentry_violation mcp_tool_violation
                distillation_amnesia_violation swarm_deadlock_cycle
                supply_chain_dep_violation reproducible_build_violation
+               enclave_attestation_violation enclave_nonce_replay_violation
                release_disqualified release_admitted)))
   (display "${BEGIN_MARKER}\\n{")
   (let loop ((ks keys) (first #t))

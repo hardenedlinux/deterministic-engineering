@@ -704,7 +704,11 @@
     lockfile_pinned_dep
     cve_tombstone
     release_sbom_dep
-    build_attestation)
+    build_attestation
+    expected_enclave_measurement
+    enclave_quote
+    revoked_tee_platform
+    tee_quote_nonce)
   (outputs
     effectively_revoked
     belief_poisoned
@@ -722,6 +726,8 @@
     swarm_deadlock_cycle
     supply_chain_dep_violation
     reproducible_build_violation
+    enclave_attestation_violation
+    enclave_nonce_replay_violation
     release_disqualified
     release_admitted)
   (relation delegation_edge ((parent string?) (child string?)))
@@ -756,8 +762,12 @@
   (relation cve_tombstone ((dep_digest string?)))
   (relation release_sbom_dep ((rel_id string?) (dep_digest string?)))
   (relation build_attestation ((rel_id string?) (builder_id string?) (artifact_digest string?) (hermetic string?)))
+  (relation expected_enclave_measurement ((rel_id string?) (artifact_digest string?)))
+  (relation enclave_quote ((rel_id string?) (platform_id string?) (measured_digest string?) (debug_disabled string?) (tcb_ok string?)))
+  (relation revoked_tee_platform ((platform_id string?)))
+  (relation tee_quote_nonce ((rel_id string?) (nonce string?)))
 
-  ;; Internal stratified helper relations for pure relational identity, cross-log finality, slashing, B11 MCP pinning, B13 wait-graph reachability & B14 artifact equality:
+  ;; Internal stratified helper relations for pure relational identity, cross-log finality, slashing, B11 MCP pinning, B13 wait-graph reachability, B14 artifact equality & B15 release identity:
   (relation same_root ((r1 string?) (r2 string?)))
   (relation same_witness ((w1 string?) (w2 string?)))
   (relation valid_witness_cosign ((witness string?) (log_id string?) (size string?) (root string?)))
@@ -766,6 +776,7 @@
   (relation mcp_tool_pinned ((tool_id string?)))
   (relation wait_reaches ((session_id string?) (a string?) (b string?)))
   (relation same_artifact ((a1 string?) (a2 string?)))
+  (relation same_release ((r1 string?) (r2 string?)))
 
   (relation effectively_revoked ((principal string?)))
   (relation belief_poisoned ((belief_id string?)))
@@ -783,6 +794,8 @@
   (relation swarm_deadlock_cycle ((session_id string?) (agent string?)))
   (relation supply_chain_dep_violation ((rel_id string?) (dep_digest string?) (reason string?)))
   (relation reproducible_build_violation ((rel_id string?) (reason string?)))
+  (relation enclave_attestation_violation ((rel_id string?) (reason string?)))
+  (relation enclave_nonce_replay_violation ((rel1 string?) (rel2 string?) (nonce string?)))
   (relation release_disqualified ((rel_id string?) (reason string?)))
   (relation release_admitted ((rel_id string?)))
 
@@ -945,7 +958,35 @@
    (build_attestation Rel _ A2 _)
    (not (same_artifact A1 A2)))
 
-  ;; 6. Cross-pillar B1/B3/B5/B6/B8/B9/B10/B10c/B11/B12/B13/B14 release disqualification & clean admission:
+  ;; 5g. B15 Confidential Compute / Hardware TEE Enclave Attestation & Nonce Anti-Replay:
+  ((same_release R R)
+   <--
+   (release_proposal R _ _ _))
+  ((same_release R R)
+   <--
+   (tee_quote_nonce R _))
+  ((enclave_attestation_violation Rel (lit "debug-enclave-forbidden"))
+   <--
+   (enclave_quote Rel _ _ (lit "no") _))
+  ((enclave_attestation_violation Rel (lit "tcb-svn-rollback"))
+   <--
+   (enclave_quote Rel _ _ _ (lit "no")))
+  ((enclave_attestation_violation Rel (lit "revoked-tee-platform"))
+   <--
+   (enclave_quote Rel Plat _ _ _)
+   (revoked_tee_platform Plat))
+  ((enclave_attestation_violation Rel (lit "enclave-measurement-mismatch"))
+   <--
+   (expected_enclave_measurement Rel _)
+   (enclave_quote Rel _ Meas _ _)
+   (not (expected_enclave_measurement Rel Meas)))
+  ((enclave_nonce_replay_violation R1 R2 Nonce)
+   <--
+   (tee_quote_nonce R1 Nonce)
+   (tee_quote_nonce R2 Nonce)
+   (not (same_release R1 R2)))
+
+  ;; 6. Cross-pillar B1/B3/B5/B6/B8/B9/B10/B10c/B11/B12/B13/B14/B15 release disqualification & clean admission:
   ((release_finality_satisfied Rel Ckpt)
    <--
    (release_proposal Rel _ _ Log)
@@ -1006,6 +1047,14 @@
    <--
    (release_proposal Rel _ _ _)
    (reproducible_build_violation Rel _))
+  ((release_disqualified Rel (lit "enclave-attestation-violation"))
+   <--
+   (release_proposal Rel _ _ _)
+   (enclave_attestation_violation Rel _))
+  ((release_disqualified Rel (lit "enclave-nonce-replay"))
+   <--
+   (release_proposal Rel _ _ _)
+   (enclave_nonce_replay_violation Rel _ _))
   ((release_admitted Rel)
    <--
    (release_proposal Rel _ _ _)

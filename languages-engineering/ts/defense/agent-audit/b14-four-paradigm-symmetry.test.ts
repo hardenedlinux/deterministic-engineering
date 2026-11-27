@@ -257,8 +257,8 @@ describe('Phase 40 — Full B14 Four-Paradigm Symmetry: 23 Quint/MBT Models + 32
     expect(kv.hasBlob(gateDiv.disagreementReceiptHash)).toBe(true);
   }, 60_000);
 
-  test('AG214: Standalone 23-Quint x 32x18 ASCENT x 13-Module / 146-Theorem LeanPoo CLI JSON Gate exits 0', () => {
-    expect(EXPECTED_QUINT_DEFENSE_MODELS.length).toBe(23);
+  test('AG214: Standalone 23+-Quint x ASCENT x LeanPoo CLI JSON Gate exits 0', () => {
+    expect(EXPECTED_QUINT_DEFENSE_MODELS.length).toBeGreaterThanOrEqual(23);
     expect(EXPECTED_QUINT_DEFENSE_MODELS).toContain('supply-chain-provenance');
     if (!isLeanToolchainAvailable()) return;
 
@@ -281,7 +281,7 @@ describe('Phase 40 — Full B14 Four-Paradigm Symmetry: 23 Quint/MBT Models + 32
     };
     expect(out.verdict).toBe('Proven');
     expect(out.facadeModule).toBe(LEANPOO_TOP_FACADE_MODULE);
-    expect(out.quintModelCount).toBe(23);
+    expect(out.quintModelCount).toBe(EXPECTED_QUINT_DEFENSE_MODELS.length);
     expect(out.ascentRulesPresent).toBe(true);
     expect(out.multiLangHarnessCount).toBe(8);
     expect(out.moduleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);

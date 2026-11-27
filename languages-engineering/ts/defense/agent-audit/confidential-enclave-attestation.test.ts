@@ -331,9 +331,9 @@ describe('Phase 41 — B15 Confidential Compute / Hardware TEE Enclave Attestati
       ? (() => {
           const rep = auditFourParadigmCrossConsistency({kv});
           expect(rep.verdict).toBe('Proven');
-          expect(rep.quintModelCount).toBe(23);
-          expect(rep.leanPooModuleCount).toBe(14);
-          expect(rep.leanPooTheoremCount).toBe(156);
+          expect(rep.quintModelCount).toBe(EXPECTED_QUINT_DEFENSE_MODELS.length);
+          expect(rep.leanPooModuleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);
+          expect(rep.leanPooTheoremCount).toBe(LEANPOO_EXPECTED_THEOREM_COUNT);
           return rep.releaseAttestationDigest;
         })()
       : sha256Digest({milestone: 220, quint: 23, modules: 14, theorems: 156});
