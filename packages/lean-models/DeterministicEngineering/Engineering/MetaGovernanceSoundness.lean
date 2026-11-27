@@ -314,6 +314,34 @@ theorem dsseRoleBasedSoD_enforces_roles_quorum_and_rotation {Key Role : Type}
    fun kOld kNew rest hSub hAll =>
      dsseRoleSoD_preserved_under_role_key_rotation keyHasRole kOld kNew rest hSub requiredRoles hAll⟩
 
+/-- Instantiated declarative audit policy manifest contract (`--policy <policy.json>`,
+70th strictly zero-axiom meta-theorem milestone!): proves with zero axioms that attempting to
+weaken `minSignatures` below the policy baseline violates monotonic tightening, and every
+attestation admitted under a monotonically tightened effective policy satisfies the baseline. -/
+theorem declarativePolicyManifest_prevents_cli_weakening {Subject Key Role : Type}
+    (keyHasRole : Key → Role → Prop)
+    (actualSubjects : List Subject) (verifiedKeys : List Key)
+    (pMinSigs eMinSigs : Nat) (hPPos : 1 ≤ pMinSigs)
+    (pReqSubjects eReqSubjects : List Subject)
+    (pReqSigners eReqSigners : List Key)
+    (pReqRoles eReqRoles : List Role) :
+    (eMinSigs < pMinSigs →
+      ¬ PolicyMonotonicallyTighter pMinSigs eMinSigs
+          pReqSubjects eReqSubjects pReqSigners eReqSigners pReqRoles eReqRoles) ∧
+    (PolicyMonotonicallyTighter pMinSigs eMinSigs
+        pReqSubjects eReqSubjects pReqSigners eReqSigners pReqRoles eReqRoles →
+      DsseRoleSoDSatisfied keyHasRole verifiedKeys eReqRoles eMinSigs →
+      allRequiredKeysPresent actualSubjects eReqSubjects →
+      allRequiredKeysPresent verifiedKeys eReqSigners →
+      DsseRoleSoDSatisfied keyHasRole verifiedKeys pReqRoles pMinSigs ∧
+      allRequiredKeysPresent actualSubjects pReqSubjects ∧
+      allRequiredKeysPresent verifiedKeys pReqSigners) :=
+  ⟨fun hWeaken hTight => Nat.lt_irrefl _ (Nat.lt_of_lt_of_le hWeaken hTight.1),
+   fun hTight hRole hSub hSig =>
+     monotonicPolicyTightening_implies_baseline_satisfied keyHasRole actualSubjects verifiedKeys
+       pMinSigs eMinSigs hPPos pReqSubjects eReqSubjects pReqSigners eReqSigners pReqRoles eReqRoles
+       hTight hRole hSub hSig⟩
+
 /-! ## One-Line Proof Transport via `Core.Transport` -/
 
 inductive MetaProofKey where

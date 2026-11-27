@@ -1102,6 +1102,74 @@
             (close-port proc)
             (check-equal? ts-st 0)
             (check (and (string-contains ts-out "\"ok\":true") #t) => #t)
-            (check (and (string-contains ts-out "\"verifiedRoles\":[\"ci-builder\",\"security-auditor\"]") #t) => #t))))
+            (check (and (string-contains ts-out "\"verifiedRoles\":[\"ci-builder\",\"security-auditor\"]") #t) => #t)))
+
+        ;; Attacks 51-53: Declarative Versioned Audit Policy Manifest (`--policy`, `de.attestation.policy.v1`)
+        ;; & Monotonic Tightening:
+        ;;   51: Unknown typo key (`minSignature`) & symlink policy file rejected fail-closed!
+        ;;   52: Valid policy manifest verifies via BOTH Gerbil `load-audit-policy-json`/`merge-audit-policy-strict`
+        ;;       AND Bun/TS `--policy` CLI!
+        ;;   53: Weakening `minSignatures` (1 < 2) or conflicting `expectedSysmlSha256` rejected unconditionally!
+        (let ((bad-pol-typo (path-expand "policy-typo.json" work))
+              (valid-pol (path-expand "release-policy.v1.json" work))
+              (pol-sym (path-expand "policy-sym.json" work)))
+          (write-json-file bad-pol-typo
+            (hash ("schema" "de.attestation.policy.v1")
+                  ("minSignature" 2)))
+          (check-equal? (throws? (lambda () (load-audit-policy-json bad-pol-typo))) #t)
+          (write-json-file valid-pol
+            (hash ("schema" "de.attestation.policy.v1")
+                  ("expectedSysmlSha256" "sysml-sha")
+                  ("expectedSubjectCount" 1)
+                  ("requiredSubjects" '("demo"))
+                  ("minSignatures" 2)
+                  ("requiredRoles" '("ci-builder" "security-auditor"))))
+          (run-process (list "ln" "-s" valid-pol pol-sym))
+          (check-equal? (throws? (lambda () (load-audit-policy-json pol-sym))) #t)
+          (let ((pht (load-audit-policy-json valid-pol)))
+            (check-equal?
+              (throws? (lambda () (merge-audit-policy-strict pht #f #f '() 1 '() '())))
+              #t)
+            (check-equal?
+              (throws? (lambda () (merge-audit-policy-strict pht "wrong-sysml" #f '() #f '() '())))
+              #t)
+            (let-values (((eff-sha eff-cnt eff-subs eff-min eff-sigs eff-roles)
+                          (merge-audit-policy-strict pht #f #f '() #f '() '())))
+              (check-equal? eff-sha "sysml-sha")
+              (check-equal? eff-cnt 1)
+              (check-equal? eff-min 2)
+              (check-equal? eff-roles '("ci-builder" "security-auditor"))
+              (check-equal?
+                (verify-dsse-statement-offline dsse-cosigned-k2k3 (load-trust-store-json-lite role-rot-bundle-path)
+                  expected-sysml-sha256: eff-sha
+                  expected-subject-count: eff-cnt
+                  required-subjects: eff-subs
+                  min-signatures: eff-min
+                  required-signers: eff-sigs
+                  required-roles: eff-roles)
+                #t)))
+          ;; Cross-language Bun/TS `--policy` verification + anti-weakening rejection:
+          (let* ((ts-ok-cmd (string-append
+                              "cd \"" repo-root "\" && bun t/harness/offline-attestation-verifier.ts "
+                              "--json --verify-dsse-statement --policy \"" valid-pol "\" "
+                              "\"" dsse-cosigned-k2k3 "\" \"" role-rot-bundle-path "\""))
+                 (p1 (open-process (list path: "/bin/bash" arguments: (list "-euo" "pipefail" "-c" ts-ok-cmd)
+                                         stdin-redirection: #f stdout-redirection: #t stderr-redirection: #t)))
+                 (o1 (read-all-as-string p1))
+                 (s1 (process-status p1)))
+            (close-port p1)
+            (check-equal? s1 0)
+            (check (and (string-contains o1 "\"ok\":true") #t) => #t)
+            (check (and (string-contains o1 "\"policyPath\"") #t) => #t))
+          (let* ((ts-weak-cmd (string-append
+                                "cd \"" repo-root "\" && bun t/harness/offline-attestation-verifier.ts "
+                                "--json --verify-dsse-statement --policy \"" valid-pol "\" --min-signatures 1 "
+                                "\"" dsse-cosigned-k2k3 "\" \"" role-rot-bundle-path "\""))
+                 (p2 (open-process (list path: "/bin/bash" arguments: (list "-euo" "pipefail" "-c" ts-weak-cmd)
+                                         stdin-redirection: #f stdout-redirection: #t stderr-redirection: #t)))
+                 (_o2 (read-all-as-string p2))
+                 (s2 (process-status p2)))
+            (close-port p2)
+            (check (not (= s2 0)) => #t))))
 
       (run-process (list "rm" "-rf" work)))))

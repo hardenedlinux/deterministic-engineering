@@ -269,7 +269,7 @@ release-multi-method-bundle output cache_dir="" subjects="":
       "{{output}}/verification-summary.intoto.dsse.json" \
       "{{output}}/trust-bundle.v1.json"
 
-# Portable zero-dependency (<100ms, zero Gerbil, zero OpenSSL) Bun/TS offline attestation CLI & 50-control gate.
+# Portable zero-dependency (<100ms, zero Gerbil, zero OpenSSL) Bun/TS offline attestation CLI & 53-control gate.
 verify-multi-method-fast *args:
     bun t/harness/offline-attestation-verifier.ts {{args}}
 

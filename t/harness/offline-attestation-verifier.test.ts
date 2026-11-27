@@ -34,7 +34,9 @@ import {
   exportTrustBundleOffline,
   inspectDsseStatementVerified,
   inspectFleetBundleVerified,
+  loadAuditPolicyJson,
   loadTrustStoreJsonLite,
+  mergeAuditPolicyStrict,
   packFleetBundleOffline,
   resolveContainedChildReportPath,
   safeRelativeChildPath,
@@ -1486,5 +1488,76 @@ describe('Zero-Dependency TS/Bun Offline Attestation Verifier (25 Controls + Ger
     expect(docRotRoleOk.ok).toBe(true);
     expect(docRotRoleOk.verifiedRoles).toEqual(['ci-builder', 'security-auditor']);
     expect(docRotRoleOk.verifiedKeyIds).toEqual([k2.kid, k3.kid].sort());
+
+    // Controls 51-53: Declarative Versioned Audit Policy Manifest (`--policy`, `de.attestation.policy.v1`)
+    // & Monotonic Policy Tightening:
+    //   51: Strict loader rejects unknown typo keys (`minSignature`), symlink policies, and bad schemas!
+    //   52: Valid `--policy` manifest drives full DSSE SoD + coverage + spec-pinning in one flag!
+    //   53: Monotonic tightening rejects CLI attempts to weaken `minSignatures` or override `expectedSysmlSha256`,
+    //       while allowing CLI to tighten `requiredRoles` via set union!
+    const badPolicyTypo = writeJson(join(WORK_DIR, 'policy-typo.json'), {
+      schema: 'de.attestation.policy.v1',
+      minSignature: 2, // typo!
+    });
+    expect(() => loadAuditPolicyJson(badPolicyTypo)).toThrow();
+    const validPolicyPath = writeJson(join(WORK_DIR, 'release-policy.v1.json'), {
+      schema: 'de.attestation.policy.v1',
+      expectedSysmlSha256: 'sysmlsha',
+      expectedSubjectCount: 1,
+      requiredSubjects: ['demo'],
+      minSignatures: 2,
+      requiredRoles: ['ci-builder', 'security-auditor'],
+    });
+    const policySymlink = join(WORK_DIR, 'policy-symlink.json');
+    symlinkSync(validPolicyPath, policySymlink);
+    expect(() => loadAuditPolicyJson(policySymlink)).toThrow();
+
+    const parsedPolicy = loadAuditPolicyJson(validPolicyPath);
+    expect(() => mergeAuditPolicyStrict(parsedPolicy, {minSignatures: 1})).toThrow();
+    expect(() =>
+      mergeAuditPolicyStrict(parsedPolicy, {expectedSysmlSha256: 'other-sysml'}),
+    ).toThrow();
+
+    const resPolicyOk = runTsCli([
+      '--json',
+      '--verify-dsse-statement',
+      '--policy',
+      validPolicyPath,
+      cosignedK2K3,
+      roleRotatedBundlePath,
+    ]);
+    expect(resPolicyOk.exitCode).toBe(0);
+    const docPolicyOk = JSON.parse(resPolicyOk.stdout.trim());
+    expect(docPolicyOk.ok).toBe(true);
+    expect(docPolicyOk.policyPath).toBe(validPolicyPath);
+    expect(docPolicyOk.minSignatures).toBe(2);
+    expect(docPolicyOk.requiredRoles).toEqual(['ci-builder', 'security-auditor']);
+    expect(docPolicyOk.verifiedRoles).toEqual(['ci-builder', 'security-auditor']);
+
+    const resPolicyWeakenFail = runTsCli([
+      '--json',
+      '--verify-dsse-statement',
+      '--policy',
+      validPolicyPath,
+      '--min-signatures',
+      '1',
+      cosignedK2K3,
+      roleRotatedBundlePath,
+    ]);
+    expect(resPolicyWeakenFail.exitCode).not.toBe(0);
+    expect(JSON.parse(resPolicyWeakenFail.stdout.trim()).ok).toBe(false);
+
+    const resPolicyTightenFail = runTsCli([
+      '--json',
+      '--verify-dsse-statement',
+      '--policy',
+      validPolicyPath,
+      '--require-role',
+      'release-manager',
+      cosignedK2K3,
+      roleRotatedBundlePath,
+    ]);
+    expect(resPolicyTightenFail.exitCode).not.toBe(0);
+    expect(JSON.parse(resPolicyTightenFail.stdout.trim()).ok).toBe(false);
   });
 });

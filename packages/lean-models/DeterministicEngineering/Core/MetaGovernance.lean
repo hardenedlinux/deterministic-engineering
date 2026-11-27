@@ -1207,4 +1207,78 @@ theorem dsseRoleSoD_preserved_under_role_key_rotation {Key Role : Type}
       ⟨roleSatisfied_preserved_by_rotation keyHasRole kOld kNew r (hRolesSub r) rest hHead,
        dsseRoleSoD_preserved_under_role_key_rotation keyHasRole kOld kNew rest hRolesSub rRest hTail⟩
 
+/-! ## 21. Declarative Audit Policy Manifest & Monotonic Tightening (`--policy`) -/
+
+/-- Constructive zero-axiom monotonic policy tightening relation between a baseline
+versioned audit policy (`pMinSigs`, `pReqSubjects`, `pReqSigners`, `pReqRoles`) and an
+effective merged policy (`eMinSigs`, `eReqSubjects`, `eReqSigners`, `eReqRoles`):
+CLI flags may ONLY tighten (never weaken) quorum thresholds or drop required subjects,
+signers, or operational roles. -/
+def PolicyMonotonicallyTighter {Subject Key Role : Type}
+    (pMinSigs eMinSigs : Nat)
+    (pReqSubjects eReqSubjects : List Subject)
+    (pReqSigners eReqSigners : List Key)
+    (pReqRoles eReqRoles : List Role) : Prop :=
+  pMinSigs ≤ eMinSigs ∧
+  (∀ s, containsKey s pReqSubjects → containsKey s eReqSubjects) ∧
+  (∀ k, containsKey k pReqSigners → containsKey k eReqSigners) ∧
+  (∀ r, containsKey r pReqRoles → containsKey r eReqRoles)
+
+private theorem allRequiredKeys_subset_mono {Key : Type}
+    (actual : List Key) (eReqs : List Key)
+    (hE : allRequiredKeysPresent actual eReqs) :
+    ∀ pReqs : List Key,
+      (∀ x, containsKey x pReqs → containsKey x eReqs) →
+      allRequiredKeysPresent actual pReqs
+  | [], _ => trivial
+  | x :: rest, hSub =>
+      have hInE : containsKey x eReqs := hSub x (Or.inl rfl)
+      have hPres : containsKey x actual :=
+        let rec extract : ∀ ys : List Key, containsKey x ys → allRequiredKeysPresent actual ys → containsKey x actual
+          | [], hIn, _ => False.elim hIn
+          | _ :: _, Or.inl hEq, ⟨hP, _⟩ => hEq ▸ hP
+          | _ :: ysRest, Or.inr hR, ⟨_, hAll⟩ => extract ysRest hR hAll
+        extract eReqs hInE hE
+      ⟨hPres, allRequiredKeys_subset_mono actual eReqs hE rest (fun y hy => hSub y (Or.inr hy))⟩
+
+private theorem allRequiredRoles_subset_mono {Key Role : Type}
+    (keyHasRole : Key → Role → Prop) (verifiedKeys : List Key) (eRoles : List Role)
+    (hE : allRequiredRolesSatisfied keyHasRole verifiedKeys eRoles) :
+    ∀ pRoles : List Role,
+      (∀ r, containsKey r pRoles → containsKey r eRoles) →
+      allRequiredRolesSatisfied keyHasRole verifiedKeys pRoles
+  | [], _ => trivial
+  | r :: rest, hSub =>
+      have hInE : containsKey r eRoles := hSub r (Or.inl rfl)
+      have hSat : roleSatisfiedByKeys keyHasRole r verifiedKeys :=
+        let rec extract : ∀ ys : List Role, containsKey r ys → allRequiredRolesSatisfied keyHasRole verifiedKeys ys → roleSatisfiedByKeys keyHasRole r verifiedKeys
+          | [], hIn, _ => False.elim hIn
+          | _ :: _, Or.inl hEq, ⟨hS, _⟩ => hEq ▸ hS
+          | _ :: ysRest, Or.inr hR, ⟨_, hAll⟩ => extract ysRest hR hAll
+        extract eRoles hInE hE
+      ⟨hSat, allRequiredRoles_subset_mono keyHasRole verifiedKeys eRoles hE rest (fun y hy => hSub y (Or.inr hy))⟩
+
+/-- Constructive zero-axiom monotonic policy soundness proof: any attestation admitted under
+a monotonically tightened effective policy unconditionally satisfies the entire baseline
+policy manifest (CLI overrides can NEVER weaken a declarative audit policy). -/
+theorem monotonicPolicyTightening_implies_baseline_satisfied {Subject Key Role : Type}
+    (keyHasRole : Key → Role → Prop)
+    (actualSubjects : List Subject) (verifiedKeys : List Key)
+    (pMinSigs eMinSigs : Nat) (hPPos : 1 ≤ pMinSigs)
+    (pReqSubjects eReqSubjects : List Subject)
+    (pReqSigners eReqSigners : List Key)
+    (pReqRoles eReqRoles : List Role)
+    (hTighter : PolicyMonotonicallyTighter pMinSigs eMinSigs
+                  pReqSubjects eReqSubjects pReqSigners eReqSigners pReqRoles eReqRoles)
+    (hEffRoleSoD : DsseRoleSoDSatisfied keyHasRole verifiedKeys eReqRoles eMinSigs)
+    (hEffSub : allRequiredKeysPresent actualSubjects eReqSubjects)
+    (hEffSig : allRequiredKeysPresent verifiedKeys eReqSigners) :
+    DsseRoleSoDSatisfied keyHasRole verifiedKeys pReqRoles pMinSigs ∧
+    allRequiredKeysPresent actualSubjects pReqSubjects ∧
+    allRequiredKeysPresent verifiedKeys pReqSigners :=
+  ⟨⟨⟨hPPos, hEffRoleSoD.1.2.1, Nat.le_trans hTighter.1 hEffRoleSoD.1.2.2⟩,
+    allRequiredRoles_subset_mono keyHasRole verifiedKeys eReqRoles hEffRoleSoD.2 pReqRoles hTighter.2.2.2⟩,
+   allRequiredKeys_subset_mono actualSubjects eReqSubjects hEffSub pReqSubjects hTighter.2.1,
+   allRequiredKeys_subset_mono verifiedKeys eReqSigners hEffSig pReqSigners hTighter.2.2.1⟩
+
 end DeterministicEngineering.Core.MetaGovernance

@@ -36,6 +36,16 @@ export interface ExportBundleResult {
 const TRUST_STORE_SCHEMA = 'de.attestation.ed25519-trust-store.v1';
 const FLEET_BUNDLE_SCHEMA = 'de.attestation.fleet-evidence-bundle.v1';
 const VERIFY_RESULT_SCHEMA = 'de.attestation.offline-verify-result.v1';
+const AUDIT_POLICY_SCHEMA = 'de.attestation.policy.v1';
+const AUDIT_POLICY_ALLOWED_KEYS = new Set([
+  'schema',
+  'expectedSysmlSha256',
+  'expectedSubjectCount',
+  'requiredSubjects',
+  'minSignatures',
+  'requiredSigners',
+  'requiredRoles',
+]);
 const INTOTO_DSSE_PAYLOAD_TYPE = 'application/vnd.in-toto+json';
 const INTOTO_STATEMENT_TYPE = 'https://in-toto.io/Statement/v1';
 const INTOTO_PREDICATE_TYPE =
@@ -440,6 +450,160 @@ export interface FleetVerifyOptions {
   minSignatures?: number;
   requiredSigners?: ReadonlyArray<string>;
   requiredRoles?: ReadonlyArray<string>;
+}
+
+export interface AuditPolicyManifest {
+  expectedSysmlSha256?: string;
+  expectedSubjectCount?: number;
+  requiredSubjects: string[];
+  minSignatures?: number;
+  requiredSigners: string[];
+  requiredRoles: string[];
+}
+
+function validatePolicyStringArray(fieldName: string, raw: unknown): string[] {
+  if (!Array.isArray(raw)) {
+    throw new Error(`Policy field ${fieldName} must be an array of non-empty strings`);
+  }
+  const set = new Set<string>();
+  for (const item of raw) {
+    if (typeof item !== 'string' || item.length === 0) {
+      throw new Error(`Invalid empty/non-string entry in policy ${fieldName}`);
+    }
+    set.add(item);
+  }
+  return [...set].sort(codePointCompare);
+}
+
+/**
+ * Strict loader for declarative `de.attestation.policy.v1` audit policy manifests.
+ * Enforces POSIX lstat non-symlink regular file, exact schema, strict allowlisted keys
+ * (blocking silent typos), and valid field types.
+ */
+export function loadAuditPolicyJson(policyPath: string): AuditPolicyManifest {
+  if (typeof policyPath !== 'string' || policyPath.length === 0) {
+    throw new Error(`Invalid audit policy path: ${String(policyPath)}`);
+  }
+  if (lstatKind(policyPath) !== 'regular') {
+    throw new Error(`Audit policy must be an existing regular non-symlink file: ${policyPath}`);
+  }
+  const doc = readJsonObject(policyPath);
+  if (!doc || doc.schema !== AUDIT_POLICY_SCHEMA) {
+    throw new Error(`Invalid audit policy schema (expected ${AUDIT_POLICY_SCHEMA}): ${policyPath}`);
+  }
+  for (const k of Object.keys(doc)) {
+    if (!AUDIT_POLICY_ALLOWED_KEYS.has(k)) {
+      throw new Error(`Unknown key in audit policy manifest (fail-closed typo guard): ${k}`);
+    }
+  }
+  let expectedSysmlSha256: string | undefined;
+  if (doc.expectedSysmlSha256 !== undefined) {
+    if (typeof doc.expectedSysmlSha256 !== 'string' || doc.expectedSysmlSha256.length === 0) {
+      throw new Error('Policy expectedSysmlSha256 must be a non-empty string');
+    }
+    expectedSysmlSha256 = doc.expectedSysmlSha256;
+  }
+  let expectedSubjectCount: number | undefined;
+  if (doc.expectedSubjectCount !== undefined) {
+    if (
+      typeof doc.expectedSubjectCount !== 'number' ||
+      !Number.isInteger(doc.expectedSubjectCount) ||
+      doc.expectedSubjectCount < 1
+    ) {
+      throw new Error('Policy expectedSubjectCount must be a positive integer');
+    }
+    expectedSubjectCount = doc.expectedSubjectCount;
+  }
+  let minSignatures: number | undefined;
+  if (doc.minSignatures !== undefined) {
+    if (
+      typeof doc.minSignatures !== 'number' ||
+      !Number.isInteger(doc.minSignatures) ||
+      doc.minSignatures < 1
+    ) {
+      throw new Error('Policy minSignatures must be a positive integer');
+    }
+    minSignatures = doc.minSignatures;
+  }
+  const requiredSubjects =
+    doc.requiredSubjects !== undefined
+      ? validatePolicyStringArray('requiredSubjects', doc.requiredSubjects)
+      : [];
+  const requiredSigners =
+    doc.requiredSigners !== undefined
+      ? validatePolicyStringArray('requiredSigners', doc.requiredSigners)
+      : [];
+  const requiredRoles =
+    doc.requiredRoles !== undefined
+      ? validatePolicyStringArray('requiredRoles', doc.requiredRoles)
+      : [];
+  return {
+    expectedSysmlSha256,
+    expectedSubjectCount,
+    requiredSubjects,
+    minSignatures,
+    requiredSigners,
+    requiredRoles,
+  };
+}
+
+function unionSortedStrings(
+  a: ReadonlyArray<string>,
+  b: ReadonlyArray<string>,
+): string[] {
+  return [...new Set([...a, ...b])].sort(codePointCompare);
+}
+
+/**
+ * Monotonic policy tightening merge: CLI overrides can ONLY tighten (never weaken) a loaded policy!
+ */
+export function mergeAuditPolicyStrict(
+  policy: AuditPolicyManifest | null,
+  cli: FleetVerifyOptions,
+): FleetVerifyOptions {
+  if (!policy) return cli;
+  if (
+    policy.expectedSysmlSha256 !== undefined &&
+    cli.expectedSysmlSha256 !== undefined &&
+    policy.expectedSysmlSha256 !== cli.expectedSysmlSha256
+  ) {
+    throw new Error(
+      `CLI --expected-sysml-sha256 conflicts with policy expectedSysmlSha256: cli=${cli.expectedSysmlSha256} policy=${policy.expectedSysmlSha256}`,
+    );
+  }
+  if (
+    policy.expectedSubjectCount !== undefined &&
+    cli.expectedSubjectCount !== undefined &&
+    policy.expectedSubjectCount !== cli.expectedSubjectCount
+  ) {
+    throw new Error(
+      `CLI --expected-subject-count conflicts with policy expectedSubjectCount: cli=${cli.expectedSubjectCount} policy=${policy.expectedSubjectCount}`,
+    );
+  }
+  if (
+    policy.minSignatures !== undefined &&
+    cli.minSignatures !== undefined &&
+    cli.minSignatures < policy.minSignatures
+  ) {
+    throw new Error(
+      `Refusing to weaken policy minSignatures via CLI --min-signatures: cli=${cli.minSignatures} policy=${policy.minSignatures}`,
+    );
+  }
+  const mergedSubs = unionSortedStrings(policy.requiredSubjects, cli.requiredSubjects ?? []);
+  const mergedSigners = unionSortedStrings(policy.requiredSigners, cli.requiredSigners ?? []);
+  const mergedRoles = unionSortedStrings(policy.requiredRoles, cli.requiredRoles ?? []);
+  const effMin =
+    policy.minSignatures !== undefined && cli.minSignatures !== undefined
+      ? Math.max(policy.minSignatures, cli.minSignatures)
+      : (cli.minSignatures ?? policy.minSignatures);
+  return {
+    expectedSysmlSha256: cli.expectedSysmlSha256 ?? policy.expectedSysmlSha256,
+    expectedSubjectCount: cli.expectedSubjectCount ?? policy.expectedSubjectCount,
+    requiredSubjects: mergedSubs.length > 0 ? mergedSubs : undefined,
+    minSignatures: effMin,
+    requiredSigners: mergedSigners.length > 0 ? mergedSigners : undefined,
+    requiredRoles: mergedRoles.length > 0 ? mergedRoles : undefined,
+  };
 }
 
 function normalizeFleetOpts(
@@ -1253,6 +1417,7 @@ export function runCli(argv: string[]): number {
   let minSignatures: number | undefined;
   const requiredSigners: string[] = [];
   const requiredRoles: string[] = [];
+  let policyPath: string | undefined;
   const cleanArgs: string[] = [];
   try {
     for (let i = 0; i < argv.length; i += 1) {
@@ -1313,6 +1478,13 @@ export function runCli(argv: string[]): number {
         }
         if (!requiredRoles.includes(val)) requiredRoles.push(val);
         i += 1;
+      } else if (a === '--policy') {
+        const val = argv[i + 1];
+        if (typeof val !== 'string' || val.length === 0) {
+          throw new Error('--policy requires a non-empty policy manifest path');
+        }
+        policyPath = val;
+        i += 1;
       } else {
         cleanArgs.push(a);
       }
@@ -1331,6 +1503,29 @@ export function runCli(argv: string[]): number {
       'usage: [--json] --verify-report|--verify-fleet|--verify-fleet-bundle|--verify-cache [--max-age-seconds N] [--now-epoch T] <artifact.json> <trust-store.json> | [--json] --verify-trust-store <trust-store.json> | [--json] --export-trust-bundle <out.json> [--revoke <keyId>]... <pub1.pem>... | [--json] --pack-fleet-bundle <fleet-report.json> <out-bundle.json>\n',
     );
     return 1;
+  }
+  let loadedPolicy: AuditPolicyManifest | null = null;
+  let mergedPolicyOpts: FleetVerifyOptions = {
+    expectedSysmlSha256,
+    expectedSubjectCount,
+    requiredSubjects: requiredSubjects.length > 0 ? requiredSubjects : undefined,
+    minSignatures,
+    requiredSigners: requiredSigners.length > 0 ? requiredSigners : undefined,
+    requiredRoles: requiredRoles.length > 0 ? requiredRoles : undefined,
+  };
+  if (policyPath !== undefined) {
+    try {
+      loadedPolicy = loadAuditPolicyJson(policyPath);
+      mergedPolicyOpts = mergeAuditPolicyStrict(loadedPolicy, mergedPolicyOpts);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (jsonMode) {
+        emitJsonResult(false, 'policy-load', policyPath, policyPath, `audit policy error: ${msg}`);
+      } else {
+        process.stderr.write(`ERROR: ${msg}\n`);
+      }
+      return 1;
+    }
   }
   const mode = cleanArgs[0];
 
@@ -1412,11 +1607,7 @@ export function runCli(argv: string[]): number {
     const outDsse = cleanArgs[5];
     try {
       const tp = loadTrustStoreJsonLite(storePath);
-      const res = cosignDsseStatementOffline(inDsse, privPem, pubPem, tp, outDsse, {
-        expectedSysmlSha256,
-        expectedSubjectCount,
-        requiredSubjects: requiredSubjects.length > 0 ? requiredSubjects : undefined,
-      });
+      const res = cosignDsseStatementOffline(inDsse, privPem, pubPem, tp, outDsse, mergedPolicyOpts);
       if (jsonMode) {
         emitJsonResult(
           true,
@@ -1551,22 +1742,24 @@ export function runCli(argv: string[]): number {
     return 1;
   }
 
-  const fleetOpts: FleetVerifyOptions = {
-    expectedSysmlSha256,
-    expectedSubjectCount,
-    requiredSubjects: requiredSubjects.length > 0 ? requiredSubjects : undefined,
-    minSignatures,
-    requiredSigners: requiredSigners.length > 0 ? requiredSigners : undefined,
-    requiredRoles: requiredRoles.length > 0 ? requiredRoles : undefined,
-  };
+  const fleetOpts: FleetVerifyOptions = mergedPolicyOpts;
   const fleetJsonExtra = (): Record<string, unknown> => {
     const extra: Record<string, unknown> = {};
-    if (expectedSysmlSha256 !== undefined) extra.expectedSysmlSha256 = expectedSysmlSha256;
-    if (expectedSubjectCount !== undefined) extra.expectedSubjectCount = expectedSubjectCount;
-    if (requiredSubjects.length > 0) extra.requiredSubjects = [...requiredSubjects].sort(codePointCompare);
-    if (minSignatures !== undefined && minSignatures > 1) extra.minSignatures = minSignatures;
-    if (requiredSigners.length > 0) extra.requiredSigners = [...requiredSigners].sort(codePointCompare);
-    if (requiredRoles.length > 0) extra.requiredRoles = [...requiredRoles].sort(codePointCompare);
+    if (fleetOpts.expectedSysmlSha256 !== undefined) extra.expectedSysmlSha256 = fleetOpts.expectedSysmlSha256;
+    if (fleetOpts.expectedSubjectCount !== undefined) extra.expectedSubjectCount = fleetOpts.expectedSubjectCount;
+    if (fleetOpts.requiredSubjects && fleetOpts.requiredSubjects.length > 0) {
+      extra.requiredSubjects = [...fleetOpts.requiredSubjects].sort(codePointCompare);
+    }
+    if (fleetOpts.minSignatures !== undefined && fleetOpts.minSignatures > 1) {
+      extra.minSignatures = fleetOpts.minSignatures;
+    }
+    if (fleetOpts.requiredSigners && fleetOpts.requiredSigners.length > 0) {
+      extra.requiredSigners = [...fleetOpts.requiredSigners].sort(codePointCompare);
+    }
+    if (fleetOpts.requiredRoles && fleetOpts.requiredRoles.length > 0) {
+      extra.requiredRoles = [...fleetOpts.requiredRoles].sort(codePointCompare);
+    }
+    if (policyPath !== undefined) extra.policyPath = policyPath;
     return extra;
   };
 
