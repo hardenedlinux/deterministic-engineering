@@ -240,6 +240,21 @@ pack-multi-method-fleet-bundle fleet_report out:
 verify-multi-method-fleet-bundle fleet_bundle trust_store *flags:
     t/harness/run-gxtest.sh script none t/support/offline-attestation-verifier.ss {{flags}} --verify-fleet-bundle "{{fleet_bundle}}" "{{trust_store}}"
 
+# One-command 2-file air-gapped release bundle pipeline: execute Fleet, emit
+# `fleet-evidence-bundle.v1.json` + inline-PEM `trust-bundle.v1.json`, and self-audit via Bun/TS (<100ms).
+release-multi-method-bundle output cache_dir="" subjects="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    test ! -e "{{output}}"
+    t/harness/run-gxtest.sh script 600s t/support/verification-flow-runner.ss --fleet-bundle "{{output}}" "{{cache_dir}}" "{{subjects}}"
+    SYSML_SHA="$(shasum -a 256 docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml | cut -d' ' -f1)"
+    EXPECTED_COUNT="$(bun -e 'const d = JSON.parse(await Bun.file(process.argv[1]).text()); console.log(d.fleetReport.subjects.length);' "{{output}}/fleet-evidence-bundle.v1.json")"
+    bun t/harness/offline-attestation-verifier.ts --json --verify-fleet-bundle \
+      --expected-sysml-sha256 "$SYSML_SHA" \
+      --expected-subject-count "$EXPECTED_COUNT" \
+      "{{output}}/fleet-evidence-bundle.v1.json" \
+      "{{output}}/trust-bundle.v1.json"
+
 # Portable zero-dependency (<100ms, zero Gerbil, zero OpenSSL) Bun/TS offline attestation CLI & 37-control gate.
 verify-multi-method-fast *args:
     bun t/harness/offline-attestation-verifier.ts {{args}}

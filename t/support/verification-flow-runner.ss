@@ -1384,6 +1384,7 @@
        signing-keypair: (signing-keypair #f)
        trust-store: (trust-store #f)
        subject-keys: (explicit-subject-keys #f)
+       emit-bundles?: (emit-bundles? #f)
        fleet-id: (fleet-id "fleet-m5-001"))
   (def sysml-path (sysml-spec-path repo-root))
   (def sysml-sha (sha256-of-file sysml-path))
@@ -1404,6 +1405,7 @@
 
   (def subject-hashes '())
   (def subject-canonical-entries '())
+  (def child-docs-ht (make-hash-table))
   (def total-executed 0)
   (def total-reused 0)
   (def all-admitted? #t)
@@ -1438,6 +1440,8 @@
         (unless admitted? (set! all-admitted? #f))
         (set! subject-canonical-entries
           (cons (list skey-str sid rsha rvalid? admitted?) subject-canonical-entries))
+        (when emit-bundles?
+          (hash-put! child-docs-ht (string-append skey-str "/report.json") rdoc))
         (set! subject-hashes
           (cons (hash ("subjectKey" skey-str)
                       ("subjectId" sid)
@@ -1455,28 +1459,46 @@
   (def canonical-fleet (canonical-fleet-signing-payload fleet-id sysml-sha ordered-entries))
   (def fleet-sha (sha256-of-string canonical-fleet))
   (def fleet-sig (ed25519-sign-string (.get keypair private-key) canonical-fleet))
+  (def fleet-doc
+    (hash ("schema" "deterministic-engineering.multi-method-fleet-report.v1")
+          ("fleetId" fleet-id)
+          ("sysmlSource" sysml-path)
+          ("sysmlSha256" sysml-sha)
+          ("allAdmitted" all-admitted?)
+          ("totalExecuted" total-executed)
+          ("totalReused" total-reused)
+          ("subjects" (reverse subject-hashes))
+          ("attestation"
+           (hash ("algorithm" "Ed25519")
+                 ("keyId" (.get keypair key-id))
+                 ("publicKeyPath" (.get keypair public-key))
+                 ("payloadSha256" fleet-sha)
+                 ("signature" fleet-sig)))))
   (def fleet-report-path (path-expand "fleet-report.json" resolved-out))
   (call-with-output-file fleet-report-path
     (lambda (port)
-      (write-json
-        port
-        (hash ("schema" "deterministic-engineering.multi-method-fleet-report.v1")
-              ("fleetId" fleet-id)
-              ("sysmlSource" sysml-path)
-              ("sysmlSha256" sysml-sha)
-              ("allAdmitted" all-admitted?)
-              ("totalExecuted" total-executed)
-              ("totalReused" total-reused)
-              ("subjects" (reverse subject-hashes))
-              ("attestation"
-               (hash ("algorithm" "Ed25519")
-                     ("keyId" (.get keypair key-id))
-                     ("publicKeyPath" (.get keypair public-key))
-                     ("payloadSha256" fleet-sha)
-                     ("signature" fleet-sig)))))
+      (write-json port fleet-doc)
       (newline port)))
+  (def fleet-bundle-path #f)
+  (def trust-bundle-path #f)
+  (when (and emit-bundles? all-admitted?)
+    (set! fleet-bundle-path (path-expand "fleet-evidence-bundle.v1.json" resolved-out))
+    (call-with-output-file fleet-bundle-path
+      (lambda (port)
+        (write-json port
+          (hash ("schema" "de.attestation.fleet-evidence-bundle.v1")
+                ("fleetReport" fleet-doc)
+                ("childReports" child-docs-ht)))
+        (newline port)))
+    (set! trust-bundle-path (path-expand "trust-bundle.v1.json" resolved-out))
+    (let ((effective-ts (or trust-store
+                            (make-ed25519-trust-store (list (.get keypair public-key))))))
+      (write-ed25519-trust-store-json effective-ts trust-bundle-path inline-pem?: #t)))
   (.o bind-these: #f
       fleet-report-path: fleet-report-path
+      fleet-bundle-path: fleet-bundle-path
+      trust-bundle-path: trust-bundle-path
+      sysml-sha256: sysml-sha
       public-key-path: (.get keypair public-key)
       key-id: (.get keypair key-id)
       subject-keys: subject-keys
@@ -1644,6 +1666,26 @@
         (.get plan subjects))
       (displayln "MULTI-METHOD-PLAN-OK pending=" (.get plan total-pending)
                  " reusable=" (.get plan total-reusable))))
+   ((equal? mode-or-output "--fleet-bundle")
+    (let* ((output-dir (car rest))
+           (cache-dir (and (pair? (cdr rest)) (> (string-length (cadr rest)) 0) (cadr rest)))
+           (raw-subs (and (pair? (cdr rest)) (pair? (cddr rest)) (> (string-length (caddr rest)) 0) (caddr rest)))
+           (sub-keys (and raw-subs
+                          (map string->symbol
+                               (filter (lambda (s) (> (string-length s) 0))
+                                       (string-split raw-subs #\,)))))
+           (res (run-multi-method-fleet repo-root output-dir
+                  cache-dir: cache-dir
+                  subject-keys: sub-keys
+                  emit-bundles?: #t)))
+      (unless (.get res all-admitted?)
+        (error "multi-method fleet bundle verification refused admission" (.get res fleet-report-path)))
+      (displayln "MULTI-METHOD-FLEET-BUNDLE-OK " (.get res fleet-bundle-path)
+                 " trust=" (.get res trust-bundle-path)
+                 " subjects=" (length (.get res subject-keys))
+                 " executed=" (.get res total-executed)
+                 " reused=" (.get res total-reused)
+                 " sysmlSha256=" (.get res sysml-sha256))))
    ((equal? mode-or-output "--fleet")
     (let* ((output-dir (car rest))
            (cache-dir (and (pair? (cdr rest)) (> (string-length (cadr rest)) 0) (cadr rest)))
