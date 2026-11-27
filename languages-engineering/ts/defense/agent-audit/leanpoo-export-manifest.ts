@@ -69,7 +69,10 @@ export const LEANPOO_PQ_AGILITY_FACADE_MODULE =
 export const LEANPOO_ZK_DISCLOSURE_FACADE_MODULE =
   'DeterministicEngineering.Engineering.ZeroKnowledgeSelectiveDisclosure';
 
-export const LEANPOO_TOP_FACADE_MODULE = LEANPOO_ZK_DISCLOSURE_FACADE_MODULE;
+export const LEANPOO_GEO_RESIDENCY_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.GeoResidencyAndSovereignty';
+
+export const LEANPOO_TOP_FACADE_MODULE = LEANPOO_GEO_RESIDENCY_FACADE_MODULE;
 
 export const LEANPOO_LIBRARY_EXPORT_MANIFEST: readonly LeanPooExportModuleSpec[] = [
   {
@@ -377,6 +380,23 @@ export const LEANPOO_LIBRARY_EXPORT_MANIFEST: readonly LeanPooExportModuleSpec[]
       'disablingOverDisclosureFence_invalidates_reuse',
     ],
   },
+  {
+    moduleName: LEANPOO_GEO_RESIDENCY_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/GeoResidencyAndSovereignty.lean',
+    pillars: ['B19', 'GeoResidency', 'DataSovereignty'],
+    theorems: [
+      'forbidden_region_placement_refused',
+      'unapproved_cross_border_egress_refused',
+      'unverified_region_attestation_refused',
+      'revoked_jurisdiction_cert_refused',
+      'model_inference_residency_escape_refused',
+      'same_region_local_transfer_no_egress_permit_needed',
+      'geo_residency_admit_sound_and_complete',
+      'geoResidencyContract_preserves_rejection',
+      'regionHealthPollTuning_preserves_certificate',
+      'disablingCrossBorderFence_invalidates_reuse',
+    ],
+  },
 ];
 
 export const LEANPOO_EXPECTED_MODULE_COUNT = LEANPOO_LIBRARY_EXPORT_MANIFEST.length;
@@ -418,6 +438,7 @@ export function auditLeanPooLibraryBoundaries(
     const fullPath = resolve(leanDir, mod.relativeLeanPath);
     const src = readFileSync(fullPath, 'utf8');
 
+    // REUSE-IgnoreStart
     if (!src.slice(0, 400).includes('SPDX-License-Identifier:')) {
       violations.push({
         moduleName: mod.moduleName,
@@ -425,6 +446,7 @@ export function auditLeanPooLibraryBoundaries(
         detail: `${mod.relativeLeanPath} is missing SPDX-License-Identifier header`,
       });
     }
+    // REUSE-IgnoreEnd
 
     for (const line of src.split('\n')) {
       const trimmed = line.trim();
@@ -520,8 +542,10 @@ export function verifyLeanPooLibraryFleet(params?: {
   }
 
   const facadeToImport = manifest.some(
-    m => m.moduleName === LEANPOO_ZK_DISCLOSURE_FACADE_MODULE,
+    m => m.moduleName === LEANPOO_GEO_RESIDENCY_FACADE_MODULE,
   )
+    ? LEANPOO_GEO_RESIDENCY_FACADE_MODULE
+    : manifest.some(m => m.moduleName === LEANPOO_ZK_DISCLOSURE_FACADE_MODULE)
     ? LEANPOO_ZK_DISCLOSURE_FACADE_MODULE
     : manifest.some(m => m.moduleName === LEANPOO_PQ_AGILITY_FACADE_MODULE)
     ? LEANPOO_PQ_AGILITY_FACADE_MODULE
