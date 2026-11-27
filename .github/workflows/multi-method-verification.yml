@@ -48,7 +48,9 @@ jobs:
       - name: Install workspace Quint CLI for live ITF MBT replay
         run: |
           bun install --frozen-lockfile
+          echo "$PWD/packages/quint-modules-resolver/node_modules/.bin" >> "$GITHUB_PATH"
           echo "$PWD/node_modules/.bin" >> "$GITHUB_PATH"
+          test -x "$PWD/packages/quint-modules-resolver/node_modules/.bin/quint"
       - name: Run auto-discovered Rust lifecycle verification suite
         run: just verify-lang rust lifecycle
 

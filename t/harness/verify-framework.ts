@@ -987,13 +987,26 @@ function resolveRustTool(tool: 'rustc' | 'cargo'): string {
   return found;
 }
 
+function workspaceAugmentedPath(basePath: string | undefined): string {
+  const candidates = [
+    join(REPO_ROOT, 'packages/quint-modules-resolver/node_modules/.bin'),
+    join(REPO_ROOT, 'node_modules/.bin'),
+  ].filter((p) => existsSync(p));
+  const current = basePath ?? '';
+  const parts = current ? current.split(':') : [];
+  const missing = candidates.filter((p) => !parts.includes(p));
+  return [...missing, ...parts].filter(Boolean).join(':');
+}
+
 async function execAsync(
   cmd: string[],
   opts: {cwd?: string; env?: Record<string, string | undefined>; inherit?: boolean} = {},
 ): Promise<{exitCode: number; output: string}> {
+  const mergedEnv: Record<string, string | undefined> = {...process.env, ...opts.env};
+  mergedEnv.PATH = workspaceAugmentedPath(mergedEnv.PATH);
   const proc = Bun.spawn(cmd, {
     cwd: opts.cwd ?? REPO_ROOT,
-    env: {...process.env, ...opts.env},
+    env: mergedEnv,
     stdout: opts.inherit ? 'inherit' : 'pipe',
     stderr: opts.inherit ? 'inherit' : 'pipe',
   });
