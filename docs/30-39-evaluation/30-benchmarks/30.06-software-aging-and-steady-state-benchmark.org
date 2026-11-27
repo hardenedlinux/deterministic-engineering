@@ -57,8 +57,14 @@ anti-blinding & Deck single-VM module/timer/delay capacity confinement, and
 hostile (=ADV-L4=) POSIX process-group signal target confinement
 (=kill(0)=/=kill(-1)=/self-kill prevention), fail-closed anti-PID-reuse orphan
 reconciliation, symlink-safe byte-/schema-/capacity-bounded process ledger
-persistence & hard-capped sub-agent fanout abort-drain quiescence defects*
-(=SM1=–=SM37= in
+persistence & hard-capped sub-agent fanout abort-drain quiescence, and hostile
+(=ADV-L4=) defense-pillar cryptographic & state-machine confinement (B16
+retired-only epoch shredding & live-epoch rewrap, B18 canonical secret filtering
+& consumed-challenge anti-replay, B14 canonical 2-builder parity, immutable
+CVE-checked pinning & anti-replay releases, B20 treaty dispute-freeze
+preservation, monotonic epochs & anti-self-reciprocity, and B9/B21 RFC 6962
+empty-head & non-duplicating shard Merkle root soundness) defects*
+(=SM1=–=SM38= in
 [[file:../../40-49-research/40-reference-studies/40.04-software-aging-and-steady-state-stability.org][40.04]],
 [[file:../../40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org][40.05]],
 and [[file:../../40-49-research/40-reference-studies/40.06-ci-cd-scientific-caching-and-subdomain-sharding.org][40.06]])
@@ -67,7 +73,7 @@ realistic multi-layer agent/UI architectures (**Marlin Rust/Scheme Host + MyGo
 Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
 
 - *Independent Gold & Mandatory Adversarial Pressure Floor (=>= ADV-L3=, Target =ADV-L4=)*:
-  Every static case (=SA01=–=SA248=), closed-loop persona, formal countermodel,
+  Every static case (=SA01=–=SA258=), closed-loop persona, formal countermodel,
   metamorphic search property (=MR1=–=MR6=), structure-aware / hostile fuzz
   property, and runtime soak/exploit assertion carries a fixed independent
   expected outcome (=pass= vs. =refuse= + exact mechanism / rule / ITF
@@ -75,8 +81,8 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
   =ADV-L1= happy-path-only suites are formally rejected in Lean 4).
 - *Five Coupled Verification Layers*:
   1. *Formal Finite-State Models (Quint + Apalache 0.62.1 + 100% =--mbt=)*:
-     38 stability & AI-defensive models (121 auto-derived countermodels — with
-     =SM22= marking the 100th and =SM37= marking the **115th Quint formal
+     39 stability & AI-defensive models (126 auto-derived countermodels — with
+     =SM22= marking the 100th and =SM38= marking the **116th Quint formal
      model** in the repository!) + 3 UI concurrency kernel models (7
      auto-derived countermodels) covering cyclic
      drain, buffer ratchet, metastable retry collapse, GC headroom pacing,
@@ -175,12 +181,19 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
      =O_NOFOLLOW= symlink-safe byte-/schema-/capacity-bounded process ledger
      persistence, and hard-capped sub-agent fanout parallelism (64) with
      =join_next_with_id()= panic attribution & async abort-drain quiescence
-     (=SM37=).
+     (=SM37=), and hostile =ADV-L4= defense-pillar cryptographic & state-machine
+     confinement across B16 retired-only epoch shredding/live rewrap, B18
+     canonical secret filtering & consumed-challenge anti-replay, B14 canonical
+     2-builder distinctness/immutable CVE-checked pinning/single-use releases,
+     B20 treaty freeze preservation/monotonic epochs/anti-self-reciprocity, and
+     B9/B21 RFC 6962 empty-head & non-duplicating shard Merkle root integrity
+     (=SM38=).
   2. *Unbounded Algebraic & LeanPoo Object Proofs (Lean 4)*:
      [[file:../../../packages/lean-models/DeterministicEngineering/Core/Stability.lean][Core/Stability.lean]]
-     (Sections 1–17, 51 theorems, zero =sorry=) plus 21 dedicated objectified
-     =LeanPoo= domain modules (249 theorems, zero =sorry=, 300 total stability
-     & AI-defensive theorems; 697 audited theorems across all 55 Lean modules):
+     (Sections 1–17, 51 theorems, zero =sorry=) plus 22 dedicated objectified
+     =LeanPoo= domain modules (261 theorems, zero =sorry=, 312 total stability
+     & AI-defensive theorems; 709 committed audited theorems across all 56 Lean
+     modules):
      [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/StreamingOutputBudget.lean][Engineering/StreamingOutputBudget.lean]]
      (=SM17=, 10 theorems),
      [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/CiCacheSoundness.lean][Engineering/CiCacheSoundness.lean]]
@@ -291,7 +304,15 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
      =O_NOFOLLOW= symlink-safe byte-/schema-/capacity-bounded process ledger
      persistence, hard-capped working-copy sub-agent fanout with abort-drain
      quiescence, live countermodels, and regression-invalidated
-     =LeanPoo.Proof.reuse=),
+     =LeanPoo.Proof.reuse=), and
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/DefensePillarCryptoStateConfinement.lean][Engineering/DefensePillarCryptoStateConfinement.lean]]
+     (=SM38=, 56th committed Lean module, 12 theorems proving B16 retired-only
+     epoch shredding & live-epoch rewrap, B18 canonical secret filtering &
+     consumed-challenge anti-replay, B14 canonical 2-builder distinctness,
+     immutable CVE-checked pinning & anti-replay releases, B20 treaty
+     dispute-freeze preservation, monotonic epochs & anti-self-reciprocity,
+     B9/B21 RFC 6962 empty-head & non-duplicating shard Merkle root soundness,
+     live countermodels, and regression-invalidated =LeanPoo.Proof.reuse=),
      proving arbitrary-cycle zero drift, ARB linear exhaustion, spike-independent
      capped pool ceilings, GC headroom cycle bounds, bounded fan-out retention,
      bounded-projection idle-eviction liveness, lag-resync/coalesced
@@ -327,7 +348,7 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
        soak, and native OLS Slope Oracle.
      - TypeScript / Bun: Reusable Independent Steady-State Slope Oracle
        ([[file:../../../languages-engineering/ts/stability/aging-contrast/slope-oracle.ts][slope-oracle.ts]]),
-       live Quint =--mbt= ITF state-machine refinement across all 38 formal
+       live Quint =--mbt= ITF state-machine refinement across all 39 formal
        stability & AI-defensive models
        ([[file:../../../languages-engineering/ts/stability/aging-contrast/mbt-stability-replay.test.ts][mbt-stability-replay.test.ts]],
        [[file:../../../languages-engineering/ts/stability/aging-contrast/ipc-ime-chaos-fuzz.test.ts][ipc-ime-chaos-fuzz.test.ts]],
@@ -353,29 +374,30 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
        [[file:../../../languages-engineering/ts/stability/aging-contrast/runtime-env-activation-and-context-confinement-fuzz.test.ts][runtime-env-activation-and-context-confinement-fuzz.test.ts]],
        [[file:../../../languages-engineering/ts/stability/aging-contrast/graph-witness-and-harness-confinement-fuzz.test.ts][graph-witness-and-harness-confinement-fuzz.test.ts]],
        [[file:../../../languages-engineering/ts/stability/aging-contrast/telemetry-watchdog-and-deck-vm-confinement-fuzz.test.ts][telemetry-watchdog-and-deck-vm-confinement-fuzz.test.ts]],
-       and [[file:../../../languages-engineering/ts/stability/aging-contrast/process-signal-ledger-and-fanout-confinement-fuzz.test.ts][process-signal-ledger-and-fanout-confinement-fuzz.test.ts]]),
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/process-signal-ledger-and-fanout-confinement-fuzz.test.ts][process-signal-ledger-and-fanout-confinement-fuzz.test.ts]],
+       and [[file:../../../languages-engineering/ts/stability/aging-contrast/defense-pillar-crypto-state-confinement-fuzz.test.ts][defense-pillar-crypto-state-confinement-fuzz.test.ts]]),
        500-case parametric search metamorphic fuzzing across =MR1=–=MR6= with
        3 deterministic refutations ([[file:../../../languages-engineering/ts/stability/aging-contrast/search-metamorphic-fuzz.test.ts][search-metamorphic-fuzz.test.ts]]),
-       10,500-trial structure-aware & hostile =ADV-L4= fuzzing (250 trials each
-       across =SM12=–=SM21= + 500 hostile =ADV-L4= trials each for =SM22=–=SM37=
-       + 156 live Quint ITF MBT traces), live self-auditing CI workflow/CAS tests,
+       11,000-trial structure-aware & hostile =ADV-L4= fuzzing (250 trials each
+       across =SM12=–=SM21= + 500 hostile =ADV-L4= trials each for =SM22=–=SM38=
+       + 162 live Quint ITF MBT traces), live self-auditing CI workflow/CAS tests,
        and the 4-layer Marlin + MyGo + WebView UI soak suite
        ([[file:../../../languages-engineering/ts/stability/aging-contrast/marlin-mygo-fullstack-soak.test.ts][marlin-mygo-fullstack-soak.test.ts]]).
-  4. *248-Case Multi-Language Aging, Stability & AI-Defensive AST Auditor (=SA01=–=SA248=)*:
+  4. *258-Case Multi-Language Aging, Stability & AI-Defensive AST Auditor (=SA01=–=SA258=)*:
      [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-ast-auditor.ts][aging-ast-auditor.ts]]
      & [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-benchmark.test.ts][aging-benchmark.test.ts]]
-     (=tp=143, tn=105, fp=0, fn=0=), empirically calibrated across full 3-repo
-     production sweeps (**0 SM22–SM37 findings across all committed production
-     Rust files in =marlin-agent-core=, including =marlin-agent-runtime=**).
+     (=tp=149, tn=109, fp=0, fn=0=), empirically calibrated across full 3-repo
+     production sweeps (**0 SM22–SM38 findings across all committed production
+     Rust files in =marlin-agent-core=, including =marlin-agent-kernel=**).
   5. *Closed-Loop AI Aging & Defensive Governance Harness & CLI*:
      [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-governance-harness.ts][aging-governance-harness.ts]],
      [[file:../../../languages-engineering/ts/stability/aging-contrast/agent-stability-audit.ts][agent-stability-audit.ts]]
      (=just audit-agent-stability=, supporting =--files=, =--dir --lang --exclude-tests=,
      and =--diff=), emitting SARIF 2.1.0 and structured C2 repair packets across
-     =SM2=–=SM5=, =SM7=–=SM9=, and =SM12=–=SM37=, validated against 3 AI agent
+     =SM2=–=SM5=, =SM7=–=SM9=, and =SM12=–=SM38=, validated against 3 AI agent
      personas plus a full-stack Marlin/MyGo C2 convergence scenario.
 
-* Two-Hundred-Forty-Eight-Case Static Aging, Stability & AI-Defensive Cohort (=SA01=–=SA248=)
+* Two-Hundred-Fifty-Eight-Case Static Aging, Stability & AI-Defensive Cohort (=SA01=–=SA258=)
 :PROPERTIES:
 :CUSTOM_ID: bench3006-cohort
 :END:
@@ -630,6 +652,16 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
 | =SA246= | Rust | Clean control | Pass (0 findings) | Hardened =signal_unix_target= (=validate_signalable_unix_target=) + fail-closed =matches_recorded_start_time= (=None => false=) |
 | =SA247= | Rust | Clean control | Pass (0 findings) | Hardened =FileProcessLedgerStore::read_snapshot_unlocked= (=verify_ledger_path_no_symlinks= + =open_no_follow= + =MAX_LEDGER_FILE_BYTES= + =FILE_LEDGER_SCHEMA_VERSION=) + bounded =effective_working_copy_fanout_parallelism= & drained =cancel_remaining_work= |
 | =SA248= | TypeScript | Clean control | Pass (0 findings) | TS =signalProcessGroup= rejecting =pgid <= 1= before =process.kill(-pgid, sig)= |
+| =SA249= | Rust | =SM38= (=ADV-L4=) | Refuse (=rust-b16-future-epoch-shred-or-epoch0-rewrap=) | =shred_retired_epoch= omitting =epoch == 0= / =epoch > active_epoch= guards (future-epoch DoS) or =admit_rewrap= omitting =from_epoch == 0= / live commitment checks |
+| =SA250= | Rust | =SM38= (=ADV-L4=) | Refuse (=rust-b18-zk-case-secret-bypass-or-nonce-replay=) | =ZkSelectiveDisclosureGate::admit_disclosure= checking =forbidden_secret_fields.contains(field)= without trim/case-folding, or =issue_challenge_nonce= omitting =consumed_challenges= / blank-nonce refusal |
+| =SA251= | Rust | =SM38= (=ADV-L4=) | Refuse (=rust-b14-builder-case-spoof-or-pin-overwrite=) | =SupplyChainProvenanceGate::admit_build= comparing raw =builder_a_id == builder_b_id=, or =register_pinned_dependency= silently overwriting pins / ignoring =cve_tombstones= |
+| =SA252= | Rust | =SM38= (=ADV-L4=) | Refuse (=rust-b20-treaty-freeze-wipe-or-self-case-spoof=) | =FederatedOrgReciprocityGate::register_treaty= blindly overwriting active =dispute_freeze_active= / =treaty_epoch=, or raw =org_a == org_b= / =origin_org == target_org= comparison |
+| =SA253= | Rust | =SM38= (=ADV-L4=) | Refuse (=rust-merkle-odd-leaf-duplication-or-empty-head-unverified=) | =compute_shard_merkle_root= duplicating trailing odd Merkle leaves (=CVE-2012-2459=), or =verify_tree_head_progression= accepting =prev.tree_size == 0= without verifying =SHA256("")= |
+| =SA254= | TypeScript | =SM38= (=ADV-L4=) | Refuse (=ts-defense-pillar-case-bypass-or-merkle-dup=) | TS =checkForbiddenDisclosedFields= omitting trim/lowercase normalization or =computeShardMerkleRoot= duplicating trailing odd leaves |
+| =SA255= | Rust | Clean control | Pass (0 findings) | Hardened B16 =shred_retired_epoch=/=admit_rewrap= + B18 =issue_challenge_nonce=/=admit_disclosure= |
+| =SA256= | Rust | Clean control | Pass (0 findings) | Hardened B14 =register_pinned_dependency=/=admit_build= + B20 =register_treaty=/=admit_federated_op= |
+| =SA257= | Rust | Clean control | Pass (0 findings) | Hardened B21 RFC 6962 non-duplicating =compute_shard_merkle_root= + B9 =verify_tree_head_progression= verifying =SHA256("")= and proof sizes |
+| =SA258= | TypeScript | Clean control | Pass (0 findings) | TS =checkForbiddenDisclosedFields= (=trim().toLowerCase()=) + non-duplicating =largestPowerOfTwoLessThan= =computeShardMerkleRoot= |
 
 * Empirical Adversarial Challenge Receipts on Downstream Packages
 :PROPERTIES:
@@ -683,14 +715,15 @@ package-domain adversarial test suites:
 | =marlin-agent-core= | =crates/marlin-agent-telemetry/src/{otlp,host_observer,host_watchdog}.rs=, =crates/marlin-agent-telemetry/tests/unit/sm36_telemetry_confinement.rs=, =crates/marlin-deck-runtime/src/runtime/{config,module,owner,handle}.rs=, =crates/marlin-deck-runtime/tests/unit/{runtime_queue,module_events}.rs=, =devenv.nix=, =Justfile=, =.github/workflows/defense-audit.yaml= | =SM36= (=ADV-L4=, 114th Quint Model, 54th LeanPoo Module — Telemetry OTLP/Observer/Watchdog Isolation, Deck Single-VM Capacity/Delay Confinement & Cross-Repo Static Gate Closure) | Hostile =ADV-L4= LIVE RED proved **4/4 live runtime exploits + 5/5 real-file SM36 static catches** (=SA233=–=SA236= across 526 prod Rust files, 0 FP): =OpenTelemetry::otlp_http= accepted cleartext remote =http://evil-collector.example:4318/v1/traces= and control/userinfo injection; =start_host_observer= spawned detached =Command::new(env::current_exe()).spawn()= inheriting all ambient host secrets without =.env_clear()= and followed symlinked report dir =escaped -> outside= creating =observer.jsonl= outside root; =HostObserver::attach= accepted =pid == 0= and =drain_pulses= blindly stored sender =u64::MAX= future timestamps blinding the stall watchdog indefinitely; =DeckContextModule::timer= enqueued a 365-day timer straight into the VM queue hanging callers (=Elapsed(())=) while =owner::Controls= left =modules=/=timers= unbounded. Cross-repo root-cause audit also found =marlin-agent-core= only wired G2 (=agent-defense-audit=) and had a Nix type error in =devenv.nix:142= (=excludes= string vs list) without wiring =agent-stability-audit.ts= in CI/Justfile/pre-commit | Hardened =otlp.rs= (=validate_otlp_endpoint= requiring =https://= for remote collectors and loopback-only =http://=, rejecting userinfo/control chars & malformed labels), =host_observer.rs= (=.env_clear()= minimal allowlist + =Stdio::null()= + =verify_report_path_no_symlinks= + bounded 64 KiB JSONL), =host_watchdog.rs= (=pid > 0= + fail-closed rejection of =timestamp == 0 \|\| timestamp > now= future-timestamp pulses), and =marlin-deck-runtime/src/runtime/{config,module,owner,handle}.rs= (=MAX_TIMER_DELAY_US= 24h ceiling enforced at both =module::timer= and =owner::receive=, configurable =max_active_modules=/=max_active_timers= ceilings =256/1024= default, =4096/16384= max with =Backpressure= rejection); upgraded =agent-stability-audit.ts= with =--dir/--lang/--exclude-tests= and closed cross-repo gates in =marlin-agent-core/{devenv.nix,Justfile,.github/workflows/defense-audit.yaml}= (=nix-instantiate --parse= OK): =marlin-agent-telemetry= **--test unit_test 6/6 PASS (0.08s, SM36 3/3), --test integration_test 4/4 PASS (1.37s), --test policy 1/1 PASS (0.16s, fail-closed =asp-rust=), =clippy --all-targets --no-deps -D warnings= 0 warnings**; =marlin-deck-runtime --features actor-runtime= **--lib 13/13 PASS (0.01s, SM36 2/2), --test unit_test 3/3 PASS (0.05s), --test actor_runtime_test 1/1 PASS (1.16s), --test context_text_budget_test 1/1 PASS (1.33s), =clippy --all-targets --no-deps -D warnings= 0 warnings**; =just audit-stability= & =just audit-g2= on both hardened crates **18/18 files = 0 findings**, committed-code 526-file sweep = **0 findings (=SA01=–=SA240=)** |
 
 | =marlin-agent-core= | =crates/marlin-agent-runtime/src/process/{shutdown,managed_reaper,managed,cleanup,reconcile,ledger}.rs=, =crates/marlin-agent-runtime/src/tokio_runtime/{fanout,receipt}.rs=, =crates/marlin-agent-runtime/tests/unit/runtime/process/sm37_process_signal_ledger_fanout.rs= | =SM37= (=ADV-L4=, 115th Quint Model, 55th LeanPoo Module — Process-Group Signal Confinement, Anti-PID-Reuse Orphan Reaping, Bounded Symlink-Safe Process Ledger & Bounded Fanout Drain) | Hostile =ADV-L4= LIVE RED proved **4/4 live runtime exploits + 5/5 real-file SM37 static catches** (=SA241=–=SA244= across 528 prod Rust files, 0 FP): =is_process_group_alive(0)= returned =Ok(true)= (confirming unguarded =libc::kill(-pgid_i32, ...)= admitting =pgid=0= -> =kill(0)= caller-group suicide and =pgid=1= -> =kill(-1)= user-wide OS kill, while =SysinfoRuntimeProcessController= omitted protected/self PID checks and =managed_reaper= waited on =ctx.pid= instead of =target_pgid=); =probe_persisted_process= returned =OsProcessProbeResult { leader_alive: true, group_alive: true, surviving_descendant_pids: [...] }= on an unfingerprinted =os_start_time_secs: None= entry pointing at the current host PID/PGID; =FileProcessLedgerStore::load_all= followed a leaf symlink straight to =outside/victim.json=, accepted unknown =schema_version: 999=, performed unbounded =read_to_string=, and left active/in-memory entries unbounded; =WorkingCopySubAgentFanoutRunner= spiked peak concurrency to **80 (> 64)** under =bounded(512)=, returned from =cancel_remaining_work= after =abort_all()= without awaiting sibling drain, and lost panicked =input_index= via =join_next()= | Hardened =shutdown.rs= (=validate_unix_pgid=/=validate_signalable_unix_target= enforcing =pid > 1=, =pgid > 1=, =!= host PID/PGID= before every =libc::kill=), =managed_reaper.rs=/=managed.rs= (wait on =target_pgid= + =LedgerFinalization= cleanup), =cleanup.rs= (protected/host PID refusal), =reconcile.rs= (=os_start_time_secs: None => false=, protected/host PID & PGID guards in =probe_persisted_process=/=reap_survived_entry=/=is_matching_descendant=), =ledger.rs= (=verify_ledger_path_no_symlinks= + =O_NOFOLLOW= + =MAX_LEDGER_FILE_BYTES=4MiB= + =FILE_LEDGER_SCHEMA_VERSION= check + =MAX_ACTIVE_LEDGER_ENTRIES=1024= + =MAX_IN_MEMORY_LEDGER_ENTRIES=1536= + parent-dir fsync), and =tokio_runtime/{fanout,receipt}.rs= (=MAX_WORKING_COPY_FANOUT_PARALLELISM=64=, =join_next_with_id()= exact =input_index= panic attribution, async abort-drain quiescence): =marlin-agent-runtime= **--test unit_test 167/167 PASS (1.05s, SM37 4/4 + fail-closed =asp-rust= =mode=deny=, 5 pre-existing ignored)**, =clippy --all-targets --no-deps -D warnings= **0 warnings**, =just audit-stability= & =just audit-g2= **47/47 files = 0 findings**, committed-code 527-file sweep = **0 findings (=SA01=–=SA248=)** |
+| =marlin-agent-core= | =crates/marlin-agent-kernel/src/{key_rotation_shredding,zk_selective_disclosure,supply_chain_provenance,federated_org_reciprocity,transparency_log,model_weight_attestation}.rs=, =crates/marlin-agent-kernel/tests/unit/kernel/sm38_defense_pillar_confinement.rs= | =SM38= (=ADV-L4=, 116th Quint Model, 56th committed LeanPoo Module — Defense Pillar Cryptographic & State-Machine Integrity Confinement across B9/B14/B16/B18/B20/B21) | Hostile =ADV-L4= LIVE RED proved **5/5 live runtime exploits (0/5 passed) + 10/10 real-file SM38 static catches** (=SA249=–=SA253= across 516 committed prod Rust files, 0 FP): B16 =shred_retired_epoch= tombstoned future epochs (> =active_epoch=) permanently bricking =rotate_to_epoch=, =admit_rewrap= admitted non-existent epoch 0, and =new()= accepted blank =tenant_id=; B18 =admit_disclosure= leaked forbidden secrets via ="RAW_PII"= / =" raw_pii "= and =issue_challenge_nonce= allowed blank & previously consumed nonce replay; B14 =admit_build= admitted case/whitespace single-builder spoofing (=" BUILDER-EU-NIX-01 "=), duplicate deps & replayed =release_id=, while =register_pinned_dependency= silently overwrote pins & pinned CVE-tombstoned coordinates; B20 =register_treaty= wiped active =dispute_freeze_active= and rolled back =treaty_epoch= while org checks admitted =" ORG-ALPHA "= self-reciprocity spoofing; B9 =verify_tree_head_progression= admitted forged non-empty root hashes at =tree_size == 0= and mismatched proof sizes, while B21 =compute_shard_merkle_root= suffered =CVE-2012-2459= odd-leaf duplication (=root([A,B,C]) == root([A,B,C,C])=) | Hardened all 6 defense pillar modules in =marlin-agent-kernel= (B16 =0 < epoch < active_epoch= + =checked_add(1)= + live =epoch_commitments= rewrap + non-blank =tenant_id=; B18 canonical trim+ASCII lowercase secret denylist + =consumed_challenges= anti-replay; B14 canonical 2-builder distinctness, immutable CVE-checked pinning, duplicate-dep & release-replay refusal; B20 freeze-preserving monotonic =register_treaty= + canonical anti-self-reciprocity; B9 =SHA256("")= empty-head & proof-size parity; B21 RFC 6962 =largest_power_of_two_less_than= non-duplicating =shard_mth=): =marlin-agent-kernel= **--lib 44/44 PASS (0.10s), --test unit_test 102/102 PASS (3.10s, SM38 5/5 + =asp-rust= gate, 0 ignored)**, =clippy --all-targets --no-deps -D warnings= **0 warnings**, =just audit-stability= & =just audit-g2= **37/37 files = 0 findings**, committed-code 516-file sweep = **0 findings (=SA01=–=SA258=)** |
 
 * Unified Verification Command
 
 #+begin_src sh
-# Run full 5-language stability & AI-defensive gate (Quint/MBT + Lean 4 / LeanPoo + C/CBMC + C++20 + Rust + Go devenv -race/synctest/runtime-soak + TS Slope Oracle + SA01-SA248 + Metamorphic/ADV-L4 Fuzz + Closed-Loop Governance):
+# Run full 5-language stability & AI-defensive gate (Quint/MBT + Lean 4 / LeanPoo + C/CBMC + C++20 + Rust + Go devenv -race/synctest/runtime-soak + TS Slope Oracle + SA01-SA258 + Metamorphic/ADV-L4 Fuzz + Closed-Loop Governance):
 just check-stability
 
-# Audit current git diff or explicit files for SM2-SM5, SM7-SM9, and SM12-SM37 aging/search/cancellation/pipe/persistence/ADV-L4-confinement hazards:
+# Audit current git diff or explicit files for SM2-SM5, SM7-SM9, and SM12-SM38 aging/search/cancellation/pipe/persistence/ADV-L4-confinement hazards:
 just audit-agent-stability --files languages-engineering/go/stability/aging-contrast/deterministic_steady.go
 #+end_src
 

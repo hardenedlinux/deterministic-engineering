@@ -43,7 +43,8 @@ export type AgingMechanism =
   | 'SM34-runtime-env-context-confinement'
   | 'SM35-graph-witness-harness-confinement'
   | 'SM36-telemetry-watchdog-deck-vm-confinement'
-  | 'SM37-process-signal-ledger-fanout-confinement';
+  | 'SM37-process-signal-ledger-fanout-confinement'
+  | 'SM38-defense-pillar-crypto-state-confinement';
 
 export interface AgingFinding {
   ruleId: string;
@@ -2327,6 +2328,175 @@ function auditRust(clean: string): AgingFinding[] {
     }
   }
 
+  // 85. Rust B16 KeyRotationShreddingGate::shred_retired_epoch allows future-epoch (> active_epoch) or epoch-0 tombstoning DoS, OR admit_rewrap allows epoch 0 / uncommitted source epochs (ADV-L4, SM38).
+  const shredRetiredMatch = /\bfn\s+shred_retired_epoch\s*\([^)]*\)/.exec(clean);
+  if (shredRetiredMatch) {
+    const fnBody = extractBraceBlock(clean, shredRetiredMatch.index);
+    const guardsZero = /\bepoch\s*==\s*0\b/.test(fnBody);
+    const guardsFuture = /\bepoch\s*(?:>=|>)\s*self\.active_epoch\b/.test(fnBody);
+    if (/self\.shredded_epochs\.insert\s*\(/.test(fnBody) && (!guardsZero || !guardsFuture)) {
+      findings.push({
+        ruleId: 'rust-b16-future-epoch-shred-or-epoch0-rewrap',
+        mechanism: 'SM38-defense-pillar-crypto-state-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, shredRetiredMatch.index),
+        message: 'shred_retired_epoch omits epoch == 0 or epoch > self.active_epoch checks, letting callers tombstone future epochs to permanently DoS rotate_to_epoch (ADV-L4, SM38).',
+      });
+    }
+  }
+  const admitRewrapMatch = /\bfn\s+admit_rewrap\s*\([^)]*\)/.exec(clean);
+  if (admitRewrapMatch) {
+    const fnBody = extractBraceBlock(clean, admitRewrapMatch.index);
+    const guardsEpoch0OrLive =
+      /claim\.from_epoch\s*==\s*0/.test(fnBody) ||
+      /self\.epoch_commitments\.contains_key\s*\(\s*&claim\.from_epoch\s*\)/.test(fnBody);
+    if (/claim\.from_epoch/.test(fnBody) && !guardsEpoch0OrLive) {
+      findings.push({
+        ruleId: 'rust-b16-future-epoch-shred-or-epoch0-rewrap',
+        mechanism: 'SM38-defense-pillar-crypto-state-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, admitRewrapMatch.index),
+        message: 'admit_rewrap omits from_epoch == 0 and live epoch_commitments membership checks, admitting rewrap from non-existent epoch 0 (ADV-L4, SM38).',
+      });
+    }
+  }
+
+  // 86. Rust B18 ZkSelectiveDisclosureGate matches forbidden_secret_fields case-sensitively without trim, OR issue_challenge_nonce omits consumed_challenges anti-replay and blank-nonce checks (ADV-L4, SM38).
+  const zkImplMatch = /\bimpl\s+ZkSelectiveDisclosureGate\b/.exec(clean);
+  if (zkImplMatch) {
+    const implBody = extractBraceBlock(clean, zkImplMatch.index);
+    const admitDiscMatch = /\bfn\s+admit_disclosure\s*\([^)]*\)/.exec(implBody);
+    if (admitDiscMatch) {
+      const fnBody = extractBraceBlock(implBody, admitDiscMatch.index);
+      if (/self\.forbidden_secret_fields\.contains\s*\(\s*field\s*\)/.test(fnBody)) {
+        findings.push({
+          ruleId: 'rust-b18-zk-case-secret-bypass-or-nonce-replay',
+          mechanism: 'SM38-defense-pillar-crypto-state-confinement',
+          language: 'rust',
+          line: lineOfIndex(clean, zkImplMatch.index + admitDiscMatch.index),
+          message: 'ZkSelectiveDisclosureGate::admit_disclosure checks forbidden_secret_fields.contains(field) without trim/ASCII case-folding, letting "RAW_PII" or " raw_pii " leak secrets (ADV-L4, SM38).',
+        });
+      }
+    }
+    const issueNonceMatch = /\bfn\s+issue_challenge_nonce\s*\([^)]*\)/.exec(implBody);
+    if (issueNonceMatch) {
+      const fnBody = extractBraceBlock(implBody, issueNonceMatch.index);
+      const tracksConsumed = /\b(?:consumed_challenges|spent_challenges)\b/.test(fnBody);
+      const rejectsBlank = /\.trim\s*\(\s*\)[\s\S]{0,80}\.is_empty\s*\(\s*\)/.test(fnBody);
+      if (/self\.pending_challenges\.insert\s*\(/.test(fnBody) && (!tracksConsumed || !rejectsBlank)) {
+        findings.push({
+          ruleId: 'rust-b18-zk-case-secret-bypass-or-nonce-replay',
+          mechanism: 'SM38-defense-pillar-crypto-state-confinement',
+          language: 'rust',
+          line: lineOfIndex(clean, zkImplMatch.index + issueNonceMatch.index),
+          message: 'ZkSelectiveDisclosureGate::issue_challenge_nonce lacks blank-nonce refusal or consumed_challenges anti-replay tracking (ADV-L4, SM38).',
+        });
+      }
+    }
+  }
+
+  // 87. Rust B14 SupplyChainProvenanceGate compares builder_a_id == builder_b_id without trim/case-folding, OR register_pinned_dependency blindly overwrites pins / ignores CVE tombstones (ADV-L4, SM38).
+  const scImplMatch = /\bimpl\s+SupplyChainProvenanceGate\b/.exec(clean);
+  if (scImplMatch) {
+    const implBody = extractBraceBlock(clean, scImplMatch.index);
+    const admitBuildMatch = /\bfn\s+admit_build\s*\([^)]*\)/.exec(implBody);
+    if (admitBuildMatch) {
+      const fnBody = extractBraceBlock(implBody, admitBuildMatch.index);
+      if (/claim\.builder_a_id\s*==\s*claim\.builder_b_id/.test(fnBody)) {
+        findings.push({
+          ruleId: 'rust-b14-builder-case-spoof-or-pin-overwrite',
+          mechanism: 'SM38-defense-pillar-crypto-state-confinement',
+          language: 'rust',
+          line: lineOfIndex(clean, scImplMatch.index + admitBuildMatch.index),
+          message: 'SupplyChainProvenanceGate::admit_build compares builder_a_id == builder_b_id without trim/case-folding, allowing single-builder 2-builder parity spoofing (ADV-L4, SM38).',
+        });
+      }
+    }
+    const regPinMatch = /\bfn\s+register_pinned_dependency\s*\([^)]*\)/.exec(implBody);
+    if (regPinMatch) {
+      const fnBody = extractBraceBlock(implBody, regPinMatch.index);
+      const checksExistingPin = /self\.allowlist_pins\.get\s*\(/.test(fnBody);
+      const checksCve = /self\.cve_tombstones\.get\s*\(/.test(fnBody);
+      if (/self\.allowlist_pins\.insert\s*\(/.test(fnBody) && (!checksExistingPin || !checksCve)) {
+        findings.push({
+          ruleId: 'rust-b14-builder-case-spoof-or-pin-overwrite',
+          mechanism: 'SM38-defense-pillar-crypto-state-confinement',
+          language: 'rust',
+          line: lineOfIndex(clean, scImplMatch.index + regPinMatch.index),
+          message: 'SupplyChainProvenanceGate::register_pinned_dependency overwrites allowlist_pins without checking existing pin immutability or CVE tombstones (ADV-L4, SM38).',
+        });
+      }
+    }
+  }
+
+  // 88. Rust B20 FederatedOrgReciprocityGate::register_treaty overwrites active dispute_freeze_active or rolls back treaty_epoch, OR checks org equality without trim/case-folding (ADV-L4, SM38).
+  const fedOrgImplMatch = /\bimpl\s+FederatedOrgReciprocityGate\b/.exec(clean);
+  if (fedOrgImplMatch) {
+    const implBody = extractBraceBlock(clean, fedOrgImplMatch.index);
+    const regTreatyMatch = /\bfn\s+register_treaty\s*\([^)]*\)/.exec(implBody);
+    if (regTreatyMatch) {
+      const fnBody = extractBraceBlock(implBody, regTreatyMatch.index);
+      const guardsOverwrite =
+        /self\.treaties\.get\s*\(/.test(fnBody) &&
+        /dispute_freeze_active/.test(fnBody) &&
+        /treaty_epoch/.test(fnBody);
+      const rawOrgEq = /treaty\.org_a\s*==\s*treaty\.org_b/.test(fnBody);
+      if (/self\.treaties\.insert\s*\(/.test(fnBody) && (!guardsOverwrite || rawOrgEq)) {
+        findings.push({
+          ruleId: 'rust-b20-treaty-freeze-wipe-or-self-case-spoof',
+          mechanism: 'SM38-defense-pillar-crypto-state-confinement',
+          language: 'rust',
+          line: lineOfIndex(clean, fedOrgImplMatch.index + regTreatyMatch.index),
+          message: 'FederatedOrgReciprocityGate::register_treaty overwrites treaties without preserving active dispute_freeze_active / monotonic treaty_epoch, or compares org_a == org_b without trim/case-folding (ADV-L4, SM38).',
+        });
+      }
+    }
+    const admitFedMatch = /\bfn\s+admit_federated_op\s*\([^)]*\)/.exec(implBody);
+    if (admitFedMatch) {
+      const fnBody = extractBraceBlock(implBody, admitFedMatch.index);
+      if (/claim\.origin_org\s*==\s*claim\.target_org/.test(fnBody)) {
+        findings.push({
+          ruleId: 'rust-b20-treaty-freeze-wipe-or-self-case-spoof',
+          mechanism: 'SM38-defense-pillar-crypto-state-confinement',
+          language: 'rust',
+          line: lineOfIndex(clean, fedOrgImplMatch.index + admitFedMatch.index),
+          message: 'FederatedOrgReciprocityGate::admit_federated_op compares origin_org == target_org without trim/case-folding, allowing self-reciprocity spoofing (ADV-L4, SM38).',
+        });
+      }
+    }
+  }
+
+  // 89. Rust B21 compute_shard_merkle_root duplicates odd trailing leaves (CVE-2012-2459 second-preimage malleability), OR B9 verify_tree_head_progression accepts forged non-empty root at tree_size == 0 (ADV-L4, SM38).
+  const shardMerkleMatch = /\bfn\s+compute_shard_merkle_root\s*\([^)]*\)/.exec(clean);
+  if (shardMerkleMatch) {
+    const fnBody = extractBraceBlock(clean, shardMerkleMatch.index);
+    if (/pair\.len\s*\(\s*\)\s*==\s*2[\s\S]{0,60}else\s*\{\s*pair\[0\]\s*\}/.test(fnBody)) {
+      findings.push({
+        ruleId: 'rust-merkle-odd-leaf-duplication-or-empty-head-unverified',
+        mechanism: 'SM38-defense-pillar-crypto-state-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, shardMerkleMatch.index),
+        message: 'compute_shard_merkle_root duplicates trailing odd Merkle nodes (CVE-2012-2459 malleability: root([A,B,C]) == root([A,B,C,C])); use RFC 6962 largest_power_of_two_less_than binary tree without leaf duplication (ADV-L4, SM38).',
+      });
+    }
+  }
+  const treeHeadMatch = /\bfn\s+verify_tree_head_progression\s*\([^)]*\)/.exec(clean);
+  if (treeHeadMatch) {
+    const fnBody = extractBraceBlock(clean, treeHeadMatch.index);
+    const hasZeroBranch = /prev\.tree_size\s*==\s*0/.test(fnBody);
+    const verifiesEmptyRoot =
+      /governance_sha256_bytes\s*\(\s*&\[\s*\]\s*\)|mth\s*\(\s*&\[\s*\]\s*\)|EMPTY_TREE_ROOT/.test(fnBody);
+    if (hasZeroBranch && !verifiesEmptyRoot) {
+      findings.push({
+        ruleId: 'rust-merkle-odd-leaf-duplication-or-empty-head-unverified',
+        mechanism: 'SM38-defense-pillar-crypto-state-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, treeHeadMatch.index),
+        message: 'verify_tree_head_progression accepts prev.tree_size == 0 without verifying prev.root_hash == SHA256("") and proof size parity, admitting forged empty tree heads (ADV-L4, SM38).',
+      });
+    }
+  }
+
   return findings;
 }
 
@@ -2751,6 +2921,34 @@ function auditTypeScript(clean: string): AgingFinding[] {
         language: 'ts',
         line: lineOfIndex(clean, tsNegKillMatch.index),
         message: 'process.kill(-pgid, ...) lacks a > 1 guard; pgid=0 kills caller process group and pgid=1 kills all user processes (ADV-L4, SM37).',
+      });
+    }
+  }
+
+  // 31. TS checkForbiddenDisclosedFields matches forbidden secrets without trim/toLowerCase normalization, OR computeShardMerkleRoot duplicates odd trailing Merkle leaves (ADV-L4, SM38).
+  const tsForbiddenMatch = /\bfunction\s+checkForbiddenDisclosedFields\s*\([^)]*\)(?:\s*:\s*[^{]+)?\{/.exec(clean);
+  if (tsForbiddenMatch) {
+    const fnBody = extractBraceBlock(clean, tsForbiddenMatch.index + tsForbiddenMatch[0].length - 1);
+    if (/\.has\s*\(\s*\w+\s*\)/.test(fnBody) && !/(?:\.trim\s*\(\s*\)|\.toLowerCase\s*\(\s*\))/.test(fnBody)) {
+      findings.push({
+        ruleId: 'ts-defense-pillar-case-bypass-or-merkle-dup',
+        mechanism: 'SM38-defense-pillar-crypto-state-confinement',
+        language: 'ts',
+        line: lineOfIndex(clean, tsForbiddenMatch.index),
+        message: 'checkForbiddenDisclosedFields checks forbidden secret membership without trim/toLowerCase normalization, allowing case/whitespace secret over-disclosure bypass (ADV-L4, SM38).',
+      });
+    }
+  }
+  const tsMerkleMatch = /\bfunction\s+computeShardMerkleRoot\s*\([^)]*\)(?:\s*:\s*[^{]+)?\{/.exec(clean);
+  if (tsMerkleMatch) {
+    const fnBody = extractBraceBlock(clean, tsMerkleMatch.index + tsMerkleMatch[0].length - 1);
+    if (/level\[\s*i\s*\+\s*1\s*\]\s*\?\?\s*level\[\s*i\s*\]|pair\[1\]\s*\?\?\s*pair\[0\]/.test(fnBody)) {
+      findings.push({
+        ruleId: 'ts-defense-pillar-case-bypass-or-merkle-dup',
+        mechanism: 'SM38-defense-pillar-crypto-state-confinement',
+        language: 'ts',
+        line: lineOfIndex(clean, tsMerkleMatch.index),
+        message: 'computeShardMerkleRoot duplicates trailing odd Merkle nodes (CVE-2012-2459 second-preimage malleability) instead of RFC 6962 largest-power-of-two splitting (ADV-L4, SM38).',
       });
     }
   }

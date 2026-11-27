@@ -288,6 +288,14 @@ const MECHANISM_DIRECTIVES: Record<AgingMechanism, AgingRemediationDirective> = 
     antiEvasionWarning:
       'Do NOT evade by checking only i32::try_from(pgid) while admitting 0 or 1 into libc::kill(-pgid_i32, sig), returning true on os_start_time_secs: None during reconciliation, reading process ledgers with unbounded read_to_string/symlink following, or calling abort_all() in fanout cancellation without awaiting task drain.',
   },
+  'SM38-defense-pillar-crypto-state-confinement': {
+    mechanism: 'SM38-defense-pillar-crypto-state-confinement',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Restrict B16 shred_retired_epoch strictly to 0 < epoch < active_epoch, require live committed source epochs (epoch > 0) in admit_rewrap, use checked_add(1) in rotate_to_epoch, and reject blank tenant_id; normalize B18 forbidden_secret_fields via trim + ASCII lowercase and track consumed_challenges rejecting blank/replayed nonces; normalize B14 builder IDs via trim + ASCII lowercase, forbid silent allowlist_pins overwrite or pinning CVE-tombstoned coordinates, and reject duplicate dependencies and replayed release_id; preserve active B20 dispute_freeze_active and monotonic treaty_epoch on register_treaty with canonical org identity normalization; and verify empty-tree SHA-256 root and proof size parity in B9 verify_tree_head_progression while replacing B21 odd-leaf Merkle duplication with RFC 6962 largest_power_of_two_less_than binary hashing.',
+    antiEvasionWarning:
+      'Do NOT evade by checking only epoch == active_epoch in shred_retired_epoch, comparing forbidden secret fields or builder/org identities case-sensitively without trim, calling map.insert() blindly over existing pins or frozen treaties, accepting prev.tree_size == 0 without verifying prev.root_hash == SHA256(""), or duplicating trailing odd Merkle leaves.',
+  },
 };
 
 export function getAgingRemediation(finding: AgingFinding): AgingRemediationDirective {

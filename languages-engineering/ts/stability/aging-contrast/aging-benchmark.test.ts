@@ -3841,10 +3841,233 @@ export function signalProcessGroup(pgid: number, sig: NodeJS.Signals): void {
   process.kill(-pgid, sig);
 }`,
   },
+  // --- SM38: ADV-L4 Defense pillar cryptographic & state-machine integrity confinement (SA249-SA258) ---
+  {
+    id: 'SA249',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-b16-future-epoch-shred-or-epoch0-rewrap',
+    source: `
+impl KeyRotationShreddingGate {
+  pub fn shred_retired_epoch(&mut self, epoch: u64, reason: String) -> Result<(), Err> {
+    if epoch == self.active_epoch { return Err(Err::Active); }
+    self.shredded_epochs.insert(epoch, reason);
+    Ok(())
+  }
+  pub fn admit_rewrap(&mut self, claim: &CryptoRewrapClaim) -> Result<(), Err> {
+    if claim.from_epoch >= claim.to_epoch || claim.to_epoch != self.active_epoch { return Err(Err::Bad); }
+    Ok(())
+  }
+}`,
+  },
+  {
+    id: 'SA250',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-b18-zk-case-secret-bypass-or-nonce-replay',
+    source: `
+impl ZkSelectiveDisclosureGate {
+  pub fn issue_challenge_nonce(&mut self, nonce: String) {
+    self.pending_challenges.insert(nonce);
+  }
+  pub fn admit_disclosure(&mut self, claim: &ZkDisclosureClaim) -> Result<(), Err> {
+    for field in &claim.disclosed_fields {
+      if self.forbidden_secret_fields.contains(field) { return Err(Err::Secret); }
+    }
+    Ok(())
+  }
+}`,
+  },
+  {
+    id: 'SA251',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-b14-builder-case-spoof-or-pin-overwrite',
+    source: `
+impl SupplyChainProvenanceGate {
+  pub fn register_pinned_dependency(&mut self, pkg: String, ver: String, digest: String) -> Result<(), Err> {
+    self.allowlist_pins.insert((pkg, ver), digest);
+    Ok(())
+  }
+  pub fn admit_build(&mut self, claim: &SupplyChainBuildClaim) -> Result<(), Err> {
+    if claim.builder_a_id == claim.builder_b_id { return Err(Err::Parity); }
+    Ok(())
+  }
+}`,
+  },
+  {
+    id: 'SA252',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-b20-treaty-freeze-wipe-or-self-case-spoof',
+    source: `
+impl FederatedOrgReciprocityGate {
+  pub fn register_treaty(&mut self, treaty: BilateralTreaty) -> Result<(), Err> {
+    if treaty.org_a == treaty.org_b { return Err(Err::SelfSpoof); }
+    self.treaties.insert(treaty.treaty_id.clone(), treaty);
+    Ok(())
+  }
+  pub fn admit_federated_op(&mut self, claim: &FederatedOpClaim) -> Result<(), Err> {
+    if claim.origin_org == claim.target_org { return Err(Err::SelfSpoof); }
+    Ok(())
+  }
+}`,
+  },
+  {
+    id: 'SA253',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-merkle-odd-leaf-duplication-or-empty-head-unverified',
+    source: `
+pub fn compute_shard_merkle_root(level: &[[u8; 32]]) -> [u8; 32] {
+  let mut next = Vec::new();
+  for pair in level.chunks(2) {
+    let left = pair[0];
+    let right = if pair.len() == 2 { pair[1] } else { pair[0] };
+    next.push(hash_node(&left, &right));
+  }
+  next[0]
+}
+pub fn verify_tree_head_progression(prev: &Head, next: &Head, proof: &Proof) -> Result<(), Err> {
+  if prev.tree_size == 0 {
+    return if proof.consistency_path.is_empty() { Ok(()) } else { Err(Err::Mismatch) };
+  }
+  Ok(())
+}`,
+  },
+  {
+    id: 'SA254',
+    language: 'ts',
+    expectedPass: false,
+    expectedRuleId: 'ts-defense-pillar-case-bypass-or-merkle-dup',
+    source: `
+export function checkForbiddenDisclosedFields(forbidden: Set<string>, disclosed: string[]): boolean {
+  for (const field of disclosed) {
+    if (forbidden.has(field)) return false;
+  }
+  return true;
+}
+export function computeShardMerkleRoot(level: string[]): string {
+  const next: string[] = [];
+  for (let i = 0; i < level.length; i += 2) {
+    const left = level[i]!;
+    const right = level[i + 1] ?? level[i]!;
+    next.push(left + right);
+  }
+  return next[0]!;
+}`,
+  },
+  {
+    id: 'SA255',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+impl KeyRotationShreddingGate {
+  pub fn shred_retired_epoch(&mut self, epoch: u64, reason: String) -> Result<(), Err> {
+    if epoch == self.active_epoch { return Err(Err::Active); }
+    if epoch == 0 || epoch > self.active_epoch { return Err(Err::NonMonotonic); }
+    self.shredded_epochs.insert(epoch, reason);
+    Ok(())
+  }
+  pub fn admit_rewrap(&mut self, claim: &CryptoRewrapClaim) -> Result<(), Err> {
+    if claim.from_epoch == 0 || claim.from_epoch >= claim.to_epoch || claim.to_epoch != self.active_epoch || !self.epoch_commitments.contains_key(&claim.from_epoch) {
+      return Err(Err::Bad);
+    }
+    Ok(())
+  }
+}
+impl ZkSelectiveDisclosureGate {
+  pub fn issue_challenge_nonce(&mut self, nonce: String) {
+    let n = nonce.trim().to_owned();
+    if !n.is_empty() && !self.consumed_challenges.contains(&n) {
+      self.pending_challenges.insert(n);
+    }
+  }
+  pub fn admit_disclosure(&mut self, claim: &ZkDisclosureClaim) -> Result<(), Err> {
+    for field in &claim.disclosed_fields {
+      let norm = field.trim().to_ascii_lowercase();
+      if self.forbidden_secret_fields.contains(&norm) { return Err(Err::Secret); }
+    }
+    Ok(())
+  }
+}`,
+  },
+  {
+    id: 'SA256',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+impl SupplyChainProvenanceGate {
+  pub fn register_pinned_dependency(&mut self, pkg: String, ver: String, digest: String) -> Result<(), Err> {
+    let coord = format!("{}@{}", pkg.trim(), ver.trim()).to_ascii_lowercase();
+    if self.cve_tombstones.get(&coord).is_some() || self.cve_tombstones.get(&digest).is_some() { return Err(Err::Cve); }
+    if let Some(existing) = self.allowlist_pins.get(&(pkg.clone(), ver.clone())) {
+      if existing != &digest { return Err(Err::Conflict); }
+      return Ok(());
+    }
+    self.allowlist_pins.insert((pkg, ver), digest);
+    Ok(())
+  }
+  pub fn admit_build(&mut self, claim: &SupplyChainBuildClaim) -> Result<(), Err> {
+    if claim.builder_a_id.trim().eq_ignore_ascii_case(claim.builder_b_id.trim()) { return Err(Err::Parity); }
+    Ok(())
+  }
+}
+impl FederatedOrgReciprocityGate {
+  pub fn register_treaty(&mut self, treaty: BilateralTreaty) -> Result<(), Err> {
+    if treaty.org_a.trim().eq_ignore_ascii_case(treaty.org_b.trim()) { return Err(Err::SelfSpoof); }
+    if let Some(existing) = self.treaties.get(&treaty.treaty_id) {
+      if existing.dispute_freeze_active && !treaty.dispute_freeze_active { return Err(Err::Freeze); }
+      if treaty.treaty_epoch < existing.treaty_epoch { return Err(Err::Rollback); }
+    }
+    self.treaties.insert(treaty.treaty_id.clone(), treaty);
+    Ok(())
+  }
+  pub fn admit_federated_op(&mut self, claim: &FederatedOpClaim) -> Result<(), Err> {
+    if claim.origin_org.trim().eq_ignore_ascii_case(claim.target_org.trim()) { return Err(Err::SelfSpoof); }
+    Ok(())
+  }
+}`,
+  },
+  {
+    id: 'SA257',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+pub fn compute_shard_merkle_root(leaves: &[[u8; 32]]) -> [u8; 32] {
+  mth_shards(leaves)
+}
+pub fn verify_tree_head_progression(prev: &Head, next: &Head, proof: &Proof) -> Result<(), Err> {
+  if prev.tree_size == 0 {
+    if prev.root_hash != governance_sha256_bytes(&[]) || proof.first_size != 0 || proof.second_size != next.tree_size || !proof.consistency_path.is_empty() {
+      return Err(Err::Mismatch);
+    }
+    return Ok(());
+  }
+  Ok(())
+}`,
+  },
+  {
+    id: 'SA258',
+    language: 'ts',
+    expectedPass: true,
+    source: `
+export function checkForbiddenDisclosedFields(forbidden: Set<string>, disclosed: string[]): boolean {
+  for (const field of disclosed) {
+    if (forbidden.has(field.trim().toLowerCase())) return false;
+  }
+  return true;
+}
+export function computeShardMerkleRoot(leaves: string[]): string {
+  if (leaves.length === 1) return leaves[0]!;
+  const k = largestPowerOfTwoLessThan(leaves.length);
+  return hashNode(computeShardMerkleRoot(leaves.slice(0, k)), computeShardMerkleRoot(leaves.slice(k)));
+}`,
+  },
 ];
 
-describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA248)', () => {
-  test('achieves 248/248 exact independent-gold match (tp=143, tn=105, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
+describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA258)', () => {
+  test('achieves 258/258 exact independent-gold match (tp=149, tn=109, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
     let tp = 0;
     let tn = 0;
     let fp = 0;
@@ -3867,7 +4090,7 @@ describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA248)', () 
       }
     }
 
-    expect({tp, tn, fp, fn}).toEqual({tp: 143, tn: 105, fp: 0, fn: 0});
+    expect({tp, tn, fp, fn}).toEqual({tp: 149, tn: 109, fp: 0, fn: 0});
   });
 
   test('clean Rust deterministic buffer pool & bounded retry passes with 0 findings', () => {
