@@ -14,7 +14,10 @@
 ;;;    - Upstream Fun-Flow Replay Validation (`replayValid = #t`) + ASCENT ER01-ER04 Admission.
 (import :std/test
         (only-in "../../../support/repo-paths.ss" resolve-repo-root)
-        (only-in :tao3k/yuanxu/testing yuanxu-test-case)
+        (only-in :tao3k/yuanxu/testing
+                 yuanxu-test-case
+                 yuanxu-test-case/with
+                 yuanxu-testing-case-profile-prototype)
         :std/encoding/json
         :std/misc/process
         :clan/poo/object
@@ -24,6 +27,7 @@
                  replay-report-valid?
                  replay-report-reasons
                  +flow-dag-runtime-manifest-schema+)
+        :deterministic-engineering/library/verification-flow/func
         :deterministic-engineering/library/verification-flow/rules
         :deterministic-engineering/library/verification-flow/sysml-compiler
         :deterministic-engineering/library/verification-flow/methods
@@ -33,9 +37,15 @@
 (def repo-root
   (resolve-repo-root))
 
+(.def (MultiSubjectCompileBudget @ yuanxu-testing-case-profile-prototype)
+  max-idle-milliseconds: 180000
+  max-duration-milliseconds: 240000
+  sample-interval-milliseconds: 500
+  collect-before-sample?: #t)
+
 (def verification-flow-sysml-compiler-and-lease-fencing-test
   (test-suite "Zero-glue SysML v2 -> Fun-Flow DAG compiler and 3rd subject lease-fencing-token"
-    (yuanxu-test-case "live SysML v2 compiles all 3 subjects into valid Fun-Flow DAGs and manifests with zero Scheme glue"
+    (yuanxu-test-case/with MultiSubjectCompileBudget "live SysML v2 compiles all 7 subjects (17 engines) into valid Fun-Flow DAGs and manifests with zero Scheme glue"
       (def sysml-path
         (path-expand
           "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml"
@@ -43,33 +53,42 @@
       (def json-text (run-process (list "sysml" "-convert" "api-json" sysml-path)))
       (def parsed (call-with-input-string json-text (cut read-json <> object-as-hash: #t)))
       (def projected (sysml-api-json->governance-facts parsed))
-      (def compiled (sysml-projected->compiled-subjects projected))
-      (check-equal? (length compiled) 5)
+      (check-equal? (length (.get projected subject-specs)) 7)
       (for-each
         (lambda (spec-expect)
           (def skey (car spec-expect))
           (def expected-steps (cadr spec-expect))
-          (def hit (assq skey compiled))
-          (check (pair? hit) => #t)
-          (def bundle (cdr hit))
-          (def subj (.get bundle subject))
-          (check-equal? (length (.get subj steps)) expected-steps)
-          (check-equal? (length (.get bundle mutability)) expected-steps)
-          (check-equal? (length (.get bundle input-files)) expected-steps)
-          (def gov-res (reason-multi-method-governance (subject->governance-sources subj)))
-          (check-equal? ((.ref gov-res 'rows-of) 'mr_finding) '())
-          (check-equal? ((.ref gov-res 'rows-of) 'mr03_open_premise) '())
-          (def receipt (subject->dag-receipt subj))
-          (check-equal? (cdr (assoc 'kind receipt)) flow-dag-receipt-kind)
-          (def manifest (subject->dag-runtime-manifest subj (string-append "req-compile-" (symbol->string skey))))
-          (check-equal? (cdr (assoc 'schema manifest)) +flow-dag-runtime-manifest-schema+))
+          (let* ((bundle (compile-sysml-subject-by-key projected skey))
+                 (subj (.get bundle subject)))
+            (check-equal? (length (.get subj steps)) expected-steps)
+            (check-equal? (length (.get bundle mutability)) expected-steps)
+            (check-equal? (length (.get bundle input-files)) expected-steps)
+            (let ((gov-res (reason-multi-method-governance (subject->governance-sources subj))))
+              (check-equal? ((.ref gov-res 'rows-of) 'mr_finding) '())
+              (check-equal? ((.ref gov-res 'rows-of) 'mr03_open_premise) '()))
+            (let ((receipt (subject->dag-receipt subj)))
+              (check-equal? (cdr (assoc 'kind receipt)) flow-dag-receipt-kind))
+            (let ((manifest (subject->dag-runtime-manifest subj (string-append "req-compile-" (symbol->string skey)))))
+              (check-equal? (cdr (assoc 'schema manifest)) +flow-dag-runtime-manifest-schema+)))
+          (##gc))
         '((process-tree-reclamation 4)
           (backpressure-memory 4)
           (lease-fencing-token 2)
           (c-boundary-conservation 2)
-          (meta-governance-soundness 1))))
+          (meta-governance-soundness 1)
+          (delegated-agent-authz 2)
+          (stepup-attestation-and-host-effect-confinement 2)))
+      ;; Verify static change-impact slicing isolates ONLY the 7th Threat subject for SM30 Quint edits!
+      (let* ((impact
+              (changed-files->affected-frontier
+                projected
+                '("packages/quint-models/threat/execution/stepup-attestation-and-host-effect-confinement/StepUpAttestationAndHostEffectConfinement.qnt")))
+             (affected (filter (lambda (s) (pair? (.get s affected-steps))) impact)))
+        (check-equal? (map (lambda (s) (.get s subject-key)) affected)
+                      '(stepup-attestation-and-host-effect-confinement))
+        (check-equal? (.get (car affected) affected-steps) '("sm30QuintTarget"))))
 
-    (yuanxu-test-case "live 2-engine Fun-Flow run on SysML-compiled lease-fencing-token passes Apalache+MBT, LeanPoo Core.Order+Transport, Replay, ER01-ER04, and Cold->Warm cache reuse"
+    (yuanxu-test-case/with MultiSubjectCompileBudget "live 2-engine Fun-Flow run on SysML-compiled lease-fencing-token passes Apalache+MBT, LeanPoo Core.Order+Transport, Replay, ER01-ER04, and Cold->Warm cache reuse"
       (def tmp-parent (path-expand ".data/test-runs" repo-root))
       (create-directory* tmp-parent)
       (def cache-dir (path-expand "m5-lease-fencing-cache-test" tmp-parent))

@@ -222,8 +222,8 @@ impact-multi-method *files:
 verify-multi-method-report report trust_store:
     t/harness/run-gxtest.sh script none t/support/offline-attestation-verifier.ss --verify-report "{{report}}" "{{trust_store}}"
 
-verify-multi-method-fleet fleet_report trust_store:
-    t/harness/run-gxtest.sh script none t/support/offline-attestation-verifier.ss --verify-fleet "{{fleet_report}}" "{{trust_store}}"
+verify-multi-method-fleet fleet_report trust_store *flags:
+    t/harness/run-gxtest.sh script none t/support/offline-attestation-verifier.ss {{flags}} --verify-fleet "{{fleet_report}}" "{{trust_store}}"
 
 verify-multi-method-cache cache_file trust_store *flags:
     t/harness/run-gxtest.sh script none t/support/offline-attestation-verifier.ss {{flags}} --verify-cache "{{cache_file}}" "{{trust_store}}"
@@ -240,7 +240,7 @@ pack-multi-method-fleet-bundle fleet_report out:
 verify-multi-method-fleet-bundle fleet_bundle trust_store *flags:
     t/harness/run-gxtest.sh script none t/support/offline-attestation-verifier.ss {{flags}} --verify-fleet-bundle "{{fleet_bundle}}" "{{trust_store}}"
 
-# Portable zero-dependency (<100ms, zero Gerbil, zero OpenSSL) Bun/TS offline attestation CLI & 30-control gate.
+# Portable zero-dependency (<100ms, zero Gerbil, zero OpenSSL) Bun/TS offline attestation CLI & 32-control gate.
 verify-multi-method-fast *args:
     bun t/harness/offline-attestation-verifier.ts {{args}}
 

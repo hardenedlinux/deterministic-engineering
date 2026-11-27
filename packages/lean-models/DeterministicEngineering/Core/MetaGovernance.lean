@@ -852,4 +852,22 @@ theorem freshnessWindow_rejects_future_clock_forgery
   intro hFresh
   exact Nat.lt_irrefl _ (Nat.lt_of_lt_of_le hFuture hFresh.2)
 
+/-! ## 14. Anti-Downgrade SysML Specification Pinning (`--expected-sysml-sha256`) -/
+
+/-- Constructive zero-axiom specification-pinned Fleet Evidence Bundle predicate:
+requires both complete cryptographic/Merkle bundle integrity AND exact binding of the
+signed `sysmlSha256` digest to the auditor's pinned SysML v2 specification digest. -/
+def SysmlPinnedFleetBundle {Digest : Type}
+    (b : FleetEvidenceBundleModel) (actualSpecDigest expectedSpecDigest : Digest) : Prop :=
+  SafeFleetEvidenceBundle b ∧ actualSpecDigest = expectedSpecDigest
+
+/-- Constructive zero-axiom proof: replaying a cryptographically valid Fleet bundle produced
+under an older/different SysML v2 specification (spec downgrade attack) is unconditionally rejected. -/
+theorem sysmlPinnedBundle_rejects_spec_downgrade {Digest : Type}
+    (b : FleetEvidenceBundleModel) {actualSpecDigest expectedSpecDigest : Digest}
+    (hMismatch : actualSpecDigest ≠ expectedSpecDigest) :
+    ¬ SysmlPinnedFleetBundle b actualSpecDigest expectedSpecDigest := by
+  intro hPinned
+  exact hMismatch hPinned.2
+
 end DeterministicEngineering.Core.MetaGovernance

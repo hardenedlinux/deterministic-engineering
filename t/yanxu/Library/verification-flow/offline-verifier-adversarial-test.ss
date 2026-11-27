@@ -715,4 +715,11 @@
       (check-equal? (verify-cache-offline cache-no-epoch tp-inline
                       max-age-seconds: 600 now-epoch: 1700000200) #f)
 
+      ;; Attacks 31-32: Anti-Downgrade SysML Specification Pinning (`--expected-sysml-sha256`):
+      ;;   Matching `sysml-sha` passes; downgraded/mismatched SysML digest fails unconditionally!
+      (check-equal? (verify-fleet-bundle-offline fleet-bundle-path tp-inline
+                      expected-sysml-sha256: "sysml-sha") #t)
+      (check-equal? (verify-fleet-bundle-offline fleet-bundle-path tp-inline
+                      expected-sysml-sha256: "downgraded-older-sysml-sha") #f)
+
       (run-process (list "rm" "-rf" work)))))

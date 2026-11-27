@@ -217,7 +217,10 @@
          (call-with-input-file report-path (cut read-json <> object-as-hash: #t))
          trust-pair)))
 
-(def (verify-fleet-offline fleet-report-path trust-pair)
+(def (verify-fleet-offline
+       fleet-report-path
+       trust-pair
+       expected-sysml-sha256: (expected-sysml-sha256 #f))
   (and (file-exists? fleet-report-path)
        (let* ((trusted (car trust-pair))
               (revoked (cdr trust-pair))
@@ -227,6 +230,8 @@
               (kid (and (hash-table? att) (hash-get att "keyId")))
               (fleet-pub (trust-store-alist-key-admitted? trusted revoked kid)))
          (and fleet-pub
+              (or (not expected-sysml-sha256)
+                  (equal? (hash-get doc "sysmlSha256") expected-sysml-sha256))
               (list? subjects)
               (pair? subjects)
               (equal? (hash-get att "algorithm") "Ed25519")
@@ -425,7 +430,10 @@
 ;; Pure zero-disk-traversal verifier for `de.attestation.fleet-evidence-bundle.v1`.
 ;; Enforces root Fleet Ed25519 signature, exact 1-to-1 bijection (blocking missing OR
 ;; smuggled extra child reports), child report Ed25519 + semantic admission, and Merkle binding.
-(def (verify-fleet-bundle-offline bundle-path trust-pair)
+(def (verify-fleet-bundle-offline
+       bundle-path
+       trust-pair
+       expected-sysml-sha256: (expected-sysml-sha256 #f))
   (and (file-exists? bundle-path)
        (let* ((trusted (car trust-pair))
               (revoked (cdr trust-pair))
@@ -440,6 +448,8 @@
               (kid (and (hash-table? att) (hash-get att "keyId")))
               (fleet-pub (trust-store-alist-key-admitted? trusted revoked kid)))
          (and fleet-pub
+              (or (not expected-sysml-sha256)
+                  (equal? (hash-get fleet-doc "sysmlSha256") expected-sysml-sha256))
               (hash-table? child-reports)
               (list? subjects)
               (pair? subjects)
@@ -499,26 +509,30 @@
     n))
 
 (def (extract-global-cli-flags args)
-  (let loop ((xs args) (json? #f) (max-age #f) (now-ep #f) (max-skew 60) (pos '()))
+  (let loop ((xs args) (json? #f) (max-age #f) (now-ep #f) (max-skew 60) (exp-sysml #f) (pos '()))
     (cond
      ((null? xs)
-      (values json? max-age now-ep max-skew (reverse pos)))
+      (values json? max-age now-ep max-skew exp-sysml (reverse pos)))
      ((equal? (car xs) "--json")
-      (loop (cdr xs) #t max-age now-ep max-skew pos))
+      (loop (cdr xs) #t max-age now-ep max-skew exp-sysml pos))
      ((equal? (car xs) "--max-age-seconds")
       (unless (pair? (cdr xs)) (error "--max-age-seconds requires an integer argument"))
-      (loop (cddr xs) json? (parse-nonneg-int-flag "--max-age-seconds" (cadr xs)) now-ep max-skew pos))
+      (loop (cddr xs) json? (parse-nonneg-int-flag "--max-age-seconds" (cadr xs)) now-ep max-skew exp-sysml pos))
      ((equal? (car xs) "--now-epoch")
       (unless (pair? (cdr xs)) (error "--now-epoch requires an integer argument"))
-      (loop (cddr xs) json? max-age (parse-nonneg-int-flag "--now-epoch" (cadr xs)) max-skew pos))
+      (loop (cddr xs) json? max-age (parse-nonneg-int-flag "--now-epoch" (cadr xs)) max-skew exp-sysml pos))
      ((equal? (car xs) "--max-future-skew-seconds")
       (unless (pair? (cdr xs)) (error "--max-future-skew-seconds requires an integer argument"))
-      (loop (cddr xs) json? max-age now-ep (parse-nonneg-int-flag "--max-future-skew-seconds" (cadr xs)) pos))
+      (loop (cddr xs) json? max-age now-ep (parse-nonneg-int-flag "--max-future-skew-seconds" (cadr xs)) exp-sysml pos))
+     ((equal? (car xs) "--expected-sysml-sha256")
+      (unless (and (pair? (cdr xs)) (string? (cadr xs)) (> (string-length (cadr xs)) 0))
+        (error "--expected-sysml-sha256 requires a non-empty digest argument"))
+      (loop (cddr xs) json? max-age now-ep max-skew (cadr xs) pos))
      (else
-      (loop (cdr xs) json? max-age now-ep max-skew (cons (car xs) pos))))))
+      (loop (cdr xs) json? max-age now-ep max-skew exp-sysml (cons (car xs) pos))))))
 
 (def (main . args)
-  (let-values (((json-mode? max-age-sec now-ep max-skew-sec clean-args)
+  (let-values (((json-mode? max-age-sec now-ep max-skew-sec expected-sysml-sha clean-args)
                 (extract-global-cli-flags args)))
   (when (null? clean-args)
     (error "usage: [--json] --verify-report|--verify-fleet|--verify-fleet-bundle|--verify-cache [--max-age-seconds N] [--now-epoch T] <artifact.json> <trust-store.json> | [--json] --verify-trust-store <trust-store.json> | [--json] --export-trust-bundle <out.json> [--revoke <keyId>]... <pub1.pem>... | [--json] --pack-fleet-bundle <fleet-report.json> <out-bundle.json>"
@@ -638,9 +652,11 @@
                 (exit 1))
               (error "offline report verification failed" target-path))))
          ((equal? mode "--verify-fleet")
-          (if (verify-fleet-offline target-path trust-pair)
+          (if (verify-fleet-offline target-path trust-pair
+                expected-sysml-sha256: expected-sysml-sha)
             (if json-mode?
-              (emit-json-result! #t "verify-fleet" target-path store-path "authentic-2-level-merkle-fleet")
+              (emit-json-result! #t "verify-fleet" target-path store-path "authentic-2-level-merkle-fleet"
+                (if expected-sysml-sha (list (cons "expectedSysmlSha256" expected-sysml-sha)) '()))
               (displayln "MULTI-METHOD-VERIFY-FLEET-OK " target-path))
             (if json-mode?
               (begin
@@ -648,10 +664,12 @@
                 (exit 1))
               (error "offline fleet verification failed" target-path))))
          ((equal? mode "--verify-fleet-bundle")
-          (if (verify-fleet-bundle-offline target-path trust-pair)
+          (if (verify-fleet-bundle-offline target-path trust-pair
+                expected-sysml-sha256: expected-sysml-sha)
             (if json-mode?
               (emit-json-result! #t "verify-fleet-bundle" target-path store-path
-                "authentic-self-contained-fleet-bundle")
+                "authentic-self-contained-fleet-bundle"
+                (if expected-sysml-sha (list (cons "expectedSysmlSha256" expected-sysml-sha)) '()))
               (displayln "MULTI-METHOD-VERIFY-FLEET-BUNDLE-OK " target-path))
             (if json-mode?
               (begin

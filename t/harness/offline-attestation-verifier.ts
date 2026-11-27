@@ -392,10 +392,17 @@ export function verifyReportOffline(reportPath: string, trustPair: TrustPair): b
   return verifyReportDocOffline(doc, trustPair);
 }
 
-export function verifyFleetOffline(fleetReportPath: string, trustPair: TrustPair): boolean {
+export function verifyFleetOffline(
+  fleetReportPath: string,
+  trustPair: TrustPair,
+  expectedSysmlSha256?: string,
+): boolean {
   if (!existsSync(fleetReportPath)) return false;
   const doc = readJsonObject(fleetReportPath);
   if (!doc) return false;
+  if (expectedSysmlSha256 !== undefined && doc.sysmlSha256 !== expectedSysmlSha256) {
+    return false;
+  }
   const att = doc.attestation;
   const subjects = doc.subjects;
   if (!isPlainObject(att) || !Array.isArray(subjects) || subjects.length === 0) return false;
@@ -617,13 +624,20 @@ export function packFleetBundleOffline(fleetReportPath: string, outPath: string)
  * 1-to-1 bijection of embedded child reports (rejecting missing OR smuggled extra entries),
  * every child report's Ed25519 signature & semantic admission, and 2-level Merkle digest binding.
  */
-export function verifyFleetBundleOffline(bundlePath: string, trustPair: TrustPair): boolean {
+export function verifyFleetBundleOffline(
+  bundlePath: string,
+  trustPair: TrustPair,
+  expectedSysmlSha256?: string,
+): boolean {
   if (!existsSync(bundlePath)) return false;
   const bundle = readJsonObject(bundlePath);
   if (!bundle || bundle.schema !== FLEET_BUNDLE_SCHEMA) return false;
   const fleetDoc = bundle.fleetReport;
   const childReports = bundle.childReports;
   if (!isPlainObject(fleetDoc) || !isPlainObject(childReports)) return false;
+  if (expectedSysmlSha256 !== undefined && fleetDoc.sysmlSha256 !== expectedSysmlSha256) {
+    return false;
+  }
   const att = fleetDoc.attestation;
   const subjects = fleetDoc.subjects;
   if (!isPlainObject(att) || !Array.isArray(subjects) || subjects.length === 0) return false;
@@ -720,6 +734,7 @@ export function runCli(argv: string[]): number {
   let maxAgeSeconds: number | undefined;
   let nowEpoch: number | undefined;
   let maxFutureSkewSeconds = 60;
+  let expectedSysmlSha256: string | undefined;
   const cleanArgs: string[] = [];
   try {
     for (let i = 0; i < argv.length; i += 1) {
@@ -734,6 +749,13 @@ export function runCli(argv: string[]): number {
         i += 1;
       } else if (a === '--max-future-skew-seconds') {
         maxFutureSkewSeconds = parseNonNegIntFlag('--max-future-skew-seconds', argv[i + 1]);
+        i += 1;
+      } else if (a === '--expected-sysml-sha256') {
+        const val = argv[i + 1];
+        if (typeof val !== 'string' || val.length === 0) {
+          throw new Error('--expected-sysml-sha256 requires a non-empty digest argument');
+        }
+        expectedSysmlSha256 = val;
         i += 1;
       } else {
         cleanArgs.push(a);
@@ -914,9 +936,11 @@ export function runCli(argv: string[]): number {
   }
 
   if (mode === '--verify-fleet') {
-    if (verifyFleetOffline(targetPath, trustPair)) {
+    if (verifyFleetOffline(targetPath, trustPair, expectedSysmlSha256)) {
       if (jsonMode) {
-        emitJsonResult(true, 'verify-fleet', targetPath, storePath, 'authentic-2-level-merkle-fleet');
+        const extra: Record<string, unknown> =
+          expectedSysmlSha256 !== undefined ? {expectedSysmlSha256} : {};
+        emitJsonResult(true, 'verify-fleet', targetPath, storePath, 'authentic-2-level-merkle-fleet', extra);
       } else {
         process.stdout.write(`MULTI-METHOD-VERIFY-FLEET-OK ${targetPath}\n`);
       }
@@ -931,14 +955,17 @@ export function runCli(argv: string[]): number {
   }
 
   if (mode === '--verify-fleet-bundle') {
-    if (verifyFleetBundleOffline(targetPath, trustPair)) {
+    if (verifyFleetBundleOffline(targetPath, trustPair, expectedSysmlSha256)) {
       if (jsonMode) {
+        const extra: Record<string, unknown> =
+          expectedSysmlSha256 !== undefined ? {expectedSysmlSha256} : {};
         emitJsonResult(
           true,
           'verify-fleet-bundle',
           targetPath,
           storePath,
           'authentic-self-contained-fleet-bundle',
+          extra,
         );
       } else {
         process.stdout.write(`MULTI-METHOD-VERIFY-FLEET-BUNDLE-OK ${targetPath}\n`);

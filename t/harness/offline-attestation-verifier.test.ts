@@ -880,5 +880,36 @@ describe('Zero-Dependency TS/Bun Offline Attestation Verifier (25 Controls + Ger
     ]);
     expect(resFutureFail.exitCode).not.toBe(0);
     expect(JSON.parse(resFutureFail.stdout.trim()).ok).toBe(false);
+
+    // Controls 31-32: Anti-Downgrade SysML Specification Pinning (`--expected-sysml-sha256`):
+    //   31: Matching `--expected-sysml-sha256 "sysmlsha"` succeeds on `--verify-fleet-bundle`
+    //       (direct API + `--json` CLI echoing `expectedSysmlSha256`).
+    //   32: Mismatched/downgraded `--expected-sysml-sha256` fails unconditionally even though
+    //       all Ed25519 signatures and 2-level Merkle digests are 100% valid!
+    expect(verifyFleetBundleOffline(fleetBundlePath, tpInlineAll, 'sysmlsha')).toBe(true);
+    expect(verifyFleetBundleOffline(fleetBundlePath, tpInlineAll, 'downgraded-older-sysml-sha')).toBe(false);
+    const resPinOk = runTsCli([
+      '--json',
+      '--verify-fleet-bundle',
+      '--expected-sysml-sha256',
+      'sysmlsha',
+      fleetBundlePath,
+      tsInlineAll,
+    ]);
+    expect(resPinOk.exitCode).toBe(0);
+    const docPinOk = JSON.parse(resPinOk.stdout.trim());
+    expect(docPinOk.ok).toBe(true);
+    expect(docPinOk.expectedSysmlSha256).toBe('sysmlsha');
+
+    const resPinFail = runTsCli([
+      '--json',
+      '--verify-fleet-bundle',
+      '--expected-sysml-sha256',
+      'downgraded-older-sysml-sha',
+      fleetBundlePath,
+      tsInlineAll,
+    ]);
+    expect(resPinFail.exitCode).not.toBe(0);
+    expect(JSON.parse(resPinFail.stdout.trim()).ok).toBe(false);
   });
 });

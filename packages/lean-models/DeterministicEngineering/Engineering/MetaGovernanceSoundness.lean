@@ -214,6 +214,18 @@ theorem cacheFreshnessWindow_defeats_staleReplay_and_futureForgery
   ⟨freshnessWindow_rejects_expired_replay issuedEpoch nowEpoch maxAge maxFutureSkew,
    freshnessWindow_rejects_future_clock_forgery issuedEpoch nowEpoch maxAge maxFutureSkew⟩
 
+/-- Instantiated anti-downgrade SysML specification pinning contract (`--expected-sysml-sha256`):
+constructively proves with zero axioms that replaying an authentic Fleet bundle from a different
+or older SysML specification digest is unconditionally rejected. -/
+theorem fleetSpecPinning_defeats_sysml_downgrade_replay {Digest : Type}
+    (b : FleetEvidenceBundleModel) (actualSpecDigest expectedSpecDigest : Digest) :
+    (actualSpecDigest ≠ expectedSpecDigest →
+      ¬ SysmlPinnedFleetBundle b actualSpecDigest expectedSpecDigest) ∧
+    (b.declaredCount ≠ b.embeddedCount →
+      ¬ SysmlPinnedFleetBundle b actualSpecDigest expectedSpecDigest) :=
+  ⟨fun hMis => sysmlPinnedBundle_rejects_spec_downgrade b hMis,
+   fun hCnt hPin => bundle_rejects_smuggled_extra_child b hCnt hPin.1⟩
+
 /-! ## One-Line Proof Transport via `Core.Transport` -/
 
 inductive MetaProofKey where
