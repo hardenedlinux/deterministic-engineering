@@ -1,0 +1,31 @@
+#+TITLE: 10.208 Real-Repository Formal-to-Rust Validation on tao3k/marlin-agent-core (B9, B11, B12, B21 & 11 Threat Overlays)
+#+AUTHOR: hardenedlinux Linux Team and Contributors
+#+DATE: 2026-11-27
+#+PROPERTY: JD_ID 10.208
+#+PROPERTY: STATUS accepted-and-verified
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+* Executive Summary
+
+Building on [[file:10.206-four-package-subtree-mirror-and-downstream-submodule-verification.org][10.206]] and [[file:10.207-285-case-five-language-regression-seal-and-marlin-rust-calibration.org][10.207]], this ADR records the end-to-end real-repository transfer and live Rust + Quint/MBT + =G2= verification of four flagship formal defense pillars (**B11**, **B21**, **B12**, and **B9**) directly inside the live 32-crate production Rust repository =tao3k/marlin-agent-core= (branch =sync/agentic-ai-lab-rust=), proving that our slimmed =10.204=/=10.205= =packages/quint-models= library and =G2= multi-language auditor drive real production Rust security gates with **zero external crate additions** and **100.0% MBT overlay coverage**.
+
+* Transferred Pillars & Live Production Receipts (=tao3k/marlin-agent-core=)
+
+| Pillar | Upstream Formal Source (=deterministic-engineering-qnt=) | Production Rust Implementation (=marlin-agent-core=) | Paired Marlin Threat Overlay (=dev/quint/threat/=) | Observed Verification |
+|--------+----------------------------------------------------------+------------------------------------------------------+----------------------------------------------------+-----------------------|
+| **B11** (MCP/Tool-Sandbox Anti-Rug-Pull) | [[file:../../../packages/quint-models/engineering/defense/tool-sandbox-rpc-boundary/ToolSandboxRpcBoundary.qnt][ToolSandboxRpcBoundary.qnt]] | =marlin-agent-runtime/src/model_tool_catalog.rs= (=ModelToolOffer= =ring::digest::SHA256= canonical JSON schema pinning + =verify_pinned_schema= + =SchemaRugPullDetected=) | =MarlinBackendToolSandboxOverlay.qnt= | =PLAN-OK= + =MBT-AUDIT-OK 10/10 (100.0%)=; =cargo test -p marlin-agent-runtime --test unit_test model_tool_catalog= **3/3 pass**; =G2= **0 findings** (commit =2ed5c273=) |
+| **B21** (Model-Weight Pinning & Reproducible Inference) | [[file:../../../packages/quint-models/engineering/defense/model-weight-inference-attestation/ModelWeightInferenceAttestation.qnt][ModelWeightInferenceAttestation.qnt]] | =marlin-agent-kernel/src/model_weight_attestation.rs= (=compute_shard_merkle_root= + =ModelWeightAttestationGate= refusing all 6 inference attacks) | =MarlinBackendModelWeightOverlay.qnt= | =PLAN-OK= + =MBT-AUDIT-OK 8/8 (100.0%)=; =cargo test -p marlin-agent-kernel --lib= **pass**; =G2= **0 findings** (commit =874b6bcc=) |
+| **B12** (Context Distillation & Epistemic Provenance) | [[file:../../../packages/quint-models/engineering/defense/context-distillation-provenance/ContextDistillationProvenance.qnt][ContextDistillationProvenance.qnt]] | =marlin-agent-kernel/src/context_distillation.rs= (=ContextDistillationGate=: anti-amnesia =M1= retention, citation grounding, integrity meet, secrecy union, token budget) | =MarlinBackendContextDistillationOverlay.qnt= | =PLAN-OK= + =MBT-AUDIT-OK 9/9 (100.0%)=; =cargo test -p marlin-agent-kernel --lib= **pass**; =G2= **0 findings** |
+| **B9** (RFC 6962 Transparency Log & Equivocation Defense) | [[file:../../../packages/quint-models/engineering/defense/transparency-log-equivocation/TransparencyLogEquivocation.qnt][TransparencyLogEquivocation.qnt]] | =marlin-agent-kernel/src/transparency_log.rs= (=GovernanceTransparencyLog=: RFC 6962 §2.1 domain-separated inclusion + append-only consistency proofs + =SplitViewEquivocationFraudProof=) | =MarlinBackendTransparencyLogOverlay.qnt= | =PLAN-OK= + =MBT-AUDIT-OK 8/8 (100.0%)=; =cargo test -p marlin-agent-kernel --lib= **16/16 pass (0.07s)**; =G2= **0 findings** |
+
+* Production =P1= Silent-Fallback Hardening Landed in =marlin-agent-core=
+
+1. **Non-Loopback Auth Fail-Closed (=marlin-gerbil-scheme/src/scheme_host_runtime.rs=)**: Replaced =env::var("MARLIN_BRIDGE_TOKEN").unwrap_or_default()= with =resolve_bridge_auth_header= refusing empty/missing tokens on non-loopback bind addresses and rejecting non-UTF-8 tokens (=cargo test -p marlin-gerbil-scheme --features app-server-host --lib resolve_bridge_auth_header= **1/1 pass**, =G2= **0 findings**; commit =2ed5c273=).
+2. **Governance Snapshot Numeric Parsing (=marlin-agent-app-server/src/scheme_host_client.rs=)**: Replaced silent =.parse::<u64>().ok().unwrap_or(0)= in =FleetAuditCapsuleView::from_record= and =GovernanceAuthoritySnapshotView::from_record= with strict fail-closed =Result= decoding (=cargo test -p marlin-agent-app-server --features ui-grpc --lib scheme_host_client= **7/7 pass**; commit =2ed5c273=).
+3. **Gateway, TUI & Search EDB Hardening (working-tree aligned with active feature branch)**: Hardened =marlin_mygo_host.rs= (refuse silent downgrade to mock =DeterministicLocalGateway= when explicit TOML config fails), =runner.rs= (surface persisted-process reconciliation failures as =MessageSeverity::Error=), and =choice_codec.rs=/=codec.rs= (fail-closed on invalid Scheme symbol tags and negative =file_id= rows; =cargo check -p marlin-agent-search-engine --lib= clean, =G2= **0 findings** on =choice_codec.rs=).
+
+* Full Fleet Cross-Check
+
+- **11/11** =marlin-agent-core/dev/quint/threat/*.qnt= overlays typechecked cleanly against our post-10.204/10.205/10.206 =packages/quint-models= and =packages/quint-modules-resolver= (=ALL_11_MARLIN_THREAT_OVERLAYS_TYPECHECK_OK=).
+- All 4 newly transferred overlays (=B11=, =B21=, =B12=, =B9=) achieved **100.0% MBT transition coverage** (=10/10=, =8/8=, =9/9=, =8/8=).
