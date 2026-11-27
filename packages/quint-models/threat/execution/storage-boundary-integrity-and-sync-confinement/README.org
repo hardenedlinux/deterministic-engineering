@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Storage Boundary Deserialization Parity, CAS Integrity, Sync TLS & Context-Index Confinement (SM31)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.execution.storage-boundary-integrity-and-sync-confinement=
+- *Subdomain*: =quint.threat.execution=
+- *Quint Module*: =execution_storage_boundary_integrity_and_sync_confinement= (=[[file:StorageBoundaryIntegrityAndSyncConfinement.qnt][StorageBoundaryIntegrityAndSyncConfinement.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/execution/storage-boundary-integrity-and-sync-confinement/StorageBoundaryIntegrityAndSyncConfinement=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+No deserialized empty/blank storage ID or out-of-range StoragePageLimit is admitted (serdeBypassBreaches == 0), no artifact is stored with mismatched size_bytes or forged sha256:<64-hex> payload (casIntegrityBreaches == 0), remote sync URLs enforce TLS without userinfo or control chars (syncTransportBreaches == 0 and syncTlsEnforced), applied context-index revisions remain immutable against divergent same-receipt rebuilds and CAS conflict retries preserve idempotent audit receipts (indexOrCasAuditBreaches == 0 and indexImmutable and casAuditIdempotent).
+
+#+begin_src quint
+val safety = (h.serdeBypassBreaches == 0 and h.casIntegrityBreaches == 0 and h.syncTransportBreaches == 0 and h.indexOrCasAuditBreaches == 0 and h.syncTlsEnforced and h.indexImmutable and h.casAuditIdempotent and h.appliedRev >= 0 and h.appliedRev <= h.frontierRev and h.frontierRev <= 4 and h.stepCount <= 12)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =forbid-serde-bypass-empty-id-or-unbounded-page= | =stepSerdeBypass= | =h.serdeBypassBreaches > 0= |
+| =forbid-artifact-size-lie-or-sha256-cas-poisoning= | =stepCasIntegrityBypass= | =h.casIntegrityBreaches > 0= |
+| =forbid-cleartext-remote-sync-or-userinfo-smuggle= | =stepSyncTransportBypass= | =h.syncTransportBreaches > 0= |
+| =forbid-context-index-same-rev-overwrite-or-cas-receipt-crash= | =stepIndexOrCasAuditBypass= | =h.indexOrCasAuditBreaches > 0= |
+
+* Grounded Papers & Specifications
+
+- *Deterministic Engineering (30.06 / 40.05)*: SM31 ADV-L4 validated Serde Deserialize parity for StoragePageLimit and all storage/session identifiers, put_artifact size_bytes == body.len() and cryptographic sha256:<64-hex> binding, TLS-mandatory remote TursoSyncRemoteUrl with loopback-only http:// and userinfo/CRLF refusal, immutable same-revision TursoContextIndex::rebuild conflict detection with checked sequence arithmetic, and idempotent CAS audit visibility receipts.
+- *Marlin Agent Core Empirical Case Study (2026)*: marlin-agent-storage and marlin-agent-sessions derived Serde Deserialize bypassed StoragePageLimit(1..=1000) and non-blank ID invariants; put_artifact accepted forged size_bytes=u64::MAX (-1 in SQLite) and poisoned sha256:<64-hex> blobs; TursoSyncRemoteUrl accepted remote cleartext http:// and userinfo@ smuggling; TursoContextIndex::rebuild wiped applied locators on same-receipt overwrite; compare_and_swap_artifact_pointer crashed on repeated conflict receipt PK collision.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/execution/storage-boundary-integrity-and-sync-confinement/StorageBoundaryIntegrityAndSyncConfinement.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/execution/storage-boundary-integrity-and-sync-confinement/StorageBoundaryIntegrityAndSyncConfinement.qnt --main=execution_storage_boundary_integrity_and_sync_confinement --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite bounded storage contract, Turso CAS/sync transport & derived context-index state machine (appliedRev <= 4, stepCount <= 12); models validated Deserialize parity on StoragePageLimit and storage IDs, put_artifact size_bytes == body.len() and cryptographic sha256:<64-hex> binding, TLS-mandatory remote TursoSyncRemoteUrl with loopback-only http:// and userinfo/CRLF refusal, immutable same-revision TursoContextIndex::rebuild replay/conflict enforcement, and idempotent CAS visibility receipt persistence, without modeling SQLite disk corruption or SHA-256 preimage breaks.

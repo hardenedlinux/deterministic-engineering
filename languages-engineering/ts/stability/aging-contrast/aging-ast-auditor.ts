@@ -36,7 +36,8 @@ export type AgingMechanism =
   | 'SM27-policy-gate-blindspot-confinement'
   | 'SM28-plugin-grant-rollback-lease'
   | 'SM29-governance-policy-latch-antirollback'
-  | 'SM30-stepup-attestation-host-effect';
+  | 'SM30-stepup-attestation-host-effect'
+  | 'SM31-storage-boundary-integrity-sync';
 
 export interface AgingFinding {
   ruleId: string;
@@ -1583,6 +1584,88 @@ function auditRust(clean: string): AgingFinding[] {
     }
   }
 
+  // 52. Rust validated storage/session newtypes deriving Serde `Deserialize` directly bypass `::new()`/`try_new()` bounds & non-blank checks (ADV-L4, SM31).
+  const serdeNewtypeRe = /#\[derive\([^\]]*\bDeserialize\b[^\]]*\)\]\s*(?:#\[[^\]]*\]\s*)*pub\s+struct\s+(StoragePageLimit|SessionId|\$name)\s*\(\s*(?:u16|String)\s*\)\s*;/g;
+  let serdeNewtypeMatch: RegExpExecArray | null;
+  while ((serdeNewtypeMatch = serdeNewtypeRe.exec(clean)) !== null) {
+    const attrSlice = serdeNewtypeMatch[0];
+    if (!/#\[serde\([^)]*\b(?:try_from|deserialize_with)\b/.test(attrSlice)) {
+      findings.push({
+        ruleId: 'rust-serde-derive-bypasses-validated-newtype',
+        mechanism: 'SM31-storage-boundary-integrity-sync',
+        language: 'rust',
+        line: lineOfIndex(clean, serdeNewtypeMatch.index),
+        message: `Validated storage/session newtype ${serdeNewtypeMatch[1]} derives Serde Deserialize directly without try_from/custom validation, allowing 0/65535 page limits or empty/blank IDs to bypass ::new() invariants (ADV-L4, SM31).`,
+      });
+    }
+  }
+
+  // 53. Rust put_artifact inserts record.body without validating size_bytes == body.len() and cryptographic sha256:<64-hex> binding (ADV-L4, SM31).
+  const putArtifactMatch = /\bfn\s+put_artifact\s*(?:<[^>]+>)?\s*\([^)]*\)/.exec(clean);
+  if (putArtifactMatch) {
+    const fnBody = extractBraceBlock(clean, putArtifactMatch.index);
+    const hasRecordImpl = /\b(?:INSERT\s+OR\s+IGNORE\s+INTO\s+artifacts|state\.artifacts\.insert)\b/.test(fnBody);
+    const validatesArtifact = /\b(?:validate_artifact_record|record\.size_bytes\s*!=\s*record\.body\.len\(\))\b/.test(fnBody);
+    if (hasRecordImpl && !validatesArtifact) {
+      findings.push({
+        ruleId: 'rust-put-artifact-unchecked-size-or-digest',
+        mechanism: 'SM31-storage-boundary-integrity-sync',
+        language: 'rust',
+        line: lineOfIndex(clean, putArtifactMatch.index),
+        message: 'put_artifact stores artifacts without verifying size_bytes == body.len() (i64 wrap hazard) and cryptographic sha256:<64-hex> payload integrity (ADV-L4, SM31).',
+      });
+    }
+  }
+
+  // 54. Rust TursoSyncRemoteUrl::new admits arbitrary remote cleartext http:// URLs or omits userinfo/CRLF refusal (ADV-L4, SM31).
+  const syncUrlImplMatch = /\bimpl\s+TursoSyncRemoteUrl\b/.exec(clean);
+  if (syncUrlImplMatch) {
+    const implBody = extractBraceBlock(clean, syncUrlImplMatch.index);
+    const allowsHttp = /starts_with\s*\(\s*"http:\/\/"\s*\)/.test(implBody);
+    const enforcesLoopbackAndAuthority = /\b(?:is_loopback_sync_host|localhost|127\.0\.0\.1)\b/.test(implBody) && /@/.test(implBody);
+    if (allowsHttp && !enforcesLoopbackAndAuthority) {
+      findings.push({
+        ruleId: 'rust-sync-remote-url-admits-cleartext-http',
+        mechanism: 'SM31-storage-boundary-integrity-sync',
+        language: 'rust',
+        line: lineOfIndex(clean, syncUrlImplMatch.index),
+        message: 'TursoSyncRemoteUrl::new accepts remote cleartext http:// URLs or fails to block embedded @ userinfo / CRLF smuggling carrying TursoSyncAuthToken (ADV-L4, SM31).',
+      });
+    }
+  }
+
+  // 55. Rust TursoContextIndex::rebuild overwrites already-applied context_locators on matching same-revision receipt instead of verifying immutability (ADV-L4, SM31).
+  const rebuildMatch = /\basync\s+fn\s+rebuild\s*\([^)]*\)/.exec(clean);
+  if (rebuildMatch) {
+    const fnBody = extractBraceBlock(clean, rebuildMatch.index);
+    const deletesLocators = /DELETE\s+FROM\s+context_locators\s+WHERE\s+repo/.test(fnBody);
+    const checksFinalizedReplay = /\bContextIndexUpdate::Replayed\b/.test(fnBody);
+    if (deletesLocators && !checksFinalizedReplay) {
+      findings.push({
+        ruleId: 'rust-context-index-rebuild-overwrites-applied-rev',
+        mechanism: 'SM31-storage-boundary-integrity-sync',
+        language: 'rust',
+        line: lineOfIndex(clean, rebuildMatch.index),
+        message: 'TursoContextIndex::rebuild deletes and overwrites context_locators when re-invoked at an already-finalized (sequence, receipt) instead of enforcing Replayed vs. Conflict immutability (ADV-L4, SM31).',
+      });
+    }
+  }
+
+  // 56. Rust compare_and_swap_artifact_pointer calls non-idempotent insert_visibility_receipt, crashing conflict retries and split-braining committed pointers on PK collision (ADV-L4, SM31).
+  const casPtrMatch = /\bfn\s+compare_and_swap_artifact_pointer\s*(?:<[^>]+>)?\s*\([^)]*\)/.exec(clean);
+  if (casPtrMatch) {
+    const fnBody = extractBraceBlock(clean, casPtrMatch.index);
+    if (/\binsert_visibility_receipt\s*\(/.test(fnBody)) {
+      findings.push({
+        ruleId: 'rust-cas-pointer-non-idempotent-audit-receipt',
+        mechanism: 'SM31-storage-boundary-integrity-sync',
+        language: 'rust',
+        line: lineOfIndex(clean, casPtrMatch.index),
+        message: 'compare_and_swap_artifact_pointer uses non-idempotent insert_visibility_receipt with deterministic receipt_id, crashing repeated conflict retries with UNIQUE errors and split-braining committed pointers (ADV-L4, SM31).',
+      });
+    }
+  }
+
   return findings;
 }
 
@@ -1898,6 +1981,23 @@ function auditTypeScript(clean: string): AgingFinding[] {
         language: 'ts',
         line: lineOfIndex(clean, tsStepUpMatch.index),
         message: 'parseVerifiedStepUpHuman accepts any non-empty acr string without validating against an explicit RFC 9470 / NIST MFA ACR allowlist (ADV-L4, SM30).',
+      });
+    }
+  }
+
+  // 24. TS parseSyncRemoteUrl accepts arbitrary remote cleartext http:// URLs without loopback restriction or userinfo refusal (ADV-L4, SM31).
+  const tsSyncUrlMatch = /\bfunction\s+parseSyncRemoteUrl\s*\([^)]*\)(?:\s*:\s*[^{]+)?\{/.exec(clean);
+  if (tsSyncUrlMatch) {
+    const fnBody = extractBraceBlock(clean, tsSyncUrlMatch.index + tsSyncUrlMatch[0].length - 1);
+    const admitsHttp = /http:\/\//.test(fnBody) || /===?\s*['"]http['"]/.test(fnBody);
+    const guardsLoopbackAndUserinfo = /\b(?:localhost|127\.0\.0\.1)\b/.test(fnBody) && /@/.test(fnBody);
+    if (admitsHttp && !guardsLoopbackAndUserinfo) {
+      findings.push({
+        ruleId: 'ts-remote-sync-url-admits-cleartext-http',
+        mechanism: 'SM31-storage-boundary-integrity-sync',
+        language: 'ts',
+        line: lineOfIndex(clean, tsSyncUrlMatch.index),
+        message: 'parseSyncRemoteUrl accepts remote cleartext http:// URLs or omits @ userinfo smuggling refusal (ADV-L4, SM31).',
       });
     }
   }

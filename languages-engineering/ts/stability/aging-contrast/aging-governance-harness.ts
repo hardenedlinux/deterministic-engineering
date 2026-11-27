@@ -232,6 +232,14 @@ const MECHANISM_DIRECTIVES: Record<AgingMechanism, AgingRemediationDirective> = 
     antiEvasionWarning:
       'Do NOT evade by checking only !acr.is_empty(), omitting worker/scheme-sandbox from Step-Up actor classification, gating only SandboxRun while leaving LlmComplete/CasPut open, breaking control-plane broadcast loops on Err(_), or discarding persist_to_cas errors with `let _ =`.',
   },
+  'SM31-storage-boundary-integrity-sync': {
+    mechanism: 'SM31-storage-boundary-integrity-sync',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Enforce validated custom Deserialize (try_from / custom visitor) on StoragePageLimit (1..=1000) and all storage/session string identifiers, validate size_bytes == body.len() with checked i64/u64 casts and cryptographic sha256:<64-hex> binding in put_artifact across both InMemory and Turso backends, confine TursoSyncRemoteUrl::new to TLS for remote hosts (loopback-only http://) with zero @ userinfo or control chars, enforce immutable Replayed vs. Conflict verification in TursoContextIndex::rebuild with checked_add(1) sequence arithmetic, and use idempotent INSERT OR IGNORE visibility receipts for internal CAS audit logs.',
+    antiEvasionWarning:
+      'Do NOT evade by keeping #[derive(Deserialize)] on validated newtypes, validating artifact size only on one backend, allowing remote http:// sync endpoints carrying auth tokens, overwriting applied context_locators on same-receipt rebuild, or using raw INSERT INTO visibility_receipts inside CAS retry loops.',
+  },
 };
 
 export function getAgingRemediation(finding: AgingFinding): AgingRemediationDirective {

@@ -2848,10 +2848,174 @@ export function parseVerifiedStepUpHuman(actor: string, acr: string): boolean {
   return true;
 }`,
   },
+  // --- SM31: ADV-L4 Storage boundary deserialization parity, CAS integrity, sync TLS & context-index confinement (SA183-SA192) ---
+  {
+    id: 'SA183',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-serde-derive-bypasses-validated-newtype',
+    source: `
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StoragePageLimit(u16);
+impl StoragePageLimit {
+  pub fn new(limit: u16) -> Result<Self, String> {
+    if !(1..=1000).contains(&limit) { return Err("bad".into()); }
+    Ok(Self(limit))
+  }
+}`,
+  },
+  {
+    id: 'SA184',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-put-artifact-unchecked-size-or-digest',
+    source: `
+impl AgentStorage for InMemoryAgentStorage {
+  fn put_artifact<'a>(&'a self, record: ArtifactRecord) -> StorageFuture<'a, ArtifactPutOutcome> {
+    Box::pin(ready(self.with_state(|state| {
+      let key = (record.project_id.clone(), record.artifact_hash.clone());
+      state.artifacts.insert(key, record.clone());
+      Ok(ArtifactPutOutcome { inserted: true, artifact: record })
+    })))
+  }
+}`,
+  },
+  {
+    id: 'SA185',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-sync-remote-url-admits-cleartext-http',
+    source: `
+impl TursoSyncRemoteUrl {
+  pub fn new(value: impl Into<String>) -> StorageResult<Self> {
+    let value = value.into();
+    if !(value.starts_with("libsql://") || value.starts_with("https://") || value.starts_with("http://")) {
+      return Err(StorageError::InvalidSyncConfiguration { reason: "bad scheme" });
+    }
+    Ok(Self(value))
+  }
+}`,
+  },
+  {
+    id: 'SA186',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-context-index-rebuild-overwrites-applied-rev',
+    source: `
+impl TursoContextIndex {
+  pub async fn rebuild(&self, repo: &str, revision: &Rev, cuts: &[Cut]) -> StorageResult<ContextIndexUpdate> {
+    if revision.sequence == cursor.applied && revision.receipt != cursor.receipt {
+      return Ok(ContextIndexUpdate::Conflict);
+    }
+    transaction.execute("DELETE FROM context_locators WHERE repo = ?1", (repo,)).await?;
+    Ok(ContextIndexUpdate::Applied)
+  }
+}`,
+  },
+  {
+    id: 'SA187',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-cas-pointer-non-idempotent-audit-receipt',
+    source: `
+impl AgentStorage for TursoAgentStorage {
+  fn compare_and_swap_artifact_pointer<'a>(&'a self, update: ArtifactPointerUpdate) -> StorageFuture<'a, ArtifactPointerRecord> {
+    Box::pin(async move {
+      insert_visibility_receipt(&connection, receipt).await?;
+      Ok(ptr)
+    })
+  }
+}`,
+  },
+  {
+    id: 'SA188',
+    language: 'ts',
+    expectedPass: false,
+    expectedRuleId: 'ts-remote-sync-url-admits-cleartext-http',
+    source: `
+export function parseSyncRemoteUrl(raw: string): boolean {
+  return raw.startsWith('libsql://') || raw.startsWith('https://') || raw.startsWith('http://');
+}`,
+  },
+  {
+    id: 'SA189',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "u16")]
+pub struct StoragePageLimit(u16);
+impl TryFrom<u16> for StoragePageLimit {
+  type Error = StorageError;
+  fn try_from(limit: u16) -> Result<Self, Self::Error> { Self::new(limit) }
+}`,
+  },
+  {
+    id: 'SA190',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+impl AgentStorage for TursoAgentStorage {
+  fn put_artifact<'a>(&'a self, record: ArtifactRecord) -> StorageFuture<'a, ArtifactPutOutcome> {
+    Box::pin(async move {
+      validate_artifact_record(&record)?;
+      execute_retrying(&connection, "INSERT OR IGNORE INTO artifacts VALUES (?1)", || vec![]).await?;
+      Ok(ArtifactPutOutcome { inserted: true, artifact: record })
+    })
+  }
+  fn compare_and_swap_artifact_pointer<'a>(&'a self, update: ArtifactPointerUpdate) -> StorageFuture<'a, ArtifactPointerRecord> {
+    Box::pin(async move {
+      insert_visibility_receipt_idempotent(&connection, receipt).await?;
+      Ok(ptr)
+    })
+  }
+}`,
+  },
+  {
+    id: 'SA191',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+impl TursoSyncRemoteUrl {
+  pub fn new(value: impl Into<String>) -> StorageResult<Self> {
+    let value = value.into();
+    if value.contains('@') { return Err(StorageError::InvalidSyncConfiguration { reason: "userinfo" }); }
+    if value.starts_with("http://") && !is_loopback_sync_host(&value) {
+      return Err(StorageError::InvalidSyncConfiguration { reason: "remote http" });
+    }
+    Ok(Self(value))
+  }
+}
+impl TursoContextIndex {
+  pub async fn rebuild(&self, repo: &str, revision: &Rev, cuts: &[Cut]) -> StorageResult<ContextIndexUpdate> {
+    if revision.sequence == cursor.applied && cursor.applied == cursor.frontier {
+      if revision.receipt == cursor.receipt && existing_cuts_match(&transaction, repo, cuts).await? {
+        return Ok(ContextIndexUpdate::Replayed);
+      }
+      return Ok(ContextIndexUpdate::Conflict);
+    }
+    transaction.execute("DELETE FROM context_locators WHERE repo = ?1", (repo,)).await?;
+    Ok(ContextIndexUpdate::Applied)
+  }
+}`,
+  },
+  {
+    id: 'SA192',
+    language: 'ts',
+    expectedPass: true,
+    source: `
+export function parseSyncRemoteUrl(raw: string): boolean {
+  if (!raw || raw.includes('@')) return false;
+  if (raw.startsWith('http://')) {
+    return raw.startsWith('http://localhost') || raw.startsWith('http://127.0.0.1');
+  }
+  return raw.startsWith('https://') || raw.startsWith('libsql://');
+}`,
+  },
 ];
 
-describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA182)', () => {
-  test('achieves 182/182 exact independent-gold match (tp=103, tn=79, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
+describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA192)', () => {
+  test('achieves 192/192 exact independent-gold match (tp=109, tn=83, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
     let tp = 0;
     let tn = 0;
     let fp = 0;
@@ -2874,7 +3038,7 @@ describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA182)', () 
       }
     }
 
-    expect({tp, tn, fp, fn}).toEqual({tp: 103, tn: 79, fp: 0, fn: 0});
+    expect({tp, tn, fp, fn}).toEqual({tp: 109, tn: 83, fp: 0, fn: 0});
   });
 
   test('clean Rust deterministic buffer pool & bounded retry passes with 0 findings', () => {
