@@ -72,7 +72,10 @@ export const LEANPOO_ZK_DISCLOSURE_FACADE_MODULE =
 export const LEANPOO_GEO_RESIDENCY_FACADE_MODULE =
   'DeterministicEngineering.Engineering.GeoResidencyAndSovereignty';
 
-export const LEANPOO_TOP_FACADE_MODULE = LEANPOO_GEO_RESIDENCY_FACADE_MODULE;
+export const LEANPOO_FEDERATED_ORG_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.FederatedOrgReciprocity';
+
+export const LEANPOO_TOP_FACADE_MODULE = LEANPOO_FEDERATED_ORG_FACADE_MODULE;
 
 export const LEANPOO_LIBRARY_EXPORT_MANIFEST: readonly LeanPooExportModuleSpec[] = [
   {
@@ -397,6 +400,23 @@ export const LEANPOO_LIBRARY_EXPORT_MANIFEST: readonly LeanPooExportModuleSpec[]
       'disablingCrossBorderFence_invalidates_reuse',
     ],
   },
+  {
+    moduleName: LEANPOO_FEDERATED_ORG_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/FederatedOrgReciprocity.lean',
+    pillars: ['B20', 'FederatedReciprocity', 'DisputeArbitration'],
+    theorems: [
+      'unilateral_org_approval_always_refused',
+      'self_federated_same_org_spoof_refused',
+      'revoked_or_suspended_org_always_refused',
+      'active_dispute_freeze_always_blocks',
+      'unratified_federation_treaty_refused',
+      'expired_reciprocity_epoch_refused',
+      'federated_reciprocity_sound_and_complete',
+      'federatedOrgContract_preserves_rejection',
+      'federationHeartbeatTuning_preserves_certificate',
+      'disablingBilateralReciprocity_invalidates_reuse',
+    ],
+  },
 ];
 
 export const LEANPOO_EXPECTED_MODULE_COUNT = LEANPOO_LIBRARY_EXPORT_MANIFEST.length;
@@ -542,8 +562,10 @@ export function verifyLeanPooLibraryFleet(params?: {
   }
 
   const facadeToImport = manifest.some(
-    m => m.moduleName === LEANPOO_GEO_RESIDENCY_FACADE_MODULE,
+    m => m.moduleName === LEANPOO_FEDERATED_ORG_FACADE_MODULE,
   )
+    ? LEANPOO_FEDERATED_ORG_FACADE_MODULE
+    : manifest.some(m => m.moduleName === LEANPOO_GEO_RESIDENCY_FACADE_MODULE)
     ? LEANPOO_GEO_RESIDENCY_FACADE_MODULE
     : manifest.some(m => m.moduleName === LEANPOO_ZK_DISCLOSURE_FACADE_MODULE)
     ? LEANPOO_ZK_DISCLOSURE_FACADE_MODULE
