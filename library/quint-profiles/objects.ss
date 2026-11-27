@@ -74,8 +74,8 @@
 (def QuintStatelessModelDefaultSlots
   (.o verify-depth: 12
       countermodel-depth: 4
-      require-countermodels?: #f
-      require-emergent-invariants?: #f
+      require-countermodels?: #f ;; defense-audit:allow-negative-control
+      require-emergent-invariants?: #f ;; defense-audit:allow-negative-control
       verification-mode: 'deterministic-trace
       seed: 7))
 

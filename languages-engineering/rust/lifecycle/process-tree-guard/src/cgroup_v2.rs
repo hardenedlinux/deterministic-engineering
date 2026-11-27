@@ -72,10 +72,10 @@ fn verify_writable_cgroup_parent(parent: &Path) -> bool {
     if !parent.is_dir() || !parent.join("cgroup.procs").exists() {
         return false;
     }
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_nanos())
-        .unwrap_or(0);
+    let nanos = match SystemTime::now().duration_since(UNIX_EPOCH) {
+        Ok(d) => d.as_nanos(),
+        Err(e) => e.duration().as_nanos(),
+    };
     let probe = parent.join(format!(".ptree-probe-{}-{nanos}", std::process::id()));
     match fs::create_dir(&probe) {
         Ok(()) => {
@@ -169,7 +169,10 @@ impl CgroupV2Scope {
         let _ = self.freeze();
         let mut killed_pids = 0usize;
         for _ in 0..16 {
-            let pids = self.live_pids().unwrap_or_default();
+            let pids = match self.live_pids() {
+                Ok(p) => p,
+                Err(_) => break,
+            };
             if pids.is_empty() {
                 break;
             }
@@ -193,11 +196,12 @@ impl CgroupV2Scope {
 
     /// Remove the empty leaf cgroup directory (best-effort after processes are reaped).
     pub fn cleanup(&self) -> io::Result<()> {
-        match fs::remove_dir(&self.dir) {
-            Ok(()) => Ok(()),
-            Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(()),
-            Err(e) => Err(e),
+        if let Err(e) = fs::remove_dir(&self.dir) {
+            if e.kind() != io::ErrorKind::NotFound {
+                return Err(e);
+            }
         }
+        Ok(())
     }
 }
 

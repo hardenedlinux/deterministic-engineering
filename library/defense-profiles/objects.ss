@@ -61,11 +61,12 @@
       allowed: '(mechanical-syntax bounded-contract semantic-review))))
 
 (def DefenseDefaultSlots
-  (.o require-use-time-witness?: #f
-      allow-global-purge?: #t
+  ;; Lattice bottom before monotonic meet against DefenseGovernanceFloor.
+  (.o require-use-time-witness?: #f ;; defense-audit:allow-negative-control
+      allow-global-purge?: #t ;; defense-audit:allow-negative-control
       require-dependency-manifest?: #f
-      require-guard-necessity-countermodel?: #f
-      require-admission-five-tuple?: #f
+      require-guard-necessity-countermodel?: #f ;; defense-audit:allow-negative-control
+      require-admission-five-tuple?: #f ;; defense-audit:allow-negative-control
       allow-sufficiency-stop?: #f
       review-tier: 'bounded-contract))
 

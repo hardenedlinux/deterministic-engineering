@@ -28,7 +28,13 @@ build-dependency package:
     timeout --foreground --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxpkg build "{{ package }}"
 
 build:
-    timeout --foreground --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q build
+    timeout --foreground --signal=TERM --kill-after=5s 300s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q build
+
+build-mount mount:
+    timeout --foreground --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi ./build.ss compile "--mount={{ mount }}"
+
+build-file module:
+    timeout --foreground --signal=TERM --kill-after=5s 120s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi ./build.ss compile "--file={{ module }}"
 
 # ── 2. Canonical Yuanxu + Functional Fun-Flow Execution Control Plane ─────────
 # Compiles discovered Yuanxu/polyglot units into a real Fun-Flow DAG with

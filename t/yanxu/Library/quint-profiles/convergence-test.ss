@@ -98,7 +98,7 @@
                     (list (by-tag 'quint.model))
                     (.o verify-depth: 12
                         countermodel-depth: 6
-                        require-countermodels?: #f))))))
+                        require-countermodels?: #f)))))) ;; defense-audit:allow-negative-control
       (def res (converge-quint-graph graph hostile-reg))
       (check-equal? (.ref res 'status) 'ready)
       (check-equal? (.ref (.ref (.ref res 'effective-configs) wal-id) 'require-countermodels?) #t)

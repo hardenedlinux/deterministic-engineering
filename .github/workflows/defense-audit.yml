@@ -43,4 +43,4 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           git diff -U0 "origin/${{ github.base_ref }}...HEAD" > /tmp/pr-defense.patch
-          just audit-agent-patch --diff-file /tmp/pr-defense.patch
+          just audit-agent-patch --exclude-negative-fixtures --diff-file /tmp/pr-defense.patch

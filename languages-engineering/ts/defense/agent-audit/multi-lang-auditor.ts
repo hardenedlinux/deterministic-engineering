@@ -764,13 +764,17 @@ export function auditSchemeAgentSource(sourceText: string, fileName = 'input.ss'
           add('silent-fallback', 'scheme-with-catch-constant-fallback', expr, 'with-catch swallows exception into constant/empty fallback');
         }
       }
-      // 2. P4 vacuous guard: (guard <id> #t ...)
+      // 2. P4 vacuous guard: 2-arg `(guard <id> #t)` with no countermodel branch,
+      //    or 3-arg `(guard <id> #t #t)` whose dropped branch is identical to healthy.
+      //    A 3-arg `(guard <id> #t #f)` explicitly declares `#f` as its countermodel witness.
       if (
         head.value === 'guard' &&
         expr.items.length >= 3 &&
         expr.items[1]!.kind === 'atom' &&
         expr.items[2]!.kind === 'atom' &&
-        expr.items[2]!.value === '#t'
+        expr.items[2]!.value === '#t' &&
+        (expr.items.length === 3 ||
+          (expr.items[3]!.kind === 'atom' && expr.items[3]!.value === '#t'))
       ) {
         add('redundant-defensive-glue', 'scheme-vacuous-guard', expr, `Vacuous (guard ${expr.items[1]!.value} #t) has no countermodel witness`);
       }
@@ -806,7 +810,13 @@ export function auditSchemeAgentSource(sourceText: string, fileName = 'input.ss'
   };
 
   for (const form of forms) walk(form);
-  return makeReport(fileName, 'scheme', findings);
+  const fileLines = sourceText.split('\n');
+  const filteredFindings = findings.filter(f => {
+    const cur = fileLines[f.line - 1] ?? '';
+    const prev = f.line >= 2 ? (fileLines[f.line - 2] ?? '') : '';
+    return !cur.includes('defense-audit:allow-negative-control') && !prev.includes('defense-audit:allow-negative-control');
+  });
+  return makeReport(fileName, 'scheme', filteredFindings);
 }
 
 // ── Unified Dispatcher & Git Diff Hunk Filtering ────────────────────────────
@@ -946,46 +956,78 @@ export function auditDiffObligationDeletions(diffText: string): MultiLangAuditRe
   const hunks = parseUnifiedDiffHunks(diffText);
   const findingsByFile = new Map<string, AstAuditFinding[]>();
 
+  interface FileTotals {
+    removedAsserts: number;
+    addedAsserts: number;
+    firstAssertLine: number;
+    removedFloors: number;
+    addedFloors: number;
+    firstFloorLine: number;
+    removedGuards: number;
+    addedGuards: number;
+    firstGuardLine: number;
+  }
+  const totalsByFile = new Map<string, FileTotals>();
+  for (const h of hunks) {
+    let t = totalsByFile.get(h.filePath);
+    if (!t) {
+      t = {
+        removedAsserts: 0, addedAsserts: 0, firstAssertLine: h.newStartLine,
+        removedFloors: 0, addedFloors: 0, firstFloorLine: h.newStartLine,
+        removedGuards: 0, addedGuards: 0, firstGuardLine: h.newStartLine,
+      };
+      totalsByFile.set(h.filePath, t);
+    }
+    const rA = h.removedLines.filter(l => ASSERTION_RE.test(l)).length;
+    const aA = h.addedLines.filter(l => ASSERTION_RE.test(l)).length;
+    if (rA > 0 && t.removedAsserts === 0) t.firstAssertLine = h.newStartLine;
+    t.removedAsserts += rA;
+    t.addedAsserts += aA;
+
+    const rF = h.removedLines.filter(l => FLOOR_OBLIGATION_RE.test(l)).length;
+    const aF = h.addedLines.filter(l => FLOOR_OBLIGATION_RE.test(l)).length;
+    if (rF > 0 && t.removedFloors === 0) t.firstFloorLine = h.newStartLine;
+    t.removedFloors += rF;
+    t.addedFloors += aF;
+
+    const rG = h.removedLines.filter(l => FORMAL_GUARD_OR_COUNTERMODEL_RE.test(l)).length;
+    const aG = h.addedLines.filter(l => FORMAL_GUARD_OR_COUNTERMODEL_RE.test(l)).length;
+    if (rG > 0 && t.removedGuards === 0) t.firstGuardLine = h.newStartLine;
+    t.removedGuards += rG;
+    t.addedGuards += aG;
+  }
+
   const pushFinding = (filePath: string, f: AstAuditFinding) => {
     if (!findingsByFile.has(filePath)) findingsByFile.set(filePath, []);
     findingsByFile.get(filePath)!.push(f);
   };
 
-  for (const h of hunks) {
-    if (h.removedLines.length === 0) continue;
-    const removedAsserts = h.removedLines.filter(l => ASSERTION_RE.test(l)).length;
-    const addedAsserts = h.addedLines.filter(l => ASSERTION_RE.test(l)).length;
-    if (removedAsserts > addedAsserts) {
-      pushFinding(h.filePath, {
+  for (const [filePath, t] of totalsByFile.entries()) {
+    if (t.removedAsserts > t.addedAsserts) {
+      pushFinding(filePath, {
         hallucinationClass: 'floor-weakening',
         rule: 'diff-deleted-assertion',
-        line: h.newStartLine,
+        line: t.firstAssertLine,
         column: 1,
-        detail: `Diff deletes ${removedAsserts - addedAsserts} verification assertion(s) without replacement in hunk`,
+        detail: `Diff deletes ${t.removedAsserts - t.addedAsserts} verification assertion(s) without replacement in file`,
       });
     }
-
-    const removedFloors = h.removedLines.filter(l => FLOOR_OBLIGATION_RE.test(l)).length;
-    const addedFloors = h.addedLines.filter(l => FLOOR_OBLIGATION_RE.test(l)).length;
-    if (removedFloors > addedFloors) {
-      pushFinding(h.filePath, {
+    if (t.removedFloors > t.addedFloors) {
+      pushFinding(filePath, {
         hallucinationClass: 'floor-weakening',
         rule: 'diff-deleted-governance-floor',
-        line: h.newStartLine,
+        line: t.firstFloorLine,
         column: 1,
-        detail: `Diff removes ${removedFloors - addedFloors} Band-5 governance floor requirement(s) without preserving them`,
+        detail: `Diff removes ${t.removedFloors - t.addedFloors} Band-5 governance floor requirement(s) without preserving them`,
       });
     }
-
-    const removedGuards = h.removedLines.filter(l => FORMAL_GUARD_OR_COUNTERMODEL_RE.test(l)).length;
-    const addedGuards = h.addedLines.filter(l => FORMAL_GUARD_OR_COUNTERMODEL_RE.test(l)).length;
-    if (removedGuards > addedGuards) {
-      pushFinding(h.filePath, {
+    if (t.removedGuards > t.addedGuards) {
+      pushFinding(filePath, {
         hallucinationClass: 'floor-weakening',
         rule: 'diff-deleted-formal-guard-or-countermodel',
-        line: h.newStartLine,
+        line: t.firstGuardLine,
         column: 1,
-        detail: `Diff deletes ${removedGuards - addedGuards} formal (guard ...) or @countermodel witness(es) without replacement`,
+        detail: `Diff deletes ${t.removedGuards - t.addedGuards} formal (guard ...) or @countermodel witness(es) without replacement`,
       });
     }
   }

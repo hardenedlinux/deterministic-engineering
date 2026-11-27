@@ -77,19 +77,19 @@ direction: down
 
 config: "SysML v2 Single Source of Truth (10.154-*.sysml)\n6 Zero-Glue Subjects (5 Eng + 1 Threat) | 15 Engines\nOpenSysML -validate -strict -> api-json"
 
-ascentGate: "ASCENT Governance (ascent-rules.ss)\nMR01-MR08 Pre-Flight (incl. Acyclicity) | ER01-ER04 Admission\nIR01-IR08 Reuse, Toolchain Drift, Ed25519 Trust/Revocation, Strict Premise & M3 TTL\nSelf-Verified in Lean 4 (34 Zero-Axiom Theorems in Core.MetaGovernance)"
+ascentGate: "ASCENT Governance (ascent-rules.ss)\nMR01-MR08 Pre-Flight | ER01-ER04 Admission\nIR01-IR08 Reuse, Toolchain Drift & Ed25519 Trust\nSelf-Verified in Lean 4 (Core.MetaGovernance)"
 
-funflow: "Fun-Flow Control Plane (library/verification-flow/)\nZero-I/O SysML->DAG Compiler + Conflict-Free Parallel Waves\nStatic Change-Impact Analyzer + TaskFamilyRegistry\nEmits yuanxu.core.flow-dag-runtime-manifest.v1"
+funflow: "Fun-Flow Control Plane (library/verification-flow/)\nZero-I/O SysML->DAG Compiler + Parallel Waves\nStatic Change-Impact + TaskFamilyRegistry\nEmits yuanxu.core.flow-dag-runtime-manifest.v1"
 
 quintModels: "packages/quint-models (Bun / Apalache / MBT)\nClaim: bounded-interleaving, fault-race, mbt-trace\nEngineering: ProcessTree | Backpressure | LeaseFencing\nThreat: DelegatedAgentAuthz + AuthorityCurrentness"
 
-leanModels: "packages/lean-models (Lake / LeanPoo 6-Core, 0 sorryAx)\nClaim: unbounded-invariant, refinement, proof-transport\nCore/{Conservation,Budget,Containment,Order,Transport,MetaGovernance}\nRefines -> 5 Engineering + 2 Threat Modules (CapabilityContainment, AuthorityCurrentness)"
+leanModels: "packages/lean-models (Lake / LeanPoo 6-Core, 0 sorryAx)\nClaim: unbounded-invariant, refinement, transport\nCore/{Conservation,Budget,Containment,Order,Transport}\nRefines -> Engineering + Threat LeanPoo Modules"
 
-rustSubjects: "languages-engineering/{rust,c} + Source Contracts\nClaim: source-memory-ub (CBMC 6.11), api-ban-lint (Clippy)\nProcessTreeGuard (Linux cgroup v2 pre_exec/kill, Darwin setsid, Online OS MBT)\nBackpressure Tokio/Rayon | C deterministic_boundary.c"
+rustSubjects: "languages-engineering/{rust,c} + Source Contracts\nClaim: source-memory-ub (CBMC), api-ban-lint (Clippy)\nProcessTreeGuard (cgroup v2, setsid, Online OS MBT)\nBackpressure Tokio/Rayon | C deterministic_boundary.c"
 
-runtimeAdapter: "Parallel Contained Ops Runner (verification-flow-runner.ss)\nConcurrent Gambit Green-Thread Waves + Native Gerbil SHA-256 + Memoization\nMixed-Key Ed25519 Fleet Rotation (JSON Trust Store v1) + 2-Level Merkle\nUltra-Lightweight Air-Gapped Verifier (offline-attestation-verifier.ss, Zero SysML/FunFlow)"
+runtimeAdapter: "Parallel Contained Ops Runner\n(verification-flow-runner.ss)\nGambit Green-Thread Waves + SHA-256 + Ed25519 Fleet\nAir-Gapped Verifier (offline-attestation-verifier.ss)"
 
-evidenceSession: "Unified ASCENT Evidence & Air-Gapped Attestation Closure\nZero-Dependency attestation.ss + --json / --verify-{report,fleet,cache} + lstat Containment\nCold 15/0 -> Warm 0/15 Verified Reuse | 11 Qualification Suites (18 Adversarial Controls)"
+evidenceSession: "Unified ASCENT Evidence & Air-Gapped Closure\nZero-Dep attestation.ss + Inline-PEM Trust Bundle\nCold 15/0 -> Warm 0/15 Reuse | 22 Adversarial Controls"
 
 config -> ascentGate
 config -> funflow

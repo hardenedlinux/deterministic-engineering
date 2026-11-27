@@ -47,7 +47,13 @@ fn spawn_grandchild(mode: &str, grandchild_pid_file: &str) -> std::process::Chil
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let mode = args.get(1).map(String::as_str).unwrap_or("");
+    let mode = match args.get(1) {
+        Some(arg) => arg.as_str(),
+        None => {
+            eprintln!("mock_tree: missing mode argument");
+            std::process::exit(2);
+        }
+    };
 
     match mode {
         "supervisor-graceful" => {

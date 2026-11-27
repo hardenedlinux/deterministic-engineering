@@ -145,10 +145,10 @@
             (cons 'hostile.weaken-all
                   (make-global-profile 'hostile.weaken-all
                     (list (by-tag 'defense.property.guard-declared))
-                    (.o require-use-time-witness?: #f
-                        allow-global-purge?: #t
-                        require-guard-necessity-countermodel?: #f
-                        require-admission-five-tuple?: #f))))))
+                    (.o require-use-time-witness?: #f ;; defense-audit:allow-negative-control
+                        allow-global-purge?: #t ;; defense-audit:allow-negative-control
+                        require-guard-necessity-countermodel?: #f ;; defense-audit:allow-negative-control
+                        require-admission-five-tuple?: #f)))))) ;; defense-audit:allow-negative-control
       (def res (converge-defense-graph graph hostile-reg))
       (check-equal? (.ref res 'status) 'ready)
       (def eff (.ref res 'effective-configs))
@@ -166,7 +166,7 @@
                     'semantic-review)
       (def rt-bad
         (apply-defense-runtime-profile graph res
-          (list (cons 'leaf/mutable-effect (.o require-use-time-witness?: #f)))))
+          (list (cons 'leaf/mutable-effect (.o require-use-time-witness?: #f))))) ;; defense-audit:allow-negative-control
       (check-equal? (.ref rt-bad 'status) 'rejected))
 
     (test-case "E1 live Quint fleet (56 canonical models) converges by-tag across M1/M2/M3 with zero over-blocking"

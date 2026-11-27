@@ -23,6 +23,14 @@ test('engineering overview preserves the original seven subjects and ten feedbac
 test('README workflow displays the actual sketch PNG and keeps vector SVG output',async()=>{
  const readme=await readFile(new URL('README.org',root),'utf8');const section=readme.split('* Engineering workflow')[1]!.split('\n* ')[0]!;
  expect(section).toContain('[[file:'+file.replace('.d2','.png')+']]');expect(section).not.toContain('[[file:'+file.replace('.d2','.svg')+']]');
- const png=await readFile(new URL(file.replace('.d2','.png'),root));expect(png.byteLength).toBeGreaterThan(0);
- const svg=await readFile(new URL(file.replace('.d2','.svg'),root),'utf8');expect(svg).toContain('data-vector-surface');expect(svg).not.toContain('foreignObject');
+ const png=await readFile(new URL(file.replace('.d2','.png'),root));
+ expect(png.byteLength).toBeGreaterThan(24);
+ expect(png.subarray(0,8).equals(Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]))).toBe(true);
+ const pngWidth=png.readUInt32BE(16),pngHeight=png.readUInt32BE(20);
+ expect(pngWidth).toBeGreaterThanOrEqual(400);
+ expect(pngHeight/pngWidth).toBeLessThan(1.6);
+ const svg=await readFile(new URL(file.replace('.d2','.svg'),root),'utf8');
+ expect(svg).toContain('<svg');
+ expect(svg).toContain('data-vector-surface');
+ expect(svg).not.toContain('foreignObject');
 });

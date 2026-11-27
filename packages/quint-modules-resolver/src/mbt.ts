@@ -152,8 +152,11 @@ function extractStepActionsWithImports(
       if (!targetMod) continue;
       const nested = extractStepActionsWithImports(targetMod, target.fullPath, stepName, visited);
       if (nested.length > 0) return nested;
-    } catch {
-      // Ignore unresolvable auxiliary imports while locating step action.
+    } catch (err) {
+      // Built-in / virtual Quint modules (e.g. basicSpells) have no local source file; continue searching other imports.
+      if (!(err instanceof Error && err.message.startsWith('Could not resolve Quint module'))) {
+        throw err;
+      }
     }
   }
   return [];

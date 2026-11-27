@@ -143,10 +143,10 @@ impl ProcessTreeGuard {
         // `cgroup.procs` (`O_CLOEXEC`) BEFORE `fork()` so `pre_exec` attaches with zero TOCTOU.
         let (cgroup_scope, cgroup_procs_fd) = match cgroup_root {
             Some(parent) => {
-                let nanos = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .map(|d| d.as_nanos())
-                    .unwrap_or(0);
+                let nanos = match SystemTime::now().duration_since(UNIX_EPOCH) {
+                    Ok(d) => d.as_nanos(),
+                    Err(e) => e.duration().as_nanos(),
+                };
                 let leaf_name = format!("ptree-{}-{nanos}", std::process::id());
                 let scope = match CgroupV2Scope::create_under(parent, &leaf_name) {
                     Ok(s) => s,

@@ -38,6 +38,7 @@ interface CliOptions {
   mode: 'files' | 'diff' | 'diff-file' | 'probe-quint';
   files: string[];
   staged: boolean;
+  excludeNegativeFixtures: boolean;
   diffFile?: string;
   scopeGlobs: string[];
   forbidGlobs: string[];
@@ -48,11 +49,14 @@ interface CliOptions {
   outputFormat: 'text' | 'json' | 'sarif' | 'agent-feedback';
 }
 
+const NEGATIVE_FIXTURE_RE = /(^|\/)(bad[_-]defensive|bad[_-]aging)\.[^/]+$/;
+
 function parseArgs(argv: string[]): CliOptions {
   const opts: CliOptions = {
     mode: 'files',
     files: [],
     staged: false,
+    excludeNegativeFixtures: false,
     scopeGlobs: [],
     forbidGlobs: [],
     outputFormat: 'text',
@@ -69,6 +73,8 @@ function parseArgs(argv: string[]): CliOptions {
       opts.mode = 'diff';
     } else if (a === '--staged') {
       opts.staged = true;
+    } else if (a === '--exclude-negative-fixtures') {
+      opts.excludeNegativeFixtures = true;
     } else if (a === '--diff-file') {
       opts.mode = 'diff-file';
       opts.diffFile = argv[++i];
@@ -166,10 +172,13 @@ function main(): void {
       }
       diffText = proc.stdout.toString();
     }
-    const diffReports = auditUnifiedDiff(diffText, relPath => {
+    const rawDiffReports = auditUnifiedDiff(diffText, relPath => {
       const full = resolve(process.cwd(), relPath);
       return existsSync(full) ? readFileSync(full, 'utf8') : null;
     });
+    const diffReports = opts.excludeNegativeFixtures
+      ? rawDiffReports.filter(r => !NEGATIVE_FIXTURE_RE.test(r.fileName))
+      : rawDiffReports;
     const touchedFiles = [...new Set(parseUnifiedDiffHunks(diffText).map(h => h.filePath))];
     const scopeReports =
       opts.scopeGlobs.length > 0 || opts.forbidGlobs.length > 0

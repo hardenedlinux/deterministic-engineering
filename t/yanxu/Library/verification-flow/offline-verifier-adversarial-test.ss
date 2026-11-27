@@ -109,7 +109,7 @@
   sha)
 
 (def (throws? thunk)
-  (with-catch (lambda (_) #t) (lambda () (thunk) #f)))
+  (with-catch (lambda (_) #t) (lambda () (thunk) #f))) ;; defense-audit:allow-negative-control
 
 (def verification-flow-offline-verifier-adversarial-test
   (test-suite "Adversarial cryptographic & boundary security controls for attestation.ss and offline-attestation-verifier.ss"
