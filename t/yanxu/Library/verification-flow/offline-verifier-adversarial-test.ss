@@ -998,4 +998,34 @@
         (check (and (string-contains ts-out "\"ok\":true") #t) => #t)
         (check (and (string-contains ts-out "\"minSignatures\":2") #t) => #t))
 
+      ;; Attacks 46-47: Separation of Duties Named-Approver Policy Pinning (`--require-signer`):
+      ;;   46: 2-of-2 cosigned envelope passes requiring BOTH `kid1` & `kid2`, rejects missing 3rd authority!
+      ;;   47: Requiring revoked `kid1` under `tp-exported` FAILS even when `kid2` is valid!
+      (check-equal? (verify-dsse-statement-offline dsse-cosigned tp-inline
+                      min-signatures: 2
+                      required-signers: (list kid1 kid2)) #t)
+      (check-equal? (verify-dsse-statement-offline dsse-cosigned tp-inline
+                      min-signatures: 2
+                      required-signers: (list kid1 "deadbeef00000000")) #f)
+      (check-equal? (verify-dsse-statement-offline dsse-cosigned tp-exported
+                      min-signatures: 1
+                      required-signers: (list kid1)) #f)
+      (let* ((ts-cmd (string-append
+                       "cd \"" repo-root "\" && bun t/harness/offline-attestation-verifier.ts "
+                       "--json --verify-dsse-statement --min-signatures 2 "
+                       "--require-signer \"" kid1 "\" --require-signer \"" kid2 "\" "
+                       "\"" dsse-cosigned "\" \"" ts-inline-path "\""))
+             (proc (open-process
+                     (list path: "/bin/bash"
+                           arguments: (list "-euo" "pipefail" "-c" ts-cmd)
+                           stdin-redirection: #f
+                           stdout-redirection: #t
+                           stderr-redirection: #t)))
+             (ts-out (read-all-as-string proc))
+             (ts-st (process-status proc)))
+        (close-port proc)
+        (check-equal? ts-st 0)
+        (check (and (string-contains ts-out "\"ok\":true") #t) => #t)
+        (check (and (string-contains ts-out "\"requiredSigners\"") #t) => #t))
+
       (run-process (list "rm" "-rf" work)))))

@@ -1108,4 +1108,33 @@ theorem dsseQuorum_monotonic_under_fresh_cosigner {Key : Type}
    ⟨hFresh, hQ.2.1⟩,
    Nat.succ_le_succ hQ.2.2⟩
 
+/-! ## 19. Separation of Duties: Named-Approver Policy Pinning (`--require-signer`) -/
+
+/-- Constructive zero-axiom Separation-of-Duties predicate: requires BOTH M-of-N distinct
+threshold quorum (`DsseQuorumSatisfied`) AND presence of every auditor-mandated named signer
+keyId in `distinctVerifiedKeys` (preventing same-role keys from bypassing distinct authorities). -/
+def DsseSeparationOfDutiesSatisfied {Key : Type}
+    (distinctVerifiedKeys requiredSigners : List Key) (requiredQuorum : Nat) : Prop :=
+  DsseQuorumSatisfied distinctVerifiedKeys requiredQuorum ∧
+  allRequiredKeysPresent distinctVerifiedKeys requiredSigners
+
+/-- Constructive zero-axiom proof: omitting ANY required named approver keyId invalidates
+the DSSE envelope even when the M-of-N threshold quorum count is met by other active keys. -/
+theorem dsseSoD_rejects_missing_required_signer {Key : Type}
+    (distinctVerifiedKeys requiredSigners : List Key) (requiredQuorum : Nat) {req : Key}
+    (hReq : containsKey req requiredSigners)
+    (hAbsent : ¬ containsKey req distinctVerifiedKeys) :
+    ¬ DsseSeparationOfDutiesSatisfied distinctVerifiedKeys requiredSigners requiredQuorum := by
+  intro hSoD
+  exact missingRequiredKey_contradicts_allPresent distinctVerifiedKeys req hAbsent requiredSigners hReq hSoD.2
+
+/-- Constructive zero-axiom proof: even when all named signers are present, failing to reach
+`requiredQuorum` distinct verified keys still rejects the DSSE envelope. -/
+theorem dsseSoD_rejects_below_threshold {Key : Type}
+    (distinctVerifiedKeys requiredSigners : List Key) (requiredQuorum : Nat)
+    (hBelow : distinctVerifiedKeys.length < requiredQuorum) :
+    ¬ DsseSeparationOfDutiesSatisfied distinctVerifiedKeys requiredSigners requiredQuorum := by
+  intro hSoD
+  exact dsseQuorum_rejects_below_threshold distinctVerifiedKeys requiredQuorum hBelow hSoD.1
+
 end DeterministicEngineering.Core.MetaGovernance

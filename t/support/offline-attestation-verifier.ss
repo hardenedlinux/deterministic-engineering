@@ -669,7 +669,8 @@
        expected-sysml-sha256: (expected-sysml-sha256 #f)
        expected-subject-count: (expected-subject-count #f)
        required-subjects: (required-subjects '())
-       min-signatures: (min-signatures 1))
+       min-signatures: (min-signatures 1)
+       required-signers: (required-signers '()))
   (and (file-exists? dsse-path)
        (exact-integer? min-signatures)
        (>= min-signatures 1)
@@ -705,6 +706,7 @@
                                  (set! verified-kids (cons kid verified-kids))))))
                          sigs)
                        (and (>= (length verified-kids) min-signatures)
+                            (andmap (lambda (req) (and (member req verified-kids) #t)) required-signers)
                             (let ((stmt (with-catch (lambda (_) #f)
                                           (lambda () (call-with-input-string payload-str
                                                        (cut read-json <> object-as-hash: #t))))))
@@ -749,12 +751,14 @@
        expected-sysml-sha256: (expected-sysml-sha256 #f)
        expected-subject-count: (expected-subject-count #f)
        required-subjects: (required-subjects '())
-       min-signatures: (min-signatures 1))
+       min-signatures: (min-signatures 1)
+       required-signers: (required-signers '()))
   (and (inspect-dsse-statement-verified dsse-path trust-pair
          expected-sysml-sha256: expected-sysml-sha256
          expected-subject-count: expected-subject-count
          required-subjects: required-subjects
-         min-signatures: min-signatures)
+         min-signatures: min-signatures
+         required-signers: required-signers)
        #t))
 
 ;; Air-gapped offline DSSE v1 counter-signer (`--cosign-dsse-statement`):
@@ -844,50 +848,55 @@
 
 (def (extract-global-cli-flags args)
   (let loop ((xs args) (json? #f) (max-age #f) (now-ep #f) (max-skew 60)
-             (exp-sysml #f) (exp-cnt #f) (req-subs '()) (emit-stmt #f) (min-sigs 1) (pos '()))
+             (exp-sysml #f) (exp-cnt #f) (req-subs '()) (emit-stmt #f) (min-sigs 1) (req-signers '()) (pos '()))
     (cond
      ((null? xs)
-      (values json? max-age now-ep max-skew exp-sysml exp-cnt (reverse req-subs) emit-stmt min-sigs (reverse pos)))
+      (values json? max-age now-ep max-skew exp-sysml exp-cnt (reverse req-subs) emit-stmt min-sigs (reverse req-signers) (reverse pos)))
      ((equal? (car xs) "--json")
-      (loop (cdr xs) #t max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs pos))
+      (loop (cdr xs) #t max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers pos))
      ((equal? (car xs) "--max-age-seconds")
       (unless (pair? (cdr xs)) (error "--max-age-seconds requires an integer argument"))
-      (loop (cddr xs) json? (parse-nonneg-int-flag "--max-age-seconds" (cadr xs)) now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs pos))
+      (loop (cddr xs) json? (parse-nonneg-int-flag "--max-age-seconds" (cadr xs)) now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers pos))
      ((equal? (car xs) "--now-epoch")
       (unless (pair? (cdr xs)) (error "--now-epoch requires an integer argument"))
-      (loop (cddr xs) json? max-age (parse-nonneg-int-flag "--now-epoch" (cadr xs)) max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs pos))
+      (loop (cddr xs) json? max-age (parse-nonneg-int-flag "--now-epoch" (cadr xs)) max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers pos))
      ((equal? (car xs) "--max-future-skew-seconds")
       (unless (pair? (cdr xs)) (error "--max-future-skew-seconds requires an integer argument"))
-      (loop (cddr xs) json? max-age now-ep (parse-nonneg-int-flag "--max-future-skew-seconds" (cadr xs)) exp-sysml exp-cnt req-subs emit-stmt min-sigs pos))
+      (loop (cddr xs) json? max-age now-ep (parse-nonneg-int-flag "--max-future-skew-seconds" (cadr xs)) exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers pos))
      ((equal? (car xs) "--expected-sysml-sha256")
       (unless (and (pair? (cdr xs)) (string? (cadr xs)) (> (string-length (cadr xs)) 0))
         (error "--expected-sysml-sha256 requires a non-empty digest argument"))
-      (loop (cddr xs) json? max-age now-ep max-skew (cadr xs) exp-cnt req-subs emit-stmt min-sigs pos))
+      (loop (cddr xs) json? max-age now-ep max-skew (cadr xs) exp-cnt req-subs emit-stmt min-sigs req-signers pos))
      ((equal? (car xs) "--expected-subject-count")
       (unless (pair? (cdr xs)) (error "--expected-subject-count requires an integer argument"))
       (let ((n (parse-nonneg-int-flag "--expected-subject-count" (cadr xs))))
         (unless (>= n 1) (error "--expected-subject-count must be >= 1" n))
-        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml n req-subs emit-stmt min-sigs pos)))
+        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml n req-subs emit-stmt min-sigs req-signers pos)))
      ((equal? (car xs) "--require-subject")
       (unless (and (pair? (cdr xs)) (string? (cadr xs)) (> (string-length (cadr xs)) 0))
         (error "--require-subject requires a non-empty subjectKey argument"))
       (let ((next-req (if (member (cadr xs) req-subs) req-subs (cons (cadr xs) req-subs))))
-        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt next-req emit-stmt min-sigs pos)))
+        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt next-req emit-stmt min-sigs req-signers pos)))
      ((equal? (car xs) "--emit-statement")
       (unless (and (pair? (cdr xs)) (string? (cadr xs)) (> (string-length (cadr xs)) 0))
         (error "--emit-statement requires a non-empty output file path"))
-      (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs (cadr xs) min-sigs pos))
+      (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs (cadr xs) min-sigs req-signers pos))
      ((equal? (car xs) "--min-signatures")
       (unless (pair? (cdr xs)) (error "--min-signatures requires an integer argument"))
       (let ((n (parse-nonneg-int-flag "--min-signatures" (cadr xs))))
         (unless (>= n 1) (error "--min-signatures must be >= 1" n))
-        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt n pos)))
+        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt n req-signers pos)))
+     ((equal? (car xs) "--require-signer")
+      (unless (and (pair? (cdr xs)) (string? (cadr xs)) (> (string-length (cadr xs)) 0))
+        (error "--require-signer requires a non-empty keyId argument"))
+      (let ((next-signers (if (member (cadr xs) req-signers) req-signers (cons (cadr xs) req-signers))))
+        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs next-signers pos)))
      (else
-      (loop (cdr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs (cons (car xs) pos))))))
+      (loop (cdr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers (cons (car xs) pos))))))
 
 (def (main . args)
   (let-values (((json-mode? max-age-sec now-ep max-skew-sec expected-sysml-sha
-                 expected-sub-cnt req-subs emit-stmt-path min-sigs clean-args)
+                 expected-sub-cnt req-subs emit-stmt-path min-sigs req-signers clean-args)
                 (extract-global-cli-flags args)))
   (when (null? clean-args)
     (error "usage: [--json] --verify-report|--verify-fleet|--verify-fleet-bundle|--verify-cache [--max-age-seconds N] [--now-epoch T] <artifact.json> <trust-store.json> | [--json] --verify-trust-store <trust-store.json> | [--json] --export-trust-bundle <out.json> [--revoke <keyId>]... <pub1.pem>... | [--json] --pack-fleet-bundle <fleet-report.json> <out-bundle.json>"
@@ -1100,7 +1109,8 @@
                            expected-sysml-sha256: expected-sysml-sha
                            expected-subject-count: expected-sub-cnt
                            required-subjects: req-subs
-                           min-signatures: min-sigs)))
+                           min-signatures: min-sigs
+                           required-signers: req-signers)))
             (if summary
               (if json-mode?
                 (emit-json-result! #t "verify-dsse-statement" target-path store-path
@@ -1110,6 +1120,7 @@
                     (if expected-sub-cnt (list (cons "expectedSubjectCount" expected-sub-cnt)) '())
                     (if (pair? req-subs) (list (cons "requiredSubjects" (sort-by req-subs string<?))) '())
                     (if (> min-sigs 1) (list (cons "minSignatures" min-sigs)) '())
+                    (if (pair? req-signers) (list (cons "requiredSigners" (sort-by req-signers string<?))) '())
                     (list (cons "fleetId" (hash-get summary "fleetId"))
                           (cons "sysmlSha256" (hash-get summary "sysmlSha256"))
                           (cons "fleetPayloadSha256" (hash-get summary "fleetPayloadSha256"))

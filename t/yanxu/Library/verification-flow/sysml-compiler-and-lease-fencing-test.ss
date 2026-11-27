@@ -45,7 +45,7 @@
 
 (def verification-flow-sysml-compiler-and-lease-fencing-test
   (test-suite "Zero-glue SysML v2 -> Fun-Flow DAG compiler and 3rd subject lease-fencing-token"
-    (yuanxu-test-case/with MultiSubjectCompileBudget "live SysML v2 compiles all 8 subjects (19 engines) into valid Fun-Flow DAGs and manifests with zero Scheme glue"
+    (yuanxu-test-case/with MultiSubjectCompileBudget "live SysML v2 compiles all 9 subjects (21 engines) into valid Fun-Flow DAGs and manifests with zero Scheme glue"
       (def sysml-path
         (path-expand
           "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml"
@@ -53,7 +53,7 @@
       (def json-text (run-process (list "sysml" "-convert" "api-json" sysml-path)))
       (def parsed (call-with-input-string json-text (cut read-json <> object-as-hash: #t)))
       (def projected (sysml-api-json->governance-facts parsed))
-      (check-equal? (length (.get projected subject-specs)) 8)
+      (check-equal? (length (.get projected subject-specs)) 9)
       (for-each
         (lambda (spec-expect)
           (def skey (car spec-expect))
@@ -78,8 +78,17 @@
           (meta-governance-soundness 1)
           (delegated-agent-authz 2)
           (stepup-attestation-and-host-effect-confinement 2)
-          (sandbox-symlink-archive-confinement 2)))
-      ;; Verify static change-impact slicing isolates ONLY the 7th & 8th Threat subjects cleanly!
+          (sandbox-symlink-archive-confinement 2)
+          (runtime-env-activation-and-context-confinement 2)))
+      ;; Verify static change-impact slicing isolates ONLY the 7th, 8th & 9th Threat subjects cleanly!
+      (let* ((impact3
+              (changed-files->affected-frontier
+                projected
+                '("packages/quint-models/threat/execution/runtime-env-activation-and-context-confinement/RuntimeEnvActivationAndContextConfinement.qnt")))
+             (affected3 (filter (lambda (s) (pair? (.get s affected-steps))) impact3)))
+        (check-equal? (map (lambda (s) (.get s subject-key)) affected3)
+                      '(runtime-env-activation-and-context-confinement))
+        (check-equal? (.get (car affected3) affected-steps) '("sm34QuintTarget")))
       (let* ((impact
               (changed-files->affected-frontier
                 projected

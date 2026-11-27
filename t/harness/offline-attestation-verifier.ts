@@ -415,6 +415,7 @@ export interface FleetVerifyOptions {
   expectedSubjectCount?: number;
   requiredSubjects?: ReadonlyArray<string>;
   minSignatures?: number;
+  requiredSigners?: ReadonlyArray<string>;
 }
 
 function normalizeFleetOpts(
@@ -950,6 +951,11 @@ export function inspectDsseStatementVerified(
     }
   }
   if (verifiedKeyIds.length < minSignatures) return null;
+  if (opts.requiredSigners !== undefined) {
+    for (const reqSigner of opts.requiredSigners) {
+      if (!verifiedKeyIds.includes(reqSigner)) return null;
+    }
+  }
 
   let stmt: unknown;
   try {
@@ -1172,6 +1178,7 @@ export function runCli(argv: string[]): number {
   const requiredSubjects: string[] = [];
   let emitStatementPath: string | undefined;
   let minSignatures: number | undefined;
+  const requiredSigners: string[] = [];
   const cleanArgs: string[] = [];
   try {
     for (let i = 0; i < argv.length; i += 1) {
@@ -1217,6 +1224,13 @@ export function runCli(argv: string[]): number {
         const n = parseNonNegIntFlag('--min-signatures', argv[i + 1]);
         if (n < 1) throw new Error('--min-signatures must be >= 1');
         minSignatures = n;
+        i += 1;
+      } else if (a === '--require-signer') {
+        const val = argv[i + 1];
+        if (typeof val !== 'string' || val.length === 0) {
+          throw new Error('--require-signer requires a non-empty keyId argument');
+        }
+        if (!requiredSigners.includes(val)) requiredSigners.push(val);
         i += 1;
       } else {
         cleanArgs.push(a);
@@ -1456,6 +1470,7 @@ export function runCli(argv: string[]): number {
     expectedSubjectCount,
     requiredSubjects: requiredSubjects.length > 0 ? requiredSubjects : undefined,
     minSignatures,
+    requiredSigners: requiredSigners.length > 0 ? requiredSigners : undefined,
   };
   const fleetJsonExtra = (): Record<string, unknown> => {
     const extra: Record<string, unknown> = {};
@@ -1463,6 +1478,7 @@ export function runCli(argv: string[]): number {
     if (expectedSubjectCount !== undefined) extra.expectedSubjectCount = expectedSubjectCount;
     if (requiredSubjects.length > 0) extra.requiredSubjects = [...requiredSubjects].sort(codePointCompare);
     if (minSignatures !== undefined && minSignatures > 1) extra.minSignatures = minSignatures;
+    if (requiredSigners.length > 0) extra.requiredSigners = [...requiredSigners].sort(codePointCompare);
     return extra;
   };
 

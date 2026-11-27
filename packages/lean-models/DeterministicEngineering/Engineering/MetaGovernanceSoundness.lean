@@ -286,6 +286,17 @@ theorem dsseQuorumAttestation_enforces_threshold_distinctness_and_cosign_monoton
    fun k hDup => dsseQuorum_rejects_duplicate_key_padding k keys q hDup,
    fun newKey hFresh hQ => dsseQuorum_monotonic_under_fresh_cosigner newKey keys q hFresh hQ⟩
 
+/-- Instantiated Separation-of-Duties named-approver contract (`--require-signer` +
+`--min-signatures`, 65th zero-axiom meta-theorem!): proves with zero axioms that omitting any
+required named approver OR falling below quorum threshold is unconditionally rejected. -/
+theorem dsseSeparationOfDuties_enforces_named_approvers_and_quorum {Key : Type}
+    (keys requiredSigners : List Key) (q : Nat) :
+    (∀ req, containsKey req requiredSigners → ¬ containsKey req keys →
+      ¬ DsseSeparationOfDutiesSatisfied keys requiredSigners q) ∧
+    (keys.length < q → ¬ DsseSeparationOfDutiesSatisfied keys requiredSigners q) :=
+  ⟨fun _ hReq hAbs => dsseSoD_rejects_missing_required_signer keys requiredSigners q hReq hAbs,
+   fun hBelow => dsseSoD_rejects_below_threshold keys requiredSigners q hBelow⟩
+
 /-! ## One-Line Proof Transport via `Core.Transport` -/
 
 inductive MetaProofKey where

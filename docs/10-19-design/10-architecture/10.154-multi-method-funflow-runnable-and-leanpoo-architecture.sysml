@@ -652,6 +652,37 @@ package MultiMethodFunFlowArchitecture {
                 attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Conservation.lean,packages/lean-models/DeterministicEngineering/Core/Containment.lean,packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean";
             }
         }
+
+        // Ninth Zero-Glue Subject (Fourth Threat-Domain Subject: SM34 ADV-L4 Runtime Environment Activation & Governed Context Confinement)
+        part runtimeEnvActivationContextConfinement {
+            attribute subjectKey : String = "runtime-env-activation-and-context-confinement";
+            attribute identity : String = "threat.execution.runtime-env-activation-and-context-confinement";
+            attribute tags : String = "threat,execution,runtime-env-context,defense.mutability.immutable-proof,hazard.direnv-symlink-rollback-prompt-spoof";
+            attribute factors : String = "runtime-env-activation-and-context-confinement";
+
+            part sm34QuintTarget {
+                attribute modelId : String = "threat.execution.runtime-env-activation-and-context-confinement";
+                attribute quintFile : String = "packages/quint-models/threat/execution/runtime-env-activation-and-context-confinement/RuntimeEnvActivationAndContextConfinement.qnt";
+                attribute quintMain : String = "execution_runtime_env_activation_and_context_confinement";
+                attribute itfSubdir : String = "runtime-env-activation-and-context-confinement";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "forbid-direnv-loader-hijack,forbid-envrc-org-symlink-escape,forbid-org-channel-rollback,forbid-two-zone-prefix-or-task-spoof";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/execution/runtime-env-activation-and-context-confinement/RuntimeEnvActivationAndContextConfinement.qnt,packages/quint-models/threat/execution/runtime-env-activation-and-context-confinement/objects.ss,packages/quint-models/threat/execution/runtime-env-activation-and-context-confinement/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part sm34LeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.RuntimeEnvActivationAndContextConfinement";
+                attribute refinesCore : String = "DeterministicEngineering.Engineering.SandboxSymlinkArchiveConfinement";
+                attribute transportContract : String = "ObjectContract.refine+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Engineering.RuntimeEnvActivationAndContextConfinement.sm34_direnv_export_fail_closed,DeterministicEngineering.Engineering.RuntimeEnvActivationAndContextConfinement.sm34_confined_path_refuses_traversal_escape_and_symlink,DeterministicEngineering.Engineering.RuntimeEnvActivationAndContextConfinement.sm34_snapshot_rollback_and_active_lease_swap_refused,DeterministicEngineering.Engineering.RuntimeEnvActivationAndContextConfinement.sm34_two_zone_recomputed_digest_and_task_binding,DeterministicEngineering.Engineering.RuntimeEnvActivationAndContextConfinement.sm34_strict_admission_eliminates_all_exploits,DeterministicEngineering.Engineering.RuntimeEnvActivationAndContextConfinement.sm34_gentle_pressure_rejected,DeterministicEngineering.Engineering.RuntimeEnvActivationAndContextConfinement.sm34_defective_configs_expose_live_exploits,DeterministicEngineering.Engineering.RuntimeEnvActivationAndContextConfinement.sm34_marlin_contract_refinement_laws,DeterministicEngineering.Engineering.RuntimeEnvActivationAndContextConfinement.sm34_baseline_certified,DeterministicEngineering.Engineering.RuntimeEnvActivationAndContextConfinement.sm34_obligation_untouched_by_byte_cap_tuning,DeterministicEngineering.Engineering.RuntimeEnvActivationAndContextConfinement.sm34_byte_cap_tuning_reuses_and_closes_certificate,DeterministicEngineering.Engineering.RuntimeEnvActivationAndContextConfinement.sm34_regressions_invalidate_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean,packages/lean-models/DeterministicEngineering/Engineering/RuntimeEnvActivationAndContextConfinement.lean";
+            }
+        }
     }
 
     // ── 12. Architectural, Cross-Method, and Requirement Dependencies ──
@@ -700,6 +731,9 @@ package MultiMethodFunFlowArchitecture {
     dependency 'sm22-lean-source' from system::sandboxSymlinkArchiveConfinement::sm22LeanPooTarget to system::leanModels;
     dependency 'sm22-lean-refines-conservation' from system::sandboxSymlinkArchiveConfinement::sm22LeanPooTarget to system::leanModels::core::conservation;
     dependency 'sm22-lean-refines-containment' from system::sandboxSymlinkArchiveConfinement::sm22LeanPooTarget to system::leanModels::core::containment;
+
+    dependency 'sm34-quint-source' from system::runtimeEnvActivationContextConfinement::sm34QuintTarget to system::quintModels;
+    dependency 'sm34-lean-source' from system::runtimeEnvActivationContextConfinement::sm34LeanPooTarget to system::leanModels;
 
     // Cross-method edges enforced by MR03 & MR04 (zero model duplication)
     dependency 'pt-mbt-itf-edge' from system::processTreeReclamation::rustOracleTarget::traceIn to system::processTreeReclamation::quintTarget::traceOut;

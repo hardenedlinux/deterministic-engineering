@@ -1325,5 +1325,59 @@ describe('Zero-Dependency TS/Bun Offline Attestation Verifier (25 Controls + Ger
     ]);
     expect(resQuorumFail.exitCode).not.toBe(0);
     expect(JSON.parse(resQuorumFail.stdout.trim()).ok).toBe(false);
+
+    // Controls 46-47: Separation of Duties Named-Approver Policy Pinning (`--require-signer <keyId>`):
+    //   46: 2-of-2 cosigned envelope passes `--min-signatures 2 --require-signer <k1> --require-signer <k2>`,
+    //       while requiring an absent 3rd authority `--require-signer deadbeef00000000` FAILS even with 2 sigs!
+    //   47: Requiring a REVOKED signer (`--require-signer <k1>` under `tpExported`) FAILS even though
+    //       K1's signature is cryptographically valid and K2 is active!
+    expect(
+      verifyDsseStatementOffline(cosignedOut, tpInlineAll, {
+        minSignatures: 2,
+        requiredSigners: [k1.kid, k2.kid],
+      }),
+    ).toBe(true);
+    expect(
+      verifyDsseStatementOffline(cosignedOut, tpInlineAll, {
+        minSignatures: 2,
+        requiredSigners: [k1.kid, 'deadbeef00000000'],
+      }),
+    ).toBe(false);
+    expect(
+      verifyDsseStatementOffline(cosignedOut, tpExported, {
+        minSignatures: 1,
+        requiredSigners: [k1.kid],
+      }),
+    ).toBe(false);
+
+    const resSoDOk = runTsCli([
+      '--json',
+      '--verify-dsse-statement',
+      '--min-signatures',
+      '2',
+      '--require-signer',
+      k2.kid,
+      '--require-signer',
+      k1.kid,
+      cosignedOut,
+      tsInlineAll,
+    ]);
+    expect(resSoDOk.exitCode).toBe(0);
+    const docSoDOk = JSON.parse(resSoDOk.stdout.trim());
+    expect(docSoDOk.ok).toBe(true);
+    expect(docSoDOk.requiredSigners).toEqual([k1.kid, k2.kid].sort());
+
+    const resSoDFailRevoked = runTsCli([
+      '--json',
+      '--verify-dsse-statement',
+      '--require-signer',
+      k1.kid,
+      cosignedOut,
+      exportedBundle,
+    ]);
+    expect(resSoDFailRevoked.exitCode).not.toBe(0);
+    const docSoDFail = JSON.parse(resSoDFailRevoked.stdout.trim());
+    expect(docSoDFail.ok).toBe(false);
+    expect(docSoDFail.verifiedKeyIds).toBeUndefined();
   });
 });

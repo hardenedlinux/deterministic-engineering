@@ -251,4 +251,5 @@
       (check (and (member '("engineering.concurrency.lease-fencing-token") admitted-subjs) #t) => #t)
       (check (and (member '("engineering.defense.c-boundary-conservation") admitted-subjs) #t) => #t)
       (check (and (member '("engineering.governance.meta-governance-soundness") admitted-subjs) #t) => #t)
-      (check-equal? (length (.get projected subject-specs)) 6))))
+      (check (and (member '("threat.execution.runtime-env-activation-and-context-confinement") admitted-subjs) #t) => #t)
+      (check-equal? (length (.get projected subject-specs)) 9))))

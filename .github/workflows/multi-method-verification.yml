@@ -148,7 +148,7 @@ jobs:
         run: just check-lean --cache=.data/ci-cache/lean
 
   airgapped-offline-verifier-adversarial:
-    name: Zero-Dep Portable Offline Attestation Verifier (45 Adversarial, DSSE v1 & M-of-N Quorum Controls)
+    name: Zero-Dep Portable Offline Attestation Verifier (47 Adversarial, DSSE v1, Quorum & SoD Controls)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -157,5 +157,5 @@ jobs:
       - uses: ./.github/actions/setup-bun-cached
         with:
           install: 'false'
-      - name: Run 45-control adversarial, Gerbil<->TS golden-vector, DSSE v1 & M-of-N quorum gate
+      - name: Run 47-control adversarial, Gerbil<->TS golden-vector, DSSE v1, quorum & SoD gate
         run: just check-offline-verifier
