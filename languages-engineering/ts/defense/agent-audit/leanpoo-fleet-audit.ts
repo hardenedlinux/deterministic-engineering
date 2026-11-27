@@ -83,6 +83,7 @@ export const EXPECTED_QUINT_DEFENSE_MODELS = [
   'geo-residency-sovereignty',
   'hitl-durable-approval',
   'key-rotation-crypto-shredding',
+  'model-weight-inference-attestation',
   'partial-order-delivery',
   'policy-admission-sufficiency',
   'post-quantum-crypto-agility',
@@ -169,7 +170,9 @@ export function auditFourParadigmCrossConsistency(params?: {
       ascentSrc.includes('geo_residency_violation') &&
       ascentSrc.includes('geo_cross_border_violation') &&
       ascentSrc.includes('fed_reciprocity_violation') &&
-      ascentSrc.includes('fed_dispute_freeze_violation');
+      ascentSrc.includes('fed_dispute_freeze_violation') &&
+      ascentSrc.includes('model_weight_violation') &&
+      ascentSrc.includes('model_adapter_violation');
   }
   const ascentVerdict: EpistemicVerdict = ascentRulesPresent ? 'Proven' : 'Refuted';
 

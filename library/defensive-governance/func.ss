@@ -728,7 +728,11 @@
     fed_ratified_treaty
     fed_revoked_org
     fed_dispute_freeze
-    release_fed_reciprocity)
+    release_fed_reciprocity
+    model_pinned_weight
+    model_approved_adapter
+    model_revoked_id
+    release_model_inference)
   (outputs
     effectively_revoked
     belief_poisoned
@@ -758,6 +762,8 @@
     geo_cross_border_violation
     fed_reciprocity_violation
     fed_dispute_freeze_violation
+    model_weight_violation
+    model_adapter_violation
     release_disqualified
     release_admitted)
   (relation delegation_edge ((parent string?) (child string?)))
@@ -816,8 +822,12 @@
   (relation fed_revoked_org ((org_id string?)))
   (relation fed_dispute_freeze ((treaty_id string?)))
   (relation release_fed_reciprocity ((rel_id string?) (treaty_id string?) (origin_org string?) (target_org string?) (bilateral_ok string?)))
+  (relation model_pinned_weight ((model_id string?) (weight_root string?)))
+  (relation model_approved_adapter ((adapter_digest string?)))
+  (relation model_revoked_id ((model_id string?)))
+  (relation release_model_inference ((rel_id string?) (model_id string?) (obs_weight_root string?) (adapter_digest string?) (det_sampling_ok string?)))
 
-  ;; Internal stratified helper relations for pure relational identity, cross-log finality, slashing, B11 MCP pinning, B13 wait-graph reachability, B14 artifact equality & B15 release identity:
+  ;; Internal stratified helper relations for pure relational identity, cross-log finality, slashing, B11 MCP pinning, B13 wait-graph reachability, B14 artifact equality, B15 release identity & B21 adapter allowlist:
   (relation same_root ((r1 string?) (r2 string?)))
   (relation same_witness ((w1 string?) (w2 string?)))
   (relation valid_witness_cosign ((witness string?) (log_id string?) (size string?) (root string?)))
@@ -829,6 +839,7 @@
   (relation same_release ((r1 string?) (r2 string?)))
   (relation same_region ((r1 string?) (r2 string?)))
   (relation valid_geo_permit ((rel_id string?) (src_region string?) (dst_region string?)))
+  (relation model_adapter_ok ((adapter_digest string?)))
 
   (relation effectively_revoked ((principal string?)))
   (relation belief_poisoned ((belief_id string?)))
@@ -858,6 +869,8 @@
   (relation geo_cross_border_violation ((rel_id string?) (src_region string?) (dst_region string?) (reason string?)))
   (relation fed_reciprocity_violation ((rel_id string?) (detail string?) (reason string?)))
   (relation fed_dispute_freeze_violation ((rel_id string?) (treaty_id string?)))
+  (relation model_weight_violation ((rel_id string?) (detail string?) (reason string?)))
+  (relation model_adapter_violation ((rel_id string?) (adapter_digest string?)))
   (relation release_disqualified ((rel_id string?) (reason string?)))
   (relation release_admitted ((rel_id string?)))
 
@@ -1177,7 +1190,30 @@
    (release_fed_reciprocity Rel Treaty _ _ _)
    (fed_dispute_freeze Treaty))
 
-  ;; 6. Cross-pillar B1/B3/B5/B6/B8/B9/B10/B10c/B11/B12/B13/B14/B15/B16/B17/B18/B19/B20 release disqualification & clean admission:
+  ;; 5m. B21 Deterministic Model-Weight Pinning, LoRA Adapter Allowlist & Reproducible Inference:
+  ((model_adapter_ok (lit "none"))
+   <--
+   (release_model_inference _ _ _ (lit "none") _))
+  ((model_adapter_ok Adapter)
+   <--
+   (model_approved_adapter Adapter))
+  ((model_weight_violation Rel Obs (lit "unpinned-base-weight"))
+   <--
+   (release_model_inference Rel Model Obs _ _)
+   (not (model_pinned_weight Model Obs)))
+  ((model_weight_violation Rel Model (lit "revoked-model-id"))
+   <--
+   (release_model_inference Rel Model _ _ _)
+   (model_revoked_id Model))
+  ((model_weight_violation Rel Model (lit "non-deterministic-sampling"))
+   <--
+   (release_model_inference Rel Model _ _ (lit "no")))
+  ((model_adapter_violation Rel Adapter)
+   <--
+   (release_model_inference Rel _ _ Adapter _)
+   (not (model_adapter_ok Adapter)))
+
+  ;; 6. Cross-pillar B1/B3/B5/B6/B8/B9/B10/B10c/B11/B12/B13/B14/B15/B16/B17/B18/B19/B20/B21 release disqualification & clean admission:
   ((release_finality_satisfied Rel Ckpt)
    <--
    (release_proposal Rel _ _ Log)
@@ -1286,6 +1322,14 @@
    <--
    (release_proposal Rel _ _ _)
    (fed_dispute_freeze_violation Rel _))
+  ((release_disqualified Rel (lit "model-weight-or-sampling-violation"))
+   <--
+   (release_proposal Rel _ _ _)
+   (model_weight_violation Rel _ _))
+  ((release_disqualified Rel (lit "unauthorized-lora-adapter"))
+   <--
+   (release_proposal Rel _ _ _)
+   (model_adapter_violation Rel _))
   ((release_admitted Rel)
    <--
    (release_proposal Rel _ _ _)

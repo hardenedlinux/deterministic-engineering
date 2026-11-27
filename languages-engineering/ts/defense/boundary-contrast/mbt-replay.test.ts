@@ -2425,6 +2425,77 @@ class BadUnilateralFedSUT extends FederatedOrgReciprocitySUT {
   }
 }
 
+class ModelWeightInferenceAttestationSUT {
+  weightRootPinned = false;
+  adaptersAllowlisted = false;
+  samplingDeterministic = false;
+  modelRevoked = false;
+  admittedInferences = 0;
+  unpinnedWeightViolations = 0;
+  stealthLoraViolations = 0;
+  nondetSamplingViolations = 0;
+
+  apply(action: string): void {
+    switch (action) {
+      case 'pinWeightRoot':
+        if (!this.weightRootPinned) this.weightRootPinned = true;
+        break;
+      case 'verifyAdapterAllowlist':
+        if (!this.adaptersAllowlisted) this.adaptersAllowlisted = true;
+        break;
+      case 'lockDeterministicSampling':
+        if (!this.samplingDeterministic) this.samplingDeterministic = true;
+        break;
+      case 'revokeModel':
+        if (!this.modelRevoked) this.modelRevoked = true;
+        break;
+      case 'admitInference':
+        if (
+          this.admittedInferences < 2 &&
+          this.weightRootPinned &&
+          this.adaptersAllowlisted &&
+          this.samplingDeterministic &&
+          !this.modelRevoked
+        ) {
+          this.admittedInferences += 1;
+        }
+        break;
+      default:
+        throw new Error(`Unknown ModelWeightInferenceAttestation action: ${action}`);
+    }
+  }
+
+  snapshot() {
+    return {
+      weightRootPinned: this.weightRootPinned,
+      adaptersAllowlisted: this.adaptersAllowlisted,
+      samplingDeterministic: this.samplingDeterministic,
+      modelRevoked: this.modelRevoked,
+      admittedInferences: this.admittedInferences,
+      unpinnedWeightViolations: this.unpinnedWeightViolations,
+      stealthLoraViolations: this.stealthLoraViolations,
+      nondetSamplingViolations: this.nondetSamplingViolations,
+    };
+  }
+}
+
+class BadUnpinnedWeightSUT extends ModelWeightInferenceAttestationSUT {
+  override apply(action: string): void {
+    if (action === 'admitInference' && this.admittedInferences < 2) {
+      // Anti-pattern: drops weight-root-pinned, adapters-allowlisted, and deterministic-nonrevoked guards!
+      const wtOk = this.weightRootPinned;
+      const adOk = this.adaptersAllowlisted;
+      const detOk = this.samplingDeterministic && !this.modelRevoked;
+      this.admittedInferences += 1;
+      if (!wtOk) this.unpinnedWeightViolations += 1;
+      if (!adOk) this.stealthLoraViolations += 1;
+      if (!detOk) this.nondetSamplingViolations += 1;
+      return;
+    }
+    super.apply(action);
+  }
+}
+
 const repoRoot = resolve(import.meta.dir, '../../../..');
 
 function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(): Record<string, unknown>}>(
@@ -2477,7 +2548,7 @@ function replayModelAgainstSut<T extends {apply(action: string): void; snapshot(
   }
 }
 
-describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (29 Defense Models)', () => {
+describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (30 Defense Models)', () => {
   test('EpistemicStateLattice ITF actions drive EpistemicLatticeSUT with exact step-by-step state isomorphism', () => {
     const stats = replayModelAgainstSut(
       'packages/quint-models/engineering/defense/epistemic-state-lattice/EpistemicStateLattice.qnt',
@@ -3109,6 +3180,27 @@ describe('E2.1 Action-Driven MBT SUT State-Machine Refinement (29 Defense Models
       () => new FederatedOrgReciprocitySUT(),
       projectH,
       () => new BadUnilateralFedSUT(),
+    );
+    expect(stats.transitions).toBeGreaterThan(50);
+    expect(stats.brokenDiverged).toBe(true);
+  }, 30_000);
+
+  test('ModelWeightInferenceAttestation ITF actions drive ModelWeightInferenceAttestationSUT with exact state isomorphism and reject BadUnpinnedWeightSUT', () => {
+    const projectH = (h: Record<string, unknown>) => ({
+      weightRootPinned: Boolean(h.weightRootPinned),
+      adaptersAllowlisted: Boolean(h.adaptersAllowlisted),
+      samplingDeterministic: Boolean(h.samplingDeterministic),
+      modelRevoked: Boolean(h.modelRevoked),
+      admittedInferences: asInt(h.admittedInferences),
+      unpinnedWeightViolations: asInt(h.unpinnedWeightViolations),
+      stealthLoraViolations: asInt(h.stealthLoraViolations),
+      nondetSamplingViolations: asInt(h.nondetSamplingViolations),
+    });
+    const stats = replayModelAgainstSut(
+      'packages/quint-models/engineering/defense/model-weight-inference-attestation/ModelWeightInferenceAttestation.qnt',
+      () => new ModelWeightInferenceAttestationSUT(),
+      projectH,
+      () => new BadUnpinnedWeightSUT(),
     );
     expect(stats.transitions).toBeGreaterThan(50);
     expect(stats.brokenDiverged).toBe(true);

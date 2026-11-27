@@ -93,6 +93,10 @@ export interface MetaAuditFactBundle {
   fed_revoked_org: Array<[string]>;
   fed_dispute_freeze: Array<[string]>;
   release_fed_reciprocity: Array<[string, string, string, string, string]>;
+  model_pinned_weight: Array<[string, string]>;
+  model_approved_adapter: Array<[string]>;
+  model_revoked_id: Array<[string]>;
+  release_model_inference: Array<[string, string, string, string, string]>;
 }
 
 export interface AscentMetaAuditOutput {
@@ -124,6 +128,8 @@ export interface AscentMetaAuditOutput {
   geo_cross_border_violation: string[][];
   fed_reciprocity_violation: string[][];
   fed_dispute_freeze_violation: string[][];
+  model_weight_violation: string[][];
+  model_adapter_violation: string[][];
   release_disqualified: string[][];
   release_admitted: string[][];
 }
@@ -293,6 +299,19 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
     originOrgId: string;
     targetOrgId: string;
     bilateralOk: boolean;
+  }>;
+  modelPinnedWeights?: ReadonlyArray<{
+    modelId: string;
+    weightRoot: string;
+  }>;
+  modelApprovedAdapters?: readonly string[];
+  modelRevokedIds?: readonly string[];
+  releaseModelInferences?: ReadonlyArray<{
+    releaseId: string;
+    modelId: string;
+    observedWeightRoot: string;
+    adapterDigest: string;
+    deterministicSamplingOk: boolean;
   }>;
   releaseProposals: ReadonlyArray<{
     releaseId: string;
@@ -561,6 +580,21 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
     f.targetOrgId,
     f.bilateralOk ? 'yes' : 'no',
   ]);
+  const model_pinned_weight: Array<[string, string]> = (params.modelPinnedWeights ?? []).map(m => [
+    m.modelId,
+    m.weightRoot,
+  ]);
+  const model_approved_adapter: Array<[string]> = (params.modelApprovedAdapters ?? []).map(a => [a]);
+  const model_revoked_id: Array<[string]> = (params.modelRevokedIds ?? []).map(id => [id]);
+  const release_model_inference: Array<[string, string, string, string, string]> = (
+    params.releaseModelInferences ?? []
+  ).map(inf => [
+    inf.releaseId,
+    inf.modelId,
+    inf.observedWeightRoot,
+    inf.adapterDigest,
+    inf.deterministicSamplingOk ? 'yes' : 'no',
+  ]);
 
   const bundle: MetaAuditFactBundle = {
     delegation_edge: dedupeTuples(delegation_edge),
@@ -619,6 +653,10 @@ export function extractMetaAuditBundleFromLiveObjects(params: {
     fed_revoked_org: dedupeTuples(fed_revoked_org),
     fed_dispute_freeze: dedupeTuples(fed_dispute_freeze),
     release_fed_reciprocity: dedupeTuples(release_fed_reciprocity),
+    model_pinned_weight: dedupeTuples(model_pinned_weight),
+    model_approved_adapter: dedupeTuples(model_approved_adapter),
+    model_revoked_id: dedupeTuples(model_revoked_id),
+    release_model_inference: dedupeTuples(release_model_inference),
   };
 
   const factBundleMerkleHash = params.kv.putBlob('ascent-meta-audit-fact-bundle', bundle, []);
@@ -686,6 +724,8 @@ export function parseFramedAscentOutput(rawStdout: string): AscentOracleRunVerdi
     'geo_cross_border_violation',
     'fed_reciprocity_violation',
     'fed_dispute_freeze_violation',
+    'model_weight_violation',
+    'model_adapter_violation',
     'release_disqualified',
     'release_admitted',
   ];
@@ -768,6 +808,7 @@ export function runLiveGerbilAscentMetaAudit(
                zk_disclosure_violation zk_nullifier_replay_violation
                geo_residency_violation geo_cross_border_violation
                fed_reciprocity_violation fed_dispute_freeze_violation
+               model_weight_violation model_adapter_violation
                release_disqualified release_admitted)))
   (display "${BEGIN_MARKER}\\n{")
   (let loop ((ks keys) (first #t))

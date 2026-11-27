@@ -1,0 +1,53 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 10.203 B21 Four-Paradigm Symmetry Closure: 30th Quint/Apalache Model, 30/30 MBT SUTs & 60x32 B1-B21 ASCENT (AG281-AG285)
+#+AUTHOR: Deterministic Engineering
+#+DATE: 2026-11-27
+
+* Executive Summary
+:PROPERTIES:
+:CUSTOM_ID: arch10203-summary
+:STATUS: executed-verified
+:END:
+
+Phase 54 closes complete **four-paradigm verification symmetry for =B21= (Deterministic
+Model-Weight Pinning & Reproducible Inference Attestation)** and reaches the **30-Quint-model
+milestone** — closing all **21 business pillars (=B1=–=B21=)** symmetrically across Quint/Apalache,
+Model-Based Testing, Gerbil Scheme ASCENT Datalog, and Pure =LeanPoo=:
+
+1. **30th Formal Defense Quint/Apalache Model (=model-weight-inference-attestation=)**:
+   - [[file:../../../packages/quint-models/engineering/defense/model-weight-inference-attestation/ModelWeightInferenceAttestation.qnt][ModelWeightInferenceAttestation.qnt]] & [[file:../../../packages/quint-models/engineering/defense/model-weight-inference-attestation/README.org][README.org]]:
+     Apalache bounded safety (=max-steps=10=) + 3 countermodels (=max-steps=6=,
+     =require-weight-root-pinned=, =require-adapters-allowlisted=,
+     =require-deterministic-nonrevoked=), 3/3 =F3= =guard-probe= =essential=.
+2. **30/30 Action-Driven MBT SUT Refinement**:
+   - [[file:../../../languages-engineering/ts/defense/boundary-contrast/mbt-replay.test.ts][mbt-replay.test.ts]]: adds =ModelWeightInferenceAttestationSUT= (100% action coverage,
+     exact step-by-step state isomorphism) and negative control =BadUnpinnedWeightSUT=
+     (diverging immediately on dropped guards).
+3. **=60 × 32= Gerbil Scheme ASCENT Datalog Meta-Audit (=B1=–=B21=)**:
+   - [[file:../../../library/defensive-governance/func.ss][func.ss]], [[file:../../../t/yanxu/Library/defensive-governance/governance-ascent-test.ss][governance-ascent-test.ss]], and [[file:../../../languages-engineering/ts/defense/agent-audit/ascent-meta-audit-bridge.ts][ascent-meta-audit-bridge.ts]]: adds 4 =B21=
+     source relations (=model_pinned_weight=, =model_approved_adapter=, =model_revoked_id=,
+     =release_model_inference=), internal =model_adapter_ok= (admitting zero-adapter ="none"=
+     and allowlisted LoRA), and 2 output relations (=model_weight_violation=,
+     =model_adapter_violation=).
+4. **30-Quint × 60×32 ASCENT × 20-Module / 216-Theorem CLI Gate & 285-Case Benchmark**:
+   - [[file:../../../languages-engineering/ts/defense/agent-audit/leanpoo-fleet-audit.ts][leanpoo-fleet-audit.ts]] upgrades =EXPECTED_QUINT_DEFENSE_MODELS= to **30** and enforces
+     =B21= ASCENT rules.
+   - [[file:../../../languages-engineering/ts/defense/agent-audit/b21-four-paradigm-symmetry.test.ts][b21-four-paradigm-symmetry.test.ts]] (=AG281=–=AG285=) verifies live =60 × 32= ASCENT
+     violation derivation, N-Version override of buggy TS coordinators, standalone 30-Quint ×
+     216-theorem CLI JSON gate, and air-gapped =cedar-poo-spec= dual-sovereign admission.
+
+* Verification Receipts
+:PROPERTIES:
+:CUSTOM_ID: arch10203-receipts
+:STATUS: executed-verified
+:END:
+
+- Apalache Plan Verification: =run-plan ModelWeightInferenceAttestation.qnt --verify= -> **6/6 =PLAN-OK=** (safety + 3 countermodels + 4 unit runs).
+- Automated =F3= Guard Necessity (=guard-probe=): **3/3 =essential=** (=h.weightRootPinned=, =h.adaptersAllowlisted=, =(h.samplingDeterministic and not(h.modelRevoked))=).
+- Live Gerbil Scheme ASCENT (=60 × 32=): =gerbil build && governance-ascent-test.ss= -> **all checks pass**.
+- Action-Driven MBT SUT (=30/30=): =mbt-replay.test.ts= -> **30/30 pass / 0 fail**.
+- Bun Test Suite (=AG281=–=AG285= + Phase 53 regression): **all pass / 0 fail**; =G2= static audit -> **0 findings**.
+- Standalone 30-Quint × 216-Theorem CLI Gate: =just audit-leanpoo-fleet --json= -> =verdict: "Proven", quintModelCount: 30, ascentRulesPresent: true, moduleCount: 20, verifiedTheoremCount: 216, zeroMathlib: true, zeroCedar: true=.
+- Benchmark: [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05]] extended to **285 cases (=AG01=–=AG285=)**.

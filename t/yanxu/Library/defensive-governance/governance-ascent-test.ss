@@ -253,7 +253,9 @@
                                     ("rel-geo-escape" "clean-coder" "human-approver" "log-honest")
                                     ("rel-geo-nopermit" "clean-coder" "human-approver" "log-honest")
                                     ("rel-fed-spoof" "clean-coder" "human-approver" "log-honest")
-                                    ("rel-fed-frozen" "clean-coder" "human-approver" "log-honest")))
+                                    ("rel-fed-frozen" "clean-coder" "human-approver" "log-honest")
+                                    ("rel-mod-bad" "clean-coder" "human-approver" "log-honest")
+                                    ("rel-lora-stealth" "clean-coder" "human-approver" "log-honest")))
           (cons 'release_uses_belief '(("rel-clean" "b-clean")
                                        ("rel-clean" "b-oracle-safe")
                                        ("rel-poison-chain" "b-leaf")))
@@ -383,7 +385,17 @@
           (cons 'fed_dispute_freeze '(("treaty-frozen")))
           (cons 'release_fed_reciprocity '(("rel-clean" "treaty-ab" "org-a" "org-b" "yes")
                                            ("rel-fed-spoof" "treaty-unrat" "org-revoked" "org-revoked" "no")
-                                           ("rel-fed-frozen" "treaty-frozen" "org-a" "org-b" "yes")))))
+                                           ("rel-fed-frozen" "treaty-frozen" "org-a" "org-b" "yes")))
+          ;; B21: model-v54 pinned to wroot-v54, lora-safe approved, model-revoked revoked;
+          ;;      rel-clean uses pinned base model (zero-adapter "none") with deterministic sampling;
+          ;;      rel-mod-bad hits unpinned weight, revoked model & non-det sampling;
+          ;;      rel-lora-stealth attaches unapproved trojan LoRA adapter!
+          (cons 'model_pinned_weight '(("model-v54" "wroot-v54") ("model-revoked" "wroot-old")))
+          (cons 'model_approved_adapter '(("lora-safe")))
+          (cons 'model_revoked_id '(("model-revoked")))
+          (cons 'release_model_inference '(("rel-clean" "model-v54" "wroot-v54" "none" "yes")
+                                           ("rel-mod-bad" "model-revoked" "wroot-tampered" "none" "no")
+                                           ("rel-lora-stealth" "model-v54" "wroot-v54" "lora-trojan" "yes")))))
 
       (def mres (reason-durable-governance-meta-audit m-facts))
       (def revoked (rows mres 'effectively_revoked))
@@ -413,6 +425,8 @@
       (def geo-xb-v (rows mres 'geo_cross_border_violation))
       (def fed-rec-v (rows mres 'fed_reciprocity_violation))
       (def fed-frz-v (rows mres 'fed_dispute_freeze_violation))
+      (def mod-wt-v (rows mres 'model_weight_violation))
+      (def mod-ad-v (rows mres 'model_adapter_violation))
       (def disq (rows mres 'release_disqualified))
       (def admitted (rows mres 'release_admitted))
 
@@ -514,4 +528,11 @@
       (check-equal? (and (member '("rel-fed-spoof" "treaty-unrat" "unilateral-countersignature") fed-rec-v) #t) #t)
       (check-equal? (and (member '("rel-fed-frozen" "treaty-frozen") fed-frz-v) #t) #t)
       (check-equal? (and (member '("rel-fed-spoof" "federated-reciprocity-violation") disq) #t) #t)
-      (check-equal? (and (member '("rel-fed-frozen" "federated-dispute-freeze") disq) #t) #t))))
+      (check-equal? (and (member '("rel-fed-frozen" "federated-dispute-freeze") disq) #t) #t)
+      ;; 15. B21 deterministic model-weight pinning, LoRA allowlist & reproducible inference:
+      (check-equal? (and (member '("rel-mod-bad" "wroot-tampered" "unpinned-base-weight") mod-wt-v) #t) #t)
+      (check-equal? (and (member '("rel-mod-bad" "model-revoked" "revoked-model-id") mod-wt-v) #t) #t)
+      (check-equal? (and (member '("rel-mod-bad" "model-revoked" "non-deterministic-sampling") mod-wt-v) #t) #t)
+      (check-equal? (and (member '("rel-lora-stealth" "lora-trojan") mod-ad-v) #t) #t)
+      (check-equal? (and (member '("rel-mod-bad" "model-weight-or-sampling-violation") disq) #t) #t)
+      (check-equal? (and (member '("rel-lora-stealth" "unauthorized-lora-adapter") disq) #t) #t))))
