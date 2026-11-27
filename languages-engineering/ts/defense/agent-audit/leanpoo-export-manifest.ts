@@ -66,7 +66,10 @@ export const LEANPOO_KEY_ROTATION_FACADE_MODULE =
 export const LEANPOO_PQ_AGILITY_FACADE_MODULE =
   'DeterministicEngineering.Engineering.PostQuantumCryptoAgility';
 
-export const LEANPOO_TOP_FACADE_MODULE = LEANPOO_PQ_AGILITY_FACADE_MODULE;
+export const LEANPOO_ZK_DISCLOSURE_FACADE_MODULE =
+  'DeterministicEngineering.Engineering.ZeroKnowledgeSelectiveDisclosure';
+
+export const LEANPOO_TOP_FACADE_MODULE = LEANPOO_ZK_DISCLOSURE_FACADE_MODULE;
 
 export const LEANPOO_LIBRARY_EXPORT_MANIFEST: readonly LeanPooExportModuleSpec[] = [
   {
@@ -357,6 +360,23 @@ export const LEANPOO_LIBRARY_EXPORT_MANIFEST: readonly LeanPooExportModuleSpec[]
       'disablingPqHybridFloor_invalidates_reuse',
     ],
   },
+  {
+    moduleName: LEANPOO_ZK_DISCLOSURE_FACADE_MODULE,
+    relativeLeanPath: 'DeterministicEngineering/Engineering/ZeroKnowledgeSelectiveDisclosure.lean',
+    pillars: ['B18', 'ZkSelectiveDisclosure', 'PrivacyCompliance'],
+    theorems: [
+      'commitment_mismatch_always_refused',
+      'over_disclosure_of_secret_field_refused',
+      'sigma_proof_failure_blocks_zk_disclosure',
+      'replayed_nullifier_always_refused',
+      'stale_verifier_nonce_or_policy_refused',
+      'missing_required_predicate_field_refused',
+      'zk_selective_disclosure_sound_and_complete',
+      'zkDisclosureContract_preserves_rejection',
+      'proofBatchSizeTuning_preserves_certificate',
+      'disablingOverDisclosureFence_invalidates_reuse',
+    ],
+  },
 ];
 
 export const LEANPOO_EXPECTED_MODULE_COUNT = LEANPOO_LIBRARY_EXPORT_MANIFEST.length;
@@ -500,8 +520,10 @@ export function verifyLeanPooLibraryFleet(params?: {
   }
 
   const facadeToImport = manifest.some(
-    m => m.moduleName === LEANPOO_PQ_AGILITY_FACADE_MODULE,
+    m => m.moduleName === LEANPOO_ZK_DISCLOSURE_FACADE_MODULE,
   )
+    ? LEANPOO_ZK_DISCLOSURE_FACADE_MODULE
+    : manifest.some(m => m.moduleName === LEANPOO_PQ_AGILITY_FACADE_MODULE)
     ? LEANPOO_PQ_AGILITY_FACADE_MODULE
     : manifest.some(m => m.moduleName === LEANPOO_KEY_ROTATION_FACADE_MODULE)
       ? LEANPOO_KEY_ROTATION_FACADE_MODULE

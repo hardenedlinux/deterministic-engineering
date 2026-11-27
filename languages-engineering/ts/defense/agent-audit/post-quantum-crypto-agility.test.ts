@@ -58,9 +58,9 @@ const PQ_THEOREMS = LEANPOO_LIBRARY_EXPORT_MANIFEST.find(
 describe('Phase 45 — B17 Post-Quantum Hybrid Cryptographic Agility & Anti-Downgrade + 16-Module / 176-Theorem LeanPoo Library (10.193 / 30.05 AG236-AG240)', () => {
   test('AG236: Live Lean 4 / LeanPoo verifies all 10 PostQuantumCryptoAgility theorems + single-shot 176/176-theorem 16-module fleet attestation', () => {
     expect(PQ_THEOREMS.length).toBe(10);
-    expect(LEANPOO_EXPECTED_MODULE_COUNT).toBe(16);
-    expect(LEANPOO_EXPECTED_THEOREM_COUNT).toBe(176);
-    expect(LEANPOO_TOP_FACADE_MODULE).toBe(LEANPOO_PQ_AGILITY_FACADE_MODULE);
+    expect(LEANPOO_EXPECTED_MODULE_COUNT).toBeGreaterThanOrEqual(16);
+    expect(LEANPOO_EXPECTED_THEOREM_COUNT).toBeGreaterThanOrEqual(176);
+    expect(LEANPOO_LIBRARY_EXPORT_MANIFEST.some(m => m.moduleName === LEANPOO_PQ_AGILITY_FACADE_MODULE)).toBe(true);
 
     const kv = new ContentAddressedKvStore();
     if (!isLeanToolchainAvailable()) {
@@ -88,8 +88,8 @@ describe('Phase 45 — B17 Post-Quantum Hybrid Cryptographic Agility & Anti-Down
     const fleet = verifyLeanPooLibraryFleet({kv});
     expect(fleet.kind).toBe('Proven');
     if (fleet.kind !== 'Proven') throw new Error('expected Proven');
-    expect(fleet.moduleCount).toBe(16);
-    expect(fleet.verifiedTheoremCount).toBe(176);
+    expect(fleet.moduleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);
+    expect(fleet.verifiedTheoremCount).toBe(LEANPOO_EXPECTED_THEOREM_COUNT);
 
     kv.gcUnreferenced();
     expect(kv.hasBlob(modRes.pinnedCertificateHash!)).toBe(true);
@@ -257,12 +257,12 @@ describe('Phase 45 — B17 Post-Quantum Hybrid Cryptographic Agility & Anti-Down
         zeroCedar: boolean;
       };
       expect(out.verdict).toBe('Proven');
-      expect(out.facadeModule).toBe(LEANPOO_PQ_AGILITY_FACADE_MODULE);
+      expect(out.facadeModule).toBe(LEANPOO_TOP_FACADE_MODULE);
       expect(out.quintModelCount).toBe(EXPECTED_QUINT_DEFENSE_MODELS.length);
       expect(out.ascentRulesPresent).toBe(true);
       expect(out.multiLangHarnessCount).toBe(8);
-      expect(out.moduleCount).toBe(16);
-      expect(out.verifiedTheoremCount).toBe(176);
+      expect(out.moduleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);
+      expect(out.verifiedTheoremCount).toBe(LEANPOO_EXPECTED_THEOREM_COUNT);
       expect(out.zeroMathlib).toBe(true);
       expect(out.zeroCedar).toBe(true);
     }
@@ -272,8 +272,8 @@ describe('Phase 45 — B17 Post-Quantum Hybrid Cryptographic Agility & Anti-Down
           const rep = auditFourParadigmCrossConsistency({kv});
           expect(rep.verdict).toBe('Proven');
           expect(rep.quintModelCount).toBe(EXPECTED_QUINT_DEFENSE_MODELS.length);
-          expect(rep.leanPooModuleCount).toBe(16);
-          expect(rep.leanPooTheoremCount).toBe(176);
+          expect(rep.leanPooModuleCount).toBe(LEANPOO_EXPECTED_MODULE_COUNT);
+          expect(rep.leanPooTheoremCount).toBe(LEANPOO_EXPECTED_THEOREM_COUNT);
           return rep.releaseAttestationDigest;
         })()
       : sha256Digest({milestone: 240, quint: 25, modules: 16, theorems: 176});
