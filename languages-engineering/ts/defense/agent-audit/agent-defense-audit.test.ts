@@ -444,4 +444,102 @@ void sync_state() {
     expect(badReport.findings.some(f => f.rule === 'rust-unwrap-or-constant')).toBe(true);
     expect(badReport.findings.some(f => f.rule === 'rust-err-log-and-swallow')).toBe(true);
   });
+
+  test('Native Go & upgraded Scheme G2 auditors (10.209, calibrated on 251 Go + 240 Scheme real Marlin files)', () => {
+    // 1. Go negative control covering all 4 G2 hallucination classes:
+    const badGo = `
+package auth
+import ("fmt"; "log"; "testing")
+//nolint:errcheck
+func DeleteSecret(path string) error {
+  err := removeBlob(path)
+  if err != nil {
+    return nil
+  }
+  if err2 := syncDisk(path); err2 != nil {
+    log.Printf("sync failed: %v", err2)
+  }
+  defer func() { recover() }()
+  return nil
+}
+func WrapRecover() {
+  defer func() {
+    if r := recover(); r != nil { panic(r) }
+  }()
+}
+func VerifyReceipt(raw []byte) bool {
+  return true
+}
+func TestGate(t *testing.T) {
+  t.Skip("flaky")
+}
+`;
+    const badGoRep = auditSourceByPath(badGo, 'auth/keychain_bad.go')!;
+    expect(badGoRep.language).toBe('go');
+    expect(badGoRep.passed).toBe(false);
+    expect(badGoRep.findings.some(f => f.rule === 'go-if-err-return-nil')).toBe(true);
+    expect(badGoRep.findings.some(f => f.rule === 'go-if-err-log-and-swallow')).toBe(true);
+    expect(badGoRep.findings.some(f => f.rule === 'go-recover-swallow')).toBe(true);
+    expect(badGoRep.findings.some(f => f.rule === 'go-noop-recover-repanic')).toBe(true);
+    expect(badGoRep.findings.some(f => f.rule === 'go-stub-verify-returns-true')).toBe(true);
+    expect(badGoRep.findings.some(f => f.rule === 'go-test-skip')).toBe(true);
+    expect(badGoRep.findings.some(f => f.rule === 'go-nolint-errcheck')).toBe(true);
+
+    // 2. Clean idiomatic Go (propagated err, narrow os.ErrNotExist, CLI os.Exit(1)) => 0 findings:
+    const cleanGo = `
+package auth
+import ("errors"; "fmt"; "os")
+func DeleteSecret(path string) error {
+  if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+    return fmt.Errorf("delete secret %s: %w", path, err)
+  }
+  return nil
+}
+func main() {
+  if err := DeleteSecret("/tmp/x"); err != nil {
+    fmt.Fprintf(os.Stderr, "fatal: %v\\n", err)
+    os.Exit(1)
+  }
+}
+`;
+    const cleanGoRep = auditSourceByPath(cleanGo, 'auth/keychain_clean.go')!;
+    expect(cleanGoRep.passed).toBe(true);
+    expect(cleanGoRep.findings).toEqual([]);
+
+    // 3. Upgraded Gerbil Scheme: catches (try ... (catch (_) '())) & (with-catch (lambda (e) (displayln e) 0) ...)
+    const badScheme = `
+(def (bad-try thunk)
+  (try (thunk) (catch (_) '())))
+(def (bad-log-swallow thunk)
+  (with-catch (lambda (e) (displayln e) 0) thunk))
+`;
+    const badSchemeRep = auditSourceByPath(badScheme, 'bad_gerbil.ss')!;
+    expect(badSchemeRep.passed).toBe(false);
+    expect(badSchemeRep.findings.some(f => f.rule === 'scheme-try-catch-constant-fallback')).toBe(true);
+    expect(badSchemeRep.findings.some(f => f.rule === 'scheme-with-catch-log-and-swallow')).toBe(true);
+
+    // 4. Clean Gerbil Scheme (cleanup + re-raise) => 0 findings:
+    const cleanScheme = `
+(def (safe-read input)
+  (with-catch (lambda (failure) (close-input-port input) (raise failure))
+    (lambda () (read input))))
+`;
+    const cleanSchemeRep = auditSourceByPath(cleanScheme, 'clean_gerbil.ss')!;
+    expect(cleanSchemeRep.passed).toBe(true);
+    expect(cleanSchemeRep.findings).toEqual([]);
+
+    // 5. E3 diff-delta catches deleted Go test assertions (t.Fatalf / require.NoError):
+    const deletedGoAssertDiff = [
+      'diff --git a/control/auth/keychain_test.go b/control/auth/keychain_test.go',
+      '--- a/control/auth/keychain_test.go',
+      '+++ b/control/auth/keychain_test.go',
+      '@@ -12,2 +12,0 @@',
+      '-  t.Fatalf("expected error on corrupt secret")',
+      '-  require.NoError(t, err)',
+    ].join('\n');
+    const goDiffRep = auditDiffObligationDeletions(deletedGoAssertDiff);
+    expect(goDiffRep.length).toBe(1);
+    expect(goDiffRep[0]!.language).toBe('go');
+    expect(goDiffRep[0]!.findings.some(f => f.rule === 'diff-deleted-assertion')).toBe(true);
+  });
 });

@@ -38,7 +38,7 @@ const CLASS_DIRECTIVES: Record<HallucinationClass, RemediationDirective> = {
     antiPatternId: 'c1.silent-fallback-on-defect',
     taxonomyRef: 'docs/10-19-design/10-architecture/10.153-defensive-engineering-taxonomy-and-modular-organization.org#de153-taxonomy',
     c2Replacement:
-      'Return a typed epistemic boundary result separating SetupDefect, PendingMethod, PendingScope, Conflict, Refuted, and Proven (TS discriminated union / C de_boundary_status_t / C++ std::variant / Rust Epistemic<T> / Scheme POO verdict).',
+      'Return a typed epistemic boundary result separating SetupDefect, PendingMethod, PendingScope, Conflict, Refuted, and Proven (TS discriminated union / C de_boundary_status_t / C++ std::variant / Rust Epistemic<T> / Go typed error+status / Scheme POO verdict).',
     requiredFiveTuple: FIVE_TUPLE,
     antiEvasionWarning:
       'Do NOT evade by adding console.error/std::cerr/eprintln before returning null/0/[]/Ok(())/default. The failure state must remain visible in the return type.',

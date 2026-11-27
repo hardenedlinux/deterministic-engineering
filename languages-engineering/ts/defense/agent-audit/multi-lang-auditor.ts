@@ -4,11 +4,12 @@
 /**
  * E3.3: Multi-Language Structural AST & Unified-Diff AI Agent Defensive Auditor.
  *
- * Covers 5 languages used in this repository with zero external parser dependencies
- * and exact 1-based line/column locations:
+ * Covers 6 languages used across this repository and consuming production repos
+ * with zero external parser dependencies and exact 1-based line/column locations:
  *   - TypeScript / JavaScript (.ts, .tsx, .js, .mjs) -> delegates to ts-ast-auditor.ts
  *   - C / C++ (.c, .h, .cc, .cpp, .hpp)             -> balanced C-family lexer & block auditor
  *   - Rust (.rs)                                     -> nested-comment Rust lexer & structural auditor
+ *   - Go (.go)                                       -> Go lexer (incl. raw backtick strings) & err/recover/stub auditor
  *   - Gerbil / Gambit Scheme (.ss, .scm)             -> S-expression datum parser mirroring library/defensive-governance/func.ss
  *
  * Also parses unified git diffs so AI Agent PRs/patches are audited strictly on
@@ -23,7 +24,7 @@ import {
   type TsAgentAuditReport,
 } from './ts-ast-auditor.ts';
 
-export type SupportedAuditLanguage = 'typescript' | 'c-cpp' | 'rust' | 'scheme';
+export type SupportedAuditLanguage = 'typescript' | 'c-cpp' | 'rust' | 'go' | 'scheme';
 
 export interface MultiLangAuditReport extends TsAgentAuditReport {
   language: SupportedAuditLanguage;
@@ -69,6 +70,7 @@ export function detectAuditLanguage(fileName: string): SupportedAuditLanguage | 
     return 'c-cpp';
   }
   if (ext === '.rs') return 'rust';
+  if (ext === '.go') return 'go';
   if (ext === '.ss' || ext === '.scm') return 'scheme';
   return null;
 }
@@ -138,6 +140,15 @@ function tokenizeCLike(src: string, nestedBlockComments: boolean): {code: Tok[];
         }
       }
       comments.push({kind: 'comment', value: src.slice(start, i), line: startLine, column: startCol});
+      continue;
+    }
+    if (ch === '`') {
+      advance();
+      const start = i;
+      while (i < src.length && src[i] !== '`') advance();
+      const val = src.slice(start, i);
+      if (src[i] === '`') advance();
+      code.push({kind: 'str', value: val, line: startLine, column: startCol});
       continue;
     }
     if (ch === '"') {
@@ -810,6 +821,308 @@ export function auditRustAgentSource(sourceText: string, fileName = 'input.rs'):
   return makeReport(fileName, 'rust', findings);
 }
 
+// ── Go Auditor ──────────────────────────────────────────────────────────────
+
+function findEnclosingGoFuncReturnError(code: readonly Tok[], idx: number): {
+  fnName: string | null;
+  returnsError: boolean;
+  returnsMulti: boolean;
+} {
+  // Scan enclosing func declarations that contain `idx`.
+  let bestSpan = Infinity;
+  let best: {fnName: string | null; returnsError: boolean; returnsMulti: boolean} = {
+    fnName: null,
+    returnsError: false,
+    returnsMulti: false,
+  };
+  for (let i = 0; i < idx; i++) {
+    if (code[i]!.kind !== 'ident' || code[i]!.value !== 'func') continue;
+    let cursor = i + 1;
+    // Skip optional method receiver `func (r *Recv)`
+    if (code[cursor]?.value === '(') {
+      const recvClose = findMatching(code, cursor, '(', ')');
+      if (recvClose < 0) continue;
+      cursor = recvClose + 1;
+    }
+    let fnName: string | null = null;
+    if (code[cursor]?.kind === 'ident') {
+      fnName = code[cursor]!.value;
+      cursor++;
+    }
+    // Skip optional type parameters `[T any]`
+    if (code[cursor]?.value === '[') {
+      const tpClose = findMatching(code, cursor, '[', ']');
+      if (tpClose < 0) continue;
+      cursor = tpClose + 1;
+    }
+    if (code[cursor]?.value !== '(') continue;
+    const paramClose = findMatching(code, cursor, '(', ')');
+    if (paramClose < 0) continue;
+    let braceIdx = paramClose + 1;
+    while (braceIdx < code.length && code[braceIdx]!.value !== '{' && code[braceIdx]!.value !== ';') {
+      braceIdx++;
+    }
+    if (code[braceIdx]?.value !== '{') continue;
+    const bodyClose = findMatching(code, braceIdx, '{', '}');
+    if (bodyClose <= braceIdx || idx < braceIdx || idx > bodyClose) continue;
+    const span = bodyClose - braceIdx;
+    if (span < bestSpan) {
+      bestSpan = span;
+      const retSlice = code.slice(paramClose + 1, braceIdx);
+      const returnsMulti = retSlice[0]?.value === '(' && retSlice.some(tk => tk.value === ',');
+      const returnsError = retSlice.some(tk => tk.kind === 'ident' && tk.value === 'error');
+      best = {fnName, returnsError, returnsMulti};
+    }
+  }
+  return best;
+}
+
+export function auditGoAgentSource(sourceText: string, fileName = 'input.go'): MultiLangAuditReport {
+  const {code, comments} = tokenizeCLike(sourceText, false);
+  const findings: AstAuditFinding[] = [];
+  const add = (hallucinationClass: HallucinationClass, rule: string, tok: Tok, detail: string) => {
+    findings.push({hallucinationClass, rule, line: tok.line, column: tok.column, detail});
+  };
+
+  for (let i = 0; i < code.length; i++) {
+    const t = code[i]!;
+
+    // 1. `if ... err != nil { ... }` silent fallback / log-and-swallow / empty block
+    if (t.kind === 'ident' && t.value === 'if') {
+      let braceIdx = i + 1;
+      let pDepth = 0;
+      while (braceIdx < code.length) {
+        const v = code[braceIdx]!.value;
+        if (v === '(' || v === '[') pDepth++;
+        else if (v === ')' || v === ']') {
+          if (pDepth > 0) pDepth--;
+        } else if (pDepth === 0 && v === '{') {
+          break;
+        } else if (pDepth === 0 && v === '}' && braceIdx > i + 1) {
+          braceIdx = -1;
+          break;
+        }
+        braceIdx++;
+      }
+      if (braceIdx > i + 1 && code[braceIdx]?.value === '{') {
+        const condSlice = code.slice(i + 1, braceIdx);
+        const checksErrNotNil = condSlice.some(
+          (tk, idx) =>
+            tk.kind === 'ident' &&
+            /^(err\d*|[a-zA-Z0-9_]+Err)$/.test(tk.value) &&
+            condSlice[idx + 1]?.value === '!=' &&
+            condSlice[idx + 2]?.value === 'nil',
+        );
+        const hasNarrowExpectedErrGuard = condSlice.some(
+          tk =>
+            tk.value === 'Is' ||
+            tk.value === 'As' ||
+            tk.value === 'EOF' ||
+            tk.value === 'ErrNotExist' ||
+            tk.value === 'ErrClosed' ||
+            tk.value === 'Canceled' ||
+            tk.value === 'IsNotExist',
+        );
+        if (checksErrNotNil && !hasNarrowExpectedErrGuard) {
+          const bodyClose = findMatching(code, braceIdx, '{', '}');
+          if (bodyClose > braceIdx) {
+            const body = code.slice(braceIdx + 1, bodyClose);
+            if (body.length === 0) {
+              add('silent-fallback', 'go-empty-if-err', t, 'Empty `if err != nil {}` silently swallows error');
+            } else {
+              const fnInfo = findEnclosingGoFuncReturnError(code, i);
+              const logsErr = body.some(
+                (tk, idx) =>
+                  (tk.value === 'log' || tk.value === 'slog' || tk.value === 'fmt') &&
+                  body[idx + 1]?.value === '.' &&
+                  /^(Print|Printf|Println|Warn|Error|Fprint|Fprintf|Fprintln)/.test(body[idx + 2]?.value ?? ''),
+              );
+              const propagatesErr = body.some(
+                (tk, idx) =>
+                  tk.value === 'panic' ||
+                  tk.value === 'Fatal' ||
+                  tk.value === 'Fatalf' ||
+                  tk.value === 'Error' ||
+                  tk.value === 'Errorf' ||
+                  (tk.value === 'Exit' &&
+                    body[idx - 1]?.value === '.' &&
+                    body[idx + 1]?.value === '(' &&
+                    body[idx + 2]?.value !== '0') ||
+                  (tk.value === 'return' &&
+                    body.slice(idx + 1).some(
+                      rt =>
+                        rt.value === 'err' ||
+                        rt.value.endsWith('Err') ||
+                        rt.value === 'Errorf' ||
+                        rt.value === 'New' ||
+                        rt.value === 'Wrap' ||
+                        rt.value === 'Status' ||
+                        rt.value === 'Error' ||
+                        rt.value === 'Refuted' ||
+                        rt.value === 'Denied',
+                    )),
+              );
+              // Detect `return nil` or `return ..., nil` where the function returns `error`
+              let returnsNilError = false;
+              let retTok: Tok | null = null;
+              for (let k = 0; k < body.length; k++) {
+                if (body[k]!.value !== 'return') continue;
+                // Find end of return statement (same line or next `;` / `}`)
+                const retLine = body[k]!.line;
+                let end = k + 1;
+                let d = 0;
+                while (end < body.length) {
+                  const ev = body[end]!.value;
+                  if (ev === '(' || ev === '{' || ev === '[') d++;
+                  else if (ev === ')' || ev === '}' || ev === ']') {
+                    if (d > 0) d--;
+                  } else if (d === 0 && (ev === ';' || (body[end]!.line > retLine && body[end - 1]!.value !== ','))) {
+                    break;
+                  }
+                  end++;
+                }
+                const retExpr = body.slice(k + 1, end);
+                if (retExpr.length > 0 && retExpr[retExpr.length - 1]!.value === 'nil') {
+                  if (fnInfo.returnsError) {
+                    returnsNilError = true;
+                    retTok = body[k]!;
+                    break;
+                  }
+                }
+              }
+              const handlesExpectedInside = body.some(
+                tk =>
+                  tk.value === 'Is' ||
+                  tk.value === 'As' ||
+                  tk.value === 'EOF' ||
+                  tk.value === 'ErrNotExist' ||
+                  tk.value === 'ErrClosed' ||
+                  tk.value === 'Canceled' ||
+                  tk.value === 'DeadlineExceeded',
+              );
+              if (!handlesExpectedInside) {
+                if (logsErr && !propagatesErr && (returnsNilError || body.every(tk => tk.value !== 'return') || fnInfo.returnsError)) {
+                  add(
+                    'silent-fallback',
+                    'go-if-err-log-and-swallow',
+                    t,
+                    '`if err != nil` logs error and swallows failure without propagating error',
+                  );
+                } else if (returnsNilError && !propagatesErr) {
+                  add(
+                    'silent-fallback',
+                    'go-if-err-return-nil',
+                    retTok ?? t,
+                    '`if err != nil` returns nil error, silently masking defect',
+                  );
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // 2. `recover()` swallow or redundant `if r := recover(); r != nil { panic(r) }`
+    if (t.kind === 'ident' && t.value === 'recover' && code[i + 1]?.value === '(' && code[i + 2]?.value === ')') {
+      // Check `defer func() { recover() }()` bare swallow
+      if (code[i - 1]?.value === '{' && code[i + 3]?.value === '}') {
+        add('silent-fallback', 'go-recover-swallow', t, 'Bare `recover()` silently swallows panic without recording or returning error');
+      } else if (code[i + 3]?.value === ';') {
+        // `if r := recover(); r != nil { ... }`
+        let braceIdx = i + 4;
+        while (braceIdx < code.length && code[braceIdx]!.value !== '{' && braceIdx < i + 12) braceIdx++;
+        if (code[braceIdx]?.value === '{') {
+          const bodyClose = findMatching(code, braceIdx, '{', '}');
+          if (bodyClose > braceIdx) {
+            const inner = code.slice(braceIdx + 1, bodyClose);
+            if (inner.length === 0) {
+              add('silent-fallback', 'go-recover-swallow', t, 'Empty `if r := recover(); r != nil {}` silently swallows panic');
+            } else if (
+              inner.length === 4 &&
+              inner[0]!.value === 'panic' &&
+              inner[1]!.value === '(' &&
+              inner[3]!.value === ')'
+            ) {
+              add('redundant-defensive-glue', 'go-noop-recover-repanic', t, 'Redundant recover() that immediately re-panics unchanged value');
+            }
+          }
+        }
+      }
+    }
+
+    // 3. Floor weakening: t.Skip / t.Skipf / t.SkipNow
+    if (
+      t.value === '.' &&
+      (code[i + 1]?.value === 'Skip' || code[i + 1]?.value === 'Skipf' || code[i + 1]?.value === 'SkipNow') &&
+      code[i + 2]?.value === '('
+    ) {
+      add('floor-weakening', 'go-test-skip', code[i + 1]!, `Test skip call .${code[i + 1]!.value}() weakens verification gate`);
+    }
+
+    // 4. Fabricated evidence: zero-check Verify*/Validate*/Check*/Audit* stub returning bare true or nil
+    if (t.kind === 'ident' && t.value === 'func') {
+      let cursor = i + 1;
+      if (code[cursor]?.value === '(') {
+        const rc = findMatching(code, cursor, '(', ')');
+        if (rc > cursor) cursor = rc + 1;
+      }
+      const fnName = code[cursor];
+      if (
+        fnName?.kind === 'ident' &&
+        /^(verify|validate|check|audit)[A-Z_]/i.test(fnName.value) &&
+        code[cursor + 1]?.value === '('
+      ) {
+        const pc = findMatching(code, cursor + 1, '(', ')');
+        if (pc > cursor) {
+          let braceIdx = pc + 1;
+          while (braceIdx < code.length && code[braceIdx]!.value !== '{' && code[braceIdx]!.value !== ';') {
+            braceIdx++;
+          }
+          if (code[braceIdx]?.value === '{') {
+            const bodyClose = findMatching(code, braceIdx, '{', '}');
+            if (bodyClose > braceIdx) {
+              const inner = code.slice(braceIdx + 1, bodyClose);
+              if (
+                inner.length === 2 &&
+                inner[0]!.value === 'return' &&
+                (inner[1]!.value === 'true' || inner[1]!.value === 'nil')
+              ) {
+                add(
+                  'fabricated-evidence',
+                  'go-stub-verify-returns-true',
+                  fnName,
+                  `Verification function '${fnName.value}' unconditionally returns '${inner[1]!.value}' with zero checks`,
+                );
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  for (const c of comments) {
+    if (/nolint:[^\n]*\berrcheck\b/i.test(c.value)) {
+      add('floor-weakening', 'go-nolint-errcheck', c, '//nolint:errcheck suppresses Go error-checking boundary enforcement');
+    }
+    if (/(?:TODO|FIXME|HACK).*(?:verify|validate|check|auth|signature|proof)/i.test(c.value)) {
+      const nearReturn = code.find(
+        (tk, idx) =>
+          tk.value === 'return' &&
+          tk.line >= c.line &&
+          tk.line <= c.line + 4 &&
+          (code[idx + 1]?.value === 'true' || code[idx + 1]?.value === 'nil'),
+      );
+      if (nearReturn) {
+        add('fabricated-evidence', 'go-todo-verify-return-true', nearReturn, 'TODO verification comment paired with bare return true/nil');
+      }
+    }
+  }
+
+  return makeReport(fileName, 'go', findings);
+}
+
 // ── Scheme S-Expression Auditor (mirrors library/defensive-governance/func.ss) ──
 
 type SExpr =
@@ -983,17 +1296,44 @@ export function auditSchemeAgentSource(sourceText: string, fileName = 'input.ss'
     if (expr.kind !== 'list' || expr.items.length === 0) return;
     const head = expr.items[0]!;
     if (head.kind === 'atom') {
-      // 1. P1 silent fallback: (with-catch (lambda (_) <const>) ...)
+      // 1. P1 silent fallback: (with-catch (lambda (_) <const>) ...) and Gerbil (try ... (catch (_) <const>))
       if (head.value === 'with-catch' && expr.items.length >= 3) {
         const handler = expr.items[1]!;
         if (
           handler.kind === 'list' &&
-          handler.items.length === 3 &&
+          handler.items.length >= 3 &&
           handler.items[0]!.kind === 'atom' &&
-          handler.items[0]!.value === 'lambda' &&
-          isSchemeConstantFallback(handler.items[2]!)
+          handler.items[0]!.value === 'lambda'
         ) {
-          add('silent-fallback', 'scheme-with-catch-constant-fallback', expr, 'with-catch swallows exception into constant/empty fallback');
+          const bodyForms = handler.items.slice(2);
+          const lastForm = bodyForms[bodyForms.length - 1]!;
+          const logsErr = bodyForms.some(
+            bf =>
+              bf.kind === 'list' &&
+              bf.items[0]?.kind === 'atom' &&
+              ['displayln', 'display', 'eprintf', 'fprintf', 'errorf', 'log-error'].includes(bf.items[0].value),
+          );
+          if (bodyForms.length === 1 && isSchemeConstantFallback(lastForm)) {
+            add('silent-fallback', 'scheme-with-catch-constant-fallback', expr, 'with-catch swallows exception into constant/empty fallback');
+          } else if (logsErr && isSchemeConstantFallback(lastForm)) {
+            add('silent-fallback', 'scheme-with-catch-log-and-swallow', expr, 'with-catch logs exception and swallows failure into constant fallback');
+          }
+        }
+      }
+      if (head.value === 'try' && expr.items.length >= 3) {
+        for (const clause of expr.items.slice(2)) {
+          if (
+            clause.kind === 'list' &&
+            clause.items.length >= 3 &&
+            clause.items[0]?.kind === 'atom' &&
+            clause.items[0].value === 'catch'
+          ) {
+            const catchBody = clause.items.slice(2);
+            const lastForm = catchBody[catchBody.length - 1]!;
+            if (isSchemeConstantFallback(lastForm)) {
+              add('silent-fallback', 'scheme-try-catch-constant-fallback', clause, 'Gerbil (try ... (catch ...)) swallows exception into constant/empty fallback');
+            }
+          }
         }
       }
       // 2. P4 vacuous guard: 2-arg `(guard <id> #t)` with no countermodel branch,
@@ -1069,6 +1409,8 @@ export function auditSourceByPath(
     raw = auditCCppAgentSource(sourceText, fileName);
   } else if (lang === 'rust') {
     raw = auditRustAgentSource(sourceText, fileName);
+  } else if (lang === 'go') {
+    raw = auditGoAgentSource(sourceText, fileName);
   } else {
     raw = auditSchemeAgentSource(sourceText, fileName);
   }
@@ -1175,7 +1517,8 @@ export function parseUnifiedDiffHunks(diffText: string): DiffHunkDelta[] {
   return hunks;
 }
 
-const ASSERTION_RE = /\b(?:expect|assert|assert_eq|assert_ne|static_assert|check-equal\?)\s*(?:!\s*)?\(|\(check-equal\?/;
+const ASSERTION_RE =
+  /\b(?:expect|assert|assert_eq|assert_ne|static_assert|check-equal\?)\s*(?:!\s*)?\(|\(check-equal\?|\bt\.(?:Fatal|Fatalf|Error|Errorf)\s*\(|\b(?:require|assert)\.[A-Z][A-Za-z0-9_]*\s*\(/;
 const FLOOR_OBLIGATION_RE =
   /(?:require-countermodels\?:\s*#t|require-use-time-witness\?:\s*#t|require-guard-necessity-countermodel\?:\s*#t|require-admission-five-tuple\?:\s*#t|allow-global-purge\?:\s*#f|requireCountermodels:\s*true|requireUseTimeWitness:\s*true|allowGlobalPurge:\s*false|minCoverage:\s*1(?:\.0)?\b|--min-coverage=1\.0\b)/;
 const FORMAL_GUARD_OR_COUNTERMODEL_RE = /\(guard\s+[A-Za-z0-9_-]+|\/\/\s*@countermodel\b/;
