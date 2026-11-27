@@ -25,6 +25,7 @@ import {dirname, join, resolve} from 'node:path';
 export interface TrustPair {
   trusted: Array<[string, string]>;
   revoked: string[];
+  keyRoles?: Record<string, string[]>;
 }
 
 export interface ExportBundleResult {
@@ -359,7 +360,29 @@ export function loadTrustStoreJsonLite(storePath: string): TrustPair {
   }
   const revokedRaw = Array.isArray(doc.revokedKeyIds) ? doc.revokedKeyIds : [];
   const revoked = revokedRaw.filter((x): x is string => typeof x === 'string');
-  return {trusted, revoked};
+  const keyRoles: Record<string, string[]> = {};
+  if (doc.keyRoles !== undefined) {
+    if (!isPlainObject(doc.keyRoles)) {
+      throw new Error(`Ed25519 trust store keyRoles must be a JSON object: ${storePath}`);
+    }
+    for (const [kid, rlist] of Object.entries(doc.keyRoles)) {
+      if (!Object.prototype.hasOwnProperty.call(keysObj, kid)) {
+        throw new Error(`keyRoles references unknown keyId not in trustedKeys: ${kid}`);
+      }
+      if (!Array.isArray(rlist)) {
+        throw new Error(`keyRoles value must be an array of non-empty strings for keyId: ${kid}`);
+      }
+      const cleanRoles = new Set<string>();
+      for (const r of rlist) {
+        if (typeof r !== 'string' || r.length === 0) {
+          throw new Error(`Invalid empty or non-string role in keyRoles for keyId: ${kid}`);
+        }
+        cleanRoles.add(r);
+      }
+      keyRoles[kid] = [...cleanRoles].sort(codePointCompare);
+    }
+  }
+  return {trusted, revoked, keyRoles};
 }
 
 export function verifyReportDocOffline(doc: Record<string, unknown>, trustPair: TrustPair): boolean {
@@ -416,6 +439,7 @@ export interface FleetVerifyOptions {
   requiredSubjects?: ReadonlyArray<string>;
   minSignatures?: number;
   requiredSigners?: ReadonlyArray<string>;
+  requiredRoles?: ReadonlyArray<string>;
 }
 
 function normalizeFleetOpts(
@@ -578,6 +602,7 @@ export function exportTrustBundleOffline(
   outPath: string,
   pubPaths: ReadonlyArray<string>,
   revokedKeyIds: ReadonlyArray<string> = [],
+  roleBindings: ReadonlyArray<readonly [string, string]> = [],
 ): ExportBundleResult {
   if (typeof outPath !== 'string' || outPath.length === 0) {
     throw new Error(`Invalid output trust bundle path: ${String(outPath)}`);
@@ -614,15 +639,31 @@ export function exportTrustBundleOffline(
       `Refusing to export trust bundle with zero active unrevoked keys: revoked=${JSON.stringify(revoked)}`,
     );
   }
+  const keyRoles: Record<string, string[]> = {};
+  for (const [kid, role] of roleBindings) {
+    if (!Object.prototype.hasOwnProperty.call(keysMap, kid)) {
+      throw new Error(`Refusing to assign role to unknown keyId not in exported bundle: ${kid}`);
+    }
+    if (typeof role !== 'string' || role.length === 0) {
+      throw new Error(`Invalid empty role name for keyId: ${kid}`);
+    }
+    const cur = keyRoles[kid] ?? [];
+    if (!cur.includes(role)) {
+      keyRoles[kid] = [...cur, role].sort(codePointCompare);
+    }
+  }
   const parentDir = dirname(resolve(outPath));
   if (!existsSync(parentDir)) {
     mkdirSync(parentDir, {recursive: true});
   }
-  const doc = {
+  const doc: Record<string, unknown> = {
     schema: TRUST_STORE_SCHEMA,
     trustedKeys: keysMap,
     revokedKeyIds: revoked,
   };
+  if (Object.keys(keyRoles).length > 0) {
+    doc.keyRoles = keyRoles;
+  }
   writeFileSync(outPath, `${JSON.stringify(doc)}\n`, 'utf8');
   return {active, revoked};
 }
@@ -878,6 +919,7 @@ export function verifyFleetBundleOffline(
 
 export interface VerifiedDsseStatementSummary extends VerifiedFleetBundleSummary {
   verifiedKeyIds: string[];
+  verifiedRoles: string[];
 }
 
 function ed25519VerifyBytes(pubPemOrPath: string, payloadBuf: Buffer, sigB64: unknown): boolean {
@@ -954,6 +996,22 @@ export function inspectDsseStatementVerified(
   if (opts.requiredSigners !== undefined) {
     for (const reqSigner of opts.requiredSigners) {
       if (!verifiedKeyIds.includes(reqSigner)) return null;
+    }
+  }
+  const roleSet = new Set<string>();
+  const keyRoles = trustPair.keyRoles ?? {};
+  for (const kid of verifiedKeyIds) {
+    const roles = keyRoles[kid];
+    if (Array.isArray(roles)) {
+      for (const r of roles) {
+        if (typeof r === 'string' && r.length > 0) roleSet.add(r);
+      }
+    }
+  }
+  const verifiedRoles = [...roleSet].sort(codePointCompare);
+  if (opts.requiredRoles !== undefined) {
+    for (const reqRole of opts.requiredRoles) {
+      if (!roleSet.has(reqRole)) return null;
     }
   }
 
@@ -1036,6 +1094,7 @@ export function inspectDsseStatementVerified(
     fleetPayloadSha256,
     rootKeyId,
     verifiedKeyIds,
+    verifiedRoles,
     subjectCount,
     verifiedSubjects,
   };
@@ -1142,19 +1201,33 @@ function emitJsonResult(
   process.stdout.write(`${JSON.stringify(doc)}\n`);
 }
 
-function parseExportArgs(rest: string[]): {pubPaths: string[]; revokedIds: string[]} {
+function parseExportArgs(rest: string[]): {
+  pubPaths: string[];
+  revokedIds: string[];
+  roleBindings: Array<[string, string]>;
+} {
   const pubPaths: string[] = [];
   const revokedIds: string[] = [];
+  const roleBindings: Array<[string, string]> = [];
   for (let i = 0; i < rest.length; i += 1) {
     if (rest[i] === '--revoke') {
       if (i + 1 >= rest.length) throw new Error('--revoke requires a keyId argument');
       revokedIds.push(rest[i + 1]);
       i += 1;
+    } else if (rest[i] === '--role') {
+      if (i + 1 >= rest.length) throw new Error('--role requires a <keyId>=<role> argument');
+      const raw = rest[i + 1];
+      const eq = raw.indexOf('=');
+      if (eq <= 0 || eq >= raw.length - 1) {
+        throw new Error(`--role requires <keyId>=<role> format, got: ${raw}`);
+      }
+      roleBindings.push([raw.slice(0, eq), raw.slice(eq + 1)]);
+      i += 1;
     } else {
       pubPaths.push(rest[i]);
     }
   }
-  return {pubPaths, revokedIds};
+  return {pubPaths, revokedIds, roleBindings};
 }
 
 function parseNonNegIntFlag(flagName: string, raw: string | undefined): number {
@@ -1179,6 +1252,7 @@ export function runCli(argv: string[]): number {
   let emitStatementPath: string | undefined;
   let minSignatures: number | undefined;
   const requiredSigners: string[] = [];
+  const requiredRoles: string[] = [];
   const cleanArgs: string[] = [];
   try {
     for (let i = 0; i < argv.length; i += 1) {
@@ -1232,6 +1306,13 @@ export function runCli(argv: string[]): number {
         }
         if (!requiredSigners.includes(val)) requiredSigners.push(val);
         i += 1;
+      } else if (a === '--require-role') {
+        const val = argv[i + 1];
+        if (typeof val !== 'string' || val.length === 0) {
+          throw new Error('--require-role requires a non-empty role name');
+        }
+        if (!requiredRoles.includes(val)) requiredRoles.push(val);
+        i += 1;
       } else {
         cleanArgs.push(a);
       }
@@ -1262,8 +1343,8 @@ export function runCli(argv: string[]): number {
     }
     const outPath = cleanArgs[1];
     try {
-      const {pubPaths, revokedIds} = parseExportArgs(cleanArgs.slice(2));
-      const {active, revoked} = exportTrustBundleOffline(outPath, pubPaths, revokedIds);
+      const {pubPaths, revokedIds, roleBindings} = parseExportArgs(cleanArgs.slice(2));
+      const {active, revoked} = exportTrustBundleOffline(outPath, pubPaths, revokedIds, roleBindings);
       if (jsonMode) {
         emitJsonResult(true, 'export-trust-bundle', outPath, outPath, 'exported-inline-pem-trust-bundle', {
           inlinePem: true,
@@ -1397,13 +1478,18 @@ export function runCli(argv: string[]): number {
       .sort(codePointCompare);
     if (active.length > 0) {
       if (jsonMode) {
+        const keyRoles = trustPair.keyRoles ?? {};
         emitJsonResult(
           true,
           'verify-trust-store',
           storePath,
           storePath,
           'trust-store-valid-with-active-keys',
-          {activeKeyIds: active, revokedKeyIds: revoked},
+          {
+            activeKeyIds: active,
+            revokedKeyIds: revoked,
+            ...(Object.keys(keyRoles).length > 0 ? {keyRoles} : {}),
+          },
         );
       } else {
         process.stdout.write(
@@ -1471,6 +1557,7 @@ export function runCli(argv: string[]): number {
     requiredSubjects: requiredSubjects.length > 0 ? requiredSubjects : undefined,
     minSignatures,
     requiredSigners: requiredSigners.length > 0 ? requiredSigners : undefined,
+    requiredRoles: requiredRoles.length > 0 ? requiredRoles : undefined,
   };
   const fleetJsonExtra = (): Record<string, unknown> => {
     const extra: Record<string, unknown> = {};
@@ -1479,6 +1566,7 @@ export function runCli(argv: string[]): number {
     if (requiredSubjects.length > 0) extra.requiredSubjects = [...requiredSubjects].sort(codePointCompare);
     if (minSignatures !== undefined && minSignatures > 1) extra.minSignatures = minSignatures;
     if (requiredSigners.length > 0) extra.requiredSigners = [...requiredSigners].sort(codePointCompare);
+    if (requiredRoles.length > 0) extra.requiredRoles = [...requiredRoles].sort(codePointCompare);
     return extra;
   };
 
@@ -1583,6 +1671,9 @@ export function runCli(argv: string[]): number {
             fleetPayloadSha256: summary.fleetPayloadSha256,
             rootKeyId: summary.rootKeyId,
             verifiedKeyIds: summary.verifiedKeyIds,
+            ...(summary.verifiedRoles.length > 0 || requiredRoles.length > 0
+              ? {verifiedRoles: summary.verifiedRoles}
+              : {}),
             subjectCount: summary.subjectCount,
             verifiedSubjects: summary.verifiedSubjects,
           },

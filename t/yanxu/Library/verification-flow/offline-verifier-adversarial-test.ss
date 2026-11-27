@@ -705,7 +705,27 @@
                         expected-subject-count: 1
                         required-subjects: '("demo"))))
             (check-equal? (hash-get cres "cosignerKeyId") kid2)
-            (check-equal? (length (hash-get cres "verifiedKeyIds")) 2))))
+            (check-equal? (length (hash-get cres "verifiedKeyIds")) 2)))
+        ;; Attacks 48-50 (pre-delete setup): Role-Based Trust Bundle export + k3 role key rotation!
+        (def role-bundle-path (path-expand "trust-roles.v1.json" work))
+        (def role-rot-bundle-path (path-expand "trust-roles-rotated.v1.json" work))
+        (def dsse-cosigned-k2k3 (path-expand "adv-cosigned-k2k3.intoto.dsse.json" work))
+        (def k3 (gen-ed25519-pair keys-dir "k3"))
+        (def kid3 (car k3))
+        (check-equal?
+          (throws? (lambda ()
+                     (export-trust-bundle-offline
+                       (path-expand "bad-role-bundle.json" work)
+                       (list (caddr k1)) '() (list (cons "deadbeef00000000" "ci-builder")))))
+          #t)
+        (export-trust-bundle-offline
+          role-bundle-path (list (caddr k1) (caddr k2)) '()
+          (list (cons kid1 "ci-builder") (cons kid2 "security-auditor")))
+        (export-trust-bundle-offline
+          role-rot-bundle-path (list (caddr k1) (caddr k2) (caddr k3)) (list kid1)
+          (list (cons kid1 "ci-builder") (cons kid3 "ci-builder") (cons kid2 "security-auditor")))
+        (let ((tp-pre-rot (load-trust-store-json-lite role-rot-bundle-path)))
+          (cosign-dsse-statement-offline dsse-cosigned (cadr k3) (caddr k3) tp-pre-rot dsse-cosigned-k2k3)))
 
       ;; Physically delete ALL .pub.pem files from disk before running inline-bundle verification!
       (yuanxu-test-checkpoint 'after-export-bundle-attacks)
@@ -1027,5 +1047,61 @@
         (check-equal? ts-st 0)
         (check (and (string-contains ts-out "\"ok\":true") #t) => #t)
         (check (and (string-contains ts-out "\"requiredSigners\"") #t) => #t))
+
+      ;; Attacks 48-50 (50-Control Milestone, post-key-deletion!): Role-Based SoD (`--require-role`):
+      ;;   48: Dangling unknown keyId in `keyRoles` rejected on trust-store load!
+      ;;   49: Role-Based SoD passes on 2-of-2 `[k1:ci-builder, k2:security-auditor]`, rejects missing role,
+      ;;       and rejects when `ci-builder` (`k1`) is revoked!
+      ;;   50: Rotating `ci-builder` from revoked `k1` -> fresh `k3` passes the EXACT SAME role policy
+      ;;       in BOTH Gerbil AND zero-dependency Bun/TS (`<100ms`) with zero keyId policy changes!
+      (let ((bad-role-ts (path-expand "bad-role-ts.json" work))
+            (role-bundle-path (path-expand "trust-roles.v1.json" work))
+            (role-rot-bundle-path (path-expand "trust-roles-rotated.v1.json" work))
+            (dsse-cosigned-k2k3 (path-expand "adv-cosigned-k2k3.intoto.dsse.json" work)))
+        (let ((bad-tk (make-hash-table)))
+          (hash-put! bad-tk kid1 k1-pem-str)
+          (write-json-file bad-role-ts
+            (hash ("schema" "de.attestation.ed25519-trust-store.v1")
+                  ("trustedKeys" bad-tk)
+                  ("revokedKeyIds" '())
+                  ("keyRoles" (hash ("deadbeef00000000" '("ci-builder")))))))
+        (check-equal? (throws? (lambda () (load-trust-store-json-lite bad-role-ts))) #t)
+        (let ((tp-roles (load-trust-store-json-lite role-bundle-path))
+              (tp-rot-roles (load-trust-store-json-lite role-rot-bundle-path)))
+          (check-equal?
+            (verify-dsse-statement-offline dsse-cosigned tp-roles
+              min-signatures: 2 required-roles: '("ci-builder" "security-auditor"))
+            #t)
+          (check-equal?
+            (verify-dsse-statement-offline dsse-k1 tp-roles
+              required-roles: '("ci-builder" "security-auditor"))
+            #f)
+          (check-equal?
+            (verify-dsse-statement-offline dsse-cosigned tp-rot-roles
+              min-signatures: 2 required-roles: '("ci-builder" "security-auditor"))
+            #f)
+          (let ((rot-sum (inspect-dsse-statement-verified dsse-cosigned-k2k3 tp-rot-roles
+                           min-signatures: 2 required-roles: '("ci-builder" "security-auditor"))))
+            (check (hash-table? rot-sum) => #t)
+            (check-equal? (hash-get rot-sum "verifiedRoles") '("ci-builder" "security-auditor"))
+            (check-equal? (length (hash-get rot-sum "verifiedKeyIds")) 2))
+          ;; Cross-language Bun/TS verification of Gerbil-exported rotated role bundle & cosigned DSSE!
+          (let* ((ts-cmd (string-append
+                           "cd \"" repo-root "\" && bun t/harness/offline-attestation-verifier.ts "
+                           "--json --verify-dsse-statement --min-signatures 2 "
+                           "--require-role ci-builder --require-role security-auditor "
+                           "\"" dsse-cosigned-k2k3 "\" \"" role-rot-bundle-path "\""))
+                 (proc (open-process
+                         (list path: "/bin/bash"
+                               arguments: (list "-euo" "pipefail" "-c" ts-cmd)
+                               stdin-redirection: #f
+                               stdout-redirection: #t
+                               stderr-redirection: #t)))
+                 (ts-out (read-all-as-string proc))
+                 (ts-st (process-status proc)))
+            (close-port proc)
+            (check-equal? ts-st 0)
+            (check (and (string-contains ts-out "\"ok\":true") #t) => #t)
+            (check (and (string-contains ts-out "\"verifiedRoles\":[\"ci-builder\",\"security-auditor\"]") #t) => #t))))
 
       (run-process (list "rm" "-rf" work)))))

@@ -297,6 +297,23 @@ theorem dsseSeparationOfDuties_enforces_named_approvers_and_quorum {Key : Type}
   ⟨fun _ hReq hAbs => dsseSoD_rejects_missing_required_signer keys requiredSigners q hReq hAbs,
    fun hBelow => dsseSoD_rejects_below_threshold keys requiredSigners q hBelow⟩
 
+/-- Instantiated Role-Based Separation-of-Duties contract (`--require-role` + Trust Store
+`keyRoles`, 68th zero-axiom meta-theorem!): proves with zero axioms that missing operational roles
+and sub-threshold quorums are unconditionally rejected, while rotating a role key preserves policy
+satisfaction without changing auditor flags. -/
+theorem dsseRoleBasedSoD_enforces_roles_quorum_and_rotation {Key Role : Type}
+    (keyHasRole : Key → Role → Prop) (keys : List Key) (requiredRoles : List Role) (q : Nat) :
+    (∀ req, containsKey req requiredRoles → ¬ roleSatisfiedByKeys keyHasRole req keys →
+      ¬ DsseRoleSoDSatisfied keyHasRole keys requiredRoles q) ∧
+    (keys.length < q → ¬ DsseRoleSoDSatisfied keyHasRole keys requiredRoles q) ∧
+    (∀ kOld kNew rest, (∀ r, keyHasRole kOld r → keyHasRole kNew r) →
+      allRequiredRolesSatisfied keyHasRole (kOld :: rest) requiredRoles →
+      allRequiredRolesSatisfied keyHasRole (kNew :: rest) requiredRoles) :=
+  ⟨fun _ hReq hNo => dsseRoleSoD_rejects_missing_required_role keyHasRole keys requiredRoles q hReq hNo,
+   fun hBelow hSoD => dsseQuorum_rejects_below_threshold keys q hBelow hSoD.1,
+   fun kOld kNew rest hSub hAll =>
+     dsseRoleSoD_preserved_under_role_key_rotation keyHasRole kOld kNew rest hSub requiredRoles hAll⟩
+
 /-! ## One-Line Proof Transport via `Core.Transport` -/
 
 inductive MetaProofKey where

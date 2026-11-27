@@ -1137,4 +1137,74 @@ theorem dsseSoD_rejects_below_threshold {Key : Type}
   intro hSoD
   exact dsseQuorum_rejects_below_threshold distinctVerifiedKeys requiredQuorum hBelow hSoD.1
 
+/-! ## 20. Role-Based Separation of Duties (`--require-role` & Trust Store `keyRoles`) -/
+
+/-- Pure structural predicate: at least one active verified signer key in `verifiedKeys`
+holds `role` under the trust-store mapping `keyHasRole`. -/
+def roleSatisfiedByKeys {Key Role : Type}
+    (keyHasRole : Key → Role → Prop) (role : Role) : List Key → Prop
+  | [] => False
+  | k :: rest => keyHasRole k role ∨ roleSatisfiedByKeys keyHasRole role rest
+
+def allRequiredRolesSatisfied {Key Role : Type}
+    (keyHasRole : Key → Role → Prop) (verifiedKeys : List Key) : List Role → Prop
+  | [] => True
+  | r :: rest => roleSatisfiedByKeys keyHasRole r verifiedKeys ∧
+                 allRequiredRolesSatisfied keyHasRole verifiedKeys rest
+
+/-- Constructive zero-axiom Role-Based Separation-of-Duties predicate:
+requires BOTH M-of-N distinct verified key quorum (`DsseQuorumSatisfied`) AND satisfaction
+of every required operational role (e.g. `ci-builder`, `security-auditor`) by active verified keys. -/
+def DsseRoleSoDSatisfied {Key Role : Type}
+    (keyHasRole : Key → Role → Prop)
+    (distinctVerifiedKeys : List Key) (requiredRoles : List Role) (requiredQuorum : Nat) : Prop :=
+  DsseQuorumSatisfied distinctVerifiedKeys requiredQuorum ∧
+  allRequiredRolesSatisfied keyHasRole distinctVerifiedKeys requiredRoles
+
+private theorem missingRole_contradicts_allRoles {Key Role : Type}
+    (keyHasRole : Key → Role → Prop) (verifiedKeys : List Key) (req : Role)
+    (hMissing : ¬ roleSatisfiedByKeys keyHasRole req verifiedKeys) :
+    ∀ reqs : List Role, containsKey req reqs →
+      allRequiredRolesSatisfied keyHasRole verifiedKeys reqs → False
+  | [], hIn, _ => hIn
+  | _ :: _, Or.inl hEq, ⟨hSat, _⟩ => hMissing (hEq ▸ hSat)
+  | _ :: rest, Or.inr hRest, ⟨_, hAll⟩ =>
+      missingRole_contradicts_allRoles keyHasRole verifiedKeys req hMissing rest hRest hAll
+
+/-- Constructive zero-axiom proof: omitting ANY required operational role (e.g. two `ci-builder`
+keys signing without a `security-auditor` key) is unconditionally rejected even when the M-of-N
+signature threshold is satisfied. -/
+theorem dsseRoleSoD_rejects_missing_required_role {Key Role : Type}
+    (keyHasRole : Key → Role → Prop)
+    (distinctVerifiedKeys : List Key) (requiredRoles : List Role) (requiredQuorum : Nat)
+    {req : Role}
+    (hReq : containsKey req requiredRoles)
+    (hNoHolder : ¬ roleSatisfiedByKeys keyHasRole req distinctVerifiedKeys) :
+    ¬ DsseRoleSoDSatisfied keyHasRole distinctVerifiedKeys requiredRoles requiredQuorum := by
+  intro hSoD
+  exact missingRole_contradicts_allRoles keyHasRole distinctVerifiedKeys req hNoHolder
+    requiredRoles hReq hSoD.2
+
+private theorem roleSatisfied_preserved_by_rotation {Key Role : Type}
+    (keyHasRole : Key → Role → Prop) (kOld kNew : Key) (role : Role)
+    (hRolesSub : keyHasRole kOld role → keyHasRole kNew role) :
+    ∀ rest : List Key,
+      roleSatisfiedByKeys keyHasRole role (kOld :: rest) →
+      roleSatisfiedByKeys keyHasRole role (kNew :: rest)
+  | _, Or.inl hOld => Or.inl (hRolesSub hOld)
+  | _, Or.inr hRest => Or.inr hRest
+
+/-- Constructive zero-axiom proof: rotating a role's signing key from `kOld` to a fresh key `kNew`
+carrying at least the same roles preserves `allRequiredRolesSatisfied` with zero policy changes. -/
+theorem dsseRoleSoD_preserved_under_role_key_rotation {Key Role : Type}
+    (keyHasRole : Key → Role → Prop) (kOld kNew : Key) (rest : List Key)
+    (hRolesSub : ∀ r, keyHasRole kOld r → keyHasRole kNew r) :
+    ∀ requiredRoles : List Role,
+      allRequiredRolesSatisfied keyHasRole (kOld :: rest) requiredRoles →
+      allRequiredRolesSatisfied keyHasRole (kNew :: rest) requiredRoles
+  | [], _ => trivial
+  | r :: rRest, ⟨hHead, hTail⟩ =>
+      ⟨roleSatisfied_preserved_by_rotation keyHasRole kOld kNew r (hRolesSub r) rest hHead,
+       dsseRoleSoD_preserved_under_role_key_rotation keyHasRole kOld kNew rest hRolesSub rRest hTail⟩
+
 end DeterministicEngineering.Core.MetaGovernance

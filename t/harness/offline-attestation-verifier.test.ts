@@ -1379,5 +1379,112 @@ describe('Zero-Dependency TS/Bun Offline Attestation Verifier (25 Controls + Ger
     const docSoDFail = JSON.parse(resSoDFailRevoked.stdout.trim());
     expect(docSoDFail.ok).toBe(false);
     expect(docSoDFail.verifiedKeyIds).toBeUndefined();
+
+    // Controls 48-50 (50-Control Milestone!): Role-Based Separation of Duties (`--require-role` + `keyRoles`):
+    //   48: Trust Store `keyRoles` rejects unknown keyId spoofing on load & export; valid `--export-trust-bundle
+    //       --role <k1>=ci-builder --role <k2>=security-auditor` passes `--json --verify-trust-store` echoing `keyRoles`.
+    //   49: `--require-role ci-builder --require-role security-auditor --min-signatures 2` passes on 2-of-2 cosigned
+    //       envelope (echoing `verifiedRoles`), rejects single-role envelope, and rejects when `ci-builder` is revoked!
+    //   50: Seamless zero-policy-change role key rotation: rotate `ci-builder` from revoked `k1` -> fresh `k3`,
+    //       cosign with `k3` + `k2`, and pass the EXACT SAME `--min-signatures 2 --require-role ci-builder --require-role security-auditor`!
+    const tsBadRoleKey = writeJson(join(WORK_DIR, 'trust-bad-role-key.json'), {
+      schema: 'de.attestation.ed25519-trust-store.v1',
+      trustedKeys: {[k1.kid]: k1.pubPem},
+      revokedKeyIds: [],
+      keyRoles: {deadbeef00000000: ['ci-builder']},
+    });
+    expect(() => loadTrustStoreJsonLite(tsBadRoleKey)).toThrow();
+    expect(() =>
+      exportTrustBundleOffline(
+        join(WORK_DIR, 'bad-role-export.json'),
+        [k1PubCosign],
+        [],
+        [['deadbeef00000000', 'ci-builder']],
+      ),
+    ).toThrow();
+
+    const roleBundlePath = join(WORK_DIR, 'trust-roles.v1.json');
+    const resExportRoles = runTsCli([
+      '--json',
+      '--export-trust-bundle',
+      roleBundlePath,
+      '--role',
+      `${k1.kid}=ci-builder`,
+      '--role',
+      `${k2.kid}=security-auditor`,
+      k1PubCosign,
+      k2PubCosign,
+    ]);
+    expect(resExportRoles.exitCode).toBe(0);
+    const resAuditRoles = runTsCli(['--json', '--verify-trust-store', roleBundlePath]);
+    expect(resAuditRoles.exitCode).toBe(0);
+    const docAuditRoles = JSON.parse(resAuditRoles.stdout.trim());
+    expect(docAuditRoles.ok).toBe(true);
+    expect(docAuditRoles.keyRoles).toEqual({
+      [k1.kid]: ['ci-builder'],
+      [k2.kid]: ['security-auditor'],
+    });
+
+    const tpRoles = loadTrustStoreJsonLite(roleBundlePath);
+    expect(
+      verifyDsseStatementOffline(cosignedOut, tpRoles, {
+        minSignatures: 2,
+        requiredRoles: ['ci-builder', 'security-auditor'],
+      }),
+    ).toBe(true);
+    expect(
+      verifyDsseStatementOffline(dsseValidK1, tpRoles, {
+        requiredRoles: ['ci-builder', 'security-auditor'],
+      }),
+    ).toBe(false);
+
+    // Control 50: Zero-policy-change role key rotation (revoke k1, add fresh k3 with role `ci-builder`)!
+    const k3 = genKeyPair(cosignKeysDir, 'k3');
+    const roleRotatedBundlePath = join(WORK_DIR, 'trust-roles-rotated.v1.json');
+    const resExportRotRoles = runTsCli([
+      '--json',
+      '--export-trust-bundle',
+      roleRotatedBundlePath,
+      '--revoke',
+      k1.kid,
+      '--role',
+      `${k1.kid}=ci-builder`,
+      '--role',
+      `${k3.kid}=ci-builder`,
+      '--role',
+      `${k2.kid}=security-auditor`,
+      k1PubCosign,
+      k2PubCosign,
+      k3.pubPath,
+    ]);
+    expect(resExportRotRoles.exitCode).toBe(0);
+    const tpRotRoles = loadTrustStoreJsonLite(roleRotatedBundlePath);
+    // Old k1+k2 envelope now FAILS because k1 (ci-builder) is revoked!
+    expect(
+      verifyDsseStatementOffline(cosignedOut, tpRotRoles, {
+        minSignatures: 2,
+        requiredRoles: ['ci-builder', 'security-auditor'],
+      }),
+    ).toBe(false);
+    // Fresh k3 cosigns offline -> EXACT SAME role policy passes with ZERO keyId flag changes!
+    const cosignedK2K3 = join(WORK_DIR, 'cosigned-k2-k3.intoto.dsse.json');
+    cosignDsseStatementOffline(cosignedOut, k3.privPath, k3.pubPath, tpRotRoles, cosignedK2K3);
+    const resRotRoleOk = runTsCli([
+      '--json',
+      '--verify-dsse-statement',
+      '--min-signatures',
+      '2',
+      '--require-role',
+      'ci-builder',
+      '--require-role',
+      'security-auditor',
+      cosignedK2K3,
+      roleRotatedBundlePath,
+    ]);
+    expect(resRotRoleOk.exitCode).toBe(0);
+    const docRotRoleOk = JSON.parse(resRotRoleOk.stdout.trim());
+    expect(docRotRoleOk.ok).toBe(true);
+    expect(docRotRoleOk.verifiedRoles).toEqual(['ci-builder', 'security-auditor']);
+    expect(docRotRoleOk.verifiedKeyIds).toEqual([k2.kid, k3.kid].sort());
   });
 });

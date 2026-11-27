@@ -167,8 +167,18 @@
                raw-path base-dir))
       contained)))
 
-;; Returns `(cons trusted-keys-alist revoked-key-ids-list)` after validating schema,
-;; non-symlink regular PEM files, and keyId SHA-256 anti-spoofing.
+(def (trust-pair-trusted tp) (car tp))
+(def (trust-pair-revoked tp)
+  (if (and (pair? (cdr tp)) (pair? (cddr tp)) (hash-table? (caddr tp)))
+    (cadr tp)
+    (cdr tp)))
+(def (trust-pair-key-roles tp)
+  (if (and (pair? (cdr tp)) (pair? (cddr tp)) (hash-table? (caddr tp)))
+    (caddr tp)
+    (make-hash-table)))
+
+;; Returns `(list trusted-keys-alist revoked-key-ids-list key-roles-hash)` after validating schema,
+;; non-symlink regular PEM files, keyId SHA-256 anti-spoofing, and optional `keyRoles` bindings.
 (def (load-trust-store-json-lite store-path)
   (unless (and (string? store-path) (file-exists? store-path))
     (error "Ed25519 trust store file not found" store-path))
@@ -199,12 +209,32 @@
           (set! trusted (cons (cons declared-kid resolved) trusted)))))
     keys-ht)
   (def revoked (filter string? (or (hash-get doc "revokedKeyIds") '())))
-  (cons (reverse trusted) revoked))
+  (def roles-ht (make-hash-table))
+  (let ((raw-roles (hash-get doc "keyRoles")))
+    (when raw-roles
+      (unless (hash-table? raw-roles)
+        (error "Ed25519 trust store keyRoles must be a JSON object" store-path))
+      (hash-for-each
+        (lambda (kid rlist)
+          (unless (and (string? kid) (hash-key? keys-ht kid))
+            (error "keyRoles references unknown keyId not in trustedKeys" kid))
+          (unless (list? rlist)
+            (error "keyRoles value must be a list of non-empty role strings" kid))
+          (let ((clean '()))
+            (for-each
+              (lambda (r)
+                (unless (and (string? r) (> (string-length r) 0))
+                  (error "Invalid empty or non-string role in keyRoles" kid r))
+                (unless (member r clean) (set! clean (cons r clean))))
+              rlist)
+            (hash-put! roles-ht kid (sort-by clean string<?))))
+        raw-roles)))
+  (list (reverse trusted) revoked roles-ht))
 
 (def (verify-report-doc-offline doc trust-pair)
   (and (hash-table? doc)
-       (let* ((trusted (car trust-pair))
-              (revoked (cdr trust-pair))
+       (let* ((trusted (trust-pair-trusted trust-pair))
+              (revoked (trust-pair-revoked trust-pair))
               (att (hash-get doc "attestation"))
               (kid (and (hash-table? att) (hash-get att "keyId")))
               (pub (trust-store-alist-key-admitted? trusted revoked kid)))
@@ -270,8 +300,8 @@
        expected-subject-count: (expected-subject-count #f)
        required-subjects: (required-subjects '()))
   (and (file-exists? fleet-report-path)
-       (let* ((trusted (car trust-pair))
-              (revoked (cdr trust-pair))
+       (let* ((trusted (trust-pair-trusted trust-pair))
+              (revoked (trust-pair-revoked trust-pair))
               (doc (call-with-input-file fleet-report-path (cut read-json <> object-as-hash: #t)))
               (att (and (hash-table? doc) (hash-get doc "attestation")))
               (subjects (and (hash-table? doc) (hash-get doc "subjects")))
@@ -329,8 +359,8 @@
   (def effective-now
     (or now-epoch (inexact->exact (floor (time->seconds (current-time))))))
   (and (file-exists? cache-path)
-       (let* ((trusted (car trust-pair))
-              (revoked (cdr trust-pair))
+       (let* ((trusted (trust-pair-trusted trust-pair))
+              (revoked (trust-pair-revoked trust-pair))
               (doc (call-with-input-file cache-path (cut read-json <> object-as-hash: #t)))
               (entries (and (hash-table? doc) (hash-get doc "entries"))))
          (and (hash-table? entries)
@@ -385,7 +415,7 @@
 ;;   3. Exact content-derived `keyId = sha256(pem)[:16]` binding.
 ;;   4. At least one active (unrevoked) key remains (rejects zero-active lockout bundles).
 ;; Returns `(cons active-key-ids-sorted revoked-key-ids-sorted)`.
-(def (export-trust-bundle-offline out-path pub-paths (revoked-key-ids '()))
+(def (export-trust-bundle-offline out-path pub-paths (revoked-key-ids '()) (role-bindings '()))
   (unless (and (string? out-path) (> (string-length out-path) 0))
     (error "Invalid output trust bundle path" out-path))
   (unless (pair? pub-paths)
@@ -419,6 +449,19 @@
   (unless (pair? active)
     (error "Refusing to export trust bundle with zero active unrevoked keys"
            revoked-clean))
+  (def roles-ht (make-hash-table))
+  (for-each
+    (lambda (rb)
+      (let ((kid (car rb))
+            (role (cdr rb)))
+        (unless (and (string? kid) (hash-key? keys-ht kid))
+          (error "Refusing to assign role to unknown keyId not in exported bundle" kid role))
+        (unless (and (string? role) (> (string-length role) 0))
+          (error "Invalid empty role name" kid role))
+        (let ((prev (or (hash-get roles-ht kid) '())))
+          (unless (member role prev)
+            (hash-put! roles-ht kid (sort-by (cons role prev) string<?))))))
+    role-bindings)
   (def parent-dir (path-directory out-path))
   (when (and (> (string-length parent-dir) 0) (not (file-exists? parent-dir)))
     (create-directory* parent-dir))
@@ -426,6 +469,8 @@
     (hash ("schema" "de.attestation.ed25519-trust-store.v1")
           ("trustedKeys" keys-ht)
           ("revokedKeyIds" revoked-clean)))
+  (when (> (hash-length roles-ht) 0)
+    (hash-put! doc "keyRoles" roles-ht))
   (call-with-output-file out-path
     (lambda (port)
       (write-json port doc)
@@ -485,8 +530,8 @@
        expected-subject-count: (expected-subject-count #f)
        required-subjects: (required-subjects '()))
   (and (file-exists? bundle-path)
-       (let* ((trusted (car trust-pair))
-              (revoked (cdr trust-pair))
+       (let* ((trusted (trust-pair-trusted trust-pair))
+              (revoked (trust-pair-revoked trust-pair))
               (bundle (call-with-input-file bundle-path (cut read-json <> object-as-hash: #t)))
               (fleet-doc (and (hash-table? bundle)
                               (equal? (hash-get bundle "schema")
@@ -663,6 +708,19 @@
 ;;   4. Exact digest agreement between `subject` bindings (`sysml:...` and `fleet:...`) and `predicate`.
 ;;   5. Optional anti-downgrade `--expected-sysml-sha256` & subject-coverage completeness gates.
 ;; Returns authenticated summary hash-table on pass, or `#f` on any failure (zero leakage).
+(def (collect-verified-roles verified-kids key-roles-ht)
+  (def roles '())
+  (when (hash-table? key-roles-ht)
+    (for-each
+      (lambda (kid)
+        (for-each
+          (lambda (r)
+            (when (and (string? r) (> (string-length r) 0) (not (member r roles)))
+              (set! roles (cons r roles))))
+          (or (hash-get key-roles-ht kid) '())))
+      verified-kids))
+  (sort-by roles string<?))
+
 (def (inspect-dsse-statement-verified
        dsse-path
        trust-pair
@@ -670,12 +728,14 @@
        expected-subject-count: (expected-subject-count #f)
        required-subjects: (required-subjects '())
        min-signatures: (min-signatures 1)
-       required-signers: (required-signers '()))
+       required-signers: (required-signers '())
+       required-roles: (required-roles '()))
   (and (file-exists? dsse-path)
        (exact-integer? min-signatures)
        (>= min-signatures 1)
-       (let* ((trusted (car trust-pair))
-              (revoked (cdr trust-pair))
+       (let* ((trusted (trust-pair-trusted trust-pair))
+              (revoked (trust-pair-revoked trust-pair))
+              (key-roles (trust-pair-key-roles trust-pair))
               (env (with-catch (lambda (_) #f)
                      (lambda () (call-with-input-file dsse-path (cut read-json <> object-as-hash: #t)))))
               (ptype (and (hash-table? env) (hash-get env "payloadType")))
@@ -705,45 +765,48 @@
                                           (not (member kid verified-kids)))
                                  (set! verified-kids (cons kid verified-kids))))))
                          sigs)
-                       (and (>= (length verified-kids) min-signatures)
-                            (andmap (lambda (req) (and (member req verified-kids) #t)) required-signers)
-                            (let ((stmt (with-catch (lambda (_) #f)
-                                          (lambda () (call-with-input-string payload-str
-                                                       (cut read-json <> object-as-hash: #t))))))
-                              (and (hash-table? stmt)
-                                   (equal? (hash-get stmt "_type") *intoto-statement-type*)
-                                   (equal? (hash-get stmt "predicateType") *intoto-predicate-type*)
-                                   (let* ((subjects (hash-get stmt "subject"))
-                                          (pred (hash-get stmt "predicate"))
-                                          (fleet-id (and (hash-table? pred) (hash-get pred "fleetId")))
-                                          (sysml-sha (and (hash-table? pred) (hash-get pred "sysmlSha256")))
-                                          (fleet-sha (and (hash-table? pred) (hash-get pred "fleetPayloadSha256")))
-                                          (root-kid (and (hash-table? pred) (hash-get pred "rootKeyId")))
-                                          (sub-cnt (and (hash-table? pred) (hash-get pred "subjectCount")))
-                                          (ver-subs (and (hash-table? pred) (hash-get pred "verifiedSubjects"))))
-                                     (and (hash-table? pred)
-                                          (equal? (hash-get pred "verifier") "de.offline-attestation-verifier.v1")
-                                          (string? fleet-id) (> (string-length fleet-id) 0)
-                                          (string? sysml-sha) (> (string-length sysml-sha) 0)
-                                          (string? fleet-sha) (> (string-length fleet-sha) 0)
-                                          (string? root-kid) (> (string-length root-kid) 0)
-                                          (exact-integer? sub-cnt) (>= sub-cnt 1)
-                                          (list? ver-subs) (= (length ver-subs) sub-cnt)
-                                          (intoto-subject-digest-matches?
-                                            subjects *intoto-sysml-subject-name* sysml-sha)
-                                          (intoto-subject-digest-matches?
-                                            subjects (string-append "fleet:" fleet-id) fleet-sha)
-                                          (or (not expected-sysml-sha256)
-                                              (equal? sysml-sha expected-sysml-sha256))
-                                          (fleet-subject-coverage-ok?
-                                            ver-subs expected-subject-count required-subjects)
-                                          (hash ("fleetId" fleet-id)
-                                                ("sysmlSha256" sysml-sha)
-                                                ("fleetPayloadSha256" fleet-sha)
-                                                ("rootKeyId" root-kid)
-                                                ("verifiedKeyIds" (sort-by verified-kids string<?))
-                                                ("subjectCount" sub-cnt)
-                                                ("verifiedSubjects" ver-subs))))))))))))))
+                       (let ((verified-roles (collect-verified-roles verified-kids key-roles)))
+                         (and (>= (length verified-kids) min-signatures)
+                              (andmap (lambda (req) (and (member req verified-kids) #t)) required-signers)
+                              (andmap (lambda (req) (and (member req verified-roles) #t)) required-roles)
+                              (let ((stmt (with-catch (lambda (_) #f)
+                                            (lambda () (call-with-input-string payload-str
+                                                         (cut read-json <> object-as-hash: #t))))))
+                                (and (hash-table? stmt)
+                                     (equal? (hash-get stmt "_type") *intoto-statement-type*)
+                                     (equal? (hash-get stmt "predicateType") *intoto-predicate-type*)
+                                     (let* ((subjects (hash-get stmt "subject"))
+                                            (pred (hash-get stmt "predicate"))
+                                            (fleet-id (and (hash-table? pred) (hash-get pred "fleetId")))
+                                            (sysml-sha (and (hash-table? pred) (hash-get pred "sysmlSha256")))
+                                            (fleet-sha (and (hash-table? pred) (hash-get pred "fleetPayloadSha256")))
+                                            (root-kid (and (hash-table? pred) (hash-get pred "rootKeyId")))
+                                            (sub-cnt (and (hash-table? pred) (hash-get pred "subjectCount")))
+                                            (ver-subs (and (hash-table? pred) (hash-get pred "verifiedSubjects"))))
+                                       (and (hash-table? pred)
+                                            (equal? (hash-get pred "verifier") "de.offline-attestation-verifier.v1")
+                                            (string? fleet-id) (> (string-length fleet-id) 0)
+                                            (string? sysml-sha) (> (string-length sysml-sha) 0)
+                                            (string? fleet-sha) (> (string-length fleet-sha) 0)
+                                            (string? root-kid) (> (string-length root-kid) 0)
+                                            (exact-integer? sub-cnt) (>= sub-cnt 1)
+                                            (list? ver-subs) (= (length ver-subs) sub-cnt)
+                                            (intoto-subject-digest-matches?
+                                              subjects *intoto-sysml-subject-name* sysml-sha)
+                                            (intoto-subject-digest-matches?
+                                              subjects (string-append "fleet:" fleet-id) fleet-sha)
+                                            (or (not expected-sysml-sha256)
+                                                (equal? sysml-sha expected-sysml-sha256))
+                                            (fleet-subject-coverage-ok?
+                                              ver-subs expected-subject-count required-subjects)
+                                            (hash ("fleetId" fleet-id)
+                                                  ("sysmlSha256" sysml-sha)
+                                                  ("fleetPayloadSha256" fleet-sha)
+                                                  ("rootKeyId" root-kid)
+                                                  ("verifiedKeyIds" (sort-by verified-kids string<?))
+                                                  ("verifiedRoles" verified-roles)
+                                                  ("subjectCount" sub-cnt)
+                                                  ("verifiedSubjects" ver-subs)))))))))))))))
 
 (def (verify-dsse-statement-offline
        dsse-path
@@ -752,13 +815,15 @@
        expected-subject-count: (expected-subject-count #f)
        required-subjects: (required-subjects '())
        min-signatures: (min-signatures 1)
-       required-signers: (required-signers '()))
+       required-signers: (required-signers '())
+       required-roles: (required-roles '()))
   (and (inspect-dsse-statement-verified dsse-path trust-pair
          expected-sysml-sha256: expected-sysml-sha256
          expected-subject-count: expected-subject-count
          required-subjects: required-subjects
          min-signatures: min-signatures
-         required-signers: required-signers)
+         required-signers: required-signers
+         required-roles: required-roles)
        #t))
 
 ;; Air-gapped offline DSSE v1 counter-signer (`--cosign-dsse-statement`):
@@ -789,7 +854,7 @@
   (unless (inline-pem-string? pub-pem)
     (error "Cosigner public key must be a valid PUBLIC KEY PEM" pub-path))
   (def cosigner-kid (substring (sha256-str pub-pem) 0 16))
-  (def admitted-pub (trust-store-alist-key-admitted? (car trust-pair) (cdr trust-pair) cosigner-kid))
+  (def admitted-pub (trust-store-alist-key-admitted? (trust-pair-trusted trust-pair) (trust-pair-revoked trust-pair) cosigner-kid))
   (unless admitted-pub
     (error "Refusing to cosign with untrusted or revoked keyId" cosigner-kid))
   (def env (call-with-input-file in-dsse-path (cut read-json <> object-as-hash: #t)))
@@ -829,16 +894,30 @@
         ("verifiedKeyIds" (hash-get post-summary "verifiedKeyIds"))
         ("signatureCount" (length next-sigs))))
 
+(def (parse-role-binding raw)
+  (let* ((len (if (string? raw) (string-length raw) 0))
+         (idx (let loop ((i 0))
+                (cond ((>= i len) #f)
+                      ((char=? (string-ref raw i) #\=) i)
+                      (else (loop (+ i 1)))))))
+    (unless (and idx (> idx 0) (< (+ idx 1) len))
+      (error "--role requires <keyId>=<role> format" raw))
+    (cons (substring raw 0 idx) (substring raw (+ idx 1) len))))
+
 (def (parse-export-bundle-args rest)
-  (let loop ((xs rest) (revoked '()) (pubs '()))
+  (let loop ((xs rest) (revoked '()) (roles '()) (pubs '()))
     (cond
-     ((null? xs) (values (reverse pubs) (reverse revoked)))
+     ((null? xs) (values (reverse pubs) (reverse revoked) (reverse roles)))
      ((equal? (car xs) "--revoke")
       (unless (pair? (cdr xs))
         (error "--revoke requires a keyId argument"))
-      (loop (cddr xs) (cons (cadr xs) revoked) pubs))
+      (loop (cddr xs) (cons (cadr xs) revoked) roles pubs))
+     ((equal? (car xs) "--role")
+      (unless (pair? (cdr xs))
+        (error "--role requires a <keyId>=<role> argument"))
+      (loop (cddr xs) revoked (cons (parse-role-binding (cadr xs)) roles) pubs))
      (else
-      (loop (cdr xs) revoked (cons (car xs) pubs))))))
+      (loop (cdr xs) revoked roles (cons (car xs) pubs))))))
 
 (def (parse-nonneg-int-flag flag-name raw)
   (let ((n (and (string? raw) (string->number raw))))
@@ -848,55 +927,62 @@
 
 (def (extract-global-cli-flags args)
   (let loop ((xs args) (json? #f) (max-age #f) (now-ep #f) (max-skew 60)
-             (exp-sysml #f) (exp-cnt #f) (req-subs '()) (emit-stmt #f) (min-sigs 1) (req-signers '()) (pos '()))
+             (exp-sysml #f) (exp-cnt #f) (req-subs '()) (emit-stmt #f) (min-sigs 1)
+             (req-signers '()) (req-roles '()) (pos '()))
     (cond
      ((null? xs)
-      (values json? max-age now-ep max-skew exp-sysml exp-cnt (reverse req-subs) emit-stmt min-sigs (reverse req-signers) (reverse pos)))
+      (values json? max-age now-ep max-skew exp-sysml exp-cnt (reverse req-subs) emit-stmt min-sigs
+              (reverse req-signers) (reverse req-roles) (reverse pos)))
      ((equal? (car xs) "--json")
-      (loop (cdr xs) #t max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers pos))
+      (loop (cdr xs) #t max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers req-roles pos))
      ((equal? (car xs) "--max-age-seconds")
       (unless (pair? (cdr xs)) (error "--max-age-seconds requires an integer argument"))
-      (loop (cddr xs) json? (parse-nonneg-int-flag "--max-age-seconds" (cadr xs)) now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers pos))
+      (loop (cddr xs) json? (parse-nonneg-int-flag "--max-age-seconds" (cadr xs)) now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers req-roles pos))
      ((equal? (car xs) "--now-epoch")
       (unless (pair? (cdr xs)) (error "--now-epoch requires an integer argument"))
-      (loop (cddr xs) json? max-age (parse-nonneg-int-flag "--now-epoch" (cadr xs)) max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers pos))
+      (loop (cddr xs) json? max-age (parse-nonneg-int-flag "--now-epoch" (cadr xs)) max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers req-roles pos))
      ((equal? (car xs) "--max-future-skew-seconds")
       (unless (pair? (cdr xs)) (error "--max-future-skew-seconds requires an integer argument"))
-      (loop (cddr xs) json? max-age now-ep (parse-nonneg-int-flag "--max-future-skew-seconds" (cadr xs)) exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers pos))
+      (loop (cddr xs) json? max-age now-ep (parse-nonneg-int-flag "--max-future-skew-seconds" (cadr xs)) exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers req-roles pos))
      ((equal? (car xs) "--expected-sysml-sha256")
       (unless (and (pair? (cdr xs)) (string? (cadr xs)) (> (string-length (cadr xs)) 0))
         (error "--expected-sysml-sha256 requires a non-empty digest argument"))
-      (loop (cddr xs) json? max-age now-ep max-skew (cadr xs) exp-cnt req-subs emit-stmt min-sigs req-signers pos))
+      (loop (cddr xs) json? max-age now-ep max-skew (cadr xs) exp-cnt req-subs emit-stmt min-sigs req-signers req-roles pos))
      ((equal? (car xs) "--expected-subject-count")
       (unless (pair? (cdr xs)) (error "--expected-subject-count requires an integer argument"))
       (let ((n (parse-nonneg-int-flag "--expected-subject-count" (cadr xs))))
         (unless (>= n 1) (error "--expected-subject-count must be >= 1" n))
-        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml n req-subs emit-stmt min-sigs req-signers pos)))
+        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml n req-subs emit-stmt min-sigs req-signers req-roles pos)))
      ((equal? (car xs) "--require-subject")
       (unless (and (pair? (cdr xs)) (string? (cadr xs)) (> (string-length (cadr xs)) 0))
         (error "--require-subject requires a non-empty subjectKey argument"))
       (let ((next-req (if (member (cadr xs) req-subs) req-subs (cons (cadr xs) req-subs))))
-        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt next-req emit-stmt min-sigs req-signers pos)))
+        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt next-req emit-stmt min-sigs req-signers req-roles pos)))
      ((equal? (car xs) "--emit-statement")
       (unless (and (pair? (cdr xs)) (string? (cadr xs)) (> (string-length (cadr xs)) 0))
         (error "--emit-statement requires a non-empty output file path"))
-      (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs (cadr xs) min-sigs req-signers pos))
+      (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs (cadr xs) min-sigs req-signers req-roles pos))
      ((equal? (car xs) "--min-signatures")
       (unless (pair? (cdr xs)) (error "--min-signatures requires an integer argument"))
       (let ((n (parse-nonneg-int-flag "--min-signatures" (cadr xs))))
         (unless (>= n 1) (error "--min-signatures must be >= 1" n))
-        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt n req-signers pos)))
+        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt n req-signers req-roles pos)))
      ((equal? (car xs) "--require-signer")
       (unless (and (pair? (cdr xs)) (string? (cadr xs)) (> (string-length (cadr xs)) 0))
         (error "--require-signer requires a non-empty keyId argument"))
       (let ((next-signers (if (member (cadr xs) req-signers) req-signers (cons (cadr xs) req-signers))))
-        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs next-signers pos)))
+        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs next-signers req-roles pos)))
+     ((equal? (car xs) "--require-role")
+      (unless (and (pair? (cdr xs)) (string? (cadr xs)) (> (string-length (cadr xs)) 0))
+        (error "--require-role requires a non-empty role name"))
+      (let ((next-roles (if (member (cadr xs) req-roles) req-roles (cons (cadr xs) req-roles))))
+        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers next-roles pos)))
      (else
-      (loop (cdr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers (cons (car xs) pos))))))
+      (loop (cdr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt min-sigs req-signers req-roles (cons (car xs) pos))))))
 
 (def (main . args)
   (let-values (((json-mode? max-age-sec now-ep max-skew-sec expected-sysml-sha
-                 expected-sub-cnt req-subs emit-stmt-path min-sigs req-signers clean-args)
+                 expected-sub-cnt req-subs emit-stmt-path min-sigs req-signers req-roles clean-args)
                 (extract-global-cli-flags args)))
   (when (null? clean-args)
     (error "usage: [--json] --verify-report|--verify-fleet|--verify-fleet-bundle|--verify-cache [--max-age-seconds N] [--now-epoch T] <artifact.json> <trust-store.json> | [--json] --verify-trust-store <trust-store.json> | [--json] --export-trust-bundle <out.json> [--revoke <keyId>]... <pub1.pem>... | [--json] --pack-fleet-bundle <fleet-report.json> <out-bundle.json>"
@@ -916,8 +1002,8 @@
               (exit 1))
             (raise e)))
         (lambda ()
-          (let-values (((pub-paths revoked-ids) (parse-export-bundle-args (cddr clean-args))))
-            (let* ((res (export-trust-bundle-offline out-path pub-paths revoked-ids))
+          (let-values (((pub-paths revoked-ids role-bindings) (parse-export-bundle-args (cddr clean-args))))
+            (let* ((res (export-trust-bundle-offline out-path pub-paths revoked-ids role-bindings))
                    (active (car res))
                    (revoked (cdr res)))
               (if json-mode?
@@ -996,8 +1082,9 @@
                        (exit 1))
                      (raise e)))
                  (lambda () (load-trust-store-json-lite store-path))))
-             (trusted (car trust-pair))
-             (revoked (sort-by (cdr trust-pair) string<?))
+             (trusted (trust-pair-trusted trust-pair))
+             (revoked (sort-by (trust-pair-revoked trust-pair) string<?))
+             (key-roles (trust-pair-key-roles trust-pair))
              (active (sort-by
                        (filter (lambda (kid) (not (member kid revoked)))
                                (map car trusted))
@@ -1006,8 +1093,12 @@
           (if json-mode?
             (emit-json-result! #t "verify-trust-store" store-path store-path
               "trust-store-valid-with-active-keys"
-              (list (cons "activeKeyIds" active)
-                    (cons "revokedKeyIds" revoked)))
+              (append
+                (list (cons "activeKeyIds" active)
+                      (cons "revokedKeyIds" revoked))
+                (if (> (hash-length key-roles) 0)
+                  (list (cons "keyRoles" key-roles))
+                  '())))
             (displayln "MULTI-METHOD-VERIFY-TRUST-STORE-OK " store-path
                        " active=" (length active)
                        " revoked=" (length revoked)))
@@ -1110,24 +1201,28 @@
                            expected-subject-count: expected-sub-cnt
                            required-subjects: req-subs
                            min-signatures: min-sigs
-                           required-signers: req-signers)))
+                           required-signers: req-signers
+                           required-roles: req-roles)))
             (if summary
               (if json-mode?
-                (emit-json-result! #t "verify-dsse-statement" target-path store-path
-                  "authentic-dsse-v1-intoto-statement"
-                  (append
-                    (if expected-sysml-sha (list (cons "expectedSysmlSha256" expected-sysml-sha)) '())
-                    (if expected-sub-cnt (list (cons "expectedSubjectCount" expected-sub-cnt)) '())
-                    (if (pair? req-subs) (list (cons "requiredSubjects" (sort-by req-subs string<?))) '())
-                    (if (> min-sigs 1) (list (cons "minSignatures" min-sigs)) '())
-                    (if (pair? req-signers) (list (cons "requiredSigners" (sort-by req-signers string<?))) '())
-                    (list (cons "fleetId" (hash-get summary "fleetId"))
-                          (cons "sysmlSha256" (hash-get summary "sysmlSha256"))
-                          (cons "fleetPayloadSha256" (hash-get summary "fleetPayloadSha256"))
-                          (cons "rootKeyId" (hash-get summary "rootKeyId"))
-                          (cons "verifiedKeyIds" (hash-get summary "verifiedKeyIds"))
-                          (cons "subjectCount" (hash-get summary "subjectCount"))
-                          (cons "verifiedSubjects" (hash-get summary "verifiedSubjects")))))
+                (let ((vroles (hash-get summary "verifiedRoles")))
+                  (emit-json-result! #t "verify-dsse-statement" target-path store-path
+                    "authentic-dsse-v1-intoto-statement"
+                    (append
+                      (if expected-sysml-sha (list (cons "expectedSysmlSha256" expected-sysml-sha)) '())
+                      (if expected-sub-cnt (list (cons "expectedSubjectCount" expected-sub-cnt)) '())
+                      (if (pair? req-subs) (list (cons "requiredSubjects" (sort-by req-subs string<?))) '())
+                      (if (> min-sigs 1) (list (cons "minSignatures" min-sigs)) '())
+                      (if (pair? req-signers) (list (cons "requiredSigners" (sort-by req-signers string<?))) '())
+                      (if (pair? req-roles) (list (cons "requiredRoles" (sort-by req-roles string<?))) '())
+                      (if (or (pair? vroles) (pair? req-roles)) (list (cons "verifiedRoles" vroles)) '())
+                      (list (cons "fleetId" (hash-get summary "fleetId"))
+                            (cons "sysmlSha256" (hash-get summary "sysmlSha256"))
+                            (cons "fleetPayloadSha256" (hash-get summary "fleetPayloadSha256"))
+                            (cons "rootKeyId" (hash-get summary "rootKeyId"))
+                            (cons "verifiedKeyIds" (hash-get summary "verifiedKeyIds"))
+                            (cons "subjectCount" (hash-get summary "subjectCount"))
+                            (cons "verifiedSubjects" (hash-get summary "verifiedSubjects"))))))
                 (displayln "MULTI-METHOD-VERIFY-DSSE-STATEMENT-OK " target-path))
               (if json-mode?
                 (begin
