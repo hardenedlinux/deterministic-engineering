@@ -1,0 +1,79 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#+TITLE: 10.213 Eleven-Pillar B9+B12..B21 Kernel Closure (B18/B13), 19/19 Quint Overlays, Devenv G2 Hooks & 1,019-File Zero-G2
+#+PROPERTY: JD_ID 10.213
+
+* Overview
+
+Building on [[file:10.212-unified-nine-pillar-marlin-kernel-coordinator-and-17-threat-overlays.org][10.212]], this milestone completes the full **11-pillar** formal-to-Rust
+kernel defense closure on =tao3k/marlin-agent-core= (=1546e031=) and wires
+declarative =devenv.nix= =git-hooks.hooks.agent-defense-g2= regression gates
+across both =marlin-mygo= (=eb9550b=) and =marlin-agent-core= (=1546e031=):
+
+1. Added **B18** (Zero-Knowledge Selective-Disclosure Compliance Proofs) and
+   **B13** (Federated Arbitration Liveness & Bounded Escalation) Rust kernel
+   gates and their paired Quint threat overlays, expanding the live production
+   threat overlay suite to **19/19** =dev/quint/threat/*.qnt= overlays.
+2. Upgraded =UnifiedDefensePillarCoordinator= from 9 to **11 formally verified
+   defense pillars** (=B9= + =B12= + =B13= + =B14= + =B15= + =B16= + =B17= +
+   =B18= + =B19= + =B20= + =B21=) with strict transactional rollback semantics
+   before anchoring composite release certificates in the =B9= RFC 6962 log.
+3. Declared =agent-defense-g2= pre-commit hooks directly in =devenv.nix= in both
+   production repositories (passing =nixfmt --check=), preventing G2 defensive
+   hallucinations from re-entering staged Go, Rust, or Gerbil Scheme files.
+
+* New Formal-to-Rust Kernel Modules & Overlays (=tao3k/marlin-agent-core@1546e031=)
+
+- *B18 Zero-Knowledge Selective-Disclosure Compliance Proofs*
+  - Rust gate: =crates/marlin-agent-kernel/src/zk_selective_disclosure.rs=
+    (=ZkSelectiveDisclosureGate=, =ZkDisclosureClaim=, =ZkDisclosureReceipt=,
+    =ZkDisclosureRejection=).
+  - Enforces zero forbidden-secret over-disclosure, full required compliance
+    predicate coverage, verified Sigma/ZK proof bound to a fresh verifier
+    challenge nonce, and permanent single-use nullifier burning against replay.
+  - Quint threat overlay: =dev/quint/threat/MarlinBackendZkDisclosureOverlay.qnt=
+    - =run-plan=: =PLAN-OK= (=passed=2, skipped=7, verify=false=)
+    - =mbt-audit=: =MBT-AUDIT-OK marlin_backend_zk_disclosure_overlay
+      coverage=6/6 (100.0%) traces=12 transitions=120 uniqueStates=9=
+- *B13 Federated Arbitration Liveness & Bounded Escalation*
+  - Rust gate: =crates/marlin-agent-kernel/src/federated_arbitration_liveness.rs=
+    (=FederatedArbitrationLivenessGate=, =ArbitrationPhase=, =ArbitrationClaim=,
+    =ArbitrationReceipt=, =ArbitrationRejection=).
+  - Enforces bounded auto-retry budgets (=attempts < max_attempts=),
+    deterministic DFS wait-for cycle/deadlock detection and latching, forced
+    escalation/abort on deadlock or budget exhaustion, and mutually exclusive
+    absorbing terminal phases (=Admitted= vs =Escalated=).
+  - Quint threat overlay:
+    =dev/quint/threat/MarlinBackendFederatedArbitrationOverlay.qnt=
+    - =run-plan=: =PLAN-OK= (=passed=2, skipped=7, verify=false=)
+    - =mbt-audit=: =MBT-AUDIT-OK marlin_backend_federated_arbitration_overlay
+      coverage=6/6 (100.0%) traces=12 transitions=120 uniqueStates=9=
+- *11-Pillar Atomic Coordinator (=defense_pillar_coordinator.rs=)*
+  - Composes =B12..B21= into a single transactional =admit_release= call that
+    anchors a verifiable =B9= RFC 6962 inclusion proof only when all 10
+    admission pillars succeed; sabotaging =B18= (or any other pillar) leaves
+    =B13= case phase, =B15= challenge nonce, =B18= nullifier, and =B9= tree head
+    untouched so clean retries succeed.
+
+* Declarative =devenv.nix= Pre-Commit G2 Gates
+
+- =marlin-mygo/devenv.nix= (=eb9550b=): Added =git-hooks.hooks.agent-defense-g2=
+  auditing staged production =*.go= files (excluding =gen/=, =tests/=,
+  =*_test.go=, =vendor/=) via =pkgs.bun= + =@deterministic-engineering/agent-defense-audit=.
+- =marlin-agent-core/devenv.nix= (=1546e031=): Added
+  =git-hooks.hooks.agent-defense-g2= auditing staged production =*.rs= and
+  =*.ss= files (excluding =tests/=, =t/=, =*_test.rs=, =*-test.ss=, =target/=).
+
+* Verification Summary
+
+- =cargo test -p marlin-agent-kernel --lib=: **44 passed, 0 failed** (0.08s),
+  covering all 11 pillars (=B9= + =B12..B21=), 11-pillar
+  =UnifiedDefensePillarCoordinator=, =SM25= E-Stop, and Cedar admission.
+- Quint threat overlays (=dev/quint/threat/*.qnt=): **19/19** overlays pass
+  =quint-modules-resolver typecheck= (=ALL_19_THREAT_OVERLAYS_TYPECHECK_OK=).
+- =nixfmt --check= passed on both =marlin-mygo/devenv.nix= and
+  =marlin-agent-core/devenv.nix= (=NIXFMT_CHECK_OK=).
+- Standalone =@deterministic-engineering/agent-defense-audit= live sweep:
+  - =marlin-mygo= (=just audit-g2=): =Summary: audited=247 findings=0=
+  - =marlin-agent-core= (=just audit-g2=): =Summary: audited=772 findings=0=
+  - Combined live production total: **1,019 files, 0 G2 findings**.
