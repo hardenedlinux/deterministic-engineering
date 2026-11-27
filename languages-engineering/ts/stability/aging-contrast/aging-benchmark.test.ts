@@ -1128,10 +1128,75 @@ impl SingleFlightQueryCache {
   }
 }`,
   },
+
+  // ── Wave-9 Search-Box Input Sanitization & Bounded Clipboard Paste Cap (SA81-SA84, SM16) ──
+  {
+    id: 'SA81',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-paste-bypasses-input-cap',
+    source: `
+const MAX_HELM_INPUT_BYTES: usize = 2_048;
+impl HelmOverlay {
+  fn edit(&mut self, action: Action, yank_register: &mut String) {
+    match action {
+      Action::PasteSelection => {
+        let clean: String = yank_register.chars().filter(|c| !c.is_control()).collect();
+        self.editor.insert_text(&clean);
+      }
+      _ => {}
+    }
+  }
+}`,
+  },
+  {
+    id: 'SA82',
+    language: 'ts',
+    expectedPass: false,
+    expectedRuleId: 'ts-search-input-uncapped-paste',
+    source: `
+export function bindSearchPaste(input: HTMLInputElement, ac: AbortController) {
+  input.addEventListener('paste', (ev: ClipboardEvent) => {
+    const pasted = ev.clipboardData?.getData('text') ?? '';
+    input.value += pasted;
+  }, { signal: ac.signal });
+}`,
+  },
+  {
+    id: 'SA83',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+const MAX_HELM_INPUT_BYTES: usize = 2_048;
+impl HelmOverlay {
+  fn edit(&mut self, action: Action, yank_register: &mut String) {
+    match action {
+      Action::PasteSelection => {
+        self.insert_text(yank_register);
+      }
+      _ => {}
+    }
+  }
+}`,
+  },
+  {
+    id: 'SA84',
+    language: 'ts',
+    expectedPass: true,
+    source: `
+const MAX_SEARCH_CHARS = 2048;
+export function bindSearchPaste(input: HTMLInputElement, ac: AbortController) {
+  input.addEventListener('paste', (ev: ClipboardEvent) => {
+    const raw = ev.clipboardData?.getData('text') ?? '';
+    const clean = raw.replace(/[\\u0000-\\u001f]/g, '').slice(0, MAX_SEARCH_CHARS);
+    input.value = (input.value + clean).slice(0, MAX_SEARCH_CHARS);
+  }, { signal: ac.signal });
+}`,
+  },
 ];
 
-describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA80)', () => {
-  test('achieves 80/80 exact independent-gold match (tp=47, tn=33, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
+describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA84)', () => {
+  test('achieves 84/84 exact independent-gold match (tp=49, tn=35, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
     let tp = 0;
     let tn = 0;
     let fp = 0;
@@ -1154,7 +1219,7 @@ describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA80)', () =
       }
     }
 
-    expect({tp, tn, fp, fn}).toEqual({tp: 47, tn: 33, fp: 0, fn: 0});
+    expect({tp, tn, fp, fn}).toEqual({tp: 49, tn: 35, fp: 0, fn: 0});
   });
 
   test('clean Rust deterministic buffer pool & bounded retry passes with 0 findings', () => {

@@ -22,7 +22,8 @@ export type AgingMechanism =
   | 'SM12-ipc-half-open-reconnect'
   | 'SM13-ime-composition-race'
   | 'SM14-chaos-circuit-envelope'
-  | 'SM15-search-snapshot-isolation';
+  | 'SM15-search-snapshot-isolation'
+  | 'SM16-search-input-sanitization';
 
 export interface AgingFinding {
   ruleId: string;
@@ -644,6 +645,23 @@ function auditRust(clean: string): AgingFinding[] {
     }
   }
 
+  // 16. PasteSelection arm bypasses search-box input byte cap declared in the same file (SM16: helm/editor.rs).
+  const pasteArmMatch = /\bPasteSelection\s*=>\s*\{/.exec(clean);
+  if (pasteArmMatch && /\bMAX_[A-Z0-9_]*INPUT_BYTES\b/.test(clean)) {
+    const armBody = extractBraceBlock(clean, pasteArmMatch.index);
+    const insertsDirectly = /\.insert_text\s*\(/.test(armBody) && !/\bself\.insert_text\s*\(/.test(armBody);
+    const enforcesCap = /\b(?:MAX_[A-Z0-9_]*INPUT_BYTES|remaining|saturating_sub|sanitize_bounded)\b/.test(armBody);
+    if (insertsDirectly && !enforcesCap) {
+      findings.push({
+        ruleId: 'rust-paste-bypasses-input-cap',
+        mechanism: 'SM16-search-input-sanitization',
+        language: 'rust',
+        line: lineOfIndex(clean, pasteArmMatch.index),
+        message: 'PasteSelection inserts yank_register directly into editor bypassing MAX_*_INPUT_BYTES cap (SM16).',
+      });
+    }
+  }
+
   return findings;
 }
 
@@ -826,6 +844,23 @@ function auditTypeScript(clean: string): AgingFinding[] {
           message: 'Input blur handler clears focused state without canceling active IME composition/preedit, leaving orphaned preedit state (SM13).',
         });
       }
+    }
+  }
+
+  // 10. Search/input clipboard paste handler appends clipboardData without byte/length cap or control-char stripping (SM16).
+  const pasteEvMatch = /addEventListener\s*\(\s*['"]paste['"]/.exec(clean);
+  if (pasteEvMatch) {
+    const fnScope = extractEnclosingBlock(clean, pasteEvMatch.index);
+    const readsClipboard = /clipboardData/.test(fnScope);
+    const hasCap = /\b(?:slice\s*\(\s*0\s*,|maxLen|maxLength|maxBytes|MAX_\w+|truncate|sanitize)\b/i.test(fnScope);
+    if (readsClipboard && !hasCap) {
+      findings.push({
+        ruleId: 'ts-search-input-uncapped-paste',
+        mechanism: 'SM16-search-input-sanitization',
+        language: 'ts',
+        line: lineOfIndex(clean, pasteEvMatch.index),
+        message: 'Clipboard paste handler writes clipboardData directly into input/query without length cap or control-char sanitization (SM16).',
+      });
     }
   }
 

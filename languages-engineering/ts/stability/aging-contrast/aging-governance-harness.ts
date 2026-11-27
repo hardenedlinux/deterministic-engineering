@@ -120,6 +120,14 @@ const MECHANISM_DIRECTIVES: Record<AgingMechanism, AgingRemediationDirective> = 
     antiEvasionWarning:
       'Do NOT evade by sharing one unverified cached index across distinct worktrees or cascade-failing healthy followers when one caller times out.',
   },
+  'SM16-search-input-sanitization': {
+    mechanism: 'SM16-search-input-sanitization',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Route insert, paste/yank, and programmatic setInput through one shared bounded sanitizer enforcing MAX_INPUT_BYTES on UTF-8/grapheme boundaries, stripping control/ANSI chars, and shrinking oversized capacity on clear.',
+    antiEvasionWarning:
+      'Do NOT evade by capping only keystroke typing while leaving PasteSelection, clipboard paste, or set_input uncapped.',
+  },
 };
 
 export function getAgingRemediation(finding: AgingFinding): AgingRemediationDirective {
