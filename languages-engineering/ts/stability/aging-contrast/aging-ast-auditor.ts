@@ -21,7 +21,8 @@ export type AgingMechanism =
   | 'SM9-singleflight-deadlock'
   | 'SM12-ipc-half-open-reconnect'
   | 'SM13-ime-composition-race'
-  | 'SM14-chaos-circuit-envelope';
+  | 'SM14-chaos-circuit-envelope'
+  | 'SM15-search-snapshot-isolation';
 
 export interface AgingFinding {
   ruleId: string;
@@ -398,11 +399,12 @@ function auditRust(clean: string): AgingFinding[] {
   }
 
   // 2. Detached tokio::spawn (dropping JoinHandle does NOT cancel task!).
-  // Exclude tail-expression returns inside functions returning `-> ...JoinHandle<...>`.
+  // Exclude tail-expression returns inside functions returning `-> ...JoinHandle<...>`
+  // and handles passed directly into a tracked task wrapper (e.g. `RuntimeTask::new(..., tokio::spawn(...))`).
   const detachedRe = /(?:let\s+_\s*=\s*tokio::spawn\s*\(|^\s*tokio::spawn\s*\()/gm;
   let detachedMatch: RegExpExecArray | null;
   while ((detachedMatch = detachedRe.exec(clean)) !== null) {
-    if (/\b(?:TaskTracker|JoinSet)\b/.test(clean)) break;
+    if (/\b(?:TaskTracker|JoinSet|task_tracker)\b/.test(clean)) break;
     const prefix = clean.slice(Math.max(0, detachedMatch.index - 400), detachedMatch.index);
     const returnsJoinHandle = /->\s*[^{]*\bJoinHandle\b[^{]*\{[^;]*$/.test(prefix);
     const lineEnd = clean.indexOf('\n', detachedMatch.index);
@@ -603,6 +605,41 @@ function auditRust(clean: string): AgingFinding[] {
         language: 'rust',
         line: lineOfIndex(clean, rustReconnectMatch.index),
         message: 'Stream reconnect replaces active stream without taking/aborting the superseded stream or advancing session epoch (SM12).',
+      });
+    }
+  }
+
+  // 14. Unserialized cold-start index open or missing workspace root verification (SM15: search_tool.rs split-brain / cross-root).
+  const getOrOpenMatch = /\bfn\s+get_or_open\s*\([^)]*\)/.exec(clean);
+  if (getOrOpenMatch) {
+    const fnBody = extractBraceBlock(clean, getOrOpenMatch.index);
+    const readsInner = /\bself\.inner\.read\s*\(\s*\)/.test(fnBody);
+    const callsAttach = /\bself\.attach\s*\(/.test(fnBody);
+    const serializesOpen = /\b(?:open_lock|init_lock|build_lock)\b/.test(fnBody) || /\bself\.inner\.write\s*\(\s*\)/.test(fnBody);
+    const verifiesRoot = /\b(?:canonical|root\s*==|==\s*root|matches_root|workspace_root)\b/.test(fnBody);
+    if (readsInner && callsAttach && (!serializesOpen || !verifiesRoot)) {
+      findings.push({
+        ruleId: 'rust-cold-open-split-brain',
+        mechanism: 'SM15-search-snapshot-isolation',
+        language: 'rust',
+        line: lineOfIndex(clean, getOrOpenMatch.index),
+        message: 'Lazy get_or_open builds outside an init lock or skips workspace root matching, causing concurrent cold-start split-brain or cross-worktree contamination (SM15).',
+      });
+    }
+  }
+
+  // 15. Single-flight watch follower returns error immediately when leader drops instead of re-electing (SM15: search_scheduler.rs).
+  const changedErrMatch = /if\s+\w+\.changed\s*\(\s*\)\.await\.is_err\s*\(\s*\)\s*\{[\s\S]{0,160}return\s+Err\s*\(/.exec(clean);
+  if (changedErrMatch && /\bin_flight\b/.test(clean)) {
+    const fnScope = extractEnclosingBlock(clean, changedErrMatch.index);
+    const reelects = /\bcontinue\s*'[a-zA-Z_]\w*\b|\breelect\b|\bretry_leader\b/.test(fnScope);
+    if (!reelects) {
+      findings.push({
+        ruleId: 'rust-singleflight-cancel-cascade',
+        mechanism: 'SM15-search-snapshot-isolation',
+        language: 'rust',
+        line: lineOfIndex(clean, changedErrMatch.index),
+        message: 'Single-flight follower fails immediately when leader watch channel closes instead of re-electing a surviving leader (SM15).',
       });
     }
   }

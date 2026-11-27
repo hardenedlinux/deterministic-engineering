@@ -1039,10 +1039,99 @@ class SearchBox {
   }
 }`,
   },
+
+  // ── Wave-8 Search Index Snapshot Isolation & Single-Flight Follower Re-Election (SA77-SA80, SM15) ──
+  {
+    id: 'SA77',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-cold-open-split-brain',
+    source: `
+impl SharedSearchIndexSlot {
+  pub fn get_or_open(&self, workspace: &Path) -> Arc<RwLock<WorkspaceSearchIndex>> {
+    if let Ok(guard) = self.inner.read() {
+      if let Some(existing) = guard.as_ref() {
+        return existing.clone();
+      }
+    }
+    let opened = Arc::new(RwLock::new(open_index(workspace)));
+    self.attach(opened.clone());
+    opened
+  }
+}`,
+  },
+  {
+    id: 'SA78',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-singleflight-cancel-cascade',
+    source: `
+impl SingleFlightQueryCache {
+  async fn wait_or_lead(&self, key: String, mut rx: watch::Receiver<Option<Result<String, String>>>) -> Result<String, String> {
+    let _ = &self.in_flight;
+    loop {
+      if let Some(res) = rx.borrow().clone() {
+        return res;
+      }
+      if rx.changed().await.is_err() {
+        return Err("coalesced search query cancelled".to_owned());
+      }
+    }
+  }
+}`,
+  },
+  {
+    id: 'SA79',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+impl SharedSearchIndexSlot {
+  pub fn get_or_open(&self, workspace: &Path) -> Arc<RwLock<WorkspaceSearchIndex>> {
+    let canonical = canonicalize_root(workspace);
+    if let Ok(guard) = self.inner.read() {
+      if let Some(existing) = guard.as_ref() {
+        if existing.workspace_root == canonical {
+          return existing.index.clone();
+        }
+      }
+    }
+    let _open_guard = self.open_lock.lock();
+    if let Ok(guard) = self.inner.read() {
+      if let Some(existing) = guard.as_ref() {
+        if existing.workspace_root == canonical {
+          return existing.index.clone();
+        }
+      }
+    }
+    let opened = Arc::new(RwLock::new(open_index(&canonical)));
+    self.attach(opened.clone());
+    opened
+  }
+}`,
+  },
+  {
+    id: 'SA80',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+impl SingleFlightQueryCache {
+  async fn wait_or_lead(&self, key: String, mut rx: watch::Receiver<Option<Result<String, String>>>) -> Result<String, String> {
+    let _ = &self.in_flight;
+    'election: loop {
+      if let Some(res) = rx.borrow().clone() {
+        return res;
+      }
+      if rx.changed().await.is_err() {
+        continue 'election;
+      }
+    }
+  }
+}`,
+  },
 ];
 
-describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA76)', () => {
-  test('achieves 76/76 exact independent-gold match (tp=45, tn=31, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
+describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA80)', () => {
+  test('achieves 80/80 exact independent-gold match (tp=47, tn=33, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
     let tp = 0;
     let tn = 0;
     let fp = 0;
@@ -1065,7 +1154,7 @@ describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA76)', () =
       }
     }
 
-    expect({tp, tn, fp, fn}).toEqual({tp: 45, tn: 31, fp: 0, fn: 0});
+    expect({tp, tn, fp, fn}).toEqual({tp: 47, tn: 33, fp: 0, fn: 0});
   });
 
   test('clean Rust deterministic buffer pool & bounded retry passes with 0 findings', () => {

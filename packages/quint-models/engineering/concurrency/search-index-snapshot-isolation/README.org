@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Search Index Snapshot Isolation, Cold-Open Serialization & Follower Re-Election
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.concurrency.search-index-snapshot-isolation=
+- *Subdomain*: =quint.engineering.concurrency=
+- *Quint Module*: =concurrency_search_index_snapshot_isolation= (=[[file:SearchIndexSnapshotIsolation.qnt][SearchIndexSnapshotIsolation.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/concurrency/search-index-snapshot-isolation/SearchIndexSnapshotIsolation=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Concurrent cold-start opens serialize into at most one authoritative index per workspace root (zero split-brain builds), queries against a switched workspace root never return another root's cached snapshot, cancelling a single-flight query leader re-elects a surviving follower with zero cascade failures, and releasing readers allows tombstone compaction to keep pinnedSegments <= activeReaders + 1.
+
+#+begin_src quint
+val safety = (h.activeIndexesForRoot <= 1 and h.splitBrainOpens == 0 and h.crossWorkspaceHits == 0 and h.cascadeFailures == 0 and h.pinnedSegments <= (h.activeReaders + 1) and h.snapshotGen >= 1)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =serialize-cold-open= | =stepSplitBrainColdOpen= | =h.splitBrainOpens > 0= |
+| =verify-workspace-root= | =stepCrossWorkspaceContamination= | =h.crossWorkspaceHits > 0= |
+| =reelect-on-leader-cancel= | =stepSingleFlightCascadeFailure= | =h.cascadeFailures > 0= |
+
+* Grounded Papers & Specifications
+
+- *J. Gray & A. Reuter (1993)*: Transaction Processing: Concepts and Techniques — snapshot isolation prevents readers from observing torn or cross-partition state during incremental compaction.
+- *M. Stonebraker & L. Rowe (SIGMOD 1986)*: The Design of Postgres — generational MVCC snapshots bound tombstone retention once readers release old epochs.
+- *J. Dean & L. Barroso (CACM 2013)*: The Tail at Scale — single-flight coalescing must isolate per-caller cancellation so one cancelled leader does not cascade-fail healthy followers.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/concurrency/search-index-snapshot-isolation/SearchIndexSnapshotIsolation.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/concurrency/search-index-snapshot-isolation/SearchIndexSnapshotIsolation.qnt --main=concurrency_search_index_snapshot_isolation --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite two-workspace, single-leader/follower snapshot isolation abstraction; verifies cold-open serialization, workspace root isolation, follower re-election under leader cancellation, and bounded reader-pinned segment compaction, not OS filesystem rename durability or Tantivy inverted-index compression internals.

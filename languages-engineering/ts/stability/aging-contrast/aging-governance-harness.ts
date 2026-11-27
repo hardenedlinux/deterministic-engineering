@@ -88,6 +88,38 @@ const MECHANISM_DIRECTIVES: Record<AgingMechanism, AgingRemediationDirective> = 
     antiEvasionWarning:
       'Do NOT evade by adding arbitrary timeouts over a leaked in_flight flag without fixing cancellation safety and armed notify registration.',
   },
+  'SM12-ipc-half-open-reconnect': {
+    mechanism: 'SM12-ipc-half-open-reconnect',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Derive a per-attempt cancelable stream context retired before every reconnect or target swap, advance a monotonic session_epoch fence rejecting stale frames, and deduplicate replayed mutations by idempotency key.',
+    antiEvasionWarning:
+      'Do NOT evade by opening replacement streams on a shared long-lived context or silencing duplicate commit errors without retiring the superseded stream.',
+  },
+  'SM13-ime-composition-race': {
+    mechanism: 'SM13-ime-composition-race',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Gate Enter submissions and global shortcuts on !(event.isComposing || event.keyCode === 229) and atomically clear composing/preedit state on blur so focus changes never leave orphaned compositions.',
+    antiEvasionWarning:
+      'Do NOT evade by delaying keydown handlers with setTimeout while still firing shortcuts or submitting raw preedit text during composition.',
+  },
+  'SM14-chaos-circuit-envelope': {
+    mechanism: 'SM14-chaos-circuit-envelope',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Enforce a bounded consecutive-failure budget that trips open with typed fast-fail refusals under sustained faults and parks retries until a bounded half-open recovery probe or target swap succeeds.',
+    antiEvasionWarning:
+      'Do NOT evade by capping backoff duration while retrying indefinitely or returning silent empty payloads under active faults.',
+  },
+  'SM15-search-snapshot-isolation': {
+    mechanism: 'SM15-search-snapshot-isolation',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Serialize cold-start index opening behind an open_lock with double-checked canonical workspace-root matching, re-elect a surviving follower if a single-flight query leader cancels, and compact obsolete segments once readers drop.',
+    antiEvasionWarning:
+      'Do NOT evade by sharing one unverified cached index across distinct worktrees or cascade-failing healthy followers when one caller times out.',
+  },
 };
 
 export function getAgingRemediation(finding: AgingFinding): AgingRemediationDirective {

@@ -19,22 +19,22 @@
 
 This benchmark evaluates whether a language-agnostic, multi-method engineering
 gate can deterministically detect, refute, and guide AI repair of *long-running
-software aging, interactive search/IME stability, and chaos/IPC reconnect
-resilience defects* (=SM1=–=SM14= in
+software aging, interactive search/IME stability, chaos/IPC reconnect resilience,
+and search-index snapshot isolation defects* (=SM1=–=SM15= in
 [[file:../../40-49-research/40-reference-studies/40.04-software-aging-and-steady-state-stability.org][40.04]] and
 [[file:../../40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org][40.05]]) across five implementation
 languages (**Go, Rust, TypeScript, C, C++**) and realistic multi-layer agent/UI
 architectures (**Marlin Rust/Scheme Host + MyGo Go Bridge + WebView TS UI**)
 without requiring multi-hour soak runs in CI.
 
-- *Independent Gold*: Every static case (=SA01=–=SA76=), closed-loop persona,
+- *Independent Gold*: Every static case (=SA01=–=SA80=), closed-loop persona,
   formal countermodel, metamorphic search property (=MR1=–=MR6=), chaos/IME/IPC
-  structure-aware fuzz property, and runtime soak assertion carries a fixed
-  independent expected outcome (=pass= vs. =refuse= + exact mechanism / rule /
-  ITF predicate).
+  and snapshot-isolation structure-aware fuzz property, and runtime soak
+  assertion carries a fixed independent expected outcome (=pass= vs. =refuse= +
+  exact mechanism / rule / ITF predicate).
 - *Five Coupled Verification Layers*:
   1. *Formal Finite-State Models (Quint + Apalache 0.62.1 + 100% =--mbt=)*:
-     15 stability models (36 auto-derived countermodels) + 3 UI concurrency
+     16 stability models (39 auto-derived countermodels) + 3 UI concurrency
      kernel models (7 auto-derived countermodels) covering cyclic drain, buffer
      ratchet, metastable retry collapse, GC headroom pacing, slow-consumer
      fan-out eviction, bounded projection idle eviction & side-map cleanup,
@@ -46,21 +46,25 @@ without requiring multi-hour soak runs in CI.
      priority-isolated bounded mailboxes & $O(1)$ latest-wins =watch= channels
      (=SM11=), IPC half-open stream retirement + monotonic epoch fencing +
      idempotent replay (=SM12=), interactive search-box IME composition + atomic
-     blur cleanup + shortcut isolation (=SM13=), and chaos fault-injection
-     recovery envelopes with circuit shedding & half-open probe recovery (=SM14=).
+     blur cleanup + shortcut isolation (=SM13=), chaos fault-injection recovery
+     envelopes with circuit shedding & half-open probe recovery (=SM14=), and
+     search-index cold-open serialization + multi-workspace root isolation +
+     single-flight follower re-election & reader-bounded compaction (=SM15=).
   2. *Unbounded Algebraic Proofs (Lean 4)*:
      [[file:../../../packages/lean-models/DeterministicEngineering/Core/Stability.lean][Core/Stability.lean]]
-     (Sections 1–15, zero =sorry=) proving arbitrary-cycle zero drift, ARB
-     linear exhaustion of any finite capacity, spike-independent capped pool
+     (Sections 1–16, 49 theorems, zero =sorry=) proving arbitrary-cycle zero drift,
+     ARB linear exhaustion of any finite capacity, spike-independent capped pool
      ceilings, GC headroom cycle bounds, bounded fan-out retention,
      bounded-projection idle-eviction liveness, lag-resync/coalesced
      write-amplification bounds, UI viewport/render-budget independence from
      transcript history length, =SM8=–=SM11= monotonic generation fencing,
      single-flight cancellation liveness, metamorphic query algebra, and
-     priority-isolated bounded mailbox headroom & watch-slot monotonicity, plus
+     priority-isolated bounded mailbox headroom & watch-slot monotonicity,
      =SM12=–=SM14= arbitrary-reconnect stream retirement & epoch monotonicity,
      idempotent deduplication, IME Enter/blur/shortcut guards, and bounded
-     circuit-breaker fault-injection retry envelopes.
+     circuit-breaker fault-injection retry envelopes, plus =SM15= serialized
+     cold-open authority, zero-cascade follower re-election, and quiescent
+     segment compaction.
   3. *Live Runtime, PBT & Structure-Aware Fuzzing Contrasts (5 Languages + Marlin/MyGo Full-Stack)*:
      - Go 1.26.7 (via modular =devenv=): =testing/synctest= virtual-clock
        quiescence bubbles, real =runtime.ReadMemStats= sub-slice pinning &
@@ -79,31 +83,31 @@ without requiring multi-hour soak runs in CI.
        soak, and native OLS Slope Oracle.
      - TypeScript / Bun: Reusable Independent Steady-State Slope Oracle
        ([[file:../../../languages-engineering/ts/stability/aging-contrast/slope-oracle.ts][slope-oracle.ts]]),
-       live Quint =--mbt= ITF state-machine refinement across all 15 formal
-       stability models ([[file:../../../languages-engineering/ts/stability/aging-contrast/mbt-stability-replay.test.ts][mbt-stability-replay.test.ts]]
-       and [[file:../../../languages-engineering/ts/stability/aging-contrast/ipc-ime-chaos-fuzz.test.ts][ipc-ime-chaos-fuzz.test.ts]]),
+       live Quint =--mbt= ITF state-machine refinement across all 16 formal
+       stability models ([[file:../../../languages-engineering/ts/stability/aging-contrast/mbt-stability-replay.test.ts][mbt-stability-replay.test.ts]],
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/ipc-ime-chaos-fuzz.test.ts][ipc-ime-chaos-fuzz.test.ts]],
+       and [[file:../../../languages-engineering/ts/stability/aging-contrast/search-index-snapshot-fuzz.test.ts][search-index-snapshot-fuzz.test.ts]]),
        500-case parametric search metamorphic fuzzing across =MR1=–=MR6= with
        3 deterministic refutations ([[file:../../../languages-engineering/ts/stability/aging-contrast/search-metamorphic-fuzz.test.ts][search-metamorphic-fuzz.test.ts]]),
-       750-trial structure-aware IPC/IME/chaos fuzzing (250 trials each across
-       =SM12=–=SM14= with 6 deterministic bad-SUT refutations + 18-trace live
-       Quint ITF MBT replay in [[file:../../../languages-engineering/ts/stability/aging-contrast/ipc-ime-chaos-fuzz.test.ts][ipc-ime-chaos-fuzz.test.ts]]),
+       1,000-trial structure-aware IPC/IME/chaos/snapshot-isolation fuzzing (250
+       trials each across =SM12=–=SM15= + 24 live Quint ITF MBT traces),
        and the 4-layer Marlin + MyGo + WebView UI soak suite
        ([[file:../../../languages-engineering/ts/stability/aging-contrast/marlin-mygo-fullstack-soak.test.ts][marlin-mygo-fullstack-soak.test.ts]]).
-  4. *76-Case Multi-Language Aging, Search/IME & IPC/Chaos AST Auditor (=SA01=–=SA76=)*:
+  4. *80-Case Multi-Language Aging, Search/IME, IPC/Chaos & Snapshot AST Auditor (=SA01=–=SA80=)*:
      [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-ast-auditor.ts][aging-ast-auditor.ts]]
      & [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-benchmark.test.ts][aging-benchmark.test.ts]]
-     (=tp=45, tn=31, fp=0, fn=0=), empirically calibrated to **0 findings** across
-     full sweeps of **all 250 Go source files in =marlin-mygo=** and **all 103 Rust
-     source files across =marlin-agent-{tui,search-engine,tooling,app-server,stream}=**.
+     (=tp=47, tn=33, fp=0, fn=0=), empirically calibrated to **0 findings** across
+     full sweeps of **all 280 Go+TS source files in =marlin-mygo=** and **all 154
+     Rust source files across =marlin-agent-{tui,search-engine,tooling,app-server,stream,gerbil-scheme}=**.
   5. *Closed-Loop AI Aging Governance Harness & CLI*:
      [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-governance-harness.ts][aging-governance-harness.ts]],
      [[file:../../../languages-engineering/ts/stability/aging-contrast/agent-stability-audit.ts][agent-stability-audit.ts]]
      (=just audit-agent-stability=), emitting SARIF 2.1.0 and structured C2
-     aging repair packets across =SM2=–=SM5=, =SM7=–=SM9=, and =SM12=–=SM14=,
+     aging repair packets across =SM2=–=SM5=, =SM7=–=SM9=, and =SM12=–=SM15=,
      validated against 3 AI agent personas plus a full-stack Marlin/MyGo C2
      convergence scenario.
 
-* Seventy-Six-Case Static Aging, Search/IME & IPC Concurrency Cohort (=SA01=–=SA76=)
+* Eighty-Case Static Aging, Search/IME, IPC & Snapshot Concurrency Cohort (=SA01=–=SA80=)
 :PROPERTIES:
 :CUSTOM_ID: bench3006-cohort
 :END:
@@ -186,6 +190,10 @@ without requiring multi-hour soak runs in CI.
 | =SA74= | Rust | Clean control | Pass (0 findings) | Epoch-fenced reconnect checking =frame.session_epoch >= self.session_epoch= + idempotent replay set |
 | =SA75= | TypeScript | Clean control | Pass (0 findings) | IME-safe =keydown= checking =e.isComposing || e.keyCode === 229= before Enter submit |
 | =SA76= | TypeScript | Clean control | Pass (0 findings) | =compositionstart= paired with =compositionend= and =blur= listener cancelling active preedit |
+| =SA77= | Rust | =SM15= | Refuse (=rust-cold-open-split-brain=) | Lazy =get_or_open= building outside an init lock or skipping workspace root matching (=search_tool.rs= pattern) |
+| =SA78= | Rust | =SM15= | Refuse (=rust-singleflight-cancel-cascade=) | Single-flight follower failing immediately on =rx.changed().await.is_err()= instead of re-electing (=search_scheduler.rs= pattern) |
+| =SA79= | Rust | Clean control | Pass (0 findings) | Double-checked =open_lock= + canonical =workspace_root= match before returning cached index |
+| =SA80= | Rust | Clean control | Pass (0 findings) | Single-flight ='election: loop= re-electing a surviving follower when the leader watch channel closes |
 
 * Empirical Adversarial Challenge Receipts on Downstream Packages
 :PROPERTIES:
@@ -214,6 +222,7 @@ package-domain adversarial test suites:
 | =marlin-mygo= | =control/transport/{sidecar_pgid_stability,federation_bound}_test.go=, =control/grpcwire/resilience_budget_test.go=, =engine/contextgov/store_eviction_test.go=, =engine/composer/voice_capture.go= | =SM2=, =SM3=, =SM4=, =SM5= | Live RED (0/4): sidecar grandchild PID survived =Stop()=; =ProbeAll= spiked to 64 concurrent pings; =ContinuityCoordinator= spun 26 unbudgeted retries; =GovernanceStore= retained 4,500 entries unboundedly | Hardened =sidecar.go= (+ =Setpgid: true= & =-pid= group signal), =federation.go= (cap=16 semaphore), =resilience_sync.go= (=DefaultMaxConsecutiveSyncFailures=12= + wake reset), =contextgov/store.go= (FIFO cap=4096), =voice_capture.go= (=time.NewTimer= + =Stop=): all 4 packages =-race= PASS |
 | =marlin-mygo= | =control/grpcwire/projection_bridge_stability_test.go=, =cmd/marlin-web/ime_guard_test.go=, =examples/plugins/ts-session-radar/src/main.ts= | =SM2=, =SM12=, =SM13=, =SM14= | Live RED (0/2): =ProjectionStreamBridge.Start()= re-entry leaked 6 concurrent half-open streams & hot-swap hung stalled streams; sustained fault injection hammered 253 unbounded watch retries; =marlin-web= global =keydown= fired shortcuts during IME composition; =ts-session-radar= leaked click listener | Hardened =projection_bridge.go=, =governance_bridge.go=, =driver.go= (swap-aware per-attempt =streamCtx= retirement + =DefaultMaxConsecutiveProjectionFailures=12= circuit shedding & probe recovery), =cmd/marlin-web/{ime_guard.go,resilience_web.go}= (=isComposing \|\| keyCode==229= gate), =ts-session-radar/src/main.ts= (=AbortController= + =pagehide=): =go test -race ./control/grpcwire ./cmd/marlin-web= PASS, =GOOS=js GOARCH=wasm go vet= clean, **280/280 own Go+TS files in =marlin-mygo= = 0 findings** |
 | =marlin-agent-core= | =crates/marlin-agent-app-server/src/bin/marlin_mygo_host.rs=, =crates/marlin-gerbil-scheme/src/scheme_host_runtime.rs= | =SM4=, =SM5=, =SM5c= | Detached =tokio::spawn= UI command router silently exited on first =RecvError::Lagged=, killing live LLM model hot-switching; =scheme_host_runtime.rs= used =tokio::sync::mpsc::unbounded_channel= for =effect_tx= | Hardened =marlin_mygo_host.rs= (=run_ui_command_router_loop= explicitly surviving =RecvError::Lagged= + tracked shutdown =JoinHandle=) and =scheme_host_runtime.rs= (bounded =mpsc::channel(64)=): =marlin-mygo-host stability_tests= 2/2 PASS, =cargo check -p marlin-gerbil-scheme= clean, **154/154 Rust files across core 6 crates = 0 findings** |
+| =marlin-agent-core= | =crates/marlin-agent-tooling/tests/unit/search_scheduler_stability.rs= | =SM15= | Live RED (2/4 failed, 0.08s): cancelling single-flight query leader cascade-failed healthy followers with =Err("coalesced search query cancelled")=; 6 concurrent cold opens produced split-brain distinct =WorkspaceSearchIndex Arc= handles & unchecked root reuse across worktrees | Hardened =search_scheduler.rs= (='election: loop= re-electing surviving follower on leader watch close) and =search_tool.rs= (=open_lock= double-checked canonical =workspace_root= matching): =search_scheduler::stability_tests= 4/4 PASS (0.08s), =clippy --no-deps -D warnings= clean, **154/154 Rust files across core 6 crates = 0 findings (=SA01=–=SA80=)** |
 
 * Unified Verification Command
 
