@@ -146,3 +146,16 @@ jobs:
             de-lean-build-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('packages/lean-models/lean-toolchain', 'packages/lean-models/lakefile.toml', 't/harness/verify-framework.ts') }}-${{ steps.leanpoo.outputs.sha }}-
       - name: Auto-discovered Lean 4 build & dynamic #print axioms audit
         run: just check-lean --cache=.data/ci-cache/lean
+
+  airgapped-offline-verifier-adversarial:
+    name: Zero-Dep Portable Offline Attestation Verifier (25 Adversarial & Gerbil<->TS Interop Controls)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: ./.github/actions/setup-just
+      - uses: ./.github/actions/setup-bun-cached
+        with:
+          install: 'false'
+      - name: Run 25-control adversarial & Gerbil<->TS golden-vector offline verifier gate
+        run: just check-offline-verifier

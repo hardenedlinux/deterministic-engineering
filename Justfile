@@ -233,3 +233,10 @@ verify-multi-method-trust-store trust_store *flags:
 
 export-multi-method-trust-bundle out *args:
     t/harness/run-gxtest.sh script none t/support/offline-attestation-verifier.ss --export-trust-bundle "{{out}}" {{args}}
+
+# Portable zero-dependency (<100ms, zero Gerbil, zero OpenSSL) Bun/TS offline attestation CLI & 25-control gate.
+verify-multi-method-fast *args:
+    bun t/harness/offline-attestation-verifier.ts {{args}}
+
+check-offline-verifier:
+    bun test t/harness/offline-attestation-verifier.test.ts
