@@ -365,6 +365,26 @@ theorem signedAuditPolicyEnvelope_closes_policy_tamper_gap {Key Role : Type}
   signedPolicy_rejects_typeConfusion_revoked_and_unprivilegedRole
     keyHasRole payloadTypeMatchesPolicy policySchemaValid signatures verifiedPolicyKeys requiredPolicyRoles
 
+/-- Instantiated anti-rollback policy version & expiry contract (`--min-policy-version` &
+`notAfterEpoch`, 75th strictly zero-axiom meta-theorem milestone!): proves with zero axioms
+that replaying older policy versions or expired policies is unconditionally rejected, while
+advancing policy generation and expiry preserves validity. -/
+theorem signedPolicyAntiRollback_defeats_oldPolicyReplay_and_expiry
+    (policyVersion minPolicyVersion nowEpoch notAfterEpoch : Nat) :
+    (policyVersion < minPolicyVersion →
+      ¬ PolicyAntiRollbackValid policyVersion minPolicyVersion nowEpoch notAfterEpoch) ∧
+    (notAfterEpoch < nowEpoch →
+      ¬ PolicyAntiRollbackValid policyVersion minPolicyVersion nowEpoch notAfterEpoch) ∧
+    (∀ policyVersion' notAfterEpoch',
+      policyVersion ≤ policyVersion' →
+      notAfterEpoch ≤ notAfterEpoch' →
+      PolicyAntiRollbackValid policyVersion minPolicyVersion nowEpoch notAfterEpoch →
+      PolicyAntiRollbackValid policyVersion' minPolicyVersion nowEpoch notAfterEpoch') :=
+  ⟨fun hDown => policyAntiRollback_rejects_version_downgrade policyVersion minPolicyVersion nowEpoch notAfterEpoch hDown,
+   fun hExp => policyAntiRollback_rejects_expired_policy policyVersion minPolicyVersion nowEpoch notAfterEpoch hExp,
+   fun _ _ hV hE hVal =>
+     ⟨Nat.le_trans hVal.1 hV, Nat.le_trans hVal.2.1 hV, Nat.le_trans hVal.2.2 hE⟩⟩
+
 /-! ## One-Line Proof Transport via `Core.Transport` -/
 
 inductive MetaProofKey where

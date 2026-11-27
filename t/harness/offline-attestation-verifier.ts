@@ -46,6 +46,8 @@ const AUDIT_POLICY_ALLOWED_KEYS = new Set([
   'minSignatures',
   'requiredSigners',
   'requiredRoles',
+  'policyVersion',
+  'notAfterEpoch',
 ]);
 const INTOTO_DSSE_PAYLOAD_TYPE = 'application/vnd.in-toto+json';
 const INTOTO_STATEMENT_TYPE = 'https://in-toto.io/Statement/v1';
@@ -460,6 +462,8 @@ export interface AuditPolicyManifest {
   minSignatures?: number;
   requiredSigners: string[];
   requiredRoles: string[];
+  policyVersion?: number;
+  notAfterEpoch?: number;
 }
 
 function validatePolicyStringArray(fieldName: string, raw: unknown): string[] {
@@ -529,6 +533,28 @@ function parseAuditPolicyDoc(
     doc.requiredRoles !== undefined
       ? validatePolicyStringArray('requiredRoles', doc.requiredRoles)
       : [];
+  let policyVersion: number | undefined;
+  if (doc.policyVersion !== undefined) {
+    if (
+      typeof doc.policyVersion !== 'number' ||
+      !Number.isInteger(doc.policyVersion) ||
+      doc.policyVersion < 1
+    ) {
+      throw new Error('Policy policyVersion must be a positive integer');
+    }
+    policyVersion = doc.policyVersion;
+  }
+  let notAfterEpoch: number | undefined;
+  if (doc.notAfterEpoch !== undefined) {
+    if (
+      typeof doc.notAfterEpoch !== 'number' ||
+      !Number.isInteger(doc.notAfterEpoch) ||
+      doc.notAfterEpoch < 0
+    ) {
+      throw new Error('Policy notAfterEpoch must be a non-negative integer');
+    }
+    notAfterEpoch = doc.notAfterEpoch;
+  }
   return {
     expectedSysmlSha256,
     expectedSubjectCount,
@@ -536,7 +562,38 @@ function parseAuditPolicyDoc(
     minSignatures,
     requiredSigners,
     requiredRoles,
+    policyVersion,
+    notAfterEpoch,
   };
+}
+
+/**
+ * Anti-rollback version floor & expiry window gate for both plaintext & signed policies.
+ */
+export function assertPolicyFreshnessAndVersion(
+  policy: AuditPolicyManifest | null,
+  minPolicyVersion?: number,
+  nowEpoch?: number,
+): void {
+  if (!policy) return;
+  const effNow = nowEpoch ?? Math.floor(Date.now() / 1000);
+  if (minPolicyVersion !== undefined) {
+    if (!Number.isInteger(minPolicyVersion) || minPolicyVersion < 1) {
+      throw new Error(`--min-policy-version must be a positive integer: ${String(minPolicyVersion)}`);
+    }
+    if (policy.policyVersion === undefined || policy.policyVersion < minPolicyVersion) {
+      throw new Error(
+        `Audit policy rejected by anti-rollback --min-policy-version floor: policyVersion=${String(policy.policyVersion)} < minPolicyVersion=${minPolicyVersion}`,
+      );
+    }
+  }
+  if (policy.notAfterEpoch !== undefined) {
+    if (!Number.isInteger(effNow) || effNow > policy.notAfterEpoch) {
+      throw new Error(
+        `Audit policy expired: nowEpoch=${effNow} > notAfterEpoch=${policy.notAfterEpoch}`,
+      );
+    }
+  }
 }
 
 /**
@@ -1568,6 +1625,7 @@ export function runCli(argv: string[]): number {
   let policyPath: string | undefined;
   let signedPolicyPath: string | undefined;
   const requiredPolicyRoles: string[] = [];
+  let minPolicyVersion: number | undefined;
   const cleanArgs: string[] = [];
   try {
     for (let i = 0; i < argv.length; i += 1) {
@@ -1649,6 +1707,11 @@ export function runCli(argv: string[]): number {
         }
         if (!requiredPolicyRoles.includes(val)) requiredPolicyRoles.push(val);
         i += 1;
+      } else if (a === '--min-policy-version') {
+        const n = parseNonNegIntFlag('--min-policy-version', argv[i + 1]);
+        if (n < 1) throw new Error('--min-policy-version must be >= 1');
+        minPolicyVersion = n;
+        i += 1;
       } else {
         cleanArgs.push(a);
       }
@@ -1690,6 +1753,7 @@ export function runCli(argv: string[]): number {
   if (policyPath !== undefined) {
     try {
       loadedPolicy = loadAuditPolicyJson(policyPath);
+      assertPolicyFreshnessAndVersion(loadedPolicy, minPolicyVersion, nowEpoch);
       mergedPolicyOpts = mergeAuditPolicyStrict(loadedPolicy, mergedPolicyOpts);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -1956,6 +2020,7 @@ export function runCli(argv: string[]): number {
   if (signedPolicyPath !== undefined) {
     try {
       signedPolicyMeta = loadSignedAuditPolicyJson(signedPolicyPath, trustPair, requiredPolicyRoles);
+      assertPolicyFreshnessAndVersion(signedPolicyMeta.policy, minPolicyVersion, nowEpoch);
       mergedPolicyOpts = mergeAuditPolicyStrict(signedPolicyMeta.policy, rawCliPolicyOpts);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -1992,6 +2057,9 @@ export function runCli(argv: string[]): number {
       extra.requiredRoles = [...fleetOpts.requiredRoles].sort(codePointCompare);
     }
     if (policyPath !== undefined) extra.policyPath = policyPath;
+    const activePol = signedPolicyMeta?.policy ?? loadedPolicy;
+    if (activePol?.policyVersion !== undefined) extra.policyVersion = activePol.policyVersion;
+    if (activePol?.notAfterEpoch !== undefined) extra.policyNotAfterEpoch = activePol.notAfterEpoch;
     if (signedPolicyPath !== undefined && signedPolicyMeta !== null) {
       extra.signedPolicyPath = signedPolicyPath;
       extra.policySignerKeyIds = signedPolicyMeta.verifiedKeyIds;

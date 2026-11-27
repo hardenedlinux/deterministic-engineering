@@ -1323,4 +1323,32 @@ theorem signedPolicy_rejects_typeConfusion_revoked_and_unprivilegedRole {Key Rol
    fun _ hReq hNo hSafe =>
      missingRole_contradicts_allRoles keyHasRole verifiedPolicyKeys _ hNo requiredPolicyRoles hReq hSafe.2.2.2⟩
 
+/-! ## 23. Anti-Rollback Policy Versioning & Expiry (`--min-policy-version` & `notAfterEpoch`) -/
+
+/-- Constructive zero-axiom anti-rollback and freshness predicate for audit policy manifests:
+enforces positive policy generation (`1 ≤ policyVersion`), monotonic anti-rollback floor
+(`minPolicyVersion ≤ policyVersion`), and wall-clock non-expiry (`nowEpoch ≤ notAfterEpoch`). -/
+def PolicyAntiRollbackValid (policyVersion minPolicyVersion nowEpoch notAfterEpoch : Nat) : Prop :=
+  1 ≤ policyVersion ∧
+  minPolicyVersion ≤ policyVersion ∧
+  nowEpoch ≤ notAfterEpoch
+
+/-- Constructive zero-axiom proof: replaying an older validly signed policy whose
+`policyVersion < minPolicyVersion` (policy rollback attack) is unconditionally rejected. -/
+theorem policyAntiRollback_rejects_version_downgrade
+    (policyVersion minPolicyVersion nowEpoch notAfterEpoch : Nat)
+    (hRollback : policyVersion < minPolicyVersion) :
+    ¬ PolicyAntiRollbackValid policyVersion minPolicyVersion nowEpoch notAfterEpoch := by
+  intro hVal
+  exact Nat.lt_irrefl _ (Nat.lt_of_lt_of_le hRollback hVal.2.1)
+
+/-- Constructive zero-axiom proof: replaying an expired policy (`notAfterEpoch < nowEpoch`)
+is unconditionally rejected even when its Ed25519 DSSE signature remains valid. -/
+theorem policyAntiRollback_rejects_expired_policy
+    (policyVersion minPolicyVersion nowEpoch notAfterEpoch : Nat)
+    (hExpired : notAfterEpoch < nowEpoch) :
+    ¬ PolicyAntiRollbackValid policyVersion minPolicyVersion nowEpoch notAfterEpoch := by
+  intro hVal
+  exact Nat.lt_irrefl _ (Nat.lt_of_lt_of_le hExpired hVal.2.2)
+
 end DeterministicEngineering.Core.MetaGovernance

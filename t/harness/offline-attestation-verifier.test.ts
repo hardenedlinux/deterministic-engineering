@@ -26,6 +26,7 @@ import {
 import {tmpdir} from 'node:os';
 import {dirname, join, resolve} from 'node:path';
 import {
+  assertPolicyFreshnessAndVersion,
   canonicalFleetSigningPayload,
   canonicalReportSigningPayload,
   canonicalWitnessSigningPayload,
@@ -1656,5 +1657,116 @@ describe('Zero-Dependency TS/Bun Offline Attestation Verifier (25 Controls + Ger
     ]);
     expect(resBothPol.exitCode).not.toBe(0);
     expect(JSON.parse(resBothPol.stdout.trim()).ok).toBe(false);
+
+    // Controls 57-60 (60-Control Security Gate Milestone!): Anti-Rollback Monotonic `policyVersion`
+    // & `notAfterEpoch` Expiry Window (`--min-policy-version` & `--now-epoch`):
+    //   57: Signed policy v3 (`policyVersion=3, notAfterEpoch=1800000000`) passes at exact boundary!
+    //   58: Replaying validly signed older v2 policy (or unversioned policy) fails `--min-policy-version 3`!
+    //   59: Expired v3 policy at `nowEpoch=1800000001` (1s past `notAfterEpoch`) fails unconditionally!
+    //   60: Invalid `policyVersion: 0` or negative `notAfterEpoch: -1` rejected at schema load time!
+    const badVerZero = writeJson(join(WORK_DIR, 'pol-bad-ver0.json'), {
+      schema: 'de.attestation.policy.v1',
+      policyVersion: 0,
+    });
+    const badNegExpiry = writeJson(join(WORK_DIR, 'pol-bad-neg-exp.json'), {
+      schema: 'de.attestation.policy.v1',
+      notAfterEpoch: -1,
+    });
+    expect(() => loadAuditPolicyJson(badVerZero)).toThrow();
+    expect(() => loadAuditPolicyJson(badNegExpiry)).toThrow();
+
+    const polV2Path = writeJson(join(WORK_DIR, 'pol-v2.json'), {
+      schema: 'de.attestation.policy.v1',
+      policyVersion: 2,
+      notAfterEpoch: 1800000000,
+      expectedSysmlSha256: 'sysmlsha',
+      minSignatures: 2,
+      requiredRoles: ['ci-builder', 'security-auditor'],
+    });
+    const polV3Path = writeJson(join(WORK_DIR, 'pol-v3.json'), {
+      schema: 'de.attestation.policy.v1',
+      policyVersion: 3,
+      notAfterEpoch: 1800000000,
+      expectedSysmlSha256: 'sysmlsha',
+      expectedSubjectCount: 1,
+      requiredSubjects: ['demo'],
+      minSignatures: 2,
+      requiredRoles: ['ci-builder', 'security-auditor'],
+    });
+    const signedPolV2 = join(WORK_DIR, 'pol-v2.dsse.json');
+    const signedPolV3 = join(WORK_DIR, 'pol-v3.dsse.json');
+    signAuditPolicyOffline(polV2Path, k2PrivCosign, k2PubCosign, tpRotRoles, signedPolV2);
+    signAuditPolicyOffline(polV3Path, k2PrivCosign, k2PubCosign, tpRotRoles, signedPolV3);
+
+    const parsedV3 = loadAuditPolicyJson(polV3Path);
+    expect(() => assertPolicyFreshnessAndVersion(parsedV3, 3, 1800000000)).not.toThrow();
+    expect(() => assertPolicyFreshnessAndVersion(parsedV3, 4, 1800000000)).toThrow();
+    expect(() => assertPolicyFreshnessAndVersion(parsedV3, 3, 1800000001)).toThrow();
+
+    // Control 57: Exact boundary pass
+    const resV3Ok = runTsCli([
+      '--json',
+      '--verify-dsse-statement',
+      '--signed-policy',
+      signedPolV3,
+      '--require-policy-role',
+      'security-auditor',
+      '--min-policy-version',
+      '3',
+      '--now-epoch',
+      '1800000000',
+      cosignedK2K3,
+      roleRotatedBundlePath,
+    ]);
+    expect(resV3Ok.exitCode).toBe(0);
+    const docV3Ok = JSON.parse(resV3Ok.stdout.trim());
+    expect(docV3Ok.ok).toBe(true);
+    expect(docV3Ok.policyVersion).toBe(3);
+    expect(docV3Ok.policyNotAfterEpoch).toBe(1800000000);
+
+    // Control 58: Policy rollback (v2 & unversioned signed policy rejected under `--min-policy-version 3`)
+    const resRollbackV2 = runTsCli([
+      '--json',
+      '--verify-dsse-statement',
+      '--signed-policy',
+      signedPolV2,
+      '--min-policy-version',
+      '3',
+      '--now-epoch',
+      '1800000000',
+      cosignedK2K3,
+      roleRotatedBundlePath,
+    ]);
+    expect(resRollbackV2.exitCode).not.toBe(0);
+    expect(JSON.parse(resRollbackV2.stdout.trim()).ok).toBe(false);
+
+    const resUnversioned = runTsCli([
+      '--json',
+      '--verify-dsse-statement',
+      '--signed-policy',
+      signedPolicyK2,
+      '--min-policy-version',
+      '1',
+      cosignedK2K3,
+      roleRotatedBundlePath,
+    ]);
+    expect(resUnversioned.exitCode).not.toBe(0);
+    expect(JSON.parse(resUnversioned.stdout.trim()).ok).toBe(false);
+
+    // Control 59: Expired policy (1 second past notAfterEpoch)
+    const resExpiredPol = runTsCli([
+      '--json',
+      '--verify-dsse-statement',
+      '--signed-policy',
+      signedPolV3,
+      '--min-policy-version',
+      '3',
+      '--now-epoch',
+      '1800000001',
+      cosignedK2K3,
+      roleRotatedBundlePath,
+    ]);
+    expect(resExpiredPol.exitCode).not.toBe(0);
+    expect(JSON.parse(resExpiredPol.stdout.trim()).ok).toBe(false);
   });
 });

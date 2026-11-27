@@ -745,7 +745,30 @@
                            (path-expand "revoked-pol.dsse.json" work))))
               #t)
             (sign-audit-policy-offline pre-pol (cadr k2) (caddr k2) tp-pre-rot sp-k2)
-            (sign-audit-policy-offline pre-pol (cadr k3) (caddr k3) tp-pre-rot sp-k3))))
+            (sign-audit-policy-offline pre-pol (cadr k3) (caddr k3) tp-pre-rot sp-k3)
+            ;; Attacks 57-60 (pre-delete setup): Signed v2 & v3 versioned/expiring policies!
+            (let ((p-v2 (path-expand "pol-v2.json" work))
+                  (p-v3 (path-expand "pol-v3.json" work))
+                  (sp-v2 (path-expand "pol-v2.dsse.json" work))
+                  (sp-v3 (path-expand "pol-v3.dsse.json" work)))
+              (write-json-file p-v2
+                (hash ("schema" "de.attestation.policy.v1")
+                      ("policyVersion" 2)
+                      ("notAfterEpoch" 1800000000)
+                      ("expectedSysmlSha256" "sysml-sha")
+                      ("minSignatures" 2)
+                      ("requiredRoles" '("ci-builder" "security-auditor"))))
+              (write-json-file p-v3
+                (hash ("schema" "de.attestation.policy.v1")
+                      ("policyVersion" 3)
+                      ("notAfterEpoch" 1800000000)
+                      ("expectedSysmlSha256" "sysml-sha")
+                      ("expectedSubjectCount" 1)
+                      ("requiredSubjects" '("demo"))
+                      ("minSignatures" 2)
+                      ("requiredRoles" '("ci-builder" "security-auditor"))))
+              (sign-audit-policy-offline p-v2 (cadr k2) (caddr k2) tp-pre-rot sp-v2)
+              (sign-audit-policy-offline p-v3 (cadr k2) (caddr k2) tp-pre-rot sp-v3)))))
 
       ;; Physically delete ALL .pub.pem files from disk before running inline-bundle verification!
       (yuanxu-test-checkpoint 'after-export-bundle-attacks)
@@ -1229,6 +1252,48 @@
             (close-port p3)
             (check-equal? s3 0)
             (check (and (string-contains o3 "\"ok\":true") #t) => #t)
-            (check (and (string-contains o3 "\"policySignerRoles\":[\"security-auditor\"]") #t) => #t))))
+            (check (and (string-contains o3 "\"policySignerRoles\":[\"security-auditor\"]") #t) => #t)))
+
+        ;; Attacks 57-60 (60-Control Security Gate Milestone!): Anti-Rollback Monotonic `policyVersion`
+        ;; & `notAfterEpoch` Expiry Window (`--min-policy-version` & `--now-epoch`):
+        (let* ((bad-v0 (path-expand "pol-bad-v0.json" work))
+               (sp-v2 (path-expand "pol-v2.dsse.json" work))
+               (sp-v3 (path-expand "pol-v3.dsse.json" work))
+               (tp-rr (load-trust-store-json-lite role-rot-bundle-path)))
+          ;; Attack 60: policyVersion=0 rejected at load time!
+          (write-json-file bad-v0 (hash ("schema" "de.attestation.policy.v1") ("policyVersion" 0)))
+          (check-equal? (throws? (lambda () (load-audit-policy-json bad-v0))) #t)
+          (let ((p2 (hash-get (load-signed-audit-policy-json sp-v2 tp-rr) "policy"))
+                (p3 (hash-get (load-signed-audit-policy-json sp-v3 tp-rr) "policy")))
+            ;; Attack 57: v3 passes at exact boundary `min-policy-version=3, now=1800000000`
+            (assert-policy-freshness-and-version! p3 3 1800000000)
+            ;; Attack 58: v2 rollback rejected under min-policy-version=3!
+            (check-equal? (throws? (lambda () (assert-policy-freshness-and-version! p2 3 1800000000))) #t)
+            ;; Attack 59: v3 expired 1s past notAfterEpoch rejected!
+            (check-equal? (throws? (lambda () (assert-policy-freshness-and-version! p3 3 1800000001))) #t))
+          ;; Cross-language Bun/TS CLI verification on Gerbil-signed v3 (pass) + v2 rollback & expiry (fail):
+          (let* ((cmd-ok (string-append
+                           "cd \"" repo-root "\" && bun t/harness/offline-attestation-verifier.ts "
+                           "--json --verify-dsse-statement --signed-policy \"" sp-v3 "\" "
+                           "--require-policy-role security-auditor --min-policy-version 3 --now-epoch 1800000000 "
+                           "\"" dsse-cosigned-k2k3 "\" \"" role-rot-bundle-path "\""))
+                 (po (open-process (list path: "/bin/bash" arguments: (list "-euo" "pipefail" "-c" cmd-ok)
+                                         stdin-redirection: #f stdout-redirection: #t stderr-redirection: #t)))
+                 (oo (read-all-as-string po))
+                 (so (process-status po)))
+            (close-port po)
+            (check-equal? so 0)
+            (check (and (string-contains oo "\"policyVersion\":3") #t) => #t))
+          (let* ((cmd-exp (string-append
+                            "cd \"" repo-root "\" && bun t/harness/offline-attestation-verifier.ts "
+                            "--json --verify-dsse-statement --signed-policy \"" sp-v3 "\" "
+                            "--min-policy-version 3 --now-epoch 1800000001 "
+                            "\"" dsse-cosigned-k2k3 "\" \"" role-rot-bundle-path "\""))
+                 (pe (open-process (list path: "/bin/bash" arguments: (list "-euo" "pipefail" "-c" cmd-exp)
+                                         stdin-redirection: #f stdout-redirection: #t stderr-redirection: #t)))
+                 (_oe (read-all-as-string pe))
+                 (se (process-status pe)))
+            (close-port pe)
+            (check (not (= se 0)) => #t))))
 
       (run-process (list "rm" "-rf" work)))))
