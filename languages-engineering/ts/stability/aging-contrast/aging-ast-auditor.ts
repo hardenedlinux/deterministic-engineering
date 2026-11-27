@@ -29,7 +29,8 @@ export type AgingMechanism =
   | 'SM20-subprocess-pipe-capture'
   | 'SM21-atomic-persistence-fsync'
   | 'SM22-adversarial-sandbox-archive-confinement'
-  | 'SM23-adversarial-http-redirect-ssrf';
+  | 'SM23-adversarial-http-redirect-ssrf'
+  | 'SM24-adversarial-env-scrub-auth-timing';
 
 export interface AgingFinding {
   ruleId: string;
@@ -492,6 +493,25 @@ function auditGo(clean: string): AgingFinding[] {
         language: 'go',
         line: lineOfIndex(clean, serveFileMatch.index),
         message: 'HTTP handler checks os.Stat before http.ServeFile without os.Lstat ModeSymlink rejection; planted symlinks inside served directories leak arbitrary host files (ADV-L4, SM23).',
+      });
+    }
+  }
+
+  // 21. Go untrusted plugin build/perf subprocess inherits ambient host os.Environ() (ADV-L4, SM24).
+  const goPluginCmdRe = /\bexec\.CommandContext\s*\(\s*[^,\n]+,\s*(?:"go"|bunBin\b)/g;
+  let pluginCmdMatch: RegExpExecArray | null;
+  while ((pluginCmdMatch = goPluginCmdRe.exec(clean)) !== null) {
+    const fnScope = extractEnclosingBlock(clean, pluginCmdMatch.index);
+    const inheritsRawEnviron = /\bos\.Environ\s*\(\s*\)/.test(fnScope);
+    const usesSanitizedEnv = /\bsanitized\w*Env\s*\(|\bfiltered\w*Env\s*\(/i.test(fnScope);
+    const setsExplicitEnv = /\.\s*Env\s*=/.test(fnScope);
+    if (inheritsRawEnviron || (!setsExplicitEnv && !usesSanitizedEnv)) {
+      findings.push({
+        ruleId: 'go-untrusted-plugin-cmd-inherits-os-environ',
+        mechanism: 'SM24-adversarial-env-scrub-auth-timing',
+        language: 'go',
+        line: lineOfIndex(clean, pluginCmdMatch.index),
+        message: 'Untrusted plugin build/perf subprocess inherits ambient host os.Environ() instead of allowlist-scrubbed toolchain env, leaking API keys and bridge tokens (ADV-L4, SM24).',
       });
     }
   }
@@ -971,6 +991,39 @@ function auditRust(clean: string): AgingFinding[] {
         language: 'rust',
         line: lineOfIndex(clean, reqwestBuilderMatch.index),
         message: 'reqwest::Client::builder() inherits default 10-hop redirect following; 307/302 redirects leak prompts/Bearer credentials and enable internal SSRF (ADV-L4, SM23).',
+      });
+    }
+  }
+
+  // 25. Rust sandbox/tool subprocess spawner inherits ambient host environment without .env_clear() allowlist scrubbing (ADV-L4, SM24).
+  const rustToolCmdMatch = /\b(?:tokio::process::Command|AsyncCommand)::new\s*\(\s*(?:&payload\.program|request\.program\.as_str\(\))\s*\)/.exec(clean);
+  if (rustToolCmdMatch) {
+    const fnScope = extractEnclosingBlock(clean, rustToolCmdMatch.index);
+    const scrubsEnv = /\.env_clear\s*\(\s*\)|\bapply_scrubbed_env\b|\bscrub_command_env\b/.test(fnScope);
+    if (!scrubsEnv) {
+      findings.push({
+        ruleId: 'rust-sandbox-spawn-inherits-ambient-env',
+        mechanism: 'SM24-adversarial-env-scrub-auth-timing',
+        language: 'rust',
+        line: lineOfIndex(clean, rustToolCmdMatch.index),
+        message: 'Sandboxed tool subprocess inherits ambient host environment variables without .env_clear() + explicit safe allowlist, leaking API keys and bridge tokens (ADV-L4, SM24).',
+      });
+    }
+  }
+
+  // 26. Rust Bearer authorization check compares token string via short-circuit `==` instead of constant-time comparison (ADV-L4, SM24).
+  const bearerFnMatch = /\bfn\s+check_bearer_header\b/.exec(clean);
+  if (bearerFnMatch) {
+    const fnBody = extractBraceBlock(clean, bearerFnMatch.index);
+    const hasPlainEq = /\bactual\s*==\s*expected\b|\bexpected\s*==\s*actual\b/.test(fnBody);
+    const hasConstTime = /\b(?:constant_time_eq|ct_eq|ConstantTimeEq)\b/.test(fnBody);
+    if (hasPlainEq && !hasConstTime) {
+      findings.push({
+        ruleId: 'rust-bearer-auth-non-constant-time-eq',
+        mechanism: 'SM24-adversarial-env-scrub-auth-timing',
+        language: 'rust',
+        line: lineOfIndex(clean, bearerFnMatch.index),
+        message: 'Bearer authorization header verification uses short-circuit `==` instead of constant-time byte comparison and non-empty guard (CWE-208, ADV-L4, SM24).',
       });
     }
   }

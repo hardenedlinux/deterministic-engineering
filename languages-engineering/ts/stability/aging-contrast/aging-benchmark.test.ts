@@ -1908,10 +1908,93 @@ func serveCatalogSafe(dir string) http.Handler {
   })
 }`,
   },
+  // --- SM24: ADV-L4 subprocess ambient secret env scrubbing & constant-time Bearer auth (SA121-SA126) ---
+  {
+    id: 'SA121',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-sandbox-spawn-inherits-ambient-env',
+    source: `
+pub fn spawn_tool(payload: &Payload) {
+  let mut cmd = tokio::process::Command::new(&payload.program);
+  cmd.args(&payload.args).stdin(std::process::Stdio::null());
+}`,
+  },
+  {
+    id: 'SA122',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-bearer-auth-non-constant-time-eq',
+    source: `
+pub fn check_bearer_header(actual: Option<&str>, expected: &str) -> Result<(), ()> {
+  match actual {
+    Some(actual) if actual == expected => Ok(()),
+    _ => Err(()),
+  }
+}`,
+  },
+  {
+    id: 'SA123',
+    language: 'go',
+    expectedPass: false,
+    expectedRuleId: 'go-untrusted-plugin-cmd-inherits-os-environ',
+    source: `
+package marketplace
+import (
+  "context"
+  "os"
+  "os/exec"
+)
+func buildPlugin(ctx context.Context, out string) error {
+  cmd := exec.CommandContext(ctx, "go", "build", "-o", out, ".")
+  cmd.Env = append(os.Environ(), "GOOS=wasip1", "GOARCH=wasm")
+  return cmd.Run()
+}`,
+  },
+  {
+    id: 'SA124',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+pub fn spawn_tool_safe(payload: &Payload) {
+  let mut cmd = tokio::process::Command::new(&payload.program);
+  cmd.env_clear();
+  cmd.args(&payload.args).stdin(std::process::Stdio::null());
+}`,
+  },
+  {
+    id: 'SA125',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+pub fn check_bearer_header(actual: Option<&str>, expected: &str) -> Result<(), ()> {
+  if expected.trim().is_empty() { return Err(()); }
+  match actual {
+    Some(actual) if constant_time_eq(actual.as_bytes(), expected.as_bytes()) => Ok(()),
+    _ => Err(()),
+  }
+}`,
+  },
+  {
+    id: 'SA126',
+    language: 'go',
+    expectedPass: true,
+    source: `
+package marketplace
+import (
+  "context"
+  "os/exec"
+)
+func buildPluginSafe(ctx context.Context, out string) error {
+  cmd := exec.CommandContext(ctx, "go", "build", "-o", out, ".")
+  cmd.Env = sanitizedBuildEnv("GOOS=wasip1", "GOARCH=wasm")
+  return cmd.Run()
+}`,
+  },
 ];
 
-describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA120)', () => {
-  test('achieves 120/120 exact independent-gold match (tp=67, tn=53, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
+describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA126)', () => {
+  test('achieves 126/126 exact independent-gold match (tp=70, tn=56, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
     let tp = 0;
     let tn = 0;
     let fp = 0;
@@ -1934,7 +2017,7 @@ describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA120)', () 
       }
     }
 
-    expect({tp, tn, fp, fn}).toEqual({tp: 67, tn: 53, fp: 0, fn: 0});
+    expect({tp, tn, fp, fn}).toEqual({tp: 70, tn: 56, fp: 0, fn: 0});
   });
 
   test('clean Rust deterministic buffer pool & bounded retry passes with 0 findings', () => {

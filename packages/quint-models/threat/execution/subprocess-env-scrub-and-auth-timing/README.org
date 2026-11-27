@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Adversarial (ADV-L4) Subprocess Secret Environment Scrubbing & Constant-Time Auth Verification
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.execution.subprocess-env-scrub-and-auth-timing=
+- *Subdomain*: =quint.threat.execution=
+- *Quint Module*: =execution_subprocess_env_scrub_and_auth_timing= (=[[file:SubprocessEnvScrubAndAuthTiming.qnt][SubprocessEnvScrubAndAuthTiming.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/execution/subprocess-env-scrub-and-auth-timing/SubprocessEnvScrubAndAuthTiming=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Under ADV-L4 hostile agent tools and untrusted plugins, sandboxed tool and plugin-build subprocesses never inherit ambient secret environment variables (sandboxSecretLeaks == 0 and pluginSecretLeaks == 0), gRPC/HTTP Bearer token checks execute in constant time without short-circuit timing oracles (authTimingOracles == 0), and blank expected auth headers or ambient stdin inheritance are rejected fail-closed (blankAuthBypasses == 0).
+
+#+begin_src quint
+val safety = (h.sandboxSecretLeaks == 0 and h.pluginSecretLeaks == 0 and h.authTimingOracles == 0 and h.blankAuthBypasses == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =scrub-sandbox-env-allowlist= | =stepSandboxEnvInheritLeak= | =h.sandboxSecretLeaks > 0= |
+| =scrub-plugin-build-env-allowlist= | =stepPluginBuildEnvLeak= | =h.pluginSecretLeaks > 0= |
+| =constant-time-bearer-verify= | =stepTimingOracleAuth= | =h.authTimingOracles > 0= |
+| =reject-blank-auth-and-stdin-inherit= | =stepBlankAuthOrStdinLeak= | =h.blankAuthBypasses > 0= |
+
+* Grounded Papers & Specifications
+
+- *CWE-526 / CWE-200 Exposure of Sensitive Information Through Environmental Variables*: Spawning untrusted AI tool or plugin-build subprocesses with inherited os.Environ()/std::env::vars() leaks LLM API keys, cloud credentials, and bridge tokens directly to child code.
+- *Miller (2006) Robust Composition & Principle of Least Authority (POLA)*: Untrusted child processes MUST start from an empty environment populated strictly via an explicit safe-toolchain allowlist (default-deny) with null stdin isolation.
+- *CWE-208 Observable Timing Discrepancy & RFC 6750 Bearer Token Verification*: Short-circuit string equality (`==`) on Bearer authorization headers leaks token prefix timing side channels and fails open on blank expected tokens unless constant-time full-length comparison and non-empty guards are enforced.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/execution/subprocess-env-scrub-and-auth-timing/SubprocessEnvScrubAndAuthTiming.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/execution/subprocess-env-scrub-and-auth-timing/SubprocessEnvScrubAndAuthTiming.qnt --main=execution_subprocess_env_scrub_and_auth_timing --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite subprocess environment allowlist, plugin build sandbox, and constant-time bearer auth state abstraction (ADV-L4 hostile attack tier); verifies zero ambient secret inheritance into sandbox/plugin subprocesses, constant-time bearer verification, and fail-closed blank-token refusal, not hardware microarchitectural cache-line side channels.

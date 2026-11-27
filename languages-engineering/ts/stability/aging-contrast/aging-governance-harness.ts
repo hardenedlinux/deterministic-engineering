@@ -176,6 +176,14 @@ const MECHANISM_DIRECTIVES: Record<AgingMechanism, AgingRemediationDirective> = 
     antiEvasionWarning:
       'Do NOT evade by validating only the initial URL while leaving default redirect following enabled, allowing cleartext http:// Bearer credentials to remote hosts, or relying on os.Stat before http.ServeFile.',
   },
+  'SM24-adversarial-env-scrub-auth-timing': {
+    mechanism: 'SM24-adversarial-env-scrub-auth-timing',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Call cmd.env_clear() (Rust) or sanitizedBuildEnv() (Go) populated strictly from an explicit safe-toolchain allowlist (never os.Environ() or nil Env) with Stdio::null() stdin isolation for untrusted tool and plugin-build subprocesses; verify Bearer auth headers with constant-time full-length byte comparison rejecting blank expected tokens.',
+    antiEvasionWarning:
+      'Do NOT evade by blocklisting only a few secret variable names (like OPENAI_API_KEY) while inheriting os.Environ(), or keeping short-circuit `==` on Bearer token headers.',
+  },
 };
 
 export function getAgingRemediation(finding: AgingFinding): AgingRemediationDirective {

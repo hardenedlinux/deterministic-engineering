@@ -3,8 +3,9 @@
 #
 # SPDX-License-Identifier: LGPL-2.1-or-later
 #
-# End-to-end verification of all 4 subtree package mirrors (`render`, `quint-models`,
-# `quint-modules-resolver`, `lean-models`) and real downstream Git Submodule consumption.
+# End-to-end verification of all 5 subtree package mirrors (`render`, `quint-models`,
+# `quint-modules-resolver`, `lean-models`, `agent-defense-audit`) and real downstream
+# Git Submodule consumption.
 #
 # Usage:
 #   ./scripts/verify-subtree-mirrors.sh [--all | <pkg>...] [--ref <git-ref>] [--lean-poo-path <dir>] [--skip-lake-build]
@@ -24,11 +25,12 @@ usage() {
 Usage: scripts/verify-subtree-mirrors.sh [options] [package...]
 
 Packages:
-  --all                     Verify all 4 packages (default when no package is specified)
+  --all                     Verify all 5 packages (default when no package is specified)
   render                    Verify packages/render subtree split + tarball + consumer import
   quint-models              Verify packages/quint-models subtree split + 10.204/10.205 invariants + submodule
   quint-modules-resolver    Verify packages/quint-modules-resolver + cross-submodule Quint parse/typecheck
   lean-models               Verify packages/lean-models + zero-Mathlib/Cedar/sorry + CedarHostConsumer lake build
+  agent-defense-audit       Verify packages/agent-defense-audit + tarball + zero-dep 6-language CLI gate
 
 Options:
   --ref <git-ref>           Git ref to split (default: HEAD)
@@ -41,9 +43,9 @@ EOF
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --all)
-      SELECTED_PKGS=(render quint-models quint-modules-resolver lean-models)
+      SELECTED_PKGS=(render quint-models quint-modules-resolver lean-models agent-defense-audit)
       ;;
-    render|quint-models|quint-modules-resolver|lean-models)
+    render|quint-models|quint-modules-resolver|lean-models|agent-defense-audit)
       SELECTED_PKGS+=("$1")
       ;;
     --ref)
@@ -71,7 +73,7 @@ while [ "$#" -gt 0 ]; do
 done
 
 if [ "${#SELECTED_PKGS[@]}" -eq 0 ]; then
-  SELECTED_PKGS=(render quint-models quint-modules-resolver lean-models)
+  SELECTED_PKGS=(render quint-models quint-modules-resolver lean-models agent-defense-audit)
 fi
 
 if [ -z "$LEAN_POO_PATH" ]; then
@@ -156,14 +158,17 @@ PY
   local pack_dir="$WORK_DIR/packs/render"
   mkdir -p "$pack_dir"
   (cd "$pkg_dir" && bun pm pack --destination "$pack_dir" >/dev/null)
-  local tgz
-  tgz=$(find "$pack_dir" -maxdepth 1 -name '*.tgz' | head -n 1)
+  local tgz_list tgz
+  tgz_list=$(find "$pack_dir" -maxdepth 1 -name '*.tgz')
+  tgz=${tgz_list%%$'\n'*}
   if [ -z "$tgz" ]; then
     echo "[verify-subtree-mirrors] ERROR: bun pm pack produced no tarball for render" >&2
     exit 1
   fi
-  tar -tzf "$tgz" | grep -Eq '^package/src/index\.ts$'
-  tar -tzf "$tgz" | grep -Eq '^package/package\.json$'
+  local tar_entries
+  tar_entries=$(tar -tzf "$tgz")
+  grep -Eq '^package/src/index\.ts$' <<< "$tar_entries"
+  grep -Eq '^package/package\.json$' <<< "$tar_entries"
 
   # Link workspace node_modules so the downstream submodule can execute real Bun module imports.
   if [ -d "$REPO_ROOT/packages/render/node_modules" ]; then
@@ -265,13 +270,16 @@ PY
   local pack_dir="$WORK_DIR/packs/quint-modules-resolver"
   mkdir -p "$pack_dir"
   (cd "$res_dir" && bun pm pack --destination "$pack_dir" >/dev/null)
-  local tgz
-  tgz=$(find "$pack_dir" -maxdepth 1 -name '*.tgz' | head -n 1)
+  local tgz_list tgz
+  tgz_list=$(find "$pack_dir" -maxdepth 1 -name '*.tgz')
+  tgz=${tgz_list%%$'\n'*}
   if [ -z "$tgz" ]; then
     echo "[verify-subtree-mirrors] ERROR: bun pm pack produced no tarball for quint-modules-resolver" >&2
     exit 1
   fi
-  tar -tzf "$tgz" | grep -Eq '^package/src/cli\.ts$'
+  local tar_entries
+  tar_entries=$(tar -tzf "$tgz")
+  grep -Eq '^package/src/cli\.ts$' <<< "$tar_entries"
 
   # Wire real @informalsystems/quint runtime + split quint-models submodule into downstream consumer.
   mkdir -p "$cdir/node_modules/@deterministic-engineering"
@@ -412,12 +420,82 @@ EOF
   echo "PASS lean-models split=${sha} submodule=ok hygiene=ok lake_build=ok axioms=clean"
 }
 
+verify_agent_defense_audit() {
+  local cdir="$WORK_DIR/consumer/agent-defense-host"
+  init_consumer_repo "$cdir"
+  local sha
+  sha=$(split_and_mount_submodule "agent-defense-audit" "$cdir")
+  local pkg_dir="$cdir/vendor/agent-defense-audit"
+
+  python3 - "$pkg_dir" <<'PY'
+import json, os, sys
+pkg_dir = sys.argv[1]
+with open(os.path.join(pkg_dir, "package.json"), "r", encoding="utf-8") as fh:
+    pkg = json.load(fh)
+assert pkg.get("name") == "@deterministic-engineering/agent-defense-audit", f"unexpected name: {pkg.get('name')}"
+assert pkg.get("license") == "LGPL-2.1-or-later", f"unexpected license: {pkg.get('license')}"
+for k, v in pkg.get("exports", {}).items():
+    target = v if isinstance(v, str) else v.get("default")
+    assert target and os.path.exists(os.path.join(pkg_dir, target)), f"missing export {k} -> {target}"
+for k, target in pkg.get("bin", {}).items():
+    assert target and os.path.exists(os.path.join(pkg_dir, target)), f"missing bin {k} -> {target}"
+PY
+
+  local pack_dir="$WORK_DIR/packs/agent-defense-audit"
+  mkdir -p "$pack_dir"
+  (cd "$pkg_dir" && bun pm pack --destination "$pack_dir" >/dev/null)
+  local tgz_list tgz
+  tgz_list=$(find "$pack_dir" -maxdepth 1 -name '*.tgz')
+  tgz=${tgz_list%%$'\n'*}
+  if [ -z "$tgz" ]; then
+    echo "[verify-subtree-mirrors] ERROR: bun pm pack produced no tarball for agent-defense-audit" >&2
+    exit 1
+  fi
+  local tar_entries
+  tar_entries=$(tar -tzf "$tgz")
+  grep -Eq '^package/src/agent-defense-audit\.ts$' <<< "$tar_entries"
+  grep -Eq '^package/src/multi-lang-auditor\.ts$' <<< "$tar_entries"
+  grep -Eq '^package/src/index\.ts$' <<< "$tar_entries"
+
+  # Zero-node_modules standalone execution test across Go, Rust, Scheme, and TS!
+  mkdir -p "$cdir/sample"
+  cat > "$cdir/sample/ok.go" <<'EOF'
+package sample
+import "errors"
+func Check(v int) error {
+	if v < 0 {
+		return errors.New("negative")
+	}
+	return nil
+}
+EOF
+  cat > "$cdir/sample/bad.go" <<'EOF'
+package sample
+func Swallow(fn func() error) error {
+	if err := fn(); err != nil {
+		return nil
+	}
+	return nil
+}
+EOF
+  (
+    cd "$cdir"
+    bun "$pkg_dir/src/agent-defense-audit.ts" --files sample/ok.go >/dev/null
+    if bun "$pkg_dir/src/agent-defense-audit.ts" --files sample/bad.go >/dev/null 2>&1; then
+      echo "[verify-subtree-mirrors] ERROR: standalone agent-defense-audit failed to refuse Go silent fallback" >&2
+      exit 1
+    fi
+  )
+  echo "PASS agent-defense-audit split=${sha} submodule=ok pack=ok zero_dep_cli=ok"
+}
+
 for pkg in "${SELECTED_PKGS[@]}"; do
   case "$pkg" in
     render) verify_render ;;
     quint-models) verify_quint_models ;;
     quint-modules-resolver) verify_quint_modules_resolver ;;
     lean-models) verify_lean_models ;;
+    agent-defense-audit) verify_agent_defense_audit ;;
   esac
 done
 
