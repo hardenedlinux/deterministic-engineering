@@ -25,8 +25,8 @@ export function findEnclosingPackage(filePath: string): {name: string; root: str
         if (parsed.name) {
           return {name: parsed.name, root: cur};
         }
-      } catch {
-        // Ignore malformed package.json while walking upward.
+      } catch (err) {
+        throw new Error(`Invalid package.json at '${pkgPath}': ${err instanceof Error ? err.message : String(err)}`);
       }
     }
     const parent = dirname(cur);
@@ -81,8 +81,8 @@ export function resolveQuintSpec(spec: string, fromDir: string = process.cwd()):
               }
             }
           }
-        } catch {
-          // ignore malformed workspace package.json
+        } catch (err) {
+          throw new Error(`Invalid workspace package.json at '${pkgJson}': ${err instanceof Error ? err.message : String(err)}`);
         }
       }
     }

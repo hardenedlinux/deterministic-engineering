@@ -46,7 +46,7 @@
     (flushedBatches "int" "0")
     (uncoalescedFlushes "int" "0"))
   guards:
-  '((resync-snapshot-on-lag #t)
+  '((resync-snapshot-on-lag (. h streamAlive))
     (coalesce-batch-flush (>= (. h dirtyBatch) 2)))
   transitions:
   '((emitDelta
@@ -66,7 +66,7 @@
         (if (and (. h streamAlive) (. h lagged))
           (set-h (clientGen (. h serverGen))
                  (lagged #f)
-                 (streamAlive (guard resync-snapshot-on-lag #t #f)))
+                 (streamAlive (guard resync-snapshot-on-lag (. h streamAlive) #f)))
           (keep-h))))
     (flushCheckpoint
       (action flushCheckpoint ()

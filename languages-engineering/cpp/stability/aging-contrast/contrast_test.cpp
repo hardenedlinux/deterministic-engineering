@@ -23,15 +23,19 @@ int main() {
   BadBufferPool bad_p;
   DeterministicBufferPool good_p(kSlotCap, kNormal);
 
+  std::size_t bad_errors = 0;
+  std::size_t good_errors = 0;
   for (std::size_t c = 1; c <= 120; ++c) {
     const Outcome o = (c % 7 == 0) ? Outcome::Error : ((c % 11 == 0) ? Outcome::Cancel : Outcome::Ok);
     try {
       bad_h.run_cycle(o);
     } catch (const std::runtime_error&) {
+      ++bad_errors;
     }
     try {
       good_h.run_cycle(o);
     } catch (const std::runtime_error&) {
+      ++good_errors;
     }
 
     const std::size_t sz = (c % 15 == 0) ? kSpike : kNormal;
@@ -47,6 +51,7 @@ int main() {
   }
 
   // Bad C++ aging implementation leaks handles and ratchets std::vector::capacity():
+  assert(bad_errors == 17 && good_errors == 17);
   assert(bad_h.held > 0);
   assert(bad_p.retained_capacity_bytes() > kSlotCap * kNormal);
 

@@ -162,16 +162,15 @@
   (sort-strings acc))
 
 (def (read-all-sexprs file-path)
-  (with-catch
-    (lambda (_) '())
-    (lambda ()
-      (call-with-input-file file-path
-        (lambda (port)
-          (let loop ((acc '()))
-            (let ((form (read port)))
-              (if (eof-object? form)
-                (reverse acc)
-                (loop (cons form acc))))))))))
+  (if (not (regular-file? file-path))
+    '()
+    (call-with-input-file file-path
+      (lambda (port)
+        (let loop ((acc '()))
+          (let ((form (read port)))
+            (if (eof-object? form)
+              (reverse acc)
+              (loop (cons form acc)))))))))
 
 (def (sym-or-str->string x)
   (cond
@@ -834,16 +833,16 @@
 ;; ── 4. Composable Query Algebra & O(Delta) Change-Impact Slicing ──
 
 (def (git-changed-files repo-root)
-  (def (lines-of cmd)
-    (with-catch
-      (lambda (_) '())
-      (lambda ()
-        (filter (lambda (s) (> (string-length s) 0))
-                (map (lambda (s) (strip-dot-slash (str-trim s)))
-                     (string-split (run-process cmd directory: repo-root) #\newline))))))
+  (def (lines-of cmd-str)
+    (let-values (((code out) (exec-bash-captured repo-root cmd-str 30)))
+      (unless (= code 0)
+        (error "git change-impact command failed" cmd-str code out))
+      (filter (lambda (s) (> (string-length s) 0))
+              (map (lambda (s) (strip-dot-slash (str-trim s)))
+                   (string-split out #\newline)))))
   (dedup-sorted-strings
-    (append (lines-of '("git" "diff" "--name-only" "HEAD"))
-            (lines-of '("git" "ls-files" "--others" "--exclude-standard")))))
+    (append (lines-of "git diff --name-only HEAD")
+            (lines-of "git ls-files --others --exclude-standard"))))
 
 (def (unit-matches-token? u tok)
   (or (equal? (symbol->string (.get u kind)) tok)

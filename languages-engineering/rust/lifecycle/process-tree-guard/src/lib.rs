@@ -40,8 +40,8 @@ const ESRCH: i32 = 3;
 unsafe extern "C" {
     fn pipe(fds: *mut i32) -> i32;
     fn close(fd: i32) -> i32;
-    fn read(fd: i32, buf: *mut u8, count: usize) -> isize;
-    fn write(fd: i32, buf: *const u8, count: usize) -> isize;
+    fn read(fd: i32, buf: *mut std::ffi::c_void, count: usize) -> isize;
+    fn write(fd: i32, buf: *const std::ffi::c_void, count: usize) -> isize;
     fn fcntl(fd: i32, cmd: i32, ...) -> i32;
     fn setpgid(pid: i32, pgid: i32) -> i32;
     fn getpgid(pid: i32) -> i32;
@@ -180,7 +180,9 @@ impl ProcessTreeGuard {
             cmd.pre_exec(move || {
                 if let Some(cg_fd) = cgroup_procs_fd {
                     let payload = b"0\n";
-                    if write(cg_fd, payload.as_ptr(), payload.len()) != payload.len() as isize {
+                    if write(cg_fd, payload.as_ptr().cast::<std::ffi::c_void>(), payload.len())
+                        != payload.len() as isize
+                    {
                         return Err(io::Error::last_os_error());
                     }
                 }
@@ -496,7 +498,7 @@ pub fn install_pipe_eof_watchdog() {
                     let mut byte = [0u8; 1];
                     loop {
                         // SAFETY: `fd` is the inherited read end of the guardian's watchdog pipe.
-                        let n = unsafe { read(fd, byte.as_mut_ptr(), 1) };
+                        let n = unsafe { read(fd, byte.as_mut_ptr().cast::<std::ffi::c_void>(), 1) };
                         if n == 0 {
                             // Guardian/parent closed pipe write end (exit or SIGKILL) -> self-terminate.
                             unsafe { _exit(137) };

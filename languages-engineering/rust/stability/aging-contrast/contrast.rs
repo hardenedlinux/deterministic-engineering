@@ -73,7 +73,10 @@ struct BadBufferPool {
 
 impl BadBufferPool {
     fn acquire(&mut self, len: usize) -> Vec<u8> {
-        let mut buf = self.pool.pop().unwrap_or_default();
+        let mut buf = match self.pool.pop() {
+            Some(existing) => existing,
+            None => Vec::new(),
+        };
         buf.resize(len, 0);
         buf
     }

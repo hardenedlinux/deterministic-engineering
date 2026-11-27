@@ -13,7 +13,7 @@ module concurrency_stream_lag_resync {
   action init = h' = { serverGen: 0, clientGen: 0, lagged: false, streamAlive: true, dirtyBatch: 0, flushedBatches: 0, uncoalescedFlushes: 0 }
   action emitDelta = if ((h.serverGen < 6 and h.dirtyBatch < 2)) h' = h.with("serverGen", (h.serverGen + 1)).with("dirtyBatch", (h.dirtyBatch + 1)).with("lagged", (h.lagged or ((h.serverGen + 1) - h.clientGen) > 2)) else h' = h
   action consumeDelta = if ((h.streamAlive and not(h.lagged) and h.clientGen < h.serverGen)) h' = h.with("clientGen", (h.clientGen + 1)) else h' = h
-  action resyncOnLag = if ((h.streamAlive and h.lagged)) h' = h.with("clientGen", h.serverGen).with("lagged", false).with("streamAlive", true) else h' = h
+  action resyncOnLag = if ((h.streamAlive and h.lagged)) h' = h.with("clientGen", h.serverGen).with("lagged", false).with("streamAlive", h.streamAlive) else h' = h
   action flushCheckpoint = if ((h.dirtyBatch > 0 and h.dirtyBatch >= 2)) h' = h.with("dirtyBatch", 0).with("flushedBatches", (h.flushedBatches + 1)).with("uncoalescedFlushes", if (h.dirtyBatch < 2) (h.uncoalescedFlushes + 1) else h.uncoalescedFlushes) else h' = h
   action step = any { emitDelta, consumeDelta, resyncOnLag, flushCheckpoint }
   val safety = (h.streamAlive and h.clientGen <= h.serverGen and h.dirtyBatch <= 2 and h.uncoalescedFlushes == 0 and (h.lagged or (h.serverGen - h.clientGen) <= 2))
