@@ -2,6 +2,8 @@
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 (import :std/test
+        (only-in "../../../support/repo-paths.ss" resolve-repo-root)
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case)
         :clan/poo/object
         :gerbil-ascent/program/session
         "../../../support/source-contracts.ss"
@@ -12,7 +14,7 @@
         (only-in :tao3k/yuanxu/module-system/interface yuanxu-load-modules))
 (export source-contract-owner-config-test)
 
-(def root (path-expand "../../../.." (path-directory (this-source-file))))
+(def root (resolve-repo-root))
 (def (read-text path) (call-with-input-file path read-all-as-string))
 (def (write-text path text)
   (call-with-output-file (list path: path truncate: #t) (cut display text <>)))
@@ -28,7 +30,7 @@
 
 (def source-contract-owner-config-test
   (test-suite "Unified program Config through actual native owners"
-    (test-case "C and C++ settings drive real evidence; disabling C retains history and C++ settings"
+    (yuanxu-test-case "C and C++ settings drive real evidence; disabling C retains history and C++ settings"
       (call-with-temporary-directory "source-contract-owner-config"
         (lambda (directory)
           (for-each

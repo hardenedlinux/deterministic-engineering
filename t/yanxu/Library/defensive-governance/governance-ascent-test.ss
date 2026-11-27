@@ -5,6 +5,7 @@
 ;;; G1 five-tuple guard admission, G2 AI Agent defensive-hallucination controls,
 ;;; and F1/F2 live executable ASCENT BoundedRevalidationProgram.
 (import :std/test
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case)
         :clan/poo/object
         (only-in :clan/poo/type validate TypeError?)
         :deterministic-engineering/library/defensive-governance/types
@@ -17,7 +18,7 @@
 
 (def defensive-governance-ascent-test
   (test-suite "defensive-governance G1 5-tuple, G2 hallucination controls, and F1/F2 ASCENT revalidation"
-    (test-case "G1 five-tuple guard admission validates complete records and refuses M3 immutable-reuse claims"
+    (yuanxu-test-case "G1 five-tuple guard admission validates complete records and refuses M3 immutable-reuse claims"
       (validate DefensiveGovernanceScopeType (.get DefensiveGovernance core exports))
       (def valid-guard
         (.o guard-id: 'check-authority-at-use
@@ -51,7 +52,7 @@
       ;; G2 hallucination controls cover all 4 LLM defensive pathologies:
       (check-equal? (length AgentDefensiveHallucinationControls) 4))
 
-    (test-case "F1/F2 live ASCENT BoundedRevalidationProgram preserves 6 epistemic states, bounded invalidation, and frozen history"
+    (yuanxu-test-case "F1/F2 live ASCENT BoundedRevalidationProgram preserves 6 epistemic states, bounded invalidation, and frozen history"
       (def facts
         (list
           (cons 'subject '(("s-defect") ("s-pending-method") ("s-pending-scope")
@@ -108,7 +109,7 @@
       (check-equal? (and (member '("s-proven" "unknown-method-admission")
                                  (rows res 'policy_verdict_pending)) #t) #t))
 
-    (test-case "G2 audit-agent-defensive-submission catches all 4 LLM hallucination classes and clears clean submissions"
+    (yuanxu-test-case "G2 audit-agent-defensive-submission catches all 4 LLM hallucination classes and clears clean submissions"
       (def bad-sub
         (.o silent-fallbacks: '((parse-config missing-body-returns-empty))
             floor-overrides: '((require-countermodels? #t #f)
@@ -132,7 +133,7 @@
       (check-equal? (.get clean-res passed?) #t)
       (check-equal? (.get clean-res findings) '()))
 
-    (test-case "G5 live ASCENT AgentTranscriptAuditProgram enforces scope, anti-evasion, obligation preservation & bounded human escalation"
+    (yuanxu-test-case "G5 live ASCENT AgentTranscriptAuditProgram enforces scope, anti-evasion, obligation preservation & bounded human escalation"
       (def t-facts
         (list
           (cons 'patch '(("p-coop-admit") ("p-evasive-escalate") ("p-tamper-scope")
@@ -164,7 +165,7 @@
       (check-equal? (and (member '("p-tamper-scope") escalated) #t) #t)
       (check-equal? (and (member '("p-prose-only") escalated) #t) #t))
 
-    (test-case "R3 assert-m1-persistable! blocks accidental reachability leak of M3 capability and R1 ASCENT co-evolution selectively revalidates"
+    (yuanxu-test-case "R3 assert-m1-persistable! blocks accidental reachability leak of M3 capability and R1 ASCENT co-evolution selectively revalidates"
       (def m3-cap (make-m3-transient-capability 'cap-deploy "src/**" 7))
       ;; Pure M1 data (nested POO + lists + strings) passes:
       (check-equal?
@@ -200,7 +201,7 @@
       (check-equal? (and (member '("apalache-proof-1" "sha-bbb") m1-reuse) #t) #t)
       (check-equal? (rows pres 'historical_cut_preserved) '(("cut-v1" "root-111"))))
 
-    (test-case "Phase 19 (10.167) live ASCENT DurableGovernanceMetaAuditProgram performs transitive cross-pillar B1-B9 Datalog verification"
+    (yuanxu-test-case "Phase 19 (10.167) live ASCENT DurableGovernanceMetaAuditProgram performs transitive cross-pillar B1-B9 Datalog verification"
       (def m-facts
         (list
           ;; B3: 4-hop delegation chain admin -> c1 -> c2 -> c3 -> worker4; sibling admin -> clean-coder

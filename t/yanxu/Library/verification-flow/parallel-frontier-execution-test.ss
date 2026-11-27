@@ -11,6 +11,8 @@
 ;;;    simultaneously in Wave 1 while preserving 100% deterministic Fun-Flow Replay
 ;;;    (`replayValid = #t`) and ASCENT ER01-ER04 admission!
 (import :std/test
+        (only-in "../../../support/repo-paths.ss" resolve-repo-root)
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case)
         :std/encoding/json
         :std/misc/process
         :clan/poo/object
@@ -24,7 +26,7 @@
 (export verification-flow-parallel-frontier-execution-test)
 
 (def repo-root
-  (path-normalize (path-expand "../../../.." (path-directory (this-source-file)))))
+  (resolve-repo-root))
 
 (def (set-eq? xs ys)
   (and (= (length xs) (length ys))
@@ -33,7 +35,7 @@
 
 (def verification-flow-parallel-frontier-execution-test
   (test-suite "Conflict-free parallel Fun-Flow frontier execution"
-    (test-case "pure partition-parallel-frontier-waves maximizes concurrency while honoring DAG edges and Cargo exclusivity"
+    (yuanxu-test-case "pure partition-parallel-frontier-waves maximizes concurrency while honoring DAG edges and Cargo exclusivity"
       (def pt (make-process-tree-verification-subject))
       (def pt-waves (partition-parallel-frontier-waves (.get pt steps) (.get pt dag-edges)))
       (check-equal? (length pt-waves) 2)
@@ -53,7 +55,7 @@
       (check-equal? (length lf-waves) 1)
       (check (set-eq? (car lf-waves) '("lfQuintTarget" "lfLeanPooTarget")) => #t))
 
-    (test-case "live parallel Fun-Flow run executes CBMC || LeanPoo simultaneously with valid Fun-Flow replay and ER01-ER04 admission"
+    (yuanxu-test-case "live parallel Fun-Flow run executes CBMC || LeanPoo simultaneously with valid Fun-Flow replay and ER01-ER04 admission"
       (def outcome
         (run-multi-method-verification-pipeline repo-root
           subject-key: 'c-boundary-conservation
@@ -71,7 +73,7 @@
       (check-equal? ((.ref er 'rows-of) 'verification_admitted)
                     '(("engineering.defense.c-boundary-conservation"))))
 
-    (test-case "SysML correspondenceBridges projection clears MR02 duplicate-method refusal when explicitly bridged"
+    (yuanxu-test-case "SysML correspondenceBridges projection clears MR02 duplicate-method refusal when explicitly bridged"
       ;; Construct minimal synthetic SysML api-json elements with two methods covering the same
       ;; (obligation, claim-kind) without vs with `correspondenceBridges = "shared-obl:de-quint:de-lean-poo"`.
       (def (make-synthetic-sysml with-bridge?)
@@ -115,7 +117,7 @@
       (check (pair? ((.ref (reason-multi-method-governance src-no-br) 'rows-of) 'mr02_finding)) => #t)
       (check-equal? ((.ref (reason-multi-method-governance src-with-br) 'rows-of) 'mr02_finding) '()))
 
-    (test-case "pure changed-files->affected-frontier computes minimal direct + transitive IR03 impact across all 5 SysML subjects"
+    (yuanxu-test-case "pure changed-files->affected-frontier computes minimal direct + transitive IR03 impact across all 5 SysML subjects"
       (def projected (sysml-api-json->governance-facts
                        (call-with-input-string
                          (run-process (list "sysml" "-convert" "api-json"

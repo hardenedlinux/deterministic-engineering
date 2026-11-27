@@ -11,6 +11,8 @@
 ;;;  - Band 5 monotonic GovernanceFloor refuses weakening require-countermodels? to #f
 ;;;  - zero-recompilation runtime overlay switches stage:'runtime slot and rejects stage:'assembly mutation
 (import :std/test
+        (only-in "../../../support/repo-paths.ss" resolve-repo-root)
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case)
         :std/source
         :clan/poo/object
         (only-in :tao3k/yuanxu/module-system/interface yuanxu-load-modules)
@@ -19,7 +21,7 @@
 (export quint-profiles-convergence-test)
 
 (def repo-root
-  (path-normalize (path-expand "../../../.." (path-directory (this-source-file)))))
+  (resolve-repo-root))
 (def init-path (path-expand "init.ss" repo-root))
 
 (def wal-id
@@ -47,7 +49,7 @@
 
 (def quint-profiles-convergence-test
   (test-suite "Quint 3-axis Profile Namespace (assurance.*, bound.*, governance.*) over 10 subdomains"
-    (test-case "all 37 co-located models converge cleanly via profile-catalog auto-discovery and by-tag targeting"
+    (yuanxu-test-case "all 37 co-located models converge cleanly via profile-catalog auto-discovery and by-tag targeting"
       (def view (yuanxu-load-modules init-path))
       (def graph (.ref view 'selected-graph))
       (def res (converge-quint-graph graph))
@@ -85,7 +87,7 @@
       (check-equal? (.ref (.ref eff cap-id) 'require-countermodels?) #f)
       (check-equal? (.ref (.ref eff auth-id) 'require-countermodels?) #f))
 
-    (test-case "Band 5 monotonic governance-floor cannot be weakened and runtime overlay switches mode cold"
+    (yuanxu-test-case "Band 5 monotonic governance-floor cannot be weakened and runtime overlay switches mode cold"
       (def view (yuanxu-load-modules init-path))
       (def graph (.ref view 'selected-graph))
       ;; Hostile profile attempts to weaken require-countermodels? to #f across all quint.model units;

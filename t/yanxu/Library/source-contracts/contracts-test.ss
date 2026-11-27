@@ -3,6 +3,8 @@
 
 (import
   :std/test
+        (only-in "../../../support/repo-paths.ss" resolve-repo-root)
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case)
   (only-in :std/error Error? Error-message)
   "../../../support/source-contracts.ss"
   :clan/poo/object
@@ -24,7 +26,7 @@
   (force-output))
 
 (stage 'imports-ready)
-(def root (path-expand "../../../.." (path-directory (this-source-file))))
+(def root (resolve-repo-root))
 (stage 'prepare-module-view)
 (def module-view (yuanxu-load-modules (path-expand "t/support/source-contract-modules.ss" root)))
 (stage 'prepare-selected)
@@ -87,7 +89,7 @@
 
 (def source-contract-positive-test
   (test-suite "Actual C/C++ source contracts through native owners"
-    (test-case "contract body, independent callers, C++ lifetime and native artifact"
+    (yuanxu-test-case "contract body, independent callers, C++ lifetime and native artifact"
       (call-with-temporary-directory "source-contract-positive"
         (lambda (out)
           ;; Existing native selection publishes the actual domain and driver.
@@ -131,7 +133,7 @@
 
 (def source-contract-change-test
   (test-suite "Cross-usage reuse and source mutation"
-    (test-case "shared witness, new source capture, late registration and frozen query"
+    (yuanxu-test-case "shared witness, new source capture, late registration and frozen query"
       (call-with-temporary-directory "source-contract-change"
         (lambda (base)
           (copy-project base (.get profiles capacity-body))
@@ -166,7 +168,7 @@
 
 (def source-contract-refusal-test
   (test-suite "Independent negative controls preserve opposing evidence"
-    (test-case "real source mutant yields a counter; shape and missing-property forgery refuse"
+    (yuanxu-test-case "real source mutant yields a counter; shape and missing-property forgery refuse"
       (call-with-temporary-directory "source-contract-refusal"
         (lambda (base)
           (copy-project base (.get profiles capacity-body))
@@ -204,7 +206,7 @@
           (write-text (path-expand "counter/cbmc.log" base) "[]")
           (check-exception ((.get driver register!) review (list failed)) error?)
           (check-equal? (length (rows queried 'counter)) 1))))
-    (test-case "occupied C++ transfer cannot drop a live source on refusal"
+    (yuanxu-test-case "occupied C++ transfer cannot drop a live source on refusal"
       (call-with-temporary-directory "source-contract-lifetime-counter"
         (lambda (base)
           (copy-project base (.get profiles lifetime-body))
@@ -269,7 +271,7 @@
 
 (def source-contract-cross-project-test
   (test-suite "Real independent consumer contexts share one verified subject"
-    (test-case "two user declarations reuse one witness and retain separate source guards"
+    (yuanxu-test-case "two user declarations reuse one witness and retain separate source guards"
       (call-with-temporary-directory "source-contract-projects"
         (lambda (workspace)
           (def source-root (path-expand "shared-subject" workspace))
@@ -307,7 +309,7 @@
 
 (def source-contract-scenario-test
   (test-suite "Declarative Library Scenario boundary"
-    (test-case "imported Config and plain assignment drive the native plan"
+    (yuanxu-test-case "imported Config and plain assignment drive the native plan"
       (def direct-value declared-Config)
       (def assigned-value
         (.o enable: #t settings: (.get direct-value settings)))
@@ -374,7 +376,7 @@
                    (equal? (Error-message failure)
                            "source-contract capability is disabled; no plan issued"))))
           (check-equal? (file-exists? output) #f))))
-    (test-case "Scenario validation does not capture source or run a tool"
+    (yuanxu-test-case "Scenario validation does not capture source or run a tool"
       (call-with-temporary-directory "source-contract-declaration"
         (lambda (directory)
           (def absent (path-expand "not-created" directory))
@@ -417,7 +419,7 @@
 
 (def source-contract-tool-closure-test
   (test-suite "Actual tool dependency closure"
-    (test-case "unused tool changes preserve a native witness; compiler changes refuse reuse"
+    (yuanxu-test-case "unused tool changes preserve a native witness; compiler changes refuse reuse"
       (for-each
         (lambda (row)
           (def profile (.ref profiles (car row)))

@@ -16,6 +16,8 @@
 ;;; 4. Warm Fleet run against the exact same signed cache achieves 0 executed / 10 reused
 ;;;    across all 3 subjects and passes full pinned-key Merkle verification!
 (import :std/test
+        (only-in "../../../support/repo-paths.ss" resolve-repo-root)
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case)
         :std/encoding/json
         :std/misc/ports
         :std/misc/process
@@ -25,7 +27,7 @@
 (export verification-flow-multi-subject-fleet-and-pinned-attestation-test)
 
 (def repo-root
-  (path-normalize (path-expand "../../../.." (path-directory (this-source-file)))))
+  (resolve-repo-root))
 
 (def (run-verify-fleet-cli fleet-report-path trust-store-path)
   (let* ((cmd (string-append
@@ -46,7 +48,7 @@
 
 (def verification-flow-multi-subject-fleet-and-pinned-attestation-test
   (test-suite "Multi-subject Fleet orchestration and 2-level Merkle pinned-key Ed25519 attestation"
-    (test-case "live 6-subject Fleet passes Cold (15/0) -> Warm (0/15), pinned-key & offline --verify-fleet CLI, and rejects rogue-key, revocation & child-tamper attacks"
+    (yuanxu-test-case "live 6-subject Fleet passes Cold (15/0) -> Warm (0/15), pinned-key & offline --verify-fleet CLI, and rejects rogue-key, revocation & child-tamper attacks"
       (def tmp-parent (path-expand ".data/test-runs" repo-root))
       (create-directory* tmp-parent)
       (def cache-dir (path-expand "m5-fleet-cache-test" tmp-parent))

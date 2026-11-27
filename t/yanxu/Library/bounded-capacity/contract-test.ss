@@ -2,6 +2,7 @@
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 (import :std/test
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case)
         :clan/poo/object
         (only-in :clan/poo/type validate)
         "../../../../library/bounded-capacity/types.ss"
@@ -10,7 +11,7 @@
 
 (def bounded-capacity-contract-test
   (test-suite "bounded-capacity Loader owner contract"
-    (test-case "Config validates sealed CatalogConfigContract and exposes numeric.bounded-capacity"
+    (yuanxu-test-case "Config validates sealed CatalogConfigContract and exposes numeric.bounded-capacity"
       (validate (.get CatalogConfigContract value-contract) Config)
       (check-equal? (.get Config entry identity) 'numeric.bounded-capacity)
       (check-equal? (.get Config entry family) 'numeric.bounded-capacity))))

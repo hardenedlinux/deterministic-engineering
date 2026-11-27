@@ -5,6 +5,7 @@
 ;;; Catalog control inputs exercise the real native engine; no method receipt is fabricated.
 (import
   :std/test
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case)
   :clan/poo/object
   :deterministic-engineering/init
   :gerbil-ascent/program/session
@@ -21,7 +22,7 @@
 
 (def evidence-catalog-test
   (test-suite "Catalog-owned meaning in the shared Evidence engine"
-    (test-case "Tokio and Rayon imply handoff only in the selected specialization"
+    (yuanxu-test-case "Tokio and Rayon imply handoff only in the selected specialization"
       (def profile (.o factors: '(tokio rayon)))
       (def parent-session
         ((.get evidence open-review) generic profile 'parent "cut/parent" '()))
@@ -39,7 +40,7 @@
       (check-equal?
         (and (member '(child TR-O03 quint) (rows frozen 'obligation)) #t) #t))
 
-    (test-case "binary rules chain to a finite fixed point without crossing entry or usage"
+    (yuanxu-test-case "binary rules chain to a finite fixed point without crossing entry or usage"
       (def session
         ((.get evidence open-review) generic (.o factors: '()) 'unused "cut/unused" '()))
       (gerbil-ascent-session-replace-sources! session
@@ -60,7 +61,7 @@
             (u2 left) (u2 right) (u3 left))) #t)
       (check-equal? (rows result 'support) '()))
 
-    (test-case "same-named obligations retain each Catalog's dependency set"
+    (yuanxu-test-case "same-named obligations retain each Catalog's dependency set"
       (def session
         ((.get evidence open-review) generic (.o factors: '()) 'unused "cut/unused" '()))
       (gerbil-ascent-session-replace-sources! session
@@ -75,7 +76,7 @@
       (check-equal?
         (same-rows? (rows result 'pending) '((u1 SAME review) (u2 SAME review))) #t))
 
-    (test-case "malformed factor rules refuse at the published native Type boundary"
+    (yuanxu-test-case "malformed factor rules refuse at the published native Type boundary"
       (for-each
         (lambda (invalid)
           (check-exception

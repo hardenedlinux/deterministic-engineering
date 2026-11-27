@@ -14,6 +14,8 @@
 ;;;      entries, re-executes 2/2, and re-signs cache & report-k2 with K2!
 ;;;    - Phase 4 (Post-revocation Warm under K2): 0 executed / 2 reused, report-k2 verifies `#t`!
 (import :std/test
+        (only-in "../../../support/repo-paths.ss" resolve-repo-root)
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case)
         :std/encoding/json
         :std/misc/ports
         :std/misc/process
@@ -29,7 +31,7 @@
 (export verification-flow-key-rotation-and-revocation-test)
 
 (def repo-root
-  (path-normalize (path-expand "../../../.." (path-directory (this-source-file)))))
+  (resolve-repo-root))
 
 (def (run-offline-verifier mode target-path store-path)
   (let* ((cmd (string-append
@@ -50,7 +52,7 @@
 
 (def verification-flow-key-rotation-and-revocation-test
   (test-suite "Multi-key Ed25519 trust store, zero-downtime key rotation, and compromise revocation"
-    (test-case "live 4-phase K1 -> rotate K2 -> revoke K1 -> warm K2 enforces zero-downtime rotation and instant compromise invalidation"
+    (yuanxu-test-case "live 4-phase K1 -> rotate K2 -> revoke K1 -> warm K2 enforces zero-downtime rotation and instant compromise invalidation"
       (def tmp-parent (path-expand ".data/test-runs" repo-root))
       (create-directory* tmp-parent)
       (def work-root (path-expand "m5-key-rotation-test" tmp-parent))
@@ -149,7 +151,7 @@
         (check-equal? (.get (.get r4 cache-summary) executed) '())
         (check-equal? (length (.get (.get r4 cache-summary) reused)) 2)))
 
-    (test-case "2-level Merkle Fleet rotation K1 -> K2 and mixed-key sub-report revocation cascade via offline-attestation-verifier.ss"
+    (yuanxu-test-case "2-level Merkle Fleet rotation K1 -> K2 and mixed-key sub-report revocation cascade via offline-attestation-verifier.ss"
       (def tmp-parent (path-expand ".data/test-runs" repo-root))
       (create-directory* tmp-parent)
       (def work-root (path-expand "m5-fleet-rotation-test" tmp-parent))

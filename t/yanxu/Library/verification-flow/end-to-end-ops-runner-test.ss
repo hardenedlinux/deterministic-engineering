@@ -11,6 +11,8 @@
 ;;;       + Rust Clippy + Rust OS SIGKILL Oracle) -> Fun-Flow Replay Validation
 ;;;    -> ASCENT ER01-ER04 Unified Admission.
 (import :std/test
+        (only-in "../../../support/repo-paths.ss" resolve-repo-root)
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case)
         :clan/poo/object
         (only-in :std/source this-source-file)
         (only-in :clan/poo/type validate)
@@ -25,7 +27,7 @@
 (export verification-flow-end-to-end-ops-runner-test)
 
 (def repo-root
-  (path-normalize (path-expand "../../../.." (path-directory (this-source-file)))))
+  (resolve-repo-root))
 
 (def (mk-ev st obl meth ck out det)
   (validate VerificationEvidenceRecordType
@@ -33,7 +35,7 @@
 
 (def verification-flow-end-to-end-ops-runner-test
   (test-suite "M5 Fun-Flow real 4-engine Ops Runner and ASCENT ER01-ER04 admission"
-    (test-case "ASCENT ER01-ER04 negative controls reject missing evidence, failed step, unverified premise, and method mismatch"
+    (yuanxu-test-case "ASCENT ER01-ER04 negative controls reject missing evidence, failed step, unverified premise, and method mismatch"
       (def subject (make-process-tree-verification-subject))
       (def gov (subject->governance-sources subject))
       (def all-pass
@@ -79,7 +81,7 @@
       (check (pair? ((.ref r-er04 'rows-of) 'er04_method_mismatch)) => #t)
       (check-equal? ((.ref r-er04 'rows-of) 'verification_admitted) '()))
 
-    (test-case "live 4-engine Fun-Flow Ops Runner executes Quint, LeanPoo, Clippy, and Rust SIGKILL Oracle and passes ASCENT ER01-ER04"
+    (yuanxu-test-case "live 4-engine Fun-Flow Ops Runner executes Quint, LeanPoo, Clippy, and Rust SIGKILL Oracle and passes ASCENT ER01-ER04"
       (def outcome (run-multi-method-verification-pipeline repo-root request-id: "req-pt-m5-test"))
       (check-equal? (cdr (assoc 'schema (.get outcome dag-manifest)))
                     +flow-dag-runtime-manifest-schema+)

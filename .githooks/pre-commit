@@ -54,6 +54,33 @@ check_spdx() {
 
 check_spdx
 
+# 1b. Enforce unified Yuanxu test framework discipline on staged t/yanxu/**/*.ss (10.205):
+#     - Must use :tao3k/yuanxu/testing `yuanxu-test-case` (never raw `(test-case `)
+#     - Must use t/support/repo-paths.ss `(repo-root)` / `(repo-path ...)` (never manual `path-expand "../..`)
+check_yuanxu_tests() {
+  local bad=0
+  local file
+  while IFS= read -r file; do
+    [ -z "$file" ] && continue
+    [ -f "$file" ] || continue
+    case "$file" in
+      t/yanxu/*.ss)
+        if sed 's/;.*$//' "$file" | grep -Eq '(^|[^[:alnum:]_-])\(test-case[[:space:]]'; then
+          echo "[githooks/pre-commit] ERROR: raw (test-case ...) forbidden in ${file}; use (yuanxu-test-case ...) from :tao3k/yuanxu/testing (10.205)" >&2
+          bad=1
+        fi
+        if sed 's/;.*$//' "$file" | grep -Eq '\(path-expand[[:space:]]+"\.\./\.\.'; then
+          echo "[githooks/pre-commit] ERROR: manual (path-expand \"../..\" ...) forbidden in ${file}; use (resolve-repo-root)/(repo-path) from t/support/repo-paths.ss (10.205)" >&2
+          bad=1
+        fi
+        ;;
+    esac
+  done <<< "$STAGED_FILES"
+  return "$bad"
+}
+
+check_yuanxu_tests
+
 # 2. Run G2 agent-defense static audit when defense TypeScript files are staged.
 if printf '%s\n' "$STAGED_FILES" | grep -q '^languages-engineering/ts/defense/.*\.ts$'; then
   AUDIT_SCRIPT="$REPO_ROOT/languages-engineering/ts/defense/agent-audit/agent-defense-audit.ts"

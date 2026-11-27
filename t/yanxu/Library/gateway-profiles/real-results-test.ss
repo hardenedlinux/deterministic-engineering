@@ -5,11 +5,12 @@
 ;;; -*- Gerbil -*-
 ;;; Integration audit of real Core Ops/QNT/TLC/Lean/native ASCENT artifacts.
 ;;; Run the example first and bind GATEWAY_REAL_REPORT to its immutable report.
-(import :std/test :std/encoding/json :clan/poo/object :deterministic-engineering/init)
+(import :std/test
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case) :std/encoding/json :clan/poo/object :deterministic-engineering/init)
 (export gateway-real-results-test)
 (def gateway-real-results-test
   (test-suite "Real gateway method evidence, provenance and scoped reuse"
-    (test-case "actual method outputs and independent native queries match review gold"
+    (yuanxu-test-case "actual method outputs and independent native queries match review gold"
       (def scope (.get (.get deterministic-engineering.init.exports Library) gateway-review))
       (def digest (.get scope methods file-digest))
       (def report-path (getenv "GATEWAY_REAL_REPORT" #f))

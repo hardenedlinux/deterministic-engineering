@@ -371,4 +371,53 @@ describe('Layered Subtree Git Hooks & Branch-Mirrored CI Sync', () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  test('H8: pre-commit enforces 10.205 unified Yuanxu test framework (blocks raw test-case, manual path-expand .., and per-model quint-models types.ss)', () => {
+    const dir = initTempMonorepo();
+    try {
+      // 1. Per-model types.ss inside packages/quint-models/ MUST be rejected.
+      const qDir = join(dir, 'packages/quint-models/engineering/defense/demo-types');
+      mkdirSync(qDir, { recursive: true });
+      writeFileSync(join(qDir, 'types.ss'), ';; SPDX-License-Identifier: LGPL-2.1-or-later\n(export X)\n');
+      expect(runCmd(['git', 'add', 'packages/quint-models/engineering/defense/demo-types/types.ss'], dir).exitCode).toBe(0);
+      const blockedTypes = runCmd(['git', 'commit', '-m', 'forbidden per-model types.ss'], dir);
+      expect(blockedTypes.exitCode).not.toBe(0);
+      expect(blockedTypes.stderr).toContain('per-model');
+      expect(blockedTypes.stderr).toContain('EngineeringCatalogConfigContract');
+      expect(runCmd(['git', 'reset', 'HEAD', 'packages/quint-models/engineering/defense/demo-types/types.ss'], dir).exitCode).toBe(0);
+
+      // 2. Raw (test-case ...) and manual (path-expand "../../../.." ...) inside t/yanxu/ MUST be rejected.
+      const tDir = join(dir, 't/yanxu/Library/demo');
+      mkdirSync(tDir, { recursive: true });
+      const testFile = join(tDir, 'demo-test.ss');
+      writeFileSync(
+        testFile,
+        [
+          ';; SPDX-License-Identifier: LGPL-2.1-or-later',
+          '(def repo-root (path-normalize (path-expand "../../../.." (path-directory (this-source-file)))))',
+          '(def demo-test (test-suite "demo" (test-case "raw" (check-equal? 1 1))))',
+        ].join('\n') + '\n',
+      );
+      expect(runCmd(['git', 'add', 't/yanxu/Library/demo/demo-test.ss'], dir).exitCode).toBe(0);
+      const blockedRaw = runCmd(['git', 'commit', '-m', 'raw test-case and path-expand'], dir);
+      expect(blockedRaw.exitCode).not.toBe(0);
+      expect(blockedRaw.stderr).toContain('raw (test-case ...) forbidden');
+      expect(blockedRaw.stderr).toContain('manual (path-expand "../.." ...) forbidden');
+
+      // 3. Unified yuanxu-test-case + resolve-repo-root MUST succeed.
+      writeFileSync(
+        testFile,
+        [
+          ';; SPDX-License-Identifier: LGPL-2.1-or-later',
+          '(def repo-root (resolve-repo-root))',
+          '(def demo-test (test-suite "demo" (yuanxu-test-case "unified" (check-equal? 1 1))))',
+        ].join('\n') + '\n',
+      );
+      expect(runCmd(['git', 'add', 't/yanxu/Library/demo/demo-test.ss'], dir).exitCode).toBe(0);
+      const okUnified = runCmd(['git', 'commit', '-m', 'unified yuanxu test'], dir);
+      expect(okUnified.exitCode).toBe(0);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });

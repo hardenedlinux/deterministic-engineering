@@ -3,6 +3,8 @@
 
 ;;; Loader-owned qualification tests for library/defensive-boundaries (C1-C4 / 10.153).
 (import :std/test
+        (only-in "../../../support/repo-paths.ss" resolve-repo-root)
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case)
         :std/source
         :clan/poo/object
         (only-in :clan/poo/type validate TypeError?)
@@ -12,11 +14,11 @@
 (export defensive-boundaries-catalog-contract-test)
 
 (def repo-root
-  (path-normalize (path-expand "../../../.." (path-directory (this-source-file)))))
+  (resolve-repo-root))
 
 (def defensive-boundaries-catalog-contract-test
   (test-suite "defensive-boundaries C1-C4 catalog, contracts, and contrast directory closure"
-    (test-case "catalog validates all 8 entries across P1-P4 and M1-M3 and resolves contrast dirs on disk"
+    (yuanxu-test-case "catalog validates all 8 entries across P1-P4 and M1-M3 and resolves contrast dirs on disk"
       (validate DefensiveBoundariesScopeType (.get DefensiveBoundaries core exports))
       (check-equal? (length DefensiveAntiPatternCatalog) 8)
       (check-equal? (>= (length (anti-patterns-by-pathology 'P1-masking)) 2) #t)
@@ -30,7 +32,7 @@
           (check-equal? (file-exists? dir) #t))
         DefensiveContrastSubjects))
 
-    (test-case "sealed contracts reject unknown pathology or mutability values"
+    (yuanxu-test-case "sealed contracts reject unknown pathology or mutability values"
       (check-exception
         (validate AntiPatternEntryType
           (.o identity: 'bad.entry

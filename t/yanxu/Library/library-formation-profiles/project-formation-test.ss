@@ -4,6 +4,7 @@
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 (import
   :std/test
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case)
   :clan/poo/object
   "../../../../library/project-formation/func.ss"
   "../../../../library/project-organization/objects.ss"
@@ -12,7 +13,7 @@
   project-formation-test)
 (def project-formation-test
   (test-suite "Declarative project formation"
-    (test-case "baseline actual ASCENT consequences"
+    (yuanxu-test-case "baseline actual ASCENT consequences"
       (def result
         (reason-project-formation (formation-inputs ProjectOrganization LibraryFormationProfile)))
       (check-equal? ((.ref result 'rows-of) 'structurally_covered) '(("LIB-C01")))
@@ -28,7 +29,7 @@
   formation-control-01-test)
 (def formation-control-01-test
   (test-suite "Formation control 01"
-    (test-case "independent exact conflicts and gaps"
+    (yuanxu-test-case "independent exact conflicts and gaps"
       (def r (run-profile LibraryFormationProfile))
       (check-equal? (length (rows r 'conflict)) 8)
       (check-equal? (length (rows r 'gap)) 34)
@@ -39,7 +40,7 @@
   formation-control-02-test)
 (def formation-control-02-test
   (test-suite "Formation control 02"
-    (test-case "candidate names do not control selection"
+    (yuanxu-test-case "candidate names do not control selection"
       (def r (run-profile (with-candidates (list (.cc chosen 'identity "another-proposal")))))
       (check-equal? (rows r 'structurally_covered) '(("another-proposal"))))))
 
@@ -47,7 +48,7 @@
   formation-control-03-test)
 (def formation-control-03-test
   (test-suite "Formation control 03"
-    (test-case "missing capture cannot disappear with proposal"
+    (yuanxu-test-case "missing capture cannot disappear with proposal"
       (def owners (filter (lambda (r) (not (equal? (car r) "capture"))) (.ref chosen 'owners)))
       (def r (run-profile (with-candidates (list (.cc chosen 'owners owners)))))
       (check-equal? (and (member '("LIB-C01" "role" "capture") (rows r 'gap)) #t) #t)
@@ -57,7 +58,7 @@
   formation-control-04-test)
 (def formation-control-04-test
   (test-suite "Formation control 04"
-    (test-case "changed confirmed intent invalidates all old proposals"
+    (yuanxu-test-case "changed confirmed intent invalidates all old proposals"
       (def r (run-profile (.cc LibraryFormationProfile 'intent "different-intent")))
       (check-equal? (length (rows r 'invalidated)) 3)
       (check-equal? (rows r 'structurally_covered) '()))))
@@ -66,7 +67,7 @@
   formation-control-05-test)
 (def formation-control-05-test
   (test-suite "Formation control 05"
-    (test-case "multiple eligible proposals refuse model generation"
+    (yuanxu-test-case "multiple eligible proposals refuse model generation"
       (def r (run-profile (with-candidates (list chosen (.cc chosen 'identity "LIB-C04")))))
       (check-equal? (length (rows r 'structurally_covered)) 2)
       (check-exception (render-formation-model r) (lambda (_) #t)))))
@@ -75,7 +76,7 @@
   formation-control-06-test)
 (def formation-control-06-test
   (test-suite "Formation control 06"
-    (test-case "independently added obligation changes outcomes"
+    (yuanxu-test-case "independently added obligation changes outcomes"
       (def declaration
         (.cc ProjectOrganization 'duties (cons "NEW-DUTY" (.ref ProjectOrganization 'duties))))
       (def r (run-profile LibraryFormationProfile declaration))
@@ -86,7 +87,7 @@
   formation-control-07-test)
 (def formation-control-07-test
   (test-suite "Formation control 07"
-    (test-case "declaratively added role extends model without changing rules"
+    (yuanxu-test-case "declaratively added role extends model without changing rules"
       (def d
         (.cc ProjectOrganization
           'roles (append (.ref ProjectOrganization 'roles) '(("new-concern" "documents" "document")))))
@@ -111,7 +112,7 @@
   formation-control-08-test)
 (def formation-control-08-test
   (test-suite "Formation control 08"
-    (test-case "empty demand and duplicate candidate identity refused"
+    (yuanxu-test-case "empty demand and duplicate candidate identity refused"
       (check-exception
        (run-profile LibraryFormationProfile (.cc ProjectOrganization 'roles '()))
        (lambda (_) #t))
@@ -125,7 +126,7 @@
   formation-control-09-test)
 (def formation-control-09-test
   (test-suite "Formation control 09"
-    (test-case "incompatible owner retained and no root materialized"
+    (yuanxu-test-case "incompatible owner retained and no root materialized"
       (def c
         (.cc chosen 'owners (map (lambda (r) (if (equal? (car r) "capture") '("capture" "library") r)) (.ref chosen 'owners))))
       (def r (run-profile (with-candidates (list c))))
@@ -136,7 +137,7 @@
   formation-control-10-test)
 (def formation-control-10-test
   (test-suite "Formation control 10"
-    (test-case "declared capability conditions and contradictory status"
+    (yuanxu-test-case "declared capability conditions and contradictory status"
       (def caps
         (map (lambda (k) (list k "established")) (.ref ProjectOrganization 'required-capabilities)))
       (def positive (.cc chosen 'capabilities caps))
@@ -151,7 +152,7 @@
   formation-control-11-test)
 (def formation-control-11-test
   (test-suite "Formation control 11"
-    (test-case "actual Program coverage rejects omitted empty, duplicate and foreign sources"
+    (yuanxu-test-case "actual Program coverage rejects omitted empty, duplicate and foreign sources"
       (def batch (formation-inputs ProjectOrganization LibraryFormationProfile))
       (check-exception
        (reason-project-formation (filter (lambda (r) (not (eq? (car r) 'declared_capability))) batch))
@@ -163,7 +164,7 @@
   formation-control-12-test)
 (def formation-control-12-test
   (test-suite "Formation control 12"
-    (test-case "public rows own string cells on every read"
+    (yuanxu-test-case "public rows own string cells on every read"
       (def result (run-profile LibraryFormationProfile))
       (def first (rows result 'structurally_covered))
       (string-set! (caar first) 0 #\X)
@@ -179,7 +180,7 @@
   formation-control-13-test)
 (def formation-control-13-test
   (test-suite "Formation control 13"
-    (test-case "root and dependency identity are declarations, independent of row order"
+    (yuanxu-test-case "root and dependency identity are declarations, independent of row order"
       (def p
         (.cc LibraryFormationProfile 'model-root "another-project-root"
              'dependencies (reverse (.ref LibraryFormationProfile 'dependencies))))
@@ -198,7 +199,7 @@
   formation-projection-order-test)
 (def formation-projection-order-test
   (test-suite "Formation projection boundary"
-    (test-case "declaration order does not change the rendered model"
+    (yuanxu-test-case "declaration order does not change the rendered model"
       (def baseline (run-profile LibraryFormationProfile))
       (def reordered
         (run-profile
@@ -206,7 +207,7 @@
            'dependencies (reverse (.ref LibraryFormationProfile 'dependencies)))))
       (check-equal? (render-formation-model reordered) (render-formation-model baseline))
       (check-equal? (rows reordered 'runtime_ready) '()))
-    (test-case "part references retain independently specified name quoting"
+    (yuanxu-test-case "part references retain independently specified name quoting"
       (def result (run-profile LibraryFormationProfile))
       (def model (render-formation-model result))
       (check-equal?

@@ -2,7 +2,8 @@
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 (import (only-in :clan/poo/object .def .o .get)
-        "types.ss"
+        (only-in :deterministic-engineering/types library-catalog-scope-contract)
+        (only-in :deterministic-engineering/library/quint-methods/types ThreatCatalogConfigContract)
         "objects.ss"
         (only-in :deterministic-engineering/library/quint-profiles/objects
                  QuintModelSlotSpecs
@@ -28,9 +29,9 @@
   core:
   (.o
     admissions: (.o)
-    scope-contract: (.get CatalogScopeContract value-contract)
+    scope-contract: (.get (library-catalog-scope-contract 'webauthn-passkey-ceremony/scope) value-contract)
     exports:
     (.o entry: WebAuthnPasskeyCeremonyModel
         config: (.o entry: WebAuthnPasskeyCeremonyModel)
-        contracts: (.o config: CatalogConfigContract)))
+        contracts: (.o config: ThreatCatalogConfigContract)))
   features: (.o))

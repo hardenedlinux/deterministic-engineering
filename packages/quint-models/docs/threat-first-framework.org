@@ -70,11 +70,11 @@ Never weaken the hardened =step= action to test failure modes. Instead:
 
 - Keep =step= strictly hardened and verify emergent relational =safety= at the
   converged positive depth (default =12=, expected exit =0=).
-- Declare each countermodel with =derive-from-transition:= and =dropped-guard:=
-  so =library/quint-methods/ast.ss= structurally prunes that single guard from
-  the hardened transition and emits a separate weakened =step*= action (or, for
-  additive host-environment attacks like =state-rollback=, declares the explicit
-  host fault transition).
+- Declare each countermodel directly in =<Model>.qnt= via
+  =// @countermodel <guard> step=<stepAction> max-steps=<N> itf="<pred>"=
+  headers alongside its weakened =step*= action (verified natively by
+  =library/quint-methods/grammar.ss= and =quint-modules-resolver guard-probe=).
+  Scheme =objects.ss= is strictly sealed metadata-only (=10.204=).
 - Verify each countermodel at bounded negative depth (default =6= or profile
   override =bound.extended-counterexample= / =bound.deep-counterexample=,
   expected exit =1=) and assert on the generated Informal Trace Format

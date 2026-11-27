@@ -13,7 +13,7 @@
   extract-rendered-placements)
 
 (def ignored-top-entries
-  '(".git" ".github" ".gitignore" ".gerbil" ".data" ".cache" "node_modules"
+  '(".git" ".github" ".githooks" ".gitignore" ".gerbil" ".data" ".cache" "node_modules"
     "LICENSE" "LICENSES" "LICENSING.org" "README.org" "bun.lock" "bun.lock.license"
     "package.json.license" "project.sysml"))
 
@@ -29,6 +29,7 @@
    ((equal? name "examples") '("UserExample"))
    ((equal? name "t") '("DevelopmentVerification"))
    ((equal? name "docs") '("DocumentItem"))
+   ((equal? name "scripts") '("PackageInfrastructure"))
    ((member name infrastructure-files) '("PackageInfrastructure"))
    (else '())))
 
@@ -155,7 +156,7 @@
                                              "DistributionPackage"
                                              "incomplete-co-located-quint-unit"
                                              (string-append "missing:" req)))))
-                          '("types.ss" "objects.ss" "interface.ss" "README.org"))
+                          '("objects.ss" "interface.ss" "README.org"))
                         (unless (find (cut string-suffix? ".qnt" <>) files)
                           (record! (list rel-model
                                          "DistributionPackage"

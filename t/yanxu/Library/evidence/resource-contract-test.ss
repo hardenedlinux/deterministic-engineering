@@ -5,6 +5,7 @@
 ;;; -*- Gerbil -*-
 (import
   :std/test
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case)
   (only-in :clan/poo/object .o .cc .get)
   (only-in :clan/poo/type validate TypeError?)
   :deterministic-engineering/init
@@ -32,7 +33,7 @@
 
 (def resource-evidence-contract-test
   (test-suite "Native Evidence Module method boundaries"
-    (test-case "actual publication constructs a checked Program and runs native inference"
+    (yuanxu-test-case "actual publication constructs a checked Program and runs native inference"
       (def scope (.get deterministic-engineering.init.exports Library evidence))
       (def entry (.get deterministic-engineering.init.exports Library rust-resources entry))
       ;; Exercise the published boundary too, rather than only a test-local wrapper.
@@ -55,7 +56,7 @@
        (eq? scope (.get deterministic-engineering.init.exports Library evidence))
        #t))
 
-    (test-case "invalid arguments and arity are rejected before the real operation runs"
+    (yuanxu-test-case "invalid arguments and arity are rejected before the real operation runs"
       (def scope (.get deterministic-engineering.init.exports Library evidence))
       (def entry (.get deterministic-engineering.init.exports Library rust-resources entry))
       (def calls 0)
@@ -84,7 +85,7 @@
                    (expected-obligations 'typed-effect))
        #t))
 
-    (test-case "a callable with the wrong result cannot satisfy a method signature"
+    (yuanxu-test-case "a callable with the wrong result cannot satisfy a method signature"
       (def make-invalid (validate ResourceMakeEvidenceSignature (lambda () (ascent-rule-module (.o)))))
       (check-exception (make-invalid) TypeError?)
       (def scope (.get deterministic-engineering.init.exports Library evidence))
@@ -92,7 +93,7 @@
       (def open-invalid (validate ResourceOpenReviewSignature (lambda args 'not-a-session)))
       (check-exception (open-invalid entry LocalProfile 'u "source/A" '()) TypeError?))
 
-    (test-case "policy changes and undeclared permission fields cannot grant authority"
+    (yuanxu-test-case "policy changes and undeclared permission fields cannot grant authority"
       (def scope (.get deterministic-engineering.init.exports Library evidence))
       (check-exception
        (validate ResourceEvidenceScopeContract
@@ -106,7 +107,7 @@
                  (.cc scope 'policy (.cc (.get scope policy) 'outcomes '(pass))))
        TypeError?))
 
-    (test-case "typed normalization preserves immutable old results across a real source update"
+    (yuanxu-test-case "typed normalization preserves immutable old results across a real source update"
       (def scope (.get deterministic-engineering.init.exports Library evidence))
       (def entry (.get deterministic-engineering.init.exports Library rust-resources entry))
       (def session ((.get scope open-review) entry LocalProfile 'typed-before "source/A" '()))

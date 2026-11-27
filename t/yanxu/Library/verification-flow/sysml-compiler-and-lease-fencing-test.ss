@@ -13,6 +13,8 @@
 ;;;    - `lfLeanPooTarget` (`Core.Order` + `Core.Transport` + `Engineering.LeaseFencing`, 6 theorems, 0 sorryAx)
 ;;;    - Upstream Fun-Flow Replay Validation (`replayValid = #t`) + ASCENT ER01-ER04 Admission.
 (import :std/test
+        (only-in "../../../support/repo-paths.ss" resolve-repo-root)
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case)
         :std/encoding/json
         :std/misc/process
         :clan/poo/object
@@ -29,11 +31,11 @@
 (export verification-flow-sysml-compiler-and-lease-fencing-test)
 
 (def repo-root
-  (path-normalize (path-expand "../../../.." (path-directory (this-source-file)))))
+  (resolve-repo-root))
 
 (def verification-flow-sysml-compiler-and-lease-fencing-test
   (test-suite "Zero-glue SysML v2 -> Fun-Flow DAG compiler and 3rd subject lease-fencing-token"
-    (test-case "live SysML v2 compiles all 3 subjects into valid Fun-Flow DAGs and manifests with zero Scheme glue"
+    (yuanxu-test-case "live SysML v2 compiles all 3 subjects into valid Fun-Flow DAGs and manifests with zero Scheme glue"
       (def sysml-path
         (path-expand
           "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml"
@@ -67,7 +69,7 @@
           (c-boundary-conservation 2)
           (meta-governance-soundness 1))))
 
-    (test-case "live 2-engine Fun-Flow run on SysML-compiled lease-fencing-token passes Apalache+MBT, LeanPoo Core.Order+Transport, Replay, ER01-ER04, and Cold->Warm cache reuse"
+    (yuanxu-test-case "live 2-engine Fun-Flow run on SysML-compiled lease-fencing-token passes Apalache+MBT, LeanPoo Core.Order+Transport, Replay, ER01-ER04, and Cold->Warm cache reuse"
       (def tmp-parent (path-expand ".data/test-runs" repo-root))
       (create-directory* tmp-parent)
       (def cache-dir (path-expand "m5-lease-fencing-cache-test" tmp-parent))

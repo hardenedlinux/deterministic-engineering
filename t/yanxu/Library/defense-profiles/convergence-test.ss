@@ -5,6 +5,8 @@
 ;;; verifies Yuanxu Design 165 by-tag scoped defense profiles and Band-5 monotonic floors
 ;;; over defense leaves without global over-blocking.
 (import :std/test
+        (only-in "../../../support/repo-paths.ss" resolve-repo-root)
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case)
         :std/source
         :std/list/list
         :clan/poo/object
@@ -17,7 +19,7 @@
 (export defense-profiles-convergence-test)
 
 (def repo-root
-  (path-normalize (path-expand "../../../.." (path-directory (this-source-file)))))
+  (resolve-repo-root))
 
 (def (plist-ref-form xs key)
   (let loop ((rest xs))
@@ -102,7 +104,7 @@
 
 (def defense-profiles-convergence-test
   (test-suite "defense-profiles G3/G4 scoped by-tag convergence and Band-5 monotonic floors"
-    (test-case "by-tag profiles apply scoped defenses by M1/M2/M3 mutability without global over-blocking"
+    (yuanxu-test-case "by-tag profiles apply scoped defenses by M1/M2/M3 mutability without global over-blocking"
       (validate DefenseProfilesScopeType (.get DefenseProfilesModule core exports))
       (def graph
         (make-synthetic-defense-graph
@@ -129,7 +131,7 @@
       (check-equal? (.ref m3 'require-use-time-witness?) #t)
       (check-equal? (.ref m3 'allow-sufficiency-stop?) #f))
 
-    (test-case "Band-5 monotonic meet blocks hostile weakening of guard/purge floors and runtime overlay switches tier cold"
+    (yuanxu-test-case "Band-5 monotonic meet blocks hostile weakening of guard/purge floors and runtime overlay switches tier cold"
       (def graph
         (make-synthetic-defense-graph
           '(defense.mutable-root-floor
@@ -169,7 +171,7 @@
           (list (cons 'leaf/mutable-effect (.o require-use-time-witness?: #f))))) ;; defense-audit:allow-negative-control
       (check-equal? (.ref rt-bad 'status) 'rejected))
 
-    (test-case "E1 live Quint fleet (56 canonical models) converges by-tag across M1/M2/M3 with zero over-blocking"
+    (yuanxu-test-case "E1 live Quint fleet (56 canonical models) converges by-tag across M1/M2/M3 with zero over-blocking"
       (def fleet-meta (collect-live-quint-fleet-meta))
       (check-equal? (>= (length fleet-meta) 56) #t)
       (def m1-count 0)

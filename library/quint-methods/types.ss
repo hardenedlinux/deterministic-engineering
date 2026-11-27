@@ -13,6 +13,7 @@
         QuintRuleRow QuintDepRow
         QuintDomainModelShape QuintDomainModelType
         ThreatDomainModelType EngineeringDomainModelType
+        EngineeringCatalogConfigContract ThreatCatalogConfigContract
         QuintCheckStep QuintPolicyType QuintProfileType QuintPlanType
         QuintGuardClassification QuintGuardAuditEntryType QuintGuardAuditReportType
         QuintMethodsContractsShape QuintMethodsScopeType)
@@ -93,6 +94,17 @@
   (lambda (m)
     (and (element? QuintDomainModelType m)
          (string-starts-with? (.get m domain-dir) "engineering/"))))
+
+;; Shared sealed catalog entry contracts (10.205): eliminates 95 identical per-model types.ss files.
+(define-type
+  (EngineeringCatalogConfigContract @
+   (Record entry: [EngineeringDomainModelType]))
+  sealed: #t)
+
+(define-type
+  (ThreatCatalogConfigContract @
+   (Record entry: [ThreatDomainModelType]))
+  sealed: #t)
 
 (define-type (QuintTimeout @ Type.)
   identity: 'quint/timeout

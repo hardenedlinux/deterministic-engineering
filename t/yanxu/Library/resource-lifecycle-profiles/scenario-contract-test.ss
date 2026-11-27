@@ -5,6 +5,7 @@
 ;;; -*- Gerbil -*-
 (import
   :std/test
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case)
   (only-in :clan/poo/object .o .cc .get)
   (only-in :clan/poo/type validate TypeError?)
   (only-in :clan/poo/mop map-object-values)
@@ -20,7 +21,7 @@
 
 (def resource-scenario-contract-test
   (test-suite "Owner-bound native Scenario method contracts"
-    (test-case "revalidation retains the published Scope, owner handles and installed functions"
+    (yuanxu-test-case "revalidation retains the published Scope, owner handles and installed functions"
       (def scope (.get deterministic-engineering.init.exports Library resource-lifecycle))
       (def contract (.get scope contracts scope))
       (def capture (.get scope capture))
@@ -31,7 +32,7 @@
       (check-equal? (eq? (.get (validate contract scope) open-review) review) #t)
       (check-equal? (eq? (.get scope entry) (.get scope domain entry)) #t)
       (check-equal? (eq? (.get scope methods) (.get scope domain methods)) #t))
-    (test-case "a fresh producer uses the actual selected owner Contract"
+    (yuanxu-test-case "a fresh producer uses the actual selected owner Contract"
       (def selected (.get deterministic-engineering.init.exports Library resource-lifecycle))
       (def contract (.get selected contracts scope))
       (def raw
@@ -51,7 +52,7 @@
          (.get selected evidence)
          (.get selected domain contracts scope)))
        TypeError?))
-    (test-case "a child owner override is read after the parent fields were cached"
+    (yuanxu-test-case "a child owner override is read after the parent fields were cached"
       (def selected (.get deterministic-engineering.init.exports Library resource-lifecycle))
       (def contract (.get selected contracts scope))
       (def original-domain (.get selected domain))
@@ -71,7 +72,7 @@
       (check-equal? (eq? (.get parent domain) original-domain) #t)
       (check-equal? (eq? (.get parent entry) cached-entry) #t)
       (check-equal? (eq? (.get parent capture) cached-capture) #t))
-    (test-case "closed validation cannot mask substituted associations or methods"
+    (yuanxu-test-case "closed validation cannot mask substituted associations or methods"
       (def selected (.get deterministic-engineering.init.exports Library resource-lifecycle))
       (def contract (.get selected contracts scope))
       (for-each
@@ -82,7 +83,7 @@
         (.cc selected 'capture (lambda args 'unqualified))
         (.cc selected 'authorization #t)
         (.cc selected 'validation (.get selected domain validation)))))
-    (test-case "a generic native closure cannot masquerade as Scenario normalization"
+    (yuanxu-test-case "a generic native closure cannot masquerade as Scenario normalization"
       (def selected (.get deterministic-engineering.init.exports Library resource-lifecycle))
       (def contract (.get selected contracts scope))
       (def raw
@@ -96,7 +97,7 @@
         (.cc (map-object-values identity (closed-ref foreign-graph 'scope))
           'validation foreign-graph))
       (check-exception (validate contract forged) TypeError?))
-    (test-case "capture inputs refuse before the body and result checks occur after the body"
+    (yuanxu-test-case "capture inputs refuse before the body and result checks occur after the body"
       (def selected (.get deterministic-engineering.init.exports Library resource-lifecycle))
       (def contract (.get selected contracts scope))
       (def calls 0)
@@ -118,7 +119,7 @@
        ((.get checked capture) "root" LifecycleProfile "crate" "cargo" "rustc" 'u)
        TypeError?)
       (check-equal? calls 1))
-    (test-case "review recognizes the selected owner's Context before calling its body"
+    (yuanxu-test-case "review recognizes the selected owner's Context before calling its body"
       (def selected (.get deterministic-engineering.init.exports Library resource-lifecycle))
       (def contract (.get selected contracts scope))
       (def calls 0)

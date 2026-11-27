@@ -54,6 +54,10 @@ while IFS= read -r rel_path; do
         failed=1
       fi
       ;;
+    */types.ss|types.ss)
+      echo "[quint-models/pre-commit] ERROR: per-model $rel_path forbidden (10.205); import shared EngineeringCatalogConfigContract / ThreatCatalogConfigContract from library/quint-methods/types" >&2
+      failed=1
+      ;;
     */objects.ss|objects.ss)
       if [ ! -f "$PKG_ROOT/${rel_path}.license" ] && ! head -n 15 "$PKG_ROOT/$rel_path" | grep -q "SPDX-License-Identifier:"; then
         echo "[quint-models/pre-commit] ERROR: missing SPDX header in $rel_path" >&2

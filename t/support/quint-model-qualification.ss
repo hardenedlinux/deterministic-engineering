@@ -5,11 +5,11 @@
 ;;; Uses native :tao3k/yuanxu/testing (yuanxu-test-case) and owns .qnt file lookup
 ;;; so individual test modules carry zero path boilerplate.
 (import :std/test
-        :std/source
         :std/misc/ports
         :clan/poo/object
         (only-in :clan/poo/type validate)
         (only-in :tao3k/yuanxu/testing yuanxu-test-case)
+        (only-in "./repo-paths.ss" repo-path)
         :deterministic-engineering/library/quint-methods/types
         :deterministic-engineering/library/quint-methods/objects
         :deterministic-engineering/library/quint-methods/methods
@@ -20,15 +20,8 @@
         read-quint-model-source
         make-quint-model-qualification-suite)
 
-(def (quint-models-root)
-  (let ((cwd-pkg (path-expand "packages/quint-models" (current-directory))))
-    (if (file-exists? cwd-pkg)
-      cwd-pkg
-      (path-expand "packages/quint-models"
-        (path-normalize (path-expand "../.." (path-directory (this-source-file))))))))
-
 (def (quint-model-dir model)
-  (path-expand (.get model domain-dir) (quint-models-root)))
+  (path-expand (.get model domain-dir) (repo-path "packages/quint-models")))
 
 (def (read-quint-model-source model)
   (read-file-string (path-expand (.get model quint-file) (quint-model-dir model))))

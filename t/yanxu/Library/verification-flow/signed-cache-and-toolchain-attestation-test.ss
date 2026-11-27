@@ -12,6 +12,8 @@
 ;;;    -> Toolchain upgrade drift attack (IR05 rejects ONLY drifted lfLeanPooTarget, reuses lfQuintTarget)
 ;;;    + Offline report tamper detection (`verify-verification-report-attestation` returns #f on 1-byte edit).
 (import :std/test
+        (only-in "../../../support/repo-paths.ss" resolve-repo-root)
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case)
         :std/encoding/json
         :std/misc/process
         :clan/poo/object
@@ -23,7 +25,7 @@
 (export verification-flow-signed-cache-and-toolchain-attestation-test)
 
 (def repo-root
-  (path-normalize (path-expand "../../../.." (path-directory (this-source-file)))))
+  (resolve-repo-root))
 
 (def (set-eq? xs ys)
   (and (= (length xs) (length ys))
@@ -42,7 +44,7 @@
 
 (def verification-flow-signed-cache-and-toolchain-attestation-test
   (test-suite "Toolchain fingerprint (IR05) and Ed25519 signed verifiable cache & report attestation (IR06)"
-    (test-case "pure ASCENT IR05 + IR06 catch toolchain drift, unsigned/tampered witnesses, and propagate transitively via IR03"
+    (yuanxu-test-case "pure ASCENT IR05 + IR06 catch toolchain drift, unsigned/tampered witnesses, and propagate transitively via IR03"
       (def gov (subject->governance-sources (make-process-tree-verification-subject)))
       (def base-inputs
         '(("quintTarget" "ProcessTreeReclamation.qnt" "sha-q1")
@@ -184,7 +186,7 @@
       (check (and (member '("leanPooTarget" "IR07-premise-supporter-invalidated")
                           (.get p-ir08-strict invalidations)) #t) => #t))
 
-    (test-case "live Ed25519 signed cache & report reject forged detail (IR06), toolchain drift (IR05), and tampered report.json"
+    (yuanxu-test-case "live Ed25519 signed cache & report reject forged detail (IR06), toolchain drift (IR05), and tampered report.json"
       (def tmp-parent (path-expand ".data/test-runs" repo-root))
       (create-directory* tmp-parent)
       (def cache-dir (path-expand "m5-signed-cache-test" tmp-parent))
@@ -256,7 +258,7 @@
         (check (and (member '("lfLeanPooTarget" "IR05-toolchain-drift")
                             (.get (.get r4 cache-summary) invalidations)) #t) => #t)))
 
-    (test-case "live run-impacted-multi-method-fleet runs ONLY affected c-boundary-conservation for C file change and skips unrelated subjects"
+    (yuanxu-test-case "live run-impacted-multi-method-fleet runs ONLY affected c-boundary-conservation for C file change and skips unrelated subjects"
       (def tmp-parent (path-expand ".data/test-runs" repo-root))
       (create-directory* tmp-parent)
       (def imp-out (path-expand "m5-impact-run-out" tmp-parent))
@@ -280,7 +282,7 @@
         (def rep-path (cdr (assq 'c-boundary-conservation (.get res reports))))
         (check-equal? (verify-report-with-pinned-key rep-path pub-key) #t)))
 
-    (test-case "live IR08 M3 witness TTL expires ONLY M3 oracle while M1 proofs stay reusable, and timestamp forgery is caught by IR06 Ed25519"
+    (yuanxu-test-case "live IR08 M3 witness TTL expires ONLY M3 oracle while M1 proofs stay reusable, and timestamp forgery is caught by IR06 Ed25519"
       (def tmp-parent (path-expand ".data/test-runs" repo-root))
       (create-directory* tmp-parent)
       (def ttl-cache (path-expand "m5-ir08-ttl-cache" tmp-parent))

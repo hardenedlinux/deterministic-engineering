@@ -2,7 +2,8 @@
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-(import :std/test :clan/poo/object
+(import :std/test
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case) :clan/poo/object
  (only-in :clan/poo/type validate)
  "../../../../types.ss"
  "../../../../library/project-organization/types.ss"
@@ -12,7 +13,7 @@
 (export organization-library-test)
 (def organization-library-test
  (test-suite "Organization declarations, independent demand and Module policy"
-  (test-case "family inherits the single generation and model has actual catalog closure"
+  (yuanxu-test-case "family inherits the single generation and model has actual catalog closure"
    (check-equal? (.get OrganizationDeclarationContract contract-version) (.get LibraryDeclarationContract contract-version))
    (validate (.get OrganizationDeclarationContract value-contract) OrganizationDeclaration)
    (def model (validate (.get OrganizationModelContract value-contract) ProjectOrganization))
@@ -21,7 +22,7 @@
    (check-equal? (.get model mapping catalog-id) (.get model catalog identity))
    (check-equal? (.get model capabilities) '(organization-demands))
    (check-equal? (length (.get model required-capabilities)) 4))
-  (test-case "lost demand, wrong role, duplicate roles and catalog escape refuse"
+  (yuanxu-test-case "lost demand, wrong role, duplicate roles and catalog escape refuse"
    (def expected (.get OrganizationModelContract value-contract))
    (for-each (lambda (candidate) (check-exception (validate expected candidate) error?))
     (list (.cc ProjectOrganization 'products '())
@@ -34,7 +35,7 @@
           (.cc ProjectOrganization 'role 'generic-model)
           (.cc ProjectOrganization 'roles (cons (car (.get ProjectOrganization roles)) (.get ProjectOrganization roles)))
           (.cc ProjectOrganization 'catalog (.cc (.get ProjectOrganization catalog) 'definitions '("Foreign"))))))
-  (test-case "Module policy cannot claim runtime authority or change Program owner"
+  (yuanxu-test-case "Module policy cannot claim runtime authority or change Program owner"
    (def expected (.get FormationConfigContract value-contract))
    (validate expected FormationSemantics)
    (check-exception (validate expected (.cc FormationSemantics 'authority 'runtime-authority)) error?)

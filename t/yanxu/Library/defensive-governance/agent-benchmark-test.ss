@@ -6,13 +6,15 @@
 ;;;   - 4 negative cases (AG03, AG06, AG09, AG12) covering all 4 G2 hallucination classes
 ;;;   - 2 real-file positive controls (AG15 defensive-boundaries/objects.ss, AG16 quint-profiles/objects.ss)
 (import :std/test
+        (only-in "../../../support/repo-paths.ss" resolve-repo-root)
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case)
         :std/source
         :clan/poo/object
         :deterministic-engineering/library/defensive-governance/func)
 (export agent-defensive-scheme-benchmark-test)
 
 (def repo-root
-  (path-normalize (path-expand "../../../.." (path-directory (this-source-file)))))
+  (resolve-repo-root))
 
 (def (read-scheme-file-datums rel-path)
   (call-with-input-file (path-expand rel-path repo-root)
@@ -23,7 +25,7 @@
 
 (def agent-defensive-scheme-benchmark-test
   (test-suite "E3.2 Agent Defensive Coding Benchmark (Scheme AST, 30.05)"
-    (test-case "catches all 4 Scheme G2 hallucination classes (AG03, AG06, AG09, AG12) with 100% recall"
+    (yuanxu-test-case "catches all 4 Scheme G2 hallucination classes (AG03, AG06, AG09, AG12) with 100% recall"
       ;; AG03: silent-fallback via with-catch returning constant empty list
       (def r03 (audit-scheme-defensive-datums
                  '((def (bad-parse x) (with-catch (lambda (_) '()) (lambda () (parse x)))))))
@@ -48,7 +50,7 @@
       (check-equal? (.get r12 passed?) #f)
       (check-equal? (and (memq 'fabricated-evidence (map car (.get r12 findings))) #t) #t))
 
-    (test-case "zero false positives on real maintained library Scheme files (AG15, AG16)"
+    (yuanxu-test-case "zero false positives on real maintained library Scheme files (AG15, AG16)"
       ;; AG15: real library/defensive-boundaries/objects.ss
       (def r15 (audit-scheme-defensive-datums
                  (read-scheme-file-datums "library/defensive-boundaries/objects.ss")))

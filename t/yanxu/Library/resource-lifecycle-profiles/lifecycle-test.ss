@@ -3,17 +3,18 @@
 
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 ;;; -*- Gerbil -*-
-(import :std/test :std/encoding/json :clan/poo/object :deterministic-engineering/init)
+(import :std/test
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case) :std/encoding/json :clan/poo/object :deterministic-engineering/init)
 (export resource-lifecycle-test)
 (def resource-lifecycle-test
   (test-suite "Rust mechanism ownership and actual evidence"
-    (test-case "direct migration publishes one Library to independent applications"
+    (yuanxu-test-case "direct migration publishes one Library to independent applications"
       (check-equal? (.slot? (.get deterministic-engineering.init.exports Library) 'gateway-domain) #f)
       (check-equal? (.slot? (.get deterministic-engineering.init.exports Library) 'gateway-evidence) #f)
       (check-equal? (.get (.get deterministic-engineering.init.exports Library) rust-resources entry identity) 'rust.resources.backpressure-memory)
       (check-equal? (.get (.get deterministic-engineering.init.exports Library) resource-lifecycle entry identity)
                     (.get (.get deterministic-engineering.init.exports Library) gateway-review entry identity)))
-    (test-case "actual native/QNT/Lean receipts and change queries match independent gold"
+    (yuanxu-test-case "actual native/QNT/Lean receipts and change queries match independent gold"
       (def path (getenv "RESOURCE_REAL_REPORT" #f))
       (unless path (error "run t/support/resource-lifecycle-evidence.ss and set RESOURCE_REAL_REPORT"))
       (def methods (.get (.get deterministic-engineering.init.exports Library) rust-resources methods))

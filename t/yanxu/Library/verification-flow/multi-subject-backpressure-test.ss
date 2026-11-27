@@ -7,6 +7,8 @@
 ;;; SHA-256 content-addressed cache scale horizontally to a second subject with
 ;;; zero framework duplication.
 (import :std/test
+        (only-in "../../../support/repo-paths.ss" resolve-repo-root)
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case)
         :std/misc/process
         :clan/poo/object
         (only-in :std/source this-source-file)
@@ -18,11 +20,11 @@
 (export verification-flow-multi-subject-backpressure-test)
 
 (def repo-root
-  (path-normalize (path-expand "../../../.." (path-directory (this-source-file)))))
+  (resolve-repo-root))
 
 (def verification-flow-multi-subject-backpressure-test
   (test-suite "Horizontal multi-subject reuse on backpressure-memory (Quint + LeanPoo Core.Budget + Clippy + Tokio/Rayon Oracle)"
-    (test-case "live 4-engine Fun-Flow run on backpressure-memory passes MR01-MR06 (both subjects), Replay, ER01-ER04, and cold->warm SHA-256 cache reuse"
+    (yuanxu-test-case "live 4-engine Fun-Flow run on backpressure-memory passes MR01-MR06 (both subjects), Replay, ER01-ER04, and cold->warm SHA-256 cache reuse"
       (def tmp-parent (path-expand ".data/test-runs" repo-root))
       (create-directory* tmp-parent)
       (def cache-dir (path-expand "m5-backpressure-cache-test" tmp-parent))

@@ -7,6 +7,8 @@
 ;;; 3. ASCENT MR01-MR06 positive admission & all 6 negative controls
 ;;; 4. Live OpenSysML (sysml -validate -strict & -convert api-json) -> ASCENT linkage
 (import :std/test
+        (only-in "../../../support/repo-paths.ss" resolve-repo-root)
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case)
         :std/encoding/json
         :std/misc/process
         :clan/poo/object
@@ -27,7 +29,7 @@
 (export verification-flow-governance-and-sysml-linkage-test)
 
 (def repo-root
-  (path-normalize (path-expand "../../../.." (path-directory (this-source-file)))))
+  (resolve-repo-root))
 
 ;; Author pilot ProcessTreeReclamation steps via hygienic defrules expanding to Fun-Flow.
 (defde-verification-step pt-quint-step quint-process-tree DeQuintTaskFamily
@@ -100,7 +102,7 @@
 
 (def verification-flow-governance-and-sysml-linkage-test
   (test-suite "verification-flow Fun-Flow Runnable, ASCENT MR01-MR06, and live SysML v2 linkage"
-    (test-case "Fun-Flow TaskFamilyRegistry registers all 4 orthogonal families and CLOS rejects alien targets"
+    (yuanxu-test-case "Fun-Flow TaskFamilyRegistry registers all 4 orthogonal families and CLOS rejects alien targets"
       (for-each
         (lambda (fname)
           (def desc (task-family-for-kind-in DeVerificationTaskFamilyRegistry fname))
@@ -122,7 +124,7 @@
       (check-equal? (.get ev outcome) 'pass)
       (check-equal? (.get ev method) 'de-lean-poo))
 
-    (test-case "defrules-authored ProcessTreeReclamation passes MR01-MR06 and emits Fun-Flow DAG receipt & manifest"
+    (yuanxu-test-case "defrules-authored ProcessTreeReclamation passes MR01-MR06 and emits Fun-Flow DAG receipt & manifest"
       (def res (reason-multi-method-governance (subject->governance-sources pt-subject)))
       (check-equal? ((.ref res 'rows-of) 'mr_finding) '())
       (check-equal? ((.ref res 'rows-of) 'mr03_open_premise) '())
@@ -133,7 +135,7 @@
       (def manifest (subject->dag-runtime-manifest pt-subject "req-pt-001"))
       (check-equal? (cdr (assoc 'schema manifest)) +flow-dag-runtime-manifest-schema+))
 
-    (test-case "ASCENT MR01-MR06 negative controls catch every forbidden routing, duplication, premise, DAG, countermodel, and leak-containment defect"
+    (yuanxu-test-case "ASCENT MR01-MR06 negative controls catch every forbidden routing, duplication, premise, DAG, countermodel, and leak-containment defect"
       (def base (subject->governance-sources pt-subject))
       ;; MR01: Quint claiming unbounded-invariant
       (def r-mr01
@@ -220,7 +222,7 @@
       (def bad-subject (.cc pt-subject 'dag-edges '()))
       (check-exception (subject->dag-runtime-manifest bad-subject "req-bad") error?))
 
-    (test-case "live OpenSysML strict validation and api-json drive ASCENT MR01-MR06 directly with zero Scheme duplication"
+    (yuanxu-test-case "live OpenSysML strict validation and api-json drive ASCENT MR01-MR06 directly with zero Scheme duplication"
       (def sysml-path
         (path-expand "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml"
                      repo-root))

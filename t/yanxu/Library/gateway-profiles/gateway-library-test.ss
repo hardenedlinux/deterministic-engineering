@@ -3,7 +3,8 @@
 ;;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 ;;; -*- Gerbil -*-
-(import :std/test :deterministic-engineering/init :clan/poo/object
+(import :std/test
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case) :deterministic-engineering/init :clan/poo/object
 
         :gerbil-ascent/rules/func)
 (def LocalProfile (.get deterministic-engineering.init.exports Library gateway-profiles profiles LocalProfile))
@@ -40,7 +41,7 @@
 
 (def gateway-initial-test
   (test-suite "Gateway initial"
-    (test-case "C1 derives eight literal obligations from Library and Tokio/Rayon factors"
+    (yuanxu-test-case "C1 derives eight literal obligations from Library and Tokio/Rayon factors"
       (def s (open LocalProfile))
       (def r (gerbil-ascent-session-run s))
       (check-equal? (same-set? (rows r 'obligation) expected-obligations) #t)
@@ -51,7 +52,7 @@
 
 (def gateway-method-test
   (test-suite "Gateway method"
-    (test-case "raw pass is pending; checked exact witness produces T-use and support"
+    (yuanxu-test-case "raw pass is pending; checked exact witness produces T-use and support"
       (def s (open LocalProfile))
       (publish! s (list sum-row) (list (list 'wsum 'arithmetic c1-sum)) '())
       (check-equal? (rows (gerbil-ascent-session-run s) 'support) '())
@@ -63,7 +64,7 @@
 
 (def gateway-capacity-test
   (test-suite "Gateway capacity"
-    (test-case "C1 to C2 invalidates application without deleting late or historical evidence"
+    (yuanxu-test-case "C1 to C2 invalidates application without deleting late or historical evidence"
       (def s (open LocalProfile))
       (publish! s (list sum-row) (list (list 'wsum 'arithmetic c1-sum)) (list sum-check))
       (def frozen (gerbil-ascent-session-run s))
@@ -85,7 +86,7 @@
 
 (def gateway-cache-retry-test
   (test-suite "Gateway cache-retry"
-    (test-case "cache and retry introduce their own obligations; unknown factors stay discoverable"
+    (yuanxu-test-case "cache and retry introduce their own obligations; unknown factors stay discoverable"
       (def s (open CacheProfile))
       (publish! s (list sum-row) (list (list 'wsum 'arithmetic c1-sum)) (list sum-check))
       (def cache (gerbil-ascent-session-run s))
@@ -102,7 +103,7 @@
 
 (def gateway-source-test
   (test-suite "Gateway source"
-    (test-case "source change reuses conditional math/model while reopening correspondence"
+    (yuanxu-test-case "source change reuses conditional math/model while reopening correspondence"
       (def s (open LocalProfile))
       (publish! s
         (list sum-row '(wmodel BP-O02 quint "V/model-fixture" pass)
@@ -122,7 +123,7 @@
 
 (def gateway-boundaries-test
   (test-suite "Gateway boundaries"
-    (test-case "incomplete and extra closures, wrong methods and invalid source types cannot support"
+    (yuanxu-test-case "incomplete and extra closures, wrong methods and invalid source types cannot support"
       (def s (open LocalProfile))
       (publish! s
         (list sum-row '(extra BP-O03 lean "V/extra" pass) '(wrong BP-O03 native "V/wrong" pass))
@@ -137,7 +138,7 @@
 
 (def gateway-counter-test
   (test-suite "Gateway counter"
-    (test-case "opposing validated evidence stays visible beside support"
+    (yuanxu-test-case "opposing validated evidence stays visible beside support"
       (def s (open LocalProfile))
       (publish! s (list sum-row '(wcounter BP-O03 lean "V/counter-fixture" fail))
         (list (list 'wsum 'arithmetic c1-sum) (list 'wcounter 'arithmetic c1-sum))

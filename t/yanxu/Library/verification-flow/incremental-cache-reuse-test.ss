@@ -11,6 +11,8 @@
 ;;;    -> Rust-only drift (2 executed: Clippy + SIGKILL Oracle; 2 reused: Quint + LeanPoo)
 ;;;    -> require-fresh-m3 policy (1 executed: SIGKILL Oracle only; 3 reused: M1 proofs).
 (import :std/test
+        (only-in "../../../support/repo-paths.ss" resolve-repo-root)
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case)
         :std/encoding/json
         :std/misc/process
         :clan/poo/object
@@ -22,7 +24,7 @@
 (export verification-flow-incremental-cache-reuse-test)
 
 (def repo-root
-  (path-normalize (path-expand "../../../.." (path-directory (this-source-file)))))
+  (resolve-repo-root))
 
 (def (set-eq? xs ys)
   (and (= (length xs) (length ys))
@@ -46,7 +48,7 @@
 
 (def verification-flow-incremental-cache-reuse-test
   (test-suite "ASCENT IR01-IR04 incremental cache reuse and live selective invalidation"
-    (test-case "pure ASCENT IR01-IR04 accurately partitions pending vs reusable frontier across cold, warm, Rust-edit, Quint-edit (transitive IR03), M3-policy (IR04), and tamper"
+    (yuanxu-test-case "pure ASCENT IR01-IR04 accurately partitions pending vs reusable frontier across cold, warm, Rust-edit, Quint-edit (transitive IR03), M3-policy (IR04), and tamper"
       (def gov (subject->governance-sources (make-process-tree-verification-subject)))
       (def base-inputs
         '(("quintTarget" "ProcessTreeReclamation.qnt" "sha-q1")
@@ -141,7 +143,7 @@
             (build-incremental-reuse-sources gov default-process-tree-step-mutability '() base-inputs all-cached extra-key-cache))))
       (check-equal? (.get p-extra pending) '("leanPooTarget")))
 
-    (test-case "live 4-phase Fun-Flow run proves cold (4/0), warm (0/4 cache hits), selective Rust invalidation (2/2), and fresh-M3 policy (1/3) with full replay & ER01-ER04 admission"
+    (yuanxu-test-case "live 4-phase Fun-Flow run proves cold (4/0), warm (0/4 cache hits), selective Rust invalidation (2/2), and fresh-M3 policy (1/3) with full replay & ER01-ER04 admission"
       (def tmp-parent (path-expand ".data/test-runs" repo-root))
       (create-directory* tmp-parent)
       (def cache-dir (path-expand "m5-incremental-cache-test" tmp-parent))

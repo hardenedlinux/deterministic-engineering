@@ -15,6 +15,8 @@
 ;;;    - Revoked key in JSON trust store -> CLI exits non-zero
 ;;;    - Tampered report.json -> CLI exits non-zero
 (import :std/test
+        (only-in "../../../support/repo-paths.ss" resolve-repo-root)
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case)
         :std/encoding/json
         :std/misc/ports
         :std/misc/process
@@ -27,7 +29,7 @@
 (export verification-flow-threat-capability-and-offline-verifier-test)
 
 (def repo-root
-  (path-normalize (path-expand "../../../.." (path-directory (this-source-file)))))
+  (resolve-repo-root))
 
 (def (rm-rf! path)
   (when (file-exists? path)
@@ -67,7 +69,7 @@
 
 (def verification-flow-threat-capability-and-offline-verifier-test
   (test-suite "Cross-domain Threat LeanPoo subject (delegated-agent-authz) & offline JSON trust-store CLI verifier"
-    (test-case "delegated-agent-authz runs zero-glue Quint || LeanPoo and offline --verify-report enforces JSON trust store + revocation"
+    (yuanxu-test-case "delegated-agent-authz runs zero-glue Quint || LeanPoo and offline --verify-report enforces JSON trust store + revocation"
       (def work-dir (path-expand ".data/test-runs/m5-threat-offline-cli" repo-root))
       (rm-rf! work-dir)
       (create-directory* work-dir)

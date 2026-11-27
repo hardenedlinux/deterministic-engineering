@@ -6,6 +6,8 @@
 ;;; a repaired tree with rendered placements must produce zero findings.
 (import
   :std/test
+        (only-in "../../../support/repo-paths.ss" resolve-repo-root)
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case)
   :std/source
   :clan/poo/object
   (only-in :clan/poo/type validate)
@@ -16,7 +18,7 @@
   "../../../support/repository-organization-facts.ss")
 (export repository-organization-test)
 
-(def repo-root (path-normalize (path-expand "../../../.." (path-directory (this-source-file)))))
+(def repo-root (resolve-repo-root))
 (def (rows r name) ((.ref r 'rows-of) name))
 (def (has-finding? findings rule subject-substr)
   (and (find (lambda (row)
@@ -81,17 +83,17 @@
 
 (def repository-organization-test
   (test-suite "Repository organization rules OR01-OR06 and debt detection D1-D6"
-    (test-case "organization declaration with placements and package families validates"
+    (yuanxu-test-case "organization declaration with placements and package families validates"
       (def model (validate (.get OrganizationModelContract value-contract) ProjectOrganization))
       (check-equal? (length (.get model placements)) 9)
       (check-equal? (length (.get model package-families)) 3))
 
-    (test-case "actual repository yields zero OR01-OR06 findings after L2 repair"
+    (yuanxu-test-case "actual repository yields zero OR01-OR06 findings after L2 repair"
       (def facts (capture-repository-organization-facts repo-root ProjectOrganization))
       (def result (reason-repository-organization facts))
       (check-equal? (rows result 'finding) '()))
 
-    (test-case "rendered SysML with placements matches project.sysml and yields zero findings"
+    (yuanxu-test-case "rendered SysML with placements matches project.sysml and yields zero findings"
       (def formation (reason-project-formation (formation-inputs ProjectOrganization LibraryFormationProfile)))
       (def rendered (render-formation-model-with-placements formation LibraryFormationProfile))
       (check-equal? (and (string-contains rendered "part 'placements' {") #t) #t)
@@ -101,7 +103,7 @@
       (def result (reason-repository-organization clean))
       (check-equal? (rows result 'finding) '()))
 
-    (test-case "negative controls: each rule OR01-OR06 and debt D1-D6 is rejected"
+    (yuanxu-test-case "negative controls: each rule OR01-OR06 and debt D1-D6 is rejected"
       (def formation (reason-project-formation (formation-inputs ProjectOrganization LibraryFormationProfile)))
       (def rendered (render-formation-model-with-placements formation LibraryFormationProfile))
       (def base (clean-baseline-facts rendered))
