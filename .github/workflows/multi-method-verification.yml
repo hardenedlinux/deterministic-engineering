@@ -34,6 +34,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   rust-process-tree-guard:
     name: Rust ProcessTreeGuard (Clippy Ban + HTTP /shutdown + OS SIGKILL & Escape Oracle)
