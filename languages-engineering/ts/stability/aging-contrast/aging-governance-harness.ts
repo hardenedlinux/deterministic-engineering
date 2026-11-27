@@ -192,6 +192,14 @@ const MECHANISM_DIRECTIVES: Record<AgingMechanism, AgingRemediationDirective> = 
     antiEvasionWarning:
       'Do NOT evade by attaching Cedar/E-Stop governance gates only to legacy LoopProgram unit-test executors while leaving the production GraphEngine host path ungated or keeping unretired shadow execution surfaces.',
   },
+  'SM26-control-plane-auth-governance': {
+    mechanism: 'SM26-control-plane-auth-governance',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Delete shadow entrypoint check_bearer helpers and hardcoded default dev tokens, route all host binaries through canonical constant-time MyGoBridgeHost::check_bearer_header rejecting empty "Bearer " payloads and non-loopback missing tokens, enforce fail-closed GovernanceAdmissionGate E-Stop checks on every mutating and LLM-streaming control-plane gRPC RPC, and replace release-gate `sh -lc` with allowlist-scrubbed, timeout- and byte-bounded execution.',
+    antiEvasionWarning:
+      'Do NOT evade by hardening only library helpers while leaving host binary closures on `==`, checking `!header.trim().is_empty()` on `"Bearer "`, gating only leaf atomic effects while leaving gRPC `stream_turn`/`submit_scoped_panel_action` open during E-Stop, or running release gates under inherited env `sh -lc`.',
+  },
 };
 
 export function getAgingRemediation(finding: AgingFinding): AgingRemediationDirective {

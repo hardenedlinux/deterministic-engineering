@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Adversarial (ADV-L4) Control-Plane Entrypoint Auth & E-Stop Governance Confinement
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.execution.control-plane-auth-and-governance-confinement=
+- *Subdomain*: =quint.threat.execution=
+- *Quint Module*: =execution_control_plane_auth_and_governance_confinement= (=[[file:ControlPlaneAuthAndGovernanceConfinement.qnt][ControlPlaneAuthAndGovernanceConfinement.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/execution/control-plane-auth-and-governance-confinement/ControlPlaneAuthAndGovernanceConfinement=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Under ADV-L4 hostile control-plane probes, every binary entrypoint delegates to canonical constant-time non-empty Bearer auth refusing blank credentials and non-loopback default tokens (shadowAuthBypasses == 0 and emptyBearerBypasses == 0), every mutating or LLM-streaming gRPC RPC fails closed while Operator E-Stop is active (controlPlaneEstopBypasses == 0), and release-gate subprocesses execute without login-shell profile loading or inherited host credentials under strict output/timeout bounds (releaseShellSecretLeaks == 0).
+
+#+begin_src quint
+val safety = (h.shadowAuthBypasses == 0 and h.controlPlaneEstopBypasses == 0 and h.releaseShellSecretLeaks == 0 and h.emptyBearerBypasses == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =enforce-canonical-ct-auth-entrypoint= | =stepShadowEntrypointAuthBypass= | =h.shadowAuthBypasses > 0= |
+| =enforce-control-plane-rpc-estop= | =stepControlPlaneEstopBypass= | =h.controlPlaneEstopBypasses > 0= |
+| =scrub-and-bound-release-gate-shell= | =stepUnscrubbedReleaseShellLeak= | =h.releaseShellSecretLeaks > 0= |
+| =reject-empty-bearer-credential= | =stepEmptyBearerPrefixBypass= | =h.emptyBearerBypasses > 0= |
+
+* Grounded Papers & Specifications
+
+- *Saltzer & Schroeder (1975) Fail-Safe Defaults & Complete Mediation*: Every production binary entrypoint must bind through one canonical constant-time, non-empty Bearer authenticator and refuse non-loopback wildcard binds with default or blank credentials; shadow binary-local auth helpers negate library hardening.
+- *CWE-208 / CWE-287 / CWE-798 & Empty-Scheme Prefix Confusion*: Validating !header.trim().is_empty() on 'Bearer ' admits an empty credential because the scheme prefix itself is non-empty; authenticators must parse and verify a non-blank credential payload in constant time.
+- *AI Defensive Programming Anti-Pattern: Surface-Scoped Defense Illusion (Real-Repo Marlin Case)*: Hardening library helpers and atomic executors while leaving production host binaries (marlin_mygo_host.rs), mutating gRPC RPCs (ui_grpc.rs, grpc.rs), and release-gate shells (release.rs sh -lc) unmediated creates live E-Stop bypasses and secret exfiltration.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/execution/control-plane-auth-and-governance-confinement/ControlPlaneAuthAndGovernanceConfinement.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/execution/control-plane-auth-and-governance-confinement/ControlPlaneAuthAndGovernanceConfinement.qnt --main=execution_control_plane_auth_and_governance_confinement --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite control-plane entrypoint auth, mutating RPC E-Stop governance confinement, empty-Bearer credential rejection, and release-gate shell secret scrubbing abstraction (ADV-L4 hostile attack tier); proves every production binary entrypoint and mutating RPC enforces canonical constant-time non-empty Bearer auth and fail-closed E-Stop mediation, not arbitrary OS kernel bypasses.

@@ -31,7 +31,8 @@ export type AgingMechanism =
   | 'SM22-adversarial-sandbox-archive-confinement'
   | 'SM23-adversarial-http-redirect-ssrf'
   | 'SM24-adversarial-env-scrub-auth-timing'
-  | 'SM25-single-owner-graph-governance';
+  | 'SM25-single-owner-graph-governance'
+  | 'SM26-control-plane-auth-governance';
 
 export interface AgingFinding {
   ruleId: string;
@@ -513,6 +514,29 @@ function auditGo(clean: string): AgingFinding[] {
         language: 'go',
         line: lineOfIndex(clean, pluginCmdMatch.index),
         message: 'Untrusted plugin build/perf subprocess inherits ambient host os.Environ() instead of allowlist-scrubbed toolchain env, leaking API keys and bridge tokens (ADV-L4, SM24).',
+      });
+    }
+  }
+
+  // 22. Go auth entrypoint falls back to hardcoded dev bearer token or compares Authorization header with `==` (ADV-L4, SM26).
+  const goDevTokenMatch = /MARLIN_BRIDGE_TOKEN["']?\s*\)\s*[\s\S]{0,120}"(?:marlin-dev-token|dev-token)"/.exec(clean);
+  if (goDevTokenMatch) {
+    findings.push({
+      ruleId: 'go-shadow-default-bearer-or-timing-auth',
+      mechanism: 'SM26-control-plane-auth-governance',
+      language: 'go',
+      line: lineOfIndex(clean, goDevTokenMatch.index),
+      message: 'Go control-plane entrypoint falls back to hardcoded default dev token instead of failing closed or rotating crypto/rand ephemeral credentials (ADV-L4, SM26).',
+    });
+  } else {
+    const goAuthEqMatch = /\b(?:authHeader|bearerHeader|gotAuth)\s*(?:==|!=)\s*(?:expectedHeader|expectedAuth|wantBearer|wantAuth)\b/.exec(clean);
+    if (goAuthEqMatch && !/\b(?:subtle\.ConstantTimeCompare|ConstantTimeTokenEqual)\b/.test(clean)) {
+      findings.push({
+        ruleId: 'go-shadow-default-bearer-or-timing-auth',
+        mechanism: 'SM26-control-plane-auth-governance',
+        language: 'go',
+        line: lineOfIndex(clean, goAuthEqMatch.index),
+        message: 'Go control-plane auth compares Bearer Authorization headers with non-constant-time `==`/`!=` instead of subtle.ConstantTimeCompare (ADV-L4, SM26).',
       });
     }
   }
@@ -1081,6 +1105,112 @@ function auditRust(clean: string): AgingFinding[] {
     }
   }
 
+  // 30. Rust binary entrypoint defines shadow non-constant-time `check_bearer` or hardcoded `"marlin-dev-token"` fallback (ADV-L4, SM26).
+  const shadowBearerFnMatch = /\bfn\s+check_bearer\s*\([^)]*\)/.exec(clean);
+  if (shadowBearerFnMatch) {
+    const fnBody = extractBraceBlock(clean, shadowBearerFnMatch.index);
+    const hasPlainEq = /\.to_str\s*\(\s*\)\.ok\s*\(\s*\)\s*==\s*Some\s*\(/.test(fnBody);
+    const usesCanonicalCt = /\b(?:constant_time_eq|ct_eq|check_bearer_header)\b/.test(fnBody);
+    if (hasPlainEq && !usesCanonicalCt) {
+      findings.push({
+        ruleId: 'rust-shadow-entrypoint-bearer-auth',
+        mechanism: 'SM26-control-plane-auth-governance',
+        language: 'rust',
+        line: lineOfIndex(clean, shadowBearerFnMatch.index),
+        message: 'Binary entrypoint defines shadow check_bearer using non-constant-time `==` instead of canonical MyGoBridgeHost::check_bearer_header (ADV-L4, SM26).',
+      });
+    }
+  }
+  const hardcodedDevTokenMatch = /MARLIN_BRIDGE_TOKEN"\s*\)\s*\.unwrap_or(?:_else)?\s*\([^)]*"marlin-dev-token"/.exec(clean);
+  if (hardcodedDevTokenMatch) {
+    findings.push({
+      ruleId: 'rust-shadow-entrypoint-bearer-auth',
+      mechanism: 'SM26-control-plane-auth-governance',
+      language: 'rust',
+      line: lineOfIndex(clean, hardcodedDevTokenMatch.index),
+      message: 'Host entrypoint falls back to hardcoded "marlin-dev-token" on MARLIN_BRIDGE_TOKEN instead of fail-closed non-loopback & blank-token resolution (ADV-L4, SM26).',
+    });
+  }
+
+  // 31. Rust `check_bearer_header` validates `!expected.trim().is_empty()` without verifying non-empty credential after `"Bearer "` prefix (ADV-L4, SM26).
+  const checkBearerHeaderMatch = /\bfn\s+check_bearer_header\s*\([^)]*\)/.exec(clean);
+  if (checkBearerHeaderMatch) {
+    const fnBody = extractBraceBlock(clean, checkBearerHeaderMatch.index);
+    const checksAuthHeader = /\.get\s*\(\s*"authorization"\s*\)/.test(fnBody);
+    const checksTrimEmpty = /\bexpected\.trim\s*\(\s*\)\.is_empty\s*\(\s*\)/.test(fnBody);
+    const checksBearerPayload = /(?:strip_prefix\s*\(\s*"Bearer\s+"|\bbearer_credential\b|\bextract_bearer_token\b|\bsplit_once\b)/.test(fnBody);
+    if (checksAuthHeader && checksTrimEmpty && !checksBearerPayload) {
+      findings.push({
+        ruleId: 'rust-empty-bearer-prefix-bypass',
+        mechanism: 'SM26-control-plane-auth-governance',
+        language: 'rust',
+        line: lineOfIndex(clean, checkBearerHeaderMatch.index),
+        message: 'check_bearer_header checks expected.trim().is_empty() without verifying a non-blank credential after the "Bearer " prefix, admitting empty "Bearer " headers (ADV-L4, SM26).',
+      });
+    }
+  }
+
+  // 32. Rust control-plane mutating/streaming gRPC RPC omits fail-closed governance E-Stop gate (ADV-L4, SM26).
+  const rpcGovTargets = [
+    /\basync\s+fn\s+submit_scoped_panel_action\s*\(/g,
+    /\basync\s+fn\s+install_signed_release\s*\(/g,
+    /\basync\s+fn\s+enable_workflow\s*\(/g,
+    /\basync\s+fn\s+stream_turn\s*\(/g,
+    /\basync\s+fn\s+start_session_turn\s*\(/g,
+  ];
+  const isControlPlaneServer = /\bimpl(?:<[^>]+>)?\s+(?:PluginHostService|app_server_server::AppServer|AppServer)\s+for\s+(?:MyGoBridgeHost|AppServer)\b/.test(clean);
+  if (isControlPlaneServer) {
+    for (const rpcRe of rpcGovTargets) {
+      let rpcM: RegExpExecArray | null;
+      while ((rpcM = rpcRe.exec(clean)) !== null) {
+        const fnBody = extractBraceBlock(clean, rpcM.index);
+        const checksAuth = /(?:\bself\.check_auth|\(self\.authorize\))\s*\(/.test(fnBody);
+        const checksGovEstop = /\b(?:check_governance_admitted|ensure_governance_live|check_governance_estop|governance_gate)\b/.test(fnBody);
+        if (checksAuth && !checksGovEstop) {
+          findings.push({
+            ruleId: 'rust-control-plane-rpc-missing-estop-gate',
+            mechanism: 'SM26-control-plane-auth-governance',
+            language: 'rust',
+            line: lineOfIndex(clean, rpcM.index),
+            message: 'Mutating or LLM-streaming control-plane gRPC RPC checks Bearer auth but omits fail-closed GovernanceAdmissionGate E-Stop enforcement (ADV-L4, SM26).',
+          });
+          break;
+        }
+      }
+      if (findings.some((f) => f.ruleId === 'rust-control-plane-rpc-missing-estop-gate')) break;
+    }
+  }
+
+  // 33. Rust release-gate runner spawns unscrubbed login shell `Command::new("sh").arg("-lc")` with unbounded `.output()` (ADV-L4, SM26).
+  const loginShellMatch = /\bCommand::new\s*\(\s*"(?:\/bin\/)?sh"\s*\)\s*\.arg\s*\(\s*"-lc"\s*\)/.exec(clean);
+  if (loginShellMatch) {
+    findings.push({
+      ruleId: 'rust-release-gate-unscrubbed-login-shell',
+      mechanism: 'SM26-control-plane-auth-governance',
+      language: 'rust',
+      line: lineOfIndex(clean, loginShellMatch.index),
+      message: 'Release-gate runner spawns login shell `sh -lc` inheriting ambient host secrets and unbounded output instead of env_clear() + allowlist + bounded non-login shell (ADV-L4, SM26).',
+    });
+  } else {
+    const releaseRunMatch = /\bfn\s+run_release_gate_command\s*\([^)]*\)/.exec(clean);
+    if (releaseRunMatch) {
+      const fnBody = extractBraceBlock(clean, releaseRunMatch.index);
+      const spawnsSh = /\bCommand::new\s*\(\s*"(?:\/bin\/)?sh"\s*\)/.test(fnBody);
+      const scrubsEnv =
+        /\.env_clear\s*\(\s*\)/.test(fnBody) ||
+        (/\bapply_scrubbed\w*env\s*\(/i.test(fnBody) && /\.env_clear\s*\(\s*\)/.test(clean));
+      if (spawnsSh && !scrubsEnv) {
+        findings.push({
+          ruleId: 'rust-release-gate-unscrubbed-login-shell',
+          mechanism: 'SM26-control-plane-auth-governance',
+          language: 'rust',
+          line: lineOfIndex(clean, releaseRunMatch.index),
+          message: 'run_release_gate_command spawns `sh` without env_clear() secret scrubbing, leaking host API keys into persisted release diagnostics (ADV-L4, SM26).',
+        });
+      }
+    }
+  }
+
   return findings;
 }
 
@@ -1296,6 +1426,23 @@ function auditTypeScript(clean: string): AgingFinding[] {
         language: 'ts',
         line: lineOfIndex(clean, tsFullReadMatch.index),
         message: 'HTTP response buffers full body via .text()/.arrayBuffer() before checking size limit; pre-check Content-Length and stream via resp.body.getReader() with pre-allocation byte budget (SM17).',
+      });
+    }
+  }
+
+  // 14. TS control-plane bridge RPC admits mutating action without checking active E-Stop breaker or spawns unscrubbed `sh -lc` (ADV-L4, SM26).
+  const tsRpcMatch = /\b(?:async\s+)?(?:function\s+)?(?:submitScopedPanelAction|dispatchControlAction)\s*\([^)]*\)/.exec(clean);
+  if (tsRpcMatch) {
+    const fnBody = extractBraceBlock(clean, tsRpcMatch.index);
+    const checksAuth = /\b(?:checkAuth|verifyBearer|requireAuth)\s*\(/.test(fnBody);
+    const checksEstop = /\b(?:emergencyStop|breakerTripped|isTripped|governanceGate|ensureGovernanceLive)\b/.test(fnBody);
+    if (checksAuth && !checksEstop) {
+      findings.push({
+        ruleId: 'ts-control-plane-rpc-missing-estop-or-unscrubbed-shell',
+        mechanism: 'SM26-control-plane-auth-governance',
+        language: 'ts',
+        line: lineOfIndex(clean, tsRpcMatch.index),
+        message: 'Control-plane RPC handler validates auth token but omits fail-closed E-Stop / governance gate enforcement before admitting mutating actions (ADV-L4, SM26).',
       });
     }
   }

@@ -2071,10 +2071,143 @@ pub use loop_machine::{GenericLoopMachine};
 pub use loop_program_side_effects::{LoopProgramRuntimeSideEffectExecutor};
 pub use task_actor_executor::{TaskActorKernelExecutor};`,
   },
+  // --- SM26: ADV-L4 control-plane entrypoint auth, empty-Bearer prefix & E-Stop governance confinement (SA133-SA142) ---
+  {
+    id: 'SA133',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-shadow-entrypoint-bearer-auth',
+    source: `
+fn check_bearer(meta: &MetadataMap, expected_header: &str) -> Result<(), Status> {
+  match meta.get("authorization") {
+    Some(v) if v.to_str().ok() == Some(expected_header) => Ok(()),
+    _ => Err(Status::unauthenticated("invalid bearer token")),
+  }
+}`,
+  },
+  {
+    id: 'SA134',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-empty-bearer-prefix-bypass',
+    source: `
+pub fn check_bearer_header(meta: &MetadataMap, expected_header: Option<&str>) -> Result<(), Status> {
+  let Some(expected) = expected_header else { return Ok(()); };
+  if expected.trim().is_empty() { return Err(Status::unauthenticated("blank")); }
+  match meta.get("authorization").and_then(|v| v.to_str().ok()) {
+    Some(actual) if Self::constant_time_eq(actual.as_bytes(), expected.as_bytes()) => Ok(()),
+    _ => Err(Status::unauthenticated("invalid")),
+  }
+}`,
+  },
+  {
+    id: 'SA135',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-control-plane-rpc-missing-estop-gate',
+    source: `
+impl PluginHostService for MyGoBridgeHost {
+  async fn submit_scoped_panel_action(&self, request: Request<Req>) -> Result<Response<Resp>, Status> {
+    self.check_auth(&request)?;
+    Ok(Response::new(Resp { admitted: true }))
+  }
+}`,
+  },
+  {
+    id: 'SA136',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-release-gate-unscrubbed-login-shell',
+    source: `
+impl ReleaseGateCommandRunner for ProcessReleaseGateCommandRunner {
+  fn run_release_gate_command(&self, command: &str) -> ReleaseGateCommandOutput {
+    match Command::new("sh").arg("-lc").arg(command).output() {
+      Ok(o) => ReleaseGateCommandOutput::passed(),
+      Err(e) => ReleaseGateCommandOutput::failed(None, e.to_string()),
+    }
+  }
+}`,
+  },
+  {
+    id: 'SA137',
+    language: 'go',
+    expectedPass: false,
+    expectedRuleId: 'go-shadow-default-bearer-or-timing-auth',
+    source: `
+package main
+func checkAuth(authHeader, expectedHeader string) bool {
+  return authHeader == expectedHeader
+}`,
+  },
+  {
+    id: 'SA138',
+    language: 'ts',
+    expectedPass: false,
+    expectedRuleId: 'ts-control-plane-rpc-missing-estop-or-unscrubbed-shell',
+    source: `
+export async function submitScopedPanelAction(req: RpcReq) {
+  verifyBearer(req.headers);
+  return { admitted: true };
+}`,
+  },
+  {
+    id: 'SA139',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+pub fn check_bearer_header(meta: &MetadataMap, expected_header: Option<&str>) -> Result<(), Status> {
+  let Some(expected) = expected_header else { return Ok(()); };
+  if expected.trim().is_empty() { return Err(Status::unauthenticated("blank")); }
+  if expected.strip_prefix("Bearer ").is_some_and(|tok| tok.trim().is_empty()) {
+    return Err(Status::unauthenticated("empty bearer credential"));
+  }
+  match meta.get("authorization").and_then(|v| v.to_str().ok()) {
+    Some(actual) if Self::constant_time_eq(actual.as_bytes(), expected.as_bytes()) => Ok(()),
+    _ => Err(Status::unauthenticated("invalid")),
+  }
+}`,
+  },
+  {
+    id: 'SA140',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+impl PluginHostService for MyGoBridgeHost {
+  async fn submit_scoped_panel_action(&self, request: Request<Req>) -> Result<Response<Resp>, Status> {
+    self.check_auth(&request)?;
+    self.ensure_governance_live("submit_scoped_panel_action")?;
+    Ok(Response::new(Resp { admitted: true }))
+  }
+}`,
+  },
+  {
+    id: 'SA141',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+impl ReleaseGateCommandRunner for ProcessReleaseGateCommandRunner {
+  fn run_release_gate_command(&self, command: &str) -> ReleaseGateCommandOutput {
+    let mut cmd = Command::new("sh");
+    cmd.env_clear().env("PATH", "/usr/bin:/bin").arg("-c").arg(command);
+    run_bounded_command(cmd, 256 * 1024)
+  }
+}`,
+  },
+  {
+    id: 'SA142',
+    language: 'ts',
+    expectedPass: true,
+    source: `
+export async function submitScopedPanelAction(req: RpcReq, gate: GovernanceGate) {
+  verifyBearer(req.headers);
+  if (gate.isTripped()) throw new Error('E-Stop active');
+  return { admitted: true };
+}`,
+  },
 ];
 
-describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA132)', () => {
-  test('achieves 132/132 exact independent-gold match (tp=73, tn=59, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
+describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA142)', () => {
+  test('achieves 142/142 exact independent-gold match (tp=79, tn=63, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
     let tp = 0;
     let tn = 0;
     let fp = 0;
@@ -2097,7 +2230,7 @@ describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA132)', () 
       }
     }
 
-    expect({tp, tn, fp, fn}).toEqual({tp: 73, tn: 59, fp: 0, fn: 0});
+    expect({tp, tn, fp, fn}).toEqual({tp: 79, tn: 63, fp: 0, fn: 0});
   });
 
   test('clean Rust deterministic buffer pool & bounded retry passes with 0 findings', () => {
