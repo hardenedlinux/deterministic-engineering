@@ -136,6 +136,14 @@ const MECHANISM_DIRECTIVES: Record<AgingMechanism, AgingRemediationDirective> = 
     antiEvasionWarning:
       'Do NOT evade by buffering full payloads via resp.bytes().await or resp.text() before checking length, or by ignoring hidden Thinking deltas in cumulative output accounting.',
   },
+  'SM19-task-and-pool-cancellation': {
+    mechanism: 'SM19-task-and-pool-cancellation',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Wrap spawned async JoinHandles in an AbortOnDrop guard or JoinSet, gate JoinSet batch fan-out with a bounded Semaphore while keeping correlation IDs caller-owned, and track transaction dirty state on pooled DB leases so cancelled transactions discard/replace or roll back connections instead of poisoning the pool.',
+    antiEvasionWarning:
+      'Do NOT evade by detaching JoinHandles in Vecs, spawning unbounded JoinSet batches, or returning dirty in-transaction connections into shared pools on Drop.',
+  },
 };
 
 export function getAgingRemediation(finding: AgingFinding): AgingRemediationDirective {

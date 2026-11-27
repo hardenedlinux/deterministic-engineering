@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Structured Task Abort-on-Drop, Transaction-Safe Pool Lease & Bounded Fan-Out Envelope
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.concurrency.task-and-pool-cancellation-envelope=
+- *Subdomain*: =quint.engineering.concurrency=
+- *Quint Module*: =concurrency_task_and_pool_cancellation_envelope= (=[[file:TaskAndPoolCancellationEnvelope.qnt][TaskAndPoolCancellationEnvelope.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/concurrency/task-and-pool-cancellation-envelope/TaskAndPoolCancellationEnvelope=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Cancelling a parent async scope aborts all child tasks (orphanTasks == 0), cancelling an uncommitted DB transaction never returns a poisoned connection to the pool (poisonedPoolConns == 0), and parallel effect batches respect maxConcurrency while preserving exact correlation IDs across worker panics (fanoutBreaches == 0 and lostCorrelationIds == 0).
+
+#+begin_src quint
+val safety = (h.activeChildren <= h.maxConcurrency and h.activeChildren >= 0 and h.orphanTasks == 0 and h.poisonedPoolConns == 0 and h.fanoutBreaches == 0 and h.lostCorrelationIds == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =abort-children-on-cancel= | =stepDetachedJoinHandleLeak= | =h.orphanTasks > 0= |
+| =rollback-or-discard-dirty-lease= | =stepPoisonedTxLeaseReturn= | =h.poisonedPoolConns > 0= |
+| =bound-fanout-and-preserve-id= | =stepUnboundedFanoutAndLostCorrelation= | =h.fanoutBreaches > 0 or h.lostCorrelationIds > 0= |
+
+* Grounded Papers & Specifications
+
+- *N. J. Smith (2018)*: Notes on Structured Concurrency — async scopes must abort all spawned child tasks on cancellation rather than detaching bare JoinHandles.
+- *J. Gray & A. Reuter (1993)*: Transaction Processing: Concepts and Techniques — dirty uncommitted transactions cancelled mid-flight must never return poisoned connections to a shared pool.
+- *M. Welsh, D. Culler & E. Brewer (ACM SOSP 2001)*: SEDA — bounded concurrency semaphores prevent unbounded parallel task fan-out while caller-owned correlation tables survive worker panics.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/concurrency/task-and-pool-cancellation-envelope/TaskAndPoolCancellationEnvelope.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/concurrency/task-and-pool-cancellation-envelope/TaskAndPoolCancellationEnvelope.qnt --main=concurrency_task_and_pool_cancellation_envelope --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite 2-lane pool and 2-permit semaphore abstraction; verifies abort-on-drop task containment, dirty-lease pool isolation, and bounded panic-safe correlation, not OS thread scheduling fairness or SQLite B-tree locking internals.

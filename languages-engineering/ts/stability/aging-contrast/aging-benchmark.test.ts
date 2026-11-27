@@ -1337,10 +1337,140 @@ export async function fetchCompletion(url: string): Promise<Uint8Array> {
   return new Uint8Array(total);
 }`,
   },
+
+  // ── Wave-11 Structured Task Abort-on-Drop, Dirty DB Pool Lease & Bounded Fan-Out (SA91-SA96, SM19) ──
+  {
+    id: 'SA91',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-async-joinhandle-vec-drop-detach',
+    source: `
+async fn dispatch_hooks(regs: Vec<Reg>) -> Vec<Summary> {
+  let mut async_runs: Vec<(Reg, tokio::task::JoinHandle<Summary>)> = Vec::new();
+  for r in regs {
+    let task = tokio::spawn(async move { r.exec().await });
+    async_runs.push((r, task));
+  }
+  let mut out = Vec::new();
+  for (r, task) in async_runs {
+    if let Ok(s) = task.await { out.push(s); }
+  }
+  out
+}`,
+  },
+  {
+    id: 'SA92',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-joinset-unbounded-fanout',
+    source: `
+async fn run_atomic_effect_batch(effects: Vec<Effect>) -> Vec<Receipt> {
+  let mut join_set = tokio::task::JoinSet::new();
+  for (idx, effect) in effects.into_iter().enumerate() {
+    join_set.spawn(async move { (idx, execute(effect).await) });
+  }
+  let mut out = Vec::new();
+  while let Some(res) = join_set.join_next().await {
+    if let Ok((_, r)) = res { out.push(r); }
+  }
+  out
+}`,
+  },
+  {
+    id: 'SA93',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-pool-lease-returns-dirty-tx',
+    source: `
+struct TursoConnectionLease {
+  connection: Option<Conn>,
+  sender: tokio::sync::mpsc::Sender<Conn>,
+}
+impl Drop for TursoConnectionLease {
+  fn drop(&mut self) {
+    if let Some(connection) = self.connection.take() {
+      let _ = self.sender.try_send(connection);
+    }
+  }
+}
+async fn begin_tx(conn: &Conn) {
+  let _ = conn.execute("BEGIN CONCURRENT", ()).await;
+}`,
+  },
+  {
+    id: 'SA94',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+struct AbortOnDropHandle<T>(Option<tokio::task::JoinHandle<T>>);
+impl<T> Drop for AbortOnDropHandle<T> {
+  fn drop(&mut self) {
+    if let Some(handle) = self.0.take() { handle.abort(); }
+  }
+}
+async fn dispatch_hooks(regs: Vec<Reg>) -> Vec<Summary> {
+  let mut async_runs = Vec::new();
+  for r in regs {
+    let task = AbortOnDropHandle(Some(tokio::spawn(async move { r.exec().await })));
+    async_runs.push((r, task));
+  }
+  let mut out = Vec::new();
+  for (r, mut task) in async_runs {
+    if let Ok(s) = task.0.take().unwrap().await { out.push(s); }
+  }
+  out
+}`,
+  },
+  {
+    id: 'SA95',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+const MAX_CONCURRENT_ATOMIC_EFFECTS: usize = 16;
+async fn run_atomic_effect_batch(effects: Vec<Effect>) -> Vec<Receipt> {
+  let permits = std::sync::Arc::new(tokio::sync::Semaphore::new(MAX_CONCURRENT_ATOMIC_EFFECTS));
+  let mut join_set = tokio::task::JoinSet::new();
+  for (idx, effect) in effects.into_iter().enumerate() {
+    let permit = permits.clone().acquire_owned().await.unwrap();
+    join_set.spawn(async move {
+      let _permit = permit;
+      (idx, execute(effect).await)
+    });
+  }
+  let mut out = Vec::new();
+  while let Some(res) = join_set.join_next().await {
+    if let Ok((_, r)) = res { out.push(r); }
+  }
+  out
+}`,
+  },
+  {
+    id: 'SA96',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+struct TursoConnectionLease {
+  connection: Option<Conn>,
+  sender: tokio::sync::mpsc::Sender<Conn>,
+  tx_active: bool,
+}
+impl Drop for TursoConnectionLease {
+  fn drop(&mut self) {
+    if let Some(connection) = self.connection.take() {
+      if !self.tx_active {
+        let _ = self.sender.try_send(connection);
+      }
+    }
+  }
+}
+async fn begin_tx(conn: &Conn) {
+  let _ = conn.execute("BEGIN CONCURRENT", ()).await;
+}`,
+  },
 ];
 
-describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA90)', () => {
-  test('achieves 90/90 exact independent-gold match (tp=52, tn=38, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
+describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA96)', () => {
+  test('achieves 96/96 exact independent-gold match (tp=55, tn=41, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
     let tp = 0;
     let tn = 0;
     let fp = 0;
@@ -1363,7 +1493,7 @@ describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA90)', () =
       }
     }
 
-    expect({tp, tn, fp, fn}).toEqual({tp: 52, tn: 38, fp: 0, fn: 0});
+    expect({tp, tn, fp, fn}).toEqual({tp: 55, tn: 41, fp: 0, fn: 0});
   });
 
   test('clean Rust deterministic buffer pool & bounded retry passes with 0 findings', () => {

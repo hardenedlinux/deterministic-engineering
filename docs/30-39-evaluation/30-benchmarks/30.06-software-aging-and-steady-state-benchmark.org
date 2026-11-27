@@ -21,7 +21,8 @@ This benchmark evaluates whether a language-agnostic, multi-method engineering
 gate can deterministically detect, refute, and guide AI repair of *long-running
 software aging, interactive search/IME/input-sanitization stability, chaos/IPC
 reconnect resilience, search-index snapshot isolation, streaming LLM/HTTP
-output-budget, and CI/CD scientific caching/sharding defects* (=SM1=–=SM18= in
+output-budget, CI/CD scientific caching/sharding, and structured async task /
+DB pool cancellation hygiene defects* (=SM1=–=SM19= in
 [[file:../../40-49-research/40-reference-studies/40.04-software-aging-and-steady-state-stability.org][40.04]],
 [[file:../../40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org][40.05]],
 and [[file:../../40-49-research/40-reference-studies/40.06-ci-cd-scientific-caching-and-subdomain-sharding.org][40.06]])
@@ -29,15 +30,15 @@ across five implementation languages (**Go, Rust, TypeScript, C, C++**) and
 realistic multi-layer agent/UI architectures (**Marlin Rust/Scheme Host + MyGo
 Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
 
-- *Independent Gold*: Every static case (=SA01=–=SA90=), closed-loop persona,
+- *Independent Gold*: Every static case (=SA01=–=SA96=), closed-loop persona,
   formal countermodel, metamorphic search property (=MR1=–=MR6=), chaos/IME/IPC,
-  snapshot-isolation, search-box sanitization, streaming output-budget, and
-  CI/CD CAS soundness structure-aware fuzz property, and runtime soak assertion
-  carries a fixed independent expected outcome (=pass= vs. =refuse= + exact
-  mechanism / rule / ITF predicate).
+  snapshot-isolation, search-box sanitization, streaming output-budget, CI/CD
+  CAS soundness, and task/pool cancellation structure-aware fuzz property, and
+  runtime soak assertion carries a fixed independent expected outcome (=pass=
+  vs. =refuse= + exact mechanism / rule / ITF predicate).
 - *Five Coupled Verification Layers*:
   1. *Formal Finite-State Models (Quint + Apalache 0.62.1 + 100% =--mbt=)*:
-     19 stability models (48 auto-derived countermodels) + 3 UI concurrency
+     20 stability models (51 auto-derived countermodels) + 3 UI concurrency
      kernel models (7 auto-derived countermodels) covering cyclic drain, buffer
      ratchet, metastable retry collapse, GC headroom pacing, slow-consumer
      fan-out eviction, bounded projection idle eviction & side-map cleanup,
@@ -56,25 +57,31 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
      search-box uniform paste/setInput byte-cap sanitization + grapheme cursor
      alignment + clear-time capacity shrinking (=SM16=), streaming LLM/HTTP
      output-budget pre-allocation chunk caps + unified text/thinking accounting
-     + SSE completion parity + fail-closed buffer release (=SM17=), and CI/CD
+     + SSE completion parity + fail-closed buffer release (=SM17=), CI/CD
      scientific two-layer CAS soundness + disjoint subdomain shard namespaces +
-     active-set cache quota GC (=SM18=).
+     active-set cache quota GC (=SM18=), and structured async task abort-on-drop
+     + transaction-safe DB pool lease hygiene + semaphore-bounded fan-out with
+     panic-safe correlation IDs (=SM19=).
   2. *Unbounded Algebraic & LeanPoo Object Proofs (Lean 4)*:
      [[file:../../../packages/lean-models/DeterministicEngineering/Core/Stability.lean][Core/Stability.lean]]
      (Sections 1–17, 51 theorems, zero =sorry=) plus dedicated objectified
      =LeanPoo= domain modules
      [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/StreamingOutputBudget.lean][Engineering/StreamingOutputBudget.lean]]
-     (=SM17=, 10 theorems with =ObjectContract.refine= & =LeanPoo.Proof.reuse=)
-     and [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/CiCacheSoundness.lean][Engineering/CiCacheSoundness.lean]]
+     (=SM17=, 10 theorems with =ObjectContract.refine= & =LeanPoo.Proof.reuse=),
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/CiCacheSoundness.lean][Engineering/CiCacheSoundness.lean]]
      (=SM18=, 10 theorems with =ObjectContract.refine= & =LeanPoo.Proof.reuse=),
+     and [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/TaskAndPoolCancellation.lean][Engineering/TaskAndPoolCancellation.lean]]
+     (=SM19=, 10 theorems with =ObjectContract.refine= & =LeanPoo.Proof.reuse=),
      proving arbitrary-cycle zero drift, ARB linear exhaustion, spike-independent
      capped pool ceilings, GC headroom cycle bounds, bounded fan-out retention,
      bounded-projection idle-eviction liveness, lag-resync/coalesced
      write-amplification bounds, UI viewport/render-budget independence,
      =SM8=–=SM16= search/IPC/IME/chaos/snapshot/sanitization envelopes, =SM17=
      pre-allocation stream budget conservation & zero-allocation header refusal,
-     and =SM18= cryptographic ActionKey soundness, disjoint shard conflict
-     freedom, and active-set cache quota bounds.
+     =SM18= cryptographic ActionKey soundness, disjoint shard conflict freedom,
+     and active-set cache quota bounds, and =SM19= abort-on-drop orphan-zero
+     conservation, zero-poison DB pool lease hygiene, semaphore fan-out cap, and
+     caller-owned correlation-ID preservation across worker panics.
   3. *Live Runtime, PBT & Structure-Aware Fuzzing Contrasts (5 Languages + Marlin/MyGo Full-Stack)*:
      - Go 1.26.7 (via modular =devenv=): =testing/synctest= virtual-clock
        quiescence bubbles, real =runtime.ReadMemStats= sub-slice pinning &
@@ -93,35 +100,38 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
        soak, and native OLS Slope Oracle.
      - TypeScript / Bun: Reusable Independent Steady-State Slope Oracle
        ([[file:../../../languages-engineering/ts/stability/aging-contrast/slope-oracle.ts][slope-oracle.ts]]),
-       live Quint =--mbt= ITF state-machine refinement across all 19 formal
+       live Quint =--mbt= ITF state-machine refinement across all 20 formal
        stability models ([[file:../../../languages-engineering/ts/stability/aging-contrast/mbt-stability-replay.test.ts][mbt-stability-replay.test.ts]],
        [[file:../../../languages-engineering/ts/stability/aging-contrast/ipc-ime-chaos-fuzz.test.ts][ipc-ime-chaos-fuzz.test.ts]],
        [[file:../../../languages-engineering/ts/stability/aging-contrast/search-index-snapshot-fuzz.test.ts][search-index-snapshot-fuzz.test.ts]],
        [[file:../../../languages-engineering/ts/stability/aging-contrast/search-box-sanitization-fuzz.test.ts][search-box-sanitization-fuzz.test.ts]],
        [[file:../../../languages-engineering/ts/stability/aging-contrast/streaming-output-budget-fuzz.test.ts][streaming-output-budget-fuzz.test.ts]],
-       and [[file:../../../languages-engineering/ts/stability/aging-contrast/ci-cache-soundness-fuzz.test.ts][ci-cache-soundness-fuzz.test.ts]]),
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/ci-cache-soundness-fuzz.test.ts][ci-cache-soundness-fuzz.test.ts]],
+       and [[file:../../../languages-engineering/ts/stability/aging-contrast/task-and-pool-cancellation-fuzz.test.ts][task-and-pool-cancellation-fuzz.test.ts]]),
        500-case parametric search metamorphic fuzzing across =MR1=–=MR6= with
        3 deterministic refutations ([[file:../../../languages-engineering/ts/stability/aging-contrast/search-metamorphic-fuzz.test.ts][search-metamorphic-fuzz.test.ts]]),
-       1,750-trial structure-aware IPC/IME/chaos/snapshot/sanitization/streaming/CI-CAS
-       fuzzing (250 trials each across =SM12=–=SM18= + 42 live Quint ITF MBT
+       2,000-trial structure-aware IPC/IME/chaos/snapshot/sanitization/streaming/CI-CAS/task-pool
+       fuzzing (250 trials each across =SM12=–=SM19= + 48 live Quint ITF MBT
        traces), live self-auditing CI workflow/CAS tests, and the 4-layer Marlin
        + MyGo + WebView UI soak suite
        ([[file:../../../languages-engineering/ts/stability/aging-contrast/marlin-mygo-fullstack-soak.test.ts][marlin-mygo-fullstack-soak.test.ts]]).
-  4. *90-Case Multi-Language Aging, Search/IME/Sanitization, IPC/Chaos, Snapshot & Streaming Budget AST Auditor (=SA01=–=SA90=)*:
+  4. *96-Case Multi-Language Aging, Search/IME/Sanitization, IPC/Chaos, Snapshot, Streaming & Task/Pool Cancellation AST Auditor (=SA01=–=SA96=)*:
      [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-ast-auditor.ts][aging-ast-auditor.ts]]
      & [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-benchmark.test.ts][aging-benchmark.test.ts]]
-     (=tp=52, tn=38, fp=0, fn=0=), empirically calibrated to **0 findings** across
-     full sweeps of **all 272 non-test Go+TS source files in =marlin-mygo=** and
-     **all 157 Rust source files across =marlin-agent-{tui,search-engine,tooling,app-server,stream,gerbil-scheme}=**.
+     (=tp=55, tn=41, fp=0, fn=0=), empirically calibrated to **0 findings** across
+     full sweeps of **all 269 tracked non-test Go+TS source files in =marlin-mygo=**
+     and **222/222 production Rust source files across 9 =marlin-agent-core= crates
+     (=tui,search-engine,tooling,app-server,stream,gerbil-scheme,hooks,runtime,storage/turso=)**
+     (excluding only ephemeral test double =InMemoryAgentStorage= in =memory.rs=).
   5. *Closed-Loop AI Aging Governance Harness & CLI*:
      [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-governance-harness.ts][aging-governance-harness.ts]],
      [[file:../../../languages-engineering/ts/stability/aging-contrast/agent-stability-audit.ts][agent-stability-audit.ts]]
      (=just audit-agent-stability=), emitting SARIF 2.1.0 and structured C2
-     aging repair packets across =SM2=–=SM5=, =SM7=–=SM9=, and =SM12=–=SM17=,
+     aging repair packets across =SM2=–=SM5=, =SM7=–=SM9=, and =SM12=–=SM19=,
      validated against 3 AI agent personas plus a full-stack Marlin/MyGo C2
      convergence scenario.
 
-* Ninety-Case Static Aging, Search/IME, IPC, Snapshot, Sanitization & Streaming Cohort (=SA01=–=SA90=)
+* Ninety-Six-Case Static Aging, Search/IME, IPC, Snapshot, Sanitization, Streaming & Cancellation Cohort (=SA01=–=SA96=)
 :PROPERTIES:
 :CUSTOM_ID: bench3006-cohort
 :END:
@@ -218,6 +228,12 @@ Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
 | =SA88= | Rust | Clean control | Pass (0 findings) | SSE completion enforcing =stream_output_limit= on both =Text= and =Thinking= deltas before appending |
 | =SA89= | Rust | Clean control | Pass (0 findings) | HTTP client checking =resp.content_length()= fail-fast and streaming via =resp.chunk().await= with pre-allocation cap |
 | =SA90= | TypeScript | Clean control | Pass (0 findings) | Fetch reader checking =content-length= header and streaming via =resp.body.getReader()= with pre-allocation byte budget |
+| =SA91= | Rust | =SM19= | Refuse (=rust-async-joinhandle-vec-drop-detach=) | Pushing spawned =JoinHandle= tasks into a =Vec= and awaiting them sequentially without =AbortOnDropHandle= / =JoinSet= (=dispatcher.rs= pattern) |
+| =SA92= | Rust | =SM19= | Refuse (=rust-joinset-unbounded-fanout=) | Loop spawning unbounded =join_set.spawn(...)= per batch item without =Semaphore= concurrency cap (=effect_pump.rs= pattern) |
+| =SA93= | Rust | =SM19= | Refuse (=rust-pool-lease-returns-dirty-tx=) | =impl Drop for *Lease= returning DB connection unconditionally via =sender.send/try_send= without =tx_active= poison guard (=turso_backend.rs= pattern) |
+| =SA94= | Rust | Clean control | Pass (0 findings) | RAII =AbortOnDropHandle= awaiting =&mut handle= before disarming so mid-join drop aborts every in-flight task |
+| =SA95= | Rust | Clean control | Pass (0 findings) | =Arc<Semaphore>= bounded =JoinSet= fan-out (=MAX_CONCURRENT_ATOMIC_EFFECTS=16=) preserving caller-owned =effect_id= on panic |
+| =SA96= | Rust | Clean control | Pass (0 findings) | =TursoConnectionLease= tracking =tx_active= across =BEGIN=/=COMMIT=/=ROLLBACK= and discarding poisoned connections on drop with clean lane replenishment |
 
 * Empirical Adversarial Challenge Receipts on Downstream Packages
 :PROPERTIES:
@@ -249,15 +265,16 @@ package-domain adversarial test suites:
 | =marlin-agent-core= | =crates/marlin-agent-tooling/tests/unit/search_scheduler_stability.rs= | =SM15= | Live RED (2/4 failed, 0.08s): cancelling single-flight query leader cascade-failed healthy followers with =Err("coalesced search query cancelled")=; 6 concurrent cold opens produced split-brain distinct =WorkspaceSearchIndex Arc= handles & unchecked root reuse across worktrees | Hardened =search_scheduler.rs= (='election: loop= re-electing surviving follower on leader watch close) and =search_tool.rs= (=open_lock= double-checked canonical =workspace_root= matching): =search_scheduler::stability_tests= 4/4 PASS (0.08s), =clippy --no-deps -D warnings= clean, **154/154 Rust files across core 6 crates = 0 findings (=SA01=–=SA80=)** |
 | =marlin-agent-core= | =crates/marlin-agent-tui/tests/unit/helm_fuzz.rs= | =SM16= | Live RED (0.03s): =PasteSelection= (=C-y=) bypassed =MAX_HELM_INPUT_BYTES=2048=, injecting 18,605 bytes from =yank_register= into single-line Helm input; =set_input= also bypassed byte cap & control-char stripping | Hardened =helm/editor.rs= (shared =sanitize_bounded_helm_input= across =insert_text=, =PasteSelection=, and =set_input= + =shrink_to= capacity reclamation): =marlin-agent-tui --no-default-features --lib helm::= **21/21 PASS** (incl. 96-case =Composer= ZWJ/CJK/combining/narrow-wrap/undo =proptest=), **154/154 Rust files across core 6 crates = 0 findings (=SA01=–=SA84=)** |
 | =marlin-agent-core= | =crates/marlin-agent-stream/tests/unit/stream_budget_stability.rs= | =SM17= | Live RED (0/4 failed, 2.01s): =WeaverModelGateway::complete= over SSE ignored =stream_output_limit= on both =Text= and hidden =Thinking= floods (96B Anthropic thinking bypassed 32B cap); =OpenAiCompatibleHttpClient::complete_text= buffered all 25,165,824 bytes (24 MiB) via =resp.bytes().await= before checking 4 MiB limit and stalled 2.002s on declared 100 MiB =Content-Length= | Hardened =gateway.rs= + =streaming.rs= (shared =check_stream_output_budget= across =stream()= and =complete()= SSE/Auto for both =Text= & =Thinking= + typed =stream_event_error=) and =openai_http.rs= (=content_length()= fail-fast + incremental =resp.chunk().await= pre-allocation 4 MiB gate): =marlin-agent-stream --lib= **2/2 PASS**, =--test unit_test stream= **20/20 PASS (0.01s)**, =clippy --no-deps -D warnings= clean, **157/157 core Rust files & 272/272 =marlin-mygo= files = 0 findings (=SA01=–=SA90=)** |
-| =deterministic-engineering= | =.github/workflows/*.yml=, =packages/quint-modules-resolver/src/mbt.ts=, =t/harness/verify-framework.ts=, =ci-cache-soundness-fuzz.test.ts= | =SM18= | Cold unsharded CI baseline: 5 workflows had 0 dependency/toolchain/Playwright/Lake/CAS caching (=setup-go cache:false=, ~170 MB Playwright + ~350 MB Lean cold download every push), =conformance.test.ts= duplicated the entire 95-model uncached fleet (=206s= on =Quint Packages=, =233s= on =Render=) | Implemented zero-hardcoding dynamic subdomain matrix (=just verify-matrix quint= -> 5 disjoint shards covering 96/96 models; =stability= -> 2 shards), shared =setup-bun-cached=, SHA-pinned =actions/cache= & =setup-go=, two-layer shard-disjoint SHA-256 CAS with hermetic engine/transitive-dep hashing + active-set GC + dedicated =LeanPoo= modules (=Engineering/{StreamingOutputBudget,CiCacheSoundness}.lean=): live 10-model shard dropped **12,760 ms cold -> 8 ms warm CAS (1,595× speedup)**, resolver unit tests dropped to **29.6s** (=conformance= 304ms), =ci-cache-soundness-fuzz.test.ts= **4/4 PASS (36,805 expects)** |
+| =deterministic-engineering= | =.github/workflows/*.yml=, =packages/quint-modules-resolver/src/mbt.ts=, =t/harness/verify-framework.ts=, =ci-cache-soundness-fuzz.test.ts= | =SM18= | Cold unsharded CI baseline: 5 workflows had 0 dependency/toolchain/Playwright/Lake/CAS caching (=setup-go cache:false=, ~170 MB Playwright + ~350 MB Lean cold download every push), =conformance.test.ts= duplicated the entire 95-model uncached fleet (=206s= on =Quint Packages=, =233s= on =Render=) | Implemented zero-hardcoding dynamic subdomain matrix (=just verify-matrix quint= -> 5 disjoint shards covering 97/97 models; =stability= -> 2 shards), shared =setup-bun-cached=, SHA-pinned =actions/cache= & =setup-go=, two-layer shard-disjoint SHA-256 CAS with hermetic engine/transitive-dep hashing + active-set GC + dedicated =LeanPoo= modules (=Engineering/{StreamingOutputBudget,CiCacheSoundness}.lean=): live 10-model shard dropped **12,760 ms cold -> 8 ms warm CAS (1,595× speedup)**, live GitHub Actions =c4fd808= **5/5 upgraded workflows 100% green on cold run** (=Quint Packages= 7/7 jobs **132s** vs. 570s v1 & 256s v2; =Stability= 4/4 jobs; =Multi-Method= 3/3 jobs incl. LeanPoo; =Defense= 56s; =Render= Ubuntu 218s & macOS 266s), =ci-cache-soundness-fuzz.test.ts= **4/4 PASS (36,805 expects)** |
+| =marlin-agent-core= | =crates/marlin-agent-hooks/tests/unit/hooks/cancellation_stability.rs=, =crates/marlin-agent-runtime/tests/unit/runtime/effect_pump.rs=, =crates/marlin-agent-storage/src/turso_backend.rs= (=sm19_pool_tests=) | =SM19= | Live RED across 3 production crates: cancelling =HookDispatcher::dispatch= detached orphan async hook tasks (even naive =AbortOnDropHandle::join= with =self.0.take().await= detached mid-await!); =execute_atomic_effect_batch= spiked unbounded =JoinSet= fan-out to **48 concurrent workers** (limit=16) and fabricated =effect-7= losing caller ID ="sha256:panic-target-7"= on worker panic; =TursoConnectionPool= used =mpsc::unbounded_channel= and =TursoConnectionLease::drop= returned dirty in-transaction connections unconditionally | Hardened =dispatcher.rs= (cancel-safe =AbortOnDropHandle= awaiting =&mut handle= before disarming), =effect_pump.rs= (=MAX_CONCURRENT_ATOMIC_EFFECTS=16= =Arc<Semaphore>= + caller-owned =caller_ids=), and =turso_backend.rs=/=turso_operations.rs= (bounded =mpsc::channel(lanes)= + =tx_active= dirty-drop discard & clean lane replenishment): =marlin-agent-hooks --test unit_test= **24/24 PASS (0.16s)**, =marlin-agent-runtime effect_pump= **2/2 PASS (0.09s)**, =marlin-agent-storage --features turso sm19_pool_tests= **1/1 PASS (0.03s)**, =clippy --no-deps -D warnings= clean across all 3 crates, **222/222 production Rust files across 9 crates & 269/269 =marlin-mygo= files = 0 findings (=SA01=–=SA96=)** |
 
 * Unified Verification Command
 
 #+begin_src sh
-# Run full 5-language stability gate (Quint/MBT + Lean 4 + C/CBMC + C++20 + Rust + Go devenv -race/synctest/runtime-soak + TS Slope Oracle + SA01-SA68 + Metamorphic Fuzz + Closed-Loop Governance):
+# Run full 5-language stability gate (Quint/MBT + Lean 4 / LeanPoo + C/CBMC + C++20 + Rust + Go devenv -race/synctest/runtime-soak + TS Slope Oracle + SA01-SA96 + Metamorphic/Structure-Aware Fuzz + Closed-Loop Governance):
 just check-stability
 
-# Audit current git diff or explicit files for SM2-SM5 & SM7-SM9 aging/search hazards:
+# Audit current git diff or explicit files for SM2-SM5, SM7-SM9, and SM12-SM19 aging/search/cancellation hazards:
 just audit-agent-stability --files languages-engineering/go/stability/aging-contrast/deterministic_steady.go
 #+end_src
 

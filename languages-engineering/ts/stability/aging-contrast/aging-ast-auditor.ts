@@ -24,7 +24,8 @@ export type AgingMechanism =
   | 'SM14-chaos-circuit-envelope'
   | 'SM15-search-snapshot-isolation'
   | 'SM16-search-input-sanitization'
-  | 'SM17-streaming-output-budget';
+  | 'SM17-streaming-output-budget'
+  | 'SM19-task-and-pool-cancellation';
 
 export interface AgingFinding {
   ruleId: string;
@@ -694,6 +695,55 @@ function auditRust(clean: string): AgingFinding[] {
         language: 'rust',
         line: lineOfIndex(clean, reqwestBytesMatch.index),
         message: 'HTTP response buffers full body via .bytes().await before checking byte cap; validate content_length() and stream via .chunk().await with pre-allocation cap enforcement (SM17).',
+      });
+    }
+  }
+
+  // 19. Async function stores bare JoinHandles in a Vec and awaits sequentially without abort-on-drop (SM19: marlin-agent-hooks/dispatcher.rs).
+  const asyncRunsMatch = /\bfor\s+\([^)]*\b(?:task|handle)\b[^)]*\)\s+in\s+\w+\s*\{[\s\S]{0,120}?\b(?:task|handle)\.await\b/.exec(clean);
+  if (asyncRunsMatch && /\bJoinHandle\b/.test(clean)) {
+    const fnScope = extractEnclosingBlock(clean, asyncRunsMatch.index);
+    const hasAbortGuard = /\b(?:AbortOnDrop|JoinSet|abort_all|abort_handles|DropGuard)\b/.test(clean);
+    if (!hasAbortGuard && /\.push\s*\(/.test(fnScope)) {
+      findings.push({
+        ruleId: 'rust-async-joinhandle-vec-drop-detach',
+        mechanism: 'SM19-task-and-pool-cancellation',
+        language: 'rust',
+        line: lineOfIndex(clean, asyncRunsMatch.index),
+        message: 'Vec of bare tokio::task::JoinHandle detaches in-flight child tasks on async cancellation; wrap handles in an AbortOnDrop guard or JoinSet (SM19).',
+      });
+    }
+  }
+
+  // 20. JoinSet batch loop spawns unbounded tasks without a concurrency semaphore cap (SM19: marlin-agent-runtime/effect_pump.rs).
+  const joinSetLoopMatch = /\bfor\s+[^\n{]+\{[\s\S]{0,220}?\bjoin_set\.spawn\s*\(/.exec(clean);
+  if (joinSetLoopMatch) {
+    const fnScope = extractEnclosingBlock(clean, joinSetLoopMatch.index);
+    const hasConcurrencyCap = /\b(?:Semaphore|acquire_owned|MAX_CONCURRENT|max_concurrency|permits)\b/.test(fnScope);
+    if (!hasConcurrencyCap) {
+      findings.push({
+        ruleId: 'rust-joinset-unbounded-fanout',
+        mechanism: 'SM19-task-and-pool-cancellation',
+        language: 'rust',
+        line: lineOfIndex(clean, joinSetLoopMatch.index),
+        message: 'JoinSet loop spawns unbounded concurrent tasks without a Semaphore / max_concurrency ceiling (SM19).',
+      });
+    }
+  }
+
+  // 21. DB ConnectionLease Drop unconditionally returns connection to pool while file runs BEGIN transactions (SM19: turso_backend.rs).
+  const leaseDropMatch = /\bimpl\s+Drop\s+for\s+\w*ConnectionLease\b/.exec(clean);
+  if (leaseDropMatch && /\bBEGIN\s+(?:CONCURRENT|IMMEDIATE|DEFERRED|EXCLUSIVE)\b/i.test(clean)) {
+    const dropBody = extractBraceBlock(clean, leaseDropMatch.index);
+    const returnsConn = /\.(?:send|try_send)\s*\(\s*connection\s*\)/.test(dropBody);
+    const guardsDirty = /\b(?:dirty|in_transaction|tx_active|poisoned|is_clean|discard|rollback|autocommit)\b/i.test(dropBody);
+    if (returnsConn && !guardsDirty) {
+      findings.push({
+        ruleId: 'rust-pool-lease-returns-dirty-tx',
+        mechanism: 'SM19-task-and-pool-cancellation',
+        language: 'rust',
+        line: lineOfIndex(clean, leaseDropMatch.index),
+        message: 'ConnectionLease::drop unconditionally returns DB connection to pool without discarding or rolling back uncommitted transactions cancelled mid-flight (SM19).',
       });
     }
   }
