@@ -930,10 +930,119 @@ impl LinkedSearchDslMailbox {
   }
 }`,
   },
+
+  // ── Wave-7 Adversarial IPC Half-Open & IME Composition Traps + Positive Controls (SA69-SA76, SM12-SM14) ──
+  {
+    id: 'SA69',
+    language: 'go',
+    expectedPass: false,
+    expectedRuleId: 'go-reconnect-without-close',
+    source: `
+func (c *BridgeClient) Reconnect(dial func() Stream) {
+  c.stream = dial()
+}`,
+  },
+  {
+    id: 'SA70',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-unfenced-stream-reconnect',
+    source: `
+impl GrpcBridge {
+  fn reconnect(&mut self, next: StreamHandle) {
+    self.stream = Some(next);
+  }
+}`,
+  },
+  {
+    id: 'SA71',
+    language: 'ts',
+    expectedPass: false,
+    expectedRuleId: 'ts-ime-unguarded-enter-submit',
+    source: `
+export function onKeyDown(event: KeyboardEvent, runQuery: () => void) {
+  if (event.key === 'Enter') {
+    runQuery();
+  }
+}`,
+  },
+  {
+    id: 'SA72',
+    language: 'ts',
+    expectedPass: false,
+    expectedRuleId: 'ts-ime-blur-orphan-preedit',
+    source: `
+class SearchBox {
+  focused = true;
+  composing = false;
+  preedit = '';
+  onCompositionStart() { this.composing = true; }
+  onBlur() {
+    this.focused = false;
+  }
+}`,
+  },
+  {
+    id: 'SA73',
+    language: 'go',
+    expectedPass: true,
+    source: `
+func (c *BridgeClient) Reconnect(dial func() Stream) {
+  if c.stream != nil {
+    _ = c.stream.Close()
+  }
+  c.epoch++
+  c.stream = dial()
+}`,
+  },
+  {
+    id: 'SA74',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+impl GrpcBridge {
+  fn reconnect(&mut self, next: StreamHandle) {
+    if let Some(old) = self.stream.take() {
+      old.abort();
+    }
+    self.session_epoch += 1;
+    self.stream = Some(next);
+  }
+}`,
+  },
+  {
+    id: 'SA75',
+    language: 'ts',
+    expectedPass: true,
+    source: `
+export function onKeyDown(event: KeyboardEvent, runQuery: () => void) {
+  if (event.isComposing || event.keyCode === 229) return;
+  if (event.key === 'Enter') {
+    runQuery();
+  }
+}`,
+  },
+  {
+    id: 'SA76',
+    language: 'ts',
+    expectedPass: true,
+    source: `
+class SearchBox {
+  focused = true;
+  composing = false;
+  preedit = '';
+  onCompositionStart() { this.composing = true; }
+  onBlur() {
+    this.focused = false;
+    this.composing = false;
+    this.preedit = '';
+  }
+}`,
+  },
 ];
 
-describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA68)', () => {
-  test('achieves 68/68 exact independent-gold match (tp=41, tn=27, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
+describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA76)', () => {
+  test('achieves 76/76 exact independent-gold match (tp=45, tn=31, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
     let tp = 0;
     let tn = 0;
     let fp = 0;
@@ -956,7 +1065,7 @@ describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA68)', () =
       }
     }
 
-    expect({tp, tn, fp, fn}).toEqual({tp: 41, tn: 27, fp: 0, fn: 0});
+    expect({tp, tn, fp, fn}).toEqual({tp: 45, tn: 31, fp: 0, fn: 0});
   });
 
   test('clean Rust deterministic buffer pool & bounded retry passes with 0 findings', () => {

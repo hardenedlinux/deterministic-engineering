@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Chaos Fault Injection, Circuit Load Shedding & Typed Recovery Envelope
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.concurrency.chaos-fault-injection-recovery-envelope=
+- *Subdomain*: =quint.engineering.concurrency=
+- *Quint Module*: =concurrency_chaos_fault_injection_recovery_envelope= (=[[file:ChaosFaultInjectionRecoveryEnvelope.qnt][ChaosFaultInjectionRecoveryEnvelope.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/concurrency/chaos-fault-injection-recovery-envelope/ChaosFaultInjectionRecoveryEnvelope=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Under injected faults, an open circuit sheds traffic instead of amplifying load, active faults return typed degraded refusals rather than silent empty success, and clearing a fault enables deterministic probe recovery without permanent wedge.
+
+#+begin_src quint
+val safety = (h.activeLoad <= 2 and h.cascadeViolations == 0 and h.silentCorruptions == 0 and h.stickyWedged == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =shed-load-on-open-circuit= | =stepOpenCircuitCascade= | =h.cascadeViolations > 0= |
+| =typed-refusal-under-fault= | =stepSilentFallbackCorruption= | =h.silentCorruptions > 0= |
+| =half-open-probe-recovery= | =stepStickyRecoveryWedge= | =h.stickyWedged > 0= |
+
+* Grounded Papers & Specifications
+
+- *N. Bronson et al. (ACM HotOS 2021)*: Metastable Failures in Distributed Systems — fault bursts trigger self-sustaining overload unless circuits shed load.
+- *A. Basiri et al. (IEEE Software 2016)*: Chaos Engineering — systematic fault injection verifying steady-state invariants and bounded recovery.
+- *M. Nygard (2018)*: Release It! — circuit breakers, typed degraded refusals, and half-open recovery probes.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/concurrency/chaos-fault-injection-recovery-envelope/ChaosFaultInjectionRecoveryEnvelope.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/concurrency/chaos-fault-injection-recovery-envelope/ChaosFaultInjectionRecoveryEnvelope.qnt --main=concurrency_chaos_fault_injection_recovery_envelope --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite 2-fault trip threshold and 2-slot active load chaos abstraction; verifies open-circuit load shedding, typed degraded refusal, and deterministic recovery probing, not wall-clock exponential backoff jitter.

@@ -54,6 +54,28 @@ even when steady-state heap usage is flat:
    - Multi-=#= separators injecting literal =#= as an unsatisfiable filter token,
      unbounded clipboard pastes triggering synchronous parse/scan stalls, and
      narrow-viewport clipped tabs still responding to phantom mouse hit-tests.
+4. *IPC Half-Open Reconnect & Duplicate Replay Storms (=SM12=)*:
+   When a long-lived gRPC/Unix-socket bridge experiences a half-open network
+   stall, reconnect loops that open a replacement stream without retiring the
+   prior socket/handle accumulate leaked zombie descriptors linearly with outage
+   count; in-flight frames from superseded epochs corrupt live state if unfenced,
+   and retrying side-effecting RPCs without an idempotency key commits duplicate
+   mutations.
+5. *Interactive Search-Box IME Composition, Focus-Loss & Shortcut Races (=SM13=)*:
+   CJK/dead-key IME input fires =Enter= to commit candidate characters while
+   =isComposing= is active (=keyCode === 229=). Unguarded =keydown= submit
+   handlers prematurely dispatch raw pinyin/preedit text; focus =blur= during an
+   active composition leaves orphaned preedit buffers that block subsequent
+   submits; and global single-key/chord shortcuts fire mid-composition and
+   corrupt the active candidate session.
+6. *Chaos Fault-Injection Recovery Envelopes & Circuit-Breaker Shedding (=SM14=)*:
+   Under sustained fault injection (latency spikes, stream resets, partial
+   outages — Basiri et al., /Chaos Engineering/, IEEE Software 2016; Nygard,
+   /Release It!/), unbounded retries amplify load into metastable collapse. A
+   bounded circuit breaker transitions =Closed -> Open -> HalfOpen -> Closed=,
+   enforcing a strict retry budget, emitting typed fast-fail refusals with zero
+   silent partial drops while open, and recovering cleanly via a single bounded
+   half-open probe once faults subside.
 
 * Literature Synthesis: Unifying MBT, Stateful PBT, Coverage-Guided Fuzzing & Metamorphic Oracles
 :PROPERTIES:
@@ -83,14 +105,15 @@ gap between finite-state proofs and real search-box boundary bugs:
      fuzzing (=FuzzConsultOrderlessMetamorphic=).
    - Rust: =proptest= stateful & metamorphic search-box fuzzing + Tokio async
      cancellation/timeout deadlock challenges.
-   - TypeScript: deterministic seedable metamorphic fuzz harness + Quint =--mbt=
-     ITF refinement across all 12 stability models.
-3. *Static Aging & Concurrency Guardrails (=SA51=–=SA68=)*: Encode the exact
+   - TypeScript: deterministic seedable metamorphic fuzz harness + 750-trial
+     structure-aware IPC/IME/chaos fuzz harness + Quint =--mbt= ITF refinement
+     across all 15 stability models.
+3. *Static Aging, Search/IME & IPC Guardrails (=SA51=–=SA76=)*: Encode the exact
    structural traps discovered by adversarial testing back into
    [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-ast-auditor.ts][aging-ast-auditor.ts]]
    so AI coding agents receive immediate C2 repair packets before code merges.
 
-* Taxonomy of Search Stability Mechanisms (=SM8=–=SM11=)
+* Taxonomy of Search, IME, IPC & Chaos Stability Mechanisms (=SM8=–=SM14=)
 :PROPERTIES:
 :CUSTOM_ID: study4005-taxonomy
 :END:
@@ -101,6 +124,9 @@ gap between finite-state proofs and real search-box boundary bugs:
 | =SM9= | Single-flight coordinator async cancellation-safety (=Drop= guard) & armed =Notify= wakeup freedom | [[file:../../../packages/quint-models/engineering/concurrency/singleflight-cancellation-safety/SingleFlightCancellationSafety.qnt][SingleFlightCancellationSafety.qnt]] | =Core.Stability= Section 10 | =marlin-agent-core= (=search_scheduler.rs= =DebouncedSyncCoordinator=) |
 | =SM10= | Metamorphic search query algebra (MR1–MR6), qualifier orthogonality, scope replacement & hit-test geometry | [[file:../../../packages/quint-models/engineering/concurrency/search-query-metamorphic-algebra/SearchQueryMetamorphicAlgebra.qnt][SearchQueryMetamorphicAlgebra.qnt]] | =Core.Stability= Section 11 | =marlin-mygo= (=consult_orderless.go=, =match_mask.go=); =marlin-agent-core= (=helm/types.rs=, =helm/actions.rs=, =helm/view.rs=) |
 | =SM11= | Priority-isolated bounded mailbox (SEDA/DAGOR/WFQ), active zombie compaction & $O(1)$ latest-wins =watch= progress | [[file:../../../packages/quint-models/engineering/concurrency/priority-isolated-bounded-mailbox/PriorityIsolatedBoundedMailbox.qnt][PriorityIsolatedBoundedMailbox.qnt]] | =Core.Stability= Section 12 | =marlin-agent-core= (=linked_ui.rs= =LinkedSearchDslMailbox=, =app/asp_supervisor.rs= hydration progress & child guard) |
+| =SM12= | IPC half-open stream retirement, monotonic epoch fencing & idempotent replay deduplication | [[file:../../../packages/quint-models/engineering/concurrency/ipc-half-open-reconnect-idempotency/IpcHalfOpenReconnectIdempotency.qnt][IpcHalfOpenReconnectIdempotency.qnt]] | =Core.Stability= Section 13 | =marlin-agent-core= (=ui_grpc.rs=, =marlin_mygo_host.rs=); =marlin-mygo= (=control/grpcwire=, =control/transport=) |
+| =SM13= | Interactive search-box IME composition Enter gate, atomic blur preedit cleanup & shortcut isolation | [[file:../../../packages/quint-models/engineering/concurrency/ime-composition-focus-race/ImeCompositionFocusRace.qnt][ImeCompositionFocusRace.qnt]] | =Core.Stability= Section 14 | WebView / TypeScript search UIs & =marlin-mygo= interactive minibuffer/input handlers |
+| =SM14= | Chaos fault-injection recovery envelope, circuit-breaker fast-fail shedding & bounded half-open probe recovery | [[file:../../../packages/quint-models/engineering/concurrency/chaos-fault-injection-recovery-envelope/ChaosFaultInjectionRecoveryEnvelope.qnt][ChaosFaultInjectionRecoveryEnvelope.qnt]] | =Core.Stability= Section 15 | =marlin-mygo= (=control/grpcwire/resilience_sync.go=, =control/transport=); =marlin-agent-core= (=ui_grpc.rs= reconnect/retry) |
 
 * Metamorphic Relations Catalog for Interactive Search Boxes (=MR1=–=MR6=)
 :PROPERTIES:

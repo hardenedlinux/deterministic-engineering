@@ -91,6 +91,26 @@ five formal subdomains corresponding to distinct runtime failure classes:
 - *=ui-render-window-budget=* (=UiRenderWindowBudget.qnt=): bounded UI DOM
   viewport virtualization, coalesced animation frames, and $O(1)$ incremental
   block rendering preventing $O(N^2)$ streaming re-parse stalls (=SM7=).
+- *=search-query-generation-fencing=* (=SearchQueryGenerationFencing.qnt=):
+  monotonic interactive search generation cancellation, async batch/DSL epoch
+  fencing, identity-anchored selection stability, and hidden-mark pruning (=SM8=).
+- *=singleflight-cancellation-safety=* (=SingleFlightCancellationSafety.qnt=):
+  RAII drop-guard single-flight leader reset and pre-armed waiter wakeup safety (=SM9=).
+- *=search-query-metamorphic-algebra=* (=SearchQueryMetamorphicAlgebra.qnt=):
+  metamorphic search query algebraic laws across axis scoping, negation monotonicity,
+  and clipped-tab isolation (=SM10=).
+- *=priority-isolated-bounded-mailbox=* (=PriorityIsolatedBoundedMailbox.qnt=):
+  per-tier priority-isolated bounded mailbox with active cancelled-caller compaction,
+  weighted fair draining, and $O(1)$ latest-wins progress watch (=SM11=).
+- *=ipc-half-open-reconnect-idempotency=* (=IpcHalfOpenReconnectIdempotency.qnt=):
+  bidirectional IPC/gRPC half-open stream retirement, monotonic epoch frame fencing,
+  and idempotent replay deduplication (=SM12=).
+- *=ime-composition-focus-race=* (=ImeCompositionFocusRace.qnt=): interactive
+  search-box CJK/IME composition Enter gating, atomic blur preedit cancellation,
+  and global keyboard-shortcut isolation (=SM13=).
+- *=chaos-fault-injection-recovery-envelope=* (=ChaosFaultInjectionRecoveryEnvelope.qnt=):
+  compound chaos fault injection, open-circuit load shedding, typed degraded refusal,
+  and deterministic recovery probing (=SM14=).
 
 * 4. Parallel (=engineering/parallel/=)
 

@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: IPC Half-Open Stream Retirement, Epoch Fencing & Idempotent Replay
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.concurrency.ipc-half-open-reconnect-idempotency=
+- *Subdomain*: =quint.engineering.concurrency=
+- *Quint Module*: =concurrency_ipc_half_open_reconnect_idempotency= (=[[file:IpcHalfOpenReconnectIdempotency.qnt][IpcHalfOpenReconnectIdempotency.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/concurrency/ipc-half-open-reconnect-idempotency/IpcHalfOpenReconnectIdempotency=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Reconnecting a half-open IPC/gRPC stream retires the superseded stream so activeStreams stays bounded at 1, replaying a committed idempotency key produces zero duplicate side effects, and late frames from superseded session epochs are fenced and dropped.
+
+#+begin_src quint
+val safety = (h.activeStreams <= 1 and h.duplicateEffects == 0 and h.staleFramesApplied == 0 and h.sessionEpoch >= 1)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =retire-stale-stream-on-reconnect= | =stepHalfOpenStreamLeak= | =h.activeStreams > 1= |
+| =dedup-idempotent-replay= | =stepDuplicateReplayEffect= | =h.duplicateEffects > 0= |
+| =fence-stale-epoch-frame= | =stepStaleEpochFrameInterleave= | =h.staleFramesApplied > 0= |
+
+* Grounded Papers & Specifications
+
+- *J. Saltzer, D. Reed & D. Clark (ACM TOCS 1984)*: End-to-End Arguments in System Design — transport retries require application-level idempotency keys to avoid duplicate mutations.
+- *M. Kleppmann (2016)*: How to Do Distributed Locking — monotonic fencing tokens reject delayed frames from superseded epochs.
+- *L. Lamport (ACM TOPLAS 1978)*: Time, Clocks, and the Ordering of Events in a Distributed System — monotonic epoch ordering across asynchronous channels.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/concurrency/ipc-half-open-reconnect-idempotency/IpcHalfOpenReconnectIdempotency.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/concurrency/ipc-half-open-reconnect-idempotency/IpcHalfOpenReconnectIdempotency.qnt --main=concurrency_ipc_half_open_reconnect_idempotency --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite 3-reconnect, single-key idempotency and epoch-fencing abstraction; verifies stream retirement, replay deduplication, and stale-frame rejection across half-open drops, not TLS handshake or TCP congestion control.

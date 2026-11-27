@@ -18,7 +18,10 @@ export type AgingMechanism =
   | 'SM5-metastable-overload'
   | 'SM7-ui-render-aging'
   | 'SM8-search-generation-race'
-  | 'SM9-singleflight-deadlock';
+  | 'SM9-singleflight-deadlock'
+  | 'SM12-ipc-half-open-reconnect'
+  | 'SM13-ime-composition-race'
+  | 'SM14-chaos-circuit-envelope';
 
 export interface AgingFinding {
   ruleId: string;
@@ -287,7 +290,7 @@ function auditGo(clean: string): AgingFinding[] {
   }
 
   // 10. Unbudgeted exponential-backoff retry loop without maxAttempts/retryBudget/MaxRestarts/MaxConsecutiveFailures ceiling.
-  const backoffMulMatch = /\*?backoff\s*\*=\s*2/.exec(clean);
+  const backoffMulMatch = /(?:\*?backoff\s*\*=\s*2|\bbackoff\s*=\s*(?:min\s*\(\s*)?backoff\s*\*\s*2)/.exec(clean);
   if (backoffMulMatch) {
     const loopOrFnScope =
       findEnclosingLoopBlock(clean, backoffMulMatch.index) ?? extractEnclosingBlock(clean, backoffMulMatch.index);
@@ -344,6 +347,24 @@ function auditGo(clean: string): AgingFinding[] {
     }
   }
 
+  // 13. Reconnect method replaces active IPC/gRPC stream or connection without closing/canceling previous handle (SM12).
+  const goReconnectMatch = /\bfunc\s*\(\s*(\w+)\s+\*?\w+\s*\)\s*(?:Reconnect|reconnect|ResetStream|resetStream)\s*\([^)]*\)/.exec(clean);
+  if (goReconnectMatch) {
+    const fnScope = extractBraceBlock(clean, goReconnectMatch.index);
+    const recv = goReconnectMatch[1]!;
+    const overwritesStream = new RegExp(`\\b${recv}\\.(?:stream|conn|client)\\s*=`).test(fnScope);
+    const retiresOld = /\.(?:Close|CloseSend|Cancel)\s*\(|\bcancel\s*\(\s*\)/.test(fnScope);
+    if (overwritesStream && !retiresOld) {
+      findings.push({
+        ruleId: 'go-reconnect-without-close',
+        mechanism: 'SM12-ipc-half-open-reconnect',
+        language: 'go',
+        line: lineOfIndex(clean, goReconnectMatch.index),
+        message: 'Reconnect replaces active stream/connection without closing or canceling the previous half-open handle (SM12).',
+      });
+    }
+  }
+
   return findings;
 }
 
@@ -377,8 +398,19 @@ function auditRust(clean: string): AgingFinding[] {
   }
 
   // 2. Detached tokio::spawn (dropping JoinHandle does NOT cancel task!).
-  const detachedMatch = /(?:let\s+_\s*=\s*tokio::spawn\s*\(|^\s*tokio::spawn\s*\()/m.exec(clean);
-  if (detachedMatch && !/\b(?:TaskTracker|JoinSet)\b/.test(clean)) {
+  // Exclude tail-expression returns inside functions returning `-> ...JoinHandle<...>`.
+  const detachedRe = /(?:let\s+_\s*=\s*tokio::spawn\s*\(|^\s*tokio::spawn\s*\()/gm;
+  let detachedMatch: RegExpExecArray | null;
+  while ((detachedMatch = detachedRe.exec(clean)) !== null) {
+    if (/\b(?:TaskTracker|JoinSet)\b/.test(clean)) break;
+    const prefix = clean.slice(Math.max(0, detachedMatch.index - 400), detachedMatch.index);
+    const returnsJoinHandle = /->\s*[^{]*\bJoinHandle\b[^{]*\{[^;]*$/.test(prefix);
+    const lineEnd = clean.indexOf('\n', detachedMatch.index);
+    const snippet = clean.slice(detachedMatch.index, Math.min(clean.length, (lineEnd < 0 ? clean.length : lineEnd) + 200));
+    const hasTrailingSemicolon = /\)\s*;/.test(snippet) && !/^tokio::spawn\s*\([\s\S]*?\)\s*\}/.test(detachedMatch[0] + snippet);
+    if (returnsJoinHandle && !/^let\s+_/.test(detachedMatch[0]) && !hasTrailingSemicolon) {
+      continue;
+    }
     findings.push({
       ruleId: 'rust-detached-spawn',
       mechanism: 'SM4-orphan-concurrency',
@@ -386,6 +418,7 @@ function auditRust(clean: string): AgingFinding[] {
       line: lineOfIndex(clean, detachedMatch.index),
       message: 'Detached tokio::spawn drops JoinHandle without cancellation/quiescence tracking; use JoinSet or TaskTracker.',
     });
+    break;
   }
 
   // 3. Vec::clear() returned to pool without capacity() ceiling check in the enclosing function.
@@ -453,16 +486,18 @@ function auditRust(clean: string): AgingFinding[] {
 
   // 7. Tokio broadcast::Receiver ignoring RecvError::Lagged (silent stream termination or dropped invocations in ui_grpc.rs).
   if (/\bbroadcast::channel\s*\(|\.subscribe\s*\(\s*\)/.test(clean)) {
-    const recvOkMatch = /(?:while|if)\s+let\s+Ok\s*\([^)]+\)\s*=\s*(?:\w+\.recv\s*\(\s*\)(?:\.await)?|\w+)/.exec(clean);
-    const hasRecvAwait = /\w+\.recv\s*\(\s*\)/.test(clean);
-    if (recvOkMatch && hasRecvAwait && !/\bLagged\b/.test(clean)) {
-      findings.push({
-        ruleId: 'rust-broadcast-lag-silent-drop',
-        mechanism: 'SM5-metastable-overload',
-        language: 'rust',
-        line: lineOfIndex(clean, recvOkMatch.index),
-        message: 'Tokio broadcast receiver uses `let Ok(...)` without handling RecvError::Lagged; slow UI subscribers silently disconnect or lose frames instead of resyncing snapshot.',
-      });
+    const recvOkMatch = /(?:while|if)\s+let\s+Ok\s*\([^)]+\)\s*=\s*\w+\.recv\s*\(\s*\)(?:\.await)?/.exec(clean);
+    if (recvOkMatch) {
+      const fnScope = extractEnclosingBlock(clean, recvOkMatch.index);
+      if (!/\bLagged\b/.test(fnScope)) {
+        findings.push({
+          ruleId: 'rust-broadcast-lag-silent-drop',
+          mechanism: 'SM5-metastable-overload',
+          language: 'rust',
+          line: lineOfIndex(clean, recvOkMatch.index),
+          message: 'Tokio broadcast receiver uses `let Ok(...)` without handling RecvError::Lagged; slow UI subscribers silently disconnect or lose frames instead of resyncing snapshot.',
+        });
+      }
     }
   }
 
@@ -552,6 +587,23 @@ function auditRust(clean: string): AgingFinding[] {
           message: 'VecDeque mailbox ingests jobs from try_recv() without per-tier capacity bound or overload shedding (SM11).',
         });
       }
+    }
+  }
+
+  // 13. Reconnect/stream replacement without advancing epoch or retiring previous stream (SM12).
+  const rustReconnectMatch = /\bfn\s+(?:reconnect|replace_stream|reset_stream)\s*\([^)]*\)/.exec(clean);
+  if (rustReconnectMatch) {
+    const fnBody = extractBraceBlock(clean, rustReconnectMatch.index);
+    const overwritesStream = /\bself\.(?:stream|active_stream|session_stream)\s*=/.test(fnBody);
+    const retiresOrFences = /(?:\.take\s*\(\s*\)|\.abort\s*\(\s*\)|\.close\s*\(\s*\)|\bself\.(?:epoch|session_epoch)\s*\+=)/.test(fnBody);
+    if (overwritesStream && !retiresOrFences) {
+      findings.push({
+        ruleId: 'rust-unfenced-stream-reconnect',
+        mechanism: 'SM12-ipc-half-open-reconnect',
+        language: 'rust',
+        line: lineOfIndex(clean, rustReconnectMatch.index),
+        message: 'Stream reconnect replaces active stream without taking/aborting the superseded stream or advancing session epoch (SM12).',
+      });
     }
   }
 
@@ -700,6 +752,42 @@ function auditTypeScript(clean: string): AgingFinding[] {
           message: `Side map '${mapName}' is populated per session but never cleaned via ${mapName}.delete() when sessions are deleted.`,
         });
         break;
+      }
+    }
+  }
+
+  // 10. Interactive search/input Enter handler submits without IME isComposing gate (SM13).
+  const enterHandlerMatch = /\b(?:onKeyDown|handleKeyDown|keydown)\b[\s\S]{0,220}?(?:\.key\s*===?\s*['"]Enter['"])/.exec(clean);
+  if (enterHandlerMatch) {
+    const fnScope = extractEnclosingBlock(clean, enterHandlerMatch.index);
+    const callsSubmit = /\b(?:submit|search|runQuery|dispatchQuery|executeSearch)\w*\s*\(/.test(fnScope);
+    const checksIme = /\b(?:isComposing|composing|keyCode\s*===?\s*229)\b/.test(fnScope);
+    if (callsSubmit && !checksIme) {
+      findings.push({
+        ruleId: 'ts-ime-unguarded-enter-submit',
+        mechanism: 'SM13-ime-composition-race',
+        language: 'ts',
+        line: lineOfIndex(clean, enterHandlerMatch.index),
+        message: 'Enter key handler submits search query without checking isComposing/composing; causes premature raw-preedit submission during CJK IME input (SM13).',
+      });
+    }
+  }
+
+  // 11. IME-aware input clears focus on blur without canceling active composition/preedit (SM13).
+  if (/\b(?:compositionstart|compositionupdate|preedit)\b/.test(clean)) {
+    const blurMatch = /\b(?:onBlur|handleBlur)\s*\([^)]*\)/.exec(clean);
+    if (blurMatch) {
+      const fnScope = extractBraceBlock(clean, blurMatch.index);
+      const setsUnfocused = /\bfocused\s*=\s*false\b/.test(fnScope);
+      const cancelsIme = /\b(?:composing\s*=\s*false|preedit\s*=\s*['"]['"]|cancelComposition)\b/.test(fnScope);
+      if (setsUnfocused && !cancelsIme) {
+        findings.push({
+          ruleId: 'ts-ime-blur-orphan-preedit',
+          mechanism: 'SM13-ime-composition-race',
+          language: 'ts',
+          line: lineOfIndex(clean, blurMatch.index),
+          message: 'Input blur handler clears focused state without canceling active IME composition/preedit, leaving orphaned preedit state (SM13).',
+        });
       }
     }
   }
