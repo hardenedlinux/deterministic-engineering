@@ -1,0 +1,64 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#+TITLE: 10.211 Real-Repository Zero-G2 Closure (1,014 Prod Files) & B14/B16/B17/B19 Kernel Validation
+#+PROPERTY: JD_ID 10.211
+
+* Overview
+
+Following the Zero-Legacy promotion of =@deterministic-engineering/agent-defense-audit=
+([[file:10.210-promote-agent-defense-audit-standalone-package.org][10.210]]), this record captures the closed-loop real-repository enforcement
+across =tao3k/marlin-agent-core= (Rust + Gerbil Scheme) and =marlin-mygo= (Go),
+driving **1,014 real production files** to **zero G2 defensive-hallucination
+findings**, upgrading the standalone CLI with native recursive directory
+walking (=--dir=, =--lang==, =--exclude-tests=), and extending formal-to-Rust
+kernel validation to **8 defense pillars** (=B9=, =B11=, =B12=, =B14=, =B16=,
+=B17=, =B19=, =B21=) paired with **15 Quint threat overlays**.
+
+* Standalone Package Upgrades (=packages/agent-defense-audit/=)
+
+- *Recursive Directory Mode (=1312364=)*: Added =--dir <dir...>=,
+  =--lang=<ts,c-cpp,rust,go,scheme>=, and =--exclude-tests= to
+  [[file:../../../packages/agent-defense-audit/src/agent-defense-audit.ts][agent-defense-audit.ts]]
+  with =realpathSync= normalization and automatic exclusion of build/vendor/test
+  trees, eliminating per-repo shell =find= boilerplate.
+- *Sound Rust & Go Static Calibration (=9312737=, =ff77fc3=, =1312364=)*:
+  - Fixed C-like numeric lexer tokenizing =100usize.checked_div(n)= as a single
+    token.
+  - Added per-=fn= =Option<...>= parameter/local binding tracking, pure struct
+    field chains, =.find_map()=, =UnicodeWidthChar::width()=, =Value::as_*=
+    Option extractors, leading =?= propagation chains, async =match ... await=
+    exemption, guarded =Err(err) if ... => return Err(err)= routing, and Rust
+    UI =publish_message= error surfacing.
+  - Fixed Go anonymous closure =func(res, reloadErr error)= receiver parsing
+    and recognized =SeverityError= / =SeverityWarning= UI notification
+    surfacing.
+
+* Real-Repository Zero-G2 Closure & Formal-to-Rust Gates
+
+1. *Zero-G2 Production Closure (1,014 Files)*
+   - =marlin-mygo= (=4bd9127=, =f17a86b=, =96ec4b6=): Fixed Windows clipboard
+     =nil=-masking (=ingest_windows.go=) and surfaced 5 =cmd/marlin-app=
+     =log.Printf=-only failures via =notify.Center= (=SeverityError= /
+     =SeverityWarning=); wired =just audit-g2= -> **247/247 prod Go files, 0
+     findings**.
+   - =marlin-agent-core= (=f24cdcf4=, =b7f98830=, plus working-tree Rust
+     hardening): Fixed =patch_client.rs= HTTP error swallowing, =linked_ui.rs= /
+     =asp_supervisor.rs= false =connected: true= reporting and swallowed Scheme
+     errors, =tool_review.rs= / =live_weaver/runner.rs= / =governance_host.rs=
+     JSON serialization blank-string fallbacks, and =config.rs= lock-poison
+     masking; wired =just audit-g2= -> **767/767 prod Rust + Scheme files, 0
+     findings**.
+2. *New Formal-to-Rust Kernel Gates & Quint Threat Overlays (=15/15= overlays)*
+   - =B14= Hermetic Supply-Chain Provenance (=supply_chain_provenance.rs= +
+     =MarlinBackendSupplyChainOverlay.qnt=): =PLAN-OK=, =MBT-AUDIT-OK 6/6 (100.0%)=.
+   - =B16= Zero-Downtime Key Rotation & Crypto-Shredding
+     (=key_rotation_shredding.rs= + =MarlinBackendKeyRotationOverlay.qnt=):
+     =PLAN-OK=, =MBT-AUDIT-OK 7/7 (100.0%)=.
+   - =B17= Post-Quantum Hybrid Cryptographic Agility (=post_quantum_agility.rs=
+     + =MarlinBackendPostQuantumOverlay.qnt=): =PLAN-OK=, =MBT-AUDIT-OK 100.0%=.
+   - =B19= Sovereign Geo-Residency & Geo-Fencing
+     (=geo_residency_sovereignty.rs= + =MarlinBackendGeoResidencyOverlay.qnt=):
+     =PLAN-OK=, =MBT-AUDIT-OK 100.0%=.
+   - =cargo test -p marlin-agent-kernel --lib=: **33/33 pass (0 fail)** across
+     =B9=, =B12=, =B14=, =B16=, =B17=, =B19=, =B21=, =SM25=, and Cedar gates;
+     **15/15** =dev/quint/threat/*.qnt= overlays =typecheck= pass.
