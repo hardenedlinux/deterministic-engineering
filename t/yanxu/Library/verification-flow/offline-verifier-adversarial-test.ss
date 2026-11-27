@@ -777,4 +777,75 @@
           (check-equal? (hash-get (car subs) "evidenceCount") 1)))
       (check-equal? (inspect-fleet-bundle-verified fleet-bundle-path tp-exported) #f)
 
+      ;; Attacks 38-39: Fail-closed in-toto v1 Verification Summary Statement export (`--emit-statement`):
+      ;;   38a: Failed verification (revoked key / wrong spec) NEVER creates the statement file!
+      ;;   38b: Symlink output target on a VALID bundle is unconditionally rejected without overwriting victim!
+      ;;   39:  Valid bundle emits standard in-toto v1 JSON matching Bun/TS `--emit-statement` field-for-field!
+      (let* ((stmt-never (path-expand "must-never-exist.intoto.json" work))
+             (stmt-victim (path-expand "victim.txt" work))
+             (stmt-symlink (path-expand "evil-stmt-link.intoto.json" work))
+             (stmt-gerbil (path-expand "gerbil-stmt.intoto.json" work))
+             (stmt-ts (path-expand "ts-stmt.intoto.json" work)))
+        (call-with-output-file stmt-victim (lambda (p) (display "UNTOUCHED" p)))
+        (run-process (list "ln" "-s" stmt-victim stmt-symlink))
+        ;; 38a: Failed verification -> exit non-zero AND file never created!
+        (let-values (((st _out)
+                      (run-offline-cli
+                        (string-append "--json --verify-fleet-bundle --emit-statement \""
+                                       stmt-never "\" \"" fleet-bundle-path "\" \""
+                                       exported-bundle-path "\""))))
+          (check (not (= st 0)) => #t)
+          (check-equal? (file-exists? stmt-never) #f))
+        ;; 38b: Valid bundle + symlink target -> rejected AND victim untouched!
+        (let-values (((st _out)
+                      (run-offline-cli
+                        (string-append "--json --verify-fleet-bundle --emit-statement \""
+                                       stmt-symlink "\" \"" fleet-bundle-path "\" \""
+                                       ts-inline-path "\""))))
+          (check (not (= st 0)) => #t)
+          (check-equal? (call-with-input-file stmt-victim read-all-as-string) "UNTOUCHED"))
+        ;; 39: Valid bundle -> Gerbil & Bun/TS emit identical in-toto v1 statement!
+        (let-values (((st out)
+                      (run-offline-cli
+                        (string-append "--json --verify-fleet-bundle "
+                                       "--expected-sysml-sha256 sysml-sha "
+                                       "--expected-subject-count 1 "
+                                       "--require-subject demo "
+                                       "--emit-statement \"" stmt-gerbil "\" \""
+                                       fleet-bundle-path "\" \"" ts-inline-path "\""))))
+          (check-equal? st 0)
+          (check (and (string-contains out "\"ok\":true") #t) => #t)
+          (check-equal? (file-exists? stmt-gerbil) #t))
+        (let* ((ts-cmd (string-append
+                         "cd \"" repo-root "\" && bun t/harness/offline-attestation-verifier.ts "
+                         "--json --verify-fleet-bundle --expected-sysml-sha256 sysml-sha "
+                         "--expected-subject-count 1 --require-subject demo "
+                         "--emit-statement \"" stmt-ts "\" "
+                         "\"" fleet-bundle-path "\" \"" ts-inline-path "\""))
+               (proc (open-process
+                       (list path: "/bin/bash"
+                             arguments: (list "-euo" "pipefail" "-c" ts-cmd)
+                             stdin-redirection: #f
+                             stdout-redirection: #t
+                             stderr-redirection: #t)))
+               (_ts-out (read-all-as-string proc))
+               (ts-st (process-status proc)))
+          (close-port proc)
+          (check-equal? ts-st 0))
+        (let ((gdoc (call-with-input-file stmt-gerbil (cut read-json <> object-as-hash: #t)))
+              (tdoc (call-with-input-file stmt-ts (cut read-json <> object-as-hash: #t))))
+          (check-equal? (hash-get gdoc "_type") "https://in-toto.io/Statement/v1")
+          (check-equal? (hash-get gdoc "_type") (hash-get tdoc "_type"))
+          (check-equal? (hash-get gdoc "predicateType") (hash-get tdoc "predicateType"))
+          (let ((gp (hash-get gdoc "predicate"))
+                (tp (hash-get tdoc "predicate")))
+            (check-equal? (hash-get gp "fleetId") "fleet-adv")
+            (check-equal? (hash-get gp "fleetId") (hash-get tp "fleetId"))
+            (check-equal? (hash-get gp "sysmlSha256") (hash-get tp "sysmlSha256"))
+            (check-equal? (hash-get gp "fleetPayloadSha256") (hash-get tp "fleetPayloadSha256"))
+            (check-equal? (hash-get gp "rootKeyId") kid2)
+            (check-equal? (hash-get gp "rootKeyId") (hash-get tp "rootKeyId"))
+            (check-equal? (hash-get gp "subjectCount") 1)
+            (check-equal? (hash-get gp "subjectCount") (hash-get tp "subjectCount")))))
+
       (run-process (list "rm" "-rf" work)))))

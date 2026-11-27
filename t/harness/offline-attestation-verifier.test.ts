@@ -1022,5 +1022,89 @@ describe('Zero-Dependency TS/Bun Offline Attestation Verifier (25 Controls + Ger
     expect(docCovMissing.verifiedSubjects).toBeUndefined();
     expect(docCovMissing.rootKeyId).toBeUndefined();
     expect(inspectFleetBundleVerified(fleetBundlePath, tpExported)).toBeNull();
+
+    // Controls 38-39: Fail-Closed in-toto v1 Verification Summary Statement Export (`--emit-statement`):
+    //   38a: Failed verification (revoked trust store / wrong spec) NEVER creates or mutates output file!
+    //   38b: Symlink output target on a VALID bundle is unconditionally rejected without overwriting victim!
+    //   39:  Valid bundle emits standard `https://in-toto.io/Statement/v1` binding `sysmlSha256`,
+    //        `fleetPayloadSha256`, `rootKeyId`, `subjectCount`, and `verifiedSubjects`!
+    const stmtNever = join(WORK_DIR, 'must-never-exist.intoto.json');
+    const stmtVictim = join(WORK_DIR, 'stmt-victim.txt');
+    const stmtSymlink = join(WORK_DIR, 'evil-stmt-link.intoto.json');
+    const stmtValid = join(WORK_DIR, 'verified-summary.intoto.json');
+    writeFileSync(stmtVictim, 'UNTOUCHED', 'utf8');
+    symlinkSync(stmtVictim, stmtSymlink);
+
+    const resStmtFail = runTsCli([
+      '--json',
+      '--verify-fleet-bundle',
+      '--emit-statement',
+      stmtNever,
+      fleetBundlePath,
+      exportedBundle,
+    ]);
+    expect(resStmtFail.exitCode).not.toBe(0);
+    expect(JSON.parse(resStmtFail.stdout.trim()).ok).toBe(false);
+    expect(existsSync(stmtNever)).toBe(false);
+
+    const resStmtSymlink = runTsCli([
+      '--json',
+      '--verify-fleet-bundle',
+      '--emit-statement',
+      stmtSymlink,
+      fleetBundlePath,
+      tsInlineAll,
+    ]);
+    expect(resStmtSymlink.exitCode).not.toBe(0);
+    expect(JSON.parse(resStmtSymlink.stdout.trim()).ok).toBe(false);
+    expect(readFileSync(stmtVictim, 'utf8')).toBe('UNTOUCHED');
+
+    const resStmtOk = runTsCli([
+      '--json',
+      '--verify-fleet-bundle',
+      '--expected-sysml-sha256',
+      'sysmlsha',
+      '--expected-subject-count',
+      '1',
+      '--require-subject',
+      'demo',
+      '--emit-statement',
+      stmtValid,
+      fleetBundlePath,
+      tsInlineAll,
+    ]);
+    expect(resStmtOk.exitCode).toBe(0);
+    const docStmtOk = JSON.parse(resStmtOk.stdout.trim());
+    expect(docStmtOk.ok).toBe(true);
+    expect(docStmtOk.statementPath).toBe(stmtValid);
+    expect(typeof docStmtOk.fleetPayloadSha256).toBe('string');
+    expect(docStmtOk.fleetPayloadSha256.length).toBe(64);
+    expect(existsSync(stmtValid)).toBe(true);
+    const stmtDoc = JSON.parse(readFileSync(stmtValid, 'utf8'));
+    expect(stmtDoc._type).toBe('https://in-toto.io/Statement/v1');
+    expect(stmtDoc.predicateType).toBe(
+      'https://deterministic-engineering.hardenedlinux.org/attestation/fleet-verification-summary/v1',
+    );
+    expect(stmtDoc.subject).toEqual([
+      {
+        name: 'sysml:10.154-multi-method-funflow-runnable-architecture',
+        digest: {sha256: 'sysmlsha'},
+      },
+      {
+        name: 'fleet:f-ok',
+        digest: {sha256: docStmtOk.fleetPayloadSha256},
+      },
+    ]);
+    expect(stmtDoc.predicate).toEqual({
+      verifier: 'de.offline-attestation-verifier.v1',
+      fleetId: 'f-ok',
+      sysmlSha256: 'sysmlsha',
+      fleetPayloadSha256: docStmtOk.fleetPayloadSha256,
+      rootKeyId: k2.kid,
+      subjectCount: 1,
+      verifiedSubjects: [
+        {subjectKey: 'demo', subjectId: 'subject.demo', keyId: k1.kid, evidenceCount: 1},
+      ],
+    });
   });
 });

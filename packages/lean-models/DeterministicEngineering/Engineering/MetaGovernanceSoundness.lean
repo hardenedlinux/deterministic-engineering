@@ -239,6 +239,23 @@ theorem fleetCoverageCompleteness_prevents_silent_subject_omission {Key : Type}
    fun _ hReq hAbs =>
      fleetCoverage_rejects_missing_required_subject b actualKeys requiredKeys expectedCount hReq hAbs⟩
 
+/-- Instantiated fail-closed in-toto v1 Verification Summary Statement export contract
+(`--emit-statement <out.json>`): proves with zero axioms that unverified fleets and symlink
+destinations never emit a statement, and any emitted statement faithfully binds authenticated
+`sysmlDigest`, `rootKey`, `subjectCount`, and `verifiedSubjects`. -/
+theorem intotoStatementExport_enforces_failClosed_and_faithful_summary {Digest Key : Type}
+    (sysmlDigest : Digest) (rootKey : Key) (subjectCount : Nat) (verifiedSubjects : List Key) :
+    (∀ outSafe, emitIntotoStatement false outSafe sysmlDigest rootKey subjectCount verifiedSubjects = none) ∧
+    (∀ fleetOk, emitIntotoStatement fleetOk false sysmlDigest rootKey subjectCount verifiedSubjects = none) ∧
+    (∀ fleetOk outSafe stmt,
+      emitIntotoStatement fleetOk outSafe sysmlDigest rootKey subjectCount verifiedSubjects = some stmt →
+      fleetOk = true ∧ outSafe = true ∧
+      stmt.sysmlDigest = sysmlDigest ∧ stmt.rootKey = rootKey ∧
+      stmt.subjectCount = subjectCount ∧ stmt.verifiedSubjects = verifiedSubjects) :=
+  ⟨fun outSafe => intotoStatement_zeroLeak_on_unverified outSafe sysmlDigest rootKey subjectCount verifiedSubjects,
+   fun fleetOk => intotoStatement_rejects_unsafe_symlink_target fleetOk sysmlDigest rootKey subjectCount verifiedSubjects,
+   fun _ _ _ hEmit => intotoStatement_some_implies_verified_and_faithful hEmit⟩
+
 /-! ## One-Line Proof Transport via `Core.Transport` -/
 
 inductive MetaProofKey where

@@ -23,6 +23,9 @@
         :std/misc/process
         :clan/poo/object
         (only-in :std/source this-source-file)
+        (only-in "../../../support/offline-attestation-verifier.ss"
+                 load-trust-store-json-lite
+                 verify-fleet-bundle-offline)
         "../../../support/verification-flow-runner.ss")
 (export verification-flow-multi-subject-fleet-and-pinned-attestation-test)
 
@@ -32,7 +35,7 @@
 (def (run-verify-fleet-cli fleet-report-path trust-store-path)
   (let* ((cmd (string-append
                 "cd \"" repo-root "\" && "
-                "gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q "
+                "GERBIL_PATH=\"$PWD/.gerbil\" gxi -:max-heap=2G,debug=q "
                 "t/support/offline-attestation-verifier.ss --verify-fleet "
                 "\"" fleet-report-path "\" \"" trust-store-path "\""))
          (proc (open-process
@@ -48,7 +51,7 @@
 
 (def verification-flow-multi-subject-fleet-and-pinned-attestation-test
   (test-suite "Multi-subject Fleet orchestration and 2-level Merkle pinned-key Ed25519 attestation"
-    (yuanxu-test-case "live 6-subject Fleet passes Cold (15/0) -> Warm (0/15), pinned-key & offline --verify-fleet CLI, and rejects rogue-key, revocation & child-tamper attacks"
+    (yuanxu-test-case "live 8-subject Fleet passes Cold (19/0) -> Warm (0/19), 2-file release bundle & in-toto statement, and rejects rogue-key, revocation & child-tamper attacks"
       (def tmp-parent (path-expand ".data/test-runs" repo-root))
       (create-directory* tmp-parent)
       (def cache-dir (path-expand "m5-fleet-cache-test" tmp-parent))
@@ -120,8 +123,14 @@
         (check-equal? (.get p1 total-pending) 0)
         (check-equal? (.get p1 total-reusable) 19))
 
-      ;; Phase 2 — Warm Fleet: 0 engines executed, 19/19 verified Ed25519 cache hits across all 8 subjects!
-      (let ((f2 (run-multi-method-fleet repo-root warm-dir cache-dir: cache-dir fleet-id: "fleet-test-warm")))
+      ;; Phase 2 — Warm Fleet with `emit-bundles?: #t`: 0 engines executed, 19/19 verified Ed25519 cache hits
+      ;; across all 8 subjects + live 2-file air-gapped release bundle & in-toto v1 statement cross-audit!
+      (let ((f2 (run-multi-method-fleet repo-root warm-dir cache-dir: cache-dir
+                  fleet-id: "fleet-test-warm" emit-bundles?: #t)))
+        (def fb-path (.get f2 fleet-bundle-path))
+        (def tb-path (.get f2 trust-bundle-path))
+        (def sysml-sha (.get f2 sysml-sha256))
+        (def stmt-path (path-expand "verification-summary.intoto.json" warm-dir))
         (check-equal? (length (.get f2 subject-keys)) 8)
         (check-equal? (.get f2 all-admitted?) #t)
         (check-equal? (.get f2 total-executed) 0)
@@ -129,4 +138,42 @@
         (check-equal? (verify-fleet-report-with-pinned-key
                         (.get f2 fleet-report-path)
                         (.get f2 public-key-path))
-                      #t)))))
+                      #t)
+        (check-equal? (file-exists? fb-path) #t)
+        (check-equal? (file-exists? tb-path) #t)
+        ;; Independent Gerbil 2-file air-gapped audit with spec pinning + 8-subject coverage:
+        (let ((tp (load-trust-store-json-lite tb-path)))
+          (check-equal?
+            (verify-fleet-bundle-offline fb-path tp
+              expected-sysml-sha256: sysml-sha
+              expected-subject-count: 8
+              required-subjects: '("meta-governance-soundness"
+                                   "sandbox-symlink-archive-confinement"
+                                   "stepup-attestation-and-host-effect-confinement"))
+            #t))
+        ;; Independent zero-dependency Bun/TS (<100ms) audit + in-toto v1 statement export:
+        (let* ((cmd (string-append
+                      "cd \"" repo-root "\" && bun t/harness/offline-attestation-verifier.ts "
+                      "--json --verify-fleet-bundle "
+                      "--expected-sysml-sha256 \"" sysml-sha "\" "
+                      "--expected-subject-count 8 "
+                      "--require-subject meta-governance-soundness "
+                      "--require-subject sandbox-symlink-archive-confinement "
+                      "--require-subject stepup-attestation-and-host-effect-confinement "
+                      "--emit-statement \"" stmt-path "\" "
+                      "\"" fb-path "\" \"" tb-path "\""))
+               (proc (open-process
+                       (list path: "/bin/bash"
+                             arguments: (list "-euo" "pipefail" "-c" cmd)
+                             stdin-redirection: #f
+                             stdout-redirection: #t
+                             stderr-redirection: #t)))
+               (out (read-all-as-string proc))
+               (st (process-status proc)))
+          (close-port proc)
+          (check-equal? st 0)
+          (check (and (string-contains out "\"ok\":true") #t) => #t)
+          (check (and (string-contains out "\"subjectCount\":8") #t) => #t)
+          (let ((sdoc (call-with-input-file stmt-path (cut read-json <> object-as-hash: #t))))
+            (check-equal? (hash-get sdoc "_type") "https://in-toto.io/Statement/v1")
+            (check-equal? (hash-get (hash-get sdoc "predicate") "subjectCount") 8)))))))

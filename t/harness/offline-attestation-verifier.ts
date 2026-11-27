@@ -669,9 +669,25 @@ export interface VerifiedSubjectSummary {
 export interface VerifiedFleetBundleSummary {
   fleetId: string;
   sysmlSha256: string;
+  fleetPayloadSha256: string;
   rootKeyId: string;
   subjectCount: number;
   verifiedSubjects: VerifiedSubjectSummary[];
+}
+
+export interface IntotoVerificationStatement {
+  _type: 'https://in-toto.io/Statement/v1';
+  subject: Array<{name: string; digest: {sha256: string}}>;
+  predicateType: 'https://deterministic-engineering.hardenedlinux.org/attestation/fleet-verification-summary/v1';
+  predicate: {
+    verifier: 'de.offline-attestation-verifier.v1';
+    fleetId: string;
+    sysmlSha256: string;
+    fleetPayloadSha256: string;
+    rootKeyId: string;
+    subjectCount: number;
+    verifiedSubjects: VerifiedSubjectSummary[];
+  };
 }
 
 /**
@@ -747,10 +763,85 @@ export function inspectFleetBundleVerified(
   return {
     fleetId,
     sysmlSha256,
+    fleetPayloadSha256: att.payloadSha256,
     rootKeyId: att.keyId,
     subjectCount: verifiedSubjects.length,
     verifiedSubjects,
   };
+}
+
+export function buildIntotoVerificationStatement(
+  summary: VerifiedFleetBundleSummary,
+): IntotoVerificationStatement {
+  return {
+    _type: 'https://in-toto.io/Statement/v1',
+    subject: [
+      {
+        name: 'sysml:10.154-multi-method-funflow-runnable-architecture',
+        digest: {sha256: summary.sysmlSha256},
+      },
+      {
+        name: `fleet:${summary.fleetId}`,
+        digest: {sha256: summary.fleetPayloadSha256},
+      },
+    ],
+    predicateType:
+      'https://deterministic-engineering.hardenedlinux.org/attestation/fleet-verification-summary/v1',
+    predicate: {
+      verifier: 'de.offline-attestation-verifier.v1',
+      fleetId: summary.fleetId,
+      sysmlSha256: summary.sysmlSha256,
+      fleetPayloadSha256: summary.fleetPayloadSha256,
+      rootKeyId: summary.rootKeyId,
+      subjectCount: summary.subjectCount,
+      verifiedSubjects: summary.verifiedSubjects,
+    },
+  };
+}
+
+function assertSafeStatementOutputPath(outPath: string): void {
+  if (typeof outPath !== 'string' || outPath.length === 0) {
+    throw new Error(`Invalid --emit-statement output path: ${String(outPath)}`);
+  }
+  try {
+    const st = lstatSync(outPath);
+    if (!st.isFile() || st.isSymbolicLink()) {
+      throw new Error(`Refusing to write in-toto statement to symlink or non-regular path: ${outPath}`);
+    }
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException)?.code !== 'ENOENT') {
+      throw err;
+    }
+  }
+  const parent = dirname(resolve(outPath));
+  if (parent !== '/' && parent !== '/tmp' && parent !== '/var') {
+    try {
+      const pst = lstatSync(parent);
+      if (!pst.isDirectory() || pst.isSymbolicLink()) {
+        throw new Error(
+          `Refusing to write in-toto statement inside symlinked or non-directory parent: ${parent}`,
+        );
+      }
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException)?.code !== 'ENOENT') {
+        throw err;
+      }
+    }
+  }
+}
+
+export function emitIntotoVerificationStatement(
+  outPath: string,
+  summary: VerifiedFleetBundleSummary,
+): IntotoVerificationStatement {
+  assertSafeStatementOutputPath(outPath);
+  const parentDir = dirname(resolve(outPath));
+  if (!existsSync(parentDir)) {
+    mkdirSync(parentDir, {recursive: true});
+  }
+  const stmt = buildIntotoVerificationStatement(summary);
+  writeFileSync(outPath, `${JSON.stringify(stmt)}\n`, 'utf8');
+  return stmt;
 }
 
 /**
@@ -821,6 +912,7 @@ export function runCli(argv: string[]): number {
   let expectedSysmlSha256: string | undefined;
   let expectedSubjectCount: number | undefined;
   const requiredSubjects: string[] = [];
+  let emitStatementPath: string | undefined;
   const cleanArgs: string[] = [];
   try {
     for (let i = 0; i < argv.length; i += 1) {
@@ -854,6 +946,13 @@ export function runCli(argv: string[]): number {
           throw new Error('--require-subject requires a non-empty subjectKey argument');
         }
         if (!requiredSubjects.includes(val)) requiredSubjects.push(val);
+        i += 1;
+      } else if (a === '--emit-statement') {
+        const val = argv[i + 1];
+        if (typeof val !== 'string' || val.length === 0) {
+          throw new Error('--emit-statement requires a non-empty output file path');
+        }
+        emitStatementPath = val;
         i += 1;
       } else {
         cleanArgs.push(a);
@@ -1073,6 +1172,25 @@ export function runCli(argv: string[]): number {
   if (mode === '--verify-fleet-bundle') {
     const summary = inspectFleetBundleVerified(targetPath, trustPair, fleetOpts);
     if (summary !== null) {
+      if (emitStatementPath !== undefined) {
+        try {
+          emitIntotoVerificationStatement(emitStatementPath, summary);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          if (jsonMode) {
+            emitJsonResult(
+              false,
+              'verify-fleet-bundle',
+              targetPath,
+              storePath,
+              `statement export failed: ${msg}`,
+            );
+          } else {
+            process.stderr.write(`ERROR: statement export failed: ${msg}\n`);
+          }
+          return 1;
+        }
+      }
       if (jsonMode) {
         emitJsonResult(
           true,
@@ -1082,15 +1200,18 @@ export function runCli(argv: string[]): number {
           'authentic-self-contained-fleet-bundle',
           {
             ...fleetJsonExtra(),
+            ...(emitStatementPath !== undefined ? {statementPath: emitStatementPath} : {}),
             fleetId: summary.fleetId,
             sysmlSha256: summary.sysmlSha256,
+            fleetPayloadSha256: summary.fleetPayloadSha256,
             rootKeyId: summary.rootKeyId,
             subjectCount: summary.subjectCount,
             verifiedSubjects: summary.verifiedSubjects,
           },
         );
       } else {
-        process.stdout.write(`MULTI-METHOD-VERIFY-FLEET-BUNDLE-OK ${targetPath}\n`);
+        const suffix = emitStatementPath !== undefined ? ` statement=${emitStatementPath}` : '';
+        process.stdout.write(`MULTI-METHOD-VERIFY-FLEET-BUNDLE-OK ${targetPath}${suffix}\n`);
       }
       return 0;
     }

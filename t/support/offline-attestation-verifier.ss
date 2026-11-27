@@ -31,6 +31,8 @@
   verify-report-offline
   verify-fleet-offline
   inspect-fleet-bundle-verified
+  build-intoto-verification-statement
+  emit-intoto-verification-statement!
   verify-fleet-bundle-offline
   verify-cache-offline
   main)
@@ -530,9 +532,67 @@
                                                  (hash-get b "subjectKey"))))))
                        (hash ("fleetId" fleet-id)
                              ("sysmlSha256" sysml-sha)
+                             ("fleetPayloadSha256" expected-sha)
                              ("rootKeyId" kid)
                              ("subjectCount" (length sorted-subs))
                              ("verifiedSubjects" sorted-subs)))))))))
+
+(def (build-intoto-verification-statement summary)
+  (def fleet-id (hash-get summary "fleetId"))
+  (def sysml-sha (hash-get summary "sysmlSha256"))
+  (def fleet-sha (hash-get summary "fleetPayloadSha256"))
+  (hash ("_type" "https://in-toto.io/Statement/v1")
+        ("subject"
+         (list (hash ("name" "sysml:10.154-multi-method-funflow-runnable-architecture")
+                     ("digest" (hash ("sha256" sysml-sha))))
+               (hash ("name" (string-append "fleet:" fleet-id))
+                     ("digest" (hash ("sha256" fleet-sha))))))
+        ("predicateType"
+         "https://deterministic-engineering.hardenedlinux.org/attestation/fleet-verification-summary/v1")
+        ("predicate"
+         (hash ("verifier" "de.offline-attestation-verifier.v1")
+               ("fleetId" fleet-id)
+               ("sysmlSha256" sysml-sha)
+               ("fleetPayloadSha256" fleet-sha)
+               ("rootKeyId" (hash-get summary "rootKeyId"))
+               ("subjectCount" (hash-get summary "subjectCount"))
+               ("verifiedSubjects" (hash-get summary "verifiedSubjects"))))))
+
+;; Fail-closed safe writer for `--emit-statement <out.json>`:
+;; Rejects symlink targets and symlinked parent directories (preserving macOS `/tmp` & `/var`).
+(def (assert-safe-statement-output-path! out-path)
+  (unless (and (string? out-path) (> (string-length out-path) 0))
+    (error "Invalid --emit-statement output path" out-path))
+  (let ((leaf-type (with-catch (lambda (_) #f)
+                     (lambda () (file-info-type (file-info out-path #f))))))
+    (when (and leaf-type (not (eq? leaf-type 'regular)))
+      (error "Refusing to write in-toto statement to symlink or non-regular path" out-path)))
+  (let* ((raw-parent (path-directory out-path))
+         (parent (if (and (> (string-length raw-parent) 1)
+                          (char=? (string-ref raw-parent (- (string-length raw-parent) 1)) #\/))
+                   (substring raw-parent 0 (- (string-length raw-parent) 1))
+                   raw-parent)))
+    (when (and (> (string-length parent) 0)
+               (not (member parent '("/" "/tmp" "/var"))))
+      (let ((ptype (with-catch (lambda (_) #f)
+                     (lambda () (file-info-type (file-info parent #f))))))
+        (when (and ptype (not (eq? ptype 'directory)))
+          (error "Refusing to write in-toto statement inside symlinked or non-directory parent"
+                 parent))))))
+
+(def (emit-intoto-verification-statement! out-path summary)
+  (unless (hash-table? summary)
+    (error "Refusing to emit in-toto statement without verified fleet summary"))
+  (assert-safe-statement-output-path! out-path)
+  (def parent-dir (path-directory out-path))
+  (when (and (> (string-length parent-dir) 0) (not (file-exists? parent-dir)))
+    (create-directory* parent-dir))
+  (def stmt (build-intoto-verification-statement summary))
+  (call-with-output-file out-path
+    (lambda (port)
+      (write-json port stmt)
+      (newline port)))
+  stmt)
 
 (def (verify-fleet-bundle-offline
        bundle-path
@@ -565,41 +625,45 @@
 
 (def (extract-global-cli-flags args)
   (let loop ((xs args) (json? #f) (max-age #f) (now-ep #f) (max-skew 60)
-             (exp-sysml #f) (exp-cnt #f) (req-subs '()) (pos '()))
+             (exp-sysml #f) (exp-cnt #f) (req-subs '()) (emit-stmt #f) (pos '()))
     (cond
      ((null? xs)
-      (values json? max-age now-ep max-skew exp-sysml exp-cnt (reverse req-subs) (reverse pos)))
+      (values json? max-age now-ep max-skew exp-sysml exp-cnt (reverse req-subs) emit-stmt (reverse pos)))
      ((equal? (car xs) "--json")
-      (loop (cdr xs) #t max-age now-ep max-skew exp-sysml exp-cnt req-subs pos))
+      (loop (cdr xs) #t max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt pos))
      ((equal? (car xs) "--max-age-seconds")
       (unless (pair? (cdr xs)) (error "--max-age-seconds requires an integer argument"))
-      (loop (cddr xs) json? (parse-nonneg-int-flag "--max-age-seconds" (cadr xs)) now-ep max-skew exp-sysml exp-cnt req-subs pos))
+      (loop (cddr xs) json? (parse-nonneg-int-flag "--max-age-seconds" (cadr xs)) now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt pos))
      ((equal? (car xs) "--now-epoch")
       (unless (pair? (cdr xs)) (error "--now-epoch requires an integer argument"))
-      (loop (cddr xs) json? max-age (parse-nonneg-int-flag "--now-epoch" (cadr xs)) max-skew exp-sysml exp-cnt req-subs pos))
+      (loop (cddr xs) json? max-age (parse-nonneg-int-flag "--now-epoch" (cadr xs)) max-skew exp-sysml exp-cnt req-subs emit-stmt pos))
      ((equal? (car xs) "--max-future-skew-seconds")
       (unless (pair? (cdr xs)) (error "--max-future-skew-seconds requires an integer argument"))
-      (loop (cddr xs) json? max-age now-ep (parse-nonneg-int-flag "--max-future-skew-seconds" (cadr xs)) exp-sysml exp-cnt req-subs pos))
+      (loop (cddr xs) json? max-age now-ep (parse-nonneg-int-flag "--max-future-skew-seconds" (cadr xs)) exp-sysml exp-cnt req-subs emit-stmt pos))
      ((equal? (car xs) "--expected-sysml-sha256")
       (unless (and (pair? (cdr xs)) (string? (cadr xs)) (> (string-length (cadr xs)) 0))
         (error "--expected-sysml-sha256 requires a non-empty digest argument"))
-      (loop (cddr xs) json? max-age now-ep max-skew (cadr xs) exp-cnt req-subs pos))
+      (loop (cddr xs) json? max-age now-ep max-skew (cadr xs) exp-cnt req-subs emit-stmt pos))
      ((equal? (car xs) "--expected-subject-count")
       (unless (pair? (cdr xs)) (error "--expected-subject-count requires an integer argument"))
       (let ((n (parse-nonneg-int-flag "--expected-subject-count" (cadr xs))))
         (unless (>= n 1) (error "--expected-subject-count must be >= 1" n))
-        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml n req-subs pos)))
+        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml n req-subs emit-stmt pos)))
      ((equal? (car xs) "--require-subject")
       (unless (and (pair? (cdr xs)) (string? (cadr xs)) (> (string-length (cadr xs)) 0))
         (error "--require-subject requires a non-empty subjectKey argument"))
       (let ((next-req (if (member (cadr xs) req-subs) req-subs (cons (cadr xs) req-subs))))
-        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt next-req pos)))
+        (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt next-req emit-stmt pos)))
+     ((equal? (car xs) "--emit-statement")
+      (unless (and (pair? (cdr xs)) (string? (cadr xs)) (> (string-length (cadr xs)) 0))
+        (error "--emit-statement requires a non-empty output file path"))
+      (loop (cddr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs (cadr xs) pos))
      (else
-      (loop (cdr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs (cons (car xs) pos))))))
+      (loop (cdr xs) json? max-age now-ep max-skew exp-sysml exp-cnt req-subs emit-stmt (cons (car xs) pos))))))
 
 (def (main . args)
   (let-values (((json-mode? max-age-sec now-ep max-skew-sec expected-sysml-sha
-                 expected-sub-cnt req-subs clean-args)
+                 expected-sub-cnt req-subs emit-stmt-path clean-args)
                 (extract-global-cli-flags args)))
   (when (null? clean-args)
     (error "usage: [--json] --verify-report|--verify-fleet|--verify-fleet-bundle|--verify-cache [--max-age-seconds N] [--now-epoch T] <artifact.json> <trust-store.json> | [--json] --verify-trust-store <trust-store.json> | [--json] --export-trust-bundle <out.json> [--revoke <keyId>]... <pub1.pem>... | [--json] --pack-fleet-bundle <fleet-report.json> <out-bundle.json>"
@@ -741,19 +805,34 @@
                            expected-subject-count: expected-sub-cnt
                            required-subjects: req-subs)))
             (if summary
-              (if json-mode?
-                (emit-json-result! #t "verify-fleet-bundle" target-path store-path
-                  "authentic-self-contained-fleet-bundle"
-                  (append
-                    (if expected-sysml-sha (list (cons "expectedSysmlSha256" expected-sysml-sha)) '())
-                    (if expected-sub-cnt (list (cons "expectedSubjectCount" expected-sub-cnt)) '())
-                    (if (pair? req-subs) (list (cons "requiredSubjects" (sort-by req-subs string<?))) '())
-                    (list (cons "fleetId" (hash-get summary "fleetId"))
-                          (cons "sysmlSha256" (hash-get summary "sysmlSha256"))
-                          (cons "rootKeyId" (hash-get summary "rootKeyId"))
-                          (cons "subjectCount" (hash-get summary "subjectCount"))
-                          (cons "verifiedSubjects" (hash-get summary "verifiedSubjects")))))
-                (displayln "MULTI-METHOD-VERIFY-FLEET-BUNDLE-OK " target-path))
+              (let ((stmt-err #f))
+                (when emit-stmt-path
+                  (with-catch
+                    (lambda (e) (set! stmt-err (error-message e)))
+                    (lambda () (emit-intoto-verification-statement! emit-stmt-path summary))))
+                (if stmt-err
+                  (if json-mode?
+                    (begin
+                      (emit-json-result! #f "verify-fleet-bundle" target-path store-path
+                        (string-append "statement export failed: " stmt-err))
+                      (exit 1))
+                    (error (string-append "statement export failed: " stmt-err) emit-stmt-path))
+                  (if json-mode?
+                    (emit-json-result! #t "verify-fleet-bundle" target-path store-path
+                      "authentic-self-contained-fleet-bundle"
+                      (append
+                        (if expected-sysml-sha (list (cons "expectedSysmlSha256" expected-sysml-sha)) '())
+                        (if expected-sub-cnt (list (cons "expectedSubjectCount" expected-sub-cnt)) '())
+                        (if (pair? req-subs) (list (cons "requiredSubjects" (sort-by req-subs string<?))) '())
+                        (if emit-stmt-path (list (cons "statementPath" emit-stmt-path)) '())
+                        (list (cons "fleetId" (hash-get summary "fleetId"))
+                              (cons "sysmlSha256" (hash-get summary "sysmlSha256"))
+                              (cons "fleetPayloadSha256" (hash-get summary "fleetPayloadSha256"))
+                              (cons "rootKeyId" (hash-get summary "rootKeyId"))
+                              (cons "subjectCount" (hash-get summary "subjectCount"))
+                              (cons "verifiedSubjects" (hash-get summary "verifiedSubjects")))))
+                    (displayln "MULTI-METHOD-VERIFY-FLEET-BUNDLE-OK " target-path
+                               (if emit-stmt-path (string-append " statement=" emit-stmt-path) "")))))
               (if json-mode?
                 (begin
                   (emit-json-result! #f "verify-fleet-bundle" target-path store-path

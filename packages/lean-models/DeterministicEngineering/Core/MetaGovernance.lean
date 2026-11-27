@@ -917,4 +917,74 @@ theorem fleetCoverage_rejects_missing_required_subject {Key : Type}
   intro hComp
   exact missingRequiredKey_contradicts_allPresent actualKeys req hAbsent requiredKeys hReq hComp.2.2
 
+/-! ## 16. Authenticated in-toto v1 Statement Export (`--emit-statement`) -/
+
+structure IntotoSummaryStatement (Digest Key : Type) where
+  sysmlDigest : Digest
+  rootKey : Key
+  subjectCount : Nat
+  verifiedSubjects : List Key
+
+/-- Constructive zero-axiom emission decision for `--emit-statement <out.json>`:
+produces `some stmt` ONLY when `fleetVerified = true` AND `outputTargetSafe = true`
+(non-symlink output path); otherwise emits `none` (fail-closed zero-leakage). -/
+def emitIntotoStatement {Digest Key : Type}
+    (fleetVerified outputTargetSafe : Bool)
+    (sysmlDigest : Digest) (rootKey : Key)
+    (subjectCount : Nat) (verifiedSubjects : List Key) :
+    Option (IntotoSummaryStatement Digest Key) :=
+  match fleetVerified with
+  | false => none
+  | true =>
+    match outputTargetSafe with
+    | false => none
+    | true =>
+      some {
+        sysmlDigest := sysmlDigest
+        rootKey := rootKey
+        subjectCount := subjectCount
+        verifiedSubjects := verifiedSubjects
+      }
+
+/-- Constructive zero-axiom proof: unverified fleets NEVER emit an in-toto statement
+(fail-closed zero-leakage). -/
+theorem intotoStatement_zeroLeak_on_unverified {Digest Key : Type}
+    (outputTargetSafe : Bool) (sysmlDigest : Digest) (rootKey : Key)
+    (subjectCount : Nat) (verifiedSubjects : List Key) :
+    emitIntotoStatement false outputTargetSafe sysmlDigest rootKey subjectCount verifiedSubjects = none :=
+  rfl
+
+/-- Constructive zero-axiom proof: unsafe/symlink output destinations NEVER emit a statement,
+even when the underlying fleet bundle is cryptographically valid. -/
+theorem intotoStatement_rejects_unsafe_symlink_target {Digest Key : Type}
+    (fleetVerified : Bool) (sysmlDigest : Digest) (rootKey : Key)
+    (subjectCount : Nat) (verifiedSubjects : List Key) :
+    emitIntotoStatement fleetVerified false sysmlDigest rootKey subjectCount verifiedSubjects = none := by
+  cases fleetVerified <;> rfl
+
+/-- Constructive zero-axiom soundness proof: whenever `--emit-statement` produces `some stmt`,
+BOTH full fleet verification AND safe non-symlink target hold, and the emitted statement preserves
+exact authenticated `sysmlDigest`, `rootKey`, `subjectCount`, and `verifiedSubjects`. -/
+theorem intotoStatement_some_implies_verified_and_faithful {Digest Key : Type}
+    {fleetVerified outputTargetSafe : Bool}
+    {sysmlDigest : Digest} {rootKey : Key}
+    {subjectCount : Nat} {verifiedSubjects : List Key}
+    {stmt : IntotoSummaryStatement Digest Key}
+    (hEmit : emitIntotoStatement fleetVerified outputTargetSafe
+               sysmlDigest rootKey subjectCount verifiedSubjects = some stmt) :
+    fleetVerified = true ∧
+    outputTargetSafe = true ∧
+    stmt.sysmlDigest = sysmlDigest ∧
+    stmt.rootKey = rootKey ∧
+    stmt.subjectCount = subjectCount ∧
+    stmt.verifiedSubjects = verifiedSubjects := by
+  cases fleetVerified with
+  | false => cases hEmit
+  | true =>
+    cases outputTargetSafe with
+    | false => cases hEmit
+    | true =>
+      cases hEmit
+      exact ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩
+
 end DeterministicEngineering.Core.MetaGovernance

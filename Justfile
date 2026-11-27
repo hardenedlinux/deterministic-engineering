@@ -241,7 +241,8 @@ verify-multi-method-fleet-bundle fleet_bundle trust_store *flags:
     t/harness/run-gxtest.sh script none t/support/offline-attestation-verifier.ss {{flags}} --verify-fleet-bundle "{{fleet_bundle}}" "{{trust_store}}"
 
 # One-command 2-file air-gapped release bundle pipeline: execute Fleet, emit
-# `fleet-evidence-bundle.v1.json` + inline-PEM `trust-bundle.v1.json`, and self-audit via Bun/TS (<100ms).
+# `fleet-evidence-bundle.v1.json` + inline-PEM `trust-bundle.v1.json`, self-audit via Bun/TS (<100ms),
+# and emit a verified in-toto v1 `verification-summary.intoto.json` statement.
 release-multi-method-bundle output cache_dir="" subjects="":
     #!/usr/bin/env bash
     set -euo pipefail
@@ -252,10 +253,11 @@ release-multi-method-bundle output cache_dir="" subjects="":
     bun t/harness/offline-attestation-verifier.ts --json --verify-fleet-bundle \
       --expected-sysml-sha256 "$SYSML_SHA" \
       --expected-subject-count "$EXPECTED_COUNT" \
+      --emit-statement "{{output}}/verification-summary.intoto.json" \
       "{{output}}/fleet-evidence-bundle.v1.json" \
       "{{output}}/trust-bundle.v1.json"
 
-# Portable zero-dependency (<100ms, zero Gerbil, zero OpenSSL) Bun/TS offline attestation CLI & 37-control gate.
+# Portable zero-dependency (<100ms, zero Gerbil, zero OpenSSL) Bun/TS offline attestation CLI & 39-control gate.
 verify-multi-method-fast *args:
     bun t/harness/offline-attestation-verifier.ts {{args}}
 
