@@ -1193,10 +1193,154 @@ export function bindSearchPaste(input: HTMLInputElement, ac: AbortController) {
   }, { signal: ac.signal });
 }`,
   },
+
+  // ── Wave-10 Streaming Output Budget, Pre-Allocation Cap & Thinking Accounting (SA85-SA90, SM17) ──
+  {
+    id: 'SA85',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-sse-complete-ignores-output-limit',
+    source: `
+struct WeaverModelGateway {
+  stream_output_limit: Option<usize>,
+}
+impl WeaverModelGateway {
+  async fn complete_sse(&self, mut stream: TurnStream) -> Result<String, String> {
+    let mut text = String::new();
+    while let Some(event) = stream.next().await {
+      match event {
+        TurnEvent::Text(delta) => text.push_str(&delta),
+        TurnEvent::Thinking(_) => {}
+        TurnEvent::Finished => return Ok(text),
+      }
+    }
+    Err("incomplete".into())
+  }
+}`,
+  },
+  {
+    id: 'SA86',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-http-body-buffer-before-cap',
+    source: `
+const MAX_OPENAI_HTTP_RESPONSE_BYTES: usize = 4 * 1024 * 1024;
+async fn read_completion(resp: reqwest::Response) -> Result<Vec<u8>, String> {
+  let bytes = resp.bytes().await.map_err(|e| e.to_string())?;
+  if bytes.len() > MAX_OPENAI_HTTP_RESPONSE_BYTES {
+    return Err("exceeded 4 MiB limit".into());
+  }
+  Ok(bytes.to_vec())
+}`,
+  },
+  {
+    id: 'SA87',
+    language: 'ts',
+    expectedPass: false,
+    expectedRuleId: 'ts-http-body-buffer-before-cap',
+    source: `
+const MAX_LLM_RESPONSE_BYTES = 4 * 1024 * 1024;
+export async function fetchCompletion(url: string): Promise<string> {
+  const resp = await fetch(url);
+  const body = await resp.text();
+  if (body.length > MAX_LLM_RESPONSE_BYTES) {
+    throw new Error('response exceeded safety limit');
+  }
+  return body;
+}`,
+  },
+  {
+    id: 'SA88',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+struct WeaverModelGateway {
+  stream_output_limit: Option<usize>,
+}
+impl WeaverModelGateway {
+  async fn complete_sse(&self, mut stream: TurnStream) -> Result<String, String> {
+    let mut text = String::new();
+    let mut thinking_bytes = 0usize;
+    while let Some(event) = stream.next().await {
+      match event {
+        TurnEvent::Text(delta) => {
+          if let Some(limit) = self.stream_output_limit {
+            if text.len().saturating_add(thinking_bytes).saturating_add(delta.len()) > limit {
+              return Err("OutputLimit".into());
+            }
+          }
+          text.push_str(&delta);
+        }
+        TurnEvent::Thinking(delta) => {
+          if let Some(limit) = self.stream_output_limit {
+            if text.len().saturating_add(thinking_bytes).saturating_add(delta.len()) > limit {
+              return Err("OutputLimit".into());
+            }
+          }
+          thinking_bytes += delta.len();
+        }
+        TurnEvent::Finished => return Ok(text),
+      }
+    }
+    Err("incomplete".into())
+  }
+}`,
+  },
+  {
+    id: 'SA89',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+const MAX_OPENAI_HTTP_RESPONSE_BYTES: usize = 4 * 1024 * 1024;
+async fn read_completion(mut resp: reqwest::Response) -> Result<Vec<u8>, String> {
+  if resp.content_length().is_some_and(|n| n > MAX_OPENAI_HTTP_RESPONSE_BYTES as u64) {
+    return Err("exceeded 4 MiB limit".into());
+  }
+  let mut buf = Vec::new();
+  while let Some(chunk) = resp.chunk().await.map_err(|e| e.to_string())? {
+    if buf.len().checked_add(chunk.len()).is_none_or(|n| n > MAX_OPENAI_HTTP_RESPONSE_BYTES) {
+      return Err("exceeded 4 MiB limit".into());
+    }
+    buf.extend_from_slice(&chunk);
+  }
+  Ok(buf)
+}`,
+  },
+  {
+    id: 'SA90',
+    language: 'ts',
+    expectedPass: true,
+    source: `
+const MAX_LLM_RESPONSE_BYTES = 4 * 1024 * 1024;
+export async function fetchCompletion(url: string): Promise<Uint8Array> {
+  const resp = await fetch(url);
+  const declared = Number(resp.headers.get('content-length') ?? '0');
+  if (declared > MAX_LLM_RESPONSE_BYTES) throw new Error('exceeded limit');
+  const reader = resp.body?.getReader();
+  if (!reader) return new Uint8Array();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      if (total + value.byteLength > MAX_LLM_RESPONSE_BYTES) {
+        await reader.cancel();
+        throw new Error('exceeded limit');
+      }
+      chunks.push(value);
+      total += value.byteLength;
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return new Uint8Array(total);
+}`,
+  },
 ];
 
-describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA84)', () => {
-  test('achieves 84/84 exact independent-gold match (tp=49, tn=35, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
+describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA90)', () => {
+  test('achieves 90/90 exact independent-gold match (tp=52, tn=38, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
     let tp = 0;
     let tn = 0;
     let fp = 0;
@@ -1219,7 +1363,7 @@ describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA84)', () =
       }
     }
 
-    expect({tp, tn, fp, fn}).toEqual({tp: 49, tn: 35, fp: 0, fn: 0});
+    expect({tp, tn, fp, fn}).toEqual({tp: 52, tn: 38, fp: 0, fn: 0});
   });
 
   test('clean Rust deterministic buffer pool & bounded retry passes with 0 findings', () => {

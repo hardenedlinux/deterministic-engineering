@@ -96,12 +96,18 @@ test('all projected pure .qnt models in packages/quint-models pass run-plan with
   expect(planFiles.length).toBe(0);
   expect(receipts.length).toBe(0);
 
-  const fleet = run(['bun', cliPath, 'run-fleet', modelsRoot, '--concurrency=4', '--json'], repoRoot);
-  expect(fleet.exitCode).toBe(0);
-  const report = JSON.parse(fleet.stdout) as {total: number; passed: number; skipped: number; failed: number};
-  expect(report.total).toBe(qntFiles.length);
-  expect(report.passed).toBe(qntFiles.length);
-  expect(report.failed).toBe(0);
+  if (process.env.QUINT_SHARDED_FLEET !== '1') {
+    const fleetArgs = ['bun', cliPath, 'run-fleet', modelsRoot, '--concurrency=4', '--json'];
+    if (process.env.QUINT_FLEET_CACHE_DIR) {
+      fleetArgs.push(`--cache=${process.env.QUINT_FLEET_CACHE_DIR}`);
+    }
+    const fleet = run(fleetArgs, repoRoot);
+    expect(fleet.exitCode).toBe(0);
+    const report = JSON.parse(fleet.stdout) as {total: number; passed: number; skipped: number; failed: number};
+    expect(report.total).toBe(qntFiles.length);
+    expect(report.passed).toBe(qntFiles.length);
+    expect(report.failed).toBe(0);
+  }
   const ver = run(['bun', cliPath, '--version'], repoRoot);
   expect(ver.exitCode).toBe(0);
   expect(ver.stdout.trim()).toBe('0.33.0');

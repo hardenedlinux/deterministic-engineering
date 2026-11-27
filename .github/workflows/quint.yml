@@ -11,6 +11,7 @@ on:
       - 'bun.lock'
       - 't/harness/**'
       - 'Justfile'
+      - '.github/actions/**'
       - '.github/workflows/quint.yml'
   push:
     branches: [main]
@@ -21,6 +22,7 @@ on:
       - 'bun.lock'
       - 't/harness/**'
       - 'Justfile'
+      - '.github/actions/**'
       - '.github/workflows/quint.yml'
 
 permissions:
@@ -31,30 +33,56 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  quint-resolver-and-fleet:
-    name: Quint Resolver Tests & Full Run-Plan Fleet
+  discover-quint-shards:
+    name: Discover Quint Subdomain Shards
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - uses: ./.github/actions/setup-just
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+      - uses: ./.github/actions/setup-bun-cached
         with:
-          bun-version: 1.3.11
-      - run: bun install --frozen-lockfile
-      - name: Typecheck & portable resolver conformance tests (includes full fleet run-plan + zero-sidecar check)
+          install: 'false'
+      - name: Dynamically discover Quint subdomain shards (zero hardcoding)
+        id: plan
+        run: |
+          matrix=$(just verify-matrix quint --max-per-shard=24)
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "Discovered Quint subdomain matrix: $matrix"
+
+  quint-resolver-unit:
+    name: Quint Resolver Typecheck, Unit & Zero-Sidecar Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: ./.github/actions/setup-just
+      - uses: ./.github/actions/setup-bun-cached
+      - name: Typecheck & portable resolver conformance tests (fleet delegated to sharded CAS matrix)
+        env:
+          QUINT_SHARDED_FLEET: '1'
         run: just check-quint --portable --only=typecheck,test
 
-  quint-mbt-fleet:
-    name: Quint Full-Fleet 100% MBT Coverage Audit
+  quint-subdomain-fleet:
+    name: "Quint Shard: ${{ matrix.label }}"
+    needs: discover-quint-shards
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover-quint-shards.outputs.matrix) }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - uses: ./.github/actions/setup-just
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+      - uses: ./.github/actions/setup-bun-cached
+      - name: Restore Layer-2 shard-disjoint Quint CAS cache (SM18)
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
-          bun-version: 1.3.11
-      - run: bun install --frozen-lockfile
-      - name: Full fleet 100% action-coverage MBT audit
-        run: just check-quint --portable --only=mbt
+          path: .data/ci-cache/quint-${{ matrix.shard }}
+          key: de-quint-cas-v1-${{ runner.os }}-${{ runner.arch }}-${{ matrix.shard }}-${{ hashFiles('bun.lock', 'packages/quint-modules-resolver/src/**') }}-${{ github.sha }}
+          restore-keys: |
+            de-quint-cas-v1-${{ runner.os }}-${{ runner.arch }}-${{ matrix.shard }}-${{ hashFiles('bun.lock', 'packages/quint-modules-resolver/src/**') }}-
+      - name: Run shard run-plan + 100% MBT coverage audit with cryptographic SHA-256 CAS
+        run: just check-quint-shard "${{ matrix.domain }}" "${{ matrix.subdomains }}" ".data/ci-cache/quint-${{ matrix.shard }}"

@@ -23,7 +23,8 @@ export type AgingMechanism =
   | 'SM13-ime-composition-race'
   | 'SM14-chaos-circuit-envelope'
   | 'SM15-search-snapshot-isolation'
-  | 'SM16-search-input-sanitization';
+  | 'SM16-search-input-sanitization'
+  | 'SM17-streaming-output-budget';
 
 export interface AgingFinding {
   ruleId: string;
@@ -662,6 +663,41 @@ function auditRust(clean: string): AgingFinding[] {
     }
   }
 
+  // 17. SSE completion aggregation ignores declared stream_output_limit (SM17: marlin-agent-stream/src/gateway.rs).
+  if (/\bstream_output_limit\b/.test(clean)) {
+    const sseTextPushMatch = /TurnEvent::Text\s*\(\s*\w+\s*\)\s*=>\s*(?:\{[\s\S]{0,220}?)?\btext\.push_str\s*\(/.exec(clean);
+    if (sseTextPushMatch) {
+      const loopScope = extractEnclosingBlock(clean, sseTextPushMatch.index);
+      const checksLimit = /\b(?:stream_output_limit|output_limit|OutputLimit|enforce_stream_output_limit|check_stream_output_budget)\b/.test(loopScope);
+      if (!checksLimit) {
+        findings.push({
+          ruleId: 'rust-sse-complete-ignores-output-limit',
+          mechanism: 'SM17-streaming-output-budget',
+          language: 'rust',
+          line: lineOfIndex(clean, sseTextPushMatch.index),
+          message: 'SSE TurnEvent aggregation appends text without enforcing configured stream_output_limit or accounting thinking deltas (SM17).',
+        });
+      }
+    }
+  }
+
+  // 18. HTTP response buffers entire body via .bytes().await before checking MAX_* size cap (SM17: openai_http.rs).
+  const reqwestBytesMatch = /\.bytes\s*\(\s*\)\s*\.await\b/.exec(clean);
+  if (reqwestBytesMatch) {
+    const fnScope = extractEnclosingBlock(clean, reqwestBytesMatch.index);
+    const checksAfterBuffer = /\.len\s*\(\s*\)\s*>\s*(?:MAX_[A-Z0-9_]+|\w*(?:max|limit|cap)\w*)/i.test(fnScope);
+    const streamsChunks = /\.chunk\s*\(\s*\)\s*\.await\b/.test(fnScope);
+    if (checksAfterBuffer && !streamsChunks) {
+      findings.push({
+        ruleId: 'rust-http-body-buffer-before-cap',
+        mechanism: 'SM17-streaming-output-budget',
+        language: 'rust',
+        line: lineOfIndex(clean, reqwestBytesMatch.index),
+        message: 'HTTP response buffers full body via .bytes().await before checking byte cap; validate content_length() and stream via .chunk().await with pre-allocation cap enforcement (SM17).',
+      });
+    }
+  }
+
   return findings;
 }
 
@@ -847,7 +883,7 @@ function auditTypeScript(clean: string): AgingFinding[] {
     }
   }
 
-  // 10. Search/input clipboard paste handler appends clipboardData without byte/length cap or control-char stripping (SM16).
+  // 12. Search/input clipboard paste handler appends clipboardData without byte/length cap or control-char stripping (SM16).
   const pasteEvMatch = /addEventListener\s*\(\s*['"]paste['"]/.exec(clean);
   if (pasteEvMatch) {
     const fnScope = extractEnclosingBlock(clean, pasteEvMatch.index);
@@ -860,6 +896,23 @@ function auditTypeScript(clean: string): AgingFinding[] {
         language: 'ts',
         line: lineOfIndex(clean, pasteEvMatch.index),
         message: 'Clipboard paste handler writes clipboardData directly into input/query without length cap or control-char sanitization (SM16).',
+      });
+    }
+  }
+
+  // 13. Fetch response buffers entire payload via .text()/.arrayBuffer()/.bytes() before checking byte cap (SM17).
+  const tsFullReadMatch = /\bawait\s+\w+\.(?:text|arrayBuffer|bytes)\s*\(\s*\)/.exec(clean);
+  if (tsFullReadMatch) {
+    const fnScope = extractEnclosingBlock(clean, tsFullReadMatch.index);
+    const checksAfterRead = /(?:\.length|\.byteLength)\s*>\s*(?:MAX_[A-Z0-9_]+|\w*(?:max|limit|cap)\w*)/i.test(fnScope);
+    const streamsReader = /\bgetReader\s*\(\s*\)/.test(fnScope);
+    if (checksAfterRead && !streamsReader) {
+      findings.push({
+        ruleId: 'ts-http-body-buffer-before-cap',
+        mechanism: 'SM17-streaming-output-budget',
+        language: 'ts',
+        line: lineOfIndex(clean, tsFullReadMatch.index),
+        message: 'HTTP response buffers full body via .text()/.arrayBuffer() before checking size limit; pre-check Content-Length and stream via resp.body.getReader() with pre-allocation byte budget (SM17).',
       });
     }
   }

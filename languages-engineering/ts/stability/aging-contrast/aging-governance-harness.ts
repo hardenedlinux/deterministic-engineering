@@ -128,6 +128,14 @@ const MECHANISM_DIRECTIVES: Record<AgingMechanism, AgingRemediationDirective> = 
     antiEvasionWarning:
       'Do NOT evade by capping only keystroke typing while leaving PasteSelection, clipboard paste, or set_input uncapped.',
   },
+  'SM17-streaming-output-budget': {
+    mechanism: 'SM17-streaming-output-budget',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Fail fast on oversized Content-Length headers, read HTTP/SSE responses incrementally checking cumulative textBytes + thinkingBytes + delta <= limit BEFORE allocating/appending, enforce stream_output_limit identically on stream() and complete(), and release buffers immediately upon OutputLimit refusal.',
+    antiEvasionWarning:
+      'Do NOT evade by buffering full payloads via resp.bytes().await or resp.text() before checking length, or by ignoring hidden Thinking deltas in cumulative output accounting.',
+  },
 };
 
 export function getAgingRemediation(finding: AgingFinding): AgingRemediationDirective {

@@ -381,11 +381,12 @@ export async function runCli(argv: string[]) {
   if (argv[0] === 'run-fleet') {
     const rootDir = argv[1];
     if (!rootDir) {
-      console.error('Usage: quint-modules-resolver run-fleet <dir> [--domain=engineering|threat] [--subdomain=<name>] [--verify] [--mbt-audit] [--min-coverage=0.75] [--n-traces=12] [--seed=7] [--concurrency=4] [--json]');
+      console.error('Usage: quint-modules-resolver run-fleet <dir> [--domain=engineering|threat] [--subdomain=<csv>] [--cache=<dir>] [--verify] [--mbt-audit] [--min-coverage=0.75] [--n-traces=12] [--seed=7] [--concurrency=4] [--json]');
       process.exit(2);
     }
     let domain: string | undefined;
     let subdomain: string | undefined;
+    let cacheDir: string | undefined;
     let concurrency: number | undefined;
     let minCoverage: number | undefined;
     let nTraces: number | undefined;
@@ -412,6 +413,7 @@ export async function runCli(argv: string[]) {
       const val = eq >= 0 ? tok.slice(eq + 1) : argv[++i];
       if (key === '--domain') domain = val;
       else if (key === '--subdomain') subdomain = val;
+      else if (key === '--cache') cacheDir = val;
       else if (key === '--concurrency') concurrency = Number(val);
       else if (key === '--min-coverage') minCoverage = Number(val);
       else if (key === '--n-traces') nTraces = Number(val);
@@ -424,6 +426,7 @@ export async function runCli(argv: string[]) {
     const report = await runFleetPlans(rootDir, {
       domain,
       subdomain,
+      cacheDir,
       verify,
       mbtAudit,
       minCoverage,
@@ -437,8 +440,9 @@ export async function runCli(argv: string[]) {
       const modeTag = report.mbtAudit
         ? ` mbtAudit=true minCov=${((report.minActionCoverage ?? 1) * 100).toFixed(1)}% avgCov=${((report.avgActionCoverage ?? 1) * 100).toFixed(1)}%`
         : ` verify=${report.verify}`;
+      const cacheTag = cacheDir ? ` cached=${report.cached ?? 0}` : '';
       console.log(
-        `FLEET-${report.failed === 0 ? 'OK' : 'FAIL'} passed=${report.passed}/${report.total} skipped=${report.skipped} failed=${report.failed}${modeTag} concurrency=${report.concurrency} (${report.durationMs}ms)`,
+        `FLEET-${report.failed === 0 ? 'OK' : 'FAIL'} passed=${report.passed}/${report.total}${cacheTag} skipped=${report.skipped} failed=${report.failed}${modeTag} concurrency=${report.concurrency} (${report.durationMs}ms)`,
       );
       for (const r of report.results) {
         if (!r.passed) {

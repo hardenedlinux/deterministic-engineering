@@ -15,6 +15,7 @@ on:
       - 't/yanxu/Library/verification-flow/**'
       - 't/harness/**'
       - 'Justfile'
+      - '.github/actions/**'
       - '.github/workflows/multi-method-verification.yml'
   push:
     branches: [main]
@@ -29,6 +30,7 @@ on:
       - 't/yanxu/Library/verification-flow/**'
       - 't/harness/**'
       - 'Justfile'
+      - '.github/actions/**'
       - '.github/workflows/multi-method-verification.yml'
 
 permissions:
@@ -46,17 +48,33 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - uses: ./.github/actions/setup-just
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+      - uses: ./.github/actions/setup-bun-cached
+      - name: Restore Layer-1 Cargo registry & incremental target cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
-          bun-version: 1.3.11
-      - name: Install workspace Quint CLI for live ITF MBT replay
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            languages-engineering/rust/lifecycle/process-tree-guard/target
+          key: de-cargo-lifecycle-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('languages-engineering/rust/lifecycle/process-tree-guard/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            de-cargo-lifecycle-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('languages-engineering/rust/lifecycle/process-tree-guard/Cargo.lock') }}-
+            de-cargo-lifecycle-v1-${{ runner.os }}-${{ runner.arch }}-
+      - name: Restore Layer-2 Rust lifecycle CAS cache (SM18)
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .data/ci-cache/rust-lifecycle
+          key: de-rust-lifecycle-cas-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('bun.lock', 't/harness/verify-framework.ts', 'languages-engineering/rust/lifecycle/process-tree-guard/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            de-rust-lifecycle-cas-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('bun.lock', 't/harness/verify-framework.ts', 'languages-engineering/rust/lifecycle/process-tree-guard/Cargo.lock') }}-
+      - name: Expose workspace Quint CLI for live ITF MBT replay
         run: |
-          bun install --frozen-lockfile
           echo "$PWD/packages/quint-modules-resolver/node_modules/.bin" >> "$GITHUB_PATH"
           echo "$PWD/node_modules/.bin" >> "$GITHUB_PATH"
           test -x "$PWD/packages/quint-modules-resolver/node_modules/.bin/quint"
       - name: Run auto-discovered Rust lifecycle verification suite
-        run: just verify-lang rust lifecycle
+        run: just verify-lang rust lifecycle --cache=.data/ci-cache/rust-lifecycle
 
   c-cbmc-boundary-proof:
     name: C Trust-Boundary & Aging CBMC Proofs
@@ -65,13 +83,20 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - uses: ./.github/actions/setup-just
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+      - uses: ./.github/actions/setup-bun-cached
         with:
-          bun-version: 1.3.11
+          install: 'false'
+      - name: Restore Layer-2 C/CBMC CAS cache (SM18)
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .data/ci-cache/c-cbmc
+          key: de-cbmc-cas-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('t/harness/verify-framework.ts') }}-${{ github.sha }}
+          restore-keys: |
+            de-cbmc-cas-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('t/harness/verify-framework.ts') }}-
       - name: Install CBMC & run auto-discovered C/CBMC proofs (defense + stability)
         run: |
-          sudo apt-get update && sudo apt-get install -y cbmc
-          just verify --lang=c,cbmc --domain=defense,stability
+          sudo apt-get update -qq && sudo apt-get install -y -qq cbmc
+          just verify --lang=c,cbmc --domain=defense,stability --jobs=4 --cache=.data/ci-cache/c-cbmc
 
   lean4-meta-and-domain-proofs:
     name: Lean 4 / LeanPoo All-Module Build & Zero-sorryAx Kernel Axiom Gate
@@ -80,19 +105,42 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - uses: ./.github/actions/setup-just
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+      - uses: ./.github/actions/setup-bun-cached
         with:
-          bun-version: 1.3.11
-      - name: Install elan & pinned Lean 4 toolchain
+          install: 'false'
+      - name: Restore Layer-1 Elan & pinned Lean 4 toolchain cache
+        id: elan-cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.elan
+          key: de-elan-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('packages/lean-models/lean-toolchain') }}
+      - name: Install elan if cache missed and expose PATH
         run: |
-          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          if [ ! -x "$HOME/.elan/bin/elan" ]; then
+            curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          fi
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-      - name: Provision upstream LeanPoo sibling checkout if absent
+      - name: Provision upstream LeanPoo sibling checkout and capture exact SHA
+        id: leanpoo
         run: |
           LEAN_POO_DIR="$(realpath -m packages/lean-models/../../../../tao3k/lean-poo)"
           if [ ! -d "$LEAN_POO_DIR" ]; then
             mkdir -p "$(dirname "$LEAN_POO_DIR")"
             git clone --depth 1 --branch main https://github.com/tao3k/lean-poo.git "$LEAN_POO_DIR"
           fi
+          LEAN_POO_SHA="$(git -C "$LEAN_POO_DIR" rev-parse HEAD)"
+          echo "dir=$LEAN_POO_DIR" >> "$GITHUB_OUTPUT"
+          echo "sha=$LEAN_POO_SHA" >> "$GITHUB_OUTPUT"
+          echo "Resolved LeanPoo SHA=$LEAN_POO_SHA at $LEAN_POO_DIR"
+      - name: Restore Layer-2 Lean 4 incremental .lake/build & CAS cache (SM18)
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            packages/lean-models/.lake/build
+            ${{ steps.leanpoo.outputs.dir }}/.lake/build
+            .data/ci-cache/lean
+          key: de-lean-build-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('packages/lean-models/lean-toolchain', 'packages/lean-models/lakefile.toml', 't/harness/verify-framework.ts') }}-${{ steps.leanpoo.outputs.sha }}-${{ hashFiles('packages/lean-models/**/*.lean') }}
+          restore-keys: |
+            de-lean-build-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('packages/lean-models/lean-toolchain', 'packages/lean-models/lakefile.toml', 't/harness/verify-framework.ts') }}-${{ steps.leanpoo.outputs.sha }}-
       - name: Auto-discovered Lean 4 build & dynamic #print axioms audit
-        run: just check-lean
+        run: just check-lean --cache=.data/ci-cache/lean

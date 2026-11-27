@@ -68,6 +68,9 @@ verify-plan *args:
 verify-impact *args:
     bun t/harness/verify-framework.ts run --impact {{args}}
 
+verify-matrix target="quint" *flags:
+    bun t/harness/verify-framework.ts matrix {{target}} {{flags}}
+
 verify-lang lang domain="" *flags:
     bun t/harness/verify-framework.ts run --lang={{lang}} {{ if domain != "" { "--domain=" + domain } else { "" } }} {{flags}}
 
@@ -83,6 +86,10 @@ check-multi-method *flags:
 
 check-quint *flags:
     just verify --domain=quint {{flags}}
+
+check-quint-shard domain subdomains cache_dir="" *flags:
+    bun packages/quint-modules-resolver/src/cli.ts run-fleet packages/quint-models --domain={{domain}} --subdomain={{subdomains}} --concurrency=4 {{ if cache_dir != "" { "--cache=" + cache_dir } else { "" } }} {{flags}}
+    bun packages/quint-modules-resolver/src/cli.ts run-fleet packages/quint-models --domain={{domain}} --subdomain={{subdomains}} --mbt-audit --n-traces=12 --seed=7 --min-coverage=1.0 --concurrency=4 {{ if cache_dir != "" { "--cache=" + cache_dir } else { "" } }} {{flags}}
 
 check-lean *flags:
     just verify --lang=lean {{flags}}

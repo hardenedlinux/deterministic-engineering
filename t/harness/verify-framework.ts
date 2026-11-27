@@ -23,7 +23,7 @@
  */
 
 import {createHash} from 'node:crypto';
-import {existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync} from 'node:fs';
+import {existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, writeFileSync} from 'node:fs';
 import {basename, dirname, join, relative, resolve} from 'node:path';
 
 const REPO_ROOT = resolve(import.meta.dir, '../..');
@@ -902,11 +902,89 @@ function filterUnits(units: VerificationUnit[], opts: QueryOptions): Verificatio
   return filtered;
 }
 
-// ── 4. Content-Addressed SHA-256 Digests & Conflict-Free Parallel Wave Scheduler ──
+// ── 4. Hermetic Content-Addressed SHA-256 Digests, Active-Set GC & Parallel Waves ──
 
-function computeUnitDigest(unit: VerificationUnit): string {
+const MAX_VERIFY_CACHE_ENTRIES = 2048;
+
+let cachedHarnessFingerprint: string | null = null;
+const cachedToolFingerprints = new Map<string, string>();
+
+function computeHarnessFingerprint(): string {
+  if (cachedHarnessFingerprint !== null) return cachedHarnessFingerprint;
   const h = createHash('sha256');
-  h.update(`unit:${unit.id}\nkind:${unit.kind}\nmeta:${JSON.stringify(unit.meta)}\n`);
+  h.update(`schema:de.verify-framework-cas.v2\nplatform:${process.platform}:${process.arch}\nbun:${Bun.version}\n`);
+  for (const rel of ['t/harness/verify-framework.ts', 'bun.lock']) {
+    const full = join(REPO_ROOT, rel);
+    if (existsSync(full) && statSync(full).isFile()) {
+      h.update(`harness:${rel}\n`);
+      h.update(readFileSync(full));
+      h.update('\n');
+    }
+  }
+  cachedHarnessFingerprint = h.digest('hex');
+  return cachedHarnessFingerprint;
+}
+
+function probeCommandVersion(cmd: string[]): string {
+  const key = cmd.join(' ');
+  const existing = cachedToolFingerprints.get(key);
+  if (existing !== undefined) return existing;
+  try {
+    const proc = Bun.spawnSync(cmd, {cwd: REPO_ROOT, stdout: 'pipe', stderr: 'pipe'});
+    const out = (new TextDecoder().decode(proc.stdout) + new TextDecoder().decode(proc.stderr)).trim().split('\n')[0] ?? '';
+    const val = proc.exitCode === 0 ? out : `exit:${proc.exitCode}`;
+    cachedToolFingerprints.set(key, val);
+    return val;
+  } catch {
+    cachedToolFingerprints.set(key, 'unavailable');
+    return 'unavailable';
+  }
+}
+
+function computeEngineFingerprintForKind(kind: UnitKind): string {
+  const existing = cachedToolFingerprints.get(`kind:${kind}`);
+  if (existing !== undefined) return existing;
+  const h = createHash('sha256');
+  h.update(`kind:${kind}\nharness:${computeHarnessFingerprint()}\n`);
+  if (kind === 'lean') {
+    for (const rel of ['packages/lean-models/lean-toolchain', 'packages/lean-models/lakefile.toml']) {
+      const full = join(REPO_ROOT, rel);
+      if (existsSync(full)) {
+        h.update(`lean-meta:${rel}\n`);
+        h.update(readFileSync(full));
+        h.update('\n');
+      }
+    }
+    const leanPooDir = resolve(REPO_ROOT, 'packages/lean-models/../../../../tao3k/lean-poo');
+    if (existsSync(leanPooDir)) {
+      h.update(`lean-poo:${probeCommandVersion(['git', '-C', leanPooDir, 'rev-parse', 'HEAD'])}\n`);
+    }
+  } else if (kind === 'go') {
+    h.update(`go:${probeCommandVersion(['go', 'version'])}\n`);
+  } else if (kind === 'rust') {
+    h.update(`rustc:${probeCommandVersion(['rustc', '--version'])}\n`);
+  } else if (kind === 'c' || kind === 'cpp') {
+    h.update(`cc:${probeCommandVersion(['cc', '--version'])}\n`);
+  } else if (kind === 'cbmc') {
+    h.update(`cbmc:${probeCommandVersion(['cbmc', '--version'])}\n`);
+  } else if (kind === 'quint') {
+    const resolverSrc = join(REPO_ROOT, 'packages/quint-modules-resolver/src');
+    for (const f of findFiles(resolverSrc, (_, n) => n.endsWith('.ts'))) {
+      h.update(`qmr:${relative(REPO_ROOT, f)}\n`);
+      h.update(readFileSync(f));
+      h.update('\n');
+    }
+  }
+  const digest = h.digest('hex');
+  cachedToolFingerprints.set(`kind:${kind}`, digest);
+  return digest;
+}
+
+function computeUnitDigest(unit: VerificationUnit, checkAxioms = true): string {
+  const h = createHash('sha256');
+  h.update(
+    `unit:${unit.id}\nkind:${unit.kind}\nengine:${computeEngineFingerprintForKind(unit.kind)}\naxioms:${checkAxioms}\nmeta:${JSON.stringify(unit.meta)}\n`,
+  );
   for (const relPath of unit.inputs) {
     const full = join(REPO_ROOT, relPath);
     h.update(`file:${relPath}\n`);
@@ -919,21 +997,38 @@ function computeUnitDigest(unit: VerificationUnit): string {
 }
 
 function loadCache(cacheDir: string | null): CacheFile {
-  if (!cacheDir) return {schema: 'de.verify-framework-cache.v1', entries: {}};
-  const cachePath = resolve(REPO_ROOT, cacheDir, 'verify-framework-cache.v1.json');
-  if (!existsSync(cachePath)) return {schema: 'de.verify-framework-cache.v1', entries: {}};
+  if (!cacheDir) return {schema: 'de.verify-framework-cache.v2', entries: {}};
+  const cachePath = resolve(REPO_ROOT, cacheDir, 'verify-framework-cache.v2.json');
+  if (!existsSync(cachePath)) return {schema: 'de.verify-framework-cache.v2', entries: {}};
   try {
-    return JSON.parse(readFileSync(cachePath, 'utf8')) as CacheFile;
+    const parsed = JSON.parse(readFileSync(cachePath, 'utf8')) as CacheFile;
+    if (parsed.schema !== 'de.verify-framework-cache.v2' || !parsed.entries) {
+      return {schema: 'de.verify-framework-cache.v2', entries: {}};
+    }
+    return parsed;
   } catch {
-    return {schema: 'de.verify-framework-cache.v1', entries: {}};
+    return {schema: 'de.verify-framework-cache.v2', entries: {}};
   }
 }
 
-function saveCache(cacheDir: string | null, cache: CacheFile): void {
+function saveCache(cacheDir: string | null, cache: CacheFile, activeUnitIds?: Set<string>): void {
   if (!cacheDir) return;
   const absDir = resolve(REPO_ROOT, cacheDir);
   mkdirSync(absDir, {recursive: true});
-  writeFileSync(join(absDir, 'verify-framework-cache.v1.json'), JSON.stringify(cache, null, 2) + '\n');
+
+  // Active-set GC (SM18): prune obsolete entries no longer in the live unit graph
+  // and enforce MAX_VERIFY_CACHE_ENTRIES ceiling to prevent unbounded cache quota ratchet.
+  const entries = Object.entries(cache.entries).filter(([id]) => !activeUnitIds || activeUnitIds.has(id));
+  entries.sort((a, b) => (b[1].passedAt ?? '').localeCompare(a[1].passedAt ?? ''));
+  const bounded: Record<string, CacheEntry> = {};
+  for (const [id, entry] of entries.slice(0, MAX_VERIFY_CACHE_ENTRIES)) {
+    bounded[id] = entry;
+  }
+
+  const targetPath = join(absDir, 'verify-framework-cache.v2.json');
+  const tmpPath = `${targetPath}.${process.pid}.${Date.now()}.tmp`;
+  writeFileSync(tmpPath, JSON.stringify({schema: 'de.verify-framework-cache.v2', entries: bounded}, null, 2) + '\n');
+  renameSync(tmpPath, targetPath);
 }
 
 function partitionParallelWaves(units: VerificationUnit[], maxJobs: number): VerificationUnit[][] {
@@ -1299,7 +1394,124 @@ async function runSingleUnit(
   return fail(`Unsupported unit kind: ${unit.kind}`);
 }
 
-// ── 6. Inventory Printer & CLI Driver ──
+// ── 6. Dynamic Subdomain Shard Matrix Planner, Inventory & CLI Driver ──
+
+interface QuintShardEntry {
+  shard: string;
+  label: string;
+  domain: string;
+  subdomains: string;
+  modelCount: number;
+}
+
+function buildQuintSubdomainMatrix(maxModelsPerShard: number): {include: QuintShardEntry[]} {
+  const modelsRoot = join(REPO_ROOT, 'packages/quint-models');
+  const domainGroups = new Map<string, Array<{subdomain: string; count: number}>>();
+
+  for (const domain of listDirSorted(modelsRoot)) {
+    const domainDir = join(modelsRoot, domain);
+    if (!statSync(domainDir).isDirectory() || domain.startsWith('.') || domain === 'docs') continue;
+    const subs: Array<{subdomain: string; count: number}> = [];
+    for (const sub of listDirSorted(domainDir)) {
+      const subDir = join(domainDir, sub);
+      if (!statSync(subDir).isDirectory()) continue;
+      const count = findFiles(subDir, (_, n) => n.endsWith('.qnt')).length;
+      if (count > 0) subs.push({subdomain: sub, count});
+    }
+    if (subs.length > 0) domainGroups.set(domain, subs);
+  }
+
+  const include: QuintShardEntry[] = [];
+  for (const [domain, subs] of [...domainGroups.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+    // Large subdomains (>= half maxModelsPerShard) own dedicated shards; smaller sibling
+    // subdomains within the same top-level domain pack deterministically up to maxModelsPerShard.
+    const dedicated: Array<{subdomain: string; count: number}> = [];
+    const packable: Array<{subdomain: string; count: number}> = [];
+    for (const s of subs) {
+      if (s.count >= Math.ceil(maxModelsPerShard * 0.6)) dedicated.push(s);
+      else packable.push(s);
+    }
+
+    for (const s of dedicated) {
+      include.push({
+        shard: `${domain}-${s.subdomain}`,
+        label: `${domain}/${s.subdomain} (${s.count} models)`,
+        domain,
+        subdomains: s.subdomain,
+        modelCount: s.count,
+      });
+    }
+
+    let bucket: Array<{subdomain: string; count: number}> = [];
+    let bucketCount = 0;
+    const flushBucket = () => {
+      if (bucket.length === 0) return;
+      const names = bucket.map((b) => b.subdomain);
+      const shardSlug =
+        names.length === 1 ? `${domain}-${names[0]}` : `${domain}-${names[0]}-plus-${names.length - 1}`;
+      include.push({
+        shard: shardSlug,
+        label: `${domain}/{${names.join(',')}} (${bucketCount} models)`,
+        domain,
+        subdomains: names.join(','),
+        modelCount: bucketCount,
+      });
+      bucket = [];
+      bucketCount = 0;
+    };
+
+    for (const s of packable) {
+      if (bucket.length > 0 && bucketCount + s.count > maxModelsPerShard) {
+        flushBucket();
+      }
+      bucket.push(s);
+      bucketCount += s.count;
+    }
+    flushBucket();
+  }
+
+  return {include};
+}
+
+function buildStabilityProfileMatrix(units: VerificationUnit[]): {
+  include: Array<{shard: string; label: string; langs: string; unitCount: number}>;
+} {
+  const stabilityTags = new Set([
+    'stability',
+    'go:concurrency',
+    'quint.engineering.concurrency',
+    'quint.engineering.gc',
+    'lean.core.stability',
+  ]);
+  const relevant = units.filter(
+    (u) =>
+      u.kind !== 'cbmc' &&
+      u.kind !== 'lean' &&
+      u.kind !== 'scheme' &&
+      [...stabilityTags].some((t) => matchesToken(u, t)),
+  );
+  const tsCount = relevant.filter((u) => u.kind === 'ts').length;
+  const nativeLangs = [...new Set(relevant.filter((u) => u.kind !== 'ts').map((u) => u.kind))].sort();
+  const nativeCount = relevant.filter((u) => u.kind !== 'ts').length;
+  const include: Array<{shard: string; label: string; langs: string; unitCount: number}> = [];
+  if (tsCount > 0) {
+    include.push({
+      shard: 'ts-fuzz-mbt',
+      label: `TypeScript Fuzzing, Slope Oracle & Live ITF MBT (${tsCount} suite)`,
+      langs: 'ts',
+      unitCount: tsCount,
+    });
+  }
+  if (nativeCount > 0) {
+    include.push({
+      shard: 'native-go-rust-c-cpp',
+      label: `Native Polyglot Stability Contrasts (${nativeLangs.join('/')}, ${nativeCount} units)`,
+      langs: nativeLangs.join(','),
+      unitCount: nativeCount,
+    });
+  }
+  return {include};
+}
 
 function printInventory(units: VerificationUnit[]): void {
   const byMount = new Map<string, number>();
@@ -1395,6 +1607,21 @@ async function main(): Promise<void> {
     return;
   }
 
+  if (cmd === 'matrix') {
+    const target = rawArgs[1] ?? 'quint';
+    const maxArg = rawArgs.find((a) => a.startsWith('--max-per-shard='));
+    const maxPerShard = maxArg ? Math.max(4, Number.parseInt(maxArg.slice(16), 10) || 24) : 24;
+    if (target === 'quint') {
+      console.log(JSON.stringify(buildQuintSubdomainMatrix(maxPerShard)));
+      return;
+    }
+    if (target === 'stability') {
+      console.log(JSON.stringify(buildStabilityProfileMatrix(allUnits)));
+      return;
+    }
+    throw new Error(`Unknown matrix target '${target}' (expected 'quint' or 'stability')`);
+  }
+
   const flagArgs = cmd === 'run' ? rawArgs.slice(1) : rawArgs;
   const opts = parseQueryFlags(flagArgs);
   const selected = filterUnits(allUnits, opts);
@@ -1413,7 +1640,7 @@ async function main(): Promise<void> {
   const pendingUnits: VerificationUnit[] = [];
 
   for (const u of selected) {
-    const digest = opts.cacheDir || opts.planOnly || opts.reportPath ? computeUnitDigest(u) : '';
+    const digest = opts.cacheDir || opts.planOnly || opts.reportPath ? computeUnitDigest(u, opts.checkAxioms) : '';
     digests.set(u.id, digest);
     const hit = opts.cacheDir ? cache.entries[u.id] : undefined;
     if (hit && hit.digest === digest) {
@@ -1468,9 +1695,11 @@ async function main(): Promise<void> {
       continue;
     }
 
-    const inherit = wave.length === 1;
+    const maxConcurrency = opts.jobs;
+    const boundedWave = wave.slice(0, maxConcurrency);
+    const inherit = boundedWave.length === 1;
     const waveResults = await Promise.all(
-      wave.map((u) => runSingleUnit(u, digests.get(u.id) ?? '', opts, inherit)),
+      boundedWave.map((u) => runSingleUnit(u, digests.get(u.id) ?? '', opts, inherit)),
     );
     for (const r of waveResults) {
       outcomes.push(r);
@@ -1484,7 +1713,10 @@ async function main(): Promise<void> {
     if (failures.length > 0) break;
   }
 
-  if (opts.cacheDir) saveCache(opts.cacheDir, cache);
+  if (opts.cacheDir) {
+    const activeUnitIds = new Set(allUnits.map((u) => u.id));
+    saveCache(opts.cacheDir, cache, activeUnitIds);
+  }
 
   if (opts.reportPath) {
     const absReport = resolve(REPO_ROOT, opts.reportPath);

@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
-import {mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import {existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync} from 'node:fs';
+import {createRequire} from 'node:module';
 import {tmpdir} from 'node:os';
 import {dirname, join, relative, resolve} from 'node:path';
 import {
@@ -56,12 +58,14 @@ export interface FleetOptions {
   seed?: string;
   concurrency?: number;
   cliPath?: string;
+  cacheDir?: string;
 }
 
 export interface FleetModelResult {
   file: string;
   modelIdentity?: string;
   passed: boolean;
+  cached?: boolean;
   skipped?: boolean;
   skippedReason?: string;
   actionCoverage?: number;
@@ -78,6 +82,7 @@ export interface FleetReport {
   concurrency: number;
   total: number;
   passed: number;
+  cached?: number;
   skipped: number;
   failed: number;
   minActionCoverage?: number;
@@ -386,6 +391,159 @@ function walkQntUnder(dir: string): string[] {
   return found.sort();
 }
 
+const FLEET_CAS_SCHEMA = 'qmr.fleet-cas.v1';
+const MAX_FLEET_CAS_ENTRIES = 2048;
+
+interface FleetCasEntry {
+  actionKey: string;
+  scopeKey: string;
+  modeKey: string;
+  cachedAt: string;
+  modelIdentity?: string;
+  skipped?: boolean;
+  skippedReason?: string;
+  actionCoverage?: number;
+  coveredActions?: number;
+  declaredStepActions?: number;
+}
+
+interface FleetCasStore {
+  schema: string;
+  entries: Record<string, FleetCasEntry>;
+}
+
+let cachedResolverEngineDigest: string | null = null;
+
+function computeResolverEngineDigest(): string {
+  if (cachedResolverEngineDigest !== null) return cachedResolverEngineDigest;
+  const h = createHash('sha256');
+  const srcDir = dirname(new URL(import.meta.url).pathname);
+  const pkgRoot = resolve(srcDir, '..');
+  let quintVersion = 'unknown';
+  try {
+    const req = createRequire(import.meta.url);
+    const qPkg = JSON.parse(readFileSync(req.resolve('@informalsystems/quint/package.json'), 'utf8')) as {
+      version?: string;
+    };
+    quintVersion = qPkg.version ?? 'unknown';
+  } catch {
+    quintVersion = 'unknown';
+  }
+  h.update(`schema:${FLEET_CAS_SCHEMA}\nquint:${quintVersion}\nbun:${Bun.version}\nplatform:${process.platform}:${process.arch}\n`);
+  const pkgJsonPath = join(pkgRoot, 'package.json');
+  if (existsSync(pkgJsonPath)) {
+    h.update(`pkg:package.json\n`);
+    h.update(readFileSync(pkgJsonPath));
+    h.update('\n');
+  }
+  for (const name of readdirSync(srcDir).sort()) {
+    if (!name.endsWith('.ts')) continue;
+    const full = join(srcDir, name);
+    if (statSync(full).isFile()) {
+      h.update(`src:${name}\n`);
+      h.update(readFileSync(full));
+      h.update('\n');
+    }
+  }
+  cachedResolverEngineDigest = h.digest('hex');
+  return cachedResolverEngineDigest;
+}
+
+function collectTransitiveQntFiles(entryFile: string): {expandedText: string; files: string[]} {
+  const visited = new Set<string>();
+  const collected: string[] = [];
+  let rootExpandedText = '';
+
+  const walk = (filePath: string, isRoot: boolean) => {
+    const abs = resolve(filePath);
+    if (visited.has(abs)) return;
+    visited.add(abs);
+    collected.push(abs);
+    const expanded = expandExtendedQntFile(abs);
+    if (isRoot) rootExpandedText = expanded.expandedText;
+    for (const parent of expanded.chain) {
+      if (existsSync(parent)) walk(parent, false);
+    }
+    for (const m of expanded.expandedText.matchAll(/\bfrom\s+"([^"]+)"/g)) {
+      const spec = m[1]!;
+      try {
+        const resolved = resolveQuintSpec(spec, dirname(abs));
+        if (existsSync(resolved.fullPath)) walk(resolved.fullPath, false);
+      } catch {
+        // Built-in / virtual Quint modules (e.g. basicSpells) have no local source file.
+      }
+    }
+  };
+
+  walk(entryFile, true);
+  collected.sort();
+  return {expandedText: rootExpandedText, files: collected};
+}
+
+function computeFleetActionKey(
+  file: string,
+  relFile: string,
+  engineDigest: string,
+  flagsKey: string,
+): string {
+  const h = createHash('sha256');
+  const {expandedText, files} = collectTransitiveQntFiles(file);
+  h.update(`schema:${FLEET_CAS_SCHEMA}\nengine:${engineDigest}\nflags:${flagsKey}\nrel:${relFile}\n`);
+  h.update(`expanded:\n${expandedText}\n`);
+  for (const f of files) {
+    h.update(`dep:${f}\n`);
+    h.update(readFileSync(f));
+    h.update('\n');
+  }
+  return h.digest('hex');
+}
+
+function loadFleetCasStore(cacheDir: string | undefined): FleetCasStore {
+  if (!cacheDir) return {schema: FLEET_CAS_SCHEMA, entries: {}};
+  const cachePath = resolve(process.cwd(), cacheDir, 'qmr-fleet-cas.v1.json');
+  if (!existsSync(cachePath)) return {schema: FLEET_CAS_SCHEMA, entries: {}};
+  try {
+    const parsed = JSON.parse(readFileSync(cachePath, 'utf8')) as FleetCasStore;
+    if (parsed.schema !== FLEET_CAS_SCHEMA || !parsed.entries) {
+      return {schema: FLEET_CAS_SCHEMA, entries: {}};
+    }
+    return parsed;
+  } catch {
+    return {schema: FLEET_CAS_SCHEMA, entries: {}};
+  }
+}
+
+function saveFleetCasStore(
+  cacheDir: string | undefined,
+  store: FleetCasStore,
+  scopeKey: string,
+  modeKey: string,
+  activeKeys: Set<string>,
+): void {
+  if (!cacheDir) return;
+  const absDir = resolve(process.cwd(), cacheDir);
+  mkdirSync(absDir, {recursive: true});
+
+  // Active-set GC (SM18): prune stale models removed from this (scopeKey, modeKey)
+  // while preserving other modes in the same shard cache directory, capped at MAX_FLEET_CAS_ENTRIES.
+  const kept = Object.entries(store.entries).filter(([k, v]) => {
+    if (v.scopeKey === scopeKey && v.modeKey === modeKey) {
+      return activeKeys.has(k);
+    }
+    return true;
+  });
+  kept.sort((a, b) => (b[1].cachedAt ?? '').localeCompare(a[1].cachedAt ?? ''));
+  const bounded: Record<string, FleetCasEntry> = {};
+  for (const [k, v] of kept.slice(0, MAX_FLEET_CAS_ENTRIES)) {
+    bounded[k] = v;
+  }
+
+  const targetPath = join(absDir, 'qmr-fleet-cas.v1.json');
+  const tmpPath = `${targetPath}.${process.pid}.${Date.now()}.tmp`;
+  writeFileSync(tmpPath, `${JSON.stringify({schema: FLEET_CAS_SCHEMA, entries: bounded}, null, 2)}\n`, 'utf8');
+  renameSync(tmpPath, targetPath);
+}
+
 export async function runFleetPlans(rootDir: string, options: FleetOptions = {}): Promise<FleetReport> {
   const absRoot = resolve(process.cwd(), rootDir);
   const verify = options.verify ?? false;
@@ -393,27 +551,69 @@ export async function runFleetPlans(rootDir: string, options: FleetOptions = {})
   // Apalache server binds localhost:8822 exclusively; serialize --verify to prevent port collisions.
   const concurrency = verify ? 1 : Math.max(1, options.concurrency ?? 4);
   const cliPath = options.cliPath ?? resolve(dirname(new URL(import.meta.url).pathname), 'cli.ts');
+  const allowedSubdomains = options.subdomain
+    ? new Set(options.subdomain.split(',').map(s => s.trim()).filter(Boolean))
+    : null;
 
   const allFiles = walkQntUnder(absRoot).filter(file => {
     const rel = relative(absRoot, file).replaceAll('\\', '/');
     const parts = rel.split('/');
-    if (options.domain && !parts.includes(options.domain)) return false;
-    if (options.subdomain && !parts.includes(options.subdomain)) return false;
+    if (options.domain && parts[0] !== options.domain && !parts.includes(options.domain)) return false;
+    if (allowedSubdomains && !parts.some(p => allowedSubdomains.has(p))) return false;
     return true;
   });
+
+  const modeKey = mbtAudit ? 'mbt-audit' : verify ? 'run-plan-verify' : 'run-plan';
+  const scopeKey = `${options.domain ?? '*'}::${options.subdomain ?? '*'}`;
+  const flagsKey = JSON.stringify({
+    modeKey,
+    verify,
+    mbtAudit,
+    minCoverage: mbtAudit ? (options.minCoverage ?? 0.75) : null,
+    nTraces: mbtAudit ? (options.nTraces ?? 12) : null,
+    seed: mbtAudit ? (options.seed ?? '7') : null,
+  });
+  const engineDigest = options.cacheDir ? computeResolverEngineDigest() : '';
+  const casStore = loadFleetCasStore(options.cacheDir);
+  const activeEntryKeys = new Set<string>();
 
   const startedAt = Date.now();
   const results: FleetModelResult[] = new Array(allFiles.length);
   let cursor = 0;
 
   async function worker(): Promise<void> {
-    while (true) {
+    while (cursor < allFiles.length) {
       const idx = cursor++;
-      if (idx >= allFiles.length) return;
       const file = allFiles[idx]!;
       const relFile = relative(absRoot, file).replaceAll('\\', '/');
       const directives = parseQntHeaderDirectives(readFileSync(file, 'utf8'));
       const t0 = Date.now();
+
+      const entryKey = `${modeKey}:${relFile}`;
+      activeEntryKeys.add(entryKey);
+      const actionKey = options.cacheDir
+        ? computeFleetActionKey(file, relFile, engineDigest, flagsKey)
+        : '';
+
+      if (options.cacheDir) {
+        const hit = casStore.entries[entryKey];
+        if (hit && hit.actionKey === actionKey) {
+          results[idx] = {
+            file: relFile,
+            modelIdentity: hit.modelIdentity ?? directives.modelIdentity,
+            passed: true,
+            cached: true,
+            skipped: hit.skipped,
+            skippedReason: hit.skippedReason,
+            actionCoverage: hit.actionCoverage,
+            coveredActions: hit.coveredActions,
+            declaredStepActions: hit.declaredStepActions,
+            durationMs: 0,
+            output: `CACHE-HIT (${actionKey.slice(0, 12)})`,
+          };
+          continue;
+        }
+      }
 
       if (mbtAudit) {
         const elig = inspectModuleMbtEligibility(file);
@@ -427,6 +627,17 @@ export async function runFleetPlans(rootDir: string, options: FleetOptions = {})
             durationMs: Date.now() - t0,
             output: `SKIPPED (${elig.reason})`,
           };
+          if (options.cacheDir) {
+            casStore.entries[entryKey] = {
+              actionKey,
+              scopeKey,
+              modeKey,
+              cachedAt: new Date().toISOString(),
+              modelIdentity: directives.modelIdentity,
+              skipped: true,
+              skippedReason: elig.reason,
+            };
+          }
           continue;
         }
         const args = [
@@ -465,6 +676,18 @@ export async function runFleetPlans(rootDir: string, options: FleetOptions = {})
           durationMs: Date.now() - t0,
           output: (stdout + stderr).trim(),
         };
+        if (options.cacheDir && exitCode === 0) {
+          casStore.entries[entryKey] = {
+            actionKey,
+            scopeKey,
+            modeKey,
+            cachedAt: new Date().toISOString(),
+            modelIdentity: directives.modelIdentity,
+            actionCoverage: parsedReport?.actionCoverage,
+            coveredActions: parsedReport?.coveredActions.length,
+            declaredStepActions: parsedReport?.declaredStepActions.length,
+          };
+        }
         continue;
       }
 
@@ -487,6 +710,15 @@ export async function runFleetPlans(rootDir: string, options: FleetOptions = {})
         durationMs: Date.now() - t0,
         output: (stdout + stderr).trim(),
       };
+      if (options.cacheDir && exitCode === 0) {
+        casStore.entries[entryKey] = {
+          actionKey,
+          scopeKey,
+          modeKey,
+          cachedAt: new Date().toISOString(),
+          modelIdentity: directives.modelIdentity,
+        };
+      }
     }
   }
 
@@ -494,7 +726,12 @@ export async function runFleetPlans(rootDir: string, options: FleetOptions = {})
     Array.from({length: Math.min(concurrency, Math.max(1, allFiles.length))}, () => worker()),
   );
 
+  if (options.cacheDir) {
+    saveFleetCasStore(options.cacheDir, casStore, scopeKey, modeKey, activeEntryKeys);
+  }
+
   const skipped = results.filter(r => r.skipped).length;
+  const cached = results.filter(r => r.cached).length;
   const passed = results.filter(r => r.passed && !r.skipped).length;
   const failed = results.filter(r => !r.passed).length;
   const coverages = results
@@ -511,6 +748,7 @@ export async function runFleetPlans(rootDir: string, options: FleetOptions = {})
     concurrency,
     total: results.length,
     passed,
+    cached,
     skipped,
     failed,
     minActionCoverage,
