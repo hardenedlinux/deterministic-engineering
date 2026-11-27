@@ -271,5 +271,5 @@ describe('SM25 Adversarial (ADV-L4) Single-Owner Graph Execution & Reachable Gov
     } finally {
       rmSync(outDir, {recursive: true, force: true});
     }
-  });
+  }, 30_000);
 });

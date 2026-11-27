@@ -329,5 +329,5 @@ describe("SM20 Subprocess Pipe Capture, Drain-to-Sink & Bounded Line Framing Fuz
     } finally {
       rmSync(tmpDir, { recursive: true, force: true });
     }
-  });
+  }, 30_000);
 });

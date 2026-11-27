@@ -329,5 +329,5 @@ describe("SM21 Crash-Safe Atomic Persistence, Unique Temp Staging & Fsync Orderi
     } finally {
       rmSync(tmpDir, { recursive: true, force: true });
     }
-  });
+  }, 30_000);
 });

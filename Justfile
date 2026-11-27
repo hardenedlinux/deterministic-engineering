@@ -230,3 +230,6 @@ verify-multi-method-cache cache_file trust_store:
 
 verify-multi-method-trust-store trust_store *flags:
     t/harness/run-gxtest.sh script none t/support/offline-attestation-verifier.ss {{flags}} --verify-trust-store "{{trust_store}}"
+
+export-multi-method-trust-bundle out *args:
+    t/harness/run-gxtest.sh script none t/support/offline-attestation-verifier.ss --export-trust-bundle "{{out}}" {{args}}

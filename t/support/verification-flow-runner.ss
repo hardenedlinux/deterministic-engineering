@@ -182,8 +182,10 @@
       ;; cannot inherit and hold open the stdout/stderr pipe to gxtest/tee.
       "tmp_log=\"$(mktemp)\"\n"
       "trap 'rm -f \"$tmp_log\"' EXIT\n"
-      "bun packages/quint-modules-resolver/src/cli.ts run-plan \"" qfile "\"" verify-flag " >\"$tmp_log\" 2>&1\n"
+      "rc=0\n"
+      "bun packages/quint-modules-resolver/src/cli.ts run-plan \"" qfile "\"" verify-flag " >\"$tmp_log\" 2>&1 || rc=$?\n"
       "cat \"$tmp_log\"\n"
+      "test \"$rc\" -eq 0\n"
       "bun packages/quint-modules-resolver/src/cli.ts mbt-audit \"" qfile "\"\n"
       "rm -rf \"" itf-dir "\" && mkdir -p \"" itf-dir "\"\n"
       "quint run \"" qfile "\" --main \"" qmain "\" --mbt "
@@ -561,21 +563,42 @@
       (safe-delete-file! msg-path)
       (safe-delete-file! sig-path))))
 
+(def (inline-pem-string? val)
+  (and (string? val)
+       (>= (string-length val) 26)
+       (equal? (substring val 0 26) "-----BEGIN PUBLIC KEY-----")))
+
+(def (pub-pem->sha256 pub-pem)
+  (cond
+   ((inline-pem-string? pub-pem) (sha256-of-string pub-pem))
+   ((and (string? pub-pem) (file-exists? pub-pem)) (sha256-of-file pub-pem))
+   (else #f)))
+
+(def (pub-pem->key-id pub-pem)
+  (let ((h (pub-pem->sha256 pub-pem)))
+    (and h (substring h 0 16))))
+
 (def (ed25519-verify-string pub-pem payload-str sig-b64)
-  (if (and (string? pub-pem) (file-exists? pub-pem)
+  (def is-inline? (inline-pem-string? pub-pem))
+  (if (and (string? pub-pem)
+           (or is-inline? (file-exists? pub-pem))
            (string? sig-b64) (> (string-length sig-b64) 0))
     (let ((sig-bytes (with-catch (lambda (_) #f) (lambda () (base64-decode sig-b64)))))
       (if (u8vector? sig-bytes)
         (let* ((prefix (next-ed25519-tmp-prefix))
                (msg-path (string-append prefix ".msg"))
-               (sig-path (string-append prefix ".sig")))
+               (sig-path (string-append prefix ".sig"))
+               (tmp-pub-path (and is-inline? (string-append prefix ".pub.pem")))
+               (inkey-path (or tmp-pub-path pub-pem)))
           (try
             (write-u8vector-file msg-path (string->utf8 payload-str))
             (write-u8vector-file sig-path sig-bytes)
+            (when tmp-pub-path
+              (write-u8vector-file tmp-pub-path (string->utf8 pub-pem)))
             (let* ((proc (open-process
                            (list path: "openssl"
                                  arguments: (list "pkeyutl" "-verify" "-rawin" "-pubin"
-                                                  "-inkey" pub-pem
+                                                  "-inkey" inkey-path
                                                   "-sigfile" sig-path
                                                   "-in" msg-path)
                                  stdin-redirection: #f
@@ -587,7 +610,8 @@
               (= raw-status 0))
             (finally
               (safe-delete-file! msg-path)
-              (safe-delete-file! sig-path))))
+              (safe-delete-file! sig-path)
+              (when tmp-pub-path (safe-delete-file! tmp-pub-path)))))
         #f))
     #f))
 
@@ -601,14 +625,15 @@
   (inexact->exact (floor (time->seconds (current-time)))))
 
 ;; Constructs a pinned multi-key Ed25519 Trust Store supporting zero-downtime key rotation
-;; (`trusted-pub-paths`: list of pinned .pub.pem paths) and instant compromise revocation
-;; (`revoked-key-ids`: list of 16-hex keyIds).
+;; (`trusted-pub-paths`: list of pinned .pub.pem paths OR inline PEM strings) and instant
+;; compromise revocation (`revoked-key-ids`: list of 16-hex keyIds).
 (def (make-ed25519-trust-store trusted-pub-paths (revoked-key-ids '()))
   (def pairs
     (map (lambda (p)
-           (unless (and (string? p) (file-exists? p))
-             (error "pinned trust-store public key not found" p))
-           (cons (substring (sha256-of-file p) 0 16) p))
+           (def kid (pub-pem->key-id p))
+           (unless kid
+             (error "pinned trust-store public key not found or invalid inline PEM" p))
+           (cons kid p))
          trusted-pub-paths))
   (.o bind-these: #f
       trust-store?: #t
@@ -619,10 +644,10 @@
   (cond
    ((and (object? verifier-or-pub) (.slot? verifier-or-pub 'trust-store?))
     (trust-store-key-admitted? verifier-or-pub key-id))
-   ((and (string? verifier-or-pub) (file-exists? verifier-or-pub))
-    (let ((actual-kid (substring (sha256-of-file verifier-or-pub) 0 16)))
-      (and (or (not (string? key-id)) (equal? key-id actual-kid))
-           verifier-or-pub)))
+   ((pub-pem->key-id verifier-or-pub)
+    => (lambda (actual-kid)
+         (and (or (not (string? key-id)) (equal? key-id actual-kid))
+              verifier-or-pub)))
    (else #f)))
 
 ;; Content-addressed in-process memo for `load-verification-cache` keyed by
@@ -634,11 +659,11 @@
   (cond
    ((and (object? verifier-or-pub) (.slot? verifier-or-pub 'trust-store?))
     (list 'trust-store
-          (map (lambda (p) (cons (car p) (if (file-exists? (cdr p)) (sha256-of-file (cdr p)) "")))
+          (map (lambda (p) (cons (car p) (or (pub-pem->sha256 (cdr p)) "")))
                (.get verifier-or-pub trusted-keys))
           (.get verifier-or-pub revoked-key-ids)))
-   ((and (string? verifier-or-pub) (file-exists? verifier-or-pub))
-    (list 'pub-key (sha256-of-file verifier-or-pub)))
+   ((pub-pem->sha256 verifier-or-pub)
+    => (lambda (h) (list 'pub-key h)))
    (else 'none)))
 
 ;; Loads persisted verification cache & cryptographically verifies Ed25519 signatures ->
@@ -782,8 +807,7 @@
                      (sig (hash-get att "signature"))
                      (expected-kid (hash-get att "keyId"))
                      (expected-sha (hash-get att "payloadSha256"))
-                     (actual-kid (and (string? pub) (file-exists? pub)
-                                      (substring (sha256-of-file pub) 0 16)))
+                     (actual-kid (pub-pem->key-id pub))
                      (admitted-raw (or (hash-get doc "verificationAdmitted") '()))
                      (admitted-flat (map (lambda (r) (if (pair? r) (car r) r)) admitted-raw))
                      (ev-raw (or (hash-get doc "evidence") '()))
@@ -815,8 +839,7 @@
 ;; Checks both cryptographic Ed25519 signature against externally pinned `trusted-pub-key`
 ;; AND semantic admission (replayValid, zero mr/er findings, non-empty verificationAdmitted).
 (def (verify-report-with-pinned-key report-path trusted-pub-key)
-  (and (string? trusted-pub-key)
-       (file-exists? trusted-pub-key)
+  (and (pub-pem->key-id trusted-pub-key)
        (verify-verification-report-attestation report-path trusted-pub-key)
        (let ((doc (call-with-input-file report-path (cut read-json <> object-as-hash: #t))))
          (and (hash-table? doc)
@@ -837,7 +860,7 @@
     (lambda (pair)
       (def val (cdr pair))
       (hash-put! keys-ht (car pair)
-        (if (and inline-pem? (string? val) (file-exists? val))
+        (if (and inline-pem? (string? val) (not (inline-pem-string? val)) (file-exists? val))
           (call-with-input-file val read-all-as-string)
           val)))
     (.get trust-store trusted-keys))
@@ -852,8 +875,9 @@
   out-path)
 
 ;; Load and validate a portable Multi-Key Ed25519 Trust Store JSON file.
-;; Resolves relative public-key paths against the trust-store directory and enforces
-;; that every key file's actual sha256[:16] matches its declared keyId.
+;; Supports BOTH pinned `.pub.pem` file paths (relative or absolute, POSIX lstat regular non-symlink)
+;; AND single-file Inline-PEM strings (`-----BEGIN PUBLIC KEY-----`), enforcing exact sha256[:16]
+;; keyId anti-spoofing in both modes.
 (def (load-ed25519-trust-store-json trust-store-path)
   (unless (and (string? trust-store-path) (file-exists? trust-store-path))
     (error "Ed25519 trust store file not found" trust-store-path))
@@ -865,32 +889,38 @@
   (def keys-ht (hash-get doc "trustedKeys"))
   (unless (hash-table? keys-ht)
     (error "Ed25519 trust store missing trustedKeys map" trust-store-path))
-  (def pub-paths '())
+  (def pub-entries '())
   (hash-for-each
-    (lambda (declared-kid raw-path)
-      (unless (and (string? declared-kid) (string? raw-path) (> (string-length raw-path) 0))
-        (error "Invalid trustedKeys entry in trust store" declared-kid raw-path))
-      (let ((resolved
-             (if (char=? (string-ref raw-path 0) #\/)
-               (let ((ftype (with-catch (lambda (_) #f)
-                              (lambda () (file-info-type (file-info raw-path #f))))))
-                 (unless (eq? ftype 'regular)
-                   (error "Trusted public key must be an existing regular non-symlink file"
-                          declared-kid raw-path))
-                 raw-path)
-               (let ((contained (resolve-contained-child-report-path base-dir raw-path)))
-                 (unless contained
-                   (error "Relative trusted public key path rejected (missing, traversal, or symlink)"
-                          declared-kid raw-path base-dir))
-                 contained))))
-        (let ((actual-kid (substring (sha256-of-file resolved) 0 16)))
+    (lambda (declared-kid raw-val)
+      (unless (and (string? declared-kid) (string? raw-val) (> (string-length raw-val) 0))
+        (error "Invalid trustedKeys entry in trust store" declared-kid raw-val))
+      (if (inline-pem-string? raw-val)
+        (let ((actual-kid (substring (sha256-of-string raw-val) 0 16)))
           (unless (equal? actual-kid declared-kid)
-            (error "Trusted public keyId mismatch (possible spoofing)"
-                   declared-kid actual-kid resolved))
-          (set! pub-paths (cons resolved pub-paths)))))
+            (error "Inline trusted public keyId mismatch (possible spoofing)"
+                   declared-kid actual-kid))
+          (set! pub-entries (cons raw-val pub-entries)))
+        (let ((resolved
+               (if (char=? (string-ref raw-val 0) #\/)
+                 (let ((ftype (with-catch (lambda (_) #f)
+                                (lambda () (file-info-type (file-info raw-val #f))))))
+                   (unless (eq? ftype 'regular)
+                     (error "Trusted public key must be an existing regular non-symlink file"
+                            declared-kid raw-val))
+                   raw-val)
+                 (let ((contained (resolve-contained-child-report-path base-dir raw-val)))
+                   (unless contained
+                     (error "Relative trusted public key path rejected (missing, traversal, or symlink)"
+                            declared-kid raw-val base-dir))
+                   contained))))
+          (let ((actual-kid (substring (sha256-of-file resolved) 0 16)))
+            (unless (equal? actual-kid declared-kid)
+              (error "Trusted public keyId mismatch (possible spoofing)"
+                     declared-kid actual-kid resolved))
+            (set! pub-entries (cons resolved pub-entries))))))
     keys-ht)
   (def revoked-raw (or (hash-get doc "revokedKeyIds") '()))
-  (make-ed25519-trust-store (reverse pub-paths) (filter string? revoked-raw)))
+  (make-ed25519-trust-store (reverse pub-entries) (filter string? revoked-raw)))
 
 ;; Strict multi-key Trust Store report verifier: supports zero-downtime key rotation
 ;; across multiple pinned public keys while unconditionally rejecting any revoked keyId!
@@ -971,8 +1001,8 @@
 ;; Verifies Fleet Ed25519 signature against pinned `trusted-pub-key`, AND verifies every
 ;; subject's individual report.json against the same pinned key & Merkle payloadSha256!
 (def (verify-fleet-report-with-pinned-key fleet-report-path trusted-pub-key)
-  (and (string? trusted-pub-key)
-       (file-exists? trusted-pub-key)
+  (def actual-kid (pub-pem->key-id trusted-pub-key))
+  (and actual-kid
        (file-exists? fleet-report-path)
        (let* ((doc (call-with-input-file fleet-report-path (cut read-json <> object-as-hash: #t)))
               (att (and (hash-table? doc) (hash-get doc "attestation")))
@@ -984,7 +1014,6 @@
               (let* ((expected-kid (hash-get att "keyId"))
                      (expected-sha (hash-get att "payloadSha256"))
                      (sig (hash-get att "signature"))
-                     (actual-kid (substring (sha256-of-file trusted-pub-key) 0 16))
                      (fleet-dir (path-directory fleet-report-path))
                      (entries
                        (map (lambda (s)

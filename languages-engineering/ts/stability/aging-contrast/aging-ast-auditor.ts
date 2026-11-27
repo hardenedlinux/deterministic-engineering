@@ -35,7 +35,8 @@ export type AgingMechanism =
   | 'SM26-control-plane-auth-governance'
   | 'SM27-policy-gate-blindspot-confinement'
   | 'SM28-plugin-grant-rollback-lease'
-  | 'SM29-governance-policy-latch-antirollback';
+  | 'SM29-governance-policy-latch-antirollback'
+  | 'SM30-stepup-attestation-host-effect';
 
 export interface AgingFinding {
   ruleId: string;
@@ -1481,15 +1482,103 @@ function auditRust(clean: string): AgingFinding[] {
   const fromCanonicalMatch = /\bfn\s+from_canonical_bytes\s*\([^)]*\)/.exec(clean);
   if (fromCanonicalMatch) {
     const fnBody = extractBraceBlock(clean, fromCanonicalMatch.index);
-    const usesSha256 = /\bsha256_bytes\s*\(/.test(fnBody);
-    const shortCircuitTagCmp = /\bif\s+(?:tag\s*!=\s*expected_tag|expected_tag\s*!=\s*tag)\b/.test(fnBody);
+    const usesSha256 = /\b(?:governance_)?sha256_bytes\s*\(/.test(fnBody);
+    const shortCircuitTagCmp = /\bif\s+(?:tag\s*!=\s*(?:expected_tag|expected)|(?:expected_tag|expected)\s*!=\s*tag)\b/.test(fnBody);
     if (usesSha256 && shortCircuitTagCmp) {
+      const isFactStore = /\bGovernanceFactStore\b/.test(clean) && !/\bGovernanceDurableCheckpoint\b/.test(clean);
       findings.push({
-        ruleId: 'rust-checkpoint-sha256-non-constant-time-tag',
-        mechanism: 'SM29-governance-policy-latch-antirollback',
+        ruleId: isFactStore
+          ? 'rust-fact-store-unbounded-mutate-or-timing-tag'
+          : 'rust-checkpoint-sha256-non-constant-time-tag',
+        mechanism: isFactStore
+          ? 'SM30-stepup-attestation-host-effect'
+          : 'SM29-governance-policy-latch-antirollback',
         language: 'rust',
         line: lineOfIndex(clean, fromCanonicalMatch.index),
-        message: 'from_canonical_bytes verifies durable checkpoint SHA-256 integrity tag using short-circuit `!=` instead of constant-time full-length byte comparison (ADV-L4, SM29).',
+        message: isFactStore
+          ? 'GovernanceFactStore::from_canonical_bytes verifies MGF1 SHA-256 tag via short-circuit `!=` instead of constant-time comparison (ADV-L4, SM30).'
+          : 'from_canonical_bytes verifies durable checkpoint SHA-256 integrity tag using short-circuit `!=` instead of constant-time full-length byte comparison (ADV-L4, SM29).',
+      });
+    }
+  }
+
+  // 47. Rust parse_verified_step_up_actor accepts weak arbitrary acr= strings or omits worker/scheme-sandbox agent prefixes (ADV-L4, SM30).
+  const stepUpMatch = /\bfn\s+parse_verified_step_up_actor\s*\([^)]*\)/.exec(clean);
+  if (stepUpMatch) {
+    const fnBody = extractBraceBlock(clean, stepUpMatch.index);
+    const checksMfaAllowlist = /\b(?:is_verified_mfa_acr|urn:ietf:params:oauth:acr:mfa)\b/.test(fnBody);
+    const checksWorkerPrefix = /\b(?:infer_actor_roles|worker)\b/.test(fnBody);
+    if (!checksMfaAllowlist || !checksWorkerPrefix) {
+      findings.push({
+        ruleId: 'rust-stepup-actor-weak-acr-or-prefix-gap',
+        mechanism: 'SM30-stepup-attestation-host-effect',
+        language: 'rust',
+        line: lineOfIndex(clean, stepUpMatch.index),
+        message: 'parse_verified_step_up_actor accepts arbitrary non-empty acr= strings or omits worker/scheme-sandbox non-human prefixes, enabling spoofed E-Stop re-arm (ADV-L4, SM30).',
+      });
+    }
+  }
+
+  // 48. Rust run_one_atomic_effect leaves SchemeAtomicEffect::LlmComplete ungated under E-Stop or CasPut unprotected on reserved governance keys (ADV-L4, SM30).
+  const runAtomicMatch = /\basync\s+fn\s+run_one_atomic_effect\s*\([^)]*\)/.exec(clean);
+  if (runAtomicMatch) {
+    const fnBody = extractBraceBlock(clean, runAtomicMatch.index);
+    const hasLlmArm = /\bSchemeAtomicEffect::LlmComplete\b/.test(fnBody);
+    const hasCasPutArm = /\bSchemeAtomicEffect::CasPut\b/.test(fnBody);
+    const gatesLlm = /\bauthorize_llm_effect\b/.test(fnBody);
+    const guardsReservedCas = /\bis_reserved_governance_cas_key\b/.test(fnBody);
+    if ((hasLlmArm && !gatesLlm) || (hasCasPutArm && !guardsReservedCas)) {
+      findings.push({
+        ruleId: 'rust-scheme-effect-llm-or-cas-ungated',
+        mechanism: 'SM30-stepup-attestation-host-effect',
+        language: 'rust',
+        line: lineOfIndex(clean, runAtomicMatch.index),
+        message: 'run_one_atomic_effect dispatches LlmComplete without E-Stop governance mediation or permits CasPut to overwrite reserved governance checkpoint keys (ADV-L4, SM30).',
+      });
+    }
+  }
+
+  // 49. Rust gate_watcher / ui_cmd_watcher breaks permanently on broadcast RecvError::Lagged via `Err(_) => break` (ADV-L4, SM30).
+  const broadcastWatcherRe = /\b(?:gate_rx|ui_cmd_rx)\s*\.\s*recv\s*\(\s*\)\s*=>\s*match\s+\w+\s*\{[\s\S]{0,160}Err\s*\(\s*_\s*\)\s*=>\s*break\b/g;
+  const watcherLagMatch = broadcastWatcherRe.exec(clean);
+  if (watcherLagMatch) {
+    findings.push({
+      ruleId: 'rust-broadcast-watcher-breaks-on-lag',
+      mechanism: 'SM30-stepup-attestation-host-effect',
+      language: 'rust',
+      line: lineOfIndex(clean, watcherLagMatch.index),
+      message: 'Control-plane broadcast watcher (gate_rx / ui_cmd_rx) matches `Err(_) => break`, permanently killing E-Stop & Step-Up Re-Arm handling on RecvError::Lagged (ADV-L4, SM30).',
+    });
+  }
+
+  // 50. Rust mutate_facts_and_build_request inserts unboundedly into GovernanceFactStore past MGF1 4096-entry deserialization cap (ADV-L4, SM30).
+  const mutateFactsMatch = /\bfn\s+mutate_facts_and_build_request\s*\([^)]*\)/.exec(clean);
+  if (mutateFactsMatch && !findings.some((f) => f.ruleId === 'rust-fact-store-unbounded-mutate-or-timing-tag')) {
+    const fnBody = extractBraceBlock(clean, mutateFactsMatch.index);
+    const insertsFacts = /\bmeta\.facts\.\w+\.insert\s*\(/.test(fnBody);
+    const enforcesCap = /\b(?:MAX_FACT_STORE_ENTRIES|ensure_fact_capacity|check_fact_capacity)\b/.test(fnBody);
+    if (insertsFacts && !enforcesCap) {
+      findings.push({
+        ruleId: 'rust-fact-store-unbounded-mutate-or-timing-tag',
+        mechanism: 'SM30-stepup-attestation-host-effect',
+        language: 'rust',
+        line: lineOfIndex(clean, mutateFactsMatch.index),
+        message: 'mutate_facts_and_build_request inserts into GovernanceFactStore without enforcing MGF1 deserialization capacity cap (4096), enabling self-inflicted restart deserialization bombs (ADV-L4, SM30).',
+      });
+    }
+  }
+
+  // 51. Rust handle_claimed_gate_decision_durable silently swallows persist_to_cas error with `let _ =` after re-arm (ADV-L4, SM30).
+  const handleDurableGateMatch = /\basync\s+fn\s+handle_claimed_gate_decision_durable\s*(?:<[^>]+>)?\s*\([^)]*\)/.exec(clean);
+  if (handleDurableGateMatch) {
+    const fnBody = extractBraceBlock(clean, handleDurableGateMatch.index);
+    if (/\blet\s+_\s*=\s*self\.persist_to_cas\s*\(/.test(fnBody)) {
+      findings.push({
+        ruleId: 'rust-rearm-cas-persist-error-swallowed',
+        mechanism: 'SM30-stepup-attestation-host-effect',
+        language: 'rust',
+        line: lineOfIndex(clean, handleDurableGateMatch.index),
+        message: 'handle_claimed_gate_decision_durable silently swallows persist_to_cas errors via `let _ =` after re-arming, desynchronizing live armed state from durable Turso CAS WAL (ADV-L4, SM30).',
       });
     }
   }
@@ -1792,6 +1881,23 @@ function auditTypeScript(clean: string): AgingFinding[] {
         language: 'ts',
         line: lineOfIndex(clean, tsCedarMatch.index),
         message: 'matchesCedarPolicy waives unlessClauses whenever evalConditionBlock !== false, silently disabling forbid policies when a context key is missing (ADV-L4, SM29).',
+      });
+    }
+  }
+
+  // 19. TS Step-Up MFA attestation parser checks only non-empty acr without an explicit MFA ACR allowlist (ADV-L4, SM30).
+  const tsStepUpMatch = /\bfunction\s+parseVerifiedStepUpHuman\s*\([^)]*\)/.exec(clean);
+  if (tsStepUpMatch) {
+    const fnBody = extractBraceBlock(clean, tsStepUpMatch.index + tsStepUpMatch[0].length);
+    const hasAcrCheck = /\bacr\b/.test(fnBody);
+    const hasAllowlist = /\b(?:isAllowlistedMfaAcr|ALLOWLISTED_MFA_ACRS|urn:ietf:params:oauth:acr:mfa)\b/.test(fnBody);
+    if (hasAcrCheck && !hasAllowlist) {
+      findings.push({
+        ruleId: 'ts-stepup-weak-acr-nonempty-only',
+        mechanism: 'SM30-stepup-attestation-host-effect',
+        language: 'ts',
+        line: lineOfIndex(clean, tsStepUpMatch.index),
+        message: 'parseVerifiedStepUpHuman accepts any non-empty acr string without validating against an explicit RFC 9470 / NIST MFA ACR allowlist (ADV-L4, SM30).',
       });
     }
   }

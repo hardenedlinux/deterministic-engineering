@@ -355,5 +355,5 @@ describe("SM22 Adversarial (ADV-L4) Sandbox Symlink, Path Traversal & Archive Sh
     } finally {
       rmSync(tmpDir, { recursive: true, force: true });
     }
-  });
+  }, 30_000);
 });

@@ -663,4 +663,86 @@ theorem dotdot_segment_never_safe (p : RelativeChildPath)
   intro hSafe
   exact dotdot_contradicts_allNormal p.segments hDotDot hSafe.2.2
 
+/-! ## 11. Single-File Inline-PEM Trust Bundle Export Safety (`--export-trust-bundle`) -/
+
+inductive PemKind where
+  | publicKey
+  | privateKey
+  | malformed
+
+structure ExportKeyCandidate where
+  isRegularNonSymlink : Bool
+  pemKind : PemKind
+  isRevoked : Bool
+
+def candidateSafe (c : ExportKeyCandidate) : Prop :=
+  c.isRegularNonSymlink = true ∧ c.pemKind = PemKind.publicKey
+
+def allCandidatesSafe : List ExportKeyCandidate → Prop
+  | [] => True
+  | c :: rest => candidateSafe c ∧ allCandidatesSafe rest
+
+def hasActiveCandidate : List ExportKeyCandidate → Prop
+  | [] => False
+  | c :: rest => c.isRevoked = false ∨ hasActiveCandidate rest
+
+def containsCandidateWith (P : ExportKeyCandidate → Prop) : List ExportKeyCandidate → Prop
+  | [] => False
+  | c :: rest => P c ∨ containsCandidateWith P rest
+
+def allCandidatesRevoked : List ExportKeyCandidate → Prop
+  | [] => True
+  | c :: rest => c.isRevoked = true ∧ allCandidatesRevoked rest
+
+/-- Constructive zero-axiom safety predicate for `--export-trust-bundle`:
+every input PEM must be a POSIX `lstat` regular non-symlink public-key PEM, and at least one
+exported key must remain active (unrevoked). -/
+def SafeTrustBundleExport (cs : List ExportKeyCandidate) : Prop :=
+  allCandidatesSafe cs ∧ hasActiveCandidate cs
+
+private theorem privateKey_contradicts_allSafe :
+    ∀ cs : List ExportKeyCandidate,
+      containsCandidateWith (fun c => c.pemKind = PemKind.privateKey) cs →
+      allCandidatesSafe cs → False
+  | [], hIn, _ => hIn
+  | _ :: _, Or.inl hPriv, ⟨⟨_, hPub⟩, _⟩ => nomatch (hPriv.symm.trans hPub)
+  | _ :: rest, Or.inr hRest, ⟨_, hAll⟩ => privateKey_contradicts_allSafe rest hRest hAll
+
+/-- Constructive zero-axiom proof: private-key PEM inputs are unconditionally rejected from export. -/
+theorem exportBundle_rejects_privateKey_pem (cs : List ExportKeyCandidate)
+    (hPriv : containsCandidateWith (fun c => c.pemKind = PemKind.privateKey) cs) :
+    ¬ SafeTrustBundleExport cs := by
+  intro hSafe
+  exact privateKey_contradicts_allSafe cs hPriv hSafe.1
+
+private theorem nonRegular_contradicts_allSafe :
+    ∀ cs : List ExportKeyCandidate,
+      containsCandidateWith (fun c => c.isRegularNonSymlink = false) cs →
+      allCandidatesSafe cs → False
+  | [], hIn, _ => hIn
+  | _ :: _, Or.inl hBad, ⟨⟨hReg, _⟩, _⟩ => Bool.noConfusion (hBad.symm.trans hReg)
+  | _ :: rest, Or.inr hRest, ⟨_, hAll⟩ => nonRegular_contradicts_allSafe rest hRest hAll
+
+/-- Constructive zero-axiom proof: symlink or non-regular PEM inputs are unconditionally rejected. -/
+theorem exportBundle_rejects_symlink_or_nonRegular (cs : List ExportKeyCandidate)
+    (hNonReg : containsCandidateWith (fun c => c.isRegularNonSymlink = false) cs) :
+    ¬ SafeTrustBundleExport cs := by
+  intro hSafe
+  exact nonRegular_contradicts_allSafe cs hNonReg hSafe.1
+
+private theorem allRevoked_contradicts_hasActive :
+    ∀ cs : List ExportKeyCandidate,
+      allCandidatesRevoked cs → hasActiveCandidate cs → False
+  | [], _, hAct => hAct
+  | _ :: _, ⟨hRev, _⟩, Or.inl hNotRev => Bool.noConfusion (hRev.symm.trans hNotRev)
+  | _ :: rest, ⟨_, hAllRev⟩, Or.inr hRest => allRevoked_contradicts_hasActive rest hAllRev hRest
+
+/-- Constructive zero-axiom proof: exporting a trust bundle with zero active keys is rejected
+(preventing total offline-verification lockout). -/
+theorem exportBundle_rejects_zeroActiveLockout (cs : List ExportKeyCandidate)
+    (hAllRev : allCandidatesRevoked cs) :
+    ¬ SafeTrustBundleExport cs := by
+  intro hSafe
+  exact allRevoked_contradicts_hasActive cs hAllRev hSafe.2
+
 end DeterministicEngineering.Core.MetaGovernance

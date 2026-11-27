@@ -176,6 +176,18 @@ theorem fleetChildPathContainment_rejects_traversal_and_absolute (p : RelativeCh
     (containsSegment PathSegment.dotdot p.segments → ¬ SafeRelativeChildPath p) :=
   ⟨absolute_path_never_safe p, empty_path_never_safe p, dotdot_segment_never_safe p⟩
 
+/-- Instantiated single-file inline-PEM Trust Bundle export contract (`--export-trust-bundle`):
+constructively proves with zero axioms that private-key leakage, symlink/non-regular PEM inputs,
+and zero-active-key lockout bundles are all unconditionally rejected. -/
+theorem trustBundleExport_prevents_privateKeyLeak_symlink_and_lockout
+    (cs : List ExportKeyCandidate) :
+    (containsCandidateWith (fun c => c.pemKind = PemKind.privateKey) cs → ¬ SafeTrustBundleExport cs) ∧
+    (containsCandidateWith (fun c => c.isRegularNonSymlink = false) cs → ¬ SafeTrustBundleExport cs) ∧
+    (allCandidatesRevoked cs → ¬ SafeTrustBundleExport cs) :=
+  ⟨exportBundle_rejects_privateKey_pem cs,
+   exportBundle_rejects_symlink_or_nonRegular cs,
+   exportBundle_rejects_zeroActiveLockout cs⟩
+
 /-! ## One-Line Proof Transport via `Core.Transport` -/
 
 inductive MetaProofKey where

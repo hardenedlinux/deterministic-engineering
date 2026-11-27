@@ -8,9 +8,11 @@
 ;;; zero-dependency canonical module `library/verification-flow/attestation`.
 ;;;
 ;;; CLI:
-;;;   gxi t/support/offline-attestation-verifier.ss --verify-report <report.json> <trust-store.json>
-;;;   gxi t/support/offline-attestation-verifier.ss --verify-fleet  <fleet-report.json> <trust-store.json>
-;;;   gxi t/support/offline-attestation-verifier.ss --verify-cache  <verification-cache.v1.json> <trust-store.json>
+;;;   gxi t/support/offline-attestation-verifier.ss [--json] --verify-report <report.json> <trust-store.json>
+;;;   gxi t/support/offline-attestation-verifier.ss [--json] --verify-fleet  <fleet-report.json> <trust-store.json>
+;;;   gxi t/support/offline-attestation-verifier.ss [--json] --verify-cache  <verification-cache.v1.json> <trust-store.json>
+;;;   gxi t/support/offline-attestation-verifier.ss [--json] --verify-trust-store <trust-store.json>
+;;;   gxi t/support/offline-attestation-verifier.ss [--json] --export-trust-bundle <out.json> [--revoke <keyId>]... <pub1.pem> [<pub2.pem> ...]
 (import
   :std/crypto/digest
   :std/encoding/base64
@@ -20,6 +22,7 @@
   :deterministic-engineering/library/verification-flow/attestation)
 (export
   load-trust-store-json-lite
+  export-trust-bundle-offline
   resolve-contained-child-report-path
   verify-report-offline
   verify-fleet-offline
@@ -300,14 +303,106 @@
   (write-json (current-output-port) doc)
   (newline))
 
+;; Air-gapped single-file Inline-PEM Trust Bundle exporter.
+;; Enforces:
+;;   1. Every input key file is an existing POSIX lstat regular non-symlink file.
+;;   2. Every input file begins with `"-----BEGIN PUBLIC KEY-----"` (rejects private keys!).
+;;   3. Exact content-derived `keyId = sha256(pem)[:16]` binding.
+;;   4. At least one active (unrevoked) key remains (rejects zero-active lockout bundles).
+;; Returns `(cons active-key-ids-sorted revoked-key-ids-sorted)`.
+(def (export-trust-bundle-offline out-path pub-paths (revoked-key-ids '()))
+  (unless (and (string? out-path) (> (string-length out-path) 0))
+    (error "Invalid output trust bundle path" out-path))
+  (unless (pair? pub-paths)
+    (error "At least one public key PEM path is required to export a trust bundle"))
+  (def cwd (current-directory))
+  (def keys-ht (make-hash-table))
+  (def all-kids '())
+  (for-each
+    (lambda (raw-path)
+      (let* ((resolved (resolve-trusted-pem-path cwd raw-path))
+             (pem-str (call-with-input-file resolved read-all-as-string)))
+        (unless (inline-pem-string? pem-str)
+          (error "Refusing to bundle non-public-key PEM (private keys and malformed PEMs are rejected)"
+                 raw-path))
+        (let ((kid (substring (sha256-str pem-str) 0 16)))
+          (hash-put! keys-ht kid pem-str)
+          (unless (member kid all-kids)
+            (set! all-kids (cons kid all-kids))))))
+    pub-paths)
+  (def revoked-clean
+    (let ((acc '()))
+      (for-each
+        (lambda (r)
+          (unless (and (string? r) (> (string-length r) 0))
+            (error "Invalid --revoke keyId" r))
+          (unless (member r acc) (set! acc (cons r acc))))
+        revoked-key-ids)
+      (sort-by acc string<?)))
+  (def active
+    (sort-by (filter (lambda (kid) (not (member kid revoked-clean))) all-kids) string<?))
+  (unless (pair? active)
+    (error "Refusing to export trust bundle with zero active unrevoked keys"
+           revoked-clean))
+  (def parent-dir (path-directory out-path))
+  (when (and (> (string-length parent-dir) 0) (not (file-exists? parent-dir)))
+    (create-directory* parent-dir))
+  (def doc
+    (hash ("schema" "de.attestation.ed25519-trust-store.v1")
+          ("trustedKeys" keys-ht)
+          ("revokedKeyIds" revoked-clean)))
+  (call-with-output-file out-path
+    (lambda (port)
+      (write-json port doc)
+      (newline port)))
+  (cons active revoked-clean))
+
+(def (parse-export-bundle-args rest)
+  (let loop ((xs rest) (revoked '()) (pubs '()))
+    (cond
+     ((null? xs) (values (reverse pubs) (reverse revoked)))
+     ((equal? (car xs) "--revoke")
+      (unless (pair? (cdr xs))
+        (error "--revoke requires a keyId argument"))
+      (loop (cddr xs) (cons (cadr xs) revoked) pubs))
+     (else
+      (loop (cdr xs) revoked (cons (car xs) pubs))))))
+
 (def (main . args)
   (def json-mode? (and (member "--json" args) #t))
   (def clean-args (filter (lambda (a) (not (equal? a "--json"))) args))
   (when (null? clean-args)
-    (error "usage: [--json] --verify-report|--verify-fleet|--verify-cache <artifact.json> <trust-store.json> | [--json] --verify-trust-store <trust-store.json>"
+    (error "usage: [--json] --verify-report|--verify-fleet|--verify-cache <artifact.json> <trust-store.json> | [--json] --verify-trust-store <trust-store.json> | [--json] --export-trust-bundle <out.json> [--revoke <keyId>]... <pub1.pem>..."
            args))
   (def mode (car clean-args))
-  (if (equal? mode "--verify-trust-store")
+  (cond
+   ((equal? mode "--export-trust-bundle")
+    (unless (>= (length clean-args) 3)
+      (error "usage: [--json] --export-trust-bundle <out.json> [--revoke <keyId>]... <pub1.pem>..." args))
+    (let ((out-path (cadr clean-args)))
+      (with-catch
+        (lambda (e)
+          (if json-mode?
+            (begin
+              (emit-json-result! #f "export-trust-bundle" out-path out-path
+                (string-append "export-trust-bundle failed: " (error-message e)))
+              (exit 1))
+            (raise e)))
+        (lambda ()
+          (let-values (((pub-paths revoked-ids) (parse-export-bundle-args (cddr clean-args))))
+            (let* ((res (export-trust-bundle-offline out-path pub-paths revoked-ids))
+                   (active (car res))
+                   (revoked (cdr res)))
+              (if json-mode?
+                (emit-json-result! #t "export-trust-bundle" out-path out-path
+                  "exported-inline-pem-trust-bundle"
+                  (list (cons "inlinePem" #t)
+                        (cons "activeKeyIds" active)
+                        (cons "revokedKeyIds" revoked)))
+                (displayln "MULTI-METHOD-EXPORT-TRUST-BUNDLE-OK " out-path
+                           " active=" (length active)
+                           " revoked=" (length revoked)))))))))
+   ((equal? mode "--verify-trust-store")
     (begin
       (unless (= (length clean-args) 2)
         (error "usage: [--json] --verify-trust-store <trust-store.json>" args))
@@ -344,7 +439,8 @@
                 (list (cons "activeKeyIds" '())
                       (cons "revokedKeyIds" revoked)))
               (exit 1))
-            (error "trust-store has zero active unrevoked keys" store-path)))))
+            (error "trust-store has zero active unrevoked keys" store-path))))))
+   (else
     (begin
       (unless (= (length clean-args) 3)
         (error "usage: [--json] --verify-report|--verify-fleet|--verify-cache <artifact.json> <trust-store.json>"
@@ -396,4 +492,4 @@
                 (error "offline cache verification failed" target-path)))))
          (else
           (error "usage: [--json] --verify-report|--verify-fleet|--verify-cache <artifact.json> <trust-store.json>"
-                 mode)))))))
+                 mode))))))))

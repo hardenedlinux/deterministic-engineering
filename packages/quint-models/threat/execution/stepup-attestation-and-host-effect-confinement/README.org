@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Step-Up MFA Attestation Integrity, Scheme Effect E-Stop/CAS Isolation & Host Resilience (SM30)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.execution.stepup-attestation-and-host-effect-confinement=
+- *Subdomain*: =quint.threat.execution=
+- *Quint Module*: =execution_stepup_attestation_and_host_effect_confinement= (=[[file:StepUpAttestationAndHostEffectConfinement.qnt][StepUpAttestationAndHostEffectConfinement.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/execution/stepup-attestation-and-host-effect-confinement/StepUpAttestationAndHostEffectConfinement=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+No spoofed non-human identity, weak ACR, or duplicate-key Step-Up note re-arms the breaker (spoofedRearms == 0), no LlmComplete executes under E-Stop or CasPut overwrites reserved governance checkpoint keys (effectOrCasBreaches == 0 and reservedCasIntact), broadcast lag never terminates gate or UI command watchers (watcherSuicides == 0 and watchersAlive), and live fact-store mutations never exceed the MGF1 deserialization cap or desynchronize durable CAS on re-arm (factBombOrDesyncs == 0 and factCount <= 3).
+
+#+begin_src quint
+val safety = (h.spoofedRearms == 0 and h.effectOrCasBreaches == 0 and h.watcherSuicides == 0 and h.factBombOrDesyncs == 0 and h.watchersAlive and h.reservedCasIntact and h.factCount >= 0 and h.factCount <= 3 and h.stepCount <= 12)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =forbid-stepup-spoof-or-weak-acr-rearm= | =stepStepUpSpoofRearm= | =h.spoofedRearms > 0= |
+| =forbid-estop-llm-or-reserved-cas-overwrite= | =stepEstopEffectOrCasOverwrite= | =h.effectOrCasBreaches > 0= |
+| =forbid-watcher-suicide-on-broadcast-lag= | =stepWatcherLagSuicide= | =h.watcherSuicides > 0= |
+| =forbid-fact-store-deser-bomb-or-persist-desync= | =stepFactBombOrPersistDesync= | =h.factBombOrDesyncs > 0= |
+
+* Grounded Papers & Specifications
+
+- *Deterministic Engineering (30.06 / 40.05)*: SM30 ADV-L4 strict RFC 9470 Step-Up MFA ACR allowlist and duplicate/non-human actor refusal, Scheme LlmComplete E-Stop mediation and reserved governance CAS key confinement, broadcast RecvError::Lagged watcher survival, bounded fact-graph write parity with constant-time MGF1 verification, and fail-closed durable re-arm persistence.
+- *Marlin Agent Core Empirical Case Study (2026)*: marlin-gerbil-scheme parse_verified_step_up_actor admitted worker-*/scheme-sandbox-*, acr=none, and duplicate actor= overrides as VerifiedHuman; run_one_atomic_effect left LlmComplete ungated under E-Stop and CasPut unprotected against reserved governance checkpoint overwrites; gate_watcher/ui_cmd_watcher exited on RecvError::Lagged; mutate_facts_and_build_request overflowed MGF1's 4096-entry deserialization cap.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/execution/stepup-attestation-and-host-effect-confinement/StepUpAttestationAndHostEffectConfinement.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/execution/stepup-attestation-and-host-effect-confinement/StepUpAttestationAndHostEffectConfinement.qnt --main=execution_stepup_attestation_and_host_effect_confinement --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite bounded Scheme governance host controller & atomic-effect worker state machine (factCount <= 3, stepCount <= 12); models strict RFC 9470 Step-Up MFA ACR allowlist and agent-prefix/duplicate-param rejection, E-Stop mediation on LlmComplete plus reserved governance CAS key confinement on CasPut, broadcast-lag survival in gate/UI watchers, and fact-store capacity parity with fail-closed CAS persist handling, without modeling cryptographic SHA-256 breaks or OS process takeover.

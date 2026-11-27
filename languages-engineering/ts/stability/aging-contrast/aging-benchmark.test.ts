@@ -2683,10 +2683,175 @@ export function matchesCedarPolicy(policy: {effect: 'permit' | 'forbid'; unlessC
   return true;
 }`,
   },
+  // --- SM30: ADV-L4 Step-Up MFA attestation integrity, Scheme effect E-Stop/CAS isolation & host resilience (SA173-SA182) ---
+  {
+    id: 'SA173',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-stepup-actor-weak-acr-or-prefix-gap',
+    source: `
+pub fn parse_verified_step_up_actor(note: Option<&str>) -> Result<BreakerActor, String> {
+  let actor = "worker-auto".to_owned();
+  let acr = "none".to_owned();
+  let lower = actor.to_ascii_lowercase();
+  if lower.starts_with("agent") || lower.starts_with("bot") { return Ok(BreakerActor::Agent(id)); }
+  if acr.trim().is_empty() { return Ok(BreakerActor::UnverifiedActor(id)); }
+  Ok(BreakerActor::VerifiedHuman(id))
+}`,
+  },
+  {
+    id: 'SA174',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-scheme-effect-llm-or-cas-ungated',
+    source: `
+async fn run_one_atomic_effect(effect: SchemeAtomicEffect) -> SchemeAtomicReceipt {
+  match effect {
+    SchemeAtomicEffect::CasPut { effect_id, key, bytes } => store.put_blob(&key, bytes).await,
+    SchemeAtomicEffect::LlmComplete { effect_id, request } => client.complete_text(&request).await,
+    _ => SchemeAtomicReceipt::CasMiss("x".into()),
+  }
+}`,
+  },
+  {
+    id: 'SA175',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-broadcast-watcher-breaks-on-lag',
+    source: `
+async fn watch(mut gate_rx: broadcast::Receiver<Event>) {
+  loop {
+    let ev = tokio::select! {
+      res = gate_rx.recv() => match res {
+        Ok(ev) => ev,
+        Err(_) => break,
+      }
+    };
+    let _ = ev;
+  }
+}`,
+  },
+  {
+    id: 'SA176',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-fact-store-unbounded-mutate-or-timing-tag',
+    source: `
+impl GovernanceHostController {
+  pub fn mutate_facts_and_build_request(&self, cmd: &GovernanceUiCommand) -> Result<(), String> {
+    let mut meta = self.meta.lock().unwrap();
+    meta.facts.revoked_actors.insert("x".to_owned());
+    Ok(())
+  }
+}`,
+  },
+  {
+    id: 'SA177',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-rearm-cas-persist-error-swallowed',
+    source: `
+impl GovernanceHostController {
+  pub async fn handle_claimed_gate_decision_durable<S>(&self, cas: Option<&Store<S>>, key: Option<&str>) -> bool {
+    if let (Some(store), Some(k)) = (cas, key) {
+      let _ = self.persist_to_cas(store, k).await;
+    }
+    true
+  }
+}`,
+  },
+  {
+    id: 'SA178',
+    language: 'ts',
+    expectedPass: false,
+    expectedRuleId: 'ts-stepup-weak-acr-nonempty-only',
+    source: `
+export function parseVerifiedStepUpHuman(actor: string, acr: string): boolean {
+  if (!actor || acr.trim().length === 0) return false;
+  return true;
+}`,
+  },
+  {
+    id: 'SA179',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+pub fn parse_verified_step_up_actor(note: Option<&str>) -> Result<BreakerActor, String> {
+  let actor = "ops-alice".to_owned();
+  let acr = "urn:ietf:params:oauth:acr:mfa".to_owned();
+  if !infer_actor_roles(&actor).is_empty() { return Ok(BreakerActor::Agent(id)); }
+  if !is_verified_mfa_acr(&acr) { return Ok(BreakerActor::UnverifiedActor(id)); }
+  Ok(BreakerActor::VerifiedHuman(id))
+}`,
+  },
+  {
+    id: 'SA180',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+async fn run_one_atomic_effect(effect: SchemeAtomicEffect) -> SchemeAtomicReceipt {
+  match effect {
+    SchemeAtomicEffect::CasPut { effect_id, key, bytes } => {
+      if is_reserved_governance_cas_key(&key) { return SchemeAtomicReceipt::EffectError { effect_id, message: "denied".into() }; }
+      store.put_blob(&key, bytes).await
+    }
+    SchemeAtomicEffect::LlmComplete { effect_id, request } => {
+      governance_host.authorize_llm_effect("scheme-llm-worker", "llm-complete")?;
+      client.complete_text(&request).await
+    }
+    _ => SchemeAtomicReceipt::CasMiss("x".into()),
+  }
+}
+async fn watch(mut gate_rx: broadcast::Receiver<Event>) {
+  loop {
+    let ev = tokio::select! {
+      res = gate_rx.recv() => match res {
+        Ok(ev) => ev,
+        Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
+        Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
+      }
+    };
+    let _ = ev;
+  }
+}`,
+  },
+  {
+    id: 'SA181',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+impl GovernanceHostController {
+  pub fn mutate_facts_and_build_request(&self, cmd: &GovernanceUiCommand) -> Result<(), String> {
+    let mut meta = self.meta.lock().map_err(|_| "poisoned".to_owned())?;
+    ensure_fact_capacity(meta.facts.revoked_actors.len(), MAX_FACT_STORE_ENTRIES, false, "revoked")?;
+    meta.facts.revoked_actors.insert("x".to_owned());
+    Ok(())
+  }
+  pub async fn handle_claimed_gate_decision_durable<S>(&self, cas: Option<&Store<S>>, key: Option<&str>) -> bool {
+    if let (Some(store), Some(k)) = (cas, key) {
+      if let Err(err) = self.persist_to_cas(store, k).await {
+        let _ = self.gate.trip_operator_estop("host", &err);
+        return true;
+      }
+    }
+    true
+  }
+}`,
+  },
+  {
+    id: 'SA182',
+    language: 'ts',
+    expectedPass: true,
+    source: `
+export function parseVerifiedStepUpHuman(actor: string, acr: string): boolean {
+  if (!actor || !isAllowlistedMfaAcr(acr)) return false;
+  return true;
+}`,
+  },
 ];
 
-describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA172)', () => {
-  test('achieves 172/172 exact independent-gold match (tp=97, tn=75, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
+describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA182)', () => {
+  test('achieves 182/182 exact independent-gold match (tp=103, tn=79, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
     let tp = 0;
     let tn = 0;
     let fp = 0;
@@ -2709,7 +2874,7 @@ describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA172)', () 
       }
     }
 
-    expect({tp, tn, fp, fn}).toEqual({tp: 97, tn: 75, fp: 0, fn: 0});
+    expect({tp, tn, fp, fn}).toEqual({tp: 103, tn: 79, fp: 0, fn: 0});
   });
 
   test('clean Rust deterministic buffer pool & bounded retry passes with 0 findings', () => {

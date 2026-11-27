@@ -503,6 +503,55 @@
         (hash ("schema" "de.attestation.ed25519-trust-store.v1")
               ("trustedKeys" tk-inline-spoof) ("revokedKeyIds" '())))
 
+      ;; Attack 23: Air-gapped `--export-trust-bundle` security controls (BEFORE deleting `keys/`):
+      ;;   23A: MUST refuse private-key PEM leakage (`-----BEGIN PRIVATE KEY-----`)!
+      ;;   23B: MUST refuse symlink PEM input (POSIX lstat regular file guard)!
+      ;;   23C: MUST refuse zero-active-key lockout bundle (`--revoke kid1 --revoke kid2`)!
+      ;;   23D: Valid `--json --export-trust-bundle <out> --revoke kid1 k1.pub.pem k2.pub.pem`
+      ;;        emits single-file Inline-PEM bundle with `inlinePem=#t`, `active=[kid2]`, `revoked=[kid1]`!
+      (def exported-bundle-path (path-expand "exported-inline-bundle.json" work))
+      (def bad-priv-out (path-expand "bad-priv-bundle.json" work))
+      (def bad-sym-out (path-expand "bad-sym-bundle.json" work))
+      (def bad-lockout-out (path-expand "bad-lockout-bundle.json" work))
+      (check-equal? (throws? (lambda () (export-trust-bundle-offline bad-priv-out (list (cadr k1)) '()))) #t)
+      (check-equal? (file-exists? bad-priv-out) #f)
+      (check-equal? (throws? (lambda () (export-trust-bundle-offline bad-sym-out (list k1-symlink) '()))) #t)
+      (check-equal? (file-exists? bad-sym-out) #f)
+      (check-equal? (throws? (lambda () (export-trust-bundle-offline bad-lockout-out (list (caddr k1) (caddr k2)) (list kid1 kid2)))) #t)
+      (check-equal? (file-exists? bad-lockout-out) #f)
+      (def (run-offline-cli cli-args-str)
+        (let* ((cmd (string-append
+                      "cd \"" repo-root "\" && "
+                      "gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q "
+                      "t/support/offline-attestation-verifier.ss " cli-args-str))
+               (proc (open-process
+                       (list path: "/bin/bash"
+                             arguments: (list "-euo" "pipefail" "-c" cmd)
+                             stdin-redirection: #f
+                             stdout-redirection: #t
+                             stderr-redirection: #t)))
+               (out (read-all-as-string proc))
+               (st (process-status proc)))
+          (close-port proc)
+          (values st out)))
+      (let-values (((st out)
+                    (run-offline-cli
+                      (string-append "--json --export-trust-bundle \"" exported-bundle-path
+                                     "\" --revoke \"" kid1 "\" \"" (caddr k1) "\" \"" (caddr k2) "\""))))
+        (check-equal? st 0)
+        (let* ((json-line (car (filter (lambda (ln) (and (> (string-length ln) 0)
+                                                         (char=? (string-ref ln 0) #\{)))
+                                       (string-split out #\newline))))
+               (doc (call-with-input-string json-line (cut read-json <> object-as-hash: #t))))
+          (check-equal? (hash-get doc "ok") #t)
+          (check-equal? (hash-get doc "mode") "export-trust-bundle")
+          (check-equal? (hash-get doc "inlinePem") #t)
+          (check-equal? (hash-get doc "activeKeyIds") (list kid2))
+          (check-equal? (hash-get doc "revokedKeyIds") (list kid1))))
+      ;; Sign a valid report with active K2 before deleting `keys/` from disk.
+      (def rep-k2-ok (path-expand "rep-k2-ok.json" work))
+      (build-signed-report rep-k2-ok k2 work "rep-k2-ok" request-id: "req-k2-ok")
+
       ;; Physically delete ALL .pub.pem files from disk before running inline-bundle verification!
       (run-process (list "rm" "-rf" keys-dir))
       (check-equal? (file-exists? (caddr k1)) #f)
@@ -523,5 +572,23 @@
                (doc (call-with-input-string json-line (cut read-json <> object-as-hash: #t))))
           (check-equal? (hash-get doc "ok") #t)
           (check-equal? (length (hash-get doc "activeKeyIds")) 2)))
+
+      ;; Attack 24: Post-deletion end-to-end verification against `--export-trust-bundle` output!
+      ;;            With ZERO `.pub.pem` files on disk, exported bundle accepts active K2 report
+      ;;            (both direct & `--json --verify-report` CLI) while rejecting revoked K1 report & cache!
+      (def tp-exported (load-trust-store-json-lite exported-bundle-path))
+      (check-equal? (verify-report-offline rep-k2-ok tp-exported) #t)
+      (check-equal? (verify-report-offline rep-ok tp-exported) #f)
+      (check-equal? (verify-cache-offline cache-ok tp-exported) #f)
+      (let-values (((st out)
+                    (run-offline-cli
+                      (string-append "--json --verify-report \"" rep-k2-ok "\" \"" exported-bundle-path "\""))))
+        (check-equal? st 0)
+        (let* ((json-line (car (filter (lambda (ln) (and (> (string-length ln) 0)
+                                                         (char=? (string-ref ln 0) #\{)))
+                                       (string-split out #\newline))))
+               (doc (call-with-input-string json-line (cut read-json <> object-as-hash: #t))))
+          (check-equal? (hash-get doc "ok") #t)
+          (check-equal? (hash-get doc "mode") "verify-report")))
 
       (run-process (list "rm" "-rf" work)))))

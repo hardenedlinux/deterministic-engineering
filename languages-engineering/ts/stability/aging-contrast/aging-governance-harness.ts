@@ -224,6 +224,14 @@ const MECHANISM_DIRECTIVES: Record<AgingMechanism, AgingRemediationDirective> = 
     antiEvasionWarning:
       'Do NOT evade by testing missing context only on permit-when clauses while leaving forbid-unless fail-open on None, checking only revocation_epoch < floor without same-epoch policy_revision anti-rollback, allowing same-epoch pre-trip durable restore to clear E-Stop, clearing retracted_derivations on human re-arm, or keeping short-circuit `!=` on SHA-256 checkpoint tags.',
   },
+  'SM30-stepup-attestation-host-effect': {
+    mechanism: 'SM30-stepup-attestation-host-effect',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Enforce explicit RFC 9470 / NIST MFA ACR allowlist, duplicate-key refusal, and unified non-human prefix classification (agent/bot/llm/worker/scheme-sandbox/system/service) in parse_verified_step_up_actor; gate SchemeAtomicEffect::LlmComplete under GovernanceHostController::authorize_llm_effect and block CasPut on reserved governance checkpoint keys; survive broadcast RecvError::Lagged in gate_watcher and ui_cmd_watcher while bounding concurrent effect fan-out; enforce MGF1 capacity parity (4096) with constant-time SHA-256 verification and fail closed if durable re-arm CAS persistence fails.',
+    antiEvasionWarning:
+      'Do NOT evade by checking only !acr.is_empty(), omitting worker/scheme-sandbox from Step-Up actor classification, gating only SandboxRun while leaving LlmComplete/CasPut open, breaking control-plane broadcast loops on Err(_), or discarding persist_to_cas errors with `let _ =`.',
+  },
 };
 
 export function getAgingRemediation(finding: AgingFinding): AgingRemediationDirective {
