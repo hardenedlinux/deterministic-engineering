@@ -32,6 +32,7 @@
         quint-source-qualified?
         quint-cst-module-info
         quint-cst-declarations
+        parse-quint-model-spec
         quint-span-append-decl
         quint-span-strengthen-safety
         quint-span-extend-step
@@ -852,3 +853,154 @@
     base-source
     (reverse edits)
     (lambda (next-src) (quint-verify-source-or-error next-src "compose-overlay"))))
+
+;; ── Native .qnt SSOT Specification Parser (10.204) ──────────────────────────
+;; Parses .qnt header directives (@quint-model, @verify, @countermodel, Limits)
+;; together with the verified gerbil-parser LR CST so Scheme NEVER duplicates
+;; state, guards, transitions, safety, traces, or countermodels.
+
+(def (qnt-split-lines str)
+  (def len (string-length str))
+  (let loop ((i 0) (start 0) (acc '()))
+    (cond
+     ((>= i len)
+      (reverse (cons (substring str start len) acc)))
+     ((char=? (string-ref str i) #\newline)
+      (let ((end (if (and (> i start) (char=? (string-ref str (- i 1)) #\return)) (- i 1) i)))
+        (loop (+ i 1) (+ i 1) (cons (substring str start end) acc))))
+     (else (loop (+ i 1) start acc)))))
+
+(def (qnt-trim-ws s)
+  (def len (string-length s))
+  (def start
+    (let loop ((i 0))
+      (if (and (< i len) (or (char=? (string-ref s i) #\space) (char=? (string-ref s i) #\tab)))
+        (loop (+ i 1))
+        i)))
+  (def end
+    (let loop ((i len))
+      (if (and (> i start) (or (char=? (string-ref s (- i 1)) #\space) (char=? (string-ref s (- i 1)) #\tab)))
+        (loop (- i 1))
+        i)))
+  (substring s start end))
+
+(def (qnt-prefix? s prefix)
+  (and (>= (string-length s) (string-length prefix))
+       (equal? (substring s 0 (string-length prefix)) prefix)))
+
+(def (qnt-after-prefix s prefix)
+  (substring s (string-length prefix) (string-length s)))
+
+(def (qnt-find-substr hay needle (start 0))
+  (def hlen (string-length hay))
+  (def nlen (string-length needle))
+  (let loop ((i start))
+    (cond
+     ((> (+ i nlen) hlen) #f)
+     ((equal? (substring hay i (+ i nlen)) needle) i)
+     (else (loop (+ i 1))))))
+
+(def (qnt-extract-kv line key)
+  (def marker (string-append key "="))
+  (def pos (qnt-find-substr line marker))
+  (if (not pos)
+    #f
+    (let* ((vstart (+ pos (string-length marker)))
+           (len (string-length line)))
+      (cond
+       ((>= vstart len) #f)
+       ((char=? (string-ref line vstart) #\")
+        (let ((qend (qnt-find-substr line "\"" (+ vstart 1))))
+          (if qend (substring line (+ vstart 1) qend) #f)))
+       (else
+        (let loop ((i vstart))
+          (if (or (>= i len) (char=? (string-ref line i) #\space) (char=? (string-ref line i) #\tab))
+            (substring line vstart i)
+            (loop (+ i 1)))))))))
+
+(def (qnt-first-token s)
+  (def trimmed (qnt-trim-ws s))
+  (def len (string-length trimmed))
+  (let loop ((i 0))
+    (if (or (>= i len) (char=? (string-ref trimmed i) #\space) (char=? (string-ref trimmed i) #\tab))
+      (substring trimmed 0 i)
+      (loop (+ i 1)))))
+
+(def (parse-quint-model-spec source)
+  (unless (quint-source-qualified? source)
+    (error "parse-quint-model-spec: .qnt source failed gerbil-parser LR qualification"))
+  (def mod-info (quint-cst-module-info source))
+  (def decls (quint-cst-declarations source))
+  (def bytes (string->utf8 source))
+  (def mod-name (cdr (assq 'name mod-info)))
+  (def parsed-has-state? (and (find-decl-by-name decls "State") #t))
+  (def parsed-has-step? (and (find-decl-by-name decls "step") #t))
+  (def safety-decl (find-decl-by-name decls "safety"))
+  (def parsed-safety-source
+    (if safety-decl
+      (qnt-trim-ws (utf8-byte-slice bytes (cdr (assq 'body-start safety-decl)) (cdr (assq 'body-end safety-decl))))
+      #f))
+  (def all-op-names
+    (map (lambda (d) (cdr (assq 'name d)))
+         (filter (lambda (d) (eq? (cdr (assq 'kind d)) 'OpDeclaration)) decls)))
+  (def all-run-traces
+    (map (lambda (d) (cdr (assq 'name d)))
+         (filter (lambda (d) (and (eq? (cdr (assq 'kind d)) 'OpDeclaration)
+                                  (equal? (cdr (assq 'qualifier d)) "run")))
+                 decls)))
+  (def hdr-model-id #f)
+  (def hdr-verify-depth #f)
+  (def hdr-cm-depth #f)
+  (def hdr-limits-text #f)
+  (def parsed-cms '())
+  (for-each
+    (lambda (raw-line)
+      (def line (qnt-trim-ws raw-line))
+      (cond
+       ((qnt-prefix? line "// @quint-model ")
+        (set! hdr-model-id (string->symbol (qnt-first-token (qnt-after-prefix line "// @quint-model ")))))
+       ((qnt-prefix? line "// @verify ")
+        (let ((ms (qnt-extract-kv line "max-steps")))
+          (when ms
+            (let ((n (string->number ms)))
+              (when (exact-integer? n) (set! hdr-verify-depth n))))))
+       ((qnt-prefix? line "// @countermodel ")
+        (let* ((rest (qnt-trim-ws (qnt-after-prefix line "// @countermodel ")))
+               (guard-str (qnt-first-token rest))
+               (step-str (qnt-extract-kv rest "step"))
+               (ms-str (qnt-extract-kv rest "max-steps"))
+               (itf-str (qnt-extract-kv rest "itf")))
+          (unless (and (> (string-length guard-str) 0) step-str itf-str)
+            (error "parse-quint-model-spec: malformed @countermodel directive" line))
+          (unless (member step-str all-op-names)
+            (error "parse-quint-model-spec: @countermodel step action not found in .qnt CST"
+                   step-str mod-name))
+          (when ms-str
+            (let ((n (string->number ms-str)))
+              (when (and (exact-integer? n) (not hdr-cm-depth))
+                (set! hdr-cm-depth n))))
+          (set! parsed-cms
+                (cons (.o dropped-guard: (string->symbol guard-str)
+                          step-action: step-str
+                          max-steps: (if (and ms-str (exact-integer? (string->number ms-str)))
+                                       (string->number ms-str)
+                                       6)
+                          expected-itf-predicate: itf-str)
+                      parsed-cms))))
+       ((qnt-prefix? line "// Limits: ")
+        (set! hdr-limits-text (qnt-trim-ws (qnt-after-prefix line "// Limits: "))))))
+    (qnt-split-lines source))
+  (let ((final-vdepth (or hdr-verify-depth 12))
+        (final-cmdepth (or hdr-cm-depth 6))
+        (final-cms (reverse parsed-cms)))
+    (.o module-name: mod-name
+        model-identity: hdr-model-id
+        has-state-record?: parsed-has-state?
+        has-step?: parsed-has-step?
+        safety-source: parsed-safety-source
+        verify-depth: final-vdepth
+        countermodel-depth: final-cmdepth
+        op-names: all-op-names
+        run-traces: all-run-traces
+        countermodels: final-cms
+        limits: hdr-limits-text)))

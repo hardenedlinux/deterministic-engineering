@@ -313,4 +313,62 @@ describe('Layered Subtree Git Hooks & Branch-Mirrored CI Sync', () => {
     // Must not combine `paths:` with `tags:` under `on.push` (GitHub Actions silently skips tag events).
     expect(workflow).not.toMatch(/^\s+paths:\s*$/m);
   });
+
+  test('H7: quint-models pre-commit enforces unconditional 10.204 .qnt-SSOT anti-bloat gate (blocks ALL duplicated Quint AST slots, admits slim metadata-only objects.ss)', () => {
+    const dir = initTempMonorepo();
+    try {
+      const modelDir = join(dir, 'packages/quint-models/engineering/defense/demo-native');
+      mkdirSync(modelDir, { recursive: true });
+      const objPath = join(modelDir, 'objects.ss');
+
+      // 1. Any objects.ss duplicating state:/guards: MUST be blocked unconditionally.
+      writeFileSync(
+        objPath,
+        [
+          ';; SPDX-License-Identifier: LGPL-2.1-or-later',
+          '(.def (DemoModel @ ThreatModel.)',
+          '  identity: \'engineering.defense.demo-native',
+          '  state: \'((x "int" "0"))',
+          '  guards: \'((g "true")))',
+        ].join('\n') + '\n',
+      );
+      expect(runCmd(['git', 'add', 'packages/quint-models/engineering/defense/demo-native/objects.ss'], dir).exitCode).toBe(0);
+      const blockedState = runCmd(['git', 'commit', '-m', 'bloated objects.ss'], dir);
+      expect(blockedState.exitCode).not.toBe(0);
+      expect(blockedState.stderr).toContain('duplicates Quint AST/config slots in Scheme');
+
+      // 2. Sneaking in transitions: or countermodels: MUST be blocked.
+      writeFileSync(
+        objPath,
+        [
+          ';; SPDX-License-Identifier: LGPL-2.1-or-later',
+          '(.def (DemoModel @ ThreatModel.)',
+          '  identity: \'engineering.defense.demo-native',
+          '  transitions: \'((step "action step = h\' = h")))',
+        ].join('\n') + '\n',
+      );
+      expect(runCmd(['git', 'add', 'packages/quint-models/engineering/defense/demo-native/objects.ss'], dir).exitCode).toBe(0);
+      const blockedTrans = runCmd(['git', 'commit', '-m', 'mixed transitions'], dir);
+      expect(blockedTrans.exitCode).not.toBe(0);
+      expect(blockedTrans.stderr).toContain('duplicates Quint AST/config slots in Scheme');
+
+      // 3. Slim metadata-only ThreatModel. MUST succeed.
+      writeFileSync(
+        objPath,
+        [
+          ';; SPDX-License-Identifier: LGPL-2.1-or-later',
+          '(.def (DemoModel @ ThreatModel.)',
+          '  identity: \'engineering.defense.demo-native',
+          '  quint-module: "demo_native"',
+          '  quint-file: "DemoNative.qnt"',
+          '  domain-dir: "engineering/defense/demo-native")',
+        ].join('\n') + '\n',
+      );
+      expect(runCmd(['git', 'add', 'packages/quint-models/engineering/defense/demo-native/objects.ss'], dir).exitCode).toBe(0);
+      const okSlim = runCmd(['git', 'commit', '-m', 'slim native quint metadata'], dir);
+      expect(okSlim.exitCode).toBe(0);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });

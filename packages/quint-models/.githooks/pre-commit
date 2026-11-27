@@ -54,6 +54,18 @@ while IFS= read -r rel_path; do
         failed=1
       fi
       ;;
+    */objects.ss|objects.ss)
+      if [ ! -f "$PKG_ROOT/${rel_path}.license" ] && ! head -n 15 "$PKG_ROOT/$rel_path" | grep -q "SPDX-License-Identifier:"; then
+        echo "[quint-models/pre-commit] ERROR: missing SPDX header in $rel_path" >&2
+        failed=1
+      fi
+      # Hard unconditional 10.204 .qnt-SSOT anti-bloat gate (zero legacy exemptions):
+      # Quint state/guards/transitions/safety/traces/countermodels live EXCLUSIVELY in .qnt.
+      if grep -Eq '^[[:space:]]*(state|guards|transitions|safety|traces|countermodels|parameters|quint-imports|verify-depth|countermodel-depth|verify-const-bindings|guard-classifications|derive-from-transition|counter-action):' "$PKG_ROOT/$rel_path"; then
+        echo "[quint-models/pre-commit] ERROR: $rel_path duplicates Quint AST/config slots in Scheme; .qnt is the sole SSOT (10.204)" >&2
+        failed=1
+      fi
+      ;;
   esac
 done <<< "$CHANGED_FILES"
 

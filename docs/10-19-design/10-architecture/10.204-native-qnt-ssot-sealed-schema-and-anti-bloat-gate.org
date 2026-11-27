@@ -1,0 +1,70 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 10.204 Hard .qnt-SSOT Cutover: Zero-Legacy Sealed Schema & Anti-Bloat Gate
+#+AUTHOR: Deterministic Engineering
+#+DATE: 2026-11-27
+
+* Executive Summary
+:PROPERTIES:
+:CUSTOM_ID: arch10204-summary
+:STATUS: executed-verified
+:END:
+
+Earlier Quint models in =packages/quint-models/= duplicated the entire Quint
+state machine (=state:=, =guards:=, =transitions:=, =safety:=, =traces:=,
+=countermodels:=) inside Scheme =objects.ss= (~160--230 lines per model) to
+project =.qnt= files. Leaving legacy compatibility code behind causes AI agents
+to imitate the old Scheme DSL and accumulate permanent technical debt.
+
+This ADR executes a **hard, zero-legacy cutover** making =.qnt= the **sole
+Single Source of Truth** across the entire repository:
+
+1. **Deleted Legacy Scheme->Quint AST Codegen**:
+   - Deleted =library/quint-methods/ast.ss= and removed =quint-module=
+     Scheme->Quint projection completely.
+2. **Hard Sealed Schema Constraint ([[file:../../../library/quint-methods/types.ss][library/quint-methods/types.ss]] & [[file:../../../library/quint-methods/objects.ss][objects.ss]])**:
+   - =ThreatModel.= and the **`sealed: #t`** record contract
+     =QuintDomainModelShape= now accept **ONLY Yuanxu metadata + =.qnt= pointer**
+     (=identity=, =family=, =title=, =subdomain=, =papers=, =parent=, =revision=,
+     =factor-implications=, =quint-module=, =quint-file=, =domain-dir=, =rules=,
+     =dependencies=, =invariant=, =limits=).
+   - **Zero backward-compatibility shims**: any attempt by an Agent or human to
+     write =state:=, =guards:=, =transitions:=, =safety:=, =traces:=,
+     =countermodels:=, =parameters:=, =quint-imports:=, =verify-depth:=, or
+     =countermodel-depth:= in Scheme immediately throws =TypeError=.
+3. **Native =.qnt= LR Parser & Pure Derivation ([[file:../../../library/quint-methods/grammar.ss][grammar.ss]], [[file:../../../library/quint-methods/methods.ss][methods.ss]], [[file:../../../t/support/quint-model-qualification.ss][quint-model-qualification.ss]])**:
+   - =parse-quint-model-spec= parses =.qnt= header directives (=@quint-model=,
+     =@verify=, =@countermodel=, =Limits:=) directly alongside the verified
+     =gerbil-parser= LR CST, failing closed if any =@countermodel step== action
+     does not exist in the parsed =.qnt= CST.
+   - =quint-plan=, =quint-guard-audit=, and =quint-model-readme= derive all
+     Apalache plans, =F3= guard audit reports, and =README.org= directly from
+     the =.qnt= file on disk.
+4. **Repository-Wide Slimming (93 Models)**:
+   - Stripped all duplicated Quint AST slots and =*Countermodel= definitions from
+     all 92 tracked =packages/quint-models/**/objects.ss= files plus the 30th
+     defense model [[file:../../../packages/quint-models/engineering/defense/model-weight-inference-attestation/objects.ss][model-weight-inference-attestation/objects.ss]], eliminating
+     thousands of lines of redundant Scheme boilerplate.
+5. **Unconditional Pre-Commit Anti-Bloat Gate ([[file:../../../packages/quint-models/.githooks/pre-commit][packages/quint-models/.githooks/pre-commit]])**:
+   - Mechanically blocks committing *any* =objects.ss= under =packages/quint-models/=
+     that contains forbidden Quint AST/config slots.
+
+* Architectural Boundary: What Lives in =.qnt= vs. What Stays in Scheme
+
+| Concern | Single Source of Truth | Enforced By |
+|---------+------------------------+-------------|
+| State record, actions, guards, safety invariant, weakened countermodel steps, deterministic =run= traces, verification depths | =<Model>.qnt= ONLY | Hard sealed =QuintDomainModelShape= (=TypeError=) + unconditional =packages/quint-models/.githooks/pre-commit= |
+| Yuanxu identity, domain tags, papers, rules/dependencies, prose invariant & limits | Slim =ThreatModel.= metadata (~35 lines) | =EngineeringDomainModelType= / =ThreatDomainModelType= |
+| Cross-pillar runtime relational Datalog inference (=B1=–=B21= transitive closure) | [[file:../../../library/defensive-governance/func.ss][library/defensive-governance/func.ss]] (ASCENT) | Independent N-Version oracle (not a Quint duplication) |
+
+* Verification Receipts
+:PROPERTIES:
+:CUSTOM_ID: arch10204-receipts
+:STATUS: executed-verified
+:END:
+
+- Gerbil compile (=library/quint-methods/{types,objects,grammar,methods,interface}=, =library/quint-profiles/objects=, migrated models): 0 errors.
+- [[file:../../../t/yanxu/Library/quint-methods/projection-contracts-test.ss][projection-contracts-test.ss]]: proves hard sealed =QuintDomainModelType= throws =TypeError= on all 8 forbidden AST/config slots, verifies native =.qnt= LR parse, fail-closed parity & SpanEdit overlay compose -> =HARNESS-OK=.
+- Loader qualification tests across defense, concurrency, storage, consensus, parallel, GC, and threat subdomains -> =HARNESS-OK=.
+- [[file:../../../languages-engineering/ts/defense/agent-audit/subtree-git-hooks.test.ts][subtree-git-hooks.test.ts]] (=H1=–=H7=): proves unconditional pre-commit anti-bloat gate -> **7 pass / 0 fail**.

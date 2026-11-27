@@ -162,20 +162,16 @@
 (def (apply-quint-runtime-profile graph assembly-result runtime-overrides)
   (apply-graph-runtime-overlay graph assembly-result runtime-overrides))
 
-;; Project a validated QuintProfileType directly from a model + optional converged Yuanxu slots.
+;; Project a validated QuintProfileType directly from a .qnt-SSOT model + optional converged slots.
 (def (quint-model->verification-profile target-model (effective-slots #f))
   (def pos-depth
-    (cond
-      ((and effective-slots (.slot? effective-slots 'verify-depth))
-       (.ref effective-slots 'verify-depth))
-      ((.slot? target-model 'verify-depth) (.get target-model verify-depth))
-      (else 12)))
+    (if (and effective-slots (.slot? effective-slots 'verify-depth))
+      (.ref effective-slots 'verify-depth)
+      12))
   (def neg-depth
-    (cond
-      ((and effective-slots (.slot? effective-slots 'countermodel-depth))
-       (.ref effective-slots 'countermodel-depth))
-      ((.slot? target-model 'countermodel-depth) (.get target-model countermodel-depth))
-      (else 6)))
+    (if (and effective-slots (.slot? effective-slots 'countermodel-depth))
+      (.ref effective-slots 'countermodel-depth)
+      6))
   (def seed-val
     (if (and effective-slots (.slot? effective-slots 'seed))
       (.ref effective-slots 'seed)
@@ -183,7 +179,7 @@
   (def req-cm?
     (if (and effective-slots (.slot? effective-slots 'require-countermodels?))
       (.ref effective-slots 'require-countermodels?)
-      (and (pair? (.get target-model countermodels)) #t)))
+      (string-prefix? "engineering/" (.get target-model domain-dir))))
   (validate QuintProfileType
     (.o identity: (.get target-model identity)
         model: target-model

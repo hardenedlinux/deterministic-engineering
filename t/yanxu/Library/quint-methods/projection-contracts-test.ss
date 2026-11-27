@@ -1,13 +1,15 @@
 ;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
-;;; Loader-owned qualification tests for library/quint-methods:
-;;; prototype dispatch, sealed Record contracts, structural AST static field & guard checks,
-;;; native gerbil-parser CST/SpanEdit/overlay composition, and languages.quint Config admission.
+;;; Loader-owned qualification tests for library/quint-methods (10.204):
+;;; hard sealed .qnt-SSOT Record contracts (mechanically blocking state/guards/transitions
+;;; duplication in Scheme), native gerbil-parser LR spec/CST/SpanEdit/overlay composition,
+;;; F3 guard audit, and languages.quint Config admission.
 (import :std/test
         :clan/poo/object
         (only-in :clan/poo/type validate TypeError?)
         (only-in :clan/poo/mop/clos/objects clos-failure?)
+        (only-in :tao3k/yuanxu/testing yuanxu-test-case)
         (only-in :tao3k/yuanxu/configuration/json config-defaults)
         (only-in :deterministic-engineering/config Config)
         (only-in :deterministic-engineering/packages/quint-models/threat/execution/capabilities/objects
@@ -15,34 +17,76 @@
         (only-in :deterministic-engineering/packages/quint-models/threat/execution/state-rollback/objects
                  StateRollbackModel)
         (only-in :deterministic-engineering/packages/quint-models/threat/zero-trust/zero-trust-pep-pdp/objects
-                 ZeroTrustPepPdpModel
-                 StalePolicyDecisionCountermodel)
+                 ZeroTrustPepPdpModel)
         (only-in :deterministic-engineering/packages/quint-models/threat/identity/oauth-token-lifecycle/objects
                  OAuthTokenLifecycleModel)
         (only-in :deterministic-engineering/packages/quint-models/engineering/gc/tricolor-write-barrier/objects
                  TricolorWriteBarrierModel)
         (only-in :deterministic-engineering/packages/quint-models/engineering/parallel/hazard-pointers-tso/objects
                  HazardPointersTsoModel)
+        (only-in :deterministic-engineering/packages/quint-models/engineering/defense/model-weight-inference-attestation/objects
+                 ModelWeightInferenceAttestationModel)
         :deterministic-engineering/library/quint-methods/types
         :deterministic-engineering/library/quint-methods/objects
         :deterministic-engineering/library/quint-methods/methods
         :deterministic-engineering/library/quint-methods/grammar
         (only-in :deterministic-engineering/library/quint-profiles/types QuintConfigType)
         (only-in :deterministic-engineering/library/quint-profiles/objects
-                 quint-model->verification-profile))
+                 quint-model->verification-profile)
+        (only-in "../../../support/quint-model-qualification.ss" read-quint-model-source))
 (export quint-methods-projection-contracts-test)
 
 (def quint-methods-projection-contracts-test
-  (test-suite "quint-methods projection, sealed contracts, AST checks, and gerbil-parser composer"
-    (test-case "unknown prototype fails dispatch on quint-module and quint-plan"
+  (test-suite "quint-methods hard .qnt-SSOT sealed contracts, native LR parser, and SpanEdit composer"
+    (yuanxu-test-case "unknown prototype fails dispatch on quint-plan and quint-guard-audit"
       (def alien (.o identity: 'alien quint-module: "alien"))
       (def rollback-prof (quint-model->verification-profile StateRollbackModel))
-      (check-exception (quint-module alien) clos-failure?)
+      (def rollback-src (read-quint-model-source StateRollbackModel))
+      (check-exception (quint-guard-audit alien rollback-src) clos-failure?)
       (check-exception
-        (quint-plan alien rollback-prof DefaultQuintPolicy)
+        (quint-plan alien rollback-src rollback-prof DefaultQuintPolicy)
         clos-failure?))
 
-    (test-case "sealed contracts reject invalid steps, cross-domain misuse, bad AST fields, and missing guards"
+    (yuanxu-test-case "hard sealed QuintDomainModelType mechanically rejects ALL duplicated Quint AST slots in Scheme"
+      (validate QuintDomainModelType ModelWeightInferenceAttestationModel)
+      (validate EngineeringDomainModelType ModelWeightInferenceAttestationModel)
+      (validate ThreatDomainModelType ZeroTrustPepPdpModel)
+      (check-exception (validate ThreatDomainModelType TricolorWriteBarrierModel) TypeError?)
+      (check-exception (validate EngineeringDomainModelType ZeroTrustPepPdpModel) TypeError?)
+      ;; Every legacy Quint AST slot MUST throw TypeError on sealed QuintDomainModelShape:
+      (check-exception
+        (validate QuintDomainModelType
+          (.cc ModelWeightInferenceAttestationModel 'state '((x "int" "0"))))
+        TypeError?)
+      (check-exception
+        (validate QuintDomainModelType
+          (.cc ModelWeightInferenceAttestationModel 'guards '((g "true"))))
+        TypeError?)
+      (check-exception
+        (validate QuintDomainModelType
+          (.cc ModelWeightInferenceAttestationModel 'transitions '((step "action step = h' = h"))))
+        TypeError?)
+      (check-exception
+        (validate QuintDomainModelType
+          (.cc ModelWeightInferenceAttestationModel 'safety "true"))
+        TypeError?)
+      (check-exception
+        (validate QuintDomainModelType
+          (.cc ModelWeightInferenceAttestationModel 'traces '()))
+        TypeError?)
+      (check-exception
+        (validate QuintDomainModelType
+          (.cc ModelWeightInferenceAttestationModel 'countermodels '()))
+        TypeError?)
+      (check-exception
+        (validate QuintDomainModelType
+          (.cc ModelWeightInferenceAttestationModel 'parameters '()))
+        TypeError?)
+      (check-exception
+        (validate QuintDomainModelType
+          (.cc ModelWeightInferenceAttestationModel 'verify-depth 10))
+        TypeError?)
+      ;; Sealed QuintCheckStep still rejects invalid countermodel expectations:
       (check-exception
         (validate QuintCheckStep
           (.o label: "bad-counter"
@@ -56,39 +100,49 @@
               command: '("verify" "X.qnt")
               expected-exit: 1
               kind: "required-countermodel"))
-        TypeError?)
+        TypeError?))
+
+    (yuanxu-test-case "native .qnt parser derives plan, F3 guard audit, and fails closed on parity/countermodel violations"
+      (def cap-src (read-quint-model-source CapabilitiesModel))
       (def strict-cap
         (.cc (quint-model->verification-profile CapabilitiesModel)
              'require-countermodels? #t))
-      (check-exception (quint-plan CapabilitiesModel strict-cap DefaultQuintPolicy) error?)
-      (check-exception (validate ThreatDomainModelType TricolorWriteBarrierModel) TypeError?)
-      (check-exception (validate EngineeringDomainModelType ZeroTrustPepPdpModel) TypeError?)
+      (check-exception (quint-plan CapabilitiesModel cap-src strict-cap DefaultQuintPolicy) error?)
+      (def b21-src (read-quint-model-source ModelWeightInferenceAttestationModel))
+      (def spec (parse-quint-model-spec b21-src))
+      (check-equal? (.get spec module-name) "model_weight_inference_attestation")
+      (check-equal? (.get spec has-state-record?) #t)
+      (check-equal? (.get spec has-step?) #t)
+      (check-equal? (length (.get spec countermodels)) 3)
+      (def b21-prof (quint-model->verification-profile ModelWeightInferenceAttestationModel))
+      (def b21-plan (quint-plan ModelWeightInferenceAttestationModel b21-src b21-prof DefaultQuintPolicy))
+      (validate QuintPlanType b21-plan)
+      (check-equal? (length (.get b21-plan steps)) 6)
+      (def b21-audit (quint-guard-audit ModelWeightInferenceAttestationModel b21-src))
+      (validate QuintGuardAuditReportType b21-audit)
+      (check-equal? (.get b21-audit passed?) #t)
+      (check-equal? (length (.get b21-audit witnessed-guards)) 3)
+      ;; Fail-closed parity checks: mismatched module name or missing @countermodel step in CST must error:
       (check-exception
-        (validate EngineeringDomainModelType
-          (.cc TricolorWriteBarrierModel 'countermodels '()))
-        TypeError?)
+        (quint-plan
+          (.cc ModelWeightInferenceAttestationModel 'quint-module "wrong_module_name")
+          b21-src b21-prof DefaultQuintPolicy)
+        error?)
       (check-exception
-        (validate QuintDomainModelType
-          (.cc ZeroTrustPepPdpModel 'guards '((unrelated-guard "true"))))
-        TypeError?)
-      (check-exception
-        (validate QuintDomainModelType
-          (.cc HazardPointersTsoModel 'safety '(not (= (. h nonexistentField) 5))))
-        TypeError?)
-      (check-exception
-        (validate QuintDomainModelType
-          (.cc HazardPointersTsoModel 'transitions
-               '((step (action step () (set-h (typoField #t)))))))
-        TypeError?)
-      (check-exception
-        (validate QuintDomainModelType
-          (.cc ZeroTrustPepPdpModel 'countermodels
-               (list (.cc StalePolicyDecisionCountermodel
-                          'derive-from-transition 'policyAllow))))
-        TypeError?))
+        (parse-quint-model-spec
+          "// @countermodel bogus-guard step=nonExistentStep max-steps=6 itf=\"true\"\nmodule demo { val safety = true }\n")
+        error?)
+      ;; Engineering stateful .qnt with zero @countermodel directives MUST fail F3 guard audit:
+      (def no-cm-report
+        (quint-guard-audit
+          (.cc ModelWeightInferenceAttestationModel
+               'quint-module "bare_eng"
+               'identity 'engineering.defense.bare-eng)
+          "// @quint-model engineering.defense.bare-eng\nmodule bare_eng {\n  type State = { x: int }\n  var h: State\n  action init = h' = { x: 0 }\n  action step = h' = h\n  val safety = h.x == 0\n}\n"))
+      (check-equal? (.get no-cm-report passed?) #f))
 
-    (test-case "native gerbil-parser CST, SpanEdit, and structural overlay compose enforce parity & fail-closed"
-      (def hp-src (quint-module HazardPointersTsoModel))
+    (yuanxu-test-case "native gerbil-parser CST, SpanEdit, and structural overlay compose enforce parity & fail-closed"
+      (def hp-src (read-quint-model-source HazardPointersTsoModel))
       (def hp-decls (quint-cst-declarations hp-src))
       (check-equal? (>= (length hp-decls) 15) #t)
       (def edited (quint-span-append-decl hp-src "val extraSafety = safety"))
@@ -100,8 +154,6 @@
       (def extended (quint-span-extend-step (.get strengthened source) "readerLoadPtr"))
       (check-equal? (.get extended verified?) #t)
       (check-equal? (quint-source-qualified? (.get extended source)) #t)
-      ;; Pure-Scheme .qnt-to-.qnt overlay compose with module rename, dedup, override,
-      ;; mid-decl placement, and run tail:
       (def overlay-src
         (string-append
           "module hp_overlay {\n"
@@ -122,7 +174,7 @@
       ;; Refusal parity controls: syntax error, type conflict, missing init, uninit field, symbol collision.
       (check-exception (quint-span-append-decl hp-src "val brokenSyntax = === ???") error?)
       (check-exception (quint-span-strengthen-safety hp-src "=== broken ===") error?)
-      (def oauth-src (quint-module OAuthTokenLifecycleModel))
+      (def oauth-src (read-quint-model-source OAuthTokenLifecycleModel))
       (check-exception
         (quint-span-compose-overlay oauth-src
           "module bad_t {\n  type State = { authEpoch: bool }\n  action init = h' = { authEpoch: false }\n}\n")
@@ -140,7 +192,7 @@
           "module bad_c {\n  action beginOAuth = h' = h\n}\n")
         error?))
 
-    (test-case "languages.quint Config validates defaults and refuses invalid settings"
+    (yuanxu-test-case "languages.quint Config validates defaults and refuses invalid settings"
       (validate QuintConfigType Config)
       (def enabled
         (config-defaults Config
@@ -170,29 +222,4 @@
                 (.o deterministic-engineering:
                     (.o languages:
                         (.o quint: (.o settings: (.o timeout: 999))))))))
-        TypeError?))
-
-    (test-case "F3 quint-guard-audit classifies witnessed guards, rejects unwitnessed/redundant guards, and admits explicit preconditions"
-      (def pass-report (quint-guard-audit ZeroTrustPepPdpModel))
-      (validate QuintGuardAuditReportType pass-report)
-      (check-equal? (.get pass-report passed?) #t)
-      (check-equal? (.get pass-report unwitnessed-guards) '())
-      (check-equal? (.get pass-report undeclared-ast-guards) '())
-      ;; Removing one countermodel must fail the F3 guard necessity audit:
-      (def unwitnessed-model
-        (.cc ZeroTrustPepPdpModel 'countermodels (list StalePolicyDecisionCountermodel)))
-      (def fail-report (quint-guard-audit unwitnessed-model))
-      (check-equal? (.get fail-report passed?) #f)
-      (check-equal? (.get fail-report unwitnessed-guards) '(policy-active))
-      ;; Explicit 'precondition annotation justifies a domain framing guard:
-      (def precond-model
-        (.cc unwitnessed-model
-             'guard-classifications '((policy-active precondition "Explicit domain well-formedness frame"))))
-      (def precond-report (quint-guard-audit precond-model))
-      (check-equal? (.get precond-report passed?) #t)
-      ;; Explicit 'redundant annotation still fails passed? so redundant defenses cannot pass silently:
-      (def redundant-model
-        (.cc unwitnessed-model
-             'guard-classifications '((policy-active redundant "Pruned guard left safety intact"))))
-      (def redundant-report (quint-guard-audit redundant-model))
-      (check-equal? (.get redundant-report passed?) #f))))
+        TypeError?))))

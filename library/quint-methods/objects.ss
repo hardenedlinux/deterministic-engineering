@@ -1,6 +1,10 @@
 ;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
+;;; Canonical .qnt-SSOT prototype and default verification policy (10.204).
+;;; ThreatModel. carries ONLY Yuanxu metadata and the .qnt pointer; state, guards,
+;;; transitions, safety, traces, and countermodels live exclusively in <Model>.qnt
+;;; and are forbidden in Scheme by the sealed QuintDomainModelShape contract.
 (import :clan/poo/object)
 (export DefaultQuintPolicy ThreatModel.)
 
@@ -20,12 +24,5 @@
   factor-implications: '()
   rules: '()
   dependencies: '()
-  invariant: "Finite safety predicate over declared state."
-  state: '()
-  guards: '()
-  transitions: '()
-  safety: #t
-  traces: '()
-  countermodels: '()
-  parameters: '()
+  invariant: "Finite safety predicate defined natively in the paired .qnt file."
   limits: "Finite model abstraction; no cryptography, network or Lean refinement is claimed.")

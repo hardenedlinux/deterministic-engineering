@@ -5,10 +5,8 @@
 ;;; Co-located Yuanxu unit: single source of truth alongside StateRollback.qnt and README.org.
 (import :clan/poo/object
         (only-in :deterministic-engineering/packages/quint-models/threat/execution/effect-handoff/objects
-                 EffectHandoffModel
-                 NoDurabilityCountermodel))
-(export StateRollbackModel
-        RollbackCountermodel)
+                 EffectHandoffModel))
+(export StateRollbackModel)
 
 (.def (StateRollbackModel @ EffectHandoffModel)
   identity: 'threat.execution.state-rollback
@@ -34,26 +32,4 @@
     (ROLL-COUNTER profile)
     (ROLL-COUNTER method))
   invariant: "Monotonic storage prevents replaying a pre-handoff snapshot to emit a second effect."
-  guards: => (cut append <> '((monotonic-storage (<= (. h sent) MaxSends))))
-  traces: => (cut append <>
-                  '((rollbackCountermodelTest
-                      (run rollbackCountermodelTest
-                        (then init prepare (call commitAs #t) emit replayOldState unsafe)))))
-  countermodels:
-  (list NoDurabilityCountermodel
-        RollbackCountermodel)
   limits: "Finite rollback model; does not prove physical storage atomicity or external rail deduplication.")
-
-(.def (RollbackCountermodel @ StateRollbackModel)
-  identity: 'threat.execution.state-rollback.replay-old-state
-  dropped-guard: 'monotonic-storage
-  step-action: "stepRollback"
-  counter-action:
-  '(decls
-     (action replayOldState ()
-       (if (= (. h phase) 3)
-         (set-h (sent (+ (. h sent) 1)))
-         (keep-h)))
-     (action stepRollback ()
-       (any step replayOldState)))
-  expected-itf-predicate: "h.sent >= 2")

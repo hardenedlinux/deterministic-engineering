@@ -27,28 +27,4 @@
     (CAP-ACQ profile)
     (CAP-ACQ method))
   invariant: "Target capability is learnable iff a rule grants it and its prerequisites are known."
-  state:
-  '((known "Set[str]"))
-  guards:
-  '((rule-prerequisites (subseteq (. rule needs) known)))
-  transitions:
-  '((canLearn
-      (pure-def canLearn ((known "Set[str]")
-                          (rules "Set[{ needs: Set[str], grants: str }]")
-                          (target "str"))
-                "bool"
-        (exists rules rule
-          (and (= (. rule grants) target)
-               (subseteq (. rule needs) known))))))
-  safety: #t
-  traces:
-  '((sampleRules
-      (pure-val sampleRules
-        (set (record (needs (set "a")) (grants "b")))))
-    (learnableTest
-      (run learnableTest
-        (all (assert (call canLearn (set "a") sampleRules "b"))
-             (assert (not (call canLearn (set) sampleRules "b")))))))
-  countermodels: '()
-  parameters: '()
   limits: "Finite acquisition projection; does not model timing, side channels or cryptographic compromise.")

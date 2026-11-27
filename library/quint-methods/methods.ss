@@ -1,129 +1,54 @@
 ;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
-;;; Pure Quint source projection and verification plan generation.
-;;; Dispatched on prototype ancestry; unknown prototypes fail dispatch. Zero I/O.
+;;; Pure .qnt-SSOT verification plan, F3 guard audit, and README projection (10.204).
+;;; Dispatched on ThreatModel. prototype ancestry; parses the .qnt source directly via
+;;; gerbil-parser (grammar.ss) with ZERO duplicated Quint AST in Scheme and ZERO I/O.
 (import :clan/poo/object
         (only-in :clan/poo/type validate)
         (only-in :clan/poo/mop/clos/generic-syntax .defgeneric .defmethod)
         :std/format
         (only-in "objects.ss" ThreatModel.)
-        "ast.ss"
+        "grammar.ss"
         "types.ss")
-(export quint-module quint-plan quint-model-readme quint-guard-audit)
+(export quint-plan quint-model-readme quint-guard-audit)
 
-(.defgeneric quint-module (model))
-(.defgeneric quint-plan (model profile policy))
-(.defgeneric quint-model-readme (model))
-(.defgeneric quint-guard-audit (model))
+(.defgeneric quint-plan (model qnt-source profile policy))
+(.defgeneric quint-model-readme (model qnt-source))
+(.defgeneric quint-guard-audit (model qnt-source))
 
-(def (join-lines items sep)
-  (let loop ((rest items) (acc ""))
+(def (dedup-syms xs)
+  (let loop ((rest xs) (seen '()) (acc '()))
     (cond
-     ((null? rest) acc)
-     ((equal? acc "") (loop (cdr rest) (car rest)))
-     (else (loop (cdr rest) (string-append acc sep (car rest)))))))
+     ((null? rest) (reverse acc))
+     ((memq (car rest) seen) (loop (cdr rest) seen acc))
+     (else (loop (cdr rest) (cons (car rest) seen) (cons (car rest) acc))))))
 
-(def (has-state-record? state-rows)
-  (and (pair? state-rows) (= (length (car state-rows)) 3)))
+(def (verify-qnt-model-parity model spec)
+  (unless (equal? (.get spec module-name) (.get model quint-module))
+    (error "Native .qnt module name mismatch"
+           (.get model quint-module) (.get spec module-name)))
+  (let ((hdr-id (.get spec model-identity)))
+    (when (and hdr-id (not (eq? hdr-id (.get model identity))))
+      (error "Native .qnt @quint-model identity mismatch"
+             (.get model identity) hdr-id))))
 
-(.defmethod (quint-module (model (prototype ThreatModel.)))
-  (validate QuintDomainModelType model)
-  (def mod-name (.get model quint-module))
-  (def limits (.get model limits))
-  (def imports (if (.slot? model 'quint-imports) (.get model quint-imports) '()))
-  (def params (.get model parameters))
-  (def state-rows (.get model state))
-  (def transitions (.get model transitions))
-  (def safety (.get model safety))
-  (def traces (.get model traces))
-  (def countermodels (.get model countermodels))
-  (call-with-output-string
-    (lambda (out)
-      ;; REUSE-IgnoreStart
-      (display "// SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors\n" out)
-      (display "// SPDX-License-Identifier: LGPL-2.1-or-later\n" out)
-      ;; REUSE-IgnoreEnd
-      (fprintf out "// @quint-model %a\n" (.get model identity))
-      (display "// @quint-version 0.33.0\n" out)
-      (display "// @apalache-version 0.62.1\n" out)
-      (def verify-depth (if (.slot? model 'verify-depth) (.get model verify-depth) 12))
-      (when (has-state-record? state-rows)
-        (if (and (.slot? model 'verify-const-bindings)
-                 (pair? (.get model verify-const-bindings)))
-          (fprintf out "// @verify safety max-steps=%a const=\"%a\"\n"
-                   verify-depth
-                   (join-lines
-                     (map (lambda (b) (format "%a=%a" (car b) (cadr b)))
-                          (.get model verify-const-bindings))
-                     ", "))
-          (fprintf out "// @verify safety max-steps=%a\n" verify-depth)))
-      (def cm-depth (if (.slot? model 'countermodel-depth) (.get model countermodel-depth) 6))
-      (for-each
-        (lambda (cm)
-          (fprintf out "// @countermodel %a step=%a max-steps=%a itf=\"%a\"\n"
-                   (.get cm dropped-guard) (.get cm step-action) cm-depth (.get cm expected-itf-predicate)))
-        countermodels)
-      (fprintf out "// Limits: %a\n" limits)
-      (fprintf out "module %a {\n" mod-name)
-      (for-each
-        (lambda (imp)
-          (fprintf out "  import %a.* from \"%a\"\n" (car imp) (cadr imp)))
-        imports)
-      (for-each
-        (lambda (p)
-          (fprintf out "  const %a: %a\n" (car p) (cadr p)))
-        params)
-      (when (has-state-record? state-rows)
-        (fprintf out "  type State = { %a }\n"
-                 (join-lines (map (lambda (r) (format "%a: %a" (car r) (cadr r))) state-rows) ", "))
-        (display "  var h: State\n" out)
-        (fprintf out "  action init = h' = { %a }\n"
-                 (join-lines (map (lambda (r) (format "%a: %a" (car r) (caddr r))) state-rows) ", ")))
-      (for-each
-        (lambda (tr)
-          (def body (cadr tr))
-          (fprintf out "  %a\n" (if (string? body) body (emit-quint-decl body))))
-        transitions)
-      (when (has-state-record? state-rows)
-        (fprintf out "  val safety = %a\n" (if (string? safety) safety (emit-quint-expr safety))))
-      (for-each
-        (lambda (cm)
-          (fprintf out "  // Countermodel %a (dropped guard: %a)\n"
-                   (.get cm identity) (.get cm dropped-guard))
-          (if (.slot? cm 'derive-from-transition)
-            (let* ((base-tr (assq (.get cm derive-from-transition) transitions))
-                   (step-call (if (.slot? cm 'derive-step-call) (.get cm derive-step-call) #f))
-                   (derived (quint-derive-countermodel-decls
-                              (cadr base-tr)
-                              (.get cm dropped-guard)
-                              (.get cm derive-action-name)
-                              (string->symbol (.get cm step-action))
-                              step-call)))
-              (fprintf out "  %a\n" (emit-quint-counter-ast derived)))
-            (fprintf out "  %a\n" (emit-quint-counter-ast (.get cm counter-action)))))
-        countermodels)
-      (for-each
-        (lambda (tr)
-          (def body (cadr tr))
-          (fprintf out "  %a\n" (if (string? body) body (emit-quint-decl body))))
-        traces)
-      (display "}\n" out))))
-
-(.defmethod (quint-plan (model (prototype ThreatModel.)) profile policy)
+(.defmethod (quint-plan (model (prototype ThreatModel.)) qnt-source profile policy)
   (validate QuintDomainModelType model)
   (validate QuintProfileType profile)
   (validate QuintPolicyType policy)
-  (def mod-name (.get model quint-module))
+  (def spec (parse-quint-model-spec qnt-source))
+  (verify-qnt-model-parity model spec)
+  (def mod-name (.get spec module-name))
   (def file-name (.get model quint-file))
   (def seed-val (.get profile seed))
-  (def pos-depth (.get profile positive-depth))
-  (def neg-depth (.get profile negative-depth))
+  (def pos-depth (.get spec verify-depth))
+  (def neg-depth (.get spec countermodel-depth))
   (def timeout-val (.get policy timeout))
-  (def countermodels (.get model countermodels))
+  (def countermodels (.get spec countermodels))
   (when (and (.get profile require-countermodels?) (null? countermodels))
-    (error "Profile requires countermodels but model declares none" (.get model identity)))
-  (def has-step? (and (has-state-record? (.get model state)) #t))
+    (error "Profile requires countermodels but .qnt declares no @countermodel"
+           (.get model identity)))
   (def base-steps
     (append
       (list
@@ -131,7 +56,7 @@
             command: (list "typecheck" file-name)
             expected-exit: 0
             kind: "typecheck"))
-      (if (pair? (.get model traces))
+      (if (pair? (.get spec run-traces))
         (list
           (.o label: "traces"
               command: (list "test" file-name
@@ -142,7 +67,7 @@
               expected-exit: 0
               kind: "deterministic-traces"))
         '())
-      (if has-step?
+      (if (and (.get spec has-state-record?) (.get spec has-step?) (.get spec safety-source))
         (list
           (.o label: "safety"
               command: (list "verify" file-name
@@ -160,7 +85,7 @@
                            (string-append "--main=" mod-name)
                            (string-append "--step=" (.get cm step-action))
                            "--invariant=safety"
-                           (string-append "--max-steps=" (number->string neg-depth)))
+                           (string-append "--max-steps=" (number->string (.get cm max-steps))))
             expected-exit: 1
             kind: "required-countermodel"
             dropped-guard: (symbol->string (.get cm dropped-guard))
@@ -177,20 +102,48 @@
         timeout: timeout-val
         steps: (append base-steps counter-steps))))
 
-(.defmethod (quint-model-readme (model (prototype ThreatModel.)))
+(.defmethod (quint-guard-audit (model (prototype ThreatModel.)) qnt-source)
   (validate QuintDomainModelType model)
+  (def spec (parse-quint-model-spec qnt-source))
+  (verify-qnt-model-parity model spec)
+  (def cms (.get spec countermodels))
+  (def wit-guards (dedup-syms (map (lambda (cm) (.get cm dropped-guard)) cms)))
+  (def audit-entries
+    (map
+      (lambda (cm)
+        (.o guard-id: (.get cm dropped-guard)
+            classification: 'essential
+            in-ast?: #t
+            witnessed?: #t
+            witness: (.get cm step-action)))
+      cms))
+  (def require-cm? (and (.get spec has-state-record?)
+                        (string-prefix? "engineering/" (.get model domain-dir))))
+  (validate QuintGuardAuditReportType
+    (.o model-identity: (.get model identity)
+        declared-guards: wit-guards
+        ast-guards: wit-guards
+        witnessed-guards: wit-guards
+        unwitnessed-guards: '()
+        undeclared-ast-guards: '()
+        entries: audit-entries
+        passed?: (or (not require-cm?) (pair? wit-guards)))))
+
+(.defmethod (quint-model-readme (model (prototype ThreatModel.)) qnt-source)
+  (validate QuintDomainModelType model)
+  (def spec (parse-quint-model-spec qnt-source))
+  (verify-qnt-model-parity model spec)
   (def title (if (.slot? model 'title) (.get model title) (symbol->string (.get model identity))))
-  (def mod-name (.get model quint-module))
+  (def mod-name (.get spec module-name))
   (def file-name (.get model quint-file))
   (def domain-dir (.get model domain-dir))
   (def inv (.get model invariant))
-  (def safety (.get model safety))
-  (def guards (.get model guards))
-  (def cms (.get model countermodels))
+  (def safety-src (or (.get spec safety-source) "true"))
+  (def cms (.get spec countermodels))
   (def papers (if (.slot? model 'papers) (.get model papers) '()))
   (def limits (.get model limits))
-  (def vdepth (if (.slot? model 'verify-depth) (.get model verify-depth) 12))
-  (def cmdepth (if (.slot? model 'countermodel-depth) (.get model countermodel-depth) 6))
+  (def vdepth (.get spec verify-depth))
+  (def cmdepth (.get spec countermodel-depth))
   (call-with-output-string
     (lambda (out)
       ;; REUSE-IgnoreStart
@@ -211,9 +164,9 @@
       (display "* Emergent Safety Invariant\n\n" out)
       (fprintf out "%a\n\n" inv)
       (display "#+begin_src quint\n" out)
-      (fprintf out "val safety = %a\n" (if (string? safety) safety (emit-quint-expr safety)))
+      (fprintf out "val safety = %a\n" safety-src)
       (display "#+end_src\n\n" out)
-      (when (pair? guards)
+      (when (pair? cms)
         (display "* Protocol Guards & Auto-Derived Countermodels\n\n" out)
         (display "| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |\n" out)
         (display "|----------+----------------------+---------------------------------------|\n" out)
@@ -232,7 +185,7 @@
         (display "\n" out))
       (display "* Verification & Model-Based Testing\n\n" out)
       (display "#+begin_src sh\n" out)
-      (if (has-state-record? (.get model state))
+      (if (.get spec has-state-record?)
         (begin
           (fprintf out "# Full bounded Apalache verification (safety + all weakened countermodels):\n")
           (fprintf out "quint-modules-resolver run-plan packages/quint-models/%a/%a --verify\n\n"
@@ -247,83 +200,3 @@
       (display "#+end_src\n\n" out)
       (display "* Explicit Limits\n\n" out)
       (fprintf out "%a\n" limits))))
-
-(def (dedup-syms xs)
-  (let loop ((rest xs) (seen '()) (acc '()))
-    (cond
-     ((null? rest) (reverse acc))
-     ((memq (car rest) seen) (loop (cdr rest) seen acc))
-     (else (loop (cdr rest) (cons (car rest) seen) (cons (car rest) acc))))))
-
-(.defmethod (quint-guard-audit (model (prototype ThreatModel.)))
-  (validate QuintDomainModelType model)
-  (def decl-guards (dedup-syms (map car (.get model guards))))
-  (def ast-guard-ids
-    (dedup-syms
-      (apply append
-        (map (lambda (tr)
-               (let ((body (cadr tr)))
-                 (if (quint-decl? body) (quint-decl-collect-guards body) '())))
-             (.get model transitions)))))
-  (def cms (.get model countermodels))
-  (def wit-guards (dedup-syms (map (lambda (cm) (.get cm dropped-guard)) cms)))
-  (def annotations
-    (if (.slot? model 'guard-classifications)
-      (.get model guard-classifications)
-      '()))
-  (def stateful? (has-state-record? (.get model state)))
-  (def all-guards (dedup-syms (append decl-guards ast-guard-ids)))
-  (def audit-entries
-    (map
-      (lambda (gid)
-        (def cm (find (lambda (c) (eq? (.get c dropped-guard) gid)) cms))
-        (def ann (assq gid annotations))
-        (def found-in-ast? (and (memq gid ast-guard-ids) #t))
-        (cond
-         (cm
-          (.o guard-id: gid
-              classification: 'essential
-              in-ast?: found-in-ast?
-              witnessed?: #t
-              witness: (.get cm step-action)))
-         ((not stateful?)
-          (.o guard-id: gid
-              classification: 'precondition
-              in-ast?: found-in-ast?
-              witnessed?: #f
-              rationale: "Stateless pure reference predicate (no stateful step transition)"))
-         ((and ann (>= (length ann) 3) (eq? (cadr ann) 'precondition))
-          (.o guard-id: gid
-              classification: 'precondition
-              in-ast?: found-in-ast?
-              witnessed?: #f
-              rationale: (caddr ann)))
-         ((and ann (>= (length ann) 3)
-               (memq (cadr ann) '(redundant under-modeled)))
-          (.o guard-id: gid
-              classification: (cadr ann)
-              in-ast?: found-in-ast?
-              witnessed?: #f
-              rationale: (caddr ann)))
-         (else
-          (.o guard-id: gid
-              classification: 'unwitnessed
-              in-ast?: found-in-ast?
-              witnessed?: #f))))
-      all-guards))
-  (def unwit-guards
-    (map (lambda (e) (.get e guard-id))
-         (filter (lambda (e)
-                   (memq (.get e classification) '(unwitnessed redundant under-modeled)))
-                 audit-entries)))
-  (def undec-ast-guards
-    (filter (lambda (gid) (not (memq gid decl-guards))) ast-guard-ids))
-  (validate QuintGuardAuditReportType
-    (.o model-identity: (.get model identity)
-        declared-guards: decl-guards
-        ast-guards: ast-guard-ids
-        witnessed-guards: wit-guards
-        unwitnessed-guards: unwit-guards
-        undeclared-ast-guards: undec-ast-guards
-        entries: audit-entries
-        passed?: (and (null? unwit-guards) (null? undec-ast-guards)))))

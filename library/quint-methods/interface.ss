@@ -11,7 +11,7 @@
 
 (.def QuintMethods
   identity: 'quint-methods
-  tags: '(engineering method quint de.layer.method defense.property.guard-pruned)
+  tags: '(engineering method quint de.layer.method defense.property.guard-pruned quint.native-ssot)
   core:
   (.o
     admissions: (.o Config: (.o export-path: '(config) contract-path: '(config-type)))
@@ -19,7 +19,7 @@
     exports:
     (.o config: Config
         config-type: QuintPolicyType
-        project-module: quint-module
+        parse-spec: parse-quint-model-spec
         project-readme: quint-model-readme
         plan: quint-plan
         audit-guards: quint-guard-audit
