@@ -10,6 +10,8 @@ on:
       - 'package.json'
       - 'bun.lock'
       - 'docs/90-99-views/90-architecture-views/**'
+      - 't/harness/**'
+      - 'Justfile'
       - '.github/workflows/render.yml'
   push:
     branches: [main]
@@ -18,6 +20,8 @@ on:
       - 'package.json'
       - 'bun.lock'
       - 'docs/90-99-views/90-architecture-views/**'
+      - 't/harness/**'
+      - 'Justfile'
       - '.github/workflows/render.yml'
 permissions:
   contents: read
@@ -31,31 +35,13 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: ./.github/actions/setup-just
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
         with:
           bun-version: 1.3.11
       - run: bun install --frozen-lockfile
       - run: ./packages/render/node_modules/.bin/playwright install --with-deps chromium
-      - run: bun run typecheck
-      - run: bun run test
-      - run: bun run test:export
-      - run: bun run test:examples
-      - run: bun run example:case
-      - run: bun run example:compare
-      - run: bun run example:overviews
-      - run: bun run example:design
-      - run: bun run example:library-boundary
-      - run: bun run example:images
+      - name: Unified render package gate (typecheck + tests + Playwright export + examples)
+        run: just check-render
       - name: Consume the reviewed Git package through Bun (local subtree split)
-        run: |
-          render_version=$(bun -e 'import metadata from "./packages/render/package.json"; process.stdout.write(metadata.version)')
-          export RENDER_EXPECTED_VERSION="$render_version"
-          split_sha=$(git subtree split --prefix=packages/render HEAD)
-          mirror_work=$(mktemp -d)
-          git archive "$split_sha" | tar -x -C "$mirror_work"
-          tarball=$(cd "$mirror_work" && bun pm pack --quiet | tail -n 1)
-          render_consumer=$(mktemp -d)
-          cd "$render_consumer"
-          bun init -y
-          bun add "${mirror_work}/${tarball}"
-          bun -e 'import metadata from "@deterministic-engineering/render/package.json"; import {compileModel} from "@deterministic-engineering/render"; import {encodeWebP} from "@deterministic-engineering/render/export"; if(metadata.version!==process.env.RENDER_EXPECTED_VERSION)throw new Error("Wrong Git package version"); const compiled=await compileModel({"consumer.d2":"Library -> Consumer"},"consumer.d2"); if(compiled.model.relations.length!==1)throw new Error("Git-installed worker did not compile the consumer model"); const webp=await encodeWebP(Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAADklEQVQImWP4DwUMMAYAj4IP8cvlVgcAAAAASUVORK5CYII=","base64")); if(Buffer.from(webp.bytes).toString("ascii",8,12)!=="WEBP")throw new Error("Git-installed native WebP encoder failed");'
+        run: just check-render-consumer

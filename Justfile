@@ -2,552 +2,218 @@
 #
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
-# Native package operations; every Scheme process is fenced before importing.
+# Unified zero-hardcoding command surface for local development and GitHub Actions CI.
+# - Native Scheme Yuanxu + Functional Fun-Flow engine: t/harness/funflow-exec.ss (`just flow ...`)
+# - Portable zero-Gerbil CI worker (identical graph/tag algebra): t/harness/verify-framework.ts (`just verify ...`)
+# Adding new Scheme/Quint/Lean/TS/C/C++/Rust/Go modules requires ZERO edits here or in CI.
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 
-# The native SDK derives concurrency from this machine; preserve caller limits.
-# max-heap is per Scheme process, not a whole-build memory/worker cap.
-export GERBIL_BUILD_CORES := env_var_or_default("GERBIL_BUILD_CORES", `gxi -:max-heap=2G -e '(display (##core-count))'`)
-# Native package scripts spawn Scheme children: carry the same heap fence to them.
-# Nested Just/SDK calls must retain the same compiler input identity.
+export GERBIL_BUILD_CORES := env_var_or_default("GERBIL_BUILD_CORES", `if command -v gxi >/dev/null 2>&1; then gxi -:max-heap=2G -e '(display (##core-count))'; else nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4; fi`)
 export GAMBOPT := if env_var_or_default("GAMBOPT", "") == "" { "max-heap=2G,debug=q" } else if env_var("GAMBOPT") =~ "(^|,)max-heap=2G,debug=q$" { env_var("GAMBOPT") } else { env_var("GAMBOPT") + ",max-heap=2G,debug=q" }
 
-# Align with agentic-ai-lab's Homebrew/Darwin compiler policy; native Gerbil
-# still owns package resolution, environment and build dispatch.
 gerbil_homebrew_runtime := `gerbil_executable="$(command -v gerbil 2>/dev/null || true)"; if [ -n "$gerbil_executable" ] && realpath "$gerbil_executable" | grep -F '/opt/homebrew/Cellar/' >/dev/null; then printf true; else printf false; fi`
 homebrew_openssl_prefix := `if command -v brew >/dev/null 2>&1; then brew --prefix openssl@3 2>/dev/null || true; fi`
 darwin_openssl_prefix := env_var_or_default("OPENSSL_PREFIX", homebrew_openssl_prefix)
 gerbil_darwin_env := if os() == "macos" { if gerbil_homebrew_runtime == "true" { "env -u SDKROOT -u DEVELOPER_DIR -u CPATH -u LIBRARY_PATH -u C_INCLUDE_PATH -u CPLUS_INCLUDE_PATH -u MACOSX_DEPLOYMENT_TARGET -u DYLD_LIBRARY_PATH -u DYLD_FALLBACK_LIBRARY_PATH COMPILER_PATH=/usr/bin CPATH='" + darwin_openssl_prefix + "/include' LIBRARY_PATH='" + darwin_openssl_prefix + "/lib' PKG_CONFIG_PATH=\"" + darwin_openssl_prefix + "/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}\"" } else { "env" } } else { "env" }
 
-# Native installation spans several package builds. Keep the original deadline
-# at each package entry; a serial dependency closure is not one package build.
+# ── 1. Native Gerbil Package Lifecycle ────────────────────────────────────────
+
 deps:
     timeout --foreground --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q deps --install
 
-
-# Gerbil's public package API owns tagged updates; no Parent path or manifest writer.
 deps-update:
     timeout --foreground --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -e '(import (only-in :gerbil/tools/gxpkg pkg-update pkg-install with-pkg-build-env)) (with-pkg-build-env (for-each (lambda (dependency) (pkg-update dependency) (pkg-install dependency)) (pgetq depend: (call-with-input-file "gerbil.pkg" read) (quote ()))))'
 
-# Use the ordinary untagged native build with the same host/compiler envelope.
 build-dependency package:
     timeout --foreground --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxpkg build "{{ package }}"
 
 build:
     timeout --foreground --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q build
 
-test-file path pattern=".*" timeout_s="120s":
+# ── 2. Canonical Yuanxu + Functional Fun-Flow Execution Control Plane ─────────
+# Compiles discovered Yuanxu/polyglot units into a real Fun-Flow DAG with
+# SHA-256 content-addressed caching (--cache), O(Delta) git-diff slicing (--impact),
+# parallel green-thread waves (--jobs=N), dry-run planning (--plan), and replay validation.
+
+flow *args:
+    t/harness/run-gxtest.sh script none t/harness/funflow-exec.ss {{args}}
+
+flow-list:
+    just flow --list
+
+flow-plan *args:
+    just flow --plan {{args}}
+
+flow-impact *args:
+    just flow --impact {{args}}
+
+# ── 3. Portable Zero-Gerbil Verification Surface (Single Source of Truth for CI) ─
+# Exact same zero-hardcoding graph discovery & tag algebra without requiring Gerbil.
+
+verify *args:
+    bun t/harness/verify-framework.ts run {{args}}
+
+verify-list:
+    bun t/harness/verify-framework.ts list
+
+verify-plan *args:
+    bun t/harness/verify-framework.ts run --plan {{args}}
+
+verify-impact *args:
+    bun t/harness/verify-framework.ts run --impact {{args}}
+
+verify-lang lang domain="" *flags:
+    bun t/harness/verify-framework.ts run --lang={{lang}} {{ if domain != "" { "--domain=" + domain } else { "" } }} {{flags}}
+
+# Declarative tag-driven verification gates (zero hardcoded file/model/script lists).
+check-defense *flags:
+    just verify --tag=defense {{flags}}
+
+check-stability *flags:
+    just verify --tag=stability,go:concurrency,quint.engineering.concurrency,quint.engineering.gc,lean.core.stability {{flags}}
+
+check-multi-method *flags:
+    just verify --tag=funflow {{flags}}
+
+check-quint *flags:
+    just verify --domain=quint {{flags}}
+
+check-lean *flags:
+    just verify --lang=lean {{flags}}
+
+check-render *flags:
+    just verify --domain=render {{flags}}
+
+check-render-consumer:
     #!/usr/bin/env bash
     set -euo pipefail
-    test -f "{{path}}"
-    if test -x "$HOME/.cargo/bin/rustup"; then
-      export RESOURCE_CARGO="${RESOURCE_CARGO:-$("$HOME/.cargo/bin/rustup" which cargo)}"
-      export RESOURCE_RUSTC="${RESOURCE_RUSTC:-$("$HOME/.cargo/bin/rustup" which rustc)}"
-    fi
-    mkdir -p .data/test-logs
-    log="$(mktemp .data/test-logs/test-XXXXXX)"
-    # Establish the native package environment before gxtest initializes imports.
-    timeout --foreground --signal=TERM --kill-after=5s {{timeout_s}} {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxtest -v 5 -r "{{pattern}}" "{{path}}" 2>&1 | tee "$log"
-    if rg 'ERROR (MODULE|CHECK|CASE|HARNESS)|Heap overflow|Stack overflow' "$log"; then exit 1; fi
-    rg -F -x 'MODULE-OK {{path}}' "$log" >/dev/null
-    rg -F 'HARNESS-OK' "$log" >/dev/null
-    rg '^SUITE-OK ' "$log" >/dev/null
-    rg '^CASE-OK ' "$log" >/dev/null
-    rg -x 'OK' "$log" >/dev/null
+    render_version=$(bun -e 'import metadata from "./packages/render/package.json"; process.stdout.write(metadata.version)')
+    export RENDER_EXPECTED_VERSION="$render_version"
+    split_sha=$(git subtree split --prefix=packages/render HEAD)
+    mirror_work=$(mktemp -d)
+    render_consumer=$(mktemp -d)
+    trap 'rm -rf "$mirror_work" "$render_consumer"' EXIT
+    git archive "$split_sha" | tar -x -C "$mirror_work"
+    tarball=$(cd "$mirror_work" && bun pm pack --quiet | tail -n 1)
+    cd "$render_consumer"
+    bun init -y
+    bun add "${mirror_work}/${tarball}"
+    bun -e 'import metadata from "@deterministic-engineering/render/package.json"; import {compileModel} from "@deterministic-engineering/render"; import {encodeWebP} from "@deterministic-engineering/render/export"; if(metadata.version!==process.env.RENDER_EXPECTED_VERSION)throw new Error("Wrong Git package version"); const compiled=await compileModel({"consumer.d2":"Library -> Consumer"},"consumer.d2"); if(compiled.model.relations.length!==1)throw new Error("Git-installed worker did not compile the consumer model"); const webp=await encodeWebP(Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAADklEQVQImWP4DwUMMAYAj4IP8cvlVgcAAAAASUVORK5CYII=","base64")); if(Buffer.from(webp.bytes).toString("ascii",8,12)!=="WEBP")throw new Error("Git-installed native WebP encoder failed");'
 
-# Yuanxu Loader test layout gate: enforces t/yanxu/Library/<owner>/*-test.ss ownership.
+fleet-quint:
+    bun run fleet:quint
+
+mbt-quint:
+    bun run mbt:quint
+
+# ── 4. AI Agent PR & Library Auditors ─────────────────────────────────────────
+
+audit-agent-patch *args:
+    bun languages-engineering/ts/defense/agent-audit/agent-defense-audit.ts {{ if args == "" { "--diff" } else { args } }}
+
+audit-agent-stability *args:
+    bun languages-engineering/ts/stability/aging-contrast/agent-stability-audit.ts {{ if args == "" { "--diff" } else { args } }}
+
+audit-leanpoo-fleet *args:
+    bun languages-engineering/ts/defense/agent-audit/leanpoo-fleet-audit.ts {{ args }}
+
+# ── 5. Atomic Gerbil / Yuanxu Scheme Runners ──────────────────────────────────
+
+test-file path pattern=".*" timeout_s="120s":
+    t/harness/run-gxtest.sh file "{{path}}" "{{pattern}}" "{{timeout_s}}"
+
+test-dir dir timeout_s="120s" glob="*-test.ss":
+    t/harness/run-gxtest.sh dir "{{dir}}" "{{timeout_s}}" "{{glob}}"
+
+formation-test-file path cases:
+    t/harness/run-gxtest.sh formation "{{path}}" "{{cases}}"
+
 test-de-layout:
     just test-file t/integration/module-publication/loader-ownership-test.ss
 
-# Loader-owned Quint methods, profiles & domain model qualification suites.
-test-quint-models:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    just test-file t/yanxu/Library/quint-methods/projection-contracts-test.ss
-    just test-file t/yanxu/Library/quint-profiles/convergence-test.ss
-    just test-file t/yanxu/Library/bounded-capacity/contract-test.ss
-    just test-file t/yanxu/Library/resource-lifetime/contract-test.ss
-    for f in t/yanxu/*/*/qualification-test.ss; do
-      just test-file "$f"
-    done
+test-quint-models *flags:
+    just flow --tag=quint.model {{flags}}
 
-# Serial execution preserves bounded native test ownership.
-test:
-    just test-de-layout
-    just test-file t/integration/runtime/user-configuration-test.ss
-    just test-source-contracts
-    just test-file t/integration/library/engineering-ownership-test.ss
-    just test-file t/integration/formation/repository-input-schema-test.ss
-    just test-file t/integration/library/relation-types-test.ss
-    just test-file t/yanxu/Library/evidence/resource-contract-test.ss
-    just test-file t/yanxu/Library/evidence/catalog-test.ss
-    just test-file t/yanxu/Library/resource-lifecycle-profiles/scenario-contract-test.ss
-    just test-file t/integration/library/owner-test.ss
-    just test-file t/integration/library/selection-test.ss
-    just test-file t/integration/runtime/native-context-test.ss
-    just test-file t/integration/runtime/native-concurrency-test.ss
-    just test-file t/integration/runtime/rust-project-native-test.ss
-    just test-file t/integration/library/module-design-test.ss
-    just test-gateway
-    just test-file t/integration/runtime/dependency-compatibility-test.ss
-    just test-file t/integration/runtime/package-metadata-test.ss
-
-# Real language subjects, current native tool paths and existing test harness.
 test-source-contracts pattern=".*" path="t/yanxu/Library/source-contracts/contracts-test.ss":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    export SOURCE_CONTRACT_CBMC="$(realpath "$(command -v cbmc)")"
-    export SOURCE_CONTRACT_GOTO_CC="$(realpath "$(command -v goto-cc)")"
-    export SOURCE_CONTRACT_GOTO_INSTRUMENT="$(realpath "$(command -v goto-instrument)")"
-    export SOURCE_CONTRACT_CC="$(realpath "$(command -v clang)")"
-    export SOURCE_CONTRACT_CXX="$(realpath "$(command -v clang++)")"
     just test-file "{{path}}" "{{pattern}}"
 
-investigate-source-contracts output:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    timeout --foreground --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi t/support/source-contract-evidence.ss "{{output}}" "$(realpath "$(command -v cbmc)")" "$(realpath "$(command -v goto-cc)")" "$(realpath "$(command -v goto-instrument)")" "$(realpath "$(command -v clang)")" "$(realpath "$(command -v clang++)")"
-
-# Each existing suite receives its own bounded native invocation.
 test-gateway:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    for suite in initial method capacity cache-retry source boundaries counter; do
-      just test-file t/yanxu/Library/gateway-profiles/gateway-library-test.ss "^gateway-$suite-test$"
-    done
+    t/harness/run-gxtest.sh suites t/yanxu/Library/gateway-profiles/gateway-library-test.ss 120s
 
-# Actual tools and issued results; output must be a fresh directory.
-investigate-resource output:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    cargo="${RESOURCE_CARGO:-$("$HOME/.cargo/bin/rustup" which cargo)}"
-    rustc="${RESOURCE_RUSTC:-$("$HOME/.cargo/bin/rustup" which rustc)}"
-    quint="${RESOURCE_QUINT:-$(realpath "$(command -v quint)")}"
-    lean="${RESOURCE_LEAN:-$(elan which lean)}"
-    test ! -e "{{output}}"
-    mkdir -p .data/test-logs
-    log="$(mktemp .data/test-logs/investigation-XXXXXX)"
-    timeout --foreground --signal=TERM --kill-after=5s 600s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/resource-lifecycle-evidence.ss "{{output}}" "$cargo" "$rustc" "$quint" "$lean" 2>&1 | tee "$log"
-    RESOURCE_REAL_REPORT="{{output}}/report.json" just test-file t/yanxu/Library/resource-lifecycle-profiles/lifecycle-test.ss
-
-# Optional SysML/correspondence slice with the existing native result issuer.
-investigate-resource-integration output sysml:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    cargo="${RESOURCE_CARGO:-$("$HOME/.cargo/bin/rustup" which cargo)}"
-    rustc="${RESOURCE_RUSTC:-$("$HOME/.cargo/bin/rustup" which rustc)}"
-    quint="${RESOURCE_QUINT:-$(realpath "$(command -v quint)")}"
-    lean="${RESOURCE_LEAN:-$(elan which lean)}"
-    test ! -e "{{output}}"
-    test -x "{{sysml}}"
-    timeout --foreground --signal=TERM --kill-after=5s 600s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/resource-integration-evidence.ss "{{output}}" "$cargo" "$rustc" "$quint" "$lean" "$(realpath "{{sysml}}")"
-    # Rendering requires the TS FigureInput contract; raw D2-to-SVG is retired.
-
-# Native SDLC consumer of the accepted owner slice. No changes to its captured roots.
-test-backpressure-review:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    power_guard=()
-    if command -v caffeinate >/dev/null 2>&1; then power_guard=(caffeinate -dimsu); fi
-    mkdir -p .data/test-logs .data/test-runs
-    : "${BACKPRESSURE_ACCEPTANCE:?Provide the actual acceptance artifact}"
-    : "${BACKPRESSURE_REVIEW_SOURCES:?Provide the actual runtime source artifact}"
-    for group in applicability reuse counter corruption; do
-      echo "REVIEW-GROUP $group"
-      log="$(mktemp .data/test-logs/aitia-backpressure-XXXXXX)"
-      "${power_guard[@]}" timeout --foreground --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxtest -:max-heap=2G,debug=q -v 5 -r "^backpressure-review-$group-test$" t/backpressure-review-test.ss 2>&1 | tee "$log"
-      if rg 'ERROR (MODULE|CHECK|CASE|HARNESS)|Heap overflow|Stack overflow' "$log"; then exit 1; fi
-      rg -F -x 'MODULE-OK t/backpressure-review-test.ss' "$log" >/dev/null
-      rg -F 'HARNESS-OK' "$log" >/dev/null
-      rg '^SUITE-OK ' "$log" >/dev/null
-      rg '^CASE-OK ' "$log" >/dev/null
-      rg -x 'OK' "$log" >/dev/null
-      [[ "$(rg -c '^CASE-OK ' "$log")" == 1 ]]
-    done
-
-investigate-backpressure-reassessment output:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    mkdir -p .data/test-logs .data/test-runs
-    cargo="${RESOURCE_CARGO:-$("$HOME/.cargo/bin/rustup" which cargo)}"
-    rustc="${RESOURCE_RUSTC:-$("$HOME/.cargo/bin/rustup" which rustc)}"
-    timeout --foreground --signal=TERM --kill-after=5s 240s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/backpressure-reassessment-evidence.ss "{{output}}" "$cargo" "$rustc"
-
-test-backpressure-reassessment:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    power_guard=()
-    if command -v caffeinate >/dev/null 2>&1; then power_guard=(caffeinate -dimsu); fi
-    project_root="$PWD"
-    mkdir -p .data/test-logs .data/test-runs
-    : "${BACKPRESSURE_REASSESSMENT_RUNS:?Provide the actual reassessment runs artifact}"
-    : "${BACKPRESSURE_REVIEW_SOURCES:?Provide the actual runtime source artifact}"
-    if [[ -z "${BACKPRESSURE_REASSESSMENT_REVIEW_OUTPUT:-}" ]]; then
-      review_parent="$(mktemp -d "$project_root/.data/test-runs/review-XXXXXX")"
-      export BACKPRESSURE_REASSESSMENT_REVIEW_OUTPUT="$review_parent/results"
-    fi
-    : "${BACKPRESSURE_ACCEPTANCE:?Provide the actual acceptance artifact}"
-    log="$(mktemp .data/test-logs/aitia-reassessment-XXXXXX)"
-    "${power_guard[@]}" timeout --foreground --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxtest -:max-heap=2G,debug=q -v 5 t/integration/backpressure/reassessment-test.ss 2>&1 | tee "$log"
-    if rg 'ERROR (MODULE|CHECK|CASE|HARNESS)|Heap overflow|Stack overflow' "$log"; then exit 1; fi
-    rg -F -x 'MODULE-OK t/integration/backpressure/reassessment-test.ss' "$log" >/dev/null
-    rg -F 'HARNESS-OK' "$log" >/dev/null
-    rg '^SUITE-OK ' "$log" >/dev/null
-    rg '^CASE-OK ' "$log" >/dev/null
-    rg -x 'OK' "$log" >/dev/null
-
-# Existing real Rust runs, native ASCENT union, native Aitia authority and real signatures.
-test-backpressure-cross-intake:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    power_guard=()
-    if command -v caffeinate >/dev/null 2>&1; then power_guard=(caffeinate -dimsu); fi
-    project_root="$PWD"
-    mkdir -p .data/test-logs .data/test-runs
-    : "${BACKPRESSURE_ACCEPTANCE:?Provide the actual acceptance artifact}"
-    : "${BACKPRESSURE_REASSESSMENT_RUNS:?Provide the actual reassessment runs artifact}"
-    : "${BACKPRESSURE_REVIEW_SOURCES:?Provide the actual runtime source artifact}"
-    export BACKPRESSURE_OPENSSL="${BACKPRESSURE_OPENSSL:-$(realpath "$(command -v openssl)")}"
-    for group in preflight discovery rejection authority reuse; do
-      export BACKPRESSURE_CROSS_GROUP="$group"
-      output_parent="$(mktemp -d "$project_root/.data/test-runs/review-$group-XXXXXX")"
-      export BACKPRESSURE_CROSS_OUTPUT="$output_parent/results"
-      log="$(mktemp .data/test-logs/aitia-cross-intake-XXXXXX)"
-      "${power_guard[@]}" timeout --foreground --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxtest -:max-heap=2G,debug=q -v 5 t/backpressure-cross-intake-test.ss 2>&1 | tee "$log"
-      if rg 'ERROR (MODULE|CHECK|CASE|HARNESS)|Heap overflow|Stack overflow' "$log"; then exit 1; fi
-      rg -F -x 'MODULE-OK t/backpressure-cross-intake-test.ss' "$log" >/dev/null
-      rg -F 'HARNESS-OK' "$log" >/dev/null
-      rg '^SUITE-OK ' "$log" >/dev/null
-      rg '^CASE-OK ' "$log" >/dev/null
-      rg -x 'OK' "$log" >/dev/null
-    done
-
-# Existing real Rust runs, native ASCENT union, native Aitia authority and real signatures.
-test-backpressure-owner-handover:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    power_guard=()
-    if command -v caffeinate >/dev/null 2>&1; then power_guard=(caffeinate -dimsu); fi
-    project_root="$PWD"
-    mkdir -p .data/test-logs .data/test-runs
-    : "${BACKPRESSURE_ACCEPTANCE:?Provide the actual acceptance artifact}"
-    : "${BACKPRESSURE_REASSESSMENT_RUNS:?Provide the actual reassessment runs artifact}"
-    : "${BACKPRESSURE_REVIEW_SOURCES:?Provide the actual runtime source artifact}"
-    test_module="t/backpressure-owner-handover-test.ss"
-    export BACKPRESSURE_OPENSSL="${BACKPRESSURE_OPENSSL:-$(realpath "$(command -v openssl)")}"
-    for group in ${BACKPRESSURE_HANDOVER_GROUPS:-transfer reuse}; do
-      export BACKPRESSURE_HANDOVER_GROUP="$group"
-      output_parent="$(mktemp -d "$project_root/.data/test-runs/review-$group-XXXXXX")"
-      export BACKPRESSURE_CROSS_OUTPUT="$output_parent/results"
-      log="$(mktemp .data/test-logs/aitia-owner-handover-XXXXXX)"
-      "${power_guard[@]}" timeout --foreground --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxtest -:max-heap=2G,debug=q -v 5 "$test_module" 2>&1 | tee "$log"
-      if rg 'ERROR (MODULE|CHECK|CASE|HARNESS)|Heap overflow|Stack overflow' "$log"; then exit 1; fi
-      rg -F -x "MODULE-OK $test_module" "$log" >/dev/null
-      rg -F 'HARNESS-OK' "$log" >/dev/null
-      rg '^SUITE-OK ' "$log" >/dev/null
-      rg '^CASE-OK ' "$log" >/dev/null
-      rg -x 'OK' "$log" >/dev/null
-    done
-
-# Four naturally exiting native processes; all later receipts are newly issued.
-test-backpressure-owner-recovery:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    power_guard=()
-    if command -v caffeinate >/dev/null 2>&1; then power_guard=(caffeinate -dimsu); fi
-    project_root="$PWD"
-    mkdir -p .data/test-logs .data/test-runs
-    : "${BACKPRESSURE_ACCEPTANCE:?Provide the actual acceptance artifact}"
-    : "${BACKPRESSURE_REASSESSMENT_RUNS:?Provide the actual reassessment runs artifact}"
-    : "${BACKPRESSURE_REVIEW_SOURCES:?Provide the actual runtime source artifact}"
-    test_module="t/backpressure-owner-recovery-test.ss"
-    export BACKPRESSURE_OPENSSL="${BACKPRESSURE_OPENSSL:-$(realpath "$(command -v openssl)")}"
-    export BACKPRESSURE_RECOVERY_ROOT="$(mktemp -d "$project_root/.data/test-runs/restart-XXXXXX")"
-    for phase in producer restart-one restart-two restart-three; do
-      export BACKPRESSURE_RECOVERY_PHASE="$phase"
-      if [[ "$phase" != producer ]]; then
-        export BACKPRESSURE_RECOVERY_SELECTION_SHA="$(shasum -a 256 "$BACKPRESSURE_RECOVERY_ROOT/host-selection.json" | cut -d ' ' -f 1)"
-      fi
-      log="$(mktemp .data/test-logs/aitia-owner-recovery-XXXXXX)"
-      "${power_guard[@]}" timeout --foreground --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxtest -:max-heap=2G,debug=q -v 5 "$test_module" 2>&1 | tee "$log"
-      if rg 'ERROR (MODULE|CHECK|CASE|HARNESS)|Heap overflow|Stack overflow' "$log"; then exit 1; fi
-      rg -F -x "MODULE-OK $test_module" "$log" >/dev/null
-      rg -F 'HARNESS-OK' "$log" >/dev/null
-      rg '^SUITE-OK ' "$log" >/dev/null
-      rg '^CASE-OK ' "$log" >/dev/null
-      rg -x 'OK' "$log" >/dev/null
-    done
-
-# Real SIGKILL boundaries are expected only after a recorded local boundary.
-test-backpressure-durable-intake:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    power_guard=()
-    if command -v caffeinate >/dev/null 2>&1; then power_guard=(caffeinate -dimsu); fi
-    project_root="$PWD"
-    # Preserve the SDK child's actual signal exit; gerbil env wraps it as 70.
-    export GERBIL_PATH="${GERBIL_PATH:-$project_root/.gerbil}"
-    mkdir -p .data/test-logs .data/test-runs
-    : "${BACKPRESSURE_ACCEPTANCE:?Provide the actual acceptance artifact}"
-    : "${BACKPRESSURE_REASSESSMENT_RUNS:?Provide the actual reassessment runs artifact}"
-    : "${BACKPRESSURE_REVIEW_SOURCES:?Provide the actual runtime source artifact}"
-    test_module="t/backpressure-owner-recovery-test.ss"
-    export BACKPRESSURE_OPENSSL="${BACKPRESSURE_OPENSSL:-$(realpath "$(command -v openssl)")}"
-    export BACKPRESSURE_RECOVERY_ROOT="$(mktemp -d "$project_root/.data/test-runs/intake-XXXXXX")"
-    for phase in intake-producer intake-recover intake-partial intake-pending; do
-      export BACKPRESSURE_RECOVERY_PHASE="$phase"
-      if [[ "$phase" != intake-producer ]]; then
-        export BACKPRESSURE_RECOVERY_SELECTION_SHA="$(shasum -a 256 "$BACKPRESSURE_RECOVERY_ROOT/host-selection.json" | cut -d ' ' -f 1)"
-      fi
-      log="$(mktemp .data/test-logs/aitia-durable-intake-XXXXXX)"
-      set +e
-      "${power_guard[@]}" timeout --foreground --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gxtest -:max-heap=2G,debug=q -v 5 "$test_module" 2>&1 | tee "$log"
-      status=${PIPESTATUS[0]}
-      set -e
-      echo "PROCESS-EXIT $phase $status"
-      if rg 'ERROR (MODULE|CHECK|CASE|HARNESS)|Heap overflow|Stack overflow' "$log"; then exit 1; fi
-      if [[ "$phase" == intake-pending ]]; then
-        [[ "$status" == 0 ]]
-        rg -F -x "MODULE-OK $test_module" "$log" >/dev/null
-        rg '^HARNESS-OK ' "$log" >/dev/null
-        rg '^SUITE-OK ' "$log" >/dev/null
-        rg '^CASE-OK ' "$log" >/dev/null
-        rg -x 'OK' "$log" >/dev/null
-      else
-        [[ "$status" == 137 ]]
-        rg '^EXPECTED-SIGKILL ' "$log" >/dev/null
-        [[ -s "$BACKPRESSURE_RECOVERY_ROOT/$phase/interrupt.json" ]]
-        echo "INTERRUPTION-OK $phase status=$status"
-      fi
-    done
-
-test-backpressure-prefix-repair:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    power_guard=()
-    if command -v caffeinate >/dev/null 2>&1; then power_guard=(caffeinate -dimsu); fi
-    project_root="$PWD"
-    # Preserve the SDK child's actual signal exit; gerbil env wraps it as 70.
-    export GERBIL_PATH="${GERBIL_PATH:-$project_root/.gerbil}"
-    mkdir -p .data/test-logs .data/test-runs
-    : "${BACKPRESSURE_ACCEPTANCE:?Provide the actual acceptance artifact}"
-    : "${BACKPRESSURE_REASSESSMENT_RUNS:?Provide the actual reassessment runs artifact}"
-    : "${BACKPRESSURE_REVIEW_SOURCES:?Provide the actual runtime source artifact}"
-    test_module="t/backpressure-owner-recovery-test.ss"
-    export BACKPRESSURE_OPENSSL="${BACKPRESSURE_OPENSSL:-$(realpath "$(command -v openssl)")}"
-    export BACKPRESSURE_RECOVERY_ROOT="$(mktemp -d "$project_root/.data/test-runs/replay-XXXXXX")"
-    for phase in intake-producer intake-recover intake-partial repair-checks repair-replay; do
-      export BACKPRESSURE_RECOVERY_PHASE="$phase"
-      if [[ "$phase" != intake-producer ]]; then
-        export BACKPRESSURE_RECOVERY_SELECTION_SHA="$(shasum -a 256 "$BACKPRESSURE_RECOVERY_ROOT/host-selection.json" | cut -d ' ' -f 1)"
-      fi
-      log="$(mktemp .data/test-logs/aitia-durable-replay-XXXXXX)"
-      set +e
-      "${power_guard[@]}" timeout --foreground --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gxtest -:max-heap=2G,debug=q -v 5 "$test_module" 2>&1 | tee "$log"
-      status=${PIPESTATUS[0]}
-      set -e
-      echo "PROCESS-EXIT $phase $status"
-      if rg 'ERROR (MODULE|CHECK|CASE|HARNESS)|Heap overflow|Stack overflow' "$log"; then exit 1; fi
-      if [[ "$phase" == repair-* ]]; then
-        [[ "$status" == 0 ]]
-        rg -F -x "MODULE-OK $test_module" "$log" >/dev/null
-        rg '^HARNESS-OK ' "$log" >/dev/null
-        rg '^SUITE-OK ' "$log" >/dev/null
-        rg '^CASE-OK ' "$log" >/dev/null
-        rg -x 'OK' "$log" >/dev/null
-      else
-        [[ "$status" == 137 ]]
-        rg '^EXPECTED-SIGKILL ' "$log" >/dev/null
-        [[ -s "$BACKPRESSURE_RECOVERY_ROOT/$phase/interrupt.json" ]]
-        echo "INTERRUPTION-OK $phase status=$status"
-      fi
-    done
-
-# Real archived producer bytes; all native authority is newly issued.
-test-producer-source-custody:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    power_guard=()
-    if command -v caffeinate >/dev/null 2>&1; then power_guard=(caffeinate -dimsu); fi
-    project_root="$PWD"
-    mkdir -p .data/test-logs .data/test-runs
-    : "${BACKPRESSURE_ACCEPTANCE:?Provide the actual acceptance artifact}"
-    export BACKPRESSURE_CUSTODY_OUTPUT="$(mktemp -d "$project_root/.data/test-runs/custody-XXXXXX")/results"
-    log="$(mktemp "$project_root/.data/test-logs/custody-XXXXXX")"
-    "${power_guard[@]}" timeout --foreground --signal=TERM --kill-after=5s 180s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxtest -:max-heap=2G,debug=q -v 5 t/integration/backpressure/producer-source-custody-test.ss 2>&1 | tee "$log"
-    if rg 'ERROR (MODULE|CHECK|CASE|HARNESS)|Heap overflow|Stack overflow' "$log"; then exit 1; fi
-    rg -F -x 'MODULE-OK t/integration/backpressure/producer-source-custody-test.ss' "$log" >/dev/null
-    rg '^HARNESS-OK ' "$log" >/dev/null
-    rg '^SUITE-OK ' "$log" >/dev/null
-    rg '^CASE-OK ' "$log" >/dev/null
-    rg -x 'OK' "$log" >/dev/null
-
-# Reuse Core's real compiler / TestingScript / Fixture / Ops path.
-test-library-declarations:
-    just formation-test-file t/yanxu/Library/backpressure-memory/declaration-test.ss 4
-    just formation-test-file t/integration/library/model-chain-test.ss 4
-
-test-organization-declarations:
-    just formation-test-file t/yanxu/Library/project-organization/organization-library-test.ss 3
-    just formation-test-file t/integration/library/method-binding-test.ss 2
-
-test-codex-source:
-    just formation-test-file t/codex-source-test.ss 2
-
-test-codex-capture:
-    just formation-test-file t/codex-capture-test.ss 1
-
-test-project-inputs:
-    just formation-test-file t/integration/formation/project-inputs-test.ss 3
-
-test-library-mapping fixture:
-    LIBRARY_TRACE_FIXTURE="{{fixture}}" just formation-test-file t/integration/library/mapping-test.ss 3
-
-test-library-selection:
-    just formation-test-file t/integration/library/selection-test.ss 2
+# Core native Gerbil/Yuanxu suite driven declaratively through Yuanxu + Fun-Flow.
+test *flags:
+    just flow --mount=Library,Integration --skip=funflow {{flags}}
 
 test-project-formation:
     just formation-test-file t/yanxu/Library/library-formation-profiles/project-formation-test.ss 14
 
-test-project-formation-entry:
-    just formation-test-file t/integration/formation/project-formation-entry-test.ss 3
-
-test-project-formation-build:
-    just formation-test-file t/integration/formation/project-formation-build-test.ss 2
-
-# Core owns source/compiler preparation, Fixture, Ops and result admission.
-formation-test-file path cases:
+test-backpressure-reassessment:
     #!/usr/bin/env bash
     set -euo pipefail
-    mkdir -p .data/test-logs
-    log="$(mktemp .data/test-logs/formation-test-XXXXXX)"
-    timeout --foreground --signal=TERM --kill-after=5s 120s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q projects/library-formation/test.ss "{{path}}" "{{cases}}" 2>&1 | tee "$log"
+    : "${BACKPRESSURE_REASSESSMENT_RUNS:?Provide the actual reassessment runs artifact}"
+    : "${BACKPRESSURE_REVIEW_SOURCES:?Provide the actual runtime source artifact}"
+    : "${BACKPRESSURE_ACCEPTANCE:?Provide the actual acceptance artifact}"
+    if [[ -z "${BACKPRESSURE_REASSESSMENT_REVIEW_OUTPUT:-}" ]]; then
+      mkdir -p .data/test-runs
+      export BACKPRESSURE_REASSESSMENT_REVIEW_OUTPUT="$(mktemp -d "$PWD/.data/test-runs/review-XXXXXX")/results"
+    fi
+    just test-file t/integration/backpressure/reassessment-test.ss ".*" 180s
 
-# Fresh candidate/report only; publication remains a separate protected activity.
+test-producer-source-custody:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    : "${BACKPRESSURE_ACCEPTANCE:?Provide the actual acceptance artifact}"
+    mkdir -p .data/test-runs
+    export BACKPRESSURE_CUSTODY_OUTPUT="$(mktemp -d "$PWD/.data/test-runs/custody-XXXXXX")/results"
+    just test-file t/integration/backpressure/producer-source-custody-test.ss ".*" 180s
+
+# ── 6. Evidence Investigation & Offline Air-Gapped Attestation Verifiers ──────
+
+investigate-source-contracts output:
+    t/harness/run-gxtest.sh script 180s t/support/source-contract-evidence.ss "{{output}}" "$(realpath "$(command -v cbmc)")" "$(realpath "$(command -v goto-cc)")" "$(realpath "$(command -v goto-instrument)")" "$(realpath "$(command -v clang)")" "$(realpath "$(command -v clang++)")"
+
+investigate-resource output:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    test ! -e "{{output}}"
+    t/harness/run-gxtest.sh script 600s t/support/resource-lifecycle-evidence.ss "{{output}}" "${RESOURCE_CARGO:-$("$HOME/.cargo/bin/rustup" which cargo)}" "${RESOURCE_RUSTC:-$("$HOME/.cargo/bin/rustup" which rustc)}" "${RESOURCE_QUINT:-$(realpath "$(command -v quint)")}" "${RESOURCE_LEAN:-$(elan which lean)}"
+    RESOURCE_REAL_REPORT="{{output}}/report.json" just test-file t/yanxu/Library/resource-lifecycle-profiles/lifecycle-test.ss
+
+investigate-resource-integration output sysml:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    test ! -e "{{output}}" && test -x "{{sysml}}"
+    t/harness/run-gxtest.sh script 600s t/support/resource-integration-evidence.ss "{{output}}" "${RESOURCE_CARGO:-$("$HOME/.cargo/bin/rustup" which cargo)}" "${RESOURCE_RUSTC:-$("$HOME/.cargo/bin/rustup" which rustc)}" "${RESOURCE_QUINT:-$(realpath "$(command -v quint)")}" "${RESOURCE_LEAN:-$(elan which lean)}" "$(realpath "{{sysml}}")"
+
+investigate-backpressure-reassessment output:
+    t/harness/run-gxtest.sh script 240s t/support/backpressure-reassessment-evidence.ss "{{output}}" "${RESOURCE_CARGO:-$("$HOME/.cargo/bin/rustup" which cargo)}" "${RESOURCE_RUSTC:-$("$HOME/.cargo/bin/rustup" which rustc)}"
+
 investigate-project-formation output:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    test ! -e "{{output}}"
-    mkdir -p .data/test-logs
-    log="$(mktemp .data/test-logs/project-formation-XXXXXX)"
-    timeout --foreground --signal=TERM --kill-after=5s 120s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/library-formation.ss "{{output}}" 2>&1 | tee "$log"
+    test ! -e "{{output}}" && t/harness/run-gxtest.sh script 120s t/support/library-formation.ss "{{output}}"
 
-# Raw facts remain an explicitly untrusted design investigation interface.
 investigate-formation-consequences output:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    test ! -e "{{output}}"
-    mkdir -p .data/test-logs
-    log="$(mktemp .data/test-logs/formation-consequences-XXXXXX)"
-    timeout --foreground --signal=TERM --kill-after=5s 120s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/library-formation-consequences.ss "{{output}}" 2>&1 | tee "$log"
+    test ! -e "{{output}}" && t/harness/run-gxtest.sh script 120s t/support/library-formation-consequences.ss "{{output}}"
 
-# Unified engineering entrypoint for Quint packages (typecheck, unit/conformance tests, 37-model fleet plans & 35-model 100% MBT action-coverage gate).
-check-quint:
-    bun run check:quint
-
-# Concurrent 37-model Quint plan fleet (typecheck + deterministic traces, pure TS).
-fleet-quint:
-    bun run fleet:quint
-
-# Concurrent 40-model Quint MBT dead-action & coverage regression gate (100% action coverage).
-mbt-quint:
-    bun run mbt:quint
-
-# Audit AI Agent patch/PR diffs (or explicit paths) for G2 defensive hallucinations across TS/C/C++/Rust/Scheme.
-audit-agent-patch *args:
-    bun languages-engineering/ts/defense/agent-audit/agent-defense-audit.ts {{ if args == "" { "--diff" } else { args } }}
-
-# Verify all 4 formal paradigms & 176-theorem zero-Mathlib/zero-Cedar LeanPoo Library export fleet for cedar-poo-spec.
-audit-leanpoo-fleet *args:
-    bun languages-engineering/ts/defense/agent-audit/leanpoo-fleet-audit.ts {{ args }}
-
-# Unified D1-D4 + E2-E3 defensive-engineering verification gate (TS/C/C++/Rust contrasts, CBMC proof, MBT SUT refinement, 24-case 5-language Agent AST benchmark, Gerbil F1-F4/G1-G4/OR01-OR07).
-check-defense:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    mkdir -p .data/test-runs/check-defense
-    bun test languages-engineering/ts/defense/boundary-contrast/contrast.test.ts languages-engineering/ts/defense/boundary-contrast/mbt-replay.test.ts languages-engineering/ts/defense/agent-audit/agent-benchmark.test.ts languages-engineering/ts/defense/agent-audit/agent-defense-audit.test.ts languages-engineering/ts/defense/agent-audit/governance-harness.test.ts languages-engineering/ts/defense/agent-audit/durable-merkle-store.test.ts languages-engineering/ts/defense/agent-audit/durable-ai-context.test.ts languages-engineering/ts/defense/agent-audit/durable-business-orchestrator.test.ts languages-engineering/ts/defense/agent-audit/durable-hitl-approval.test.ts languages-engineering/ts/defense/agent-audit/capability-attenuation.test.ts languages-engineering/ts/defense/agent-audit/symbol-ssi-arbitrator.test.ts languages-engineering/ts/defense/agent-audit/durable-governance-pipeline.test.ts languages-engineering/ts/defense/agent-audit/durable-saga-budget.test.ts languages-engineering/ts/defense/agent-audit/difc-exfiltration-fence.test.ts languages-engineering/ts/defense/agent-audit/durable-memory-tms.test.ts languages-engineering/ts/defense/agent-audit/transparency-log-equivocation.test.ts languages-engineering/ts/defense/agent-audit/ascent-meta-audit-bridge.test.ts languages-engineering/ts/defense/agent-audit/witness-quorum-finality.test.ts languages-engineering/ts/defense/agent-audit/b10-ascent-quorum-closure.test.ts languages-engineering/ts/defense/agent-audit/witness-epoch-reconfiguration.test.ts languages-engineering/ts/defense/agent-audit/lean-proof-verification.test.ts languages-engineering/ts/defense/agent-audit/witness-slashing-reentry.test.ts languages-engineering/ts/defense/agent-audit/host-authorization-bridge.test.ts languages-engineering/ts/defense/agent-audit/difc-atms-leanpoo.test.ts languages-engineering/ts/defense/agent-audit/saga-ssi-leanpoo.test.ts languages-engineering/ts/defense/agent-audit/hitl-coevolution-leanpoo.test.ts languages-engineering/ts/defense/agent-audit/library-export-contract.test.ts languages-engineering/ts/defense/agent-audit/four-paradigm-consistency.test.ts languages-engineering/ts/defense/agent-audit/release-certificate-replay.test.ts languages-engineering/ts/defense/agent-audit/merkle-async-memo-leanpoo.test.ts languages-engineering/ts/defense/agent-audit/tool-sandbox-rpc-boundary.test.ts languages-engineering/ts/defense/agent-audit/b11-four-paradigm-closure.test.ts languages-engineering/ts/defense/agent-audit/context-distillation-provenance.test.ts languages-engineering/ts/defense/agent-audit/federated-arbitration-200-milestone.test.ts languages-engineering/ts/defense/agent-audit/b12-b13-four-paradigm-symmetry.test.ts languages-engineering/ts/defense/agent-audit/supply-chain-provenance.test.ts languages-engineering/ts/defense/agent-audit/b14-four-paradigm-symmetry.test.ts languages-engineering/ts/defense/agent-audit/confidential-enclave-attestation.test.ts languages-engineering/ts/defense/agent-audit/b15-four-paradigm-symmetry.test.ts languages-engineering/ts/defense/agent-audit/key-rotation-crypto-shredding.test.ts languages-engineering/ts/defense/agent-audit/b16-four-paradigm-symmetry.test.ts languages-engineering/ts/defense/agent-audit/post-quantum-crypto-agility.test.ts
-    clang -Wall -Wextra -Werror languages-engineering/c/defense/silent-fallback-contrast/bad_defensive.c languages-engineering/c/defense/silent-fallback-contrast/deterministic_boundary.c languages-engineering/c/defense/silent-fallback-contrast/contrast_test.c -o .data/test-runs/check-defense/c_contrast
-    .data/test-runs/check-defense/c_contrast
-    cbmc languages-engineering/c/defense/silent-fallback-contrast/deterministic_boundary.c languages-engineering/c/defense/silent-fallback-contrast/proof.c --bounds-check --pointer-check --unsigned-overflow-check
-    clang++ -std=c++20 -Wall -Wextra -Werror languages-engineering/cpp/defense/raii-fallback-contrast/contrast_test.cpp -o .data/test-runs/check-defense/cpp_contrast
-    .data/test-runs/check-defense/cpp_contrast
-    "$("$HOME/.cargo/bin/rustup" which rustc)" --test languages-engineering/rust/defense/ownership-boundary-contrast/contrast.rs -o .data/test-runs/check-defense/rust_contrast
-    .data/test-runs/check-defense/rust_contrast
-    just test-file t/yanxu/Library/quint-methods/projection-contracts-test.ss
-    just test-file t/yanxu/Library/defensive-boundaries/catalog-contract-test.ss
-    just test-file t/yanxu/Library/defensive-governance/governance-ascent-test.ss
-    just test-file t/yanxu/Library/defensive-governance/agent-benchmark-test.ss
-    just test-file t/yanxu/Library/defense-profiles/convergence-test.ss
-    just test-file t/yanxu/Library/project-organization/repository-organization-test.ss
-    for f in t/yanxu/Quint.Engineering.Defense/*/qualification-test.ss; do
-      just test-file "$f"
-    done
-
-# M5 multi-method verification gate (SysML v2 -> Zero-Glue Fun-Flow DAG Compiler -> Quint + LeanPoo 5-Core + Clippy + CBMC + Native Oracles -> ASCENT MR01-MR06/ER01-ER04/IR01-IR06 + Ed25519 Signed Cache & 4-Subject Fleet).
-check-multi-method:
-    just test-file t/yanxu/Library/verification-flow/governance-and-sysml-linkage-test.ss
-    just test-file t/yanxu/Library/verification-flow/sysml-compiler-and-lease-fencing-test.ss ".*" 240s
-    just test-file t/yanxu/Library/verification-flow/signed-cache-and-toolchain-attestation-test.ss ".*" 360s
-    just test-file t/yanxu/Library/verification-flow/key-rotation-and-revocation-test.ss ".*" 300s
-    just test-file t/yanxu/Library/verification-flow/offline-verifier-adversarial-test.ss ".*" 120s
-    just test-file t/yanxu/Library/verification-flow/threat-capability-and-offline-verifier-test.ss ".*" 240s
-    just test-file t/yanxu/Library/verification-flow/parallel-frontier-execution-test.ss ".*" 240s
-    just test-file t/yanxu/Library/verification-flow/end-to-end-ops-runner-test.ss ".*" 240s
-    just test-file t/yanxu/Library/verification-flow/incremental-cache-reuse-test.ss ".*" 240s
-    just test-file t/yanxu/Library/verification-flow/multi-subject-backpressure-test.ss ".*" 240s
-    just test-file t/yanxu/Library/verification-flow/multi-subject-fleet-and-pinned-attestation-test.ss ".*" 600s
-
-# Run the M5 multi-method Fun-Flow Ops Runner (optional cache_dir & subject: process-tree-reclamation | backpressure-memory | lease-fencing-token | c-boundary-conservation) and write a fresh signed JSON evidence report.
 investigate-multi-method output cache_dir="" subject="process-tree-reclamation":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    test ! -e "{{output}}"
-    mkdir -p .data/test-logs
-    log="$(mktemp .data/test-logs/multi-method-XXXXXX)"
-    timeout --foreground --signal=TERM --kill-after=5s 300s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/verification-flow-runner.ss "{{output}}" "{{cache_dir}}" "{{subject}}" 2>&1 | tee "$log"
+    test ! -e "{{output}}" && t/harness/run-gxtest.sh script 300s t/support/verification-flow-runner.ss "{{output}}" "{{cache_dir}}" "{{subject}}"
 
-# Run ALL SysML v2 subjects as one Ed25519-signed Merkle-bound Fleet against a shared cache.
 fleet-multi-method output cache_dir="":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    test ! -e "{{output}}"
-    mkdir -p .data/test-logs
-    log="$(mktemp .data/test-logs/multi-method-fleet-XXXXXX)"
-    timeout --foreground --signal=TERM --kill-after=5s 420s {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/verification-flow-runner.ss --fleet "{{output}}" "{{cache_dir}}" 2>&1 | tee "$log"
+    test ! -e "{{output}}" && t/harness/run-gxtest.sh script 420s t/support/verification-flow-runner.ss --fleet "{{output}}" "{{cache_dir}}"
 
-# Dry-run ASCENT IR01-IR06 change-impact & proof-reuse predictor across ALL SysML v2 subjects (<1s, zero engine spawns).
 plan-multi-method-fleet cache_dir="":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/verification-flow-runner.ss --plan "{{cache_dir}}"
+    t/harness/run-gxtest.sh script none t/support/verification-flow-runner.ss --plan "{{cache_dir}}"
 
-# Pure static change-impact analysis from SysML v2 inputFiles + transitive DAG edges (defaults to git diff --name-only HEAD).
 impact-multi-method *files:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/verification-flow-runner.ss --impact {{files}}
+    t/harness/run-gxtest.sh script none t/support/verification-flow-runner.ss --impact {{files}}
 
-# Offline zero-execution, zero-FunFlow air-gapped Ed25519 trust-store verifier for a single subject report.json (<2s).
 verify-multi-method-report report trust_store:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/offline-attestation-verifier.ss --verify-report "{{report}}" "{{trust_store}}"
+    t/harness/run-gxtest.sh script none t/support/offline-attestation-verifier.ss --verify-report "{{report}}" "{{trust_store}}"
 
-# Offline zero-execution, zero-FunFlow air-gapped 2-level Merkle + Ed25519 trust-store verifier for a Fleet report (<2s).
 verify-multi-method-fleet fleet_report trust_store:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/offline-attestation-verifier.ss --verify-fleet "{{fleet_report}}" "{{trust_store}}"
+    t/harness/run-gxtest.sh script none t/support/offline-attestation-verifier.ss --verify-fleet "{{fleet_report}}" "{{trust_store}}"
 
-# Offline zero-execution air-gapped verifier for every Ed25519 witness inside a verification-cache.v1.json (<2s).
 verify-multi-method-cache cache_file trust_store:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/offline-attestation-verifier.ss --verify-cache "{{cache_file}}" "{{trust_store}}"
+    t/harness/run-gxtest.sh script none t/support/offline-attestation-verifier.ss --verify-cache "{{cache_file}}" "{{trust_store}}"
 
-# Offline zero-execution air-gapped self-audit for a Multi-Key Ed25519 Trust Store JSON (supports --json).
 verify-multi-method-trust-store trust_store *flags:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    {{ gerbil_darwin_env }} gerbil -:max-heap=2G,debug=q env gxi -:max-heap=2G,debug=q t/support/offline-attestation-verifier.ss {{flags}} --verify-trust-store "{{trust_store}}"
+    t/harness/run-gxtest.sh script none t/support/offline-attestation-verifier.ss {{flags}} --verify-trust-store "{{trust_store}}"

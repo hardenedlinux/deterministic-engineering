@@ -10,8 +10,11 @@ on:
       - 'packages/lean-models/**'
       - 'languages-engineering/rust/lifecycle/process-tree-guard/**'
       - 'languages-engineering/c/defense/silent-fallback-contrast/**'
+      - 'languages-engineering/c/stability/aging-contrast/**'
       - 't/support/verification-flow-runner.ss'
       - 't/yanxu/Library/verification-flow/**'
+      - 't/harness/**'
+      - 'Justfile'
       - '.github/workflows/multi-method-verification.yml'
   push:
     branches: [main]
@@ -21,8 +24,11 @@ on:
       - 'packages/lean-models/**'
       - 'languages-engineering/rust/lifecycle/process-tree-guard/**'
       - 'languages-engineering/c/defense/silent-fallback-contrast/**'
+      - 'languages-engineering/c/stability/aging-contrast/**'
       - 't/support/verification-flow-runner.ss'
       - 't/yanxu/Library/verification-flow/**'
+      - 't/harness/**'
+      - 'Justfile'
       - '.github/workflows/multi-method-verification.yml'
 
 permissions:
@@ -35,99 +41,41 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-      - name: Run Clippy API-ban lint (-D warnings)
-        working-directory: languages-engineering/rust/lifecycle/process-tree-guard
-        run: cargo clippy --all-targets -- -D warnings
-      - name: Run cgroup v2 unit contracts, HTTP /shutdown E2E, & OS SIGKILL/setsid leak oracle controls
-        working-directory: languages-engineering/rust/lifecycle/process-tree-guard
-        run: |
-          cargo test --lib -- --nocapture
-          cargo test --test http_shutdown_e2e -- --nocapture --test-threads=1
-          cargo test --test sigkill_leak_oracle -- --nocapture --test-threads=1
+      - uses: ./.github/actions/setup-just
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version: 1.3.11
+      - name: Run auto-discovered Rust lifecycle verification suite
+        run: just verify-lang rust lifecycle
 
   c-cbmc-boundary-proof:
-    name: C Trust-Boundary CBMC Proof (source-memory-ub)
+    name: C Trust-Boundary & Aging CBMC Proofs
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-      - name: Install CBMC & run bounds/pointer/unsigned-overflow proof
-        working-directory: languages-engineering/c/defense/silent-fallback-contrast
+      - uses: ./.github/actions/setup-just
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version: 1.3.11
+      - name: Install CBMC & run auto-discovered C/CBMC proofs (defense + stability)
         run: |
           sudo apt-get update && sudo apt-get install -y cbmc
-          clang -Wall -Wextra -Werror bad_defensive.c deterministic_boundary.c contrast_test.c -o /tmp/c_contrast
-          /tmp/c_contrast
-          cbmc deterministic_boundary.c proof.c --bounds-check --pointer-check --unsigned-overflow-check
+          just verify --lang=c,cbmc --domain=defense,stability
 
   lean4-meta-and-domain-proofs:
-    name: Lean 4 / LeanPoo 6-Core & 27-Theorem Meta-Soundness Kernel Gate (0 sorryAx)
+    name: Lean 4 / LeanPoo All-Module Build & Zero-sorryAx Kernel Axiom Gate
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: ./.github/actions/setup-just
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version: 1.3.11
       - name: Install elan & pinned Lean 4 toolchain
         run: |
           curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-      - name: Modular Lake build across all 6 Subjects (5 Engineering + 2 Threat Modules) & 6 Cores
-        working-directory: packages/lean-models
-        run: |
-          lake build \
-            DeterministicEngineering.Engineering.ProcessTree \
-            DeterministicEngineering.Engineering.Backpressure \
-            DeterministicEngineering.Engineering.LeaseFencing \
-            DeterministicEngineering.Engineering.BoundaryConservation \
-            DeterministicEngineering.Engineering.MetaGovernanceSoundness \
-            DeterministicEngineering.Threat.CapabilityContainment \
-            DeterministicEngineering.Threat.AuthorityCurrentness
-      - name: Audit #print axioms (0 sorryAx everywhere; zero axioms on Core.MetaGovernance)
-        working-directory: packages/lean-models
-        run: |
-          meta_out="$(lake env lean --stdin <<'EOF'
-          import DeterministicEngineering.Core.MetaGovernance
-          import DeterministicEngineering.Engineering.MetaGovernanceSoundness
-          #print axioms DeterministicEngineering.Core.MetaGovernance.ir03_dag_invalidation_transitive
-          #print axioms DeterministicEngineering.Core.MetaGovernance.same_wave_implies_independent
-          #print axioms DeterministicEngineering.Core.MetaGovernance.mr07_acyclic_premise_sound
-          #print axioms DeterministicEngineering.Core.MetaGovernance.mr08_acyclic_dag_sound
-          #print axioms DeterministicEngineering.Core.MetaGovernance.fleet_merkle_pinned_key_tamper_resistant
-          #print axioms DeterministicEngineering.Core.MetaGovernance.ir07_mixed_dag_and_premise_invalidation
-          #print axioms DeterministicEngineering.Core.MetaGovernance.ir08_expired_m3_cascades_under_strict_premise
-          #print axioms DeterministicEngineering.Core.MetaGovernance.revoked_key_blocks_reuse_and_downstream
-          #print axioms DeterministicEngineering.Core.MetaGovernance.mixedKeyFleet_rotation_preserves_verification
-          #print axioms DeterministicEngineering.Core.MetaGovernance.mixedKeyFleet_rejects_revoked_child_even_with_valid_root_key
-          #print axioms DeterministicEngineering.Core.MetaGovernance.mixedKeyFleet_rejects_tampered_child_digest
-          #print axioms DeterministicEngineering.Core.MetaGovernance.absolute_path_never_safe
-          #print axioms DeterministicEngineering.Core.MetaGovernance.dotdot_segment_never_safe
-          #print axioms DeterministicEngineering.Engineering.MetaGovernanceSoundness.keyRevocation_invalidates_witness_and_downstream
-          #print axioms DeterministicEngineering.Engineering.MetaGovernanceSoundness.mixedKeyFleet_rotation_and_childRevocation_sound
-          #print axioms DeterministicEngineering.Engineering.MetaGovernanceSoundness.fleetChildPathContainment_rejects_traversal_and_absolute
-          EOF
-          )"
-          printf '%s\n' "$meta_out"
-          if printf '%s\n' "$meta_out" | grep -q 'sorryAx'; then
-            echo "ERROR: sorryAx detected in MetaGovernance audit" >&2
-            exit 1
-          fi
-          if printf '%s\n' "$meta_out" | grep -q 'depends on axioms'; then
-            echo "ERROR: unexpected non-constructive axiom detected in MetaGovernance proofs" >&2
-            exit 1
-          fi
-          threat_out="$(lake env lean --stdin <<'EOF'
-          import DeterministicEngineering.Threat.CapabilityContainment
-          import DeterministicEngineering.Threat.AuthorityCurrentness
-          #print axioms DeterministicEngineering.Threat.CapabilityContainment.revokeRootSession_kills_all_delegated_hops
-          #print axioms DeterministicEngineering.Threat.CapabilityContainment.crashSafe_sessionRevocation_zero_zombie_tokens
-          #print axioms DeterministicEngineering.Threat.CapabilityContainment.multiHop_attenuation_prevents_amplification
-          #print axioms DeterministicEngineering.Threat.CapabilityContainment.revokedEpoch_rejects_zombie_delegation
-          #print axioms DeterministicEngineering.Threat.AuthorityCurrentness.isCurrent_eq_true_iff
-          #print axioms DeterministicEngineering.Threat.AuthorityCurrentness.paused_never_current
-          #print axioms DeterministicEngineering.Threat.AuthorityCurrentness.epochAdvance_invalidates_all_prior_plans
-          #print axioms DeterministicEngineering.Threat.AuthorityCurrentness.authorityFloor_join_never_weakens
-          EOF
-          )"
-          printf '%s\n' "$threat_out"
-          if printf '%s\n' "$threat_out" | grep -q 'sorryAx'; then
-            echo "ERROR: sorryAx detected in Threat.CapabilityContainment audit" >&2
-            exit 1
-          fi
+      - name: Auto-discovered Lean 4 build & dynamic #print axioms audit
+        run: just check-lean
