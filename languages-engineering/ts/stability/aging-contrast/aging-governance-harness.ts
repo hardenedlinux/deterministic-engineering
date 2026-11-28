@@ -304,6 +304,14 @@ const MECHANISM_DIRECTIVES: Record<AgingMechanism, AgingRemediationDirective> = 
     antiEvasionWarning:
       'Do NOT evade by keeping unbounded fs::read_to_string or ambient credential_env lookups in Config::load, spawning asp-gateway without .env_clear() or boot timeout, trusting child boot JSON endpoints containing @-userinfo, opening probe logs with File::create without O_NOFOLLOW or byte cap, or checking cwd/scheme before the binary repository.',
   },
+  'SM40-asp-patch-transport-schema-cache-confinement': {
+    mechanism: 'SM40-asp-patch-transport-schema-cache-confinement',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Confine apply_ast_patch_via_asp_http strictly inside canonicalized workspace_root rejecting absolute, traversal, and intermediate/leaf symlink paths with O_NOFOLLOW 8 MiB bounded reads and symlink-safe atomic writes; enforce strict u16 non-zero loopback host:port parsing (zero @/controls/paths) in AspForwardingEndpoint::new, reject CR/LF/control chars in with_control_token and HttpEndpointPath::new, read MAX_HTTP_RESPONSE_BYTES + 1 to fail closed on oversize HTTP responses, and use checked_add + CRLF/0-chunk terminator validation in decode_http_body; bound TargetedJsonSchemaDocument::resolve_schema_node recursion with MAX_SCHEMA_REF_DEPTH and visited-pointer tracking; and refuse symlinks on snapshot/Open-EDB cache paths using create_new(true) + parent fsync while replacing unbounded mpsc::channel::<PackageDslJob>() with bounded mpsc::sync_channel + try_send backpressure.',
+    antiEvasionWarning:
+      'Do NOT evade by calling workspace_root.join(request.path) without symlink/traversal confinement, checking only authority.split(":").next() on loopback URLs, ignoring CR/LF in HTTP Bearer tokens or route paths, leaving unchecked pos + size in chunked decoders, recursing unboundedly on JSON Schema $ref, or leaving snapshot/cache symlinks and unbounded Search DSL channels unguarded.',
+  },
 };
 
 export function getAgingRemediation(finding: AgingFinding): AgingRemediationDirective {

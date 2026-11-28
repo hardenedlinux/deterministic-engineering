@@ -4222,10 +4222,153 @@ export function resolveTuiCredentialEnv(name: string): string | undefined {
   return process.env[name];
 }`,
   },
+  // --- SM40: ADV-L4 ASP HTTP patch confinement, loopback transport integrity, circular schema anti-DoS & cache/queue isolation (SA267-SA274) ---
+  {
+    id: 'SA267',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-asp-patch-unconfined-path-or-unbounded-read',
+    source: `
+pub fn apply_ast_patch_via_asp_http(request: &PatchReq) -> Result<String, String> {
+  let abs_path = request.workspace_root.join(request.path);
+  let src = fs::read_to_string(&abs_path).map_err(|e| e.to_string())?;
+  Ok(src)
+}`,
+  },
+  {
+    id: 'SA268',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-asp-loopback-ssrf-crlf-or-chunked-overflow',
+    source: `
+impl AspForwardingEndpoint {
+  pub fn new(raw: &str) -> Result<Self, String> {
+    let rest = raw.strip_prefix("http://").ok_or("bad")?;
+    let host = rest.split(':').next().unwrap_or("");
+    if !matches!(host, "127.0.0.1" | "localhost") { return Err("bad".into()); }
+    Ok(Self { authority: rest.to_owned() })
+  }
+}
+fn decode_http_body(body: &[u8]) -> Result<Vec<u8>, String> {
+  let mut pos = 0usize;
+  let size = usize::MAX;
+  if pos + size > body.len() { return Err("truncated".into()); }
+  Ok(Vec::new())
+}`,
+  },
+  {
+    id: 'SA269',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-json-schema-unbounded-recursive-ref',
+    source: `
+impl TargetedJsonSchemaDocument {
+  fn resolve_schema_node<'a>(&'a self, node: &'a Value) -> &'a Value {
+    if let Some(target) = node.get("$ref").and_then(|r| self.0.pointer(r.as_str()?)) {
+      return self.resolve_schema_node(target);
+    }
+    node
+  }
+}`,
+  },
+  {
+    id: 'SA270',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-search-snapshot-symlink-or-unbounded-dsl-channel',
+    source: `
+pub fn save_workspace_snapshot_atomic(snapshot_path: &Path, bytes: &[u8]) -> Result<(), String> {
+  let tmp_path = snapshot_path.with_extension("tmp");
+  let mut f = File::create(&tmp_path).map_err(|e| e.to_string())?;
+  let _ = f.write_all(bytes);
+  Ok(())
+}
+fn package_search_dsl_worker() -> std::sync::mpsc::Sender<PackageDslJob> {
+  let (tx, _rx) = mpsc::channel::<PackageDslJob>();
+  tx
+}`,
+  },
+  {
+    id: 'SA271',
+    language: 'ts',
+    expectedPass: false,
+    expectedRuleId: 'ts-asp-patch-escape-or-chunked-overflow',
+    source: `
+export function resolveWorkspacePatchPath(workspaceRoot: string, relPath: string): string {
+  return join(workspaceRoot, relPath);
+}`,
+  },
+  {
+    id: 'SA272',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+pub fn apply_ast_patch_via_asp_http(request: &PatchReq) -> Result<String, String> {
+  let abs_path = confine_workspace_patch_path(request.workspace_root, request.path)?;
+  let src = read_bounded_non_symlink(&abs_path, MAX_AST_PATCH_SOURCE_BYTES)?;
+  Ok(src)
+}
+impl TargetedJsonSchemaDocument {
+  fn resolve_schema_node_bounded<'a>(&'a self, node: &'a Value, depth: usize, visited: &mut Vec<*const Value>) -> &'a Value {
+    if depth >= MAX_SCHEMA_REF_DEPTH || visited.contains(&(node as *const Value)) { return node; }
+    visited.push(node as *const Value);
+    if let Some(target) = node.get("$ref").and_then(|r| self.0.pointer(r.as_str()?)) {
+      return self.resolve_schema_node_bounded(target, depth + 1, visited);
+    }
+    node
+  }
+}`,
+  },
+  {
+    id: 'SA273',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+impl AspForwardingEndpoint {
+  pub fn new(raw: &str) -> Result<Self, String> {
+    if raw.chars().any(char::is_control) || raw.contains('@') { return Err("bad".into()); }
+    let rest = raw.strip_prefix("http://").ok_or("bad")?;
+    let (host, port_s) = rest.split_once(':').ok_or("bad")?;
+    let port = port_s.parse::<u16>().map_err(|_| "bad")?;
+    if port == 0 || !matches!(host, "127.0.0.1" | "localhost") { return Err("bad".into()); }
+    Ok(Self { authority: format!("{host}:{port}") })
+  }
+}
+fn decode_http_body(body: &[u8]) -> Result<Vec<u8>, String> {
+  let pos = 0usize;
+  let size = 4usize;
+  let end = pos.checked_add(size).ok_or("overflow")?;
+  if end > body.len() { return Err("truncated".into()); }
+  Ok(body[pos..end].to_vec())
+}
+pub fn save_workspace_snapshot_atomic(snapshot_path: &Path, bytes: &[u8]) -> Result<(), String> {
+  verify_non_symlink_snapshot_path(snapshot_path)?;
+  let tmp_path = snapshot_path.with_extension("tmp");
+  let mut f = std::fs::OpenOptions::new().write(true).create_new(true).open(&tmp_path).map_err(|e| e.to_string())?;
+  let _ = f.write_all(bytes);
+  Ok(())
+}
+fn package_search_dsl_worker() -> std::sync::mpsc::SyncSender<PackageDslJob> {
+  let (tx, _rx) = mpsc::sync_channel::<PackageDslJob>(64);
+  tx
+}`,
+  },
+  {
+    id: 'SA274',
+    language: 'ts',
+    expectedPass: true,
+    source: `
+export function resolveWorkspacePatchPath(workspaceRoot: string, relPath: string): string {
+  if (isAbsolute(relPath) || relPath.split('/').includes('..')) throw new Error('escape');
+  const full = join(workspaceRoot, relPath);
+  if (lstatSync(full).isSymbolicLink() || !realpathSync(full).startsWith(realpathSync(workspaceRoot))) throw new Error('symlink');
+  return full;
+}`,
+  },
 ];
 
-describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA266)', () => {
-  test('achieves 266/266 exact independent-gold match (tp=154, tn=112, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
+describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA274)', () => {
+  test('achieves 274/274 exact independent-gold match (tp=159, tn=115, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
     let tp = 0;
     let tn = 0;
     let fp = 0;
@@ -4248,7 +4391,7 @@ describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA266)', () 
       }
     }
 
-    expect({tp, tn, fp, fn}).toEqual({tp: 154, tn: 112, fp: 0, fn: 0});
+    expect({tp, tn, fp, fn}).toEqual({tp: 159, tn: 115, fp: 0, fn: 0});
   });
 
   test('clean Rust deterministic buffer pool & bounded retry passes with 0 findings', () => {

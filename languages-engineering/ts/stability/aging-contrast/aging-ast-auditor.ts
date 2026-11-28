@@ -45,7 +45,8 @@ export type AgingMechanism =
   | 'SM36-telemetry-watchdog-deck-vm-confinement'
   | 'SM37-process-signal-ledger-fanout-confinement'
   | 'SM38-defense-pillar-crypto-state-confinement'
-  | 'SM39-tui-config-supervisor-probe-confinement';
+  | 'SM39-tui-config-supervisor-probe-confinement'
+  | 'SM40-asp-patch-transport-schema-cache-confinement';
 
 export interface AgingFinding {
   ruleId: string;
@@ -2617,6 +2618,136 @@ function auditRust(clean: string): AgingFinding[] {
     }
   }
 
+  // 94. Rust apply_ast_patch_via_asp_http joins untrusted request.path onto workspace_root without confinement/symlink refusal or reads unboundedly (ADV-L4, SM40).
+  const astPatchFnMatch = /\bfn\s+apply_ast_patch_via_asp_http\s*\([^)]*\)/.exec(clean);
+  if (astPatchFnMatch) {
+    const fnBody = extractBraceBlock(clean, astPatchFnMatch.index);
+    const rawJoin = /workspace_root\.join\s*\(\s*request\.path\s*\)/.test(fnBody);
+    const rawRead = /fs::read_to_string\s*\(/.test(fnBody);
+    const hasConfinement =
+      /\b(?:confine_workspace_patch_path|symlink_metadata|O_NOFOLLOW)\b/.test(fnBody) &&
+      /\b(?:MAX_AST_PATCH_SOURCE_BYTES|read_bounded_non_symlink)\b/.test(fnBody);
+    if (rawJoin || rawRead || !hasConfinement) {
+      findings.push({
+        ruleId: 'rust-asp-patch-unconfined-path-or-unbounded-read',
+        mechanism: 'SM40-asp-patch-transport-schema-cache-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, astPatchFnMatch.index),
+        message: 'apply_ast_patch_via_asp_http joins untrusted request.path directly onto workspace_root or reads unboundedly without traversal/symlink confinement, enabling arbitrary host file read and overwrite (ADV-L4, SM40).',
+      });
+    }
+  }
+
+  // 95. Rust AspForwardingEndpoint::new / HttpEndpointPath::new / http_loopback_request / decode_http_body allow @-userinfo SSRF, CRLF header smuggling, silent response truncation, or pos + size chunked overflow panic (ADV-L4, SM40).
+  const aspEndpointImplMatch = /\bimpl\s+AspForwardingEndpoint\b/.exec(clean);
+  if (aspEndpointImplMatch) {
+    const implBody = extractBraceBlock(clean, aspEndpointImplMatch.index);
+    const hasStrictPortAndChars =
+      /parse::<u16>\s*\(\s*\)|\.parse::<u16>/.test(implBody) &&
+      /is_control/.test(implBody) &&
+      /@/.test(implBody);
+    if (!hasStrictPortAndChars) {
+      findings.push({
+        ruleId: 'rust-asp-loopback-ssrf-crlf-or-chunked-overflow',
+        mechanism: 'SM40-asp-patch-transport-schema-cache-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, aspEndpointImplMatch.index),
+        message: 'AspForwardingEndpoint omits strict u16 port parsing, @-userinfo refusal, or CRLF control-char rejection on endpoint/control_token (ADV-L4, SM40).',
+      });
+    }
+  }
+  const httpLoopbackMatch = /\bfn\s+http_loopback_request\s*\([^)]*\)/.exec(clean);
+  if (httpLoopbackMatch) {
+    const fnBody = extractBraceBlock(clean, httpLoopbackMatch.index);
+    const truncatesSilently = /\.take\s*\(\s*MAX_HTTP_RESPONSE_BYTES\s+as\s+u64\s*\)/.test(fnBody);
+    if (truncatesSilently) {
+      findings.push({
+        ruleId: 'rust-asp-loopback-ssrf-crlf-or-chunked-overflow',
+        mechanism: 'SM40-asp-patch-transport-schema-cache-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, httpLoopbackMatch.index),
+        message: 'http_loopback_request silently truncates HTTP responses exceeding MAX_HTTP_RESPONSE_BYTES instead of reading cap + 1 and failing closed (ADV-L4, SM40).',
+      });
+    }
+  }
+  const decodeChunkedMatch = /\bfn\s+decode_http_body\s*\([^)]*\)/.exec(clean);
+  if (decodeChunkedMatch) {
+    const fnBody = extractBraceBlock(clean, decodeChunkedMatch.index);
+    if (/pos\s*\+\s*size\s*>\s*body\.len\s*\(\s*\)/.test(fnBody) && !/checked_add/.test(fnBody)) {
+      findings.push({
+        ruleId: 'rust-asp-loopback-ssrf-crlf-or-chunked-overflow',
+        mechanism: 'SM40-asp-patch-transport-schema-cache-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, decodeChunkedMatch.index),
+        message: 'decode_http_body computes unchecked pos + size > body.len() on untrusted chunked sizes, risking integer overflow panic or slice wraparound (ADV-L4, SM40).',
+      });
+    }
+  }
+
+  // 96. Rust TargetedJsonSchemaDocument::resolve_schema_node recurses without depth or cycle guard on circular $ref (ADV-L4, SM40).
+  const schemaDocImplMatch = /\bimpl\s+TargetedJsonSchemaDocument\b/.exec(clean);
+  if (schemaDocImplMatch) {
+    const implBody = extractBraceBlock(clean, schemaDocImplMatch.index);
+    const resolveMatch = /\bfn\s+resolve_schema_node(?:_bounded)?\s*(?:<[^>]*>)?\s*\([^)]*\)/.exec(implBody);
+    if (resolveMatch) {
+      const fnBody = extractBraceBlock(implBody, resolveMatch.index);
+      const recurses = /self\.resolve_schema_node/.test(fnBody);
+      const bounded = /\b(?:MAX_SCHEMA_REF_DEPTH|depth|visited)\b/.test(fnBody);
+      if (recurses && !bounded) {
+        findings.push({
+          ruleId: 'rust-json-schema-unbounded-recursive-ref',
+          mechanism: 'SM40-asp-patch-transport-schema-cache-confinement',
+          language: 'rust',
+          line: lineOfIndex(clean, schemaDocImplMatch.index + resolveMatch.index),
+          message: 'TargetedJsonSchemaDocument::resolve_schema_node recurses on $ref without depth or visited-pointer cycle guard, causing stack overflow DoS on circular schemas (ADV-L4, SM40).',
+        });
+      }
+    }
+  }
+
+  // 97. Rust save_workspace_snapshot_atomic / hydrate_workspace_open_edb_org_and_cache follow symlinks or stage with File::create, OR package_search_dsl_worker uses unbounded mpsc::channel (ADV-L4, SM40).
+  const snapAtomicMatch = /\bfn\s+save_workspace_snapshot_atomic\s*\([^)]*\)/.exec(clean);
+  if (snapAtomicMatch) {
+    const fnBody = extractBraceBlock(clean, snapAtomicMatch.index);
+    const usesFileCreate = /File::create\s*\(/.test(fnBody);
+    const checksSymlink = /\b(?:symlink_metadata|verify_non_symlink_snapshot_path|O_NOFOLLOW)\b/.test(fnBody);
+    if (usesFileCreate || !checksSymlink) {
+      findings.push({
+        ruleId: 'rust-search-snapshot-symlink-or-unbounded-dsl-channel',
+        mechanism: 'SM40-asp-patch-transport-schema-cache-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, snapAtomicMatch.index),
+        message: 'save_workspace_snapshot_atomic uses File::create or omits symlink refusal on snapshot_path/parent before atomic replacement (ADV-L4, SM40).',
+      });
+    }
+  }
+  const hydratorCacheMatch = /\bfn\s+hydrate_workspace_open_edb_org_and_cache\s*\([^)]*\)/.exec(clean);
+  if (hydratorCacheMatch) {
+    const fnBody = extractBraceBlock(clean, hydratorCacheMatch.index);
+    if (/cache_path\.is_file\s*\(\s*\)/.test(fnBody) && !/\b(?:symlink_metadata|is_non_symlink_cache_path)\b/.test(fnBody)) {
+      findings.push({
+        ruleId: 'rust-search-snapshot-symlink-or-unbounded-dsl-channel',
+        mechanism: 'SM40-asp-patch-transport-schema-cache-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, hydratorCacheMatch.index),
+        message: 'hydrate_workspace_open_edb_org_and_cache checks cache_path.is_file() without refusing symlinked cache paths (ADV-L4, SM40).',
+      });
+    }
+  }
+  const dslWorkerMatch = /\bfn\s+package_search_dsl_worker\s*\([^)]*\)/.exec(clean);
+  if (dslWorkerMatch) {
+    const fnBody = extractBraceBlock(clean, dslWorkerMatch.index);
+    if (/mpsc::channel\s*::<\s*PackageDslJob\s*>\s*\(\s*\)/.test(fnBody)) {
+      findings.push({
+        ruleId: 'rust-search-snapshot-symlink-or-unbounded-dsl-channel',
+        mechanism: 'SM40-asp-patch-transport-schema-cache-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, dslWorkerMatch.index),
+        message: 'package_search_dsl_worker uses unbounded mpsc::channel::<PackageDslJob>() instead of bounded mpsc::sync_channel with try_send backpressure (ADV-L4, SM40).',
+      });
+    }
+  }
+
   return findings;
 }
 
@@ -3084,6 +3215,22 @@ function auditTypeScript(clean: string): AgingFinding[] {
         language: 'ts',
         line: lineOfIndex(clean, tsTuiCfgMatch.index),
         message: 'resolveTuiCredentialEnv reads process.env[name] without rejecting ambient OS/loader variables (PATH/HOME/LD_PRELOAD) (ADV-L4, SM39).',
+      });
+    }
+  }
+
+  // 33. TS resolveWorkspacePatchPath joins untrusted relative path onto workspaceRoot without rejecting traversal, absolute paths, or symlinks (ADV-L4, SM40).
+  const tsPatchPathMatch = /\bfunction\s+resolveWorkspacePatchPath\s*\([^)]*\)(?:\s*:\s*[^{]+)?\{/.exec(clean);
+  if (tsPatchPathMatch) {
+    const fnBody = extractBraceBlock(clean, tsPatchPathMatch.index + tsPatchPathMatch[0].length - 1);
+    const hasGuard = /\b(?:isAbsolute|lstatSync|realpathSync|startsWith)\b/.test(fnBody) && /\.\./.test(fnBody);
+    if (!hasGuard) {
+      findings.push({
+        ruleId: 'ts-asp-patch-escape-or-chunked-overflow',
+        mechanism: 'SM40-asp-patch-transport-schema-cache-confinement',
+        language: 'ts',
+        line: lineOfIndex(clean, tsPatchPathMatch.index),
+        message: 'resolveWorkspacePatchPath joins untrusted patch path onto workspaceRoot without rejecting absolute paths, ".." traversal, or symlinks (ADV-L4, SM40).',
       });
     }
   }
