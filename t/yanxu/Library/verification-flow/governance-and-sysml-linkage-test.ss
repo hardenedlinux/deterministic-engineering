@@ -259,4 +259,6 @@
       (check (and (member '("threat.execution.gitops-subprocess-confinement-and-arg-injection") admitted-subjs) #t) => #t)
       (check (and (member '("threat.execution.control-plane-auth-and-governance-confinement") admitted-subjs) #t) => #t)
       (check (and (member '("threat.execution.hook-policy-and-protocol-contract-confinement") admitted-subjs) #t) => #t)
-      (check-equal? (length (.get projected subject-specs)) 16))))
+      (check (and (member '("threat.execution.plugin-grant-rollback-and-lease-confinement") admitted-subjs) #t) => #t)
+      (check (and (member '("threat.execution.governance-policy-and-latch-antirollback") admitted-subjs) #t) => #t)
+      (check-equal? (length (.get projected subject-specs)) 18))))

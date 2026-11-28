@@ -46,7 +46,7 @@
 
 (def verification-flow-sysml-compiler-and-lease-fencing-test
   (test-suite "Zero-glue SysML v2 -> Fun-Flow DAG compiler and 3rd subject lease-fencing-token"
-    (yuanxu-test-case/with MultiSubjectCompileBudget "live SysML v2 compiles all 16 subjects (35 engines) into valid Fun-Flow DAGs and manifests with zero Scheme glue"
+    (yuanxu-test-case/with MultiSubjectCompileBudget "live SysML v2 compiles all 18 subjects (39 engines) into valid Fun-Flow DAGs and manifests with zero Scheme glue"
       (def sysml-path
         (path-expand
           "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml"
@@ -54,7 +54,7 @@
       (def json-text (run-process (list "sysml" "-convert" "api-json" sysml-path)))
       (def parsed (call-with-input-string json-text (cut read-json <> object-as-hash: #t)))
       (def projected (sysml-api-json->governance-facts parsed))
-      (check-equal? (length (.get projected subject-specs)) 16)
+      (check-equal? (length (.get projected subject-specs)) 18)
       (for-each
         (lambda (spec-expect)
           (def skey (car spec-expect))
@@ -88,8 +88,26 @@
           (shared-context-governance 2)
           (gitops-subprocess-confinement-and-arg-injection 2)
           (control-plane-auth-and-governance-confinement 2)
-          (hook-policy-and-protocol-contract-confinement 2)))
+          (hook-policy-and-protocol-contract-confinement 2)
+          (plugin-grant-rollback-and-lease-confinement 2)
+          (governance-policy-and-latch-antirollback 2)))
       ;; Verify static change-impact slicing isolates AI-Security subjects cleanly!
+      (let* ((impact11
+              (changed-files->affected-frontier
+                projected
+                '("packages/quint-models/threat/execution/plugin-grant-rollback-and-lease-confinement/PluginGrantRollbackAndLeaseConfinement.qnt")))
+             (affected11 (filter (lambda (s) (pair? (.get s affected-steps))) impact11)))
+        (check-equal? (map (lambda (s) (.get s subject-key)) affected11)
+                      '(plugin-grant-rollback-and-lease-confinement))
+        (check-equal? (.get (car affected11) affected-steps) '("sm28QuintTarget")))
+      (let* ((impact12
+              (changed-files->affected-frontier
+                projected
+                '("packages/quint-models/threat/execution/governance-policy-and-latch-antirollback/GovernancePolicyAndLatchAntirollback.qnt")))
+             (affected12 (filter (lambda (s) (pair? (.get s affected-steps))) impact12)))
+        (check-equal? (map (lambda (s) (.get s subject-key)) affected12)
+                      '(governance-policy-and-latch-antirollback))
+        (check-equal? (.get (car affected12) affected-steps) '("sm29QuintTarget")))
       (let* ((impact9
               (changed-files->affected-frontier
                 projected

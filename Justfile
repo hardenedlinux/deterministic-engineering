@@ -231,6 +231,22 @@ check-ai-diff *args:
 verify-ai-diff output cache_dir="" *args:
     test ! -e "{{output}}" && t/harness/run-gxtest.sh script 420s t/support/verification-flow-runner.ss --verify-ai-diff "{{output}}" "{{cache_dir}}" {{args}}
 
+# Human-in-the-loop Step-Up approval for an AI-SE diff receipt: offline co-signs
+# `verification-summary.intoto.dsse.json` with `human-approver`'s Ed25519 key and
+# immediately verifies 2-of-2 (`ai-agent` + `human-approver`) Role-SoD (or a
+# `policy-admin`-signed anti-rollback policy) via the zero-dependency Bun/TS verifier.
+approve-ai-diff diff_dir human_priv human_pub trust_bundle signed_policy="" min_policy_version="1":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    IN_DSSE="{{diff_dir}}/verification-summary.intoto.dsse.json"
+    OUT_DSSE="{{diff_dir}}/verification-summary.approved.intoto.dsse.json"
+    bun t/harness/offline-attestation-verifier.ts --json --cosign-dsse-statement "$IN_DSSE" "{{human_priv}}" "{{human_pub}}" "{{trust_bundle}}" "$OUT_DSSE"
+    if [ -n "{{signed_policy}}" ]; then
+        bun t/harness/offline-attestation-verifier.ts --json --verify-dsse-statement --signed-policy "{{signed_policy}}" --require-policy-role policy-admin --min-policy-version "{{min_policy_version}}" "$OUT_DSSE" "{{trust_bundle}}"
+    else
+        bun t/harness/offline-attestation-verifier.ts --json --verify-dsse-statement --min-signatures 2 --require-role ai-agent --require-role human-approver "$OUT_DSSE" "{{trust_bundle}}"
+    fi
+
 verify-multi-method-report report trust_store:
     t/harness/run-gxtest.sh script none t/support/offline-attestation-verifier.ss --verify-report "{{report}}" "{{trust_store}}"
 

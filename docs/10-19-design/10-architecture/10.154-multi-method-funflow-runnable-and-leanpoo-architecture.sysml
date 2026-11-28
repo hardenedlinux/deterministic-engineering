@@ -941,6 +941,71 @@ package MultiMethodFunFlowArchitecture {
                 attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean,packages/lean-models/DeterministicEngineering/Engineering/HookPolicyAndProtocolContractConfinement.lean";
             }
         }
+
+        // Seventeenth Zero-Glue Subject (Twelfth AI-Security Threat Subject: SM28 ADV-L4 Plugin Capability Grant, Release Anti-Rollback & Device-Lease Confinement)
+        part pluginGrantRollbackLeaseConfinement {
+            attribute subjectKey : String = "plugin-grant-rollback-and-lease-confinement";
+            attribute identity : String = "threat.execution.plugin-grant-rollback-and-lease-confinement";
+            attribute tags : String = "threat,execution,ai-security,plugin-grant,anti-rollback,defense.mutability.immutable-proof,hazard.plugin-grant-rollback-hijack";
+            attribute factors : String = "plugin-grant-rollback-and-lease-confinement,ai-delegates-authority,ai-executes-tools";
+            attribute aiControls : String = "monotonic-attenuation,revocation-currentness,tool-confinement";
+
+            part sm28QuintTarget {
+                attribute modelId : String = "threat.execution.plugin-grant-rollback-and-lease-confinement";
+                attribute quintFile : String = "packages/quint-models/threat/execution/plugin-grant-rollback-and-lease-confinement/PluginGrantRollbackAndLeaseConfinement.qnt";
+                attribute quintMain : String = "execution_plugin_grant_rollback_and_lease_confinement";
+                attribute itfSubdir : String = "plugin-grant-rollback-and-lease-confinement";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "forbid-ungranted-panel-activation,forbid-release-rollback-or-publisher-hijack,forbid-forged-device-lease-mutation,forbid-conflicting-idempotency-replay";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/execution/plugin-grant-rollback-and-lease-confinement/PluginGrantRollbackAndLeaseConfinement.qnt,packages/quint-models/threat/execution/plugin-grant-rollback-and-lease-confinement/objects.ss,packages/quint-models/threat/execution/plugin-grant-rollback-and-lease-confinement/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part sm28LeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.PluginGrantRollbackAndLeaseConfinement";
+                attribute refinesCore : String = "DeterministicEngineering.Engineering.SandboxSymlinkArchiveConfinement";
+                attribute transportContract : String = "ObjectContract.refine+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Engineering.PluginGrantRollbackAndLeaseConfinement.sm28_strict_admission_eliminates_all_exploits,DeterministicEngineering.Engineering.PluginGrantRollbackAndLeaseConfinement.sm28_version_downgrade_rejected,DeterministicEngineering.Engineering.PluginGrantRollbackAndLeaseConfinement.sm28_cross_publisher_hijack_rejected,DeterministicEngineering.Engineering.PluginGrantRollbackAndLeaseConfinement.sm28_unconfined_entry_path_rejected,DeterministicEngineering.Engineering.PluginGrantRollbackAndLeaseConfinement.sm28_conflicting_idempotency_refused,DeterministicEngineering.Engineering.PluginGrantRollbackAndLeaseConfinement.sm28_matching_idempotency_replays,DeterministicEngineering.Engineering.PluginGrantRollbackAndLeaseConfinement.sm28_gentle_pressure_rejected,DeterministicEngineering.Engineering.PluginGrantRollbackAndLeaseConfinement.sm28_defective_configs_expose_live_exploits,DeterministicEngineering.Engineering.PluginGrantRollbackAndLeaseConfinement.sm28_marlin_contract_refinement_laws,DeterministicEngineering.Engineering.PluginGrantRollbackAndLeaseConfinement.sm28_baseline_certified,DeterministicEngineering.Engineering.PluginGrantRollbackAndLeaseConfinement.sm28_obligation_untouched_by_retention_tuning,DeterministicEngineering.Engineering.PluginGrantRollbackAndLeaseConfinement.sm28_retention_tuning_reuses_and_closes_certificate,DeterministicEngineering.Engineering.PluginGrantRollbackAndLeaseConfinement.sm28_regressions_invalidate_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean,packages/lean-models/DeterministicEngineering/Engineering/PluginGrantRollbackAndLeaseConfinement.lean";
+            }
+        }
+
+        // Eighteenth Zero-Glue Subject (Thirteenth AI-Security Threat Subject: SM29 ADV-L4 Governance Policy Cedar Fail-Closed & Durable E-Stop Latch Anti-Rollback)
+        part governancePolicyLatchAntirollback {
+            attribute subjectKey : String = "governance-policy-and-latch-antirollback";
+            attribute identity : String = "threat.execution.governance-policy-and-latch-antirollback";
+            attribute tags : String = "threat,execution,ai-security,governance-latch,anti-rollback,defense.mutability.immutable-proof,hazard.policy-latch-rollback-resurrection";
+            attribute factors : String = "governance-policy-and-latch-antirollback,ai-mutates-host-or-governance";
+            attribute aiControls : String = "human-stepup-and-estop";
+            attribute aiRoleBindings : String = "human-approver:human-approver,ai-agent:ai-proposer";
+
+            part sm29QuintTarget {
+                attribute modelId : String = "threat.execution.governance-policy-and-latch-antirollback";
+                attribute quintFile : String = "packages/quint-models/threat/execution/governance-policy-and-latch-antirollback/GovernancePolicyAndLatchAntirollback.qnt";
+                attribute quintMain : String = "execution_governance_policy_and_latch_antirollback";
+                attribute itfSubdir : String = "governance-policy-and-latch-antirollback";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "forbid-unless-missing-context-failopen,forbid-same-epoch-policy-revision-rollback,forbid-same-epoch-estop-checkpoint-replay,forbid-rearm-resurrecting-retracted-derivation";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/execution/governance-policy-and-latch-antirollback/GovernancePolicyAndLatchAntirollback.qnt,packages/quint-models/threat/execution/governance-policy-and-latch-antirollback/objects.ss,packages/quint-models/threat/execution/governance-policy-and-latch-antirollback/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part sm29LeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.GovernancePolicyAndLatchAntirollback";
+                attribute refinesCore : String = "DeterministicEngineering.Engineering.SandboxSymlinkArchiveConfinement";
+                attribute transportContract : String = "ObjectContract.refine+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Engineering.GovernancePolicyAndLatchAntirollback.sm29_unless_missing_context_fails_closed_for_both_effects,DeterministicEngineering.Engineering.GovernancePolicyAndLatchAntirollback.sm29_same_epoch_revision_rollback_rejected,DeterministicEngineering.Engineering.GovernancePolicyAndLatchAntirollback.sm29_same_epoch_tripped_undeny_rejected,DeterministicEngineering.Engineering.GovernancePolicyAndLatchAntirollback.sm29_same_epoch_checkpoint_cannot_untrip_estop,DeterministicEngineering.Engineering.GovernancePolicyAndLatchAntirollback.sm29_stale_epoch_checkpoint_rejected,DeterministicEngineering.Engineering.GovernancePolicyAndLatchAntirollback.sm29_rearm_preserves_retracted_derivations,DeterministicEngineering.Engineering.GovernancePolicyAndLatchAntirollback.sm29_strict_admission_eliminates_all_exploits,DeterministicEngineering.Engineering.GovernancePolicyAndLatchAntirollback.sm29_gentle_pressure_rejected,DeterministicEngineering.Engineering.GovernancePolicyAndLatchAntirollback.sm29_defective_configs_expose_live_exploits,DeterministicEngineering.Engineering.GovernancePolicyAndLatchAntirollback.sm29_marlin_contract_refinement_laws,DeterministicEngineering.Engineering.GovernancePolicyAndLatchAntirollback.sm29_baseline_certified,DeterministicEngineering.Engineering.GovernancePolicyAndLatchAntirollback.sm29_obligation_untouched_by_lease_bound_tuning,DeterministicEngineering.Engineering.GovernancePolicyAndLatchAntirollback.sm29_lease_bound_tuning_reuses_and_closes_certificate,DeterministicEngineering.Engineering.GovernancePolicyAndLatchAntirollback.sm29_regressions_invalidate_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean,packages/lean-models/DeterministicEngineering/Engineering/GovernancePolicyAndLatchAntirollback.lean";
+            }
+        }
     }
 
     // ── 12. Architectural, Cross-Method, and Requirement Dependencies ──
@@ -1020,6 +1085,12 @@ package MultiMethodFunFlowArchitecture {
 
     dependency 'sm33-quint-source' from system::hookPolicyProtocolConfinement::sm33QuintTarget to system::quintModels;
     dependency 'sm33-lean-source' from system::hookPolicyProtocolConfinement::sm33LeanPooTarget to system::leanModels;
+
+    dependency 'sm28-quint-source' from system::pluginGrantRollbackLeaseConfinement::sm28QuintTarget to system::quintModels;
+    dependency 'sm28-lean-source' from system::pluginGrantRollbackLeaseConfinement::sm28LeanPooTarget to system::leanModels;
+
+    dependency 'sm29-quint-source' from system::governancePolicyLatchAntirollback::sm29QuintTarget to system::quintModels;
+    dependency 'sm29-lean-source' from system::governancePolicyLatchAntirollback::sm29LeanPooTarget to system::leanModels;
 
     // Cross-method edges enforced by MR03 & MR04 (zero model duplication)
     dependency 'pt-mbt-itf-edge' from system::processTreeReclamation::rustOracleTarget::traceIn to system::processTreeReclamation::quintTarget::traceOut;
