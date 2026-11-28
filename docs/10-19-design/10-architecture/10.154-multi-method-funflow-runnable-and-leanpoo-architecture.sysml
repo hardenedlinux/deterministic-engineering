@@ -1135,6 +1135,71 @@ package MultiMethodFunFlowArchitecture {
                 attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean,packages/lean-models/DeterministicEngineering/Engineering/TelemetryWatchdogAndDeckVmConfinement.lean";
             }
         }
+
+        // Twenty-Third Zero-Glue Subject (Eighteenth AI-Security Threat Subject: SM37 ADV-L4 Process Signal, Ledger & Sub-Agent Fanout Confinement)
+        part processSignalLedgerFanoutConfinement {
+            attribute subjectKey : String = "process-signal-ledger-and-fanout-confinement";
+            attribute identity : String = "threat.execution.process-signal-ledger-and-fanout-confinement";
+            attribute tags : String = "threat,execution,ai-security,process-signal-guard,subagent-fanout,defense.mutability.immutable-proof,hazard.pid-reuse-fanout-exhaustion";
+            attribute factors : String = "process-signal-ledger-and-fanout-confinement,ai-executes-tools,ai-mutates-host-or-governance";
+            attribute aiControls : String = "tool-confinement,human-stepup-and-estop";
+            attribute aiRoleBindings : String = "human-approver:human-approver,ai-agent:ai-proposer";
+
+            part sm37QuintTarget {
+                attribute modelId : String = "threat.execution.process-signal-ledger-and-fanout-confinement";
+                attribute quintFile : String = "packages/quint-models/threat/execution/process-signal-ledger-and-fanout-confinement/ProcessSignalLedgerAndFanoutConfinement.qnt";
+                attribute quintMain : String = "execution_process_signal_ledger_and_fanout_confinement";
+                attribute itfSubdir : String = "process-signal-ledger-and-fanout-confinement";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "forbid-protected-pid-or-pgid-kill,forbid-unfingerprinted-pid-reuse-reap,forbid-symlink-or-unbounded-process-ledger,forbid-unbounded-fanout-or-undrained-abort";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/execution/process-signal-ledger-and-fanout-confinement/ProcessSignalLedgerAndFanoutConfinement.qnt,packages/quint-models/threat/execution/process-signal-ledger-and-fanout-confinement/objects.ss,packages/quint-models/threat/execution/process-signal-ledger-and-fanout-confinement/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part sm37LeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.ProcessSignalLedgerAndFanoutConfinement";
+                attribute refinesCore : String = "DeterministicEngineering.Engineering.SandboxSymlinkArchiveConfinement";
+                attribute transportContract : String = "ObjectContract.refine+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Engineering.ProcessSignalLedgerAndFanoutConfinement.sm37_protected_pid_pgid_fail_closed,DeterministicEngineering.Engineering.ProcessSignalLedgerAndFanoutConfinement.sm37_orphan_identity_fail_closed,DeterministicEngineering.Engineering.ProcessSignalLedgerAndFanoutConfinement.sm37_process_ledger_bounds_fail_closed,DeterministicEngineering.Engineering.ProcessSignalLedgerAndFanoutConfinement.sm37_fanout_cap_and_drain_fail_closed,DeterministicEngineering.Engineering.ProcessSignalLedgerAndFanoutConfinement.sm37_strict_admission_eliminates_all_exploits,DeterministicEngineering.Engineering.ProcessSignalLedgerAndFanoutConfinement.sm37_gentle_pressure_rejected,DeterministicEngineering.Engineering.ProcessSignalLedgerAndFanoutConfinement.sm37_defective_configs_expose_live_exploits,DeterministicEngineering.Engineering.ProcessSignalLedgerAndFanoutConfinement.sm37_marlin_contract_refinement_laws,DeterministicEngineering.Engineering.ProcessSignalLedgerAndFanoutConfinement.sm37_baseline_certified,DeterministicEngineering.Engineering.ProcessSignalLedgerAndFanoutConfinement.sm37_obligation_untouched_by_terminal_retention_tuning,DeterministicEngineering.Engineering.ProcessSignalLedgerAndFanoutConfinement.sm37_terminal_retention_tuning_reuses_and_closes_certificate,DeterministicEngineering.Engineering.ProcessSignalLedgerAndFanoutConfinement.sm37_regressions_invalidate_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean,packages/lean-models/DeterministicEngineering/Engineering/ProcessSignalLedgerAndFanoutConfinement.lean";
+            }
+        }
+
+        // Twenty-Fourth Zero-Glue Subject (Nineteenth AI-Security Threat Subject: Wasm Linear-Memory, WASI Capability & Preopen Path Confinement)
+        part wasmSandboxConfinement {
+            attribute subjectKey : String = "wasm-sandbox-confinement";
+            attribute identity : String = "threat.execution.wasm-sandbox-confinement";
+            attribute tags : String = "threat,execution,ai-security,wasm-sandbox,wasi-capability,defense.mutability.immutable-proof,hazard.sandbox-escape-ambient-fd";
+            attribute factors : String = "wasm-sandbox-confinement,ai-executes-tools";
+            attribute aiControls : String = "tool-confinement";
+
+            part wasmQuintTarget {
+                attribute modelId : String = "threat.execution.wasm-sandbox-confinement";
+                attribute quintFile : String = "packages/quint-models/threat/execution/wasm-sandbox-confinement/WasmSandboxConfinement.qnt";
+                attribute quintMain : String = "wasm_sandbox_confinement";
+                attribute itfSubdir : String = "wasm-sandbox-confinement";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "wasm-bounds-check,wasi-capability-handle,preopen-path-confinement";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/execution/wasm-sandbox-confinement/WasmSandboxConfinement.qnt,packages/quint-models/threat/execution/wasm-sandbox-confinement/objects.ss,packages/quint-models/threat/execution/wasm-sandbox-confinement/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part wasmLeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Threat.WasmSandboxConfinement";
+                attribute refinesCore : String = "DeterministicEngineering.Core.Budget,DeterministicEngineering.Core.Order,DeterministicEngineering.Core.Transport";
+                attribute transportContract : String = "ObjectContract.refine+Patch.frame+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Threat.WasmSandboxConfinement.wasmMemAccess_oob_rejected,DeterministicEngineering.Threat.WasmSandboxConfinement.wasmHostcall_ungranted_or_escape_rejected,DeterministicEngineering.Threat.WasmSandboxConfinement.wasmSandbox_linearMemory_bounded,DeterministicEngineering.Threat.WasmSandboxConfinement.wasmSandbox_revokedEpoch_blocks_staleInstance,DeterministicEngineering.Threat.WasmSandboxConfinement.wasmSandboxContract_preserves_rejection,DeterministicEngineering.Threat.WasmSandboxConfinement.wasmFuelBudgetTunedCertified,DeterministicEngineering.Threat.WasmSandboxConfinement.disableBoundsCheck_invalidates_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Budget.lean,packages/lean-models/DeterministicEngineering/Core/Order.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Threat/WasmSandboxConfinement.lean";
+            }
+        }
     }
 
     // ── 12. Architectural, Cross-Method, and Requirement Dependencies ──
@@ -1232,6 +1297,15 @@ package MultiMethodFunFlowArchitecture {
 
     dependency 'sm36-quint-source' from system::telemetryWatchdogDeckVmConfinement::sm36QuintTarget to system::quintModels;
     dependency 'sm36-lean-source' from system::telemetryWatchdogDeckVmConfinement::sm36LeanPooTarget to system::leanModels;
+
+    dependency 'sm37-quint-source' from system::processSignalLedgerFanoutConfinement::sm37QuintTarget to system::quintModels;
+    dependency 'sm37-lean-source' from system::processSignalLedgerFanoutConfinement::sm37LeanPooTarget to system::leanModels;
+
+    dependency 'wasm-quint-source' from system::wasmSandboxConfinement::wasmQuintTarget to system::quintModels;
+    dependency 'wasm-lean-source' from system::wasmSandboxConfinement::wasmLeanPooTarget to system::leanModels;
+    dependency 'wasm-lean-refines-budget' from system::wasmSandboxConfinement::wasmLeanPooTarget to system::leanModels::core::budget;
+    dependency 'wasm-lean-refines-order' from system::wasmSandboxConfinement::wasmLeanPooTarget to system::leanModels::core::order;
+    dependency 'wasm-lean-refines-transport' from system::wasmSandboxConfinement::wasmLeanPooTarget to system::leanModels::core::transport;
 
     // Cross-method edges enforced by MR03 & MR04 (zero model duplication)
     dependency 'pt-mbt-itf-edge' from system::processTreeReclamation::rustOracleTarget::traceIn to system::processTreeReclamation::quintTarget::traceOut;

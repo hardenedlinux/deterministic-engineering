@@ -265,4 +265,6 @@
       (check (and (member '("threat.execution.storage-boundary-integrity-and-sync-confinement") admitted-subjs) #t) => #t)
       (check (and (member '("threat.execution.single-owner-graph-governance-confinement") admitted-subjs) #t) => #t)
       (check (and (member '("threat.execution.telemetry-watchdog-and-deck-vm-confinement") admitted-subjs) #t) => #t)
-      (check-equal? (length (.get projected subject-specs)) 22))))
+      (check (and (member '("threat.execution.process-signal-ledger-and-fanout-confinement") admitted-subjs) #t) => #t)
+      (check (and (member '("threat.execution.wasm-sandbox-confinement") admitted-subjs) #t) => #t)
+      (check-equal? (length (.get projected subject-specs)) 24))))
