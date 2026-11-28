@@ -277,4 +277,6 @@
       (check (and (member '("threat.zero-trust.multi-tenant-isolation") admitted-subjs) #t) => #t)
       (check (and (member '("threat.supply-chain.transparency-log-gossip") admitted-subjs) #t) => #t)
       (check (and (member '("threat.zero-trust.microsegmentation-egress") admitted-subjs) #t) => #t)
-      (check-equal? (length (.get projected subject-specs)) 34))))
+      (check (and (member '("threat.identity.workload-identity-rotation") admitted-subjs) #t) => #t)
+      (check (and (member '("threat.protocol.macaroon-delegation-chain") admitted-subjs) #t) => #t)
+      (check-equal? (length (.get projected subject-specs)) 36))))

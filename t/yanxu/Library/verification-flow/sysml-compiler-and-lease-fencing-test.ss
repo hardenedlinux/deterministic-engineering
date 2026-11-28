@@ -46,7 +46,7 @@
 
 (def verification-flow-sysml-compiler-and-lease-fencing-test
   (test-suite "Zero-glue SysML v2 -> Fun-Flow DAG compiler and 3rd subject lease-fencing-token"
-    (yuanxu-test-case/with MultiSubjectCompileBudget "live SysML v2 compiles all 34 subjects (71 engines) into valid Fun-Flow DAGs and manifests with zero Scheme glue"
+    (yuanxu-test-case/with MultiSubjectCompileBudget "live SysML v2 compiles all 36 subjects (75 engines) into valid Fun-Flow DAGs and manifests with zero Scheme glue"
       (def sysml-path
         (path-expand
           "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml"
@@ -54,7 +54,7 @@
       (def json-text (run-process (list "sysml" "-convert" "api-json" sysml-path)))
       (def parsed (call-with-input-string json-text (cut read-json <> object-as-hash: #t)))
       (def projected (sysml-api-json->governance-facts parsed))
-      (check-equal? (length (.get projected subject-specs)) 34)
+      (check-equal? (length (.get projected subject-specs)) 36)
       (for-each
         (lambda (spec-expect)
           (def skey (car spec-expect))
@@ -106,8 +106,26 @@
           (zero-trust-pep-pdp 2)
           (multi-tenant-isolation 2)
           (transparency-log-gossip 2)
-          (microsegmentation-egress 2)))
+          (microsegmentation-egress 2)
+          (workload-identity-rotation 2)
+          (macaroon-delegation-chain 2)))
       ;; Verify static change-impact slicing isolates AI-Security subjects cleanly!
+      (let* ((impact29
+              (changed-files->affected-frontier
+                projected
+                '("packages/quint-models/threat/identity/workload-identity-rotation/WorkloadIdentityRotation.qnt")))
+             (affected29 (filter (lambda (s) (pair? (.get s affected-steps))) impact29)))
+        (check-equal? (map (lambda (s) (.get s subject-key)) affected29)
+                      '(workload-identity-rotation))
+        (check-equal? (.get (car affected29) affected-steps) '("wirQuintTarget")))
+      (let* ((impact30
+              (changed-files->affected-frontier
+                projected
+                '("packages/quint-models/threat/protocol/macaroon-delegation-chain/MacaroonDelegationChain.qnt")))
+             (affected30 (filter (lambda (s) (pair? (.get s affected-steps))) impact30)))
+        (check-equal? (map (lambda (s) (.get s subject-key)) affected30)
+                      '(macaroon-delegation-chain))
+        (check-equal? (.get (car affected30) affected-steps) '("macQuintTarget")))
       (let* ((impact27
               (changed-files->affected-frontier
                 projected

@@ -1524,6 +1524,71 @@ package MultiMethodFunFlowArchitecture {
                 attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Engineering/HostAuthorizationBridge.lean";
             }
         }
+
+        // Thirty-Fifth Zero-Glue Subject (Thirtieth AI-Security Threat Subject — Identity Domain: Workload Identity Rotation & HITL Co-Evolution SoD)
+        part workloadIdentityRotation {
+            attribute subjectKey : String = "workload-identity-rotation";
+            attribute identity : String = "threat.identity.workload-identity-rotation";
+            attribute tags : String = "threat,identity,ai-security,svid-rotation,hitl-coevolution,defense.mutability.immutable-proof,hazard.revoked-grace-window-hitl-drift";
+            attribute factors : String = "workload-identity-rotation,ai-delegates-authority,ai-mutates-host-or-governance";
+            attribute aiControls : String = "monotonic-attenuation,revocation-currentness,human-stepup-and-estop";
+            attribute aiRoleBindings : String = "human-approver:human-approver,ai-agent:ai-proposer";
+
+            part wirQuintTarget {
+                attribute modelId : String = "threat.identity.workload-identity-rotation";
+                attribute quintFile : String = "packages/quint-models/threat/identity/workload-identity-rotation/WorkloadIdentityRotation.qnt";
+                attribute quintMain : String = "workload_identity_rotation";
+                attribute itfSubdir : String = "workload-identity-rotation";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "revocation-overrides-overlap,valid-generation";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/identity/workload-identity-rotation/WorkloadIdentityRotation.qnt,packages/quint-models/threat/identity/workload-identity-rotation/objects.ss,packages/quint-models/threat/identity/workload-identity-rotation/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part hitlLeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.HitlAndCoevolution";
+                attribute refinesCore : String = "DeterministicEngineering.Core.Transport";
+                attribute transportContract : String = "ObjectContract.refine+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Engineering.HitlAndCoevolution.sod_forbids_requester_self_approval,DeterministicEngineering.Engineering.HitlAndCoevolution.duplicate_approver_rejected_in_quorum,DeterministicEngineering.Engineering.HitlAndCoevolution.baseline_drift_invalidates_hitl_resume,DeterministicEngineering.Engineering.HitlAndCoevolution.intersecting_policy_drift_invalidates_approval,DeterministicEngineering.Engineering.HitlAndCoevolution.disjoint_policy_upgrade_preserves_approval,DeterministicEngineering.Engineering.HitlAndCoevolution.veto_tombstone_blocks_nagging_retry_forever,DeterministicEngineering.Engineering.HitlAndCoevolution.cross_tenant_aead_read_always_refused,DeterministicEngineering.Engineering.HitlAndCoevolution.ciphertext_transplant_across_row_or_tenant_refused,DeterministicEngineering.Engineering.HitlAndCoevolution.unrevoked_m3_or_veto_or_freeze_blocks_resume,DeterministicEngineering.Engineering.HitlAndCoevolution.hitlCoevolutionContract_preserves_rejection,DeterministicEngineering.Engineering.HitlAndCoevolution.baselineHitlCertified,DeterministicEngineering.Engineering.HitlAndCoevolution.briefRenderLimitTuning_preserves_hitl_certificate,DeterministicEngineering.Engineering.HitlAndCoevolution.disablingVetoPersistence_invalidates_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Engineering/HitlAndCoevolution.lean";
+            }
+        }
+
+        // Thirty-Sixth Zero-Glue Subject (Thirty-First AI-Security Threat Subject — Protocol Domain: Macaroon Caveat Delegation Chain & Confidential TEE Enclave Attestation)
+        part macaroonDelegationChain {
+            attribute subjectKey : String = "macaroon-delegation-chain";
+            attribute identity : String = "threat.protocol.macaroon-delegation-chain";
+            attribute tags : String = "threat,protocol,ai-security,macaroon-caveat-chain,tee-enclave-attestation,defense.mutability.immutable-proof,hazard.caveat-stripping-enclave-rollback";
+            attribute factors : String = "macaroon-delegation-chain,ai-delegates-authority,ai-executes-tools";
+            attribute aiControls : String = "monotonic-attenuation,revocation-currentness,tool-confinement";
+
+            part macQuintTarget {
+                attribute modelId : String = "threat.protocol.macaroon-delegation-chain";
+                attribute quintFile : String = "packages/quint-models/threat/protocol/macaroon-delegation-chain/MacaroonDelegationChain.qnt";
+                attribute quintMain : String = "macaroon_delegation_chain";
+                attribute itfSubdir : String = "macaroon-delegation-chain";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "hmac-caveat-chain-verify";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/protocol/macaroon-delegation-chain/MacaroonDelegationChain.qnt,packages/quint-models/threat/protocol/macaroon-delegation-chain/objects.ss,packages/quint-models/threat/protocol/macaroon-delegation-chain/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part teeLeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.ConfidentialEnclaveAttestation";
+                attribute refinesCore : String = "DeterministicEngineering.Core.Transport";
+                attribute transportContract : String = "ObjectContract.refine+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Engineering.ConfidentialEnclaveAttestation.debug_enclave_always_refused,DeterministicEngineering.Engineering.ConfidentialEnclaveAttestation.enclave_measurement_mismatch_always_refused,DeterministicEngineering.Engineering.ConfidentialEnclaveAttestation.tcb_svn_rollback_always_refused,DeterministicEngineering.Engineering.ConfidentialEnclaveAttestation.replayed_or_mismatched_nonce_always_refused,DeterministicEngineering.Engineering.ConfidentialEnclaveAttestation.forged_or_revoked_hardware_quote_refused,DeterministicEngineering.Engineering.ConfidentialEnclaveAttestation.b14_to_b15_end_to_end_chain_binds_running_binary,DeterministicEngineering.Engineering.ConfidentialEnclaveAttestation.enclave_key_release_sound_and_complete,DeterministicEngineering.Engineering.ConfidentialEnclaveAttestation.enclaveAttestationContract_preserves_rejection,DeterministicEngineering.Engineering.ConfidentialEnclaveAttestation.baselineEnclaveCertified,DeterministicEngineering.Engineering.ConfidentialEnclaveAttestation.quoteCacheTtlTuning_preserves_certificate,DeterministicEngineering.Engineering.ConfidentialEnclaveAttestation.disablingDebugLockout_invalidates_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Engineering/ConfidentialEnclaveAttestation.lean";
+            }
+        }
     }
 
     // ── 12. Architectural, Cross-Method, and Requirement Dependencies ──
@@ -1669,6 +1734,14 @@ package MultiMethodFunFlowArchitecture {
     dependency 'egress-quint-source' from system::microsegmentationEgress::egressQuintTarget to system::quintModels;
     dependency 'egress-lean-source' from system::microsegmentationEgress::egressLeanPooTarget to system::leanModels;
     dependency 'egress-lean-refines-transport' from system::microsegmentationEgress::egressLeanPooTarget to system::leanModels::core::transport;
+
+    dependency 'wir-quint-source' from system::workloadIdentityRotation::wirQuintTarget to system::quintModels;
+    dependency 'hitl-lean-source' from system::workloadIdentityRotation::hitlLeanPooTarget to system::leanModels;
+    dependency 'hitl-lean-refines-transport' from system::workloadIdentityRotation::hitlLeanPooTarget to system::leanModels::core::transport;
+
+    dependency 'mac-quint-source' from system::macaroonDelegationChain::macQuintTarget to system::quintModels;
+    dependency 'tee-lean-source' from system::macaroonDelegationChain::teeLeanPooTarget to system::leanModels;
+    dependency 'tee-lean-refines-transport' from system::macaroonDelegationChain::teeLeanPooTarget to system::leanModels::core::transport;
 
     // Cross-method edges enforced by MR03 & MR04 (zero model duplication)
     dependency 'pt-mbt-itf-edge' from system::processTreeReclamation::rustOracleTarget::traceIn to system::processTreeReclamation::quintTarget::traceOut;
