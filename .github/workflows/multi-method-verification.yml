@@ -180,14 +180,47 @@ jobs:
           ! echo "$OUT" | grep -q "depends on axioms:"
 
   airgapped-offline-verifier-adversarial:
-    name: Zero-Dep Portable Offline Attestation & AI Role-SoD Verifier (63 Adversarial, DSSE v1, AI!=Human SoD & Anti-Rollback Policy Controls)
+    name: Zero-Dep Portable Offline Attestation, AI Role-SoD & Self-Modification Guard (66 Controls)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
       - uses: ./.github/actions/setup-just
       - uses: ./.github/actions/setup-bun-cached
         with:
           install: 'false'
-      - name: Run 63-control adversarial, Gerbil<->TS golden-vector, DSSE v1, AI Role-SoD & Anti-Rollback Policy gate
+      - name: Run 66-control adversarial, Gerbil<->TS golden-vector, DSSE v1, AI Role-SoD, Self-Mod Guard & Anti-Rollback Policy gate
         run: just check-offline-verifier
+      - name: Audit changed files against AI Governance Self-Modification Guard (Core.AiGovernance T16)
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ] && [ -n "${{ github.event.pull_request.base.sha }}" ]; then
+            CHANGED="$(git diff --name-only "${{ github.event.pull_request.base.sha }}" HEAD || true)"
+          elif git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
+            CHANGED="$(git diff --name-only HEAD~1 HEAD || true)"
+          else
+            CHANGED=""
+          fi
+          ARGS=()
+          while IFS= read -r f; do
+            [ -n "$f" ] && ARGS+=(--file "$f")
+          done <<< "$CHANGED"
+          AUDIT_JSON="$(bun t/harness/offline-attestation-verifier.ts --json --check-governance-core-diff "${ARGS[@]}")"
+          echo "$AUDIT_JSON"
+          TOUCHED="$(echo "$AUDIT_JSON" | bun -e 'const d = JSON.parse(await Bun.stdin.text()); console.log(d.touchedGovernanceCore ? "true" : "false");')"
+          {
+            echo "### AI Security Self-Modification Guard (\`Core.AiGovernance\` Theorem 16)"
+            echo ""
+            if [ "$TOUCHED" = "true" ]; then
+              echo "> [!WARNING]"
+              echo "> This change touches **AI Governance Core** files. Autonomous AI self-certification is forbidden by \`AR01\`–\`AR05\` & \`Core.AiGovernance\` Theorem 16; offline \`human-approver\` Ed25519 co-sign (\`just approve-ai-diff\`) is required."
+            else
+              echo "No AI Governance Core files modified (\`nextAction: ready-for-policy-gate\`)."
+            fi
+            echo ""
+            echo '```json'
+            echo "$AUDIT_JSON"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -32,9 +32,11 @@ import {
   canonicalWitnessSigningPayload,
   cosignDsseStatementOffline,
   dsseV1Pae,
+  evaluateGovernanceCoreDiff,
   exportTrustBundleOffline,
   inspectDsseStatementVerified,
   inspectFleetBundleVerified,
+  isGovernanceCorePath,
   loadAuditPolicyJson,
   loadSignedAuditPolicyJson,
   loadTrustStoreJsonLite,
@@ -1911,5 +1913,81 @@ describe('Zero-Dependency TS/Bun Offline Attestation Verifier (25 Controls + Ger
     const docAiHumanOk = JSON.parse(resAiHumanOk.stdout.trim());
     expect(docAiHumanOk.ok).toBe(true);
     expect(docAiHumanOk.verifiedRoles).toEqual(['ai-agent', 'human-approver']);
+
+    // Controls 64-66: Portable AI Governance Core Self-Modification Guard (`--check-governance-core-diff`):
+    //   Mirrors `governance-core-path?` (`library/verification-flow/rules.ss`) and Lean 4
+    //   `Core.AiGovernance` Theorem 16 (`aiChangeset_governanceCoreTouch_forces_humanStepUp`) in CI!
+    //   64: Non-governance paths pass cleanly (`touchedGovernanceCore: false`, exit 0 even with `--fail-on-stepup-required`).
+    //   65: Governance-core paths (with `./` normalization) flag `touchedGovernanceCore: true` & `human-approver-cosign-required`.
+    //   66: `--fail-on-stepup-required` FAILS CLOSED (non-zero exit, `ok: false`) whenever governance core is touched!
+    expect(isGovernanceCorePath('packages/quint-models/threat/execution/single-owner-graph-governance-confinement/SingleOwnerGraphGovernanceConfinement.qnt')).toBe(false);
+    expect(isGovernanceCorePath('./library/verification-flow/ascent-rules.ss')).toBe(true);
+    expect(isGovernanceCorePath('packages/lean-models/DeterministicEngineering/Core/AiGovernance.lean')).toBe(true);
+    expect(isGovernanceCorePath('.github/workflows/multi-method-verification.yml')).toBe(true);
+    expect(isGovernanceCorePath('t/harness/offline-attestation-verifier.ts')).toBe(true);
+    expect(isGovernanceCorePath('docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml')).toBe(true);
+
+    const safeAudit = evaluateGovernanceCoreDiff([
+      'packages/quint-models/threat/execution/single-owner-graph-governance-confinement/SingleOwnerGraphGovernanceConfinement.qnt',
+      'README.org',
+    ]);
+    expect(safeAudit.touchedGovernanceCore).toBe(false);
+    expect(safeAudit.requiresHumanStepUp).toBe(false);
+    expect(safeAudit.nextAction).toBe('ready-for-policy-gate');
+
+    // Control 64: Non-governance diff passes even under `--fail-on-stepup-required`
+    const resGovSafe = runTsCli([
+      '--json',
+      '--fail-on-stepup-required',
+      '--check-governance-core-diff',
+      '--file',
+      'packages/quint-models/threat/execution/single-owner-graph-governance-confinement/SingleOwnerGraphGovernanceConfinement.qnt',
+      '--file',
+      'packages/quint-models/threat/execution/telemetry-watchdog-and-deck-vm-confinement/TelemetryWatchdogAndDeckVmConfinement.qnt',
+    ]);
+    expect(resGovSafe.exitCode).toBe(0);
+    const docGovSafe = JSON.parse(resGovSafe.stdout.trim());
+    expect(docGovSafe.schema).toBe('de.ai-se.governance-core-diff-audit.v1');
+    expect(docGovSafe.ok).toBe(true);
+    expect(docGovSafe.checkedFileCount).toBe(2);
+    expect(docGovSafe.touchedGovernanceCore).toBe(false);
+    expect(docGovSafe.requiresHumanStepUp).toBe(false);
+    expect(docGovSafe.nextAction).toBe('ready-for-policy-gate');
+
+    // Control 65: Governance-core touch (with `./` prefix) flagged cleanly in advisory mode
+    const resGovWarn = runTsCli([
+      '--json',
+      '--check-governance-core-diff',
+      '--file',
+      './library/verification-flow/ascent-rules.ss',
+      '--file',
+      'packages/lean-models/DeterministicEngineering/Core/AiGovernance.lean',
+    ]);
+    expect(resGovWarn.exitCode).toBe(0);
+    const docGovWarn = JSON.parse(resGovWarn.stdout.trim());
+    expect(docGovWarn.ok).toBe(true);
+    expect(docGovWarn.touchedGovernanceCore).toBe(true);
+    expect(docGovWarn.requiresHumanStepUp).toBe(true);
+    expect(docGovWarn.nextAction).toBe('human-approver-cosign-required');
+    expect(docGovWarn.touchedPaths).toEqual([
+      'library/verification-flow/ascent-rules.ss',
+      'packages/lean-models/DeterministicEngineering/Core/AiGovernance.lean',
+    ]);
+
+    // Control 66: `--fail-on-stepup-required` FAILS CLOSED on governance-core self-modification!
+    const resGovBlock = runTsCli([
+      '--json',
+      '--fail-on-stepup-required',
+      '--check-governance-core-diff',
+      '--file',
+      '.github/workflows/multi-method-verification.yml',
+    ]);
+    expect(resGovBlock.exitCode).not.toBe(0);
+    const docGovBlock = JSON.parse(resGovBlock.stdout.trim());
+    expect(docGovBlock.ok).toBe(false);
+    expect(docGovBlock.touchedGovernanceCore).toBe(true);
+    expect(docGovBlock.requiresHumanStepUp).toBe(true);
+    expect(docGovBlock.nextAction).toBe('human-approver-cosign-required');
+    expect(docGovBlock.touchedPaths).toEqual(['.github/workflows/multi-method-verification.yml']);
   });
 });

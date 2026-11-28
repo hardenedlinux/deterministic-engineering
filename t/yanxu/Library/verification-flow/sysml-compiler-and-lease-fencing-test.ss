@@ -46,7 +46,7 @@
 
 (def verification-flow-sysml-compiler-and-lease-fencing-test
   (test-suite "Zero-glue SysML v2 -> Fun-Flow DAG compiler and 3rd subject lease-fencing-token"
-    (yuanxu-test-case/with MultiSubjectCompileBudget "live SysML v2 compiles all 20 subjects (43 engines) into valid Fun-Flow DAGs and manifests with zero Scheme glue"
+    (yuanxu-test-case/with MultiSubjectCompileBudget "live SysML v2 compiles all 22 subjects (47 engines) into valid Fun-Flow DAGs and manifests with zero Scheme glue"
       (def sysml-path
         (path-expand
           "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml"
@@ -54,7 +54,7 @@
       (def json-text (run-process (list "sysml" "-convert" "api-json" sysml-path)))
       (def parsed (call-with-input-string json-text (cut read-json <> object-as-hash: #t)))
       (def projected (sysml-api-json->governance-facts parsed))
-      (check-equal? (length (.get projected subject-specs)) 20)
+      (check-equal? (length (.get projected subject-specs)) 22)
       (for-each
         (lambda (spec-expect)
           (def skey (car spec-expect))
@@ -92,8 +92,26 @@
           (plugin-grant-rollback-and-lease-confinement 2)
           (governance-policy-and-latch-antirollback 2)
           (subprocess-env-scrub-and-auth-timing 2)
-          (storage-boundary-integrity-and-sync-confinement 2)))
+          (storage-boundary-integrity-and-sync-confinement 2)
+          (single-owner-graph-governance-confinement 2)
+          (telemetry-watchdog-and-deck-vm-confinement 2)))
       ;; Verify static change-impact slicing isolates AI-Security subjects cleanly!
+      (let* ((impact15
+              (changed-files->affected-frontier
+                projected
+                '("packages/quint-models/threat/execution/single-owner-graph-governance-confinement/SingleOwnerGraphGovernanceConfinement.qnt")))
+             (affected15 (filter (lambda (s) (pair? (.get s affected-steps))) impact15)))
+        (check-equal? (map (lambda (s) (.get s subject-key)) affected15)
+                      '(single-owner-graph-governance-confinement))
+        (check-equal? (.get (car affected15) affected-steps) '("sm25QuintTarget")))
+      (let* ((impact16
+              (changed-files->affected-frontier
+                projected
+                '("packages/quint-models/threat/execution/telemetry-watchdog-and-deck-vm-confinement/TelemetryWatchdogAndDeckVmConfinement.qnt")))
+             (affected16 (filter (lambda (s) (pair? (.get s affected-steps))) impact16)))
+        (check-equal? (map (lambda (s) (.get s subject-key)) affected16)
+                      '(telemetry-watchdog-and-deck-vm-confinement))
+        (check-equal? (.get (car affected16) affected-steps) '("sm36QuintTarget")))
       (let* ((impact13
               (changed-files->affected-frontier
                 projected

@@ -1070,6 +1070,71 @@ package MultiMethodFunFlowArchitecture {
                 attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean,packages/lean-models/DeterministicEngineering/Engineering/StorageBoundaryIntegrityAndSyncConfinement.lean";
             }
         }
+
+        // Twenty-First Zero-Glue Subject (Sixteenth AI-Security Threat Subject: SM25 ADV-L4 Single-Owner Graph Execution Convergence & Production Governance Confinement)
+        part singleOwnerGraphGovernanceConfinement {
+            attribute subjectKey : String = "single-owner-graph-governance-confinement";
+            attribute identity : String = "threat.execution.single-owner-graph-governance-confinement";
+            attribute tags : String = "threat,execution,ai-security,single-owner-graph,complete-mediation,defense.mutability.immutable-proof,hazard.disconnected-governance-shadow-engine";
+            attribute factors : String = "single-owner-graph-governance-confinement,ai-executes-tools,ai-mutates-host-or-governance";
+            attribute aiControls : String = "tool-confinement,human-stepup-and-estop";
+            attribute aiRoleBindings : String = "human-approver:human-approver,ai-agent:ai-proposer";
+
+            part sm25QuintTarget {
+                attribute modelId : String = "threat.execution.single-owner-graph-governance-confinement";
+                attribute quintFile : String = "packages/quint-models/threat/execution/single-owner-graph-governance-confinement/SingleOwnerGraphGovernanceConfinement.qnt";
+                attribute quintMain : String = "execution_single_owner_graph_governance_confinement";
+                attribute itfSubdir : String = "single-owner-graph-governance-confinement";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "wire-prod-executor-governance-gate,retire-shadow-legacy-engine,fail-closed-tripped-breaker,bind-fencing-and-governance-epoch";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/execution/single-owner-graph-governance-confinement/SingleOwnerGraphGovernanceConfinement.qnt,packages/quint-models/threat/execution/single-owner-graph-governance-confinement/objects.ss,packages/quint-models/threat/execution/single-owner-graph-governance-confinement/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part sm25LeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.SingleOwnerGraphGovernanceConfinement";
+                attribute refinesCore : String = "DeterministicEngineering.Engineering.SandboxSymlinkArchiveConfinement";
+                attribute transportContract : String = "ObjectContract.refine+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Engineering.SingleOwnerGraphGovernanceConfinement.sm25_tripped_breaker_blocks_all_effects,DeterministicEngineering.Engineering.SingleOwnerGraphGovernanceConfinement.sm25_cedar_ascent_epoch_and_shadow_blocked,DeterministicEngineering.Engineering.SingleOwnerGraphGovernanceConfinement.sm25_disconnected_governance_allows_bypass,DeterministicEngineering.Engineering.SingleOwnerGraphGovernanceConfinement.sm25_shadow_legacy_breaks_single_owner,DeterministicEngineering.Engineering.SingleOwnerGraphGovernanceConfinement.sm25_compound_adv_l4_zero_bypass_invariant,DeterministicEngineering.Engineering.SingleOwnerGraphGovernanceConfinement.sm25_gentle_pressure_rejected,DeterministicEngineering.Engineering.SingleOwnerGraphGovernanceConfinement.sm25_marlin_graph_gov_preserves_rejection,DeterministicEngineering.Engineering.SingleOwnerGraphGovernanceConfinement.sm25_marlin_graph_gov_accepts_iff,DeterministicEngineering.Engineering.SingleOwnerGraphGovernanceConfinement.sm25_baseline_certified,DeterministicEngineering.Engineering.SingleOwnerGraphGovernanceConfinement.sm25_obligation_untouched_by_budget_tuning,DeterministicEngineering.Engineering.SingleOwnerGraphGovernanceConfinement.sm25_budget_tuning_reuses_and_closes_certificate,DeterministicEngineering.Engineering.SingleOwnerGraphGovernanceConfinement.sm25_architecture_regressions_invalidate_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean,packages/lean-models/DeterministicEngineering/Engineering/SingleOwnerGraphGovernanceConfinement.lean";
+            }
+        }
+
+        // Twenty-Second Zero-Glue Subject (Seventeenth AI-Security Threat Subject: SM36 ADV-L4 Telemetry/Watchdog & Deck Single-VM Confinement)
+        part telemetryWatchdogDeckVmConfinement {
+            attribute subjectKey : String = "telemetry-watchdog-and-deck-vm-confinement";
+            attribute identity : String = "threat.execution.telemetry-watchdog-and-deck-vm-confinement";
+            attribute tags : String = "threat,execution,ai-security,telemetry-tls,watchdog-clock,deck-vm-bounds,defense.mutability.immutable-proof,hazard.otlp-exfil-watchdog-blinding";
+            attribute factors : String = "telemetry-watchdog-and-deck-vm-confinement,ai-executes-tools,ai-ingests-untrusted-context";
+            attribute aiControls : String = "tool-confinement,context-integrity-or-ifc";
+
+            part sm36QuintTarget {
+                attribute modelId : String = "threat.execution.telemetry-watchdog-and-deck-vm-confinement";
+                attribute quintFile : String = "packages/quint-models/threat/execution/telemetry-watchdog-and-deck-vm-confinement/TelemetryWatchdogAndDeckVmConfinement.qnt";
+                attribute quintMain : String = "execution_telemetry_watchdog_and_deck_vm_confinement";
+                attribute itfSubdir : String = "telemetry-watchdog-and-deck-vm-confinement";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "forbid-cleartext-remote-otlp-endpoint,forbid-unscrubbed-host-observer-env-leak,forbid-watchdog-future-timestamp-blinding,forbid-deck-vm-unbounded-controls-or-timer-pinning";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/execution/telemetry-watchdog-and-deck-vm-confinement/TelemetryWatchdogAndDeckVmConfinement.qnt,packages/quint-models/threat/execution/telemetry-watchdog-and-deck-vm-confinement/objects.ss,packages/quint-models/threat/execution/telemetry-watchdog-and-deck-vm-confinement/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part sm36LeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.TelemetryWatchdogAndDeckVmConfinement";
+                attribute refinesCore : String = "DeterministicEngineering.Engineering.SandboxSymlinkArchiveConfinement";
+                attribute transportContract : String = "ObjectContract.refine+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Engineering.TelemetryWatchdogAndDeckVmConfinement.sm36_otlp_export_fail_closed,DeterministicEngineering.Engineering.TelemetryWatchdogAndDeckVmConfinement.sm36_host_observer_spawn_fail_closed,DeterministicEngineering.Engineering.TelemetryWatchdogAndDeckVmConfinement.sm36_watchdog_future_timestamp_and_zero_attach_fail_closed,DeterministicEngineering.Engineering.TelemetryWatchdogAndDeckVmConfinement.sm36_deck_vm_bounds_fail_closed,DeterministicEngineering.Engineering.TelemetryWatchdogAndDeckVmConfinement.sm36_strict_admission_eliminates_all_exploits,DeterministicEngineering.Engineering.TelemetryWatchdogAndDeckVmConfinement.sm36_gentle_pressure_rejected,DeterministicEngineering.Engineering.TelemetryWatchdogAndDeckVmConfinement.sm36_defective_configs_expose_live_exploits,DeterministicEngineering.Engineering.TelemetryWatchdogAndDeckVmConfinement.sm36_marlin_contract_refinement_laws,DeterministicEngineering.Engineering.TelemetryWatchdogAndDeckVmConfinement.sm36_baseline_certified,DeterministicEngineering.Engineering.TelemetryWatchdogAndDeckVmConfinement.sm36_obligation_untouched_by_timer_budget_tuning,DeterministicEngineering.Engineering.TelemetryWatchdogAndDeckVmConfinement.sm36_timer_budget_tuning_reuses_and_closes_certificate,DeterministicEngineering.Engineering.TelemetryWatchdogAndDeckVmConfinement.sm36_regressions_invalidate_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean,packages/lean-models/DeterministicEngineering/Engineering/TelemetryWatchdogAndDeckVmConfinement.lean";
+            }
+        }
     }
 
     // ── 12. Architectural, Cross-Method, and Requirement Dependencies ──
@@ -1161,6 +1226,12 @@ package MultiMethodFunFlowArchitecture {
 
     dependency 'sm31-quint-source' from system::storageBoundaryIntegritySyncConfinement::sm31QuintTarget to system::quintModels;
     dependency 'sm31-lean-source' from system::storageBoundaryIntegritySyncConfinement::sm31LeanPooTarget to system::leanModels;
+
+    dependency 'sm25-quint-source' from system::singleOwnerGraphGovernanceConfinement::sm25QuintTarget to system::quintModels;
+    dependency 'sm25-lean-source' from system::singleOwnerGraphGovernanceConfinement::sm25LeanPooTarget to system::leanModels;
+
+    dependency 'sm36-quint-source' from system::telemetryWatchdogDeckVmConfinement::sm36QuintTarget to system::quintModels;
+    dependency 'sm36-lean-source' from system::telemetryWatchdogDeckVmConfinement::sm36LeanPooTarget to system::leanModels;
 
     // Cross-method edges enforced by MR03 & MR04 (zero model duplication)
     dependency 'pt-mbt-itf-edge' from system::processTreeReclamation::rustOracleTarget::traceIn to system::processTreeReclamation::quintTarget::traceOut;

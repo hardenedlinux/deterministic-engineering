@@ -1610,8 +1610,75 @@ function parseNonNegIntFlag(flagName: string, raw: string | undefined): number {
   return n;
 }
 
+/**
+ * Canonical AI Governance Core Self-Modification Guard (10.154).
+ * Exact 1-to-1 mirror of `governance-core-path?` in `library/verification-flow/rules.ss`
+ * and Theorem 16 (`aiChangeset_governanceCoreTouch_forces_humanStepUp`) in
+ * `packages/lean-models/DeterministicEngineering/Core/AiGovernance.lean`.
+ */
+export const GOVERNANCE_CORE_EXACT_PATHS: ReadonlyArray<string> = [
+  'docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml',
+  'packages/lean-models/DeterministicEngineering/Core/AiGovernance.lean',
+  'packages/lean-models/DeterministicEngineering/Core/MetaGovernance.lean',
+  '.github/workflows/multi-method-verification.yml',
+  't/harness/offline-attestation-verifier.ts',
+  't/support/offline-attestation-verifier.ss',
+];
+
+export const GOVERNANCE_CORE_PREFIXES: ReadonlyArray<string> = ['library/verification-flow/'];
+
+export function normalizeRepoRelativePath(rawPath: string): string {
+  let p = rawPath.replace(/\\/g, '/').trim();
+  while (p.startsWith('./')) {
+    p = p.slice(2);
+  }
+  return p;
+}
+
+export function isGovernanceCorePath(rawPath: string): boolean {
+  if (typeof rawPath !== 'string' || rawPath.length === 0) return false;
+  const p = normalizeRepoRelativePath(rawPath);
+  if (GOVERNANCE_CORE_EXACT_PATHS.includes(p)) return true;
+  return GOVERNANCE_CORE_PREFIXES.some((prefix) => p.startsWith(prefix));
+}
+
+export interface GovernanceCoreDiffAudit {
+  schema: 'de.ai-se.governance-core-diff-audit.v1';
+  checkedFileCount: number;
+  touchedGovernanceCore: boolean;
+  requiresHumanStepUp: boolean;
+  touchedPaths: string[];
+  nextAction: 'ready-for-policy-gate' | 'human-approver-cosign-required';
+}
+
+export function evaluateGovernanceCoreDiff(
+  changedFiles: ReadonlyArray<string>,
+): GovernanceCoreDiffAudit {
+  const normalized = changedFiles
+    .filter((f): f is string => typeof f === 'string' && f.trim().length > 0)
+    .map(normalizeRepoRelativePath);
+  const touchedSet = new Set<string>();
+  for (const p of normalized) {
+    if (isGovernanceCorePath(p)) {
+      touchedSet.add(p);
+    }
+  }
+  const touchedPaths = [...touchedSet].sort(codePointCompare);
+  const touchedGovernanceCore = touchedPaths.length > 0;
+  return {
+    schema: 'de.ai-se.governance-core-diff-audit.v1',
+    checkedFileCount: normalized.length,
+    touchedGovernanceCore,
+    requiresHumanStepUp: touchedGovernanceCore,
+    touchedPaths,
+    nextAction: touchedGovernanceCore ? 'human-approver-cosign-required' : 'ready-for-policy-gate',
+  };
+}
+
 export function runCli(argv: string[]): number {
   let jsonMode = false;
+  let failOnStepupRequired = false;
+  const diffFiles: string[] = [];
   let maxAgeSeconds: number | undefined;
   let nowEpoch: number | undefined;
   let maxFutureSkewSeconds = 60;
@@ -1632,6 +1699,15 @@ export function runCli(argv: string[]): number {
       const a = argv[i];
       if (a === '--json') {
         jsonMode = true;
+      } else if (a === '--fail-on-stepup-required') {
+        failOnStepupRequired = true;
+      } else if (a === '--file') {
+        const val = argv[i + 1];
+        if (typeof val !== 'string' || val.length === 0) {
+          throw new Error('--file requires a non-empty file path argument');
+        }
+        diffFiles.push(val);
+        i += 1;
       } else if (a === '--max-age-seconds') {
         maxAgeSeconds = parseNonNegIntFlag('--max-age-seconds', argv[i + 1]);
         i += 1;
@@ -1766,6 +1842,35 @@ export function runCli(argv: string[]): number {
     }
   }
   const mode = cleanArgs[0];
+
+  if (mode === '--check-governance-core-diff') {
+    const allPaths = [...diffFiles, ...cleanArgs.slice(1)];
+    const audit = evaluateGovernanceCoreDiff(allPaths);
+    const blocked = failOnStepupRequired && audit.requiresHumanStepUp;
+    const ok = !blocked;
+    if (jsonMode) {
+      process.stdout.write(
+        `${JSON.stringify({
+          ...audit,
+          ok,
+          failOnStepupRequired,
+        })}\n`,
+      );
+    } else if (blocked) {
+      process.stderr.write(
+        `AI-GOVERNANCE-CORE-STEPUP-REQUIRED touched=${audit.touchedPaths.join(',')} (run offline 'just approve-ai-diff' human-approver Ed25519 co-sign)\n`,
+      );
+    } else if (audit.touchedGovernanceCore) {
+      process.stdout.write(
+        `AI-GOVERNANCE-CORE-DIFF-AUDIT-WARN touched=${audit.touchedPaths.join(',')} nextAction=${audit.nextAction}\n`,
+      );
+    } else {
+      process.stdout.write(
+        `AI-GOVERNANCE-CORE-DIFF-AUDIT-OK checked=${audit.checkedFileCount} touchedGovernanceCore=false\n`,
+      );
+    }
+    return blocked ? 1 : 0;
+  }
 
   if (mode === '--export-trust-bundle') {
     if (cleanArgs.length < 3) {
