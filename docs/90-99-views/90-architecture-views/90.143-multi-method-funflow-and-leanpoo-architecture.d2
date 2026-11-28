@@ -75,13 +75,13 @@ vars: {d2-config: {data: {figure: |json
 |}}}
 direction: down
 
-config: "SysML v2 Single Source of Truth (10.154-*.sysml)\n18 Zero-Glue Subjects (5 Eng + 13 AI-Security) | 39 Engines\nOpenSysML -validate -strict -> api-json"
+config: "SysML v2 Single Source of Truth (10.154-*.sysml)\n20 Zero-Glue Subjects (5 Eng + 15 AI-Security) | 43 Engines\nOpenSysML -validate -strict -> api-json"
 
 ascentGate: "Live ASCENT Governance (ascent-rules.ss)\nMR01-MR08 Pre-Flight | ER01-ER04 | IR01-IR08 Reuse\nAR01-AR05 AI Security + --verify-ai-diff + approve-ai-diff\n93 Zero-Axiom Lean 4 Theorems (CI 18/18 AiGovernance Gate)"
 
 funflow: "Fun-Flow Control Plane (library/verification-flow/)\nZero-I/O SysML->DAG Compiler + Parallel Waves\nAI-SE Patch Admission + Static Change-Impact Slicing\nEmits yuanxu.core.flow-dag-runtime-manifest.v1"
 
-quintModels: "packages/quint-models (Bun / Apalache / MBT)\nClaim: bounded-interleaving, fault-race, mbt-trace\nEngineering: ProcessTree | Backpressure | LeaseFencing\nAI-Security (13): Delegated | SM22/26/28/29/30/32/33/34/35 | IFC/Breaker/Ctx"
+quintModels: "packages/quint-models (Bun / Apalache / MBT)\nClaim: bounded-interleaving, fault-race, mbt-trace\nEngineering: ProcessTree | Backpressure | LeaseFencing\nAI-Security (15): Delegated | SM22/24/26/28-35 | IFC/Breaker/Ctx"
 
 leanModels: "packages/lean-models (Lake / LeanPoo 7-Core, 0 sorryAx)\nClaim: unbounded-invariant, refinement, transport\nCore/{Conservation,Budget,Containment,Order,Transport,MetaGov,AiGov}\nThreat/{Capability,Authority,AgentIfc,CircuitBreaker,SharedContext}"
 
@@ -89,7 +89,7 @@ rustSubjects: "languages-engineering/{rust,c} + Source Contracts\nClaim: source-
 
 runtimeAdapter: "Parallel Contained Ops Runner\n(verification-flow-runner.ss --fleet-bundle / --verify-ai-diff)\nLive MR01-MR08 + AR01-AR05 Gate + SHA-256 + Ed25519 Fleet\n1-Command 2-File Release Gate (release-multi-method-bundle)"
 
-evidenceSession: "Unified ASCENT Evidence, AI Red-Team & Anti-Rollback DSSE v1\nGerbil + Zero-Dep Bun/TS (<100ms) ai-agent!=human-approver Role-SoD\nCold 39/0 -> Warm 0/39 Reuse | 63 CI Crypto + AI Role-SoD Controls"
+evidenceSession: "Unified ASCENT Evidence, AI Red-Team & Anti-Rollback DSSE v1\nGerbil + Zero-Dep Bun/TS (<100ms) ai-agent!=human-approver Role-SoD\nCold 43/0 -> Warm 0/43 Reuse | 63 CI Crypto + AI Role-SoD Controls"
 
 config -> ascentGate
 config -> funflow

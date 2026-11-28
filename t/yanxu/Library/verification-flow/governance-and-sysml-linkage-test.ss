@@ -261,4 +261,6 @@
       (check (and (member '("threat.execution.hook-policy-and-protocol-contract-confinement") admitted-subjs) #t) => #t)
       (check (and (member '("threat.execution.plugin-grant-rollback-and-lease-confinement") admitted-subjs) #t) => #t)
       (check (and (member '("threat.execution.governance-policy-and-latch-antirollback") admitted-subjs) #t) => #t)
-      (check-equal? (length (.get projected subject-specs)) 18))))
+      (check (and (member '("threat.execution.subprocess-env-scrub-and-auth-timing") admitted-subjs) #t) => #t)
+      (check (and (member '("threat.execution.storage-boundary-integrity-and-sync-confinement") admitted-subjs) #t) => #t)
+      (check-equal? (length (.get projected subject-specs)) 20))))

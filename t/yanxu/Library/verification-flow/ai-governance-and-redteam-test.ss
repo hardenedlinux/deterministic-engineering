@@ -86,7 +86,7 @@
       (def res (reason-ai-security-governance ai-sources))
       (check-equal? ((.ref res 'rows-of) 'ar_finding) '())
       (def admitted ((.ref res 'rows-of) 'ai_governance_admitted))
-      (check-equal? (length admitted) 18)
+      (check-equal? (length admitted) 20)
       (for-each
         (lambda (sid)
           (check (and (member (list sid) admitted) #t) => #t))
@@ -102,7 +102,9 @@
           "threat.execution.control-plane-auth-and-governance-confinement"
           "threat.execution.hook-policy-and-protocol-contract-confinement"
           "threat.execution.plugin-grant-rollback-and-lease-confinement"
-          "threat.execution.governance-policy-and-latch-antirollback")))
+          "threat.execution.governance-policy-and-latch-antirollback"
+          "threat.execution.subprocess-env-scrub-and-auth-timing"
+          "threat.execution.storage-boundary-integrity-and-sync-confinement")))
 
     (yuanxu-test-case "AI-SE Deterministic Change-Admission & Proof-Transport Gate separates safe parameter tuning from security-boundary regressions"
       (def sysml-path

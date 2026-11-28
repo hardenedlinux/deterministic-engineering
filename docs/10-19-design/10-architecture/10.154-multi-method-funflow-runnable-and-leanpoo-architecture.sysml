@@ -1006,6 +1006,70 @@ package MultiMethodFunFlowArchitecture {
                 attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean,packages/lean-models/DeterministicEngineering/Engineering/GovernancePolicyAndLatchAntirollback.lean";
             }
         }
+
+        // Nineteenth Zero-Glue Subject (Fourteenth AI-Security Threat Subject: SM24 ADV-L4 Subprocess Environment Allowlist Scrubbing & Constant-Time Bearer Auth)
+        part subprocessEnvScrubAuthTiming {
+            attribute subjectKey : String = "subprocess-env-scrub-and-auth-timing";
+            attribute identity : String = "threat.execution.subprocess-env-scrub-and-auth-timing";
+            attribute tags : String = "threat,execution,ai-security,env-scrub,constant-time-auth,defense.mutability.immutable-proof,hazard.ambient-secret-leak-timing-oracle";
+            attribute factors : String = "subprocess-env-scrub-and-auth-timing,ai-executes-tools";
+            attribute aiControls : String = "tool-confinement";
+
+            part sm24QuintTarget {
+                attribute modelId : String = "threat.execution.subprocess-env-scrub-and-auth-timing";
+                attribute quintFile : String = "packages/quint-models/threat/execution/subprocess-env-scrub-and-auth-timing/SubprocessEnvScrubAndAuthTiming.qnt";
+                attribute quintMain : String = "execution_subprocess_env_scrub_and_auth_timing";
+                attribute itfSubdir : String = "subprocess-env-scrub-and-auth-timing";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "scrub-sandbox-env-allowlist,scrub-plugin-build-env-allowlist,constant-time-bearer-verify,reject-blank-auth-and-stdin-inherit";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/execution/subprocess-env-scrub-and-auth-timing/SubprocessEnvScrubAndAuthTiming.qnt,packages/quint-models/threat/execution/subprocess-env-scrub-and-auth-timing/objects.ss,packages/quint-models/threat/execution/subprocess-env-scrub-and-auth-timing/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part sm24LeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.SubprocessEnvScrubAndAuthTiming";
+                attribute refinesCore : String = "DeterministicEngineering.Engineering.SandboxSymlinkArchiveConfinement";
+                attribute transportContract : String = "ObjectContract.refine+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Engineering.SubprocessEnvScrubAndAuthTiming.sm24_scrubbed_env_subset_of_allowlist,DeterministicEngineering.Engineering.SubprocessEnvScrubAndAuthTiming.sm24_allowlist_scrub_drops_all_secrets,DeterministicEngineering.Engineering.SubprocessEnvScrubAndAuthTiming.sm24_blank_expected_bearer_rejected,DeterministicEngineering.Engineering.SubprocessEnvScrubAndAuthTiming.sm24_nonblank_bearer_exact_match,DeterministicEngineering.Engineering.SubprocessEnvScrubAndAuthTiming.sm24_compound_adv_l4_zero_leak_invariant,DeterministicEngineering.Engineering.SubprocessEnvScrubAndAuthTiming.sm24_gentle_pressure_rejected,DeterministicEngineering.Engineering.SubprocessEnvScrubAndAuthTiming.sm24_marlin_mygo_preserves_rejection,DeterministicEngineering.Engineering.SubprocessEnvScrubAndAuthTiming.sm24_marlin_mygo_accepts_iff,DeterministicEngineering.Engineering.SubprocessEnvScrubAndAuthTiming.sm24_baseline_certified,DeterministicEngineering.Engineering.SubprocessEnvScrubAndAuthTiming.sm24_obligation_untouched_by_output_tuning,DeterministicEngineering.Engineering.SubprocessEnvScrubAndAuthTiming.sm24_output_tuning_reuses_and_closes_certificate,DeterministicEngineering.Engineering.SubprocessEnvScrubAndAuthTiming.sm24_security_regressions_invalidate_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean,packages/lean-models/DeterministicEngineering/Engineering/SubprocessEnvScrubAndAuthTiming.lean";
+            }
+        }
+
+        // Twentieth Zero-Glue Subject (Fifteenth AI-Security Threat Subject: SM31 ADV-L4 Storage Boundary Integrity, CAS Digest Binding & Sync TLS Confinement)
+        part storageBoundaryIntegritySyncConfinement {
+            attribute subjectKey : String = "storage-boundary-integrity-and-sync-confinement";
+            attribute identity : String = "threat.execution.storage-boundary-integrity-and-sync-confinement";
+            attribute tags : String = "threat,execution,ai-security,storage-cas-integrity,sync-tls,defense.mutability.immutable-proof,hazard.cas-poisoning-cleartext-sync";
+            attribute factors : String = "storage-boundary-integrity-and-sync-confinement,ai-ingests-untrusted-context,ai-executes-tools";
+            attribute aiControls : String = "context-integrity-or-ifc,tool-confinement";
+
+            part sm31QuintTarget {
+                attribute modelId : String = "threat.execution.storage-boundary-integrity-and-sync-confinement";
+                attribute quintFile : String = "packages/quint-models/threat/execution/storage-boundary-integrity-and-sync-confinement/StorageBoundaryIntegrityAndSyncConfinement.qnt";
+                attribute quintMain : String = "execution_storage_boundary_integrity_and_sync_confinement";
+                attribute itfSubdir : String = "storage-boundary-integrity-and-sync-confinement";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "forbid-serde-bypass-empty-id-or-unbounded-page,forbid-artifact-size-lie-or-sha256-cas-poisoning,forbid-cleartext-remote-sync-or-userinfo-smuggle,forbid-context-index-same-rev-overwrite-or-cas-receipt-crash";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/execution/storage-boundary-integrity-and-sync-confinement/StorageBoundaryIntegrityAndSyncConfinement.qnt,packages/quint-models/threat/execution/storage-boundary-integrity-and-sync-confinement/objects.ss,packages/quint-models/threat/execution/storage-boundary-integrity-and-sync-confinement/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part sm31LeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.StorageBoundaryIntegrityAndSyncConfinement";
+                attribute refinesCore : String = "DeterministicEngineering.Engineering.SandboxSymlinkArchiveConfinement";
+                attribute transportContract : String = "ObjectContract.refine+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Engineering.StorageBoundaryIntegrityAndSyncConfinement.sm31_deserialized_page_limit_bounds,DeterministicEngineering.Engineering.StorageBoundaryIntegrityAndSyncConfinement.sm31_artifact_integrity_refuses_size_lie_and_digest_poison,DeterministicEngineering.Engineering.StorageBoundaryIntegrityAndSyncConfinement.sm31_sync_url_refuses_remote_cleartext_and_smuggling,DeterministicEngineering.Engineering.StorageBoundaryIntegrityAndSyncConfinement.sm31_finalized_rebuild_divergent_cuts_returns_conflict,DeterministicEngineering.Engineering.StorageBoundaryIntegrityAndSyncConfinement.sm31_strict_admission_eliminates_all_exploits,DeterministicEngineering.Engineering.StorageBoundaryIntegrityAndSyncConfinement.sm31_gentle_pressure_rejected,DeterministicEngineering.Engineering.StorageBoundaryIntegrityAndSyncConfinement.sm31_defective_configs_expose_live_exploits,DeterministicEngineering.Engineering.StorageBoundaryIntegrityAndSyncConfinement.sm31_marlin_contract_refinement_laws,DeterministicEngineering.Engineering.StorageBoundaryIntegrityAndSyncConfinement.sm31_baseline_certified,DeterministicEngineering.Engineering.StorageBoundaryIntegrityAndSyncConfinement.sm31_obligation_untouched_by_page_tuning,DeterministicEngineering.Engineering.StorageBoundaryIntegrityAndSyncConfinement.sm31_page_tuning_reuses_and_closes_certificate,DeterministicEngineering.Engineering.StorageBoundaryIntegrityAndSyncConfinement.sm31_regressions_invalidate_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean,packages/lean-models/DeterministicEngineering/Engineering/StorageBoundaryIntegrityAndSyncConfinement.lean";
+            }
+        }
     }
 
     // ── 12. Architectural, Cross-Method, and Requirement Dependencies ──
@@ -1091,6 +1155,12 @@ package MultiMethodFunFlowArchitecture {
 
     dependency 'sm29-quint-source' from system::governancePolicyLatchAntirollback::sm29QuintTarget to system::quintModels;
     dependency 'sm29-lean-source' from system::governancePolicyLatchAntirollback::sm29LeanPooTarget to system::leanModels;
+
+    dependency 'sm24-quint-source' from system::subprocessEnvScrubAuthTiming::sm24QuintTarget to system::quintModels;
+    dependency 'sm24-lean-source' from system::subprocessEnvScrubAuthTiming::sm24LeanPooTarget to system::leanModels;
+
+    dependency 'sm31-quint-source' from system::storageBoundaryIntegritySyncConfinement::sm31QuintTarget to system::quintModels;
+    dependency 'sm31-lean-source' from system::storageBoundaryIntegritySyncConfinement::sm31LeanPooTarget to system::leanModels;
 
     // Cross-method edges enforced by MR03 & MR04 (zero model duplication)
     dependency 'pt-mbt-itf-edge' from system::processTreeReclamation::rustOracleTarget::traceIn to system::processTreeReclamation::quintTarget::traceOut;
