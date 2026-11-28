@@ -1459,6 +1459,71 @@ package MultiMethodFunFlowArchitecture {
                 attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Engineering/ToolSandboxAndRpcBoundary.lean";
             }
         }
+
+        // Thirty-Third Zero-Glue Subject (Twenty-Eighth AI-Security Threat Subject — Supply-Chain Domain: Transparency Log Gossip & RFC 6962 Merkle Consistency / LLM Drift Memoization)
+        part transparencyLogGossip {
+            attribute subjectKey : String = "transparency-log-gossip";
+            attribute identity : String = "threat.supply-chain.transparency-log-gossip";
+            attribute tags : String = "threat,supply-chain,ai-security,transparency-log,merkle-consistency,defense.mutability.immutable-proof,hazard.split-view-equivocation-llm-drift";
+            attribute factors : String = "transparency-log-gossip,ai-ingests-untrusted-context";
+            attribute aiControls : String = "context-integrity-or-ifc";
+
+            part tlogQuintTarget {
+                attribute modelId : String = "threat.supply-chain.transparency-log-gossip";
+                attribute quintFile : String = "packages/quint-models/threat/supply-chain/transparency-log-gossip/TransparencyLogGossip.qnt";
+                attribute quintMain : String = "transparency_log_gossip";
+                attribute itfSubdir : String = "transparency-log-gossip";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "log-inclusion-proof,sth-consistency-gossip";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/supply-chain/transparency-log-gossip/TransparencyLogGossip.qnt,packages/quint-models/threat/supply-chain/transparency-log-gossip/objects.ss,packages/quint-models/threat/supply-chain/transparency-log-gossip/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part tlogLeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.MerkleConsistencyAndAsyncCut";
+                attribute refinesCore : String = "DeterministicEngineering.Core.Transport";
+                attribute transportContract : String = "ObjectContract.refine+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Engineering.MerkleConsistencyAndAsyncCut.append_only_prefix_preserved,DeterministicEngineering.Engineering.MerkleConsistencyAndAsyncCut.retroactive_leaf_mutation_breaks_prefix,DeterministicEngineering.Engineering.MerkleConsistencyAndAsyncCut.size_rollback_breaks_append_only,DeterministicEngineering.Engineering.MerkleConsistencyAndAsyncCut.split_view_same_size_different_root_is_equivocation,DeterministicEngineering.Engineering.MerkleConsistencyAndAsyncCut.r2_disjoint_branch_merge_preserves_both_agents,DeterministicEngineering.Engineering.MerkleConsistencyAndAsyncCut.r2_divergent_concurrent_edit_always_surfaces_conflict,DeterministicEngineering.Engineering.MerkleConsistencyAndAsyncCut.r4_any_upstream_axis_drift_invalidates_llm_memo,DeterministicEngineering.Engineering.MerkleConsistencyAndAsyncCut.merkleAsyncMemoContract_preserves_rejection,DeterministicEngineering.Engineering.MerkleConsistencyAndAsyncCut.baselineMerkleAsyncCertified,DeterministicEngineering.Engineering.MerkleConsistencyAndAsyncCut.merkleCacheDepthTuning_preserves_certificate,DeterministicEngineering.Engineering.MerkleConsistencyAndAsyncCut.disablingSplitViewCheck_invalidates_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Engineering/MerkleConsistencyAndAsyncCut.lean";
+            }
+        }
+
+        // Thirty-Fourth Zero-Glue Subject (Twenty-Ninth AI-Security Threat Subject — Zero-Trust Domain: Microsegmentation Egress & Dual-Sovereignty Host Authorization Bridge)
+        part microsegmentationEgress {
+            attribute subjectKey : String = "microsegmentation-egress";
+            attribute identity : String = "threat.zero-trust.microsegmentation-egress";
+            attribute tags : String = "threat,zero-trust,ai-security,microsegmentation-egress,cedar-host-bridge,defense.mutability.immutable-proof,hazard.sidecar-bypass-permit-replay";
+            attribute factors : String = "microsegmentation-egress,ai-executes-tools,ai-mutates-host-or-governance";
+            attribute aiControls : String = "tool-confinement,human-stepup-and-estop";
+            attribute aiRoleBindings : String = "human-approver:human-approver,ai-agent:ai-proposer";
+
+            part egressQuintTarget {
+                attribute modelId : String = "threat.zero-trust.microsegmentation-egress";
+                attribute quintFile : String = "packages/quint-models/threat/zero-trust/microsegmentation-egress/MicrosegmentationEgress.qnt";
+                attribute quintMain : String = "microsegmentation_egress";
+                attribute itfSubdir : String = "microsegmentation-egress";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "sidecar-attestation,tenant-policy";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/zero-trust/microsegmentation-egress/MicrosegmentationEgress.qnt,packages/quint-models/threat/zero-trust/microsegmentation-egress/objects.ss,packages/quint-models/threat/zero-trust/microsegmentation-egress/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part egressLeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.HostAuthorizationBridge";
+                attribute refinesCore : String = "DeterministicEngineering.Core.Transport";
+                attribute transportContract : String = "ObjectContract.refine+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Engineering.HostAuthorizationBridge.forbid_always_overrides_permit,DeterministicEngineering.Engineering.HostAuthorizationBridge.default_deny_when_no_permit,DeterministicEngineering.Engineering.HostAuthorizationBridge.cedar_permit_cannot_bypass_library_refusal,DeterministicEngineering.Engineering.HostAuthorizationBridge.library_finalized_cannot_bypass_host_forbid,DeterministicEngineering.Engineering.HostAuthorizationBridge.library_finalized_cannot_bypass_host_pending,DeterministicEngineering.Engineering.HostAuthorizationBridge.cross_operation_permit_replay_blocked,DeterministicEngineering.Engineering.HostAuthorizationBridge.stale_policy_snapshot_permit_blocked,DeterministicEngineering.Engineering.HostAuthorizationBridge.revoked_use_time_authority_blocked,DeterministicEngineering.Engineering.HostAuthorizationBridge.dualSovereignBridge_preserves_library_rejection,DeterministicEngineering.Engineering.HostAuthorizationBridge.baselineBridgeCertified,DeterministicEngineering.Engineering.HostAuthorizationBridge.disjointHostPolicyEvolution_preserves_bridge_certificate,DeterministicEngineering.Engineering.HostAuthorizationBridge.weakeningBoundOperation_invalidates_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Engineering/HostAuthorizationBridge.lean";
+            }
+        }
     }
 
     // ── 12. Architectural, Cross-Method, and Requirement Dependencies ──
@@ -1596,6 +1661,14 @@ package MultiMethodFunFlowArchitecture {
     dependency 'mti-quint-source' from system::multiTenantIsolation::mtiQuintTarget to system::quintModels;
     dependency 'mti-lean-source' from system::multiTenantIsolation::mtiLeanPooTarget to system::leanModels;
     dependency 'mti-lean-refines-transport' from system::multiTenantIsolation::mtiLeanPooTarget to system::leanModels::core::transport;
+
+    dependency 'tlog-quint-source' from system::transparencyLogGossip::tlogQuintTarget to system::quintModels;
+    dependency 'tlog-lean-source' from system::transparencyLogGossip::tlogLeanPooTarget to system::leanModels;
+    dependency 'tlog-lean-refines-transport' from system::transparencyLogGossip::tlogLeanPooTarget to system::leanModels::core::transport;
+
+    dependency 'egress-quint-source' from system::microsegmentationEgress::egressQuintTarget to system::quintModels;
+    dependency 'egress-lean-source' from system::microsegmentationEgress::egressLeanPooTarget to system::leanModels;
+    dependency 'egress-lean-refines-transport' from system::microsegmentationEgress::egressLeanPooTarget to system::leanModels::core::transport;
 
     // Cross-method edges enforced by MR03 & MR04 (zero model duplication)
     dependency 'pt-mbt-itf-edge' from system::processTreeReclamation::rustOracleTarget::traceIn to system::processTreeReclamation::quintTarget::traceOut;

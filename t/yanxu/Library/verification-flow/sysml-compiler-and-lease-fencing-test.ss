@@ -46,7 +46,7 @@
 
 (def verification-flow-sysml-compiler-and-lease-fencing-test
   (test-suite "Zero-glue SysML v2 -> Fun-Flow DAG compiler and 3rd subject lease-fencing-token"
-    (yuanxu-test-case/with MultiSubjectCompileBudget "live SysML v2 compiles all 32 subjects (67 engines) into valid Fun-Flow DAGs and manifests with zero Scheme glue"
+    (yuanxu-test-case/with MultiSubjectCompileBudget "live SysML v2 compiles all 34 subjects (71 engines) into valid Fun-Flow DAGs and manifests with zero Scheme glue"
       (def sysml-path
         (path-expand
           "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml"
@@ -54,7 +54,7 @@
       (def json-text (run-process (list "sysml" "-convert" "api-json" sysml-path)))
       (def parsed (call-with-input-string json-text (cut read-json <> object-as-hash: #t)))
       (def projected (sysml-api-json->governance-facts parsed))
-      (check-equal? (length (.get projected subject-specs)) 32)
+      (check-equal? (length (.get projected subject-specs)) 34)
       (for-each
         (lambda (spec-expect)
           (def skey (car spec-expect))
@@ -104,8 +104,26 @@
           (data-lineage-disclosure 2)
           (supply-chain-tuf 2)
           (zero-trust-pep-pdp 2)
-          (multi-tenant-isolation 2)))
+          (multi-tenant-isolation 2)
+          (transparency-log-gossip 2)
+          (microsegmentation-egress 2)))
       ;; Verify static change-impact slicing isolates AI-Security subjects cleanly!
+      (let* ((impact27
+              (changed-files->affected-frontier
+                projected
+                '("packages/quint-models/threat/supply-chain/transparency-log-gossip/TransparencyLogGossip.qnt")))
+             (affected27 (filter (lambda (s) (pair? (.get s affected-steps))) impact27)))
+        (check-equal? (map (lambda (s) (.get s subject-key)) affected27)
+                      '(transparency-log-gossip))
+        (check-equal? (.get (car affected27) affected-steps) '("tlogQuintTarget")))
+      (let* ((impact28
+              (changed-files->affected-frontier
+                projected
+                '("packages/quint-models/threat/zero-trust/microsegmentation-egress/MicrosegmentationEgress.qnt")))
+             (affected28 (filter (lambda (s) (pair? (.get s affected-steps))) impact28)))
+        (check-equal? (map (lambda (s) (.get s subject-key)) affected28)
+                      '(microsegmentation-egress))
+        (check-equal? (.get (car affected28) affected-steps) '("egressQuintTarget")))
       (let* ((impact25
               (changed-files->affected-frontier
                 projected

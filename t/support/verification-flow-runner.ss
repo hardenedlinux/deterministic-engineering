@@ -78,6 +78,7 @@
   run-check-ai-diff-verdict
   run-verify-ai-diff-pipeline
   run-ai-security-posture-report
+  format-ai-security-posture-markdown
   main)
 
 ;; ── Zero-Glue SysML v2 -> Fun-Flow DAG Compilation (Single Source of Truth) ──
@@ -2023,18 +2024,59 @@
       posture: posture
       json-doc: doc))
 
+(def (format-ai-security-posture-markdown posture)
+  (call-with-output-string
+    (lambda (p)
+      (display "# AI Security & Multi-Method Verification Posture Matrix (10.154)\n\n" p)
+      (display "- **Status**: " p)
+      (display (if (.get posture all-admitted?) "ADMITTED (0 AR01-AR05 findings)" "BLOCKED") p)
+      (display "\n- **Total Zero-Glue Subjects**: " p)
+      (display (.get posture total-subjects) p)
+      (display " (" p)
+      (display (.get posture engineering-subjects) p)
+      (display " Engineering + " p)
+      (display (.get posture ai-security-subjects) p)
+      (display " AI-Security)\n- **Verification Engines**: " p)
+      (display (.get posture total-engines) p)
+      (display "\n- **Quint Guard-Pruning Countermodels**: " p)
+      (display (.get posture total-countermodels) p)
+      (display "\n- **Wired LeanPoo Theorems**: " p)
+      (display (.get posture total-lean-theorems) p)
+      (display "\n- **Human Step-Up Required Surfaces**: " p)
+      (display (length (.get posture stepup-required-subjects)) p)
+      (display "\n\n## Domain Coverage\n\n| Domain | Subjects |\n|---|---:|\n" p)
+      (for-each
+        (lambda (kv)
+          (display "| `" p)
+          (display (car kv) p)
+          (display "` | " p)
+          (display (cdr kv) p)
+          (display " |\n" p))
+        (.get posture domains))
+      (display "\n## Human Step-Up Escalation Surfaces (`ai-mutates-host-or-governance`)\n\n" p)
+      (for-each
+        (lambda (skey)
+          (display "- `" p)
+          (display skey p)
+          (display "`\n" p))
+        (.get posture stepup-required-subjects)))))
+
 (def (main mode-or-output . rest)
   (def repo-root (path-normalize (path-expand "../.." (path-directory (this-source-file)))))
   (cond
    ((equal? mode-or-output "--ai-security-posture")
     (let* ((json? (and (member "--json" rest) #t))
+           (md? (and (member "--markdown" rest) #t))
            (res (run-ai-security-posture-report repo-root))
            (p (.get res posture))
            (ok? (.get res ok?)))
-      (if json?
-        (begin
-          (write-json (current-output-port) (.get res json-doc))
-          (newline))
+      (cond
+       (json?
+        (write-json (current-output-port) (.get res json-doc))
+        (newline))
+       (md?
+        (display (format-ai-security-posture-markdown p)))
+       (else
         (displayln (if ok? "AI-SECURITY-POSTURE-OK " "AI-SECURITY-POSTURE-FAILED ")
                    "subjects=" (.get p total-subjects)
                    " (eng=" (.get p engineering-subjects)
@@ -2043,7 +2085,7 @@
                    " countermodels=" (.get p total-countermodels)
                    " leanTheorems=" (.get p total-lean-theorems)
                    " stepUpSubjects=" (length (.get p stepup-required-subjects))
-                   " arFindings=" (.get p ar-findings-count)))
+                   " arFindings=" (.get p ar-findings-count))))
       (unless ok?
         (exit 1))))
    ((equal? mode-or-output "--verify-ai-diff")

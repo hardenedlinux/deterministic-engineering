@@ -275,4 +275,6 @@
       (check (and (member '("threat.supply-chain.supply-chain-tuf") admitted-subjs) #t) => #t)
       (check (and (member '("threat.zero-trust.zero-trust-pep-pdp") admitted-subjs) #t) => #t)
       (check (and (member '("threat.zero-trust.multi-tenant-isolation") admitted-subjs) #t) => #t)
-      (check-equal? (length (.get projected subject-specs)) 32))))
+      (check (and (member '("threat.supply-chain.transparency-log-gossip") admitted-subjs) #t) => #t)
+      (check (and (member '("threat.zero-trust.microsegmentation-egress") admitted-subjs) #t) => #t)
+      (check-equal? (length (.get projected subject-specs)) 34))))
