@@ -1589,6 +1589,70 @@ package MultiMethodFunFlowArchitecture {
                 attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Engineering/ConfidentialEnclaveAttestation.lean";
             }
         }
+
+        // Thirty-Seventh Zero-Glue Subject (Thirty-Second AI-Security Threat Subject — Identity Domain: OIDC Federation & Multi-Org Federated Reciprocity)
+        part oidcFederation {
+            attribute subjectKey : String = "oidc-federation";
+            attribute identity : String = "threat.identity.oidc-federation";
+            attribute tags : String = "threat,identity,ai-security,oidc-federation,federated-reciprocity,defense.mutability.immutable-proof,hazard.sub-substitution-unilateral-federation";
+            attribute factors : String = "oidc-federation,ai-delegates-authority,ai-ingests-untrusted-context";
+            attribute aiControls : String = "monotonic-attenuation,revocation-currentness,context-integrity-or-ifc";
+
+            part oidcQuintTarget {
+                attribute modelId : String = "threat.identity.oidc-federation";
+                attribute quintFile : String = "packages/quint-models/threat/identity/oidc-federation/OidcFederation.qnt";
+                attribute quintMain : String = "oidc_federation";
+                attribute itfSubdir : String = "oidc-federation";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "userinfo-sub-binding,multi-aud-azp-binding,jwks-refresh-cooldown";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/identity/oidc-federation/OidcFederation.qnt,packages/quint-models/threat/identity/oidc-federation/objects.ss,packages/quint-models/threat/identity/oidc-federation/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part oidcLeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.FederatedOrgReciprocity";
+                attribute refinesCore : String = "DeterministicEngineering.Core.Transport";
+                attribute transportContract : String = "ObjectContract.refine+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Engineering.FederatedOrgReciprocity.unilateral_org_approval_always_refused,DeterministicEngineering.Engineering.FederatedOrgReciprocity.self_federated_same_org_spoof_refused,DeterministicEngineering.Engineering.FederatedOrgReciprocity.revoked_or_suspended_org_always_refused,DeterministicEngineering.Engineering.FederatedOrgReciprocity.active_dispute_freeze_always_blocks,DeterministicEngineering.Engineering.FederatedOrgReciprocity.unratified_federation_treaty_refused,DeterministicEngineering.Engineering.FederatedOrgReciprocity.expired_reciprocity_epoch_refused,DeterministicEngineering.Engineering.FederatedOrgReciprocity.federated_reciprocity_sound_and_complete,DeterministicEngineering.Engineering.FederatedOrgReciprocity.federatedOrgContract_preserves_rejection,DeterministicEngineering.Engineering.FederatedOrgReciprocity.baselineFederatedOrgCertified,DeterministicEngineering.Engineering.FederatedOrgReciprocity.federationHeartbeatTuning_preserves_certificate,DeterministicEngineering.Engineering.FederatedOrgReciprocity.disablingBilateralReciprocity_invalidates_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Engineering/FederatedOrgReciprocity.lean";
+            }
+        }
+
+        // Thirty-Eighth Zero-Glue Subject (Thirty-Third AI-Security Threat Subject — Protocol Domain: DPoP Sender-Constrain & Air-Gapped Release Certificate Replay)
+        part dpopSenderConstrain {
+            attribute subjectKey : String = "dpop-sender-constrain";
+            attribute identity : String = "threat.protocol.dpop-sender-constrain";
+            attribute tags : String = "threat,protocol,ai-security,dpop-sender-constrain,release-cert-replay,defense.mutability.immutable-proof,hazard.stolen-token-proof-replay";
+            attribute factors : String = "dpop-sender-constrain,ai-delegates-authority,ai-executes-tools";
+            attribute aiControls : String = "monotonic-attenuation,revocation-currentness,tool-confinement";
+
+            part dpopQuintTarget {
+                attribute modelId : String = "threat.protocol.dpop-sender-constrain";
+                attribute quintFile : String = "packages/quint-models/threat/protocol/dpop-sender-constrain/DpopSenderConstrain.qnt";
+                attribute quintMain : String = "dpop_sender_constrain";
+                attribute itfSubdir : String = "dpop-sender-constrain";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "cnf-jkt-binding,jti-replay-cache";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/protocol/dpop-sender-constrain/DpopSenderConstrain.qnt,packages/quint-models/threat/protocol/dpop-sender-constrain/objects.ss,packages/quint-models/threat/protocol/dpop-sender-constrain/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part dpopLeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.ReleaseCertificateReplay";
+                attribute refinesCore : String = "DeterministicEngineering.Core.Transport";
+                attribute transportContract : String = "ObjectContract.refine+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Engineering.ReleaseCertificateReplay.forged_signature_always_rejected,DeterministicEngineering.Engineering.ReleaseCertificateReplay.downgraded_theorem_count_always_rejected,DeterministicEngineering.Engineering.ReleaseCertificateReplay.nonzero_mathlib_or_cedar_always_rejected,DeterministicEngineering.Engineering.ReleaseCertificateReplay.expired_or_revoked_release_epoch_rejected,DeterministicEngineering.Engineering.ReleaseCertificateReplay.insufficient_witness_quorum_rejected,DeterministicEngineering.Engineering.ReleaseCertificateReplay.mismatched_expected_digest_rejected,DeterministicEngineering.Engineering.ReleaseCertificateReplay.offline_verify_sound_and_complete,DeterministicEngineering.Engineering.ReleaseCertificateReplay.releaseCertContract_preserves_rejection,DeterministicEngineering.Engineering.ReleaseCertificateReplay.baselineReleaseCertCertified,DeterministicEngineering.Engineering.ReleaseCertificateReplay.cacheTtlTuning_preserves_releaseCert_certificate,DeterministicEngineering.Engineering.ReleaseCertificateReplay.disablingAntiDowngrade_invalidates_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Engineering/ReleaseCertificateReplay.lean";
+            }
+        }
     }
 
     // ── 12. Architectural, Cross-Method, and Requirement Dependencies ──
@@ -1742,6 +1806,14 @@ package MultiMethodFunFlowArchitecture {
     dependency 'mac-quint-source' from system::macaroonDelegationChain::macQuintTarget to system::quintModels;
     dependency 'tee-lean-source' from system::macaroonDelegationChain::teeLeanPooTarget to system::leanModels;
     dependency 'tee-lean-refines-transport' from system::macaroonDelegationChain::teeLeanPooTarget to system::leanModels::core::transport;
+
+    dependency 'oidc-quint-source' from system::oidcFederation::oidcQuintTarget to system::quintModels;
+    dependency 'oidc-lean-source' from system::oidcFederation::oidcLeanPooTarget to system::leanModels;
+    dependency 'oidc-lean-refines-transport' from system::oidcFederation::oidcLeanPooTarget to system::leanModels::core::transport;
+
+    dependency 'dpop-quint-source' from system::dpopSenderConstrain::dpopQuintTarget to system::quintModels;
+    dependency 'dpop-lean-source' from system::dpopSenderConstrain::dpopLeanPooTarget to system::leanModels;
+    dependency 'dpop-lean-refines-transport' from system::dpopSenderConstrain::dpopLeanPooTarget to system::leanModels::core::transport;
 
     // Cross-method edges enforced by MR03 & MR04 (zero model duplication)
     dependency 'pt-mbt-itf-edge' from system::processTreeReclamation::rustOracleTarget::traceIn to system::processTreeReclamation::quintTarget::traceOut;

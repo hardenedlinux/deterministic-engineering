@@ -279,4 +279,6 @@
       (check (and (member '("threat.zero-trust.microsegmentation-egress") admitted-subjs) #t) => #t)
       (check (and (member '("threat.identity.workload-identity-rotation") admitted-subjs) #t) => #t)
       (check (and (member '("threat.protocol.macaroon-delegation-chain") admitted-subjs) #t) => #t)
-      (check-equal? (length (.get projected subject-specs)) 36))))
+      (check (and (member '("threat.identity.oidc-federation") admitted-subjs) #t) => #t)
+      (check (and (member '("threat.protocol.dpop-sender-constrain") admitted-subjs) #t) => #t)
+      (check-equal? (length (.get projected subject-specs)) 38))))

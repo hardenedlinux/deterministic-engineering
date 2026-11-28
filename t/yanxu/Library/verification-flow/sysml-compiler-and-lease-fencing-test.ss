@@ -40,13 +40,13 @@
 
 (.def (MultiSubjectCompileBudget @ yuanxu-testing-case-profile-prototype)
   max-idle-milliseconds: 180000
-  max-duration-milliseconds: 600000
+  max-duration-milliseconds: 720000
   sample-interval-milliseconds: 500
   collect-before-sample?: #t)
 
 (def verification-flow-sysml-compiler-and-lease-fencing-test
   (test-suite "Zero-glue SysML v2 -> Fun-Flow DAG compiler and 3rd subject lease-fencing-token"
-    (yuanxu-test-case/with MultiSubjectCompileBudget "live SysML v2 compiles all 36 subjects (75 engines) into valid Fun-Flow DAGs and manifests with zero Scheme glue"
+    (yuanxu-test-case/with MultiSubjectCompileBudget "live SysML v2 compiles all 38 subjects (79 engines) into valid Fun-Flow DAGs and manifests with zero Scheme glue"
       (def sysml-path
         (path-expand
           "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml"
@@ -54,7 +54,7 @@
       (def json-text (run-process (list "sysml" "-convert" "api-json" sysml-path)))
       (def parsed (call-with-input-string json-text (cut read-json <> object-as-hash: #t)))
       (def projected (sysml-api-json->governance-facts parsed))
-      (check-equal? (length (.get projected subject-specs)) 36)
+      (check-equal? (length (.get projected subject-specs)) 38)
       (for-each
         (lambda (spec-expect)
           (def skey (car spec-expect))
@@ -108,8 +108,26 @@
           (transparency-log-gossip 2)
           (microsegmentation-egress 2)
           (workload-identity-rotation 2)
-          (macaroon-delegation-chain 2)))
+          (macaroon-delegation-chain 2)
+          (oidc-federation 2)
+          (dpop-sender-constrain 2)))
       ;; Verify static change-impact slicing isolates AI-Security subjects cleanly!
+      (let* ((impact31
+              (changed-files->affected-frontier
+                projected
+                '("packages/quint-models/threat/identity/oidc-federation/OidcFederation.qnt")))
+             (affected31 (filter (lambda (s) (pair? (.get s affected-steps))) impact31)))
+        (check-equal? (map (lambda (s) (.get s subject-key)) affected31)
+                      '(oidc-federation))
+        (check-equal? (.get (car affected31) affected-steps) '("oidcQuintTarget")))
+      (let* ((impact32
+              (changed-files->affected-frontier
+                projected
+                '("packages/quint-models/threat/protocol/dpop-sender-constrain/DpopSenderConstrain.qnt")))
+             (affected32 (filter (lambda (s) (pair? (.get s affected-steps))) impact32)))
+        (check-equal? (map (lambda (s) (.get s subject-key)) affected32)
+                      '(dpop-sender-constrain))
+        (check-equal? (.get (car affected32) affected-steps) '("dpopQuintTarget")))
       (let* ((impact29
               (changed-files->affected-frontier
                 projected
