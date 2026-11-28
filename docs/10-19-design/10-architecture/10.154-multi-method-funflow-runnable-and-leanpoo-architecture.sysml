@@ -1394,6 +1394,71 @@ package MultiMethodFunFlowArchitecture {
                 attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Engineering/ModelWeightAndInferenceAttestation.lean";
             }
         }
+
+        // Thirty-First Zero-Glue Subject (Twenty-Sixth AI-Security Threat Subject — Zero-Trust Domain: PEP/PDP Policy-Epoch Currency & SM27 Policy-Gate Blind-Spot/Cycle Confinement)
+        part zeroTrustPepPdp {
+            attribute subjectKey : String = "zero-trust-pep-pdp";
+            attribute identity : String = "threat.zero-trust.zero-trust-pep-pdp";
+            attribute tags : String = "threat,zero-trust,ai-security,pep-pdp-currency,policy-gate-blindspot,defense.mutability.immutable-proof,hazard.stale-policy-cycle-blindspot";
+            attribute factors : String = "zero-trust-pep-pdp,ai-mutates-host-or-governance";
+            attribute aiControls : String = "human-stepup-and-estop";
+            attribute aiRoleBindings : String = "human-approver:human-approver,ai-agent:ai-proposer";
+
+            part pepQuintTarget {
+                attribute modelId : String = "threat.zero-trust.zero-trust-pep-pdp";
+                attribute quintFile : String = "packages/quint-models/threat/zero-trust/zero-trust-pep-pdp/ZeroTrustPepPdp.qnt";
+                attribute quintMain : String = "zero_trust_pep_pdp";
+                attribute itfSubdir : String = "zero-trust-pep-pdp";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "policy-epoch-currency,policy-active";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/zero-trust/zero-trust-pep-pdp/ZeroTrustPepPdp.qnt,packages/quint-models/threat/zero-trust/zero-trust-pep-pdp/objects.ss,packages/quint-models/threat/zero-trust/zero-trust-pep-pdp/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part sm27LeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.PolicyGateBlindspotAndCycleConfinement";
+                attribute refinesCore : String = "DeterministicEngineering.Engineering.SandboxSymlinkArchiveConfinement";
+                attribute transportContract : String = "ObjectContract.refine+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Engineering.PolicyGateBlindspotAndCycleConfinement.sm27_strict_admission_eliminates_all_blindspots,DeterministicEngineering.Engineering.PolicyGateBlindspotAndCycleConfinement.sm27_cycle_blinded_workspace_fails_admission,DeterministicEngineering.Engineering.PolicyGateBlindspotAndCycleConfinement.sm27_ungated_or_downgraded_fails_admission,DeterministicEngineering.Engineering.PolicyGateBlindspotAndCycleConfinement.sm27_fat_entrypoint_fails_admission,DeterministicEngineering.Engineering.PolicyGateBlindspotAndCycleConfinement.sm27_ci_omission_fails_admission,DeterministicEngineering.Engineering.PolicyGateBlindspotAndCycleConfinement.sm27_gentle_pressure_tiers_rejected,DeterministicEngineering.Engineering.PolicyGateBlindspotAndCycleConfinement.sm27_breaking_cycles_restores_gate_visibility,DeterministicEngineering.Engineering.PolicyGateBlindspotAndCycleConfinement.sm27_defective_postures_expose_live_exploits,DeterministicEngineering.Engineering.PolicyGateBlindspotAndCycleConfinement.sm27_marlin_policy_contract_refinement_laws,DeterministicEngineering.Engineering.PolicyGateBlindspotAndCycleConfinement.sm27_baseline_certified,DeterministicEngineering.Engineering.PolicyGateBlindspotAndCycleConfinement.sm27_obligation_untouched_by_report_tuning,DeterministicEngineering.Engineering.PolicyGateBlindspotAndCycleConfinement.sm27_report_tuning_reuses_and_closes_certificate,DeterministicEngineering.Engineering.PolicyGateBlindspotAndCycleConfinement.sm27_regressions_invalidate_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean,packages/lean-models/DeterministicEngineering/Engineering/PolicyGateBlindspotAndCycleConfinement.lean";
+            }
+        }
+
+        // Thirty-Second Zero-Glue Subject (Twenty-Seventh AI-Security Threat Subject — Zero-Trust Domain: Multi-Tenant Isolation & MCP/RPC Tool-Sandbox Boundary)
+        part multiTenantIsolation {
+            attribute subjectKey : String = "multi-tenant-isolation";
+            attribute identity : String = "threat.zero-trust.multi-tenant-isolation";
+            attribute tags : String = "threat,zero-trust,ai-security,multi-tenant-isolation,mcp-tool-sandbox,defense.mutability.immutable-proof,hazard.cross-tenant-deputy-mcp-rugpull";
+            attribute factors : String = "multi-tenant-isolation,ai-executes-tools,ai-ingests-untrusted-context";
+            attribute aiControls : String = "tool-confinement,context-integrity-or-ifc";
+
+            part mtiQuintTarget {
+                attribute modelId : String = "threat.zero-trust.multi-tenant-isolation";
+                attribute quintFile : String = "packages/quint-models/threat/zero-trust/multi-tenant-isolation/MultiTenantIsolation.qnt";
+                attribute quintMain : String = "multi_tenant_isolation";
+                attribute itfSubdir : String = "multi-tenant-isolation";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "tenant-resource-match,tenant-membership-current,outbox-tenant-binding";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/zero-trust/multi-tenant-isolation/MultiTenantIsolation.qnt,packages/quint-models/threat/zero-trust/multi-tenant-isolation/objects.ss,packages/quint-models/threat/zero-trust/multi-tenant-isolation/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part mtiLeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.ToolSandboxAndRpcBoundary";
+                attribute refinesCore : String = "DeterministicEngineering.Core.Transport";
+                attribute transportContract : String = "ObjectContract.refine+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Engineering.ToolSandboxAndRpcBoundary.unpinned_shadow_tool_always_refused,DeterministicEngineering.Engineering.ToolSandboxAndRpcBoundary.mcp_schema_rug_pull_always_refused,DeterministicEngineering.Engineering.ToolSandboxAndRpcBoundary.sandbox_scope_escalation_always_refused,DeterministicEngineering.Engineering.ToolSandboxAndRpcBoundary.side_effecting_tool_without_idempotency_key_refused,DeterministicEngineering.Engineering.ToolSandboxAndRpcBoundary.ambiguous_rpc_timeout_blocks_blind_retry,DeterministicEngineering.Engineering.ToolSandboxAndRpcBoundary.oversized_or_untagged_tool_output_refused,DeterministicEngineering.Engineering.ToolSandboxAndRpcBoundary.tool_response_admit_iff_bounded_and_tainted,DeterministicEngineering.Engineering.ToolSandboxAndRpcBoundary.toolSandboxContract_preserves_rejection,DeterministicEngineering.Engineering.ToolSandboxAndRpcBoundary.baselineToolSandboxCertified,DeterministicEngineering.Engineering.ToolSandboxAndRpcBoundary.rpcLogSampleRateTuning_preserves_toolSandbox_certificate,DeterministicEngineering.Engineering.ToolSandboxAndRpcBoundary.disablingSchemaPinning_invalidates_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Engineering/ToolSandboxAndRpcBoundary.lean";
+            }
+        }
     }
 
     // ── 12. Architectural, Cross-Method, and Requirement Dependencies ──
@@ -1524,6 +1589,13 @@ package MultiMethodFunFlowArchitecture {
     dependency 'tuf-quint-source' from system::supplyChainTuf::tufQuintTarget to system::quintModels;
     dependency 'tuf-lean-source' from system::supplyChainTuf::tufLeanPooTarget to system::leanModels;
     dependency 'tuf-lean-refines-transport' from system::supplyChainTuf::tufLeanPooTarget to system::leanModels::core::transport;
+
+    dependency 'pep-quint-source' from system::zeroTrustPepPdp::pepQuintTarget to system::quintModels;
+    dependency 'sm27-lean-source' from system::zeroTrustPepPdp::sm27LeanPooTarget to system::leanModels;
+
+    dependency 'mti-quint-source' from system::multiTenantIsolation::mtiQuintTarget to system::quintModels;
+    dependency 'mti-lean-source' from system::multiTenantIsolation::mtiLeanPooTarget to system::leanModels;
+    dependency 'mti-lean-refines-transport' from system::multiTenantIsolation::mtiLeanPooTarget to system::leanModels::core::transport;
 
     // Cross-method edges enforced by MR03 & MR04 (zero model duplication)
     dependency 'pt-mbt-itf-edge' from system::processTreeReclamation::rustOracleTarget::traceIn to system::processTreeReclamation::quintTarget::traceOut;

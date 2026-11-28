@@ -273,4 +273,6 @@
       (check (and (member '("threat.protocol.chatroom-ingress-governance") admitted-subjs) #t) => #t)
       (check (and (member '("threat.zero-trust.data-lineage-disclosure") admitted-subjs) #t) => #t)
       (check (and (member '("threat.supply-chain.supply-chain-tuf") admitted-subjs) #t) => #t)
-      (check-equal? (length (.get projected subject-specs)) 30))))
+      (check (and (member '("threat.zero-trust.zero-trust-pep-pdp") admitted-subjs) #t) => #t)
+      (check (and (member '("threat.zero-trust.multi-tenant-isolation") admitted-subjs) #t) => #t)
+      (check-equal? (length (.get projected subject-specs)) 32))))

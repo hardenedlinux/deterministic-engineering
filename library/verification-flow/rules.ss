@@ -30,6 +30,7 @@
   evaluate-ai-patch-admission
   governance-core-path?
   evaluate-ai-changeset-admission
+  project-ai-security-posture
   build-incremental-reuse-sources
   reuse-result->plan
   governance+evidence->admission-sources
@@ -205,6 +206,111 @@
       subject-verdicts: subject-verdicts
       total-affected-steps: total-affected
       total-reusable-steps: total-reusable))
+
+;; Pure AI Security Posture & Threat-Domain Coverage Matrix Aggregator (10.154):
+;; Projects ALL SysML v2 subjects through ASCENT AR01-AR05 and computes live
+;; domain coverage, engine/countermodel/LeanPoo theorem counts, and human Step-Up
+;; escalation surfaces. Zero I/O.
+(def (identity->threat-domain sid)
+  (def parts (string-split (sym->str sid) #\.))
+  (cond
+   ((and (pair? parts) (equal? (car parts) "threat") (pair? (cdr parts)))
+    (string-append "threat." (cadr parts)))
+   ((and (pair? parts) (equal? (car parts) "engineering"))
+    "engineering")
+   (else "other")))
+
+(def (trim-ws-str s)
+  (def len (string-length s))
+  (let loop-l ((i 0))
+    (if (and (< i len) (char-whitespace? (string-ref s i)))
+      (loop-l (+ i 1))
+      (let loop-r ((j len))
+        (if (and (> j i) (char-whitespace? (string-ref s (- j 1))))
+          (loop-r (- j 1))
+          (substring s i j))))))
+
+(def (csv-item-count raw)
+  (if (and (string? raw) (> (string-length raw) 0))
+    (length (filter (lambda (x) (> (string-length x) 0))
+                    (map trim-ws-str
+                         (string-split raw #\,))))
+    0))
+
+(def (project-ai-security-posture projected)
+  (def specs (.get projected subject-specs))
+  (def ai-res (reason-ai-security-governance (.get projected ai-governance-sources)))
+  (def ar-findings ((.ref ai-res 'rows-of) 'ar_finding))
+  (def admitted-rows ((.ref ai-res 'rows-of) 'ai_governance_admitted))
+  (def domain-counts '())
+  (def (bump-domain! d)
+    (let ((cell (assoc d domain-counts)))
+      (if cell
+        (set-cdr! cell (+ (cdr cell) 1))
+        (set! domain-counts (cons (cons d 1) domain-counts)))))
+  (def total-engines 0)
+  (def total-countermodels 0)
+  (def total-lean-theorems 0)
+  (def ai-subject-count 0)
+  (def eng-subject-count 0)
+  (def stepup-keys '())
+  (def subject-summaries
+    (map (lambda (spec)
+           (def skey (sym->str (.get spec subject-key)))
+           (def sid (sym->str (.get spec identity)))
+           (def dom (identity->threat-domain sid))
+           (def targets (.get spec targets))
+           (def facs (.get spec factors))
+           (def ctrls (.get spec ai-controls))
+           (def eng-n (length targets))
+           (def cm-n
+             (apply + (map (lambda (t) (length (.get t countermodels))) targets)))
+           (def lean-n
+             (apply +
+                    (map (lambda (t)
+                           (let ((p (assoc "theorems" (.get t attrs))))
+                             (if (pair? p) (csv-item-count (cdr p)) 0)))
+                         targets)))
+           (def stepup?
+             (and (member "ai-mutates-host-or-governance" facs) #t))
+           (def admitted?
+             (and (member (list sid) admitted-rows) #t))
+           (bump-domain! dom)
+           (set! total-engines (+ total-engines eng-n))
+           (set! total-countermodels (+ total-countermodels cm-n))
+           (set! total-lean-theorems (+ total-lean-theorems lean-n))
+           (if (equal? dom "engineering")
+             (set! eng-subject-count (+ eng-subject-count 1))
+             (set! ai-subject-count (+ ai-subject-count 1)))
+           (when stepup?
+             (set! stepup-keys (cons skey stepup-keys)))
+           (.o bind-these: #f
+               subject-key: skey
+               subject-id: sid
+               domain: dom
+               engine-count: eng-n
+               countermodel-count: cm-n
+               lean-theorem-count: lean-n
+               ai-controls: ctrls
+               requires-human-stepup?: stepup?
+               admitted?: admitted?))
+         specs))
+  (def all-admitted?
+    (and (null? ar-findings)
+         (= (length admitted-rows) (length specs))))
+  (.o bind-these: #f
+      all-admitted?: all-admitted?
+      total-subjects: (length specs)
+      engineering-subjects: eng-subject-count
+      ai-security-subjects: ai-subject-count
+      total-engines: total-engines
+      total-countermodels: total-countermodels
+      total-lean-theorems: total-lean-theorems
+      ar-findings-count: (length ar-findings)
+      admitted-count: (length admitted-rows)
+      domains: (reverse domain-counts)
+      stepup-required-subjects: (reverse stepup-keys)
+      subjects: subject-summaries))
 
 ;; Pure projector assembling IR01-IR06 ASCENT sources from governance sources,
 ;; mutability annotations, policy flags, current input digests, cached witnesses,

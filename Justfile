@@ -222,6 +222,9 @@ impact-multi-method *files:
 check-ai-governance:
     t/harness/run-gxtest.sh file t/yanxu/Library/verification-flow/ai-governance-and-redteam-test.ss ".*" 180s
 
+ai-security-posture *args:
+    t/harness/run-gxtest.sh script none t/support/verification-flow-runner.ss --ai-security-posture {{args}}
+
 check-ai-patch subject *args:
     t/harness/run-gxtest.sh script none t/support/verification-flow-runner.ss --check-ai-patch "{{subject}}" {{args}}
 

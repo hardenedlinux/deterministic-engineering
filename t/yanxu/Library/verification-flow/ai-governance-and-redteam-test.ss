@@ -86,7 +86,7 @@
       (def res (reason-ai-security-governance ai-sources))
       (check-equal? ((.ref res 'rows-of) 'ar_finding) '())
       (def admitted ((.ref res 'rows-of) 'ai_governance_admitted))
-      (check-equal? (length admitted) 30)
+      (check-equal? (length admitted) 32)
       (for-each
         (lambda (sid)
           (check (and (member (list sid) admitted) #t) => #t))
@@ -114,7 +114,9 @@
           "threat.zero-trust.governance-sod"
           "threat.protocol.chatroom-ingress-governance"
           "threat.zero-trust.data-lineage-disclosure"
-          "threat.supply-chain.supply-chain-tuf")))
+          "threat.supply-chain.supply-chain-tuf"
+          "threat.zero-trust.zero-trust-pep-pdp"
+          "threat.zero-trust.multi-tenant-isolation")))
 
     (yuanxu-test-case "AI-SE Deterministic Change-Admission & Proof-Transport Gate separates safe parameter tuning from security-boundary regressions"
       (def sysml-path
@@ -583,4 +585,30 @@
         (let ((doc4 (call-with-input-string out (cut read-json <> object-as-hash: #t))))
           (check-equal? (hash-get doc4 "ok") #f)
           (check-equal? (hash-get doc4 "admitted") #f)
-          (check-equal? (hash-get doc4 "totalReusableSteps") 0))))))
+          (check-equal? (hash-get doc4 "totalReusableSteps") 0))))
+
+    (yuanxu-test-case "Live AI Security Posture Matrix (--ai-security-posture) aggregates all 32 subjects across 5 Threat domains with zero AR findings"
+      (let* ((res (run-ai-security-posture-report repo-root))
+             (doc (.get res json-doc))
+             (doms (hash-get doc "domains"))
+             (stepups (hash-get doc "stepUpRequiredSubjects")))
+        (check-equal? (.get res ok?) #t)
+        (check-equal? (hash-get doc "schema") "de.ai-se.security-posture-matrix.v1")
+        (check-equal? (hash-get doc "ok") #t)
+        (check-equal? (hash-get doc "totalSubjects") 32)
+        (check-equal? (hash-get doc "engineeringSubjects") 5)
+        (check-equal? (hash-get doc "aiSecuritySubjects") 27)
+        (check-equal? (hash-get doc "totalEngines") 67)
+        (check-equal? (hash-get doc "arFindingsCount") 0)
+        (check-equal? (hash-get doc "admittedCount") 32)
+        (check (> (hash-get doc "totalCountermodels") 90) => #t)
+        (check (> (hash-get doc "totalLeanTheorems") 300) => #t)
+        (check-equal? (hash-get doms "engineering") 5)
+        (check-equal? (hash-get doms "threat.execution") 17)
+        (check-equal? (hash-get doms "threat.identity") 1)
+        (check-equal? (hash-get doms "threat.zero-trust") 5)
+        (check-equal? (hash-get doms "threat.supply-chain") 2)
+        (check-equal? (hash-get doms "threat.protocol") 2)
+        (check (and (member "zero-trust-pep-pdp" stepups) #t) => #t)
+        (check (and (member "governance-sod" stepups) #t) => #t)
+        (check (and (member "chatroom-ingress-governance" stepups) #t) => #t)))))

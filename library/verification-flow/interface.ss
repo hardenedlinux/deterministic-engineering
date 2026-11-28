@@ -43,6 +43,7 @@
         reason-ai-governance: reason-ai-security-governance
         evaluate-ai-patch: evaluate-ai-patch-admission
         evaluate-ai-changeset: evaluate-ai-changeset-admission
+        ai-security-posture: project-ai-security-posture
         reuse-sources: build-incremental-reuse-sources
         reuse-plan: reuse-result->plan
         project-sysml-json: sysml-api-json->governance-facts

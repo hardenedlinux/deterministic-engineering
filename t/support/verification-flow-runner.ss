@@ -77,6 +77,7 @@
   run-check-ai-patch-verdict
   run-check-ai-diff-verdict
   run-verify-ai-diff-pipeline
+  run-ai-security-posture-report
   main)
 
 ;; ── Zero-Glue SysML v2 -> Fun-Flow DAG Compilation (Single Source of Truth) ──
@@ -1985,9 +1986,66 @@
             fleet-result: fleet-res
             json-doc: doc))))))
 
+(def (run-ai-security-posture-report repo-root)
+  (def projected (project-sysml-model repo-root))
+  (def posture (project-ai-security-posture projected))
+  (def domains-ht (make-hash-table))
+  (for-each (lambda (kv) (hash-put! domains-ht (car kv) (cdr kv)))
+            (.get posture domains))
+  (def doc
+    (hash ("schema" "de.ai-se.security-posture-matrix.v1")
+          ("ok" (.get posture all-admitted?))
+          ("allAdmitted" (.get posture all-admitted?))
+          ("totalSubjects" (.get posture total-subjects))
+          ("engineeringSubjects" (.get posture engineering-subjects))
+          ("aiSecuritySubjects" (.get posture ai-security-subjects))
+          ("totalEngines" (.get posture total-engines))
+          ("totalCountermodels" (.get posture total-countermodels))
+          ("totalLeanTheorems" (.get posture total-lean-theorems))
+          ("arFindingsCount" (.get posture ar-findings-count))
+          ("admittedCount" (.get posture admitted-count))
+          ("domains" domains-ht)
+          ("stepUpRequiredSubjects" (.get posture stepup-required-subjects))
+          ("subjects"
+           (map (lambda (s)
+                  (hash ("subjectKey" (.get s subject-key))
+                        ("subjectId" (.get s subject-id))
+                        ("domain" (.get s domain))
+                        ("engineCount" (.get s engine-count))
+                        ("countermodelCount" (.get s countermodel-count))
+                        ("leanTheoremCount" (.get s lean-theorem-count))
+                        ("aiControls" (.get s ai-controls))
+                        ("requiresHumanStepUp" (.get s requires-human-stepup?))
+                        ("admitted" (.get s admitted?))))
+                (.get posture subjects)))))
+  (.o bind-these: #f
+      ok?: (.get posture all-admitted?)
+      posture: posture
+      json-doc: doc))
+
 (def (main mode-or-output . rest)
   (def repo-root (path-normalize (path-expand "../.." (path-directory (this-source-file)))))
   (cond
+   ((equal? mode-or-output "--ai-security-posture")
+    (let* ((json? (and (member "--json" rest) #t))
+           (res (run-ai-security-posture-report repo-root))
+           (p (.get res posture))
+           (ok? (.get res ok?)))
+      (if json?
+        (begin
+          (write-json (current-output-port) (.get res json-doc))
+          (newline))
+        (displayln (if ok? "AI-SECURITY-POSTURE-OK " "AI-SECURITY-POSTURE-FAILED ")
+                   "subjects=" (.get p total-subjects)
+                   " (eng=" (.get p engineering-subjects)
+                   ",ai=" (.get p ai-security-subjects) ")"
+                   " engines=" (.get p total-engines)
+                   " countermodels=" (.get p total-countermodels)
+                   " leanTheorems=" (.get p total-lean-theorems)
+                   " stepUpSubjects=" (length (.get p stepup-required-subjects))
+                   " arFindings=" (.get p ar-findings-count)))
+      (unless ok?
+        (exit 1))))
    ((equal? mode-or-output "--verify-ai-diff")
     (unless (pair? rest)
       (error "usage: --verify-ai-diff <output-dir> [<cache-dir>] [--json] [--require-no-stepup] [--base <ref>] [--file <path>]... [--role-binding <sid>:<role>:<auth>]... [--extra-step <sid>:<step>:<obl>:<method>:<claim>]..."))
