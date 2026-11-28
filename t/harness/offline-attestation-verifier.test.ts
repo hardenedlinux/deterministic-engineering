@@ -1768,5 +1768,148 @@ describe('Zero-Dependency TS/Bun Offline Attestation Verifier (25 Controls + Ger
     ]);
     expect(resExpiredPol.exitCode).not.toBe(0);
     expect(JSON.parse(resExpiredPol.stdout.trim()).ok).toBe(false);
+
+    // Controls 61-63: AI Security Human-in-the-Loop Role Separation of Duties (AR05):
+    //   61: `ai-agent`-only DSSE v1 statement is unconditionally REJECTED under a `policy-admin`-signed
+    //       policy requiring `["ai-agent", "human-approver"]` 2-of-2 SoD.
+    //   62: An `ai-agent`-signed policy attempting to weaken `requiredRoles` to `["ai-agent"]` is
+    //       unconditionally REJECTED under `--require-policy-role policy-admin`.
+    //   63: After genuine `human-approver` offline co-sign, the 2-of-2 (`ai-agent` + `human-approver`)
+    //       DSSE v1 statement PASSES against the `policy-admin`-signed anti-rollback policy!
+    const aiAgentKey = genKeyPair(cosignKeysDir, 'ai-agent');
+    const humanApproverKey = genKeyPair(cosignKeysDir, 'human-approver');
+    const policyAdminKey = genKeyPair(cosignKeysDir, 'policy-admin');
+    const dsseAiOnly = signDsse(
+      'application/vnd.in-toto+json',
+      stmtDoc,
+      [aiAgentKey],
+      join(WORK_DIR, 'ai-agent-only.intoto.dsse.json'),
+    );
+    const aiSodTrustPath = join(WORK_DIR, 'ai-sod-trust-bundle.json');
+    const resAiTrust = runTsCli([
+      '--json',
+      '--export-trust-bundle',
+      aiSodTrustPath,
+      '--role',
+      `${aiAgentKey.kid}=ai-agent`,
+      '--role',
+      `${humanApproverKey.kid}=human-approver`,
+      '--role',
+      `${policyAdminKey.kid}=policy-admin`,
+      aiAgentKey.pubPath,
+      humanApproverKey.pubPath,
+      policyAdminKey.pubPath,
+    ]);
+    expect(resAiTrust.exitCode).toBe(0);
+
+    const aiPolicyRawPath = writeJson(join(WORK_DIR, 'ai-sod-policy.json'), {
+      schema: 'de.attestation.policy.v1',
+      policyVersion: 1,
+      notAfterEpoch: 1900000000,
+      expectedSysmlSha256: 'sysmlsha',
+      expectedSubjectCount: 1,
+      requiredSubjects: ['demo'],
+      minSignatures: 2,
+      requiredRoles: ['ai-agent', 'human-approver'],
+    });
+    const aiWeakPolicyRawPath = writeJson(join(WORK_DIR, 'ai-weak-policy.json'), {
+      schema: 'de.attestation.policy.v1',
+      policyVersion: 2,
+      notAfterEpoch: 1900000000,
+      expectedSysmlSha256: 'sysmlsha',
+      expectedSubjectCount: 1,
+      requiredSubjects: ['demo'],
+      minSignatures: 1,
+      requiredRoles: ['ai-agent'],
+    });
+    const aiSignedPolicyAdmin = join(WORK_DIR, 'ai-sod-policy.dsse.json');
+    const aiSignedPolicyRogue = join(WORK_DIR, 'ai-weak-policy.dsse.json');
+    expect(
+      runTsCli([
+        '--sign-policy',
+        aiPolicyRawPath,
+        policyAdminKey.privPath,
+        policyAdminKey.pubPath,
+        aiSodTrustPath,
+        aiSignedPolicyAdmin,
+      ]).exitCode,
+    ).toBe(0);
+    expect(
+      runTsCli([
+        '--sign-policy',
+        aiWeakPolicyRawPath,
+        aiAgentKey.privPath,
+        aiAgentKey.pubPath,
+        aiSodTrustPath,
+        aiSignedPolicyRogue,
+      ]).exitCode,
+    ).toBe(0);
+
+    // Control 61: `ai-agent` alone CANNOT self-approve human-approver requirement!
+    const resAiSelfApprove = runTsCli([
+      '--json',
+      '--verify-dsse-statement',
+      '--signed-policy',
+      aiSignedPolicyAdmin,
+      '--require-policy-role',
+      'policy-admin',
+      '--min-policy-version',
+      '1',
+      '--now-epoch',
+      '1800000000',
+      dsseAiOnly,
+      aiSodTrustPath,
+    ]);
+    expect(resAiSelfApprove.exitCode).not.toBe(0);
+    expect(JSON.parse(resAiSelfApprove.stdout.trim()).ok).toBe(false);
+
+    // Control 62: `ai-agent` CANNOT forge a weaker `policy-admin` audit policy!
+    const resAiForgePolicy = runTsCli([
+      '--json',
+      '--verify-dsse-statement',
+      '--signed-policy',
+      aiSignedPolicyRogue,
+      '--require-policy-role',
+      'policy-admin',
+      '--min-policy-version',
+      '1',
+      '--now-epoch',
+      '1800000000',
+      dsseAiOnly,
+      aiSodTrustPath,
+    ]);
+    expect(resAiForgePolicy.exitCode).not.toBe(0);
+    expect(JSON.parse(resAiForgePolicy.stdout.trim()).ok).toBe(false);
+
+    // Control 63: Genuine `human-approver` offline co-sign completes 2-of-2 AI+Human SoD!
+    const aiHumanCosigned = join(WORK_DIR, 'ai-human-cosigned.intoto.dsse.json');
+    expect(
+      runTsCli([
+        '--cosign-dsse-statement',
+        dsseAiOnly,
+        humanApproverKey.privPath,
+        humanApproverKey.pubPath,
+        aiSodTrustPath,
+        aiHumanCosigned,
+      ]).exitCode,
+    ).toBe(0);
+    const resAiHumanOk = runTsCli([
+      '--json',
+      '--verify-dsse-statement',
+      '--signed-policy',
+      aiSignedPolicyAdmin,
+      '--require-policy-role',
+      'policy-admin',
+      '--min-policy-version',
+      '1',
+      '--now-epoch',
+      '1800000000',
+      aiHumanCosigned,
+      aiSodTrustPath,
+    ]);
+    expect(resAiHumanOk.exitCode).toBe(0);
+    const docAiHumanOk = JSON.parse(resAiHumanOk.stdout.trim());
+    expect(docAiHumanOk.ok).toBe(true);
+    expect(docAiHumanOk.verifiedRoles).toEqual(['ai-agent', 'human-approver']);
   });
 });

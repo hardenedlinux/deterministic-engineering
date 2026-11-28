@@ -228,6 +228,9 @@ check-ai-patch subject *args:
 check-ai-diff *args:
     t/harness/run-gxtest.sh script none t/support/verification-flow-runner.ss --check-ai-diff {{args}}
 
+verify-ai-diff output cache_dir="" *args:
+    test ! -e "{{output}}" && t/harness/run-gxtest.sh script 420s t/support/verification-flow-runner.ss --verify-ai-diff "{{output}}" "{{cache_dir}}" {{args}}
+
 verify-multi-method-report report trust_store:
     t/harness/run-gxtest.sh script none t/support/offline-attestation-verifier.ss --verify-report "{{report}}" "{{trust_store}}"
 

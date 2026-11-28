@@ -180,7 +180,7 @@ jobs:
           ! echo "$OUT" | grep -q "depends on axioms:"
 
   airgapped-offline-verifier-adversarial:
-    name: Zero-Dep Portable Offline Attestation Verifier (60 Adversarial, DSSE v1, Role-SoD & Anti-Rollback Policy Controls)
+    name: Zero-Dep Portable Offline Attestation & AI Role-SoD Verifier (63 Adversarial, DSSE v1, AI!=Human SoD & Anti-Rollback Policy Controls)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -189,5 +189,5 @@ jobs:
       - uses: ./.github/actions/setup-bun-cached
         with:
           install: 'false'
-      - name: Run 60-control adversarial, Gerbil<->TS golden-vector, DSSE v1, Role-SoD & Anti-Rollback Policy gate
+      - name: Run 63-control adversarial, Gerbil<->TS golden-vector, DSSE v1, AI Role-SoD & Anti-Rollback Policy gate
         run: just check-offline-verifier

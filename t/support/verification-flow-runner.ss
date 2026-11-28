@@ -76,6 +76,7 @@
   predict-fleet-reuse-plan
   run-check-ai-patch-verdict
   run-check-ai-diff-verdict
+  run-verify-ai-diff-pipeline
   main)
 
 ;; ── Zero-Glue SysML v2 -> Fun-Flow DAG Compilation (Single Source of Truth) ──
@@ -1901,9 +1902,116 @@
         subject-verdicts: sub-verdicts
         json-doc: doc)))
 
+;; End-to-End Automated AI-SE Diff Verification Pipeline (`--verify-ai-diff`):
+;; 1. Runs `run-check-ai-diff-verdict` (AR01-AR05 + Self-Modification Guard + impact slice).
+;; 2. Fails closed BEFORE spawning any engine or minting any attestation if gate refuses.
+;; 3. Executes ONLY the minimal impacted SysML v2 subjects via `run-multi-method-fleet`
+;;    (`emit-bundles?: #t`) and writes `ai-diff-receipt.v1.json` with explicit human Step-Up
+;;    co-sign guidance (`nextAction`).
+(def (run-verify-ai-diff-pipeline repo-root output-dir cache-dir raw-args)
+  (def diff-res (run-check-ai-diff-verdict repo-root raw-args))
+  (def gate-ok? (.get diff-res ok?))
+  (def admitted? (.get diff-res admitted?))
+  (def gov-core? (.get diff-res touched-governance-core?))
+  (def stepup? (.get diff-res requires-human-stepup?))
+  (def sub-verdicts (.get diff-res subject-verdicts))
+  (def affected-keys
+    (map (lambda (sv) (string->symbol (.get sv subject-key))) sub-verdicts))
+  (def resolved-out (path-expand output-dir repo-root))
+  (def doc (make-hash-table))
+  (hash-put! doc "schema" "de.ai-se.diff-verify-receipt.v1")
+  (hash-put! doc "gateAdmitted" admitted?)
+  (hash-put! doc "touchedGovernanceCore" gov-core?)
+  (hash-put! doc "requiresHumanStepUp" stepup?)
+  (hash-put! doc "affectedSubjectKeys" (map symbol->string affected-keys))
+  (hash-put! doc "diffVerdict" (.get diff-res json-doc))
+  (cond
+   ((not gate-ok?)
+    (hash-put! doc "ok" #f)
+    (hash-put! doc "executed" 0)
+    (hash-put! doc "reused" 0)
+    (hash-put! doc "nextAction"
+               (if admitted? "human-approver-stepup-required" "blocked-by-ar01-ar05-governance"))
+    (.o bind-these: #f
+        ok?: #f
+        opts: (.get diff-res opts)
+        receipt-path: #f
+        json-doc: doc))
+   ((null? affected-keys)
+    (when (file-exists? resolved-out)
+      (error "fresh output directory required for --verify-ai-diff" resolved-out))
+    (create-directory* resolved-out)
+    (hash-put! doc "ok" #t)
+    (hash-put! doc "executed" 0)
+    (hash-put! doc "reused" 0)
+    (hash-put! doc "nextAction"
+               (if stepup? "human-approver-cosign-required" "no-formal-subjects-impacted"))
+    (let ((rpath (path-expand "ai-diff-receipt.v1.json" resolved-out)))
+      (call-with-output-file rpath
+        (lambda (p) (write-json p doc) (newline p)))
+      (.o bind-these: #f
+          ok?: #t
+          opts: (.get diff-res opts)
+          receipt-path: rpath
+          json-doc: doc)))
+   (else
+    (let* ((fleet-res
+             (run-multi-method-fleet repo-root output-dir
+               cache-dir: (and cache-dir (> (string-length cache-dir) 0) cache-dir)
+               subject-keys: affected-keys
+               fleet-id: "ai-diff-verify"
+               emit-bundles?: #t))
+           (all-ok? (.get fleet-res all-admitted?)))
+      (hash-put! doc "ok" all-ok?)
+      (hash-put! doc "executed" (.get fleet-res total-executed))
+      (hash-put! doc "reused" (.get fleet-res total-reused))
+      (hash-put! doc "sysmlSha256" (.get fleet-res sysml-sha256))
+      (hash-put! doc "fleetBundlePath" (or (.get fleet-res fleet-bundle-path) ""))
+      (hash-put! doc "trustBundlePath" (or (.get fleet-res trust-bundle-path) ""))
+      (hash-put! doc "dsseStatementPath" (or (.get fleet-res dsse-statement-path) ""))
+      (hash-put! doc "nextAction"
+                 (if (not all-ok?)
+                   "formal-verification-failed"
+                   (if stepup?
+                     "human-approver-cosign-required"
+                     "ready-for-policy-gate")))
+      (let ((rpath (path-expand "ai-diff-receipt.v1.json" resolved-out)))
+        (call-with-output-file rpath
+          (lambda (p) (write-json p doc) (newline p)))
+        (.o bind-these: #f
+            ok?: all-ok?
+            opts: (.get diff-res opts)
+            receipt-path: rpath
+            fleet-result: fleet-res
+            json-doc: doc))))))
+
 (def (main mode-or-output . rest)
   (def repo-root (path-normalize (path-expand "../.." (path-directory (this-source-file)))))
   (cond
+   ((equal? mode-or-output "--verify-ai-diff")
+    (unless (pair? rest)
+      (error "usage: --verify-ai-diff <output-dir> [<cache-dir>] [--json] [--require-no-stepup] [--base <ref>] [--file <path>]... [--role-binding <sid>:<role>:<auth>]... [--extra-step <sid>:<step>:<obl>:<method>:<claim>]..."))
+    (let* ((output-dir (car rest))
+           (tail1 (cdr rest))
+           (has-cache? (and (pair? tail1)
+                            (not (and (> (string-length (car tail1)) 0)
+                                      (char=? (string-ref (car tail1) 0) #\-)))))
+           (cache-dir (and has-cache? (car tail1)))
+           (flag-args (if has-cache? (cdr tail1) tail1))
+           (res (run-verify-ai-diff-pipeline repo-root output-dir cache-dir flag-args))
+           (opts (.get res opts))
+           (ok? (.get res ok?)))
+      (if (.get opts json?)
+        (begin
+          (write-json (current-output-port) (.get res json-doc))
+          (newline))
+        (displayln (if ok? "AI-DIFF-VERIFY-OK " "AI-DIFF-VERIFY-REFUSED ")
+                   "receipt=" (or (.get res receipt-path) "none")
+                   " nextAction=" (hash-get (.get res json-doc) "nextAction")
+                   " executed=" (hash-get (.get res json-doc) "executed")
+                   " reused=" (hash-get (.get res json-doc) "reused")))
+      (unless ok?
+        (exit 1))))
    ((equal? mode-or-output "--check-ai-diff")
     (let* ((res (run-check-ai-diff-verdict repo-root rest))
            (opts (.get res opts))
