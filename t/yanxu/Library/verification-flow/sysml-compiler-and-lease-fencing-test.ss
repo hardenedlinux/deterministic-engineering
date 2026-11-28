@@ -46,7 +46,7 @@
 
 (def verification-flow-sysml-compiler-and-lease-fencing-test
   (test-suite "Zero-glue SysML v2 -> Fun-Flow DAG compiler and 3rd subject lease-fencing-token"
-    (yuanxu-test-case/with MultiSubjectCompileBudget "live SysML v2 compiles all 24 subjects (51 engines) into valid Fun-Flow DAGs and manifests with zero Scheme glue"
+    (yuanxu-test-case/with MultiSubjectCompileBudget "live SysML v2 compiles all 26 subjects (55 engines) into valid Fun-Flow DAGs and manifests with zero Scheme glue"
       (def sysml-path
         (path-expand
           "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml"
@@ -54,7 +54,7 @@
       (def json-text (run-process (list "sysml" "-convert" "api-json" sysml-path)))
       (def parsed (call-with-input-string json-text (cut read-json <> object-as-hash: #t)))
       (def projected (sysml-api-json->governance-facts parsed))
-      (check-equal? (length (.get projected subject-specs)) 24)
+      (check-equal? (length (.get projected subject-specs)) 26)
       (for-each
         (lambda (spec-expect)
           (def skey (car spec-expect))
@@ -96,8 +96,26 @@
           (single-owner-graph-governance-confinement 2)
           (telemetry-watchdog-and-deck-vm-confinement 2)
           (process-signal-ledger-and-fanout-confinement 2)
-          (wasm-sandbox-confinement 2)))
+          (wasm-sandbox-confinement 2)
+          (slsa-hermetic-provenance 2)
+          (outbound-http-redirect-ssrf-confinement 2)))
       ;; Verify static change-impact slicing isolates AI-Security subjects cleanly!
+      (let* ((impact19
+              (changed-files->affected-frontier
+                projected
+                '("packages/quint-models/threat/supply-chain/slsa-hermetic-provenance/SlsaHermeticProvenance.qnt")))
+             (affected19 (filter (lambda (s) (pair? (.get s affected-steps))) impact19)))
+        (check-equal? (map (lambda (s) (.get s subject-key)) affected19)
+                      '(slsa-hermetic-provenance))
+        (check-equal? (.get (car affected19) affected-steps) '("slsaQuintTarget")))
+      (let* ((impact20
+              (changed-files->affected-frontier
+                projected
+                '("packages/quint-models/threat/protocol/outbound-http-redirect-ssrf-confinement/OutboundHttpRedirectSsrfConfinement.qnt")))
+             (affected20 (filter (lambda (s) (pair? (.get s affected-steps))) impact20)))
+        (check-equal? (map (lambda (s) (.get s subject-key)) affected20)
+                      '(outbound-http-redirect-ssrf-confinement))
+        (check-equal? (.get (car affected20) affected-steps) '("sm23QuintTarget")))
       (let* ((impact17
               (changed-files->affected-frontier
                 projected

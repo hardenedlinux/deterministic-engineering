@@ -1200,6 +1200,70 @@ package MultiMethodFunFlowArchitecture {
                 attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Budget.lean,packages/lean-models/DeterministicEngineering/Core/Order.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Threat/WasmSandboxConfinement.lean";
             }
         }
+
+        // Twenty-Fifth Zero-Glue Subject (Twentieth AI-Security Threat Subject — Supply-Chain Domain: SLSA L3/L4 Hermetic Provenance & Reproducible Build)
+        part slsaHermeticProvenance {
+            attribute subjectKey : String = "slsa-hermetic-provenance";
+            attribute identity : String = "threat.supply-chain.slsa-hermetic-provenance";
+            attribute tags : String = "threat,supply-chain,ai-security,slsa-provenance,anti-slopsquatting,defense.mutability.immutable-proof,hazard.compromised-builder-injection";
+            attribute factors : String = "slsa-hermetic-provenance,ai-ingests-untrusted-context,ai-executes-tools";
+            attribute aiControls : String = "context-integrity-or-ifc,tool-confinement";
+
+            part slsaQuintTarget {
+                attribute modelId : String = "threat.supply-chain.slsa-hermetic-provenance";
+                attribute quintFile : String = "packages/quint-models/threat/supply-chain/slsa-hermetic-provenance/SlsaHermeticProvenance.qnt";
+                attribute quintMain : String = "slsa_hermetic_provenance";
+                attribute itfSubdir : String = "slsa-hermetic-provenance";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "slsa-provenance-signed,slsa-source-digest-match,slsa-reproducible-match";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/supply-chain/slsa-hermetic-provenance/SlsaHermeticProvenance.qnt,packages/quint-models/threat/supply-chain/slsa-hermetic-provenance/objects.ss,packages/quint-models/threat/supply-chain/slsa-hermetic-provenance/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part slsaLeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.SupplyChainProvenance";
+                attribute refinesCore : String = "DeterministicEngineering.Core.Transport";
+                attribute transportContract : String = "ObjectContract.refine+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Engineering.SupplyChainProvenance.unpinned_dependency_always_refused,DeterministicEngineering.Engineering.SupplyChainProvenance.tombstoned_cve_dependency_always_refused,DeterministicEngineering.Engineering.SupplyChainProvenance.non_hermetic_network_build_always_refused,DeterministicEngineering.Engineering.SupplyChainProvenance.reproducible_build_mismatch_always_refused,DeterministicEngineering.Engineering.SupplyChainProvenance.forged_or_revoked_builder_signature_refused,DeterministicEngineering.Engineering.SupplyChainProvenance.mismatched_source_or_toolchain_digest_refused,DeterministicEngineering.Engineering.SupplyChainProvenance.hermetic_provenance_admit_sound_and_complete,DeterministicEngineering.Engineering.SupplyChainProvenance.supplyChainContract_preserves_rejection,DeterministicEngineering.Engineering.SupplyChainProvenance.baselineSupplyChainCertified,DeterministicEngineering.Engineering.SupplyChainProvenance.buildLogVerbosityTuning_preserves_certificate,DeterministicEngineering.Engineering.SupplyChainProvenance.disablingLockfilePinning_invalidates_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Engineering/SupplyChainProvenance.lean";
+            }
+        }
+
+        // Twenty-Sixth Zero-Glue Subject (Twenty-First AI-Security Threat Subject — Protocol Domain: SM23 ADV-L4 Outbound HTTP Redirect, SSRF & Credential Confinement)
+        part outboundHttpRedirectSsrfConfinement {
+            attribute subjectKey : String = "outbound-http-redirect-ssrf-confinement";
+            attribute identity : String = "threat.protocol.outbound-http-redirect-ssrf-confinement";
+            attribute tags : String = "threat,protocol,ai-security,ssrf-confinement,http-redirect-ban,defense.mutability.immutable-proof,hazard.ssrf-credential-exfil";
+            attribute factors : String = "outbound-http-redirect-ssrf-confinement,ai-executes-tools,ai-ingests-untrusted-context";
+            attribute aiControls : String = "tool-confinement,context-integrity-or-ifc";
+
+            part sm23QuintTarget {
+                attribute modelId : String = "threat.protocol.outbound-http-redirect-ssrf-confinement";
+                attribute quintFile : String = "packages/quint-models/threat/protocol/outbound-http-redirect-ssrf-confinement/OutboundHttpRedirectSsrfConfinement.qnt";
+                attribute quintMain : String = "protocol_outbound_http_redirect_ssrf_confinement";
+                attribute itfSubdir : String = "outbound-http-redirect-ssrf-confinement";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "disable-http-redirects,enforce-https-for-remote-credentials,confine-download-url-origin,reject-userinfo-and-symlink-serve";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/protocol/outbound-http-redirect-ssrf-confinement/OutboundHttpRedirectSsrfConfinement.qnt,packages/quint-models/threat/protocol/outbound-http-redirect-ssrf-confinement/objects.ss,packages/quint-models/threat/protocol/outbound-http-redirect-ssrf-confinement/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part sm23LeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.OutboundHttpRedirectSsrfConfinement";
+                attribute refinesCore : String = "DeterministicEngineering.Engineering.SandboxSymlinkArchiveConfinement";
+                attribute transportContract : String = "ObjectContract.refine+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Engineering.OutboundHttpRedirectSsrfConfinement.sm23_no_redirect_blocks_all_3xx_ssrf,DeterministicEngineering.Engineering.OutboundHttpRedirectSsrfConfinement.sm23_remote_cleartext_credential_leak_impossible,DeterministicEngineering.Engineering.OutboundHttpRedirectSsrfConfinement.sm23_download_url_origin_confinement_blocks_ssrf_and_downgrade,DeterministicEngineering.Engineering.OutboundHttpRedirectSsrfConfinement.sm23_userinfo_and_control_char_rejection_prevents_authority_spoof,DeterministicEngineering.Engineering.OutboundHttpRedirectSsrfConfinement.sm23_lstat_serve_policy_blocks_symlink_file_disclosure,DeterministicEngineering.Engineering.OutboundHttpRedirectSsrfConfinement.sm23_compound_adv_l4_zero_escape_invariant,DeterministicEngineering.Engineering.OutboundHttpRedirectSsrfConfinement.sm23_compound_adv_l4_blocks_every_hostile_probe,DeterministicEngineering.Engineering.OutboundHttpRedirectSsrfConfinement.sm23_gentle_tier_rejected_by_outbound_http_gate,DeterministicEngineering.Engineering.OutboundHttpRedirectSsrfConfinement.sm23_weaver_mygo_preserves_rejection,DeterministicEngineering.Engineering.OutboundHttpRedirectSsrfConfinement.sm23_weaver_mygo_accepts_iff,DeterministicEngineering.Engineering.OutboundHttpRedirectSsrfConfinement.baselineWeaverHttpCertified,DeterministicEngineering.Engineering.OutboundHttpRedirectSsrfConfinement.httpObligationUntouchedByTimeoutTuning,DeterministicEngineering.Engineering.OutboundHttpRedirectSsrfConfinement.sm23_timeout_tuning_certified,DeterministicEngineering.Engineering.OutboundHttpRedirectSsrfConfinement.sm23_security_regressions_invalidate_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean,packages/lean-models/DeterministicEngineering/Engineering/OutboundHttpRedirectSsrfConfinement.lean";
+            }
+        }
     }
 
     // ── 12. Architectural, Cross-Method, and Requirement Dependencies ──
@@ -1306,6 +1370,13 @@ package MultiMethodFunFlowArchitecture {
     dependency 'wasm-lean-refines-budget' from system::wasmSandboxConfinement::wasmLeanPooTarget to system::leanModels::core::budget;
     dependency 'wasm-lean-refines-order' from system::wasmSandboxConfinement::wasmLeanPooTarget to system::leanModels::core::order;
     dependency 'wasm-lean-refines-transport' from system::wasmSandboxConfinement::wasmLeanPooTarget to system::leanModels::core::transport;
+
+    dependency 'slsa-quint-source' from system::slsaHermeticProvenance::slsaQuintTarget to system::quintModels;
+    dependency 'slsa-lean-source' from system::slsaHermeticProvenance::slsaLeanPooTarget to system::leanModels;
+    dependency 'slsa-lean-refines-transport' from system::slsaHermeticProvenance::slsaLeanPooTarget to system::leanModels::core::transport;
+
+    dependency 'sm23-quint-source' from system::outboundHttpRedirectSsrfConfinement::sm23QuintTarget to system::quintModels;
+    dependency 'sm23-lean-source' from system::outboundHttpRedirectSsrfConfinement::sm23LeanPooTarget to system::leanModels;
 
     // Cross-method edges enforced by MR03 & MR04 (zero model duplication)
     dependency 'pt-mbt-itf-edge' from system::processTreeReclamation::rustOracleTarget::traceIn to system::processTreeReclamation::quintTarget::traceOut;

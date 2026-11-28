@@ -267,4 +267,6 @@
       (check (and (member '("threat.execution.telemetry-watchdog-and-deck-vm-confinement") admitted-subjs) #t) => #t)
       (check (and (member '("threat.execution.process-signal-ledger-and-fanout-confinement") admitted-subjs) #t) => #t)
       (check (and (member '("threat.execution.wasm-sandbox-confinement") admitted-subjs) #t) => #t)
-      (check-equal? (length (.get projected subject-specs)) 24))))
+      (check (and (member '("threat.supply-chain.slsa-hermetic-provenance") admitted-subjs) #t) => #t)
+      (check (and (member '("threat.protocol.outbound-http-redirect-ssrf-confinement") admitted-subjs) #t) => #t)
+      (check-equal? (length (.get projected subject-specs)) 26))))
