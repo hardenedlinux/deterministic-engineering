@@ -44,7 +44,8 @@ export type AgingMechanism =
   | 'SM35-graph-witness-harness-confinement'
   | 'SM36-telemetry-watchdog-deck-vm-confinement'
   | 'SM37-process-signal-ledger-fanout-confinement'
-  | 'SM38-defense-pillar-crypto-state-confinement';
+  | 'SM38-defense-pillar-crypto-state-confinement'
+  | 'SM39-tui-config-supervisor-probe-confinement';
 
 export interface AgingFinding {
   ruleId: string;
@@ -2497,6 +2498,125 @@ function auditRust(clean: string): AgingFinding[] {
     }
   }
 
+  // 90. Rust TUI Config::load reads TOML unboundedly / follows symlinks, catalog_with omits timeout ceiling, OR ModelProfile::route reads arbitrary ambient credential_env (ADV-L4, SM39).
+  const tuiCfgStructPresent =
+    /\bpub\s+struct\s+Config\b/.test(clean) &&
+    /\bcredential_env\s*:\s*String\b/.test(clean) &&
+    /\btimeout_seconds\s*:\s*u64\b/.test(clean);
+  if (tuiCfgStructPresent) {
+    const cfgImplMatch = /\bimpl\s+Config\b/.exec(clean);
+    if (cfgImplMatch) {
+      const implBody = extractBraceBlock(clean, cfgImplMatch.index);
+      if (
+        /fs::read_to_string/.test(implBody) &&
+        !/\b(?:MAX_TUI_CONFIG_BYTES|symlink_metadata|O_NOFOLLOW)\b/.test(implBody)
+      ) {
+        findings.push({
+          ruleId: 'rust-tui-config-unbounded-read-or-unsafe-cred-env',
+          mechanism: 'SM39-tui-config-supervisor-probe-confinement',
+          language: 'rust',
+          line: lineOfIndex(clean, cfgImplMatch.index),
+          message: 'TUI Config::load performs unbounded symlink-following fs::read_to_string without MAX_TUI_CONFIG_BYTES cap or symlink refusal (ADV-L4, SM39).',
+        });
+      }
+      if (
+        /Duration::from_secs\s*\(\s*self\.timeout_seconds\s*\)/.test(implBody) &&
+        !/\b(?:MAX_TUI_TIMEOUT_SECONDS|validate_timeout_seconds)\b/.test(implBody)
+      ) {
+        findings.push({
+          ruleId: 'rust-tui-config-unbounded-read-or-unsafe-cred-env',
+          mechanism: 'SM39-tui-config-supervisor-probe-confinement',
+          language: 'rust',
+          line: lineOfIndex(clean, cfgImplMatch.index),
+          message: 'TUI Config::catalog_with passes unvalidated self.timeout_seconds (0 or multi-year) directly to Client::new without MAX_TUI_TIMEOUT_SECONDS bounds (ADV-L4, SM39).',
+        });
+      }
+    }
+    const profileImplMatch = /\bimpl\s+ModelProfile\b/.exec(clean);
+    if (profileImplMatch) {
+      const implBody = extractBraceBlock(clean, profileImplMatch.index);
+      if (
+        /read_env\s*\(\s*&self\.credential_env\s*\)/.test(implBody) &&
+        !/\b(?:validate_tui_credential_env|validate_credential_env_name|is_safe_credential_env)\b/.test(implBody)
+      ) {
+        findings.push({
+          ruleId: 'rust-tui-config-unbounded-read-or-unsafe-cred-env',
+          mechanism: 'SM39-tui-config-supervisor-probe-confinement',
+          language: 'rust',
+          line: lineOfIndex(clean, profileImplMatch.index),
+          message: 'TUI ModelProfile::route reads self.credential_env without rejecting ambient OS/loader variables (PATH/HOME/LD_PRELOAD/SSH_AUTH_SOCK) (ADV-L4, SM39).',
+        });
+      }
+    }
+  }
+
+  // 91. Rust spawn_managed_asp_gateway inherits ambient env without .env_clear(), omits boot timeout, or omits strict loopback endpoint validation; discover_asp_gateway_binary searches relative PATH (ADV-L4, SM39).
+  const aspSpawnMatch = /\bfn\s+spawn_managed_asp_gateway(?:_with_timeout)?\s*\([^)]*\)/.exec(clean);
+  if (aspSpawnMatch) {
+    const fnBody = extractBraceBlock(clean, aspSpawnMatch.index);
+    const hasEnvScrub = /\.env_clear\s*\(\s*\)|\bapply_scrubbed_asp_env\b/.test(fnBody);
+    const hasBootTimeout = /\b(?:ASP_GATEWAY_BOOT_TIMEOUT|read_bounded_boot_line_with_timeout|boot_timeout)\b/.test(fnBody);
+    const validatesEndpoint = /\bvalidate_managed_asp_endpoint\b/.test(fnBody);
+    if (!hasEnvScrub || !hasBootTimeout || !validatesEndpoint) {
+      findings.push({
+        ruleId: 'rust-asp-supervisor-unscrubbed-env-hang-or-ssrf',
+        mechanism: 'SM39-tui-config-supervisor-probe-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, aspSpawnMatch.index),
+        message: 'spawn_managed_asp_gateway omits .env_clear() secret scrubbing, bounded boot timeout, or strict loopback host:port validation (ADV-L4, SM39).',
+      });
+    }
+  }
+  const aspDiscoverMatch = /\bfn\s+discover_asp_gateway_binary\s*\([^)]*\)/.exec(clean);
+  if (aspDiscoverMatch) {
+    const fnBody = extractBraceBlock(clean, aspDiscoverMatch.index);
+    if (/env::split_paths/.test(fnBody) && !/\.is_absolute\s*\(\s*\)/.test(fnBody)) {
+      findings.push({
+        ruleId: 'rust-asp-supervisor-unscrubbed-env-hang-or-ssrf',
+        mechanism: 'SM39-tui-config-supervisor-probe-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, aspDiscoverMatch.index),
+        message: 'discover_asp_gateway_binary searches relative PATH entries (such as "."), enabling untrusted-repo ./asp-gateway hijack (ADV-L4, SM39).',
+      });
+    }
+  }
+
+  // 92. Rust RuntimeProbe::start opens MARLIN_TUI_RUNTIME_METRICS_FILE via File::create (symlink overwrite) or writes CSV rows indefinitely without MAX_RUNTIME_PROBE_BYTES (ADV-L4, SM39).
+  const probeImplMatch = /\bimpl\s+RuntimeProbe\b/.exec(clean);
+  if (probeImplMatch) {
+    const implBody = extractBraceBlock(clean, probeImplMatch.index);
+    const usesRawCreate = /File::create\s*\(/.test(implBody);
+    const hasNoFollowAndCap =
+      /\b(?:open_confined_probe_file|O_NOFOLLOW)\b/.test(implBody) &&
+      /\bMAX_RUNTIME_PROBE_BYTES\b/.test(implBody);
+    if (usesRawCreate || !hasNoFollowAndCap) {
+      findings.push({
+        ruleId: 'rust-runtime-probe-symlink-or-unbounded-file',
+        mechanism: 'SM39-tui-config-supervisor-probe-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, probeImplMatch.index),
+        message: 'RuntimeProbe opens metrics output with symlink-following File::create or omits MAX_RUNTIME_PROBE_BYTES cumulative write cap (ADV-L4, SM39).',
+      });
+    }
+  }
+
+  // 93. Rust bootstrap::resolve_local_scheme_prefix prioritizes untrusted cwd/scheme over binary-owned repo or follows symlinks (ADV-L4, SM39).
+  const bootstrapMatch = /\bfn\s+resolve_local_scheme_prefix\s*\([^)]*\)/.exec(clean);
+  if (bootstrapMatch) {
+    const fnBody = extractBraceBlock(clean, bootstrapMatch.index);
+    const cwdFirst = /let\s+mut\s+candidates\s*=\s*vec!\[\s*cwd\.join\s*\(\s*"scheme"\s*\)\s*\]/.test(fnBody);
+    const checksSymlink = /\b(?:symlink_metadata|is_non_symlink_scheme_package)\b/.test(clean);
+    if (cwdFirst || !checksSymlink) {
+      findings.push({
+        ruleId: 'rust-bootstrap-cwd-precedence-or-symlink-scheme',
+        mechanism: 'SM39-tui-config-supervisor-probe-confinement',
+        language: 'rust',
+        line: lineOfIndex(clean, bootstrapMatch.index),
+        message: 'resolve_local_scheme_prefix prioritizes untrusted CWD ./scheme ahead of binary-owned repository or follows symlinked Scheme prefixes (ADV-L4, SM39).',
+      });
+    }
+  }
+
   return findings;
 }
 
@@ -2949,6 +3069,21 @@ function auditTypeScript(clean: string): AgingFinding[] {
         language: 'ts',
         line: lineOfIndex(clean, tsMerkleMatch.index),
         message: 'computeShardMerkleRoot duplicates trailing odd Merkle nodes (CVE-2012-2459 second-preimage malleability) instead of RFC 6962 largest-power-of-two splitting (ADV-L4, SM38).',
+      });
+    }
+  }
+
+  // 32. TS loadTuiConfig reads ambient OS/loader credentialEnv without allowlist/denylist validation, OR discoverGatewayBinary searches relative PATH entries (ADV-L4, SM39).
+  const tsTuiCfgMatch = /\bfunction\s+resolveTuiCredentialEnv\s*\([^)]*\)(?:\s*:\s*[^{]+)?\{/.exec(clean);
+  if (tsTuiCfgMatch) {
+    const fnBody = extractBraceBlock(clean, tsTuiCfgMatch.index + tsTuiCfgMatch[0].length - 1);
+    if (/process\.env\[/.test(fnBody) && !/\b(?:isSafeCredentialEnv|AMBIENT_SYSTEM_ENV|LD_PRELOAD)\b/.test(fnBody)) {
+      findings.push({
+        ruleId: 'ts-tui-config-ambient-cred-or-relative-path-bin',
+        mechanism: 'SM39-tui-config-supervisor-probe-confinement',
+        language: 'ts',
+        line: lineOfIndex(clean, tsTuiCfgMatch.index),
+        message: 'resolveTuiCredentialEnv reads process.env[name] without rejecting ambient OS/loader variables (PATH/HOME/LD_PRELOAD) (ADV-L4, SM39).',
       });
     }
   }

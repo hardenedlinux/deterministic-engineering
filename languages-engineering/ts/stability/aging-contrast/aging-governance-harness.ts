@@ -296,6 +296,14 @@ const MECHANISM_DIRECTIVES: Record<AgingMechanism, AgingRemediationDirective> = 
     antiEvasionWarning:
       'Do NOT evade by checking only epoch == active_epoch in shred_retired_epoch, comparing forbidden secret fields or builder/org identities case-sensitively without trim, calling map.insert() blindly over existing pins or frozen treaties, accepting prev.tree_size == 0 without verifying prev.root_hash == SHA256(""), or duplicating trailing odd Merkle leaves.',
   },
+  'SM39-tui-config-supervisor-probe-confinement': {
+    mechanism: 'SM39-tui-config-supervisor-probe-confinement',
+    studyRef: 'docs/40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org#study4005-taxonomy',
+    c2SteadyReplacement:
+      'Load TUI TOML configs through non-symlink O_NOFOLLOW 256 KiB bounded reads, validate timeout_seconds in 1..=600, reject ambient OS/loader/SSH/Git credential_env names and invalid tui_ui_package paths/modules; spawn asp-gateway with .env_clear() minimal toolchain allowlist, a bounded boot timeout that kills the entire child process group and joins the reader thread, strict http://127.0.0.1:<port> / http://localhost:<port> endpoint validation (zero @/controls/path), and absolute-PATH-only binary discovery; open MARLIN_TUI_RUNTIME_METRICS_FILE with non-symlink O_NOFOLLOW (0o600) and a hard 4 MiB cumulative byte ceiling; and prioritize binary-owned repo Scheme prefixes ahead of untrusted CWD while rejecting symlinked scheme/.gerbil/init.ssi paths.',
+    antiEvasionWarning:
+      'Do NOT evade by keeping unbounded fs::read_to_string or ambient credential_env lookups in Config::load, spawning asp-gateway without .env_clear() or boot timeout, trusting child boot JSON endpoints containing @-userinfo, opening probe logs with File::create without O_NOFOLLOW or byte cap, or checking cwd/scheme before the binary repository.',
+  },
 };
 
 export function getAgingRemediation(finding: AgingFinding): AgingRemediationDirective {

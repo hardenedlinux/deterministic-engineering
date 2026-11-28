@@ -4064,10 +4064,168 @@ export function computeShardMerkleRoot(leaves: string[]): string {
   return hashNode(computeShardMerkleRoot(leaves.slice(0, k)), computeShardMerkleRoot(leaves.slice(k)));
 }`,
   },
+  // --- SM39: ADV-L4 TUI config, ASP supervisor, diagnostic probe & bootstrap confinement (SA259-SA266) ---
+  {
+    id: 'SA259',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-tui-config-unbounded-read-or-unsafe-cred-env',
+    source: `
+pub struct Config { pub credential_env: String, pub timeout_seconds: u64 }
+impl Config {
+  pub fn load(path: &Path) -> Result<Self, String> {
+    let content = fs::read_to_string(path).map_err(|e| e.to_string())?;
+    toml::from_str(&content).map_err(|e| e.to_string())
+  }
+  pub(crate) fn catalog_with(&self, read_env: impl Fn(&str) -> Option<String>) -> Result<(), String> {
+    let _client = Client::new(Duration::from_secs(self.timeout_seconds), 8 * 1024 * 1024);
+    let _ = read_env;
+    Ok(())
+  }
+}
+impl ModelProfile {
+  fn route(&self, read_env: &impl Fn(&str) -> Option<String>) -> Option<String> {
+    read_env(&self.credential_env)
+  }
+}`,
+  },
+  {
+    id: 'SA260',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-asp-supervisor-unscrubbed-env-hang-or-ssrf',
+    source: `
+fn discover_asp_gateway_binary() -> Option<PathBuf> {
+  for dir in env::split_paths(&env::var_os("PATH")?) {
+    let c = dir.join("asp-gateway");
+    if c.is_file() { return Some(c); }
+  }
+  None
+}
+fn spawn_managed_asp_gateway(bin: &Path) -> Option<AspGatewaySupervisor> {
+  let mut cmd = Command::new(bin);
+  let child = cmd.stdout(Stdio::piped()).spawn().ok()?;
+  let line = read_bounded_boot_line(child.stdout?, MAX_ASP_BOOT_LINE_BYTES)?;
+  let ep = AspForwardingEndpoint::new(line.trim()).ok()?;
+  Some(AspGatewaySupervisor { ep })
+}`,
+  },
+  {
+    id: 'SA261',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-runtime-probe-symlink-or-unbounded-file',
+    source: `
+impl RuntimeProbe {
+  pub(super) fn start(path: PathBuf) {
+    let Ok(mut file) = std::fs::File::create(path) else { return; };
+    let _ = writeln!(file, "1,2,3,4");
+  }
+}`,
+  },
+  {
+    id: 'SA262',
+    language: 'rust',
+    expectedPass: false,
+    expectedRuleId: 'rust-bootstrap-cwd-precedence-or-symlink-scheme',
+    source: `
+fn resolve_local_scheme_prefix(cwd: &Path, exe: Option<&Path>) -> Option<PathBuf> {
+  let mut candidates = vec![cwd.join("scheme")];
+  if let Some(root) = exe.and_then(|p| p.parent()) { candidates.push(root.join("scheme")); }
+  candidates.into_iter().find(|p| p.join("gerbil.pkg").is_file())
+}`,
+  },
+  {
+    id: 'SA263',
+    language: 'ts',
+    expectedPass: false,
+    expectedRuleId: 'ts-tui-config-ambient-cred-or-relative-path-bin',
+    source: `
+export function resolveTuiCredentialEnv(name: string): string | undefined {
+  return process.env[name];
+}`,
+  },
+  {
+    id: 'SA264',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+pub struct Config { pub credential_env: String, pub timeout_seconds: u64 }
+impl Config {
+  pub fn load(path: &Path) -> Result<Self, String> {
+    let content = read_bounded_non_symlink(path, MAX_TUI_CONFIG_BYTES)?;
+    toml::from_str(&content).map_err(|e| e.to_string())
+  }
+  pub(crate) fn catalog_with(&self, read_env: impl Fn(&str) -> Option<String>) -> Result<(), String> {
+    validate_timeout_seconds(self.timeout_seconds)?;
+    let _client = Client::new(Duration::from_secs(self.timeout_seconds), 8 * 1024 * 1024);
+    let _ = read_env;
+    Ok(())
+  }
+}
+impl ModelProfile {
+  fn route(&self, read_env: &impl Fn(&str) -> Option<String>) -> Result<Option<String>, String> {
+    validate_tui_credential_env(&self.credential_env)?;
+    Ok(read_env(&self.credential_env))
+  }
+}`,
+  },
+  {
+    id: 'SA265',
+    language: 'rust',
+    expectedPass: true,
+    source: `
+fn discover_asp_gateway_binary() -> Option<PathBuf> {
+  for dir in env::split_paths(&env::var_os("PATH")?) {
+    if !dir.is_absolute() { continue; }
+    let c = dir.join("asp-gateway");
+    if c.is_file() { return Some(c); }
+  }
+  None
+}
+fn spawn_managed_asp_gateway(bin: &Path) -> Option<AspGatewaySupervisor> {
+  let mut cmd = Command::new(bin);
+  apply_scrubbed_asp_env(&mut cmd);
+  let child = cmd.stdout(Stdio::piped()).spawn().ok()?;
+  let line = read_bounded_boot_line_with_timeout(child.stdout?, MAX_ASP_BOOT_LINE_BYTES, ASP_GATEWAY_BOOT_TIMEOUT)?;
+  let ep = validate_managed_asp_endpoint(line.trim())?;
+  Some(AspGatewaySupervisor { ep })
+}
+impl RuntimeProbe {
+  pub(super) fn start(path: PathBuf) {
+    let Ok(mut file) = open_confined_probe_file(&path) else { return; };
+    let mut written = 0usize;
+    let row = "1,2,3,4\n";
+    if written.saturating_add(row.len()) <= MAX_RUNTIME_PROBE_BYTES {
+      let _ = file.write_all(row.as_bytes());
+      written += row.len();
+    }
+  }
+}
+fn is_non_symlink_scheme_package(prefix: &Path) -> bool {
+  std::fs::symlink_metadata(prefix).is_ok_and(|m| !m.file_type().is_symlink())
+}
+fn resolve_local_scheme_prefix(cwd: &Path, exe: Option<&Path>) -> Option<PathBuf> {
+  let mut candidates = Vec::new();
+  if let Some(root) = exe.and_then(|p| p.parent()) { candidates.push(root.join("scheme")); }
+  candidates.push(cwd.join("scheme"));
+  candidates.into_iter().find(|p| is_non_symlink_scheme_package(p))
+}`,
+  },
+  {
+    id: 'SA266',
+    language: 'ts',
+    expectedPass: true,
+    source: `
+export function resolveTuiCredentialEnv(name: string): string | undefined {
+  if (!isSafeCredentialEnv(name)) throw new Error('ambient system env forbidden');
+  return process.env[name];
+}`,
+  },
 ];
 
-describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA258)', () => {
-  test('achieves 258/258 exact independent-gold match (tp=149, tn=109, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
+describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA266)', () => {
+  test('achieves 266/266 exact independent-gold match (tp=154, tn=112, fp=0, fn=0) across Go, Rust, TS, C, C++', () => {
     let tp = 0;
     let tn = 0;
     let fp = 0;
@@ -4090,7 +4248,7 @@ describe('Multi-Language Software Aging AST Auditor Benchmark (SA01-SA258)', () 
       }
     }
 
-    expect({tp, tn, fp, fn}).toEqual({tp: 149, tn: 109, fp: 0, fn: 0});
+    expect({tp, tn, fp, fn}).toEqual({tp: 154, tn: 112, fp: 0, fn: 0});
   });
 
   test('clean Rust deterministic buffer pool & bounded retry passes with 0 findings', () => {
