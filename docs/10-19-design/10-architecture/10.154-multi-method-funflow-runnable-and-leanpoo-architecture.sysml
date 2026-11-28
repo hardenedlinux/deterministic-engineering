@@ -876,6 +876,71 @@ package MultiMethodFunFlowArchitecture {
                 attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean,packages/lean-models/DeterministicEngineering/Engineering/GitopsSubprocessConfinementAndArgInjection.lean";
             }
         }
+
+        // Fifteenth Zero-Glue Subject (Tenth AI-Security Threat Subject: SM26 ADV-L4 Control-Plane Auth, RPC E-Stop & Release-Gate Shell Scrubbing)
+        part controlPlaneAuthGovernanceConfinement {
+            attribute subjectKey : String = "control-plane-auth-and-governance-confinement";
+            attribute identity : String = "threat.execution.control-plane-auth-and-governance-confinement";
+            attribute tags : String = "threat,execution,ai-security,control-plane-auth,estop,defense.mutability.immutable-proof,hazard.shadow-auth-estop-bypass";
+            attribute factors : String = "control-plane-auth-and-governance-confinement,ai-mutates-host-or-governance,ai-executes-tools";
+            attribute aiControls : String = "human-stepup-and-estop,tool-confinement";
+            attribute aiRoleBindings : String = "human-approver:human-approver,ai-agent:ai-proposer";
+
+            part sm26QuintTarget {
+                attribute modelId : String = "threat.execution.control-plane-auth-and-governance-confinement";
+                attribute quintFile : String = "packages/quint-models/threat/execution/control-plane-auth-and-governance-confinement/ControlPlaneAuthAndGovernanceConfinement.qnt";
+                attribute quintMain : String = "execution_control_plane_auth_and_governance_confinement";
+                attribute itfSubdir : String = "control-plane-auth-and-governance-confinement";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "enforce-canonical-ct-auth-entrypoint,enforce-control-plane-rpc-estop,scrub-and-bound-release-gate-shell,reject-empty-bearer-credential";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/execution/control-plane-auth-and-governance-confinement/ControlPlaneAuthAndGovernanceConfinement.qnt,packages/quint-models/threat/execution/control-plane-auth-and-governance-confinement/objects.ss,packages/quint-models/threat/execution/control-plane-auth-and-governance-confinement/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part sm26LeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.ControlPlaneAuthAndGovernanceConfinement";
+                attribute refinesCore : String = "DeterministicEngineering.Engineering.SandboxSymlinkArchiveConfinement";
+                attribute transportContract : String = "ObjectContract.refine+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Engineering.ControlPlaneAuthAndGovernanceConfinement.sm26_empty_bearer_payload_rejected_fail_closed,DeterministicEngineering.Engineering.ControlPlaneAuthAndGovernanceConfinement.sm26_non_loopback_default_token_rejected,DeterministicEngineering.Engineering.ControlPlaneAuthAndGovernanceConfinement.sm26_estop_blocks_all_mutating_control_plane_surfaces,DeterministicEngineering.Engineering.ControlPlaneAuthAndGovernanceConfinement.sm26_release_shell_scrubs_host_secrets,DeterministicEngineering.Engineering.ControlPlaneAuthAndGovernanceConfinement.sm26_defective_configs_expose_live_exploits,DeterministicEngineering.Engineering.ControlPlaneAuthAndGovernanceConfinement.sm26_step_preserves_safety,DeterministicEngineering.Engineering.ControlPlaneAuthAndGovernanceConfinement.sm26_compound_adv_l4_zero_bypass_invariant,DeterministicEngineering.Engineering.ControlPlaneAuthAndGovernanceConfinement.sm26_marlin_control_plane_refinement_laws,DeterministicEngineering.Engineering.ControlPlaneAuthAndGovernanceConfinement.sm26_baseline_certified,DeterministicEngineering.Engineering.ControlPlaneAuthAndGovernanceConfinement.sm26_obligation_untouched_by_output_cap_tuning,DeterministicEngineering.Engineering.ControlPlaneAuthAndGovernanceConfinement.sm26_output_cap_tuning_reuses_and_closes_certificate,DeterministicEngineering.Engineering.ControlPlaneAuthAndGovernanceConfinement.sm26_regressions_invalidate_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean,packages/lean-models/DeterministicEngineering/Engineering/ControlPlaneAuthAndGovernanceConfinement.lean";
+            }
+        }
+
+        // Sixteenth Zero-Glue Subject (Eleventh AI-Security Threat Subject: SM33 ADV-L4 Hook Policy Dispatch, Trust-Floor Immutability & SubAgent Protocol Confinement)
+        part hookPolicyProtocolConfinement {
+            attribute subjectKey : String = "hook-policy-and-protocol-contract-confinement";
+            attribute identity : String = "threat.execution.hook-policy-and-protocol-contract-confinement";
+            attribute tags : String = "threat,execution,ai-security,hook-policy,subagent-protocol,defense.mutability.immutable-proof,hazard.hook-shadow-trust-masking";
+            attribute factors : String = "hook-policy-and-protocol-contract-confinement,ai-executes-tools,ai-delegates-authority";
+            attribute aiControls : String = "tool-confinement,monotonic-attenuation,revocation-currentness";
+
+            part sm33QuintTarget {
+                attribute modelId : String = "threat.execution.hook-policy-and-protocol-contract-confinement";
+                attribute quintFile : String = "packages/quint-models/threat/execution/hook-policy-and-protocol-contract-confinement/HookPolicyAndProtocolContractConfinement.qnt";
+                attribute quintMain : String = "execution_hook_policy_and_protocol_contract_confinement";
+                attribute itfSubdir : String = "hook-policy-and-protocol-contract-confinement";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "forbid-toml-unknown-field-failopen-or-unbounded-config,forbid-duplicate-hook-shadow-or-unbounded-async-fanout,forbid-trust-rejection-masking-or-dynamic-action-flood,forbid-subagent-contradiction-serde-bypass-or-endpoint-injection";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/execution/hook-policy-and-protocol-contract-confinement/HookPolicyAndProtocolContractConfinement.qnt,packages/quint-models/threat/execution/hook-policy-and-protocol-contract-confinement/objects.ss,packages/quint-models/threat/execution/hook-policy-and-protocol-contract-confinement/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part sm33LeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.HookPolicyAndProtocolContractConfinement";
+                attribute refinesCore : String = "DeterministicEngineering.Engineering.SandboxSymlinkArchiveConfinement";
+                attribute transportContract : String = "ObjectContract.refine+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Engineering.HookPolicyAndProtocolContractConfinement.sm33_hook_toml_config_fail_closed,DeterministicEngineering.Engineering.HookPolicyAndProtocolContractConfinement.sm33_rust_trust_rejection_immutable_under_extension,DeterministicEngineering.Engineering.HookPolicyAndProtocolContractConfinement.sm33_subagent_policy_refuses_contradiction_zero_budget_and_runaway,DeterministicEngineering.Engineering.HookPolicyAndProtocolContractConfinement.sm33_protocol_identifier_refuses_blank_control_and_meta,DeterministicEngineering.Engineering.HookPolicyAndProtocolContractConfinement.sm33_strict_admission_eliminates_all_exploits,DeterministicEngineering.Engineering.HookPolicyAndProtocolContractConfinement.sm33_gentle_pressure_rejected,DeterministicEngineering.Engineering.HookPolicyAndProtocolContractConfinement.sm33_defective_configs_expose_live_exploits,DeterministicEngineering.Engineering.HookPolicyAndProtocolContractConfinement.sm33_marlin_contract_refinement_laws,DeterministicEngineering.Engineering.HookPolicyAndProtocolContractConfinement.sm33_baseline_certified,DeterministicEngineering.Engineering.HookPolicyAndProtocolContractConfinement.sm33_obligation_untouched_by_concurrency_tuning,DeterministicEngineering.Engineering.HookPolicyAndProtocolContractConfinement.sm33_concurrency_tuning_reuses_and_closes_certificate,DeterministicEngineering.Engineering.HookPolicyAndProtocolContractConfinement.sm33_regressions_invalidate_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean,packages/lean-models/DeterministicEngineering/Engineering/HookPolicyAndProtocolContractConfinement.lean";
+            }
+        }
     }
 
     // ── 12. Architectural, Cross-Method, and Requirement Dependencies ──
@@ -949,6 +1014,12 @@ package MultiMethodFunFlowArchitecture {
 
     dependency 'sm32-quint-source' from system::gitopsSubprocessConfinement::sm32QuintTarget to system::quintModels;
     dependency 'sm32-lean-source' from system::gitopsSubprocessConfinement::sm32LeanPooTarget to system::leanModels;
+
+    dependency 'sm26-quint-source' from system::controlPlaneAuthGovernanceConfinement::sm26QuintTarget to system::quintModels;
+    dependency 'sm26-lean-source' from system::controlPlaneAuthGovernanceConfinement::sm26LeanPooTarget to system::leanModels;
+
+    dependency 'sm33-quint-source' from system::hookPolicyProtocolConfinement::sm33QuintTarget to system::quintModels;
+    dependency 'sm33-lean-source' from system::hookPolicyProtocolConfinement::sm33LeanPooTarget to system::leanModels;
 
     // Cross-method edges enforced by MR03 & MR04 (zero model duplication)
     dependency 'pt-mbt-itf-edge' from system::processTreeReclamation::rustOracleTarget::traceIn to system::processTreeReclamation::quintTarget::traceOut;

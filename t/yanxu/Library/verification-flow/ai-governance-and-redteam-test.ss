@@ -86,7 +86,7 @@
       (def res (reason-ai-security-governance ai-sources))
       (check-equal? ((.ref res 'rows-of) 'ar_finding) '())
       (def admitted ((.ref res 'rows-of) 'ai_governance_admitted))
-      (check-equal? (length admitted) 14)
+      (check-equal? (length admitted) 16)
       (for-each
         (lambda (sid)
           (check (and (member (list sid) admitted) #t) => #t))
@@ -98,7 +98,9 @@
           "threat.execution.agent-ifc-capability"
           "threat.execution.agent-tool-circuit-breaker"
           "threat.zero-trust.shared-context-governance"
-          "threat.execution.gitops-subprocess-confinement-and-arg-injection")))
+          "threat.execution.gitops-subprocess-confinement-and-arg-injection"
+          "threat.execution.control-plane-auth-and-governance-confinement"
+          "threat.execution.hook-policy-and-protocol-contract-confinement")))
 
     (yuanxu-test-case "AI-SE Deterministic Change-Admission & Proof-Transport Gate separates safe parameter tuning from security-boundary regressions"
       (def sysml-path

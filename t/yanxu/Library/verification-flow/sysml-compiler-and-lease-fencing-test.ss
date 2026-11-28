@@ -46,7 +46,7 @@
 
 (def verification-flow-sysml-compiler-and-lease-fencing-test
   (test-suite "Zero-glue SysML v2 -> Fun-Flow DAG compiler and 3rd subject lease-fencing-token"
-    (yuanxu-test-case/with MultiSubjectCompileBudget "live SysML v2 compiles all 14 subjects (31 engines) into valid Fun-Flow DAGs and manifests with zero Scheme glue"
+    (yuanxu-test-case/with MultiSubjectCompileBudget "live SysML v2 compiles all 16 subjects (35 engines) into valid Fun-Flow DAGs and manifests with zero Scheme glue"
       (def sysml-path
         (path-expand
           "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml"
@@ -54,7 +54,7 @@
       (def json-text (run-process (list "sysml" "-convert" "api-json" sysml-path)))
       (def parsed (call-with-input-string json-text (cut read-json <> object-as-hash: #t)))
       (def projected (sysml-api-json->governance-facts parsed))
-      (check-equal? (length (.get projected subject-specs)) 14)
+      (check-equal? (length (.get projected subject-specs)) 16)
       (for-each
         (lambda (spec-expect)
           (def skey (car spec-expect))
@@ -86,8 +86,26 @@
           (agent-ifc-capability 2)
           (agent-tool-circuit-breaker 2)
           (shared-context-governance 2)
-          (gitops-subprocess-confinement-and-arg-injection 2)))
+          (gitops-subprocess-confinement-and-arg-injection 2)
+          (control-plane-auth-and-governance-confinement 2)
+          (hook-policy-and-protocol-contract-confinement 2)))
       ;; Verify static change-impact slicing isolates AI-Security subjects cleanly!
+      (let* ((impact9
+              (changed-files->affected-frontier
+                projected
+                '("packages/quint-models/threat/execution/control-plane-auth-and-governance-confinement/ControlPlaneAuthAndGovernanceConfinement.qnt")))
+             (affected9 (filter (lambda (s) (pair? (.get s affected-steps))) impact9)))
+        (check-equal? (map (lambda (s) (.get s subject-key)) affected9)
+                      '(control-plane-auth-and-governance-confinement))
+        (check-equal? (.get (car affected9) affected-steps) '("sm26QuintTarget")))
+      (let* ((impact10
+              (changed-files->affected-frontier
+                projected
+                '("packages/quint-models/threat/execution/hook-policy-and-protocol-contract-confinement/HookPolicyAndProtocolContractConfinement.qnt")))
+             (affected10 (filter (lambda (s) (pair? (.get s affected-steps))) impact10)))
+        (check-equal? (map (lambda (s) (.get s subject-key)) affected10)
+                      '(hook-policy-and-protocol-contract-confinement))
+        (check-equal? (.get (car affected10) affected-steps) '("sm33QuintTarget")))
       (let* ((impact7
               (changed-files->affected-frontier
                 projected
