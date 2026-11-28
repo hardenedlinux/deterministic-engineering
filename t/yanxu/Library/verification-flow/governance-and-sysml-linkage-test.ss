@@ -271,4 +271,6 @@
       (check (and (member '("threat.protocol.outbound-http-redirect-ssrf-confinement") admitted-subjs) #t) => #t)
       (check (and (member '("threat.zero-trust.governance-sod") admitted-subjs) #t) => #t)
       (check (and (member '("threat.protocol.chatroom-ingress-governance") admitted-subjs) #t) => #t)
-      (check-equal? (length (.get projected subject-specs)) 28))))
+      (check (and (member '("threat.zero-trust.data-lineage-disclosure") admitted-subjs) #t) => #t)
+      (check (and (member '("threat.supply-chain.supply-chain-tuf") admitted-subjs) #t) => #t)
+      (check-equal? (length (.get projected subject-specs)) 30))))

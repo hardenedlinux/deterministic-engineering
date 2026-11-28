@@ -40,13 +40,13 @@
 
 (.def (MultiSubjectCompileBudget @ yuanxu-testing-case-profile-prototype)
   max-idle-milliseconds: 180000
-  max-duration-milliseconds: 420000
+  max-duration-milliseconds: 600000
   sample-interval-milliseconds: 500
   collect-before-sample?: #t)
 
 (def verification-flow-sysml-compiler-and-lease-fencing-test
   (test-suite "Zero-glue SysML v2 -> Fun-Flow DAG compiler and 3rd subject lease-fencing-token"
-    (yuanxu-test-case/with MultiSubjectCompileBudget "live SysML v2 compiles all 28 subjects (59 engines) into valid Fun-Flow DAGs and manifests with zero Scheme glue"
+    (yuanxu-test-case/with MultiSubjectCompileBudget "live SysML v2 compiles all 30 subjects (63 engines) into valid Fun-Flow DAGs and manifests with zero Scheme glue"
       (def sysml-path
         (path-expand
           "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml"
@@ -54,7 +54,7 @@
       (def json-text (run-process (list "sysml" "-convert" "api-json" sysml-path)))
       (def parsed (call-with-input-string json-text (cut read-json <> object-as-hash: #t)))
       (def projected (sysml-api-json->governance-facts parsed))
-      (check-equal? (length (.get projected subject-specs)) 28)
+      (check-equal? (length (.get projected subject-specs)) 30)
       (for-each
         (lambda (spec-expect)
           (def skey (car spec-expect))
@@ -100,8 +100,26 @@
           (slsa-hermetic-provenance 2)
           (outbound-http-redirect-ssrf-confinement 2)
           (governance-sod 2)
-          (chatroom-ingress-governance 2)))
+          (chatroom-ingress-governance 2)
+          (data-lineage-disclosure 2)
+          (supply-chain-tuf 2)))
       ;; Verify static change-impact slicing isolates AI-Security subjects cleanly!
+      (let* ((impact23
+              (changed-files->affected-frontier
+                projected
+                '("packages/quint-models/threat/zero-trust/data-lineage-disclosure/DataLineageDisclosure.qnt")))
+             (affected23 (filter (lambda (s) (pair? (.get s affected-steps))) impact23)))
+        (check-equal? (map (lambda (s) (.get s subject-key)) affected23)
+                      '(data-lineage-disclosure))
+        (check-equal? (.get (car affected23) affected-steps) '("dldQuintTarget")))
+      (let* ((impact24
+              (changed-files->affected-frontier
+                projected
+                '("packages/quint-models/threat/supply-chain/supply-chain-tuf/SupplyChainTuf.qnt")))
+             (affected24 (filter (lambda (s) (pair? (.get s affected-steps))) impact24)))
+        (check-equal? (map (lambda (s) (.get s subject-key)) affected24)
+                      '(supply-chain-tuf))
+        (check-equal? (.get (car affected24) affected-steps) '("tufQuintTarget")))
       (let* ((impact21
               (changed-files->affected-frontier
                 projected

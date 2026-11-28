@@ -86,7 +86,7 @@
       (def res (reason-ai-security-governance ai-sources))
       (check-equal? ((.ref res 'rows-of) 'ar_finding) '())
       (def admitted ((.ref res 'rows-of) 'ai_governance_admitted))
-      (check-equal? (length admitted) 28)
+      (check-equal? (length admitted) 30)
       (for-each
         (lambda (sid)
           (check (and (member (list sid) admitted) #t) => #t))
@@ -112,7 +112,9 @@
           "threat.supply-chain.slsa-hermetic-provenance"
           "threat.protocol.outbound-http-redirect-ssrf-confinement"
           "threat.zero-trust.governance-sod"
-          "threat.protocol.chatroom-ingress-governance")))
+          "threat.protocol.chatroom-ingress-governance"
+          "threat.zero-trust.data-lineage-disclosure"
+          "threat.supply-chain.supply-chain-tuf")))
 
     (yuanxu-test-case "AI-SE Deterministic Change-Admission & Proof-Transport Gate separates safe parameter tuning from security-boundary regressions"
       (def sysml-path

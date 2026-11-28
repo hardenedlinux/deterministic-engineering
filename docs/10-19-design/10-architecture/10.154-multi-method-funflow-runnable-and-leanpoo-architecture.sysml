@@ -1330,6 +1330,70 @@ package MultiMethodFunFlowArchitecture {
                 attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Engineering/ContextDistillationAndProvenance.lean";
             }
         }
+
+        // Twenty-Ninth Zero-Glue Subject (Twenty-Fourth AI-Security Threat Subject — Zero-Trust Domain: Data Lineage Disclosure, DIFC Non-Interference & ATMS Retraction)
+        part dataLineageDisclosure {
+            attribute subjectKey : String = "data-lineage-disclosure";
+            attribute identity : String = "threat.zero-trust.data-lineage-disclosure";
+            attribute tags : String = "threat,zero-trust,ai-security,data-lineage,difc-atms,defense.mutability.immutable-proof,hazard.singling-out-exfiltration";
+            attribute factors : String = "data-lineage-disclosure,ai-ingests-untrusted-context";
+            attribute aiControls : String = "context-integrity-or-ifc";
+
+            part dldQuintTarget {
+                attribute modelId : String = "threat.zero-trust.data-lineage-disclosure";
+                attribute quintFile : String = "packages/quint-models/threat/zero-trust/data-lineage-disclosure/DataLineageDisclosure.qnt";
+                attribute quintMain : String = "data_lineage_disclosure";
+                attribute itfSubdir : String = "data-lineage-disclosure";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "k-anonymity-narrowing,disclosure-budget";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/zero-trust/data-lineage-disclosure/DataLineageDisclosure.qnt,packages/quint-models/threat/zero-trust/data-lineage-disclosure/objects.ss,packages/quint-models/threat/zero-trust/data-lineage-disclosure/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part dldLeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.InformationFlowAndTms";
+                attribute refinesCore : String = "DeterministicEngineering.Core.Transport";
+                attribute transportContract : String = "ObjectContract.refine+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Engineering.InformationFlowAndTms.difc_secrecy_monotonic_without_declass,DeterministicEngineering.Engineering.InformationFlowAndTms.difc_no_write_down_blocks_exfiltration,DeterministicEngineering.Engineering.InformationFlowAndTms.difc_failed_declass_preserves_taint,DeterministicEngineering.Engineering.InformationFlowAndTms.camel_integrity_meet_never_elevates,DeterministicEngineering.Engineering.InformationFlowAndTms.camel_control_slot_blocks_untrusted,DeterministicEngineering.Engineering.InformationFlowAndTms.doyle_single_justification_retraction_cascades,DeterministicEngineering.Engineering.InformationFlowAndTms.atms_clean_alternative_justification_survives,DeterministicEngineering.Engineering.InformationFlowAndTms.poison_immunization_tombstone_blocks_reproposal,DeterministicEngineering.Engineering.InformationFlowAndTms.difcAtmsContract_preserves_rejection,DeterministicEngineering.Engineering.InformationFlowAndTms.baselineInfoFlowCertified,DeterministicEngineering.Engineering.InformationFlowAndTms.retentionTuning_preserves_difc_atms_certificate,DeterministicEngineering.Engineering.InformationFlowAndTms.disablingCamelIntegrity_invalidates_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Engineering/InformationFlowAndTms.lean";
+            }
+        }
+
+        // Thirtieth Zero-Glue Subject (Twenty-Fifth AI-Security Threat Subject — Supply-Chain Domain: TUF Anti-Rollback & Deterministic Model-Weight/Inference Attestation)
+        part supplyChainTuf {
+            attribute subjectKey : String = "supply-chain-tuf";
+            attribute identity : String = "threat.supply-chain.supply-chain-tuf";
+            attribute tags : String = "threat,supply-chain,ai-security,tuf-antirollback,model-weight-attestation,defense.mutability.immutable-proof,hazard.model-weight-rollback-lora-poisoning";
+            attribute factors : String = "supply-chain-tuf,ai-ingests-untrusted-context,ai-executes-tools";
+            attribute aiControls : String = "context-integrity-or-ifc,tool-confinement";
+
+            part tufQuintTarget {
+                attribute modelId : String = "threat.supply-chain.supply-chain-tuf";
+                attribute quintFile : String = "packages/quint-models/threat/supply-chain/supply-chain-tuf/SupplyChainTuf.qnt";
+                attribute quintMain : String = "supply_chain_tuf";
+                attribute itfSubdir : String = "supply-chain-tuf";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "monotonic-version-check,timestamp-expiry-check,snapshot-atomic-binding";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/supply-chain/supply-chain-tuf/SupplyChainTuf.qnt,packages/quint-models/threat/supply-chain/supply-chain-tuf/objects.ss,packages/quint-models/threat/supply-chain/supply-chain-tuf/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part tufLeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.ModelWeightAndInferenceAttestation";
+                attribute refinesCore : String = "DeterministicEngineering.Core.Transport";
+                attribute transportContract : String = "ObjectContract.refine+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Engineering.ModelWeightAndInferenceAttestation.unpinned_base_weight_refused,DeterministicEngineering.Engineering.ModelWeightAndInferenceAttestation.unauthorized_lora_adapter_refused,DeterministicEngineering.Engineering.ModelWeightAndInferenceAttestation.non_deterministic_sampling_temperature_refused,DeterministicEngineering.Engineering.ModelWeightAndInferenceAttestation.missing_seed_or_kernel_pin_refused,DeterministicEngineering.Engineering.ModelWeightAndInferenceAttestation.forged_or_revoked_model_attestation_refused,DeterministicEngineering.Engineering.ModelWeightAndInferenceAttestation.clean_zero_adapter_base_model_admitted,DeterministicEngineering.Engineering.ModelWeightAndInferenceAttestation.model_inference_attestation_sound_and_complete,DeterministicEngineering.Engineering.ModelWeightAndInferenceAttestation.modelAttestationContract_preserves_rejection,DeterministicEngineering.Engineering.ModelWeightAndInferenceAttestation.baselineModelAttestationCertified,DeterministicEngineering.Engineering.ModelWeightAndInferenceAttestation.kvCacheEvictionTuning_preserves_certificate,DeterministicEngineering.Engineering.ModelWeightAndInferenceAttestation.disablingWeightRootPinning_invalidates_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Engineering/ModelWeightAndInferenceAttestation.lean";
+            }
+        }
     }
 
     // ── 12. Architectural, Cross-Method, and Requirement Dependencies ──
@@ -1452,6 +1516,14 @@ package MultiMethodFunFlowArchitecture {
     dependency 'chat-quint-source' from system::chatroomIngressGovernance::chatQuintTarget to system::quintModels;
     dependency 'chat-lean-source' from system::chatroomIngressGovernance::chatLeanPooTarget to system::leanModels;
     dependency 'chat-lean-refines-transport' from system::chatroomIngressGovernance::chatLeanPooTarget to system::leanModels::core::transport;
+
+    dependency 'dld-quint-source' from system::dataLineageDisclosure::dldQuintTarget to system::quintModels;
+    dependency 'dld-lean-source' from system::dataLineageDisclosure::dldLeanPooTarget to system::leanModels;
+    dependency 'dld-lean-refines-transport' from system::dataLineageDisclosure::dldLeanPooTarget to system::leanModels::core::transport;
+
+    dependency 'tuf-quint-source' from system::supplyChainTuf::tufQuintTarget to system::quintModels;
+    dependency 'tuf-lean-source' from system::supplyChainTuf::tufLeanPooTarget to system::leanModels;
+    dependency 'tuf-lean-refines-transport' from system::supplyChainTuf::tufLeanPooTarget to system::leanModels::core::transport;
 
     // Cross-method edges enforced by MR03 & MR04 (zero model duplication)
     dependency 'pt-mbt-itf-edge' from system::processTreeReclamation::rustOracleTarget::traceIn to system::processTreeReclamation::quintTarget::traceOut;
