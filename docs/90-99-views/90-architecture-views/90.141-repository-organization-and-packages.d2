@@ -1,0 +1,92 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+# Org authority: ../../10-19-design/10-architecture/10.150-repository-organization-and-package-taxonomy.org
+# Design projection; rendering is not verification or approval.
+vars: {d2-config: {data: {figure: |json
+{
+  "title": "Repository organization: placements, multi-window Yuanxu, and packages",
+  "purpose": "architecture",
+  "kind": "library-architecture",
+  "language": "en",
+  "width": 1400,
+  "primary": "placement",
+  "questions": [
+    {
+      "ref": "placement",
+      "text": "Which placement owns each responsibility, and how do OR01-OR06 enforce co-located formal packages?",
+      "focusRefs": [
+        "authority",
+        "declaration"
+      ],
+      "subjectRefs": [
+        "organization",
+        "rules",
+        "packages"
+      ]
+    }
+  ],
+  "references": {
+    "authority": "docs/10-19-design/10-architecture/10.150-repository-organization-and-package-taxonomy.org",
+    "declaration": "docs/90-99-views/90-architecture-views/90.141-repository-organization-and-packages.d2",
+    "organization-sysml": "docs/10-19-design/10-architecture/10.150-repository-organization-and-package-taxonomy.sysml",
+    "organization": "library/project-organization/objects.ss",
+    "catalog": "library/project-organization/organization.sysml",
+    "profile": "library/library-formation-profiles/objects.ss",
+    "rules": "library/project-formation/func.ss",
+    "model": "project.sysml",
+    "selection": "init.ss",
+    "package": "package.json"
+  },
+  "basis": {
+    "captureRef": "design-candidate:90.141-repository-organization-and-packages",
+    "modelRefs": [
+      "docs/10-19-design/10-architecture/10.150-repository-organization-and-package-taxonomy.org"
+    ],
+    "obligationRefs": [],
+    "evidenceRefs": []
+  },
+  "copy": {},
+  "themes": [
+    "sketchbook",
+    "compact"
+  ],
+  "presentation": {
+    "options": {
+      "elk.direction": "DOWN",
+      "elk.layered.spacing.nodeNodeBetweenLayers": "48"
+    },
+    "edgeLabels": false
+  }
+}
+|}}}
+direction: down
+
+organization: "project-organization\nRoles + 9 placements + 3 package families\nScheme POO source of truth"
+profile: "library-formation-profiles\nRepository placement instances"
+tree: "Live tree, package.json & Scheme imports\nCaptured facts (repository-organization-facts.ss)"
+rules: "project-formation rules OR01-OR06\nSingle owner / forbidden content / co-location\nModular imports / family / closure / coverage"
+model: "Rendered SysML v2\nproject.sysml + organization.sysml"
+findings: "Findings\nZero findings on live tree\nD1-D6 + co-location negative controls"
+library: "SchemeModule\nlibrary/<module>/ flat core\nquint-methods, quint-profiles, organization"
+assets: "LanguageAssets\nlanguages-engineering/<lang>/<domain>/<subject>/"
+packages: "DistributionPackage\npackages/<pkg>/ one family each"
+render: "render\npresentation"
+quintModels: "quint-models (Option A+ co-located)\n10 Yuanxu mounts: engineering/* (12) + threat/* (22)\n{types,objects,interface}.ss + *.qnt + README.org"
+quintModulesResolver: "quint-modules-resolver\nPackage-aware resolver, compose & run-plan\nOfficial Quint 0.33.0 unmodified"
+mirrors: "Read-only mirrors\ngit subtree split per prefix\nbun installs by commit SHA"
+development: "DevelopmentVerification\nt/yanxu/<Mount>/<owner>/ (11 mounts, 44 owners)\nActual tools, Apalache & gold tests"
+organization -> profile -> rules
+tree -> rules
+rules -> model: "render"
+rules -> findings
+model -> library
+model -> assets
+model -> packages
+model -> development
+packages -> render
+packages -> quintModels
+packages -> quintModulesResolver
+render -> mirrors
+quintModels -> mirrors
+quintModulesResolver -> mirrors

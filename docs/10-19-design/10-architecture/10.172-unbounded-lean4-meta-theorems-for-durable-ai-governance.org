@@ -1,0 +1,92 @@
+#+TITLE: 10.172 Unbounded Machine-Checked Lean 4 Meta-Theorems for Durable AI Governance (B1-B10b)
+#+AUTHOR: hardenedlinux Linux Team and Contributors
+#+DATE: 2026-11-26
+#+STARTUP: overview
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+* Overview
+:PROPERTIES:
+:CUSTOM_ID: arch10172-overview
+:END:
+
+Across Phases 1–23, our 19-model Quint/Apalache defense fleet proved critical
+safety invariants and generated countermodels on **bounded** state spaces (e.g.,
+=N = 4, f = 1, t = 3= for =B10= and two epochs =E1 -> E2= for =B10b=). While
+bounded symbolic model checking and 100% MBT SUT refinement excel at finding
+protocol counterexamples and verifying concrete state-machine transitions, they
+cannot by themselves establish universal algebraic safety across **unbounded**
+parameters (=∀ N, f, t, E, k=).
+
+Phase 24 bridges bounded model checking to **unbounded machine-checked proofs**
+in Lean 4 ([[file:../../../packages/lean-models/DeterministicEngineering/Engineering/DurableGovernanceQuorum.lean][DurableGovernanceQuorum.lean]])
+with zero =sorry=, zero =sorryAx=, zero custom axioms, and zero Mathlib
+dependencies, paired with an automated live Lean 4 proof-carrying oracle
+([[file:../../../languages-engineering/ts/defense/agent-audit/lean-proof-oracle.ts][lean-proof-oracle.ts]])
+and 5 new benchmark cases (=AG126=–=AG130=, reaching **130 total cases**).
+
+* Five Unbounded Machine-Checked Theorem Families + LeanPoo Core (15 Theorems Total)
+:PROPERTIES:
+:CUSTOM_ID: arch10172-theorems
+:END:
+
+**Architecture Principle (Zero Mathlib, `LeanPoo`-Centric Library ↔ `cedar-poo-spec` Host Split)**:
+- This repository (=deterministic-engineering-qnt=) is a reusable **Library**:
+  it depends strictly on Lean 4 core + =LeanPoo= (zero Mathlib) for fast,
+  offline-reproducible proofs of discrete system invariants, monotonic contract
+  refinements (=LeanPoo.Functional.ObjectContract.refine=), and dependency-certified
+  cross-patch proof transport (=LeanPoo.Proof.Reuse= / =Core.Transport=).
+- Concrete authorization policy evaluation (Cedar policies, principals, roles,
+  tenant permissions) belongs to the consuming host (**=cedar-poo-spec=**),
+  which binds into this library via =externalPolicyHostBound= and refines
+  =fullDurableQuorumContract= via =hostPolicyRefinement_preserves_library_rejection=.
+
+| Pillar | Lean 4 / LeanPoo Theorems (=DurableGovernanceQuorum.lean=) | Unbounded / Composition Guarantee | Verified Axioms |
+|--------+------------------------------------------------------------+-----------------------------------+-----------------|
+| =B10= Quorum Finality | =bft_quorum_intersection_honest_witness=, =bft_no_conflicting_finality= | =∀ N f t : Nat, ∀ roster Q₁ Q₂ B : List α= with =2*t > N + f= | =[propext, Quot.sound]= |
+| =B10b= Dynamic Reconfiguration | =handover_chain_monotonic=, =handover_chain_rejects_all_retired_epochs= | =∀ st, ∀ chain : List HandoverStep, ∀ e_old < E₀ + k= | =[propext, Classical.choice, Quot.sound]= |
+| =R3= Stratified OP | =m1_persistable_forbids_any_m3_descendant=, =m3_leak_always_refused= | =∀ node : PersistNode= (arbitrary finite nesting depth) | =[propext]= |
+| =B6= Linear Budget | =split_preserves_total_budget=, =spend_preserves_total_budget= | =∀ amount cost : Nat, ∀ pool : List BudgetNode= | =[propext, Quot.sound]= |
+| =B3= Capability Attenuation | =attenuation_chain_bounded_by_root=, =ancestor_revocation_invalidates_chain= | =∀ root, ∀ rest : List CapHop, ∀ i < k= | =[propext, Quot.sound]= / =[propext]= |
+| =LeanPoo= Refinement (Library ↔ =cedar-poo-spec=) | =durableQuorumContract_preserves_rejection=, =hostPolicyRefinement_preserves_library_rejection= | 2-step library refinement (=B10 -> B10b -> R3=) + arbitrary downstream =cedar-poo-spec= host policy refinement monotonically preserve all rejections | =[propext]= / zero axioms |
+| =LeanPoo= Proof Transport (=Core.Transport=) | =gossipTuning_preserves_quorum_certificate=, =batchSizeTuning_preserves_quorum_certificate=, =droppingExternalPolicyHost_invalidates_reuse= | Zero re-proof across operational tuning; disabling =externalPolicyHostBound= always invalidates certificate reuse | =[propext]= / zero axioms |
+
+* Four-Paradigm Heterogeneous Verification Stack
+:PROPERTIES:
+:CUSTOM_ID: arch10172-four-paradigms
+:END:
+
+With Phase 24 complete, the durable AI governance architecture is independently
+verified across four orthogonal formal methods:
+
+1. **Quint / Apalache (19 defense models, 56 canonical models)**: Bounded
+   symbolic safety, countermodels, =F3= =guard-probe= necessity, and 100% MBT
+   SUT state-machine isomorphism.
+2. **Gerbil Scheme ASCENT Datalog (20 sources × 12 outputs)**: Live heterogeneous
+   cross-runtime =gxi= fixed-point auditing over cold =M1= =B1=–=B10= evidence.
+3. **CBMC (C boundary harness)**: Bounded memory, pointer, and overflow proof.
+4. **Lean 4 (=DurableGovernanceQuorum.lean= + =lean-proof-oracle.ts=)**:
+   Unbounded inductive/algebraic theorems with automated =#print axioms=
+   certification and G2 anti-fabrication rejection of =sorry= / custom axioms.
+
+* Verification Receipts (AG126-AG130)
+:PROPERTIES:
+:CUSTOM_ID: arch10172-receipts
+:END:
+
+- Lean 4 build & axiom verification:
+  =(cd packages/lean-models && lake build DeterministicEngineering.Engineering.DurableGovernanceQuorum)=
+- Live Proof-Carrying Oracle & Benchmark (=AG126=–=AG130=):
+  [[file:../../../languages-engineering/ts/defense/agent-audit/lean-proof-verification.test.ts][lean-proof-verification.test.ts]]
+  (registered in [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05]] as the **130-case** milestone).
+
+* Limits
+:PROPERTIES:
+:CUSTOM_ID: arch10172-limits
+:END:
+
+These Lean 4 theorems certify the abstract mathematical models of quorum
+intersection, multi-epoch handover chains, =R3= reachability, linear budget
+conservation, and attenuation chains. Cryptographic assumptions (Ed25519
+unforgeability, SHA-256 collision resistance, AES-256-GCM authenticity) and
+host OS memory isolation remain outside the algebraic proof kernel.

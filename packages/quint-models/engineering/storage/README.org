@@ -1,0 +1,38 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Engineering / Storage Formal Models (Quint.Engineering.Storage)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+This subdomain groups co-located formal models for durable storage engines,
+crash-recovery ordering, and multi-version concurrency control (MVCC). Each
+model folder is a self-contained Yuanxu Loader module containing its Scheme POO
+AST source (=objects.ss=), sealed contract (=types.ss=), Yuanxu Design 165
+interface (=interface.ss=), projected pure =.qnt= specification, and
+same-commit verified =README.org=.
+
+* Yuanxu Selection & Reuse
+
+Downstream Gerbil/Yuanxu packages can import *only* this storage subdomain
+without loading consensus, GC, or threat models:
+
+#+begin_src scheme
+(yuanxu!
+  :load-modules (from: :deterministic-engineering/init QuintEngineeringStorageSource)
+  mode: auto
+  profile: quint.engineering.storage
+  mount: Storage
+  :profiles (assurance.bounded-proof bound.standard governance.mandatory-countermodels))
+#+end_src
+
+* Model Matrix
+
+| Model | Failure Class | Core Papers | Emergent Invariant | Countermodels |
+|-------+---------------+-------------+--------------------+---------------|
+| [[file:wal-crash-recovery/README.org][wal-crash-recovery]] | =quint.failure.crash-recovery= | Mohan ARIES (TODS 1992), Pillai BOB/ALICE (OSDI 2014), Bornholt (ASPLOS 2016) | =dataDiskVer <= walDiskVer= & no acked commit loss on crash | Missing WAL =fsync= reorder; Unflushed commit loss |
+| [[file:mvcc-ssi-write-skew/README.org][mvcc-ssi-write-skew]] | =quint.failure.isolation-anomaly= | Berenson (SIGMOD 1995), Adya (ICDE 2000), Cahill (SIGMOD 2008), Ports & Grittner (PVLDB 2012) | =balX + balY >= 1= & =balX + balY + committedWithdrawals == 2= | SI Write Skew (A5B); Early =SIREAD= release; Missed read-time =rw= edge |
+| [[file:atomic-persistence-fsync-envelope/README.org][atomic-persistence-fsync-envelope]] | =quint.failure.crash-recovery= | Pillai et al. (USENIX OSDI 2014 Best Paper), Bornholt et al. (ASPLOS 2016), POSIX =rename(2)= | Live persisted files never truncated in-place (=tornReads == 0=), concurrent writers stage unique temp files (=tempCollisions == 0=), and every temp file fsyncs before atomic rename (=zeroLengthOnCrash == 0=) | In-place truncate torn read; Shared deterministic =.tmp= collision; Rename-before-fsync zero-length crash |

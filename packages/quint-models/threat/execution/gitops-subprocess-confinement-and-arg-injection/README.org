@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: GitOps Subprocess Environment Neutralization, Fsmonitor Lockdown, Arg-Injection & Panic Isolation (SM32)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.execution.gitops-subprocess-confinement-and-arg-injection=
+- *Subdomain*: =quint.threat.execution=
+- *Quint Module*: =execution_gitops_subprocess_confinement_and_arg_injection= (=[[file:GitopsSubprocessConfinementAndArgInjection.qnt][GitopsSubprocessConfinementAndArgInjection.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/execution/gitops-subprocess-confinement-and-arg-injection/GitopsSubprocessConfinementAndArgInjection=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+No GitOps read or working-copy provider subprocess inherits GIT_CONFIG_GLOBAL/SYSTEM/EXEC_PATH/SSH_COMMAND overrides (envHijackBreaches == 0 and envConfinementEnforced), every Git and Worktrunk invocation enforces core.hooksPath=/dev/null and core.fsmonitor=false (fsmonitorHookBreaches == 0 and fsmonitorHooksDisabled), projected branch/base_ref/id tokens reject leading '-' and control chars while retention snapshots stay strictly confined inside snapshot_root and Worktrunk receipts reject '/' or '..' (argOrSnapshotBreaches == 0 and argAndSnapshotValidated), and provider commands run bounded with timeout/kill_on_drop while isolate_parallel isolates worker panics into rejected receipts (subprocessOrPanicBreaches == 0 and boundedSubprocessEnforced).
+
+#+begin_src quint
+val safety = (h.envHijackBreaches == 0 and h.fsmonitorHookBreaches == 0 and h.argOrSnapshotBreaches == 0 and h.subprocessOrPanicBreaches == 0 and h.envConfinementEnforced and h.fsmonitorHooksDisabled and h.argAndSnapshotValidated and h.boundedSubprocessEnforced and h.parallelTasksCompleted <= 6 and h.parallelPanicsIsolated <= 4 and h.stepCount <= 12)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =forbid-git-env-config-or-exec-path-hijack= | =stepGitEnvHijack= | =h.envHijackBreaches > 0= |
+| =forbid-repo-fsmonitor-or-hook-execution= | =stepFsmonitorOrHookBypass= | =h.fsmonitorHookBreaches > 0= |
+| =forbid-option-injection-or-snapshot-path-escape= | =stepArgOrSnapshotBypass= | =h.argOrSnapshotBreaches > 0= |
+| =forbid-unbounded-subprocess-or-parallel-worker-panic-crash= | =stepSubprocessOrPanicBypass= | =h.subprocessOrPanicBreaches > 0= |
+
+* Grounded Papers & Specifications
+
+- *Deterministic Engineering (30.06 / 40.05)*: SM32 ADV-L4 complete GIT_* override stripping and GIT_CONFIG_NOSYSTEM=1 / GIT_CONFIG_GLOBAL=/dev/null neutralization, dual-layer core.hooksPath=/dev/null and core.fsmonitor=false enforcement across Git and Worktrunk subprocesses, non-flag/non-control validation of WorkingCopyBranchName/WorkingCopyBaseRef/WorkingCopyId and confined retention snapshot paths, concurrent bounded stdout/stderr capture with timeout and kill_on_drop(true), and JoinSet panic-isolated fanout receipts.
+- *Marlin Agent Core Empirical Case Study (2026)*: marlin-agent-gitops omitted GIT_CONFIG_GLOBAL/GIT_EXEC_PATH/GIT_SSH_COMMAND from GIT_REPOSITORY_OVERRIDES, omitted core.fsmonitor=false on working-copy provider execution, projected unvalidated dash-prefixed branch/base_ref/id arguments and unsanitized retention snapshot paths, ran unbounded .output().await without timeout or kill_on_drop in working_copy/driver.rs, and crashed isolate_parallel via .expect() on worker panics.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/execution/gitops-subprocess-confinement-and-arg-injection/GitopsSubprocessConfinementAndArgInjection.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/execution/gitops-subprocess-confinement-and-arg-injection/GitopsSubprocessConfinementAndArgInjection.qnt --main=execution_gitops_subprocess_confinement_and_arg_injection --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite bounded GitOps subprocess confinement, projection argument-injection & parallel fanout isolation state machine (parallelTasksCompleted <= 6, parallelPanicsIsolated <= 4, stepCount <= 12); models complete GIT_* environment neutralization (GIT_CONFIG_GLOBAL/SYSTEM/EXEC_PATH/SSH_COMMAND/EXTERNAL_DIFF + GIT_CONFIG_NOSYSTEM=1), dual-layer core.hooksPath=/dev/null & core.fsmonitor=false enforcement on Git and Worktrunk subprocesses, non-flag/non-control validation on branch/base_ref/id and snapshot_root path confinement, concurrent bounded stdout/stderr capture with timeout and kill_on_drop, and JoinSet panic isolation without modeling OS kernel ptrace or binary tampering inside trusted PATH.

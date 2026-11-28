@@ -37,7 +37,9 @@
     asset: catalog-asset
     package: 'RepositoryOrganization
     definitions: '("LibraryDefinitions" "IndependentProfile" "ProjectScenario" "ApplicationReasoning"
-                   "ReviewBoundary" "DocumentOrganization" "MethodContracts" "ReceiptBoundary" "ProjectEntry")))
+                   "ReviewBoundary" "DocumentOrganization" "MethodContracts" "ReceiptBoundary" "ProjectEntry"
+                   "SchemeModule" "LanguageAssets" "DistributionPackage" "UserExample"
+                   "DevelopmentVerification" "DocumentItem" "ArchitectureView" "PackageInfrastructure")))
 (def mapping-value
   (.o
     identity: 'organization.role-layout
@@ -164,4 +166,56 @@
     products: '("D01" "D02" "D03" "D04" "D05" "D06" "D07" "D08" "D09" "D10")
     duties: '("DE-O-ARCH" "DE-O-DOC" "DE-O-DEC" "DE-O-TRACE" "DE-O-REVIEW")
     required-capabilities: '("source-load" "capture-origin" "method-validation" "authority")
+    ;; Physical placements: (name path-pattern ecosystem roles-csv rejects-csv)
+    placements: '(("SchemeModule" "library/<module>/" "gerbil yuanxu"
+                   "definitions,method-contracts,selection,reasoning"
+                   "execution,typescript,other-language-sources,generated-output")
+                  ("LanguageAssets" "languages-engineering/<lang>/<domain>/<subject>/" "native-toolchain"
+                   "checked-subjects"
+                   "scheme-declarations,execution-results")
+                  ("DistributionPackage" "packages/<pkg>/" "bun,gerbil-yuanxu"
+                   "distribution"
+                   "foreign-family,outside-references")
+                  ("ProjectEntry" "projects/<project>/" "yuanxu-selection"
+                   "project-entry"
+                   "definitions")
+                  ("UserExample" "examples/" "yuanxu-config"
+                   "user-settings"
+                   "operations")
+                  ("DevelopmentVerification" "t/" "gerbil-test"
+                   "capture,review"
+                   "product-declarations")
+                  ("DocumentItem" "docs/<area>/<category>/<JD>-*.org" "org"
+                   "documentation"
+                   "none")
+                  ("ArchitectureView" "docs/90-99-views/90-architecture-views/90.<n>-*" "render"
+                   "documentation"
+                   "authoritative-claims")
+                  ("PackageInfrastructure" "root" "mixed"
+                   "selection,receipt-issuance"
+                   "business-declarations,package-implementation"))
+    ;; Placement-to-role coverage rows: (placement role)
+    placement-roles: '(("SchemeModule" "definitions")
+                       ("SchemeModule" "method-contracts")
+                       ("SchemeModule" "selection")
+                       ("SchemeModule" "reasoning")
+                       ("ProjectEntry" "project-entry")
+                       ("DevelopmentVerification" "capture")
+                       ("DevelopmentVerification" "review")
+                       ("DocumentItem" "documentation")
+                       ("ArchitectureView" "documentation")
+                       ("PackageInfrastructure" "receipt-issuance"))
+    ;; Distribution package responsibility families: (package-name family dir allowed-csv rejected-csv)
+    package-families: '(("@deterministic-engineering/render" "presentation" "packages/render"
+                         "d2-sysml-compilation,composition,export,compression"
+                         "verification-models,quint-content,check-plans")
+                        ("@deterministic-engineering/quint-models" "quint-model-content" "packages/quint-models"
+                         "quint-models,co-located-yuanxu-declarations,model-readmes"
+                         "tool-code,rendering,other-language-models")
+                        ("@deterministic-engineering/quint-modules-resolver" "verification-tooling" "packages/quint-modules-resolver"
+                         "package-aware-quint-resolution"
+                         "model-content,quint-redistribution")
+                        ("@deterministic-engineering/agent-defense-audit" "agent-governance" "packages/agent-defense-audit"
+                         "multi-language-g2-auditor,scope-fence-harness,leanpoo-fleet-audit"
+                         "language-contrast-demos,quint-model-content"))
     ))

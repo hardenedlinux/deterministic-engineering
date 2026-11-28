@@ -1,0 +1,226 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+name: Multi-Method Verification Gate (10.154)
+on:
+  pull_request:
+    paths:
+      - 'docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml'
+      - 'library/verification-flow/**'
+      - 'packages/lean-models/**'
+      - 'packages/quint-models/threat/**'
+      - 'languages-engineering/rust/lifecycle/process-tree-guard/**'
+      - 'languages-engineering/c/defense/silent-fallback-contrast/**'
+      - 'languages-engineering/c/stability/aging-contrast/**'
+      - 't/support/verification-flow-runner.ss'
+      - 't/support/offline-attestation-verifier.ss'
+      - 't/yanxu/Library/verification-flow/**'
+      - 't/harness/**'
+      - 'Justfile'
+      - '.github/actions/**'
+      - '.github/workflows/multi-method-verification.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml'
+      - 'library/verification-flow/**'
+      - 'packages/lean-models/**'
+      - 'packages/quint-models/threat/**'
+      - 'languages-engineering/rust/lifecycle/process-tree-guard/**'
+      - 'languages-engineering/c/defense/silent-fallback-contrast/**'
+      - 'languages-engineering/c/stability/aging-contrast/**'
+      - 't/support/verification-flow-runner.ss'
+      - 't/support/offline-attestation-verifier.ss'
+      - 't/yanxu/Library/verification-flow/**'
+      - 't/harness/**'
+      - 'Justfile'
+      - '.github/actions/**'
+      - '.github/workflows/multi-method-verification.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  rust-process-tree-guard:
+    name: Rust ProcessTreeGuard (Clippy Ban + HTTP /shutdown + OS SIGKILL & Escape Oracle)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: ./.github/actions/setup-just
+      - uses: ./.github/actions/setup-bun-cached
+      - name: Restore Layer-1 Cargo registry & incremental target cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            languages-engineering/rust/lifecycle/process-tree-guard/target
+          key: de-cargo-lifecycle-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('languages-engineering/rust/lifecycle/process-tree-guard/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            de-cargo-lifecycle-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('languages-engineering/rust/lifecycle/process-tree-guard/Cargo.lock') }}-
+            de-cargo-lifecycle-v1-${{ runner.os }}-${{ runner.arch }}-
+      - name: Restore Layer-2 Rust lifecycle CAS cache (SM18)
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .data/ci-cache/rust-lifecycle
+          key: de-rust-lifecycle-cas-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('bun.lock', 't/harness/verify-framework.ts', 'languages-engineering/rust/lifecycle/process-tree-guard/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            de-rust-lifecycle-cas-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('bun.lock', 't/harness/verify-framework.ts', 'languages-engineering/rust/lifecycle/process-tree-guard/Cargo.lock') }}-
+      - name: Expose workspace Quint CLI for live ITF MBT replay
+        run: |
+          echo "$PWD/packages/quint-modules-resolver/node_modules/.bin" >> "$GITHUB_PATH"
+          echo "$PWD/node_modules/.bin" >> "$GITHUB_PATH"
+          test -x "$PWD/packages/quint-modules-resolver/node_modules/.bin/quint"
+      - name: Run auto-discovered Rust lifecycle verification suite
+        run: just verify-lang rust lifecycle --cache=.data/ci-cache/rust-lifecycle
+
+  c-cbmc-boundary-proof:
+    name: C Trust-Boundary & Aging CBMC Proofs
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: ./.github/actions/setup-just
+      - uses: ./.github/actions/setup-bun-cached
+        with:
+          install: 'false'
+      - name: Restore Layer-2 C/CBMC CAS cache (SM18)
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .data/ci-cache/c-cbmc
+          key: de-cbmc-cas-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('t/harness/verify-framework.ts') }}-${{ github.sha }}
+          restore-keys: |
+            de-cbmc-cas-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('t/harness/verify-framework.ts') }}-
+      - name: Install CBMC & run auto-discovered C/CBMC proofs (defense + stability)
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq cbmc
+          just verify --lang=c,cbmc --domain=defense,stability --jobs=4 --cache=.data/ci-cache/c-cbmc
+
+  lean4-meta-and-domain-proofs:
+    name: Lean 4 / LeanPoo All-Module Build & Zero-sorryAx Kernel Axiom Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: ./.github/actions/setup-just
+      - uses: ./.github/actions/setup-bun-cached
+        with:
+          install: 'false'
+      - name: Restore Layer-1 Elan & pinned Lean 4 toolchain cache
+        id: elan-cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.elan
+          key: de-elan-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('packages/lean-models/lean-toolchain') }}
+      - name: Install elan if cache missed and expose PATH
+        run: |
+          if [ ! -x "$HOME/.elan/bin/elan" ]; then
+            curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          fi
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Provision upstream LeanPoo sibling checkout and capture exact SHA
+        id: leanpoo
+        run: |
+          LEAN_POO_DIR="$(realpath -m packages/lean-models/../../../../tao3k/lean-poo)"
+          if [ ! -d "$LEAN_POO_DIR" ]; then
+            mkdir -p "$(dirname "$LEAN_POO_DIR")"
+            git clone --depth 1 --branch main https://github.com/tao3k/lean-poo.git "$LEAN_POO_DIR"
+          fi
+          LEAN_POO_SHA="$(git -C "$LEAN_POO_DIR" rev-parse HEAD)"
+          echo "dir=$LEAN_POO_DIR" >> "$GITHUB_OUTPUT"
+          echo "sha=$LEAN_POO_SHA" >> "$GITHUB_OUTPUT"
+          echo "Resolved LeanPoo SHA=$LEAN_POO_SHA at $LEAN_POO_DIR"
+      - name: Restore Layer-2 Lean 4 incremental .lake/build & CAS cache (SM18)
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            packages/lean-models/.lake/build
+            ${{ steps.leanpoo.outputs.dir }}/.lake/build
+            .data/ci-cache/lean
+          key: de-lean-build-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('packages/lean-models/lean-toolchain', 'packages/lean-models/lakefile.toml', 't/harness/verify-framework.ts') }}-${{ steps.leanpoo.outputs.sha }}-${{ hashFiles('packages/lean-models/**/*.lean') }}
+          restore-keys: |
+            de-lean-build-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('packages/lean-models/lean-toolchain', 'packages/lean-models/lakefile.toml', 't/harness/verify-framework.ts') }}-${{ steps.leanpoo.outputs.sha }}-
+      - name: Auto-discovered Lean 4 build & dynamic #print axioms audit
+        run: just check-lean --cache=.data/ci-cache/lean
+      - name: Enforce strictly zero-axiom Core.AiGovernance kernel gate (18/18 AR01-AR05, AI-SE & Changeset theorems)
+        run: |
+          cd packages/lean-models
+          OUT="$(lake env lean --stdin <<'EOF'
+          import DeterministicEngineering.Core.AiGovernance
+          open DeterministicEngineering.Core.AiGovernance
+          #print axioms llmJudge_never_deterministic
+          #print axioms nonDeterministicStep_rejects_admission
+          #print axioms aiAuthoredChange_without_deterministicVerifier_rejected
+          #print axioms aiPatch_touching_securityDep_invalidates_proofReuse
+          #print axioms aiPatch_disjoint_from_securityDeps_preserves_proofReuse
+          #print axioms aiToolExecution_missing_confinement_or_countermodel_rejected
+          #print axioms aiDelegation_missing_attenuation_or_currentness_rejected
+          #print axioms aiUntrustedContext_missing_integrity_rejected
+          #print axioms aiAgent_selfApproval_and_missing_humanStepUp_rejected
+          #print axioms aiGovernanceAdmitted_sound
+          #print axioms aiChangeAdmission_rejected_blocks_reuse_and_forces_stepUp
+          #print axioms aiChangeAdmission_affectedStep_forces_reverification
+          #print axioms aiChangeAdmission_securityDepTouch_blocks_reuse_and_requires_humanStepUp
+          #print axioms aiChangeAdmission_hostMutation_always_requires_humanStepUp
+          #print axioms aiChangeAdmission_reusable_sound
+          #print axioms aiChangeset_governanceCoreTouch_forces_humanStepUp
+          #print axioms aiChangeset_anySubjectRejected_refuses_changeset_and_forces_stepUp
+          #print axioms aiChangeset_admitted_implies_every_affectedSubject_admitted
+          EOF
+          )"
+          echo "$OUT"
+          COUNT="$(echo "$OUT" | grep -c "does not depend on any axioms")"
+          test "$COUNT" -eq 18
+          ! echo "$OUT" | grep -q "depends on axioms:"
+
+  airgapped-offline-verifier-adversarial:
+    name: Zero-Dep Portable Offline Attestation, AI Role-SoD & Self-Modification Guard (66 Controls)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-just
+      - uses: ./.github/actions/setup-bun-cached
+        with:
+          install: 'false'
+      - name: Run 66-control adversarial, Gerbil<->TS golden-vector, DSSE v1, AI Role-SoD, Self-Mod Guard & Anti-Rollback Policy gate
+        run: just check-offline-verifier
+      - name: Audit changed files against AI Governance Self-Modification Guard (Core.AiGovernance T16)
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ] && [ -n "${{ github.event.pull_request.base.sha }}" ]; then
+            CHANGED="$(git diff --name-only "${{ github.event.pull_request.base.sha }}" HEAD || true)"
+          elif git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
+            CHANGED="$(git diff --name-only HEAD~1 HEAD || true)"
+          else
+            CHANGED=""
+          fi
+          ARGS=()
+          while IFS= read -r f; do
+            [ -n "$f" ] && ARGS+=(--file "$f")
+          done <<< "$CHANGED"
+          AUDIT_JSON="$(bun t/harness/offline-attestation-verifier.ts --json --check-governance-core-diff "${ARGS[@]}")"
+          echo "$AUDIT_JSON"
+          TOUCHED="$(echo "$AUDIT_JSON" | bun -e 'const d = JSON.parse(await Bun.stdin.text()); console.log(d.touchedGovernanceCore ? "true" : "false");')"
+          {
+            echo "### AI Security Self-Modification Guard (\`Core.AiGovernance\` Theorem 16)"
+            echo ""
+            if [ "$TOUCHED" = "true" ]; then
+              echo "> [!WARNING]"
+              echo "> This change touches **AI Governance Core** files. Autonomous AI self-certification is forbidden by \`AR01\`–\`AR05\` & \`Core.AiGovernance\` Theorem 16; offline \`human-approver\` Ed25519 co-sign (\`just approve-ai-diff\`) is required."
+            else
+              echo "No AI Governance Core files modified (\`nextAction: ready-for-policy-gate\`)."
+            fi
+            echo ""
+            echo '```json'
+            echo "$AUDIT_JSON"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

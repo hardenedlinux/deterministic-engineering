@@ -4,7 +4,7 @@
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 (import "../../projects/library-formation/init.ss"
         "library-formation-output.ss" :clan/poo/object
-        (only-in :yuanxu/module-system/source/admission current-module-source-observer))
+        (only-in :tao3k/yuanxu/module-system/source/admission current-module-source-observer))
 (import :deterministic-engineering/init)
 (def LibraryFormationProfile (.get deterministic-engineering.init.exports Library library-formation-profiles profiles LibraryFormationProfile))
 (export main)

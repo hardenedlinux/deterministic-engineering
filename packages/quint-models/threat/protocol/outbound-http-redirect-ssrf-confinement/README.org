@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Adversarial (ADV-L4) Outbound HTTP Redirect, SSRF & Credential Exfiltration Confinement
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.protocol.outbound-http-redirect-ssrf-confinement=
+- *Subdomain*: =quint.threat.protocol=
+- *Quint Module*: =protocol_outbound_http_redirect_ssrf_confinement= (=[[file:OutboundHttpRedirectSsrfConfinement.qnt][OutboundHttpRedirectSsrfConfinement.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/protocol/outbound-http-redirect-ssrf-confinement/OutboundHttpRedirectSsrfConfinement=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Under ADV-L4 hostile HTTP/redirect/SSRF inputs, authenticated and origin-pinned HTTP clients never follow unchecked redirects (redirectLeaks == 0), never send remote Bearer credentials or downgrade HTTPS endpoints to cleartext HTTP (schemeDowngrades == 0), reject cross-origin/metadata DownloadURL SSRF (ssrfCrossOriginHits == 0), and block URL userinfo smuggling and symlink HTTP file disclosure (userinfoSmuggles == 0 and symlinkServeLeaks == 0).
+
+#+begin_src quint
+val safety = (h.redirectLeaks == 0 and h.schemeDowngrades == 0 and h.ssrfCrossOriginHits == 0 and h.userinfoSmuggles == 0 and h.symlinkServeLeaks == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =disable-http-redirects= | =stepFollowUncheckedRedirect= | =h.redirectLeaks > 0= |
+| =enforce-https-for-remote-credentials= | =stepCleartextRemoteCredLeak= | =h.schemeDowngrades > 0= |
+| =confine-download-url-origin= | =stepUnconfinedSsrfDownload= | =h.ssrfCrossOriginHits > 0= |
+| =reject-userinfo-and-symlink-serve= | =stepUserinfoAndSymlinkEscape= | =h.userinfoSmuggles > 0 or h.symlinkServeLeaks > 0= |
+
+* Grounded Papers & Specifications
+
+- *OWASP SSRF Prevention & CWE-918 / CWE-601*: Default HTTP client redirect following silently bypasses initial URL allowlists, downgrades HTTPS to HTTP, and exfiltrates POST bodies or credentials to loopback/cloud-metadata services.
+- *RFC 9110 Section 15.4 & RFC 6750 Bearer Token Usage*: Bearer credentials MUST NOT be transmitted over cleartext HTTP to non-loopback hosts, and 301/302/307/308 redirects must be fail-closed on authenticated or origin-pinned clients.
+- *CWE-59 / CWE-22 Symlink Following in Static HTTP File Handlers*: Static file handlers that validate paths with os.Stat before ServeFile follow symlinks planted inside served directories and leak arbitrary host files.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/protocol/outbound-http-redirect-ssrf-confinement/OutboundHttpRedirectSsrfConfinement.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/protocol/outbound-http-redirect-ssrf-confinement/OutboundHttpRedirectSsrfConfinement.qnt --main=protocol_outbound_http_redirect_ssrf_confinement --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite outbound HTTP request/redirect/download/serve state abstraction (ADV-L4 hostile attack tier); verifies fail-closed no-redirect policy, remote HTTPS credential confinement, DownloadURL origin/scheme confinement, userinfo rejection, and Lstat symlink-safe file serving, not kernel TCP stack or DNS rebinding TTL races.

@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Hermetic Supply-Chain & Reproducible Build Provenance
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.defense.supply-chain-provenance=
+- *Subdomain*: =quint.engineering.defense=
+- *Quint Module*: =supply_chain_provenance= (=[[file:SupplyChainProvenance.qnt][SupplyChainProvenance.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/defense/supply-chain-provenance/SupplyChainProvenance=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Artifact build admission requires signed lockfile pinning (slopsquatViolations == 0), zero CVE tombstones (cveViolations == 0), and hermetic 2-builder parity (reproViolations == 0).
+
+#+begin_src quint
+val safety = (h.slopsquatViolations == 0 and h.cveViolations == 0 and h.reproViolations == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =require-lockfile-pinned= | =stepSlopsquatting= | =h.slopsquatViolations > 0= |
+| =require-no-cve-tombstone= | =stepCveTombstone= | =h.cveViolations > 0= |
+| =require-hermetic-reproducible= | =stepNonReproducible= | =h.reproViolations > 0= |
+
+* Grounded Papers & Specifications
+
+- *K. Thompson (Turing Award Lecture, CACM 1984)*: Reflections on Trusting Trust — defending against compiler/builder backdoors via independent reproduction.
+- *SLSA & in-toto Frameworks (CNCF / OpenSSF)*: Hermetic signed build provenance binding source, toolchain, SBOM, and output digests.
+- *Deterministic Engineering (10.187 / 10.188)*: Anti-slopsquatting M1 lockfile pinning, CVE tombstones, and 2-builder reproducible build gates.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/defense/supply-chain-provenance/SupplyChainProvenance.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/defense/supply-chain-provenance/SupplyChainProvenance.qnt --main=supply_chain_provenance --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Bounded 2-build abstraction over lockfile pinning, CVE tombstones, and hermetic 2-builder parity; unbounded SBOM dependency lists and builder signatures are proved in SupplyChainProvenance.lean.

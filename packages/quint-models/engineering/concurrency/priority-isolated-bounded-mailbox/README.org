@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Priority-Isolated Bounded Mailbox, Active Compaction & Latest-Wins Watch
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.concurrency.priority-isolated-bounded-mailbox=
+- *Subdomain*: =quint.engineering.concurrency=
+- *Quint Module*: =concurrency_priority_isolated_bounded_mailbox= (=[[file:PriorityIsolatedBoundedMailbox.qnt][PriorityIsolatedBoundedMailbox.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/concurrency/priority-isolated-bounded-mailbox/PriorityIsolatedBoundedMailbox=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Separate per-tier bounded channels shed saturated low-priority bursts without starving high-priority queries, cancelled callers are actively compacted from queue slots, weighted fair draining avoids starvation, and latest-wins progress snapshots stay within O(1) slot.
+
+#+begin_src quint
+val safety = (h.hiQueue <= 2 and h.loQueue <= 2 and not(h.hiStarved) and h.zombieLo == 0 and h.progressSlots <= 1 and h.observedWater <= h.producedWater)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =isolate-priority-ingress= | =stepSharedChannelPriorityInversion= | =h.hiStarved == true= |
+| =bound-ingress-capacity= | =stepUnboundedQueueGrowth= | =h.loQueue > 2= |
+| =compact-cancelled-zombies= | =stepZombieSlotLeak= | =h.zombieLo > 0= |
+
+* Grounded Papers & Specifications
+
+- *M. Welsh, D. Culler & E. Brewer (ACM SOSP 2001)*: SEDA: An Architecture for Well-Conditioned, Scalable Internet Services — bounded admission control and explicit load shedding.
+- *H. Zhou et al. (ACM SoCC 2018)*: Overload Control for Scaling WeChat Microservices (DAGOR) — priority-aware load shedding preventing low-priority floods from starving high-priority work.
+- *A. Demers, S. Keshav & S. Shenker (ACM SIGCOMM 1989)*: Analysis and Simulation of a Fair Queueing Algorithm — weighted fair draining preventing lower-tier starvation.
+- *J. Dean & L. A. Barroso (CACM 2013)*: The Tail at Scale — keeping interactive latency bounded under concurrent background bursts.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/concurrency/priority-isolated-bounded-mailbox/PriorityIsolatedBoundedMailbox.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/concurrency/priority-isolated-bounded-mailbox/PriorityIsolatedBoundedMailbox.qnt --main=concurrency_priority_isolated_bounded_mailbox --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite 2-slot per-tier priority mailbox and 1-slot watch channel abstraction; verifies priority isolation under overload, bounded shedding, cancelled-job compaction, and monotonic watch progress, not OS thread scheduling.

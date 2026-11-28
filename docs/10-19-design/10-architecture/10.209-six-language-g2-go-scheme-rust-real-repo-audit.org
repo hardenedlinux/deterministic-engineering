@@ -1,0 +1,33 @@
+#+TITLE: 10.209 Six-Language G2 AI Anti-Defensive-Programming Auditor (Go, Rust, Scheme, TS, C/C++) & Live 984-File Production Sweep
+#+AUTHOR: hardenedlinux Linux Team and Contributors
+#+DATE: 2026-11-27
+#+PROPERTY: JD_ID 10.209
+#+PROPERTY: STATUS accepted-and-verified
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+* Executive Summary
+
+This ADR closes the remaining language gap in our =G2= AI Anti-Defensive-Programming gate ([[file:../../../languages-engineering/ts/defense/agent-audit/multi-lang-auditor.ts][multi-lang-auditor.ts]]): adding a first-class zero-dependency **native Go auditor (=auditGoAgentSource=)**, upgrading our **Gerbil Scheme auditor (=auditSchemeAgentSource=)** with =(try ... (catch ...))= and =E1= log-and-swallow detection, extending =E3= diff-delta assertion-deletion detection to Go (=t.Fatal/Fatalf/Error/Errorf=, =require.*/assert.*=), and validating all three target languages (**Rust, Go, Gerbil Scheme**) live across **984 real production source files** in =tao3k/marlin-agent-core= and =tao3k/marlin-mygo=.
+
+* Six-Language =G2= Coverage Matrix
+
+| Language | Auditor Surface | 4 =G2= Hallucination Classes Covered | Live Production Calibration Target |
+|----------+-----------------+--------------------------------------+------------------------------------|
+| TypeScript / JS | [[file:../../../languages-engineering/ts/defense/agent-audit/ts-ast-auditor.ts][ts-ast-auditor.ts]] | =P1= silent-fallback, =E1= log-swallow, =E2= =@ts-ignore=/=as any=/conditional =expect=, =P4= redundant glue, =G2= fabricated stubs | =deterministic-engineering-qnt= (0 findings) |
+| C / C++ | [[file:../../../languages-engineering/ts/defense/agent-audit/multi-lang-auditor.ts][multi-lang-auditor.ts]] (=auditCCppAgentSource=) | =#define NDEBUG=, empty/constant/log-swallow =catch=, =NULL=/=SIZE_MAX= silent =0=, =GTEST_SKIP=, stub =verify*= | =languages-engineering/{c,cpp}/defense= (0 findings) |
+| Rust | [[file:../../../languages-engineering/ts/defense/agent-audit/multi-lang-auditor.ts][multi-lang-auditor.ts]] (=auditRustAgentSource=) | =Result= =.unwrap_or_default()= / =.ok().unwrap_or(0)=, =Err(_) => Ok(...)=, macro =error!/eprintln!= log-swallow, =#[ignore]=, =#[allow(unused_must_use)]=, stub =verify_*= | =marlin-agent-core/crates= (**493** prod =.rs= files; calibrated =173 -> 71= & drove M1–M4 + B11/B21/B12/B9 fixes) |
+| **Go (New)** | [[file:../../../languages-engineering/ts/defense/agent-audit/multi-lang-auditor.ts][multi-lang-auditor.ts]] (=auditGoAgentSource=) | =if err != nil { return nil }=, =if err != nil { log... }= (recognizing fail-closed =os.Exit(1)= & narrow =errors.Is/ErrNotExist=), =go-empty-if-err=, =go-recover-swallow=, =go-noop-recover-repanic=, =t.Skip*=, =//nolint:errcheck=, stub =Verify*/Validate*=, =E3= Go assertion deletion | =marlin-mygo= (**251** prod =.go= files -> **12 findings**, immediately catching real secret-deletion bug in =control/auth/keychain_windows.go:124=!) |
+| **Gerbil Scheme (Upgraded)** | [[file:../../../languages-engineering/ts/defense/agent-audit/multi-lang-auditor.ts][multi-lang-auditor.ts]] (=auditSchemeAgentSource=) + [[file:../../../library/defensive-governance/func.ss][defensive-governance/func.ss]] | =(with-catch (lambda (_) <const>) ...)=, =E1= =with-catch= log-and-swallow, Gerbil =(try ... (catch (_) <const>))=, vacuous =(guard ... #t)=, POO floor weakening & =verified?: #t= without witness | =marlin-agent-core/scheme= (**240** prod =.ss= files -> **1 finding**: =scheme/search-dsl/funcs.ss:1341=) |
+
+* Real-World Production Catch Highlight (=marlin-mygo= Go)
+
+Running =auditGoAgentSource= across all 251 production Go files in =marlin-mygo= immediately surfaced a real security silent-fallback defect in =control/auth/keychain_windows.go:121-128=:
+- =windowsDPAPIStore.DeleteSecret= encounters =err != nil= from =w.blobPath(service, account)= and silently returns =nil= (claiming the secret was deleted) while also discarding =os.Remove(path)= errors via =_ = os.Remove(path)=.
+- Additional actionable log-and-swallow sites were pinpointed in =cmd/marlin-app/resilience.go:79= (=SaveFile=) and =cmd/marlin-app/sidecar.go:385,395,411= (=liveDriver.Start= / =projBridge.Start= / =DispatchPromptResponseToDriver=).
+
+* Verification Receipts
+
+- =bun test languages-engineering/ts/defense/agent-audit/agent-defense-audit.test.ts=: **6 pass / 0 fail** (covering C/C++/Rust/Go/Scheme/TS + =E1=/=E2=/=E3= + real-world Marlin Rust/Go/Scheme precision tests).
+- =G2= self-audit (=agent-defense-audit.ts= on =multi-lang-auditor.ts=, =agent-defense-audit.test.ts=, =remediation-catalog.ts=): **0 findings**.
+- Live 984-file 3-language production sweep (=marlin-mygo= 251 Go + =marlin-agent-core= 240 Scheme + 493 Rust): completed cleanly with actionable, low-noise diagnostics across all 3 languages.

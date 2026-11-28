@@ -1,0 +1,36 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Threat / Identity & Authentication Ceremonies (Quint.Threat.Identity)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+This subdomain groups co-located formal threat models for human and workload
+identity protocols: OAuth 2.1 lifecycle & PKCE, PAR & crash-safe revocation
+recovery, OpenID Connect federation, RFC 8628 device authorization, WebAuthn /
+FIDO2 passkey ceremonies, and short-lived SPIFFE/SVID rotation.
+
+* Yuanxu Selection & Reuse
+
+#+begin_src scheme
+(yuanxu!
+  :load-modules (from: :deterministic-engineering/init QuintThreatIdentitySource)
+    mode: auto
+    profile: quint.threat.identity
+    mount: Identity
+    :profiles (assurance.bounded-proof bound.standard governance.mandatory-countermodels))
+#+end_src
+
+* Model Matrix
+
+| Model | Failure Class | Core Papers / Specs | Emergent Invariant | Countermodels |
+|-------+---------------+---------------------+--------------------+---------------|
+| [[file:oauth-token-lifecycle/README.org][oauth-token-lifecycle]] | =quint.failure.replay= | RFC 9700 (2025), Fett et al. (CCS 2016) | Single-use auth codes, epoch-current refresh & monotonic scopes | Code replay; Zombie refresh; Scope escalation |
+| [[file:oauth-revocation-recovery/README.org][oauth-revocation-recovery]] | =quint.failure.crash-recovery= | RFC 9126 (PAR), RFC 7009 (Revocation) | PAR-bound admission & durable revocation across crashes | Crash drops revocation; Unbound PAR exchange |
+| [[file:oidc-federation/README.org][oidc-federation]] | =quint.failure.identity-confusion= | OIDC Core 1.0, Fett et al. (IEEE S&P 2017) | Multi-aud =azp= binding, UserInfo =sub= match & JWKS cooldown | =sub= substitution; =azp= bypass; JWKS refresh storm |
+| [[file:device-authorization/README.org][device-authorization]] | =quint.failure.identity-confusion= | RFC 8628, RFC 9700 | Cancelled/expired flow rejected & Bearer bound to ticket account | Cancelled admit; Expired admit; Cross-account bind |
+| [[file:webauthn-passkey-ceremony/README.org][webauthn-passkey-ceremony]] | =quint.failure.replay= | W3C WebAuthn L3, Barbosa et al. (CRYPTO 2021) | Exact RP-ID origin, single-use challenge & monotonic =signCount= | Phishing relay; Challenge replay; Cloned =signCount= |
+| [[file:workload-identity-rotation/README.org][workload-identity-rotation]] | =quint.failure.revocation-bypass= | SPIFFE SVID, NIST SP 800-207 | Emergency revocation overrides overlap TTL windows | Revoked SVID reuse inside grace window |

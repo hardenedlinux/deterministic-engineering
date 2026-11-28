@@ -16,6 +16,9 @@ const directory = 'docs/90-99-views/90-architecture-views/';
 const names = [
   '90.139-source-bound-c-and-cpp-contract-verification',
   '90.140-flat-declarative-library-boundary',
+  '90.141-repository-organization-and-packages',
+  '90.142-quint-models-library-and-packages',
+  '90.143-multi-method-funflow-and-leanpoo-architecture',
 ];
 const output = path.join(root, '.cache/render/library-boundary');
 const compositionSources = [
@@ -28,6 +31,7 @@ const compositionSources = [
   'packages/render/src/export.ts',
   'packages/render/src/png.ts',
   'packages/render/src/webp.ts',
+  'packages/render/package.json',
   'package.json',
   'bun.lock',
 ];

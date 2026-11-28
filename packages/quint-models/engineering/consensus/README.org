@@ -1,0 +1,35 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Engineering / Consensus Formal Models (Quint.Engineering.Consensus)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+This subdomain groups co-located formal models for replicated state machines and
+quorum consensus protocols. Each model directory is a self-contained Yuanxu
+Loader module containing its Scheme POO AST source (=objects.ss=), sealed
+contract (=types.ss=), Yuanxu Design 165 interface (=interface.ss=), projected
+pure =.qnt= specification, and same-commit verified =README.org=.
+
+* Yuanxu Selection & Reuse
+
+Downstream Gerbil/Yuanxu packages can mount only this consensus subdomain:
+
+#+begin_src scheme
+(yuanxu!
+  :load-modules (from: :deterministic-engineering/init QuintEngineeringConsensusSource)
+    mode: auto
+    profile: quint.engineering.consensus
+    mount: Consensus
+    :profiles (assurance.bounded-proof bound.extended-counterexample governance.mandatory-countermodels))
+#+end_src
+
+* Model Matrix
+
+| Model | Failure Class | Core Papers | Emergent Invariant | Countermodels |
+|-------+---------------+-------------+--------------------+---------------|
+| [[file:raft-leader-commitment/README.org][raft-leader-commitment]] | =quint.failure.split-brain= | Ongaro & Ousterhout (USENIX ATC 2014), Howard et al. (OPODIS 2016) | Leader Completeness: every elected leader holds every committed entry | Figure 8 old-term commit overwrite; Stale-log election |
+| [[file:bft-quorum-lock/README.org][bft-quorum-lock]] | =quint.failure.safety-fork= | Castro & Liskov PBFT (OSDI 1999), Buchman et al. Tendermint (2018), Yin et al. HotStuff (PODC 2019) | Byzantine Agreement across view changes under =f= equivocating replicas (=n=3f+1=) | Sub-quorum (=f+1=) commit; View-change lock bypass; Missing lock on precommit; Stale-view precommit |

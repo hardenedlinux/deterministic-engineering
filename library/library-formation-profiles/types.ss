@@ -2,7 +2,7 @@
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 (import :clan/poo/object
-        (only-in :clan/poo/mop define-type Object Type)
+        (only-in :clan/poo/type define-type Object Type)
         (only-in :clan/poo/type Record Exactly))
 (export ConfigType ScopeType)
 

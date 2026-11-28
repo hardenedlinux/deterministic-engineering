@@ -1,0 +1,48 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Macaroons Multi-Hop Caveat Attenuation & HMAC Chain Verification
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.protocol.macaroon-delegation-chain=
+- *Subdomain*: =quint.threat.protocol=
+- *Quint Module*: =macaroon_delegation_chain= (=[[file:MacaroonDelegationChain.qnt][MacaroonDelegationChain.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/protocol/macaroon-delegation-chain/MacaroonDelegationChain=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Every tool permission executed under a delegated macaroon is a subset of the monotonically attenuated caveat chain.
+
+#+begin_src quint
+val safety = h.executedPerms.subseteq(h.attenuatedPerms)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =hmac-caveat-chain-verify= | =stepCaveatStripping= | =not(subseteq(h.executedPerms, h.attenuatedPerms))= |
+
+* Grounded Papers & Specifications
+
+- *A. Birgisson, J. G. Politz, Ú. Erlingsson, A. Taly, M. Vrable & M. Lentczner (NDSS 2014)*: Macaroons: Cookies with Contextual Caveats for Decentralized Authorization in the Cloud.
+- *M. S. Miller (Johns Hopkins PhD Thesis 2006)*: Robust Composition: monotonic capability attenuation across untrusted delegation hops.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/protocol/macaroon-delegation-chain/MacaroonDelegationChain.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/protocol/macaroon-delegation-chain/MacaroonDelegationChain.qnt --main=macaroon_delegation_chain --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite three-permission delegation chain abstraction; does not model HMAC-SHA256 collision resistance or third-party discharge macaroon distribution.

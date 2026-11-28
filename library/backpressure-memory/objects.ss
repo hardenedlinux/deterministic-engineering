@@ -76,13 +76,13 @@
              revision: "ownership-budget/v1"
              owner: 'backpressure-memory
              kind: 'quint
-             relative-path: "./model.qnt")
+             relative-path: "../../languages-engineering/quint/concurrency/backpressure-memory/model.qnt")
            (.o
              identity: 'backpressure.budget
              revision: "ownership-budget/v1"
              owner: 'backpressure-memory
              kind: 'lean
-             relative-path: "./budget.lean"))
+             relative-path: "../../languages-engineering/lean/concurrency/backpressure-memory/budget.lean"))
   capabilities: '(quint-model-asset lean-budget-asset)
   method-refs: '()
   qualification: 'conditional-abstract-model)

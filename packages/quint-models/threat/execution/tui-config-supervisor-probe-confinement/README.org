@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: TUI Config, ASP Supervisor, Probe & Bootstrap Confinement (SM39)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.execution.tui-config-supervisor-probe-confinement=
+- *Subdomain*: =quint.threat.execution=
+- *Quint Module*: =execution_tui_config_supervisor_probe_confinement= (=[[file:TuiConfigSupervisorProbeConfinement.qnt][TuiConfigSupervisorProbeConfinement.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/execution/tui-config-supervisor-probe-confinement/TuiConfigSupervisorProbeConfinement=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+TUI TOML loading enforces non-symlink byte caps, finite timeouts, and non-ambient credential_env hygiene (configConfinementBreaches == 0 and configConfinementEnforced), ASP gateway supervision enforces env_clear() secret scrubbing, boot timeouts, strict loopback endpoints, and absolute-PATH discovery (supervisorIsolationBreaches == 0 and supervisorIsolationEnforced), runtime metrics probes enforce O_NOFOLLOW non-symlink creation and cumulative byte ceilings (probeFileBreaches == 0 and probeFileConfinementEnforced and probeChunksWritten <= 12), and local Scheme bootstrap prioritizes the binary-owned repository over untrusted CWD without following symlinks (bootstrapTrustBreaches == 0 and bootstrapTrustOrderEnforced).
+
+#+begin_src quint
+val safety = (h.configConfinementBreaches == 0 and h.supervisorIsolationBreaches == 0 and h.probeFileBreaches == 0 and h.bootstrapTrustBreaches == 0 and h.configConfinementEnforced and h.supervisorIsolationEnforced and h.probeFileConfinementEnforced and h.bootstrapTrustOrderEnforced and h.probeChunksWritten >= 0 and h.probeChunksWritten <= 12 and h.stepCount <= 12)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =forbid-tui-config-symlink-or-ambient-cred-env= | =stepConfigSymlinkOrAmbientCred= | =h.configConfinementBreaches > 0= |
+| =forbid-asp-supervisor-unscrubbed-env-hang-or-ssrf= | =stepAspSupervisorLeakHangOrSsrf= | =h.supervisorIsolationBreaches > 0= |
+| =forbid-runtime-probe-symlink-or-unbounded-disk= | =stepProbeSymlinkOrDiskFlood= | =h.probeFileBreaches > 0= |
+| =forbid-bootstrap-cwd-hijack-or-symlink-scheme= | =stepBootstrapCwdOrSymlinkHijack= | =h.bootstrapTrustBreaches > 0= |
+
+* Grounded Papers & Specifications
+
+- *Deterministic Engineering (30.06 / 40.05)*: SM39 ADV-L4 terminal-client config symlink/size/timeout/credential_env confinement, env_clear()-scrubbed boot-timeout-bounded strict-loopback absolute-PATH ASP gateway supervision, O_NOFOLLOW byte-capped diagnostic probe persistence, and executable-first non-symlink Scheme package bootstrap trust ordering.
+- *Marlin Agent Core Empirical Case Study (2026)*: marlin-agent-tui Config::load performed unbounded symlink-following TOML reads and admitted ambient PATH/HOME/LD_PRELOAD credential_env and unbounded timeouts, spawn_managed_asp_gateway inherited ambient host secrets without .env_clear(), lacked a boot timeout, accepted @-userinfo spoofed endpoints, and searched relative PATH entries, RuntimeProbe::start truncated symlink targets and grew CSV files unboundedly, and bootstrap::resolve_local_scheme_prefix prioritized untrusted CWD ./scheme ahead of the binary repository.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/execution/tui-config-supervisor-probe-confinement/TuiConfigSupervisorProbeConfinement.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/execution/tui-config-supervisor-probe-confinement/TuiConfigSupervisorProbeConfinement.qnt --main=execution_tui_config_supervisor_probe_confinement --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite bounded terminal-client config, ASP gateway supervisor, runtime diagnostic probe, and local Scheme bootstrap confinement state machine (probeChunksWritten <= 12, stepCount <= 12); models non-symlink byte-bounded TOML config loading with bounded HTTP timeouts and ambient-system-env-free credential_env validation, env_clear()-scrubbed boot-timeout-bounded loopback-endpoint-validated absolute-PATH ASP gateway supervision, O_NOFOLLOW non-symlink byte-capped runtime metrics probe persistence, and executable-first non-symlink local Scheme package discovery, without modeling OS kernel page-cache eviction or PTY driver internals.

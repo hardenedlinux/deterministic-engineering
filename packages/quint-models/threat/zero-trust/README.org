@@ -1,0 +1,35 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Threat / Zero Trust & Policy Governance Models (Quint.Threat.ZeroTrust)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+This subdomain groups co-located Zero Trust Architecture (ZTA) and policy
+governance threat models: authority currentness predicates, PEP/PDP policy-epoch
+split, cross-tenant microsegmentation egress mediation, Separation of Duties
+with veto precedence, and cumulative k-anonymity disclosure budgets.
+
+* Yuanxu Selection & Reuse
+
+#+begin_src scheme
+(yuanxu!
+  :load-modules (from: :deterministic-engineering/init QuintThreatZeroTrustSource)
+    mode: auto
+    profile: quint.threat.zero-trust
+    mount: ZeroTrust
+    :profiles (assurance.bounded-proof bound.standard governance.mandatory-countermodels))
+#+end_src
+
+* Model Matrix
+
+| Model | Failure Class | Core Papers / Specs | Emergent Invariant | Countermodels |
+|-------+---------------+---------------------+--------------------+---------------|
+| [[file:authority-currentness/README.org][authority-currentness]] | =quint.failure.stale-authority= | NIST SP 800-207 (2020), Miller (2006) | Pure authority currentness & epoch equality predicates | Pure reference module |
+| [[file:zero-trust-pep-pdp/README.org][zero-trust-pep-pdp]] | =quint.failure.policy-drift= | NIST SP 800-207 (2020), BeyondCorp (2014) | PEP enforces only current-epoch non-revoked PDP decisions | Stale policy decision; Revoked policy bypass |
+| [[file:microsegmentation-egress/README.org][microsegmentation-egress]] | =quint.failure.lateral-movement= | NIST SP 800-207, NIST SP 800-204A/B | Active egress requires attested non-quarantined sidecar & tenant policy | Sidecar bypass; Cross-tenant policy bypass |
+| [[file:governance-sod/README.org][governance-sod]] | =quint.failure.privilege-escalation= | Clark & Wilson (IEEE S&P 1987), Simon & Zurko (CSFW 1997) | Execution requires distinct approver and zero active vetoes | Self-approval; Veto override |
+| [[file:data-lineage-disclosure/README.org][data-lineage-disclosure]] | =quint.failure.information-leak= | Sweeney (2002), Cohen & Nissim (PNAS 2020) | Candidate set never shrinks below k=2 & disclosures stay in budget | Singling-out narrowing; Budget overrun |

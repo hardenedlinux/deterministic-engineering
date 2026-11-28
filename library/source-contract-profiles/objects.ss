@@ -3,7 +3,7 @@
 
 ;;; Profiles consume strategies from the selected native owner, not a second import.
 (import :clan/poo/object
-        (only-in :clan/poo/mop validate))
+        (only-in :clan/poo/type validate))
 (export source-contract-profiles configured-language)
 
 (def (source-contract-profiles selected-strategies)

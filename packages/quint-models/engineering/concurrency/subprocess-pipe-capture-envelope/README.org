@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Bounded Subprocess Pipe Capture, Drain-to-Sink Deadlock Freedom & Line Framing Envelope
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.concurrency.subprocess-pipe-capture-envelope=
+- *Subdomain*: =quint.engineering.concurrency=
+- *Quint Module*: =concurrency_subprocess_pipe_capture_envelope= (=[[file:SubprocessPipeCaptureEnvelope.qnt][SubprocessPipeCaptureEnvelope.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/concurrency/subprocess-pipe-capture-envelope/SubprocessPipeCaptureEnvelope=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Subprocess stdout/stderr capture retains at most maxRetainBytes in heap (peakRetainedBytes <= maxRetainBytes, never buffering full output before post-hoc truncation), continuously drains excess pipe bytes into a fixed-size discard buffer until EOF so the child never deadlocks on a full kernel pipe (pipeDeadlocks == 0), and enforces an explicit byte cap on every line-framed subprocess read (lineCapBreaches == 0).
+
+#+begin_src quint
+val safety = (h.retainedBytes <= h.maxRetainBytes and h.peakRetainedBytes <= h.maxRetainBytes and h.retainedBytes >= 0 and h.discardedBytes >= 0 and h.pipeDeadlocks == 0 and h.lineCapBreaches == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =precap-before-retain= | =stepBufferBeforeTruncate= | =h.peakRetainedBytes > h.maxRetainBytes= |
+| =drain-pipe-to-sink-after-cap= | =stepStopReadingPipeDeadlock= | =h.pipeDeadlocks > 0= |
+| =bound-line-frame-read= | =stepUnboundedReadLineBomb= | =h.lineCapBreaches > 0= |
+
+* Grounded Papers & Specifications
+
+- *W. R. Stevens & S. A. Rago (Addison-Wesley 2013)*: Advanced Programming in the UNIX Environment (APUE, Ch. 15 Pipes) — failing to drain stdout/stderr pipes past kernel pipe-buffer capacity blocks the child writer and deadlocks parent wait().
+- *M. Grottke & K. S. Trivedi (IEEE Computer 2007)*: Fighting Bugs: Remove, Retry, Replicate, and Rejuvenate — unbounded wait_with_output/read_to_end followed by post-hoc truncate() retains spike payloads in heap until OOM.
+- *S. A. Crosby & D. S. Wallach (USENIX Security 2003)*: Denial of Service via Algorithmic Complexity — unbounded single-line BufReader::read_line() without a byte limit lets a single delimiter-free payload exhaust host memory.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/concurrency/subprocess-pipe-capture-envelope/SubprocessPipeCaptureEnvelope.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/concurrency/subprocess-pipe-capture-envelope/SubprocessPipeCaptureEnvelope.qnt --main=concurrency_subprocess_pipe_capture_envelope --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite 4-unit retained pipe budget and 3-unit single-line frame cap abstraction; verifies pre-allocation retain capping, drain-to-sink pipe liveness past OS pipe capacity, and bounded line framing, not kernel splice/zero-copy syscall internals or PTY line disciplines.

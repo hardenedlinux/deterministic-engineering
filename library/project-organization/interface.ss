@@ -3,16 +3,18 @@
 
 ;;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 (import
-  (only-in :yuanxu/module-system/source/declaration .def))
+  (only-in :clan/poo/object .def .o .get)
+  "types.ss"
+  "config.ss")
+(export ProjectOrganizationLibrary)
 (.def ProjectOrganizationLibrary
   identity: 'project-organization
-  tags: '(engineering domain organization)
-  admissions: (.o
-                Config: (.o
-                          export-path: '(config)
-                          contract-path: '(contracts config)))
+  tags: '(engineering domain organization de.layer.foundation)
   core: (.o
-          requires: (.o)
+          admissions: (.o
+                        Config: (.o
+                                  export-path: '(config)
+                                  contract-path: '(contracts config)))
           scope-contract: (.get OrganizationScopeContract value-contract)
           exports: (.o (:: scope)
                      self: scope

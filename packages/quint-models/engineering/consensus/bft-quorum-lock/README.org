@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: BFT Quorum Intersection & Locked-Block View-Change Safety (PBFT / Tendermint / HotStuff)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.consensus.bft-quorum-lock=
+- *Subdomain*: =quint.engineering.consensus=
+- *Quint Module*: =consensus_bft_quorum_lock= (=[[file:BftQuorumLock.qnt][BftQuorumLock.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/consensus/bft-quorum-lock/BftQuorumLock=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=9=
+
+* Emergent Safety Invariant
+
+Byzantine Agreement: despite an equivocating Byzantine replica voting for both conflicting values in every round, two distinct values are never both committed across view changes.
+
+#+begin_src quint
+val safety = not((h.committed1 and h.committed2))
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =bft-quorum-threshold= | =stepSubQuorumCommit= | =h.committed1 == true and h.committed2 == true= |
+| =bft-lock-respect= | =stepIgnoreLock= | =h.committed1 == true and h.committed2 == true= |
+| =bft-commit-requires-lock= | =stepMissingLockOnPreCommit= | =h.committed1 == true and h.committed2 == true= |
+| =bft-monotonic-view= | =stepStaleViewPreCommit= | =h.committed1 == true and h.committed2 == true= |
+
+* Grounded Papers & Specifications
+
+- *M. Castro & B. Liskov (USENIX OSDI 1999)*: Practical Byzantine Fault Tolerance (PBFT): 2f+1 quorum intersection under f Byzantine replicas.
+- *E. Buchman, J. Kwon & Z. Milosevic (2018)*: The latest gossip on BFT consensus (Tendermint / CometBFT): polka locks and view-change safety.
+- *M. Yin, D. Malkhi, M. K. Reiter, G. G. Gueta & I. Abraham (ACM PODC 2019)*: HotStuff: BFT Consensus with Linearity and Responsiveness — lockedQC safety across views.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/consensus/bft-quorum-lock/BftQuorumLock.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/consensus/bft-quorum-lock/BftQuorumLock.qnt --main=consensus_bft_quorum_lock --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite 4-replica (3 honest + 1 equivocating Byzantine, n=3f+1) 2-view BFT quorum-intersection, view-monotonicity, and lock-respect abstraction; does not model partial-synchrony liveness, Pacemaker GST timeouts, or BLS threshold signature aggregation.

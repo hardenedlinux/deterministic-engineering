@@ -1,0 +1,143 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: @deterministic-engineering/quint-models
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+=@deterministic-engineering/quint-models= is the reusable formal-model library
+owned by =hardenedlinux/deterministic-engineering= and distributed as a
+read-only =git subtree= mirror.
+
+Every model folder is a self-contained, co-located Yuanxu Loader module pairing
+its Gerbil Scheme POO AST source (=objects.ss=), sealed contract (=types.ss=),
+Yuanxu Design 165 interface (=interface.ss=), projected pure =.qnt=
+specification, and same-commit verified =README.org=.
+
+The library is organized symmetrically into two top-level domains of 5 formal
+subdomains each (37 pure =.qnt= models total):
+
+1. *Threat-First Modeling (=threat/<subdomain>/<model>/=)*: 24 security and Zero
+   Trust state-machine models across =identity=, =zero-trust=, =protocol=,
+   =supply-chain=, and =execution=.
+2. *Engineering State Models (=engineering/<subdomain>/<model>/=)*: 13
+   deterministic systems-engineering state machines across =storage=,
+   =consensus=, =concurrency=, =parallel=, and =gc=.
+
+* Repository Layout
+
+#+begin_example
+packages/quint-models/
+├── README.org
+├── package.json
+├── docs/
+│   ├── threat-first-framework.org         # Threat-First QNT methodology & countermodel discipline
+│   ├── zero-trust-and-state-layers.org    # Mapping Zero Trust principles to state-machine invariants
+│   ├── engineering-state-models.org       # Storage, Consensus, Concurrency, Parallel, and GC taxonomy
+│   ├── model-based-testing-and-refinement.org # Emergent invariants, --mbt ITF traces & diff compose
+│   └── research-and-papers.org            # Curated bibliography of formal methods & systems papers
+├── threat/
+│   ├── identity/                          # Quint.Threat.Identity (6 models)
+│   │   ├── README.org
+│   │   ├── oauth-token-lifecycle/         # OAuth 2.1 PKCE/nonce single-use, refresh epoch & scope monotonicity
+│   │   ├── oauth-revocation-recovery/     # OAuth PAR binding & crash-safe durable revocation recovery
+│   │   ├── oidc-federation/               # OIDC Core azp binding, UserInfo sub equality & JWKS cooldown
+│   │   ├── device-authorization/          # RFC 8628 device-code cancel/expiry & multi-account token binding
+│   │   ├── webauthn-passkey-ceremony/     # WebAuthn/FIDO2 RP-ID origin, single-use challenge & signCount
+│   │   └── workload-identity-rotation/    # Short-lived SPIFFE/SVID rotation overlap & emergency revocation
+│   ├── zero-trust/                        # Quint.Threat.ZeroTrust (5 models)
+│   │   ├── README.org
+│   │   ├── authority-currentness/         # Explicit verification, freshness, revocation & epoch currency
+│   │   ├── zero-trust-pep-pdp/            # Zero Trust PEP/PDP split under policy-epoch drift & revocation
+│   │   ├── microsegmentation-egress/      # Cross-tenant egress mediation, sidecar attestation & quarantine
+│   │   ├── governance-sod/                # Separation of Duties (distinct approver) & forbid-veto precedence
+│   │   └── data-lineage-disclosure/       # Cumulative disclosure k-anonymity floor & budget cap
+│   ├── protocol/                          # Quint.Threat.Protocol (4 models)
+│   │   ├── README.org
+│   │   ├── dpop-sender-constrain/         # OAuth 2.0 DPoP sender-constrained tokens & jti replay (RFC 9449)
+│   │   ├── macaroon-delegation-chain/     # Macaroons multi-hop caveat attenuation & HMAC chain (NDSS 2014)
+│   │   ├── tls13-0rtt-forward-secrecy/    # TLS 1.3 / Noise 0-RTT anti-replay, strike sync & ECDHE PFS
+│   │   └── mls-ratchet-pcs/               # MLS (RFC 9420) / Double Ratchet FS, PCS & removal key rotation
+│   ├── supply-chain/                      # Quint.Threat.SupplyChain (3 models)
+│   │   ├── README.org
+│   │   ├── supply-chain-tuf/              # TUF / Sigstore / in-toto rollback, freeze & mix-and-match defense
+│   │   ├── transparency-log-gossip/       # RFC 9162 / Rekor inclusion & split-view consistency gossip
+│   │   └── slsa-hermetic-provenance/      # SLSA L3/L4 signed provenance & independent reproducible rebuild
+│   └── execution/                         # Quint.Threat.Execution (6 models)
+│       ├── README.org
+│       ├── capabilities/                  # Object-capability acquisition graph & reachability
+│       ├── effect-handoff/                # Prepare / durable-commit / emit exact-effect handoff
+│       ├── effect-containment/            # Assume-breach pause, quarantine & verified clearing witness
+│       ├── state-rollback/                # Monotonic storage guard & host-rollback replay countermodel
+│       ├── agent-ifc-capability/          # AI Agent control/data segregation & capability IFC (CaMeL / FIDES)
+│       └── wasm-sandbox-confinement/      # Wasm linear-memory bounds, WASI OCap handles & openat2 confinement
+└── engineering/
+    ├── storage/                           # Quint.Engineering.Storage (2 models)
+    │   ├── README.org
+    │   ├── wal-crash-recovery/            # WAL / ARIES page-cache fsync write-reordering & crash durability
+    │   └── mvcc-ssi-write-skew/           # Distributed MVCC / SSI write-skew A5B, SIREAD & read-time rw
+    ├── consensus/                         # Quint.Engineering.Consensus (2 models)
+    │   ├── README.org
+    │   ├── raft-leader-commitment/        # Raft §5.4.1 election restriction & §5.4.2 Figure 8 commit rule
+    │   └── bft-quorum-lock/               # PBFT / Tendermint / HotStuff 2f+1 quorum intersection & view-change lock
+    ├── concurrency/                       # Quint.Engineering.Concurrency (4 models)
+    │   ├── README.org
+    │   ├── backpressure-memory/           # Bounded backpressure & memory-ownership state machine
+    │   ├── structured-cancellation/       # Parent-child cancellation quiescence & fire-and-forget orphan
+    │   ├── lease-fencing-token/           # Distributed lease expiry & monotonic fencing token
+    │   └── saga-compensation-idempotency/ # Saga compensating transactions, dedup & late-retry tombstone
+    ├── parallel/                          # Quint.Engineering.Parallel (3 models)
+    │   ├── README.org
+    │   ├── epoch-reclamation/             # Lock-free Epoch-Based Reclamation (EBR) & premature-reclaim
+    │   ├── work-stealing-deque/           # Chase-Lev work-stealing deque & missing last-item CAS
+    │   └── hazard-pointers-tso/           # Hazard Pointers under x86-TSO store-buffer reordering
+    └── gc/                                # Quint.Engineering.GC (2 models)
+        ├── README.org
+        ├── tricolor-write-barrier/        # Concurrent tri-color GC with Dijkstra write barrier
+        └── safepoint-handshake/           # Mutator/collector safepoint handshake
+#+end_example
+
+* Consuming Models
+
+Official =@informalsystems/quint= resolves relative paths only. To import models
+from this package using bare package specifiers, pair it with
+=@deterministic-engineering/quint-modules-resolver= and pinned
+=@informalsystems/quint= (=0.33.0=):
+
+#+begin_src quint
+module my_wallet_host {
+  import state_rollback(MaxSends = 1).*
+    from "@deterministic-engineering/quint-models/threat/execution/state-rollback/StateRollback"
+}
+#+end_src
+
+Every model directory ships a self-contained pure =.qnt= file with embedded
+verification directives (=// @quint-model=, =// @verify=, =// @countermodel=)
+alongside its Scheme POO declaration and auto-projected =README.org=. Git commit
+integrity owns provenance — no redundant =plan.json= or =receipt.json= sidecars
+are committed.
+
+* Documentation Index
+
+- [[file:docs/threat-first-framework.org][Threat-First Modeling Framework]] — how to build pre-implementation threat models
+  with Quint, Apalache, weakened countermodels, and false-claim witnesses.
+- [[file:docs/zero-trust-and-state-layers.org][Zero Trust and State Layers]] — translating Zero Trust Architecture (ZTA)
+  principles into explicit state-machine guards and invariants.
+- [[file:docs/engineering-state-models.org][Engineering State Models (Storage, Consensus, Concurrency, Parallel, GC)]] —
+  modeling runtime determinism, crash durability, consensus, memory budgets,
+  parallel scheduling, and collector invariants.
+- [[file:docs/research-and-papers.org][Research and Papers]] — curated bibliography of formal methods, Zero Trust,
+  object-capability, distributed effects, concurrency, and GC literature.
+- [[file:docs/model-based-testing-and-refinement.org][Model-Based Testing & Refinement]] — emergent relational invariants (zero
+  synthetic =unsafe= flags), Quint =--mbt= ITF trace replay, and Scheme/TS
+  differential overlay composition.
+
+* Limits
+
+These models are finite-state protocol abstractions checked with bounded model
+checking (Apalache) and deterministic traces. They do *not* prove cryptography,
+compiler/codec correctness, kernel isolation, or physical storage atomicity.
+Every model declares its explicit limits in its =// Limits:= header directive.

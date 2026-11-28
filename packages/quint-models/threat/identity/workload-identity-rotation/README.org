@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Short-Lived Workload Identity (SVID) Rotation & Revocation Precedence
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.identity.workload-identity-rotation=
+- *Subdomain*: =quint.threat.identity=
+- *Quint Module*: =workload_identity_rotation= (=[[file:WorkloadIdentityRotation.qnt][WorkloadIdentityRotation.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/identity/workload-identity-rotation/WorkloadIdentityRotation=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Emergency revocation overrides any overlap/TTL window; no active workload session runs on a revoked or expired credential generation.
+
+#+begin_src quint
+val safety = (not(h.sessionActive) or (h.sessionGen != h.revokedGen and not(h.sessionExpired)))
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =revocation-overrides-overlap= | =stepGraceWindowReuse= | =h.sessionActive == true and h.sessionGen == h.revokedGen= |
+| =valid-generation= | =stepExpiredCredReuse= | =h.sessionActive == true and h.sessionExpired == true= |
+
+* Grounded Papers & Specifications
+
+- *CNCF SPIFFE Specification Working Group*: SPIFFE Verifiable Identity Document (SVID) & Workload API: overlapping generation rotation vs. immediate revocation.
+- *S. Rose, O. Borchert, S. Mitchell & S. Connelly (NIST SP 800-207, 2020)*: Zero Trust Architecture: short-lived workload credentials and emergency revocation precedence.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/identity/workload-identity-rotation/WorkloadIdentityRotation.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/identity/workload-identity-rotation/WorkloadIdentityRotation.qnt --main=workload_identity_rotation --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite SVID generation-rotation abstraction; does not model X.509/JWT cryptography, clock drift, or CRL/OCSP transport latency.

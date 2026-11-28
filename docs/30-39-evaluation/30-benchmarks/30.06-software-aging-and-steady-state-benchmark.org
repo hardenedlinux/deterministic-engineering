@@ -1,0 +1,795 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 30.06 Cross-Language Software Aging & AI Steady-State Stability Benchmark
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 30.06
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+#+FILETAGS: :evaluation:benchmark:software-aging:steady-state:cross-language:ai-engineering:
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:../../40-49-research/40-reference-studies/40.04-software-aging-and-steady-state-stability.org][40.04 Software Aging Study]] | [[file:../../40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org][40.05 Search Stability & PBT/Fuzzing Study]] | [[file:30.05-agent-defensive-coding-benchmark.org][30.05 Defensive Coding Benchmark]]
+
+* Benchmark Scope and Independent Gold Policy
+:PROPERTIES:
+:CUSTOM_ID: bench3006-scope
+:STATUS: implemented-verified
+:END:
+
+This benchmark evaluates whether a language-agnostic, multi-method engineering
+gate can deterministically detect, refute, and guide AI repair of *long-running
+software aging, interactive search/IME/input-sanitization stability, chaos/IPC
+reconnect resilience, search-index snapshot isolation, streaming LLM/HTTP
+output-budget, CI/CD scientific caching/sharding, structured async task / DB
+pool cancellation hygiene, bounded subprocess pipe capture, crash-safe atomic
+persistence, hostile (=ADV-L4=) sandbox symlink / manifest traversal /
+archive shadowing confinement, hostile (=ADV-L4=) outbound HTTP redirect /
+SSRF / cleartext remote credential / symlink static-serve confinement,
+hostile (=ADV-L4=) subprocess ambient secret environment scrubbing &
+constant-time non-blank Bearer auth verification, hostile (=ADV-L4=)
+single-owner GraphEngine execution convergence & production-reachable
+governance confinement, and hostile (=ADV-L4=) control-plane entrypoint
+Bearer authentication, empty-Bearer prefix rejection, mutating RPC E-Stop
+governance confinement, scrubbed bounded release-gate shell execution, and
+hostile (=ADV-L4=) policy-gate blind-spot, dependency-cycle masking & thin
+entrypoint confinement, hostile (=ADV-L4=) plugin grant, release
+anti-rollback, confined =entry_path=, bound device-lease & idempotency-digest
+confinement, hostile (=ADV-L4=) governance policy-evaluation fail-closed,
+monotonic revision/latch anti-rollback & causal retraction persistence,
+hostile (=ADV-L4=) Step-Up MFA attestation integrity, Scheme atomic effect
+E-Stop/CAS isolation, broadcast-lag watcher survival & bounded fact-graph
+capacity parity, hostile (=ADV-L4=) storage boundary deserialization
+parity, content-addressed artifact integrity, TLS-mandatory sync transport,
+immutable context-index replay & idempotent CAS audit confinement, hostile
+(=ADV-L4=) GitOps subprocess environment neutralization, dual-layer
+hook/fsmonitor lockdown, argument-injection & snapshot confinement, bounded
+concurrent capture & parallel worker panic isolation, and hostile (=ADV-L4=)
+hook TOML fail-closed parsing, anti-shadowing unique hook registry & bounded
+async fan-out, immutable trust-floor audit reasons, contradiction-free
+sub-agent spawn policy, validated protocol session/endpoint contract
+confinement, and hostile (=ADV-L4=) AgentGraph sealed-witness/epoch Serde
+parity & =PolicyDecision= routing confinement plus live-harness Cedar
+destructive-tool classification, symlink-safe atomic intent-case artifact
+materialization & bounded Weaver TOML config hygiene, and hostile (=ADV-L4=)
+telemetry OTLP remote TLS / observer env-scrubbing / watchdog future-timestamp
+anti-blinding & Deck single-VM module/timer/delay capacity confinement, and
+hostile (=ADV-L4=) POSIX process-group signal target confinement
+(=kill(0)=/=kill(-1)=/self-kill prevention), fail-closed anti-PID-reuse orphan
+reconciliation, symlink-safe byte-/schema-/capacity-bounded process ledger
+persistence & hard-capped sub-agent fanout abort-drain quiescence, and hostile
+(=ADV-L4=) defense-pillar cryptographic & state-machine confinement (B16
+retired-only epoch shredding & live-epoch rewrap, B18 canonical secret filtering
+& consumed-challenge anti-replay, B14 canonical 2-builder parity, immutable
+CVE-checked pinning & anti-replay releases, B20 treaty dispute-freeze
+preservation, monotonic epochs & anti-self-reciprocity, and B9/B21 RFC 6962
+empty-head & non-duplicating shard Merkle root soundness), and hostile
+(=ADV-L4=) terminal-client TUI config, ASP gateway supervisor, diagnostic probe
+& local Scheme bootstrap confinement (bounded non-symlink TOML config reads,
+finite request timeouts & non-ambient =credential_env= hygiene,
+=env_clear()=-scrubbed boot-timeout-bounded strict-loopback absolute-=PATH= ASP
+gateway supervision, =O_NOFOLLOW= byte-capped diagnostic probe output, and
+binary-repository-first non-symlink Scheme runtime bootstrap), and hostile
+(=ADV-L4=) ASP HTTP AST patch confinement, loopback HTTP/1.1 endpoint &
+chunked-transport integrity, circular JSON Schema =$ref= anti-DoS, and
+symlink-safe workspace snapshot/cache persistence with bounded Search DSL
+worker queueing defects*
+(=SM1=–=SM40= in
+[[file:../../40-49-research/40-reference-studies/40.04-software-aging-and-steady-state-stability.org][40.04]],
+[[file:../../40-49-research/40-reference-studies/40.05-search-stability-pbt-and-structure-aware-fuzzing.org][40.05]],
+and [[file:../../40-49-research/40-reference-studies/40.06-ci-cd-scientific-caching-and-subdomain-sharding.org][40.06]])
+across five implementation languages (**Go, Rust, TypeScript, C, C++**) and
+realistic multi-layer agent/UI architectures (**Marlin Rust/Scheme Host + MyGo
+Go Bridge + WebView TS UI**) without requiring multi-hour soak runs in CI.
+
+- *Independent Gold & Mandatory Adversarial Pressure Floor (=>= ADV-L3=, Target =ADV-L4=)*:
+  Every static case (=SA01=–=SA274=), closed-loop persona, formal countermodel,
+  metamorphic search property (=MR1=–=MR6=), structure-aware / hostile fuzz
+  property, and runtime soak/exploit assertion carries a fixed independent
+  expected outcome (=pass= vs. =refuse= + exact mechanism / rule / ITF
+  predicate) and MUST meet the =ADV-L3= / =ADV-L4= pressure floor (gentle
+  =ADV-L1= happy-path-only suites are formally rejected in Lean 4).
+- *Five Coupled Verification Layers*:
+  1. *Formal Finite-State Models (Quint + Apalache 0.62.1 + 100% =--mbt=)*:
+     41 stability & AI-defensive models (134 auto-derived countermodels — with
+     =SM22= marking the 100th and =SM40= marking the **118th Quint formal
+     model** in the repository!) + 3 UI concurrency kernel models (7
+     auto-derived countermodels) covering cyclic
+     drain, buffer ratchet, metastable retry collapse, GC headroom pacing,
+     slow-consumer fan-out eviction, bounded projection idle eviction &
+     side-map cleanup, broadcast lag snapshot-resync & coalesced checkpoint
+     flushing, UI bounded DOM viewport & $O(1)$ incremental frame budgets,
+     interactive search query generation fencing & selection identity anchoring
+     (=SM8=), single-flight leader cancellation safety & armed notify wakeup
+     (=SM9=), search query metamorphic algebra & clipped viewport hit-testing
+     (=SM10=), priority-isolated bounded mailboxes & $O(1)$ latest-wins =watch=
+     channels (=SM11=), IPC half-open stream retirement + monotonic epoch
+     fencing + idempotent replay (=SM12=), interactive search-box IME
+     composition + atomic blur cleanup + shortcut isolation (=SM13=), chaos
+     fault-injection recovery envelopes with circuit shedding & half-open probe
+     recovery (=SM14=), search-index cold-open serialization + multi-workspace
+     root isolation + single-flight follower re-election & reader-bounded
+     compaction (=SM15=), search-box uniform paste/setInput byte-cap
+     sanitization + grapheme cursor alignment + clear-time capacity shrinking
+     (=SM16=), streaming LLM/HTTP output-budget pre-allocation chunk caps +
+     unified text/thinking accounting + SSE completion parity + fail-closed
+     buffer release (=SM17=), CI/CD scientific two-layer CAS soundness +
+     disjoint subdomain shard namespaces + active-set cache quota GC (=SM18=),
+     structured async task abort-on-drop + transaction-safe DB pool lease
+     hygiene + semaphore-bounded fan-out with panic-safe correlation IDs
+     (=SM19=), bounded subprocess pipe capture with drain-to-sink deadlock
+     freedom & bounded single-line framing (=SM20=), crash-safe atomic file
+     persistence with unique per-writer temp staging & fsync-before-rename
+     ordering (=SM21=), hostile =ADV-L4= sandbox symlink/traversal
+     confinement + canonical duplicate-free archive verification & cumulative
+     decompression budgets (=SM22=), hostile =ADV-L4= outbound HTTP redirect /
+     SSRF / cleartext remote credential / symlink static-serve confinement
+     (=SM23=), hostile =ADV-L4= subprocess ambient secret environment scrubbing
+     & constant-time non-blank Bearer auth verification (=SM24=), hostile
+     =ADV-L4= single-owner GraphEngine convergence & production-reachable
+     governance confinement (=SM25=), and hostile =ADV-L4= control-plane
+     entrypoint Bearer authentication, empty-Bearer prefix rejection, mutating
+     RPC E-Stop confinement, and scrubbed bounded release-gate shell execution
+     (=SM26=), and hostile =ADV-L4= policy-gate blind-spot, local Cargo
+     dev-dependency cycle masking, fail-closed crate gating, thin binary/test
+     entrypoint confinement, and CI policy enforcement (=SM27=), and hostile
+     =ADV-L4= plugin capability-grant enforcement & revocation closure, signed
+     release anti-rollback & publisher continuity, confined =entry_path=, bound
+     device-lease verification under E-Stop, and digest-verified idempotency
+     replay (=SM28=), and hostile =ADV-L4= governance policy-evaluation
+     fail-closed (Cedar =forbid ... unless= missing-key defense), monotonic
+     same-epoch =policy_revision= anti-rollback, same-epoch E-Stop checkpoint
+     anti-untrip, Bi-Temporal TM retraction persistence across human re-arm,
+     constant-time SHA-256 verification & bounded lease registration (=SM29=),
+     and hostile =ADV-L4= Step-Up MFA attestation integrity (RFC 9470 ACR
+     allowlist + agent-prefix & duplicate-key refusal), Scheme =LlmComplete=
+     E-Stop mediation & reserved governance CAS key confinement, broadcast-lag
+     watcher survival, bounded =MGF1= fact-graph capacity parity with
+     constant-time SHA-256 verification & fail-closed durable re-arm
+     persistence (=SM30=), and hostile =ADV-L4= storage boundary
+     deserialization validation parity (=StoragePageLimit=, 11 =string_id!=
+     types & =SessionId=), =put_artifact= =size_bytes == body.len()= &
+     cryptographic =sha256:<64-hex>= CAS binding, TLS-mandatory remote
+     =TursoSyncRemoteUrl= (loopback-only =http://=, zero =@= userinfo/CRLF),
+     immutable same-revision =TursoContextIndex::rebuild= replay/conflict
+     enforcement & idempotent CAS audit receipts (=SM31=), and hostile =ADV-L4=
+     GitOps subprocess environment neutralization (=GIT_CONFIG_GLOBAL=/=SYSTEM=/=EXEC_PATH=/=SSH_COMMAND=
+     + =GIT_CONFIG_NOSYSTEM=1=), dual-layer =core.hooksPath=/dev/null= &
+     =core.fsmonitor=false= lockdown across Git and Worktrunk, non-flag/non-control
+     projection validation & confined retention snapshot paths, concurrent bounded
+     stdout/stderr capture with timeout & =kill_on_drop(true)=, and =JoinSet=
+     panic-isolated parallel receipts (=SM32=), and hostile =ADV-L4= hook TOML
+     fail-closed =deny_unknown_fields= + 256 KiB bounded reads & validated
+     =GerbilScheme= extensions, unique =hook_id= upsert preventing sticky ghost
+     hooks + semaphore-bounded async fan-out (<= 16), immutable Rust
+     trust-floor rejection reasons under bounded dynamic actions/rewrites,
+     contradiction/zero-budget/depth rejection in =SubAgentSpawnConfigSet=,
+     validated =RuntimeSessionId= Serde =Deserialize= parity, and control/URL-meta
+     refusal in =ModelEndpoint::validate_contract= (=SM33=), and hostile =ADV-L4=
+     runtime =direnv= export loader-hijack/denylist filtering with bounded
+     capture & =./.envrc= scoping, symlink-safe explicit =.envrc=/sub-agent
+     home/state-home/=FileSystemOrgSourceStore= confinement, monotonic
+     =OrgGovernanceLedger= & =SharedContextGovernanceLedger= anti-rollback with
+     atomic rebase, and recomputed Two-Zone KV-Prefix =frozen_prefix= SHA-256 +
+     =proposal.task_id == cursor.task_id= binding (=SM34=), and hostile =ADV-L4=
+     AgentGraph sealed-witness & fencing-epoch custom validated Serde
+     =Deserialize= parity (=AdmittedGovernedContext=/=AdmittedMarlinDispatch=/
+     =FencingEpoch=) with Detached-settlement & epoch-exhaustion reconciliation
+     refusal, =PolicyDecision= receipt/evidence & duplicate-edge routing
+     confinement, fail-closed harness Cedar destructive-tool classification &
+     case-insensitive matching, symlink-safe atomic intent-case artifact
+     materialization, and bounded non-symlink =LiveWeaverTomlConfig= loading
+     with timeout/stream caps & safe =credential_env= hygiene (=SM35=), and
+     hostile =ADV-L4= TLS-mandatory remote OTLP endpoints (loopback-only
+     =http://=, clean labels), =env_clear()=-scrubbed non-symlink host observer
+     sidecars, monotonic-bounded watchdog heartbeat timestamps preventing
+     =u64::MAX= blinding & non-zero PID/timeout attach guards, and bounded Deck
+     single-VM active module/timer capacities with finite =MAX_TIMER_DELAY_US=
+     ceilings (=SM36=), and hostile =ADV-L4= POSIX process-group signal target
+     confinement (=kill(0)=/=kill(-1)=/self-kill prevention), fail-closed OS
+     start-time fingerprinting for orphan reconciliation & reaping,
+     =O_NOFOLLOW= symlink-safe byte-/schema-/capacity-bounded process ledger
+     persistence, and hard-capped sub-agent fanout parallelism (64) with
+     =join_next_with_id()= panic attribution & async abort-drain quiescence
+     (=SM37=), and hostile =ADV-L4= defense-pillar cryptographic & state-machine
+     confinement across B16 retired-only epoch shredding/live rewrap, B18
+     canonical secret filtering & consumed-challenge anti-replay, B14 canonical
+     2-builder distinctness/immutable CVE-checked pinning/single-use releases,
+     B20 treaty freeze preservation/monotonic epochs/anti-self-reciprocity, and
+     B9/B21 RFC 6962 empty-head & non-duplicating shard Merkle root integrity
+     (=SM38=), and hostile =ADV-L4= TUI config symlink/size/timeout/=credential_env=
+     confinement, =env_clear()=-scrubbed boot-timeout-bounded strict-loopback
+     absolute-=PATH= ASP gateway supervision, =O_NOFOLLOW= byte-capped diagnostic
+     probe persistence, and binary-repository-first non-symlink Scheme bootstrap
+     resolution (=SM39=), and hostile =ADV-L4= ASP HTTP AST patch workspace
+     confinement, strict loopback HTTP/1.1 endpoint & checked chunked-transport
+     integrity, cycle-bounded JSON Schema =$ref= anti-DoS, and symlink-safe
+     workspace snapshot/cache persistence with bounded Search DSL worker
+     queueing (=SM40=).
+  2. *Unbounded Algebraic & LeanPoo Object Proofs (Lean 4)*:
+     [[file:../../../packages/lean-models/DeterministicEngineering/Core/Stability.lean][Core/Stability.lean]]
+     (Sections 1–17, 51 theorems, zero =sorry=) plus 24 dedicated objectified
+     =LeanPoo= domain modules (285 theorems, zero =sorry=, 336 total stability
+     & AI-defensive theorems; 733 committed audited theorems across all 58 Lean
+     modules):
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/StreamingOutputBudget.lean][Engineering/StreamingOutputBudget.lean]]
+     (=SM17=, 10 theorems),
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/CiCacheSoundness.lean][Engineering/CiCacheSoundness.lean]]
+     (=SM18=, 10 theorems),
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/TaskAndPoolCancellation.lean][Engineering/TaskAndPoolCancellation.lean]]
+     (=SM19=, 10 theorems),
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/SubprocessPipeCapture.lean][Engineering/SubprocessPipeCapture.lean]]
+     (=SM20=, 11 theorems),
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/AtomicPersistenceFsync.lean][Engineering/AtomicPersistenceFsync.lean]]
+     (=SM21=, 11 theorems),
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean][Engineering/SandboxSymlinkArchiveConfinement.lean]]
+     (=SM22=, 12 theorems with =AdversarialPressureTier= floor proving gentle
+     =L1Gentle=/=L2Edge= suites fail admission and downgrading =L4HostileAttack=
+     to =L1Gentle= invalidates =LeanPoo.Proof.reuse=),
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/OutboundHttpRedirectSsrfConfinement.lean][Engineering/OutboundHttpRedirectSsrfConfinement.lean]]
+     (=SM23=, 12 theorems composing =AdversarialPressureTier= & canonical
+     =weaver-llm= transport-owner delegation),
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/SubprocessEnvScrubAndAuthTiming.lean][Engineering/SubprocessEnvScrubAndAuthTiming.lean]]
+     (=SM24=, 12 theorems proving unbounded default-deny allowlist env scrubbing
+     drops every secret key disjoint from allowlist, fail-closed blank Bearer
+     rejection, and regression-invalidated =LeanPoo.Proof.reuse=),
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/SingleOwnerGraphGovernanceConfinement.lean][Engineering/SingleOwnerGraphGovernanceConfinement.lean]]
+     (=SM25=, 12 theorems proving production GraphEngine complete mediation under
+     tripped E-Stop and Cedar/ASCENT =forbid=, counterexample proving
+     disconnected legacy-loop governance leaks production bypasses, shadow-loop
+     retirement, and regression-invalidated =LeanPoo.Proof.reuse=), and
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/ControlPlaneAuthAndGovernanceConfinement.lean][Engineering/ControlPlaneAuthAndGovernanceConfinement.lean]]
+     (=SM26=, 12 theorems proving single-owner canonical Bearer auth across all
+     entrypoints with empty-Bearer prefix rejection, universal mutating RPC
+     E-Stop mediation, scrubbed bounded non-login release-gate shell execution,
+     live countermodels for defective configs, and regression-invalidated
+     =LeanPoo.Proof.reuse=), and
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/PolicyGateBlindspotAndCycleConfinement.lean][Engineering/PolicyGateBlindspotAndCycleConfinement.lean]]
+     (=SM27=, 13 theorems proving acyclic workspace DAG visibility restoration,
+     cycle-blinded / warn-downgraded / fat-entrypoint / CI-omitted bypass
+     countermodels, =ADV-L3/ADV-L4= pressure floor, and regression-invalidated
+     =LeanPoo.Proof.reuse=), and
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/PluginGrantRollbackAndLeaseConfinement.lean][Engineering/PluginGrantRollbackAndLeaseConfinement.lean]]
+     (=SM28=, 13 theorems proving capability-grant enforcement & revocation
+     closure, monotonic version anti-rollback & publisher continuity with
+     confined =entry_path=, bound device-lease verification under E-Stop,
+     digest-checked idempotency replay, live countermodels, and
+     regression-invalidated =LeanPoo.Proof.reuse=), and
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/GovernancePolicyAndLatchAntirollback.lean][Engineering/GovernancePolicyAndLatchAntirollback.lean]]
+     (=SM29=, 14 theorems proving fail-closed Cedar =forbid ... unless= &
+     =permit ... unless= under missing context keys, monotonic same-epoch
+     =policy_revision= anti-rollback & tripped un-denial refusal, same-epoch
+     E-Stop checkpoint anti-untrip, Bi-Temporal TM retraction persistence across
+     human re-arm, live countermodels, and regression-invalidated
+     =LeanPoo.Proof.reuse=), and
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/StepUpAttestationAndHostEffectConfinement.lean][Engineering/StepUpAttestationAndHostEffectConfinement.lean]]
+     (=SM30=, 12 theorems proving RFC 9470 Step-Up MFA ACR allowlist &
+     non-human/duplicate-param refusal, E-Stop mediation on Scheme
+     =LlmComplete= & reserved governance CAS key confinement, broadcast-lag
+     watcher survival, bounded =MGF1= fact-graph write parity & fail-closed
+     durable re-arm persistence, live countermodels, and regression-invalidated
+     =LeanPoo.Proof.reuse=), and
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/StorageBoundaryIntegrityAndSyncConfinement.lean][Engineering/StorageBoundaryIntegrityAndSyncConfinement.lean]]
+     (=SM31=, 12 theorems proving validated Serde =Deserialize= bounds on
+     =StoragePageLimit= & storage/session IDs, =put_artifact= size/SQLite-=i64=
+     & =sha256:<64-hex>= integrity, TLS-mandatory remote =TursoSyncRemoteUrl=
+     with loopback-only =http://= & userinfo/CRLF refusal, immutable
+     same-revision =TursoContextIndex::rebuild= conflict detection, idempotent
+     CAS audit receipts, live countermodels, and regression-invalidated
+     =LeanPoo.Proof.reuse=), and
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/GitopsSubprocessConfinementAndArgInjection.lean][Engineering/GitopsSubprocessConfinementAndArgInjection.lean]]
+     (=SM32=, 50th Lean module, 13 theorems proving complete =GIT_*= override
+     neutralization with =GIT_CONFIG_NOSYSTEM=1= & null global config, dual-layer
+     =core.hooksPath=/dev/null= & =core.fsmonitor=false= lockdown, dash-prefix
+     option & retention snapshot path escape refusal, bounded concurrent capture
+     with timeout & =kill_on_drop(true)=, panic-isolated =JoinSet= receipt
+     conservation, live countermodels, and regression-invalidated
+     =LeanPoo.Proof.reuse=), and
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/HookPolicyAndProtocolContractConfinement.lean][Engineering/HookPolicyAndProtocolContractConfinement.lean]]
+     (=SM33=, 51st Lean module, 12 theorems proving fail-closed hook TOML
+     admission, immutable Rust trust-floor rejections under extension
+     =Defer=/=Deny=, contradiction/zero-budget/recursion-depth refusal in
+     sub-agent spawn policies, blank/control/URL-meta protocol identifier
+     refusal, live countermodels, and regression-invalidated
+     =LeanPoo.Proof.reuse=), and
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/RuntimeEnvActivationAndContextConfinement.lean][Engineering/RuntimeEnvActivationAndContextConfinement.lean]]
+     (=SM34=, 52nd Lean module, 12 theorems proving fail-closed =direnv= export
+     filtering, symlink-safe =.envrc=/home/Org store path confinement, monotonic
+     Org snapshot & shared-channel anti-rollback, recomputed Two-Zone KV-Prefix
+     integrity & cursor/proposal task binding, live countermodels, and
+     regression-invalidated =LeanPoo.Proof.reuse=), and
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/GraphWitnessAndHarnessConfinement.lean][Engineering/GraphWitnessAndHarnessConfinement.lean]]
+     (=SM35=, 53rd Lean module, 12 theorems proving AgentGraph sealed-witness &
+     fencing-epoch custom Serde =Deserialize= parity with Detached-settlement &
+     epoch-exhaustion refusal, =PolicyDecision= receipt & duplicate-edge routing
+     confinement, fail-closed harness Cedar destructive-tool classification &
+     case-insensitive matching, symlink-safe atomic intent-case artifact
+     materialization, bounded non-symlink Weaver TOML route loading with timeout
+     & =credential_env= allowlist hygiene, live countermodels, and
+     regression-invalidated =LeanPoo.Proof.reuse=), and
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/TelemetryWatchdogAndDeckVmConfinement.lean][Engineering/TelemetryWatchdogAndDeckVmConfinement.lean]]
+     (=SM36=, 54th Lean module, 12 theorems proving TLS-mandatory remote OTLP
+     endpoints with loopback-only =http://= & clean labels, =env_clear()=-scrubbed
+     non-symlink host observer sidecars, monotonic-bounded watchdog heartbeat
+     timestamps preventing =u64::MAX= blinding & non-zero PID/timeout attach
+     guards, bounded Deck single-VM active module/timer capacities with finite
+     =MAX_TIMER_DELAY_US= ceilings, live countermodels, and
+     regression-invalidated =LeanPoo.Proof.reuse=), and
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/ProcessSignalLedgerAndFanoutConfinement.lean][Engineering/ProcessSignalLedgerAndFanoutConfinement.lean]]
+     (=SM37=, 55th Lean module, 12 theorems proving POSIX signal target
+     confinement forbidding =pid=/=pgid <= 1= & host self-PID/PGID, fail-closed
+     OS start-time fingerprinting for orphan reconciliation & reaping,
+     =O_NOFOLLOW= symlink-safe byte-/schema-/capacity-bounded process ledger
+     persistence, hard-capped working-copy sub-agent fanout with abort-drain
+     quiescence, live countermodels, and regression-invalidated
+     =LeanPoo.Proof.reuse=), and
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/DefensePillarCryptoStateConfinement.lean][Engineering/DefensePillarCryptoStateConfinement.lean]]
+     (=SM38=, 56th committed Lean module, 12 theorems proving B16 retired-only
+     epoch shredding & live-epoch rewrap, B18 canonical secret filtering &
+     consumed-challenge anti-replay, B14 canonical 2-builder distinctness,
+     immutable CVE-checked pinning & anti-replay releases, B20 treaty
+     dispute-freeze preservation, monotonic epochs & anti-self-reciprocity,
+     B9/B21 RFC 6962 empty-head & non-duplicating shard Merkle root soundness,
+     live countermodels, and regression-invalidated =LeanPoo.Proof.reuse=), and
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/TuiConfigSupervisorProbeConfinement.lean][Engineering/TuiConfigSupervisorProbeConfinement.lean]]
+     (=SM39=, 57th committed Lean module, 12 theorems proving bounded
+     non-symlink TUI config reads with finite timeout & non-ambient
+     =credential_env= hygiene, =env_clear()=-scrubbed boot-timeout-bounded
+     strict-loopback absolute-=PATH= ASP gateway supervision, =O_NOFOLLOW=
+     byte-capped diagnostic probe persistence, binary-repository-first
+     non-symlink Scheme bootstrap resolution, live countermodels, and
+     regression-invalidated =LeanPoo.Proof.reuse=), and
+     [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/AspPatchTransportSchemaCacheConfinement.lean][Engineering/AspPatchTransportSchemaCacheConfinement.lean]]
+     (=SM40=, 58th committed Lean module, 12 theorems proving workspace-confined
+     non-symlink bounded AST patch reads/writes, strict loopback HTTP/1.1
+     endpoint/CRLF/response-cap/checked-chunked integrity, depth/cycle-bounded
+     JSON Schema =$ref= anti-DoS, non-symlink snapshot/cache persistence with
+     bounded Search DSL worker queueing, live countermodels, and
+     regression-invalidated =LeanPoo.Proof.reuse=),
+     proving arbitrary-cycle zero drift, ARB linear exhaustion, spike-independent
+     capped pool ceilings, GC headroom cycle bounds, bounded fan-out retention,
+     bounded-projection idle-eviction liveness, lag-resync/coalesced
+     write-amplification bounds, UI viewport/render-budget independence,
+     =SM8=–=SM16= search/IPC/IME/chaos/snapshot/sanitization envelopes, =SM17=
+     pre-allocation stream budget conservation & zero-allocation header refusal,
+     =SM18= cryptographic ActionKey soundness, disjoint shard conflict freedom,
+     and active-set cache quota bounds, =SM19= abort-on-drop orphan-zero
+     conservation, zero-poison DB pool lease hygiene, semaphore fan-out cap, and
+     caller-owned correlation-ID preservation across worker panics, =SM20=
+     drain-to-sink byte conservation (`retained + discarded == produced`), peak
+     heap bounding, zero pipe deadlock, and bounded single-line framing, =SM21=
+     crash-consistent monotonic commit durability, disjoint `(pid, seq)` temp
+     staging, and fsync-before-rename certificate transport, and =SM22=
+     arbitrary-depth symlink-free root confinement, injective canonical archive
+     shadow-freedom, cumulative decompression bounding, and mandatory
+     =ADV-L3/ADV-L4= pressure-floor enforcement.
+  3. *Live Runtime, PBT & Structure-Aware Fuzzing Contrasts (5 Languages + Marlin/MyGo Full-Stack)*:
+     - Go 1.26.7 (via modular =devenv=): =testing/synctest= virtual-clock
+       quiescence bubbles, real =runtime.ReadMemStats= sub-slice pinning &
+       =map= never-shrink proof, real =debug.SetMemoryLimit= (=GOMEMLIMIT=
+       20 MiB: =NumGC=96= crowded vs. =NumGC=7= healthy headroom over 48 MiB churn),
+       real =net.Pipe()= slow-consumer eviction under =-race=, plus hardened
+       =languages-engineering/go/concurrency/= UI kernel with worker-panic
+       recovery, map-bucket rotation, live Quint ITF replay, and MyGo coalesced
+       projection soak.
+     - C + CBMC: 238/238 bounded model checking assertions on handle/pool/retry
+       conservation + native paired soak contrast.
+     - C++20: RAII exception-safe handle conservation & =std::vector::capacity()=
+       ratchet contrast.
+     - Rust: RAII =HandleGuard=, =Vec::clear()= watermark contrast, slow-consumer
+       eviction, Marlin =ui_grpc=/=marlin_mygo_host= bounded eviction & lag-resync
+       soak, and native OLS Slope Oracle.
+     - TypeScript / Bun: Reusable Independent Steady-State Slope Oracle
+       ([[file:../../../languages-engineering/ts/stability/aging-contrast/slope-oracle.ts][slope-oracle.ts]]),
+       live Quint =--mbt= ITF state-machine refinement across all 41 formal
+       stability & AI-defensive models
+       ([[file:../../../languages-engineering/ts/stability/aging-contrast/mbt-stability-replay.test.ts][mbt-stability-replay.test.ts]],
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/ipc-ime-chaos-fuzz.test.ts][ipc-ime-chaos-fuzz.test.ts]],
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/search-index-snapshot-fuzz.test.ts][search-index-snapshot-fuzz.test.ts]],
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/search-box-sanitization-fuzz.test.ts][search-box-sanitization-fuzz.test.ts]],
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/streaming-output-budget-fuzz.test.ts][streaming-output-budget-fuzz.test.ts]],
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/ci-cache-soundness-fuzz.test.ts][ci-cache-soundness-fuzz.test.ts]],
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/task-and-pool-cancellation-fuzz.test.ts][task-and-pool-cancellation-fuzz.test.ts]],
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/subprocess-pipe-capture-fuzz.test.ts][subprocess-pipe-capture-fuzz.test.ts]],
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/atomic-persistence-fsync-fuzz.test.ts][atomic-persistence-fsync-fuzz.test.ts]],
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/sandbox-symlink-archive-confinement-fuzz.test.ts][sandbox-symlink-archive-confinement-fuzz.test.ts]],
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/outbound-http-redirect-ssrf-confinement-fuzz.test.ts][outbound-http-redirect-ssrf-confinement-fuzz.test.ts]],
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/subprocess-env-scrub-and-auth-timing-fuzz.test.ts][subprocess-env-scrub-and-auth-timing-fuzz.test.ts]],
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/single-owner-graph-governance-confinement-fuzz.test.ts][single-owner-graph-governance-confinement-fuzz.test.ts]],
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/control-plane-auth-and-governance-confinement-fuzz.test.ts][control-plane-auth-and-governance-confinement-fuzz.test.ts]],
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/policy-gate-blindspot-and-cycle-confinement-fuzz.test.ts][policy-gate-blindspot-and-cycle-confinement-fuzz.test.ts]],
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/plugin-grant-rollback-and-lease-confinement-fuzz.test.ts][plugin-grant-rollback-and-lease-confinement-fuzz.test.ts]],
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/governance-policy-and-latch-antirollback-fuzz.test.ts][governance-policy-and-latch-antirollback-fuzz.test.ts]],
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/stepup-attestation-and-host-effect-confinement-fuzz.test.ts][stepup-attestation-and-host-effect-confinement-fuzz.test.ts]],
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/storage-boundary-integrity-and-sync-confinement-fuzz.test.ts][storage-boundary-integrity-and-sync-confinement-fuzz.test.ts]],
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/gitops-subprocess-confinement-and-arg-injection-fuzz.test.ts][gitops-subprocess-confinement-and-arg-injection-fuzz.test.ts]],
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/hook-policy-and-protocol-contract-confinement-fuzz.test.ts][hook-policy-and-protocol-contract-confinement-fuzz.test.ts]],
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/runtime-env-activation-and-context-confinement-fuzz.test.ts][runtime-env-activation-and-context-confinement-fuzz.test.ts]],
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/graph-witness-and-harness-confinement-fuzz.test.ts][graph-witness-and-harness-confinement-fuzz.test.ts]],
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/telemetry-watchdog-and-deck-vm-confinement-fuzz.test.ts][telemetry-watchdog-and-deck-vm-confinement-fuzz.test.ts]],
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/process-signal-ledger-and-fanout-confinement-fuzz.test.ts][process-signal-ledger-and-fanout-confinement-fuzz.test.ts]],
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/defense-pillar-crypto-state-confinement-fuzz.test.ts][defense-pillar-crypto-state-confinement-fuzz.test.ts]],
+       [[file:../../../languages-engineering/ts/stability/aging-contrast/tui-config-supervisor-probe-confinement-fuzz.test.ts][tui-config-supervisor-probe-confinement-fuzz.test.ts]],
+       and [[file:../../../languages-engineering/ts/stability/aging-contrast/asp-patch-transport-schema-cache-confinement-fuzz.test.ts][asp-patch-transport-schema-cache-confinement-fuzz.test.ts]]),
+       500-case parametric search metamorphic fuzzing across =MR1=–=MR6= with
+       3 deterministic refutations ([[file:../../../languages-engineering/ts/stability/aging-contrast/search-metamorphic-fuzz.test.ts][search-metamorphic-fuzz.test.ts]]),
+       12,000-trial structure-aware & hostile =ADV-L4= fuzzing (250 trials each
+       across =SM12=–=SM21= + 500 hostile =ADV-L4= trials each for =SM22=–=SM40=
+       + 174 live Quint ITF MBT traces), live self-auditing CI workflow/CAS tests,
+       and the 4-layer Marlin + MyGo + WebView UI soak suite
+       ([[file:../../../languages-engineering/ts/stability/aging-contrast/marlin-mygo-fullstack-soak.test.ts][marlin-mygo-fullstack-soak.test.ts]]).
+  4. *274-Case Multi-Language Aging, Stability & AI-Defensive AST Auditor (=SA01=–=SA274=)*:
+     [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-ast-auditor.ts][aging-ast-auditor.ts]]
+     & [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-benchmark.test.ts][aging-benchmark.test.ts]]
+     (=tp=159, tn=115, fp=0, fn=0=), empirically calibrated across full 3-repo
+     production sweeps (**0 SM22–SM40 findings across all committed production
+     Rust files in =marlin-agent-core=, including =marlin-agent-kernel=,
+     =marlin-agent-tui=, and =marlin-agent-search-engine=**).
+  5. *Closed-Loop AI Aging & Defensive Governance Harness & CLI*:
+     [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-governance-harness.ts][aging-governance-harness.ts]],
+     [[file:../../../languages-engineering/ts/stability/aging-contrast/agent-stability-audit.ts][agent-stability-audit.ts]]
+     (=just audit-agent-stability=, supporting =--files=, =--dir --lang --exclude-tests=,
+     and =--diff=), emitting SARIF 2.1.0 and structured C2 repair packets across
+     =SM2=–=SM5=, =SM7=–=SM9=, and =SM12=–=SM40=, validated against 3 AI agent
+     personas plus a full-stack Marlin/MyGo C2 convergence scenario.
+
+* Two-Hundred-Seventy-Four-Case Static Aging, Stability & AI-Defensive Cohort (=SA01=–=SA274=)
+:PROPERTIES:
+:CUSTOM_ID: bench3006-cohort
+:END:
+
+| Case ID | Language | Mechanism | Expected gold | Discriminator tested |
+|---------+----------+-----------+---------------+----------------------|
+| =SA01= | Go | =SM2= | Refuse (=go-time-after-in-loop=) | =time.After()= inside =for/select= loop |
+| =SA02= | Go | =SM2= | Refuse (=go-unclosed-http-body=) | =http.Get= without =Body.Close()= |
+| =SA03= | Go | =SM4= | Refuse (=go-unbuffered-channel-goroutine-leak=) | Live =bad_aging.go= Tu et al. (ASPLOS'19) unbuffered channel leak |
+| =SA04= | Go | =SM3= | Refuse (=go-uncapped-pool-put=) | =sync.Pool.Put= without =cap()= ceiling check |
+| =SA05= | Rust | =SM5= | Refuse (=rust-unbounded-channel=) | =tokio::sync::mpsc::unbounded_channel::<Vec<u8>>()= |
+| =SA06= | Rust | =SM4= | Refuse (=rust-detached-spawn=) | Bare detached =tokio::spawn= dropping =JoinHandle= |
+| =SA07= | Rust | =SM3= | Refuse (=rust-vec-clear-ratchet=) | =buf.clear(); pool.push(buf)= without =capacity()= check |
+| =SA08= | Rust | =SM2= | Refuse (=rust-mem-forget-leak=) | =std::mem::forget(permit)= |
+| =SA09= | TypeScript | =SM2= | Refuse (=ts-unbounded-interval=) | Uncaptured =setInterval= without =clearInterval= |
+| =SA10= | TypeScript | =SM5= | Refuse (=ts-unbounded-retry-loop=) | =while (true)= catch-retry without retry budget |
+| =SA11= | TypeScript | =SM3= | Refuse (=ts-uncapped-pool-push=) | Live =bad_aging.ts= uncapped =this.pool.push(buf)= |
+| =SA12= | TypeScript | =SM2= | Refuse (=ts-unremoved-listener=) | =emitter.on= without removal or =AbortSignal= |
+| =SA13= | C | =SM2= | Refuse (=c-early-return-resource-leak=) | =malloc= + early error =return -1= skipping =free/goto cleanup= |
+| =SA14= | C | =SM3= | Refuse (=c-uncapped-pool-return=) | Live =bad_aging.c= uncapped =pooled_bytes += buf_bytes= |
+| =SA15= | C++ | =SM4= | Refuse (=cpp-detached-thread=) | =std::thread::detach()= breaking scope quiescence |
+| =SA16= | C++ | =SM3= | Refuse (=cpp-vector-clear-ratchet=) | Live =bad_aging.hpp= =std::vector::clear()= pool ratchet |
+| =SA17= | Go | Clean control | Pass (0 findings) | Live =deterministic_steady.go= |
+| =SA18= | TypeScript | Clean control | Pass (0 findings) | Live =deterministic_steady.ts= |
+| =SA19= | C | Clean control | Pass (0 findings) | Live =deterministic_steady.c= |
+| =SA20= | C++ | Clean control | Pass (0 findings) | Live =deterministic_steady.hpp= |
+| =SA21= | Go | =SM3= | Refuse (=go-subslice-pinning=) | =return slab[:16]= pinning large backing array |
+| =SA22= | Go | =SM4= | Refuse (=go-unbounded-goroutine-fanout=) | =for ... { go processItem(item) }= without concurrency cap |
+| =SA23= | Rust | =SM4= | Refuse (=rust-blocking-in-async=) | =std::thread::sleep= inside =async fn= starving executor |
+| =SA24= | TypeScript | =SM5= | Refuse (=ts-unbounded-promise-all-fanout=) | Unbounded =Promise.all(urls.map(...))= fan-out |
+| =SA25= | TypeScript | =SM3= | Refuse (=ts-unbounded-map-cache=) | Unbounded =cache.set(k, v)= without eviction |
+| =SA26= | C++ | =SM3= | Refuse (=cpp-unordered-map-bucket-ratchet=) | =std::unordered_map::clear()= without =rehash(0)/swap= |
+| =SA27= | Go | Clean control | Pass (0 findings) | =bytes.Clone(slab[:16])= detached sub-slice |
+| =SA28= | Rust | Clean control | Pass (0 findings) | =tokio::task::spawn_blocking= offloaded sleep |
+| =SA29= | TypeScript | Clean control | Pass (0 findings) | Bounded =Map= cache with =maxSize= eviction |
+| =SA30= | C++ | Clean control | Pass (0 findings) | =unordered_map::clear()= paired with =rehash(0)= |
+| =SA31= | Rust | =SM3= | Refuse (=rust-unbounded-state-collection=) | Monotonic =st.artifacts.insert(...)= without cap/eviction (=ui_grpc.rs= pattern) |
+| =SA32= | Rust | =SM5= | Refuse (=rust-broadcast-lag-silent-drop=) | =while let Ok(snap) = rx.recv().await= ignoring =RecvError::Lagged= |
+| =SA33= | Rust | =SM3= | Refuse (=rust-bounded-no-eviction-lockout=) | Hard 64-session cap returning =resource_exhausted= with zero eviction path |
+| =SA34= | Go | =SM4= | Refuse (=go-early-return-unjoined-goroutine=) | Early =emit= error =return err= skipping =<-followErr= join (=bridge.go= pattern) |
+| =SA35= | Go | =SM3= | Refuse (=go-unbounded-struct-map=) | Long-lived =m.records[id]= never deleted or evicted (=client/session.go= pattern) |
+| =SA36= | Go | =SM4= | Refuse (=go-sidecar-missing-pgid=) | Sidecar =exec.Command.Start()= + =Process.Signal= without =Setpgid: true= |
+| =SA37= | Go | =SM5= | Refuse (=go-unbudgeted-retry-loop=) | Exponential =backoff *= 2= retry loop without =maxAttempts=/=retryBudget= |
+| =SA38= | TypeScript | =SM7= | Refuse (=ts-streaming-full-innerhtml-reparse=) | Streaming =row.raw += delta= + full =innerHTML = renderMarkdown(row.raw)= |
+| =SA39= | TypeScript | =SM7= | Refuse (=ts-unbounded-dom-append=) | Chat container =messages.appendChild(root)= without DOM viewport window cap |
+| =SA40= | TypeScript | =SM3= | Refuse (=ts-orphan-sidemap-on-delete=) | =drafts.set(...)= never cleaned via =drafts.delete(...)= on =deleteSession= |
+| =SA41= | Rust | Clean control | Pass (0 findings) | Bounded =artifacts= with =pop_first()= + =RecvError::Lagged= snapshot resync |
+| =SA42= | Go | Clean control | Pass (0 findings) | Deferred =cancel(); <-followErr= join barrier on early emit return |
+| =SA43= | Go | Clean control | Pass (0 findings) | Sidecar with =SysProcAttr{Setpgid: true}= and =-pid= process-group signal |
+| =SA44= | TypeScript | Clean control | Pass (0 findings) | Bounded DOM window (=maxVisibleNodes=) + $O(1)$ =renderDeltaBlock= |
+| =SA45= | TypeScript | Clean control | Pass (0 findings) | Cascade =drafts.delete(id)= paired with =deleteSession(id)= |
+| =SA46= | Go | Clean control | Pass (0 findings) | =sync.Once.Do= without HTTP client (eliminates =go-unclosed-http-body= FP) |
+| =SA47= | Go | Clean control | Pass (0 findings) | =ArtifactCAS.Put= without =sync.Pool= (eliminates =go-uncapped-pool-put= FP) |
+| =SA48= | Go | Clean control | Pass (0 findings) | Explicit =len(s.cache) < 512= capacity bound before map write |
+| =SA49= | Go | =SM3= | Refuse (=go-unbounded-struct-map=) | Unbounded =ModuleEngine.cache[sum]= growth without cap or eviction (=wazeroir/runtime.go= pattern) |
+| =SA50= | Go | =SM3= | Refuse (=go-unbounded-struct-map=) | Unbounded =JWKSCache.entries[url]= growth without cap or eviction (=control/auth/oidc.go= pattern) |
+| =SA51= | Rust | =SM9= | Refuse (=rust-async-inflight-no-drop-guard=) | =in_flight.compare_exchange(false, true)= across =.await= without RAII =Drop= guard (=search_scheduler.rs= pattern) |
+| =SA52= | Rust | =SM9= | Refuse (=rust-notify-notified-unarmed-check=) | =let notified = notify.notified()= checked against =in_flight.load()= without =enable()= arming |
+| =SA53= | Rust | =SM8= | Refuse (=rust-unfenced-async-search-apply=) | =apply_dsl_result= overwriting =search_candidates= without =expected_epoch= fence |
+| =SA54= | Go | =SM8= | Refuse (=go-non-monotonic-gen-cancel=) | =QueryAsync(gen)= cancelling =activeCancel= without monotonic =gen < activeGen= fence (=search_bridge.go= pattern) |
+| =SA55= | Go | =SM3= | Refuse (=go-slice-truncate-without-clear=) | =items = items[:0]= retaining pointer backing array without =clear()= or capacity cap (=helm_stream.go= pattern) |
+| =SA56= | Rust | Clean control | Pass (0 findings) | RAII =SyncLeaderGuard= (=impl Drop= clearing =in_flight=) + pinned =notified.as_mut().enable()= |
+| =SA57= | Rust | Clean control | Pass (0 findings) | Epoch-fenced =apply_dsl_result(expected_epoch, rows)= rejecting stale responses |
+| =SA58= | Go | Clean control | Pass (0 findings) | Monotonic =if gen < b.activeGen= guard before cancelling active search context |
+| =SA59= | Go | Clean control | Pass (0 findings) | =clear(items)= + backing-array capacity ceiling reset on =BeginQuery= |
+| =SA60= | TypeScript | Clean control | Pass (0 findings) | Bounded search viewport list enforcing =maxVisibleNodes= cap |
+| =SA61= | Rust | =SM5= / =SM11= | Refuse (=rust-unbounded-vecdeque-mailbox=) | =while let Ok(job) = rx.try_recv()= pushing into unbounded =VecDeque= without capacity ceiling |
+| =SA62= | Go | =SM4= | Refuse (=go-unbounded-goroutine-fanout=) | =ProbeAll= spawning unbounded =go func()= per target inside loop without semaphore (=federation.go= pattern) |
+| =SA63= | Go | Clean control | Pass (0 findings) | =time.After= in separate =Stop()= method after unrelated =Start()= loop (eliminates cross-function FP) |
+| =SA64= | Go | Clean control | Pass (0 findings) | =go func()= in UI click callback closure outside loop (=federation_switch.go= calibration) |
+| =SA65= | Go | Clean control | Pass (0 findings) | Single per-connection heartbeat goroutine joined via =<-hbDone= each iteration (=driver.go= calibration) |
+| =SA66= | Go | Clean control | Pass (0 findings) | Exponential backoff sidecar restart loop bounded by =MaxRestarts= (=resilient_sidecar.go= calibration) |
+| =SA67= | Go | Clean control | Pass (0 findings) | Fixed-size ring-buffer slice =s.history[s.histPos] = d; % len(s.history)= (=scheduler.go= calibration) |
+| =SA68= | Rust | Clean control | Pass (0 findings) | Priority-isolated bounded =VecDeque= mailbox with =MAX_FAST_DSL_JOBS= cap & closed-reply compaction |
+| =SA69= | Go | =SM12= | Refuse (=go-reconnect-without-close=) | =grpc.NewClient= / =DialContext= overwriting =c.conn= on reconnect without =Close()=/=cancel()= |
+| =SA70= | Rust | =SM12= | Refuse (=rust-unfenced-stream-reconnect=) | Reconnect stream loop without monotonic =epoch=/=generation= fence or =idempotency_key= deduplication |
+| =SA71= | TypeScript | =SM13= | Refuse (=ts-ime-unguarded-enter-submit=) | =keydown= Enter handler submitting query without =event.isComposing= / =keyCode === 229= guard |
+| =SA72= | TypeScript | =SM13= | Refuse (=ts-ime-blur-orphan-preedit=) | =compositionstart= setting composing flag without =blur= cleanup resetting preedit state |
+| =SA73= | Go | Clean control | Pass (0 findings) | Reconnect closing prior =c.conn.Close()= and incrementing monotonic =sessionEpoch= before opening replacement |
+| =SA74= | Rust | Clean control | Pass (0 findings) | Epoch-fenced reconnect checking =frame.session_epoch >= self.session_epoch= + idempotent replay set |
+| =SA75= | TypeScript | Clean control | Pass (0 findings) | IME-safe =keydown= checking =e.isComposing || e.keyCode === 229= before Enter submit |
+| =SA76= | TypeScript | Clean control | Pass (0 findings) | =compositionstart= paired with =compositionend= and =blur= listener cancelling active preedit |
+| =SA77= | Rust | =SM15= | Refuse (=rust-cold-open-split-brain=) | Lazy =get_or_open= building outside an init lock or skipping workspace root matching (=search_tool.rs= pattern) |
+| =SA78= | Rust | =SM15= | Refuse (=rust-singleflight-cancel-cascade=) | Single-flight follower failing immediately on =rx.changed().await.is_err()= instead of re-electing (=search_scheduler.rs= pattern) |
+| =SA79= | Rust | Clean control | Pass (0 findings) | Double-checked =open_lock= + canonical =workspace_root= match before returning cached index |
+| =SA80= | Rust | Clean control | Pass (0 findings) | Single-flight ='election: loop= re-electing a surviving follower when the leader watch channel closes |
+| =SA81= | Rust | =SM16= | Refuse (=rust-paste-bypasses-input-cap=) | =PasteSelection= inserting =yank_register= directly into editor bypassing =MAX_*_INPUT_BYTES= (=helm/editor.rs= pattern) |
+| =SA82= | TypeScript | =SM16= | Refuse (=ts-search-input-uncapped-paste=) | =addEventListener('paste')= writing =clipboardData= without length cap or control-char sanitization |
+| =SA83= | Rust | Clean control | Pass (0 findings) | =PasteSelection= delegating to shared bounded =self.insert_text(yank_register)= enforcing =MAX_HELM_INPUT_BYTES= |
+| =SA84= | TypeScript | Clean control | Pass (0 findings) | Clipboard paste handler stripping control chars and slicing to =MAX_SEARCH_CHARS= with =AbortSignal= |
+| =SA85= | Rust | =SM17= | Refuse (=rust-sse-complete-ignores-output-limit=) | SSE =TurnEvent::Text= aggregation appending text & discarding =Thinking= while =stream_output_limit= is declared (=gateway.rs= pattern) |
+| =SA86= | Rust | =SM17= | Refuse (=rust-http-body-buffer-before-cap=) | =reqwest= =resp.bytes().await= buffering full HTTP body before checking =MAX_*_RESPONSE_BYTES= (=openai_http.rs= pattern) |
+| =SA87= | TypeScript | =SM17= | Refuse (=ts-http-body-buffer-before-cap=) | =await resp.text()= buffering entire HTTP response before checking =MAX_LLM_RESPONSE_BYTES= without =getReader()= |
+| =SA88= | Rust | Clean control | Pass (0 findings) | SSE completion enforcing =stream_output_limit= on both =Text= and =Thinking= deltas before appending |
+| =SA89= | Rust | Clean control | Pass (0 findings) | HTTP client checking =resp.content_length()= fail-fast and streaming via =resp.chunk().await= with pre-allocation cap |
+| =SA90= | TypeScript | Clean control | Pass (0 findings) | Fetch reader checking =content-length= header and streaming via =resp.body.getReader()= with pre-allocation byte budget |
+| =SA91= | Rust | =SM19= | Refuse (=rust-async-joinhandle-vec-drop-detach=) | Pushing spawned =JoinHandle= tasks into a =Vec= and awaiting them sequentially without =AbortOnDropHandle= / =JoinSet= (=dispatcher.rs= pattern) |
+| =SA92= | Rust | =SM19= | Refuse (=rust-joinset-unbounded-fanout=) | Loop spawning unbounded =join_set.spawn(...)= per batch item without =Semaphore= concurrency cap (=effect_pump.rs= pattern) |
+| =SA93= | Rust | =SM19= | Refuse (=rust-pool-lease-returns-dirty-tx=) | =impl Drop for *Lease= returning DB connection unconditionally via =sender.send/try_send= without =tx_active= poison guard (=turso_backend.rs= pattern) |
+| =SA94= | Rust | Clean control | Pass (0 findings) | RAII =AbortOnDropHandle= awaiting =&mut handle= before disarming so mid-join drop aborts every in-flight task |
+| =SA95= | Rust | Clean control | Pass (0 findings) | =Arc<Semaphore>= bounded =JoinSet= fan-out (=MAX_CONCURRENT_ATOMIC_EFFECTS=16=) preserving caller-owned =effect_id= on panic |
+| =SA96= | Rust | Clean control | Pass (0 findings) | =TursoConnectionLease= tracking =tx_active= across =BEGIN=/=COMMIT=/=ROLLBACK= and discarding poisoned connections on drop with clean lane replenishment |
+| =SA97= | Rust | =SM20= | Refuse (=rust-subprocess-buffer-before-truncate=) | =wait_with_output()= / pipe =read_to_end()= buffering unbounded child stdout/stderr into heap before calling =.truncate(max_bytes)= (=atomic_effect_substrate.rs= / =managed.rs= pattern) |
+| =SA98= | Rust | =SM20= | Refuse (=rust-subprocess-unbounded-read-line=) | Subprocess =BufReader::new(stdout).read_line(&mut line)= without =.take(MAX_*_LINE)= cap (=asp_supervisor.rs= pattern) |
+| =SA99= | Go | =SM20= | Refuse (=go-subprocess-unbounded-output=) | =cmd.CombinedOutput()= / =io.ReadAll(stdout)= buffering unbounded subprocess output before post-hoc slice truncation =[:maxBytes]= |
+| =SA100= | Rust | Clean control | Pass (0 findings) | =child.wait_with_bounded_output(max_bytes)= retaining <= =max_bytes= while draining excess pipe bytes to sink until EOF |
+| =SA101= | Rust | Clean control | Pass (0 findings) | =BufReader::new(stdout).take(MAX_ASP_BOOT_LINE_BYTES + 1).read_line(&mut line)= rejecting oversize delimiter-free frames |
+| =SA102= | Go | Clean control | Pass (0 findings) | =io.Copy(&buf, io.LimitReader(stdout, maxBytes))= paired with =io.Copy(io.Discard, stdout)= drain-to-sink before =cmd.Wait()= |
+| =SA103= | Rust | =SM21= | Refuse (=rust-atomic-write-shared-tmp-or-no-fsync=) | =fs::write(&tmp, bytes)+fs::rename(&tmp, path)= using colliding =*.tmp= path or missing =sync_all()= (=task_actor.rs= / =release_status.rs= pattern) |
+| =SA104= | Go | =SM21= | Refuse (=go-atomic-write-shared-tmp-or-no-fsync=) | =os.WriteFile(path + ".tmp", ...)+os.Rename= using colliding =.tmp= path without =os.CreateTemp= and =Sync()= (=vault.go= / =package_store.go= / =keychain_windows.go= pattern) |
+| =SA105= | Go | =SM21= | Refuse (=go-state-file-non-atomic-overwrite=) | =SaveLayoutSpecFile= overwriting live state file directly in-place via =os.WriteFile(path, raw, ...)= (=layout_projection.go= pattern) |
+| =SA106= | Rust | Clean control | Pass (0 findings) | Unique =create_new(true)= temp file (PID+atomic seq) + =write_all= + =sync_all()= + atomic =rename= + error cleanup |
+| =SA107= | Go | Clean control | Pass (0 findings) | =os.CreateTemp= + =Write= + =Sync()= + =Close()= + =os.Rename= + deferred cleanup |
+| =SA108= | Go | Clean control | Pass (0 findings) | =SaveLayoutSpecFile= delegating to durable =writeFileAtomicallyDurable= |
+| =SA109= | Rust | =SM22= (=ADV-L4=) | Refuse (=rust-sandbox-lexical-only-no-symlink-check=) | =LoopProgramFileSandbox::resolve= returning =self.root.join(&normalized)= without =symlink_metadata=/=canonicalize= verification (=file_write.rs= pattern) |
+| =SA110= | Go | =SM22= (=ADV-L4=) | Refuse (=go-filepath-join-unconfined-manifest-entry=) | =filepath.Join(tmpDir, filepath.FromSlash(wasmEntry))= without =confineRelativePath= / =filepath.Rel= confinement (=dev_reload.go= / =ts_bundle.go= pattern) |
+| =SA111= | Go | =SM22= (=ADV-L4=) | Refuse (=go-tar-duplicate-entry-shadowing-or-no-total-cap=) | =tar.NewReader= extraction overwriting =assets[...]= without duplicate-entry rejection, cumulative byte cap, or =Multistream(false)= (=bundle.go= pattern) |
+| =SA112= | Rust | Clean control | Pass (0 findings) | =LoopProgramFileSandbox::resolve= verifying =canonical_root= and walking every path component with =symlink_metadata= + =canonicalize().starts_with(&canonical_root)= |
+| =SA113= | Go | Clean control | Pass (0 findings) | =confineRelativePath= rejecting traversal/absolute/NUL/backslash/symlink escapes before staging |
+| =SA114= | Go | Clean control | Pass (0 findings) | =VerifyBundle= with =gr.Multistream(false)=, strict canonical archive paths, =seenEntries= duplicate refusal, and cumulative =totalExtracted+hdr.Size > MaxBundleBytes= ceiling |
+| =SA115= | Rust | =SM23= (=ADV-L4=) | Refuse (=rust-reqwest-client-default-redirects=) | Hand-rolled =reqwest::Client::builder()= bypassing canonical owner =weaver-llm= without =redirect::Policy::none()= (=openai_http.rs= pattern) |
+| =SA116= | Go | =SM23= (=ADV-L4=) | Refuse (=go-http-client-default-redirects=) | Outbound =&http.Client{}= without fail-closed =CheckRedirect= policy (=official_sync.go= / =registry.go= pattern) |
+| =SA117= | Go | =SM23= (=ADV-L4=) | Refuse (=go-http-servefile-stat-follows-symlink=) | Static HTTP handler validating with =os.Stat= before =http.ServeFile= instead of =os.Lstat= + =ModeSymlink= refusal (=registry.go= pattern) |
+| =SA118= | Rust | Clean control | Pass (0 findings) | =reqwest::Client::builder().redirect(Policy::none())= (or direct delegation to =weaver_llm::Client=) |
+| =SA119= | Go | Clean control | Pass (0 findings) | =noRedirectMarketplaceHTTPClient= enforcing =CheckRedirect -> ErrRedirectBlocked= |
+| =SA120= | Go | Clean control | Pass (0 findings) | =ServeCatalogHandler= checking =os.Lstat= and rejecting =os.ModeSymlink= before =http.ServeFile= |
+| =SA121= | Rust | =SM24= (=ADV-L4=) | Refuse (=rust-sandbox-spawn-inherits-ambient-env=) | Sandboxed/projected tool subprocess (=tokio::process::Command= / =AsyncCommand=) spawned without =.env_clear()= allowlist scrubbing (=atomic_effect_substrate.rs= / =tool_process.rs= pattern) |
+| =SA122= | Rust | =SM24= (=ADV-L4=) | Refuse (=rust-bearer-auth-non-constant-time-eq=) | =check_bearer_header= using short-circuit =actual == expected= without constant-time comparison and non-blank guard (=ui_grpc.rs= pattern) |
+| =SA123= | Go | =SM24= (=ADV-L4=) | Refuse (=go-untrusted-plugin-cmd-inherits-os-environ=) | Untrusted plugin build/perf subprocess (=go build= / =bun build= / =bun run perf.ts=) inheriting =os.Environ()= or nil =cmd.Env= (=dev_reload.go= / =ts_bundle.go= / =publish.go= / =plugin_perf.go= pattern) |
+| =SA124= | Rust | Clean control | Pass (0 findings) | Tool subprocess applying =.env_clear()= + explicit minimal toolchain allowlist + =Stdio::null()= stdin |
+| =SA125= | Rust | Clean control | Pass (0 findings) | =check_bearer_header= rejecting blank expected tokens fail-closed and comparing bytes via =constant_time_eq= |
+| =SA126= | Go | Clean control | Pass (0 findings) | Plugin build/perf subprocess using default-deny =sanitizedBuildEnv(...)= allowlist without =os.Environ()= |
+| =SA127= | Rust | =SM25= (=ADV-L4=) | Refuse (=rust-production-effect-executor-missing-governance-gate=) | Production =CompositeAtomicEffectExecutor= executing =AtomicEffect::SandboxRun= without =GovernanceAdmissionGate= / =ExecutionCircuitBreaker= (=atomic_effect_substrate.rs= pattern) |
+| =SA128= | Rust | =SM25= (=ADV-L4=) | Refuse (=rust-task-actor-kernel-missing-governance-gate=) | GraphEngine =TaskActorKernelExecutor::dispatch_and_reconcile= executing steps without =GovernanceAdmissionGate= (=task_actor_executor.rs= pattern) |
+| =SA129= | Rust | =SM25= (=ADV-L4=) | Refuse (=rust-legacy-loop-engine-unretired-shadow-surface=) | Kernel exporting legacy =LoopProgram= engine un-deprecated alongside canonical GraphEngine =TaskActorKernelExecutor= (=marlin-agent-kernel/src/lib.rs= pattern) |
+| =SA130= | Rust | Clean control | Pass (0 findings) | =CompositeAtomicEffectExecutor= authorizing mutating effects fail-closed via =authorize_atomic_effect= + =GovernanceAdmissionGate= |
+| =SA131= | Rust | Clean control | Pass (0 findings) | =TaskActorKernelExecutor= calling =authorize_dispatch= against =GovernanceAdmissionGate= before step execution |
+| =SA132= | Rust | Clean control | Pass (0 findings) | Legacy =LoopProgram= re-exports marked =#[deprecated]= for retirement alongside canonical GraphEngine |
+| =SA133= | Rust | =SM26= (=ADV-L4=) | Refuse (=rust-shadow-entrypoint-bearer-auth=) | Shadow binary/example =fn check_bearer= using short-circuit === or hardcoded ="marlin-dev-token"= fallback (=marlin_mygo_host.rs= / =mygo_bridge_server.rs= pattern) |
+| =SA134= | Rust | =SM26= (=ADV-L4=) | Refuse (=rust-empty-bearer-prefix-bypass=) | =check_bearer_header= guarding =expected.trim().is_empty()= but admitting empty ="Bearer "= prefix payload (=ui_grpc.rs= pattern) |
+| =SA135= | Rust | =SM26= (=ADV-L4=) | Refuse (=rust-control-plane-rpc-missing-estop-gate=) | Mutating/executing gRPC RPC handler authorizing Bearer token without =ensure_governance_live= / E-Stop breaker check (=ui_grpc.rs= / =grpc.rs= pattern) |
+| =SA136= | Rust | =SM26= (=ADV-L4=) | Refuse (=rust-release-gate-unscrubbed-login-shell=) | =ProcessReleaseGateCommandRunner= running =Command::new("sh").arg("-lc")...output()= without =.env_clear()= or bounded output drain (=release.rs= pattern) |
+| =SA137= | Go | =SM26= (=ADV-L4=) | Refuse (=go-shadow-default-bearer-or-timing-auth=) | Go auth check using short-circuit === comparison or hardcoded default Bearer token |
+| =SA138= | TypeScript | =SM26= (=ADV-L4=) | Refuse (=ts-control-plane-rpc-missing-estop-or-unscrubbed-shell=) | TS control-plane RPC mutating/executing without E-Stop gate or spawning unscrubbed shell |
+| =SA139= | Rust | Clean control | Pass (0 findings) | Canonical =check_bearer_header= rejecting blank headers and empty ="Bearer "= payload + =constant_time_eq= |
+| =SA140= | Rust | Clean control | Pass (0 findings) | Control-plane RPC calling =check_auth= + fail-closed =ensure_governance_live= before executing |
+| =SA141= | Rust | Clean control | Pass (0 findings) | =ProcessReleaseGateCommandRunner= using non-login =sh -c=, =.env_clear()= allowlist, and bounded pipe drain |
+| =SA142= | TypeScript | Clean control | Pass (0 findings) | Control-plane RPC checking Bearer auth and fail-closed E-Stop =gate.isTripped()= before admitting |
+| =SA143= | Rust | =SM27= (=ADV-L4=) | Refuse (=rust-policy-gate-downgraded-or-ignored=) | =asp_rust_cargo_test_gate!= weakened via =advice = allow= / =mode = allow= or =#[ignore]= on =enforce_asp_rust= |
+| =SA144= | Rust | =SM27= (=ADV-L4=) | Refuse (=rust-binary-entrypoint-fat-shadow-logic=) | Fat =fn main()= binary defining >= 8 control-plane helpers directly in =src/bin/*.rs= instead of delegating to owned library module (=marlin_scheme_ctl.rs= / =marlin_mygo_host.rs= pattern) |
+| =SA145= | Rust | =SM27= (=ADV-L4=) | Refuse (=rust-workspace-policy-failure-masked=) | Policy harness masking =enforce_asp_rust_workspace_dev_gate= panic/error via =catch_unwind= or =let _ == |
+| =SA146= | Go | =SM27= (=ADV-L4=) | Refuse (=go-test-skip-weakens-gate=) | Go Quint/MBT gate calling =t.Skipf= when =quint= is absent instead of resolving local binary and failing closed (=stability_soak_test.go= pattern) |
+| =SA147= | TypeScript | =SM27= (=ADV-L4=) | Refuse (=ts-policy-gate-swallows-failure=) | Policy gate runner masking =workspace_policy= / =rust-dev-gate= failure with =|| true= or =continueOnError: true= |
+| =SA148= | TypeScript | =SM27= (=ADV-L4=) | Refuse (=ts-workspace-dep-cycle-unverified=) | =auditWorkspacePolicy= returning =passed: true= without verifying acyclic crate DAG (=cyclicSccs === 0=) |
+| =SA149= | Rust | Clean control | Pass (0 findings) | Thin =fn main()= binary delegating directly to =marlin_agent_app_server::mygo_host::run_cli().await= |
+| =SA150= | Rust | Clean control | Pass (0 findings) | Strict =asp_rust::asp_rust_cargo_test_gate!(mode = fail);= without =advice = allow= or =#[ignore]= |
+| =SA151= | Go | Clean control | Pass (0 findings) | Go Quint/MBT gate resolving local =node_modules/.bin/quint= and calling =t.Fatalf= fail-closed |
+| =SA152= | TypeScript | Clean control | Pass (0 findings) | =auditWorkspacePolicy= verifying =countCyclicSccs(crates, edges) === 0= fail-closed |
+| =SA153= | Rust | =SM28= (=ADV-L4=) | Refuse (=rust-panel-enable-ignores-grants=) | =PanelPluginHost::enable_panel= ignoring =self.grants= or =set_project_grants= omitting declared-capability validation & revocation closure |
+| =SA154= | Rust | =SM28= (=ADV-L4=) | Refuse (=rust-panel-install-blind-overwrite-no-antirollback=) | =PanelPluginHost::install= blindly overwriting =self.releases= without monotonic version anti-rollback & publisher continuity |
+| =SA155= | Rust | =SM28= (=ADV-L4=) | Refuse (=rust-panel-manifest-unvalidated-entry-path=) | =UnifiedPanelManifest::validate= omitting relative =entry_path= confinement check (=../../../etc/passwd= escape) |
+| =SA156= | Rust | =SM28= (=ADV-L4=) | Refuse (=rust-device-channel-forged-lease-or-estop-bypass=) | =BridgeState::update_device_capabilities= accepting forged =lease_id= without =active_leases= lookup or =ApprovalGateService=/=open_device_channel= omitting =ensure_governance_live= |
+| =SA157= | Rust | =SM28= (=ADV-L4=) | Refuse (=rust-idempotency-replay-ignores-payload-digest=) | =find_idempotent_action= matching only =idempotency_key= without verifying exact =action_name= & =args_digest= |
+| =SA158= | TypeScript | =SM28= (=ADV-L4=) | Refuse (=ts-panel-grant-or-idempotency-bypass=) | TS =findIdempotentAction= matching =idempotencyKey= without verifying =actionName= & =argsDigest= |
+| =SA159= | Rust | Clean control | Pass (0 findings) | =PanelPluginHost= enforcing anti-rollback + publisher continuity, validated =set_project_grants= revocation closure, and =enable_panel= grant checks |
+| =SA160= | Rust | Clean control | Pass (0 findings) | =UnifiedPanelManifest::validate= calling =validate_confined_entry_path= + =find_idempotent_action= verifying exact =action_name= & =args_digest= |
+| =SA161= | Rust | Clean control | Pass (0 findings) | =BridgeState::update_device_capabilities= verifying bound =active_leases= + =ApprovalGateService= enforcing =ensure_governance_live= |
+| =SA162= | TypeScript | Clean control | Pass (0 findings) | TS =findIdempotentAction= rejecting conflicting =actionName= or =argsDigest= on =idempotencyKey= reuse |
+| =SA163= | Rust | =SM29= (=ADV-L4=) | Refuse (=rust-cedar-forbid-unless-missing-key-failopen=) | =CompiledCedarPolicy::matches= evaluating =unless_clauses= with =!= Some(false)= unconditionally, silently disabling =forbid= on missing context key (=None=) |
+| =SA164= | Rust | =SM29= (=ADV-L4=) | Refuse (=rust-governance-rearm-clears-retracted-derivations=) | =rearm_by_verified_human= calling =retracted_derivations.clear()=, resurrecting permanently invalidated Bi-Temporal TM conclusions |
+| =SA165= | Rust | =SM29= (=ADV-L4=) | Refuse (=rust-governance-sync-ignores-same-epoch-revision-rollback=) | =synchronize_proof_envelope= overwriting =policy_revision= and fences without rejecting same-epoch lower =policy_revision= replays |
+| =SA166= | Rust | =SM29= (=ADV-L4=) | Refuse (=rust-breaker-restore-untrips-same-epoch-estop=) | =ExecutionCircuitBreaker::restore_durable_state= allowing same-epoch pre-trip checkpoint replay to overwrite active =guard.tripped = false= |
+| =SA167= | Rust | =SM29= (=ADV-L4=) | Refuse (=rust-checkpoint-sha256-non-constant-time-tag=) | =GovernanceDurableCheckpoint::from_canonical_bytes= verifying SHA-256 tag via short-circuit =!= instead of constant-time comparison |
+| =SA168= | TypeScript | =SM29= (=ADV-L4=) | Refuse (=ts-cedar-forbid-unless-failopen=) | TS =matchesCedarPolicy= waiving =forbid ... unless= on missing (=undefined=) context key via =!== false= |
+| =SA169= | Rust | Clean control | Pass (0 findings) | =CompiledCedarPolicy::matches= matching =CedarEffect::Forbid= (=Some(true)= waives) vs =CedarEffect::Permit= (=!= Some(false)= waives) |
+| =SA170= | Rust | Clean control | Pass (0 findings) | Hardened =rearm_by_verified_human= (preserving retractions), =synchronize_proof_envelope= (same-epoch revision anti-rollback) & =from_canonical_bytes= (=constant_time_eq_32=) |
+| =SA171= | Rust | Clean control | Pass (0 findings) | =ExecutionCircuitBreaker::restore_durable_state= refusing =trip_epoch == guard.trip_epoch && guard.tripped && !tripped= |
+| =SA172= | TypeScript | Clean control | Pass (0 findings) | TS =matchesCedarPolicy= waiving ='forbid'= only on ==== true= and ='permit'= on =!== false= |
+| =SA173= | Rust | =SM30= (=ADV-L4=) | Refuse (=rust-stepup-actor-weak-acr-or-prefix-gap=) | =parse_verified_step_up_actor= admitting =worker-*=/=scheme-sandbox-*= agents or weak non-allowlisted =acr= (=none=/=password=) as =VerifiedHuman= |
+| =SA174= | Rust | =SM30= (=ADV-L4=) | Refuse (=rust-scheme-effect-llm-or-cas-ungated=) | =run_one_atomic_effect= executing =LlmComplete= without E-Stop gate or =CasPut= without reserved governance key check |
+| =SA175= | Rust | =SM30= (=ADV-L4=) | Refuse (=rust-broadcast-watcher-breaks-on-lag=) | Governance/UI broadcast watcher =recv()= matching =Err(_) => break= instead of surviving =RecvError::Lagged= |
+| =SA176= | Rust | =SM30= (=ADV-L4=) | Refuse (=rust-fact-store-unbounded-mutate-or-timing-tag=) | =mutate_facts_and_build_request= inserting unboundedly past =MAX_FACT_STORE_ENTRIES=4096= or =GovernanceFactStore::from_canonical_bytes= using short-circuit =!= on SHA-256 tag |
+| =SA177= | Rust | =SM30= (=ADV-L4=) | Refuse (=rust-rearm-cas-persist-error-swallowed=) | =handle_claimed_gate_decision_durable= swallowing =persist_to_cas= failure via =let _ == leaving live re-armed state desynchronized from durable CAS |
+| =SA178= | TypeScript | =SM30= (=ADV-L4=) | Refuse (=ts-stepup-weak-acr-nonempty-only=) | TS =parseVerifiedStepUpHuman= checking only =acr.trim().length === 0= without MFA ACR allowlist |
+| =SA179= | Rust | Clean control | Pass (0 findings) | =parse_verified_step_up_actor= classifying =infer_actor_roles= non-humans as =Agent= and enforcing RFC 9470 =is_verified_mfa_acr= allowlist |
+| =SA180= | Rust | Clean control | Pass (0 findings) | =run_one_atomic_effect= checking =is_reserved_governance_cas_key= on =CasPut= and =authorize_llm_effect= on =LlmComplete= + watcher surviving =RecvError::Lagged= |
+| =SA181= | Rust | Clean control | Pass (0 findings) | =mutate_facts_and_build_request= enforcing =ensure_fact_capacity(..., MAX_FACT_STORE_ENTRIES)= + =handle_claimed_gate_decision_durable= re-tripping E-Stop on CAS error |
+| =SA182= | TypeScript | Clean control | Pass (0 findings) | TS =parseVerifiedStepUpHuman= enforcing =isAllowlistedMfaAcr(acr)= fail-closed |
+| =SA183= | Rust | =SM31= (=ADV-L4=) | Refuse (=rust-serde-derive-bypasses-validated-newtype=) | =#[derive(Deserialize)]= on =StoragePageLimit=/=string_id!=/=SessionId= bypassing =::new()= range & non-blank invariants |
+| =SA184= | Rust | =SM31= (=ADV-L4=) | Refuse (=rust-put-artifact-unchecked-size-or-digest=) | =put_artifact= inserting =record.body= without verifying =size_bytes == body.len()= and cryptographic =sha256:<64-hex>= integrity |
+| =SA185= | Rust | =SM31= (=ADV-L4=) | Refuse (=rust-sync-remote-url-admits-cleartext-http=) | =TursoSyncRemoteUrl::new= admitting remote cleartext =http://= or omitting =@= userinfo / CRLF smuggling refusal |
+| =SA186= | Rust | =SM31= (=ADV-L4=) | Refuse (=rust-context-index-rebuild-overwrites-applied-rev=) | =TursoContextIndex::rebuild= deleting/overwriting =context_locators= on same-revision matching receipt without =Replayed= / =Conflict= check |
+| =SA187= | Rust | =SM31= (=ADV-L4=) | Refuse (=rust-cas-pointer-non-idempotent-audit-receipt=) | =compare_and_swap_artifact_pointer= calling non-idempotent =insert_visibility_receipt= with deterministic =receipt_id= |
+| =SA188= | TypeScript | =SM31= (=ADV-L4=) | Refuse (=ts-remote-sync-url-admits-cleartext-http=) | TS =parseSyncRemoteUrl= accepting arbitrary remote =http://= URLs without loopback restriction or =@= userinfo refusal |
+| =SA189= | Rust | Clean control | Pass (0 findings) | =StoragePageLimit= & =string_id!= enforcing =#[serde(try_from = ...)]= validated deserialization |
+| =SA190= | Rust | Clean control | Pass (0 findings) | =put_artifact= calling =validate_artifact_record= + =compare_and_swap_artifact_pointer= calling =insert_visibility_receipt_idempotent= |
+| =SA191= | Rust | Clean control | Pass (0 findings) | =TursoSyncRemoteUrl::new= enforcing loopback-only =http://= & no userinfo + =TursoContextIndex::rebuild= enforcing =Replayed=/=Conflict= parity |
+| =SA192= | TypeScript | Clean control | Pass (0 findings) | TS =parseSyncRemoteUrl= restricting =http://= to loopback and blocking =@= userinfo |
+| =SA193= | Rust | =SM32= (=ADV-L4=) | Refuse (=rust-gitops-incomplete-env-override-strip=) | =GIT_REPOSITORY_OVERRIDES= omitting =GIT_CONFIG_GLOBAL=, =GIT_EXEC_PATH=, or =GIT_SSH_COMMAND= |
+| =SA194= | Rust | =SM32= (=ADV-L4=) | Refuse (=rust-gitops-provider-missing-fsmonitor-lockdown=) | =ProcessWorkingCopyCommandRunner= omitting =core.fsmonitor=false= / =DISABLED_FSMONITOR= lockdown |
+| =SA195= | Rust | =SM32= (=ADV-L4=) | Refuse (=rust-gitops-unvalidated-projection-arg-or-snapshot-path=) | =worktrunk_switch= projecting unvalidated =branch_or_id_target= or =plan_sweep= joining unsanitized =working_copy.id= into =snapshot_root= |
+| =SA196= | Rust | =SM32= (=ADV-L4=) | Refuse (=rust-gitops-unbounded-provider-output-no-kill-on-drop=) | Working-copy provider runner/probe calling unbounded =.output().await= without timeout, byte cap, or =kill_on_drop(true)= |
+| =SA197= | Rust | =SM32= (=ADV-L4=) | Refuse (=rust-gitops-joinset-worker-panic-expect=) | =isolate_parallel= calling =.expect()=/=.unwrap()= on =JoinSet::join_next()= crashing coordinator on worker panic |
+| =SA198= | TypeScript | =SM32= (=ADV-L4=) | Refuse (=ts-gitops-unconfined-env-or-arg-injection=) | TS =buildGitWorktreeArgs= omitting =core.fsmonitor=false= or dash-prefixed branch/baseRef refusal |
+| =SA199= | Rust | Clean control | Pass (0 findings) | Expanded =GIT_REPOSITORY_OVERRIDES= + =ProcessWorkingCopyCommandRunner= enforcing =DISABLED_HOOKS= & =DISABLED_FSMONITOR= via bounded runner |
+| =SA200= | Rust | Clean control | Pass (0 findings) | Hardened =worktrunk_switch= (=validate_branch_or_id_target=) + =plan_sweep= (=confined_snapshot_path=) |
+| =SA201= | Rust | Clean control | Pass (0 findings) | Hardened =isolate_parallel= using =join_next_with_id().await= converting worker panics into rejected receipts |
+| =SA202= | TypeScript | Clean control | Pass (0 findings) | TS =buildGitWorktreeArgs= rejecting leading =-= and passing =-c core.hooksPath=/dev/null -c core.fsmonitor=false= |
+| =SA203= | Rust | =SM33= (=ADV-L4=) | Refuse (=rust-hook-config-failopen-unknown-fields=) | =HookConfigurationEnvelope=/=HookPolicyConfiguration=/=HookRegistrationDefaults= using =#[serde(default)]= without =deny_unknown_fields= |
+| =SA204= | Rust | =SM33= (=ADV-L4=) | Refuse (=rust-hook-registry-duplicate-shadow-or-unbounded-async=) | =HookRegistry::register= pushing duplicate =hook_id= without =retain= deduplication or unbounded =HookExecutionMode::Async= spawn |
+| =SA205= | Rust | =SM33= (=ADV-L4=) | Refuse (=rust-hook-dynamic-action-masks-trust-rejection=) | =apply_dynamic_decision_action= overwriting =UntrustedRejected=/=ModifiedRejected= reasons with extension =Defer=/=Deny= |
+| =SA206= | Rust | =SM33= (=ADV-L4=) | Refuse (=rust-subagent-policy-unchecked-contradiction-or-budget=) | =validate_unique_profiles= omitting contradictory =read_only && workspace_write=, zero-budget, and recursive =max_depth= validation |
+| =SA207= | Rust | =SM33= (=ADV-L4=) | Refuse (=rust-protocol-session-serde-bypass-or-endpoint-injection=) | =RuntimeSessionId= deriving =Deserialize= bypassing =try_new= or =ModelEndpoint::validate_selector_boundaries= omitting control/URL-meta refusal |
+| =SA208= | TypeScript | =SM33= (=ADV-L4=) | Refuse (=ts-hook-config-failopen-or-trust-mask=) | TS =applyHookDynamicDecision= overwriting =UntrustedRejected=/=ModifiedRejected= with extension =Defer=/=Deny= |
+| =SA209= | Rust | Clean control | Pass (0 findings) | Hardened =HookConfigurationEnvelope= (=deny_unknown_fields=) + =HookRegistry::register= (=retain= deduplication) |
+| =SA210= | Rust | Clean control | Pass (0 findings) | Hardened =apply_dynamic_decision_action= preserving immutable =UntrustedRejected=/=ModifiedRejected= reasons |
+| =SA211= | Rust | Clean control | Pass (0 findings) | Hardened =validate_unique_profiles= (=validate_sub_agent_policy=), custom =RuntimeSessionId= =Deserialize=, and =has_unsafe_endpoint_chars= |
+| =SA212= | TypeScript | Clean control | Pass (0 findings) | TS =applyHookDynamicDecision= preserving immutable =UntrustedRejected=/=ModifiedRejected= reasons |
+| =SA213= | Rust | =SM34= (=ADV-L4=) | Refuse (=rust-direnv-export-loader-hijack-or-unbounded-output=) | =apply_direnv_json= blindly admitting =LD_PRELOAD=/=DYLD_INSERT_LIBRARIES=/=BASH_ENV=/denylist vars or =direnv_output= calling unbounded =wait_with_output()= |
+| =SA214= | Rust | =SM34= (=ADV-L4=) | Refuse (=rust-envrc-unconfined-explicit-path-or-subagent-home=) | =direnv_cwd= accepting escaping/symlinked explicit =.envrc= paths or =resolve_sub_agent= accepting escaping =home_path= overrides |
+| =SA215= | Rust | =SM34= (=ADV-L4=) | Refuse (=rust-org-store-lexical-only-no-symlink-check=) | =FileSystemOrgSourceStore= reading/writing with lexical-only path check and unbounded =fs::read_to_string= without symlink confinement |
+| =SA216= | Rust | =SM34= (=ADV-L4=) | Refuse (=rust-org-governance-snapshot-rollback-or-channel-reset=) | =OrgGovernanceLedger::register_snapshot= allowing generation rollback or =SharedContextGovernanceLedger::create_channel= resetting epoch/taint |
+| =SA217= | Rust | =SM34= (=ADV-L4=) | Refuse (=rust-two-zone-kv-prefix-unverified-content-digest=) | =assemble_two_zone_gateway_messages= comparing =envelope.kv_prefix_digest= without recomputing =compute_kv_prefix_digest(&envelope.frozen_prefix)= |
+| =SA218= | TypeScript | =SM34= (=ADV-L4=) | Refuse (=ts-two-zone-prefix-or-direnv-loader-bypass=) | TS =assembleTwoZonePrompt= comparing =envelope.kvPrefixDigest= without recomputing =computeKvPrefixDigest(envelope.frozenPrefix)= |
+| =SA219= | Rust | Clean control | Pass (0 findings) | Hardened =apply_direnv_json= (=is_disallowed_direnv_export_key=) + =direnv_cwd= (=confine_explicit_envrc=) |
+| =SA220= | Rust | Clean control | Pass (0 findings) | Hardened =FileSystemOrgSourceStore= (=verify_confined_no_symlinks= + =MAX_ORG_DOCUMENT_BYTES=) |
+| =SA221= | Rust | Clean control | Pass (0 findings) | Hardened =OrgGovernanceLedger::register_snapshot= (=GenerationRollback=) + =assemble_two_zone_gateway_messages= (=compute_kv_prefix_digest=) |
+| =SA222= | TypeScript | Clean control | Pass (0 findings) | TS =assembleTwoZonePrompt= recomputing and verifying =computeKvPrefixDigest(envelope.frozenPrefix)= |
+| =SA223= | Rust | =SM35= (=ADV-L4=) | Refuse (=rust-graph-witness-serde-bypass-or-detached-settle=) | =AdmittedGovernedContext=/=AdmittedMarlinDispatch=/=FencingEpoch= deriving =Deserialize= bypassing admission guards or reconciling =Settled= on =Detached= scope |
+| =SA224= | Rust | =SM35= (=ADV-L4=) | Refuse (=rust-graph-planning-policy-decision-bypass-or-dup-edge=) | =edge_condition_matches= returning =true= unconditionally on =AgentEdgeCondition::PolicyDecision(_)= or routing duplicate =candidate_edges= |
+| =SA225= | Rust | =SM35= (=ADV-L4=) | Refuse (=rust-harness-cedar-capability-spoof-or-case-bypass=) | =classify_capability= trusting caller =declared_capability= or substring ="search"= before destructive-tool checks / case-sensitive Cedar allow/deny lists |
+| =SA226= | Rust | =SM35= (=ADV-L4=) | Refuse (=rust-harness-artifact-lexical-only-or-empty-path=) | =materialized_artifact_path= using lexical-only =safe_relative_path= (accepting =""=/="."=) without symlink confinement or atomic temp staging |
+| =SA227= | Rust | =SM35= (=ADV-L4=) | Refuse (=rust-weaver-config-unbounded-read-or-unsafe-cred-env=) | =LiveWeaverTomlConfig::load= performing unbounded =fs::read_to_string= without symlink/byte cap or allowing unsafe ambient =credential_env= names |
+| =SA228= | TypeScript | =SM35= (=ADV-L4=) | Refuse (=ts-harness-tool-capability-spoof-or-witness-bypass=) | TS =classifyHarnessToolCapability= trusting caller =declaredCapability= or ="search"= substring before destructive-tool detection |
+| =SA229= | Rust | Clean control | Pass (0 findings) | Hardened custom validated =Deserialize= on =AdmittedGovernedContext= + receipt-gated =edge_condition_matches(..., has_policy_receipt)= |
+| =SA230= | Rust | Clean control | Pass (0 findings) | Hardened =classify_capability= checking =is_destructive_tool_name(tool_name)= before =declared_capability= and ="search"= fallback |
+| =SA231= | Rust | Clean control | Pass (0 findings) | Hardened =safe_relative_path= + =verify_confined_no_symlinks= + bounded non-symlink =LiveWeaverTomlConfig::load= (=MAX_WEAVER_CONFIG_BYTES=) |
+| =SA232= | TypeScript | Clean control | Pass (0 findings) | TS =classifyHarnessToolCapability= checking =isDestructiveToolName(toolName)= before =declaredCapability= and ="search"= fallback |
+| =SA233= | Rust | =SM36= (=ADV-L4=) | Refuse (=rust-otlp-cleartext-remote-endpoint=) | =OpenTelemetry::otlp_http= accepting remote cleartext =http://= collectors without loopback-only restriction or label checks |
+| =SA234= | Rust | =SM36= (=ADV-L4=) | Refuse (=rust-host-observer-unscrubbed-env=) | Detached sidecar spawned via =Command::new(env::current_exe()).spawn()= inheriting ambient host secrets without =.env_clear()= |
+| =SA235= | Rust | =SM36= (=ADV-L4=) | Refuse (=rust-watchdog-future-timestamp-blinding=) | =HostObserver::drain_pulses= updating =clock.last= with raw sender timestamp without rejecting future (> =monotonic_ns()=) values |
+| =SA236= | Rust | =SM36= (=ADV-L4=) | Refuse (=rust-deck-vm-unbounded-controls-or-timer-delay=) | =DeckContextModule::timer= omitting =MAX_TIMER_DELAY_US= ceiling or =owner::receive= leaving =Controls.modules=/=Controls.timers= unbounded |
+| =SA237= | TypeScript | =SM36= (=ADV-L4=) | Refuse (=ts-otlp-cleartext-remote-or-watchdog-future-ts=) | TS =validateOtlpEndpoint= accepting non-loopback cleartext =http://= collectors |
+| =SA238= | Rust | Clean control | Pass (0 findings) | Hardened =OpenTelemetry::otlp_http= (=validate_otlp_endpoint=) + =start_host_observer= (=.env_clear()=) |
+| =SA239= | Rust | Clean control | Pass (0 findings) | Hardened =HostObserver::drain_pulses= (=timestamp == 0 \|\| timestamp > now=) + =DeckContextModule::timer= (=MAX_TIMER_DELAY_US=) |
+| =SA240= | TypeScript | Clean control | Pass (0 findings) | TS =validateOtlpEndpoint= enforcing =https:= for remote hosts and =isLoopbackHost= for =http:= |
+| =SA241= | Rust | =SM37= (=ADV-L4=) | Refuse (=rust-posix-kill-unguarded-zero-or-init=) | =libc::kill(-pgid, ...)= omitting => 1= and host PID/PGID guard (=kill(0)=/=kill(-1)= hazard) |
+| =SA242= | Rust | =SM37= (=ADV-L4=) | Refuse (=rust-reconcile-missing-start-time-failopen=) | =matches_recorded_start_time= returning =None => true= during post-restart orphan reconciliation |
+| =SA243= | Rust | =SM37= (=ADV-L4=) | Refuse (=rust-process-ledger-symlink-or-unbounded-read=) | =FileProcessLedgerStore::read_snapshot_unlocked= omitting =O_NOFOLLOW= symlink refusal, =MAX_LEDGER_FILE_BYTES= cap, or =FILE_LEDGER_SCHEMA_VERSION= check |
+| =SA244= | Rust | =SM37= (=ADV-L4=) | Refuse (=rust-fanout-unbounded-parallelism-or-undrained-abort=) | =effective_working_copy_fanout_parallelism= omitting =MAX_WORKING_COPY_FANOUT_PARALLELISM= ceiling or =cancel_remaining_work= returning after =abort_all()= without awaiting task drain |
+| =SA245= | TypeScript | =SM37= (=ADV-L4=) | Refuse (=ts-posix-kill-unguarded-zero-or-init=) | TS =process.kill(-pgid, ...)= omitting => 1= protected-PGID guard |
+| =SA246= | Rust | Clean control | Pass (0 findings) | Hardened =signal_unix_target= (=validate_signalable_unix_target=) + fail-closed =matches_recorded_start_time= (=None => false=) |
+| =SA247= | Rust | Clean control | Pass (0 findings) | Hardened =FileProcessLedgerStore::read_snapshot_unlocked= (=verify_ledger_path_no_symlinks= + =open_no_follow= + =MAX_LEDGER_FILE_BYTES= + =FILE_LEDGER_SCHEMA_VERSION=) + bounded =effective_working_copy_fanout_parallelism= & drained =cancel_remaining_work= |
+| =SA248= | TypeScript | Clean control | Pass (0 findings) | TS =signalProcessGroup= rejecting =pgid <= 1= before =process.kill(-pgid, sig)= |
+| =SA249= | Rust | =SM38= (=ADV-L4=) | Refuse (=rust-b16-future-epoch-shred-or-epoch0-rewrap=) | =shred_retired_epoch= omitting =epoch == 0= / =epoch > active_epoch= guards (future-epoch DoS) or =admit_rewrap= omitting =from_epoch == 0= / live commitment checks |
+| =SA250= | Rust | =SM38= (=ADV-L4=) | Refuse (=rust-b18-zk-case-secret-bypass-or-nonce-replay=) | =ZkSelectiveDisclosureGate::admit_disclosure= checking =forbidden_secret_fields.contains(field)= without trim/case-folding, or =issue_challenge_nonce= omitting =consumed_challenges= / blank-nonce refusal |
+| =SA251= | Rust | =SM38= (=ADV-L4=) | Refuse (=rust-b14-builder-case-spoof-or-pin-overwrite=) | =SupplyChainProvenanceGate::admit_build= comparing raw =builder_a_id == builder_b_id=, or =register_pinned_dependency= silently overwriting pins / ignoring =cve_tombstones= |
+| =SA252= | Rust | =SM38= (=ADV-L4=) | Refuse (=rust-b20-treaty-freeze-wipe-or-self-case-spoof=) | =FederatedOrgReciprocityGate::register_treaty= blindly overwriting active =dispute_freeze_active= / =treaty_epoch=, or raw =org_a == org_b= / =origin_org == target_org= comparison |
+| =SA253= | Rust | =SM38= (=ADV-L4=) | Refuse (=rust-merkle-odd-leaf-duplication-or-empty-head-unverified=) | =compute_shard_merkle_root= duplicating trailing odd Merkle leaves (=CVE-2012-2459=), or =verify_tree_head_progression= accepting =prev.tree_size == 0= without verifying =SHA256("")= |
+| =SA254= | TypeScript | =SM38= (=ADV-L4=) | Refuse (=ts-defense-pillar-case-bypass-or-merkle-dup=) | TS =checkForbiddenDisclosedFields= omitting trim/lowercase normalization or =computeShardMerkleRoot= duplicating trailing odd leaves |
+| =SA255= | Rust | Clean control | Pass (0 findings) | Hardened B16 =shred_retired_epoch=/=admit_rewrap= + B18 =issue_challenge_nonce=/=admit_disclosure= |
+| =SA256= | Rust | Clean control | Pass (0 findings) | Hardened B14 =register_pinned_dependency=/=admit_build= + B20 =register_treaty=/=admit_federated_op= |
+| =SA257= | Rust | Clean control | Pass (0 findings) | Hardened B21 RFC 6962 non-duplicating =compute_shard_merkle_root= + B9 =verify_tree_head_progression= verifying =SHA256("")= and proof sizes |
+| =SA258= | TypeScript | Clean control | Pass (0 findings) | TS =checkForbiddenDisclosedFields= (=trim().toLowerCase()=) + non-duplicating =largestPowerOfTwoLessThan= =computeShardMerkleRoot= |
+| =SA259= | Rust | =SM39= (=ADV-L4=) | Refuse (=rust-tui-config-unbounded-read-or-unsafe-cred-env=) | =Config::load= performing unbounded =fs::read_to_string= without symlink/byte cap, =catalog_with= accepting =0=/unbounded =timeout_seconds=, or =ModelProfile::route= reading unvalidated ambient =credential_env= |
+| =SA260= | Rust | =SM39= (=ADV-L4=) | Refuse (=rust-asp-supervisor-unscrubbed-env-hang-or-ssrf=) | =spawn_managed_asp_gateway= omitting =.env_clear()=, boot timeout, or strict loopback =host:port= endpoint checks, or =discover_asp_gateway_binary= searching relative =PATH= entries |
+| =SA261= | Rust | =SM39= (=ADV-L4=) | Refuse (=rust-runtime-probe-symlink-or-unbounded-file=) | =RuntimeProbe::start= opening metrics CSV via raw =File::create(path)= following symlinks without =O_NOFOLLOW= or cumulative byte ceiling |
+| =SA262= | Rust | =SM39= (=ADV-L4=) | Refuse (=rust-bootstrap-cwd-precedence-or-symlink-scheme=) | =resolve_local_scheme_prefix= prioritizing untrusted CWD =./scheme= ahead of compiled binary repo or omitting symlink refusal |
+| =SA263= | TypeScript | =SM39= (=ADV-L4=) | Refuse (=ts-tui-config-ambient-cred-or-relative-path-bin=) | TS =resolveTuiCredentialEnv= indexing =process.env[name]= without blocking ambient OS/loader/SSH/Git variable names |
+| =SA264= | Rust | Clean control | Pass (0 findings) | Hardened =Config::load= (=read_bounded_non_symlink= + =MAX_TUI_CONFIG_BYTES=), =catalog_with= (=validate_timeout_seconds=), and =ModelProfile::route= (=validate_tui_credential_env=) |
+| =SA265= | Rust | Clean control | Pass (0 findings) | Hardened =discover_asp_gateway_binary= (=dir.is_absolute()=), =spawn_managed_asp_gateway= (=apply_scrubbed_asp_env= + =read_bounded_boot_line_with_timeout= + =validate_managed_asp_endpoint=), =RuntimeProbe::start= (=open_confined_probe_file= + =MAX_RUNTIME_PROBE_BYTES=), and executable-first non-symlink =resolve_local_scheme_prefix= |
+| =SA266= | TypeScript | Clean control | Pass (0 findings) | TS =resolveTuiCredentialEnv= guarding =process.env[name]= via =isSafeCredentialEnv(name)= |
+| =SA267= | Rust | =SM40= (=ADV-L4=) | Refuse (=rust-asp-patch-unconfined-path-or-unbounded-read=) | =apply_ast_patch_via_asp_http= joining untrusted =request.path= onto =workspace_root= without traversal/symlink confinement or unbounded =fs::read_to_string= |
+| =SA268= | Rust | =SM40= (=ADV-L4=) | Refuse (=rust-asp-loopback-ssrf-crlf-or-chunked-overflow=) | =AspForwardingEndpoint::new= omitting strict =u16= port / =@= / CRLF checks, or =decode_http_body= computing unchecked =pos + size > body.len()= |
+| =SA269= | Rust | =SM40= (=ADV-L4=) | Refuse (=rust-json-schema-unbounded-recursive-ref=) | =TargetedJsonSchemaDocument::resolve_schema_node= recursing unboundedly on circular JSON Schema =$ref= |
+| =SA270= | Rust | =SM40= (=ADV-L4=) | Refuse (=rust-search-snapshot-symlink-or-unbounded-dsl-channel=) | =save_workspace_snapshot_atomic= staging via =File::create= / following symlinks, =hydrate_workspace_open_edb_org_and_cache= omitting cache symlink refusal, or =package_search_dsl_worker= using unbounded =mpsc::channel= |
+| =SA271= | TypeScript | =SM40= (=ADV-L4=) | Refuse (=ts-asp-patch-escape-or-chunked-overflow=) | TS =resolveWorkspacePatchPath= joining untrusted =relPath= without rejecting absolute paths, =..=, or symlinks |
+| =SA272= | Rust | Clean control | Pass (0 findings) | Hardened =apply_ast_patch_via_asp_http= (=confine_workspace_patch_path= + =read_bounded_non_symlink=) & cycle-bounded =TargetedJsonSchemaDocument::resolve_schema_node_bounded= |
+| =SA273= | Rust | Clean control | Pass (0 findings) | Hardened =AspForwardingEndpoint::new=, checked =decode_http_body=, non-symlink =create_new(true)= =save_workspace_snapshot_atomic=, and bounded =mpsc::sync_channel= =package_search_dsl_worker= |
+| =SA274= | TypeScript | Clean control | Pass (0 findings) | TS =resolveWorkspacePatchPath= rejecting absolute paths, =..=, and symlinks via =lstatSync=/=realpathSync= |
+
+* Empirical Adversarial Challenge Receipts on Downstream Packages
+:PROPERTIES:
+:CUSTOM_ID: bench3006-downstream-receipts
+:END:
+
+Every stability model in =@deterministic-engineering/quint-models= is designed
+to be consumed natively by downstream packages via =@quint-extends= overlays and
+package-domain adversarial test suites:
+
+| Downstream package | Overlay / Test suite | Mechanism | RED exposure (before fix) | GREEN verification (after fix) |
+|--------------------+----------------------+-----------+---------------------------+--------------------------------|
+| =marlin-mygo= | =MarlinBoundedProjectionEvictionOverlay.qnt= (100% MBT), =MarlinStreamLagResyncOverlay.qnt= (100% MBT), =MarlinUiRenderWindowOverlay.qnt= (100% MBT) | =SM3c=, =SM5c=, =SM7= | Formal overlays verified (=12 traces / 144 transitions= each) | =PLAN-OK= + =MBT-AUDIT-OK= via =QUINT_RESOLVE_ROOT= |
+| =marlin-mygo= | =runtime/async/mbt_stability_test.go= | =SM3=, =SM4= | =FencedLane.runLoop= crashed process on worker panic; =PermitPool= map buckets never rotated | Hardened =fenced_lane.go= + =permit_pool.go=: =go test -race ./runtime/async= 11/11 PASS |
+| =marlin-mygo= | =runtime/wazeroir/cache_eviction_test.go= | =SM3c= | =ModuleEngine.cache= grew unboundedly to 80 entries (cap=64) | Bounded FIFO eviction (=DefaultMaxCompiledModules=64=): =go test -race ./runtime/wazeroir= PASS |
+| =marlin-mygo= | =control/auth/jwks_eviction_test.go= | =SM3c= | =HTTPJWKSCache.entries= grew unboundedly to 80 entries (cap=64) | Bounded FIFO eviction cascading =entries= + =lastForceRefresh=: =go test -race ./control/auth= ALL PASS; 4 fixed files static re-audit =0 findings= |
+| =marlin-mygo= | =spec/search/MarlinHelmGenerationOverlay.qnt= (100% MBT), =spec/search/MarlinConsultAlgebraOverlay.qnt= (100% MBT) | =SM8=, =SM10= | Formal search overlays verified (=12 traces / 168 transitions= each) | =PLAN-OK= + =MBT-AUDIT-OK= via =QUINT_RESOLVE_ROOT= |
+| =marlin-mygo= | =engine/search/search_metamorphic_fuzz_test.go=, =control/grpcwire/search_bridge_stability_test.go=, =runtime/mygoshell/helm_minibuffer_stability_test.go= | =SM3=, =SM8=, =SM10=, =MR1=–=MR6= | Live RED exposed 8 real search bugs: =@lang:rust= qualifier leak into literal matching, Unicode =İ= reflexivity break, multi-=#=/=!!neg= parse distortion, selection identity jump (=graph:b= -> =dsl:2=), dangling hidden marks on =SetSourceFilter=, 20k slice capacity ratchet on =BeginQuery=, stale =QueryAsync(gen=1)= cancelling =gen=2= + UTF-8 byte-slice corruption (=digest[:10]=), and stale =lastPrevID= suppressing Follow-Mode preview | Hardened =consult_orderless.go=, =helm_stream.go=, =search_bridge.go=, =helm_minibuffer_view.go=: =go test -race ./engine/search= ALL PASS (incl. 250k soak), live coverage-guided =go test -fuzz=FuzzConsultOrderlessMetamorphic -fuzztime=4s= **130,780 execs (43,569/s, 149 new interesting inputs, 0 failures)**, =control/grpcwire= & =runtime/mygoshell= =-race= PASS, 4-file static re-audit =0 findings= |
+| =marlin-agent-core= | =MarlinMyGoBridgeStabilityOverlay.qnt= (100% MBT), =MarlinMyGoLagResyncOverlay.qnt= (100% MBT) | =SM3c=, =SM5c= | Formal overlays verified (=12 traces / 144 transitions= each) | =PLAN-OK= + =MBT-AUDIT-OK= via =QUINT_RESOLVE_ROOT= |
+| =marlin-agent-core= | =crates/marlin-agent-app-server/tests/integration/ui_grpc_stability.rs= | =SM3c=, =SM5c= | Live HTTP/2 gRPC RED (0/2): =UploadArtifact= retained all 80 artifacts unboundedly; =WatchWorkbench= silently dropped stream on =RecvError::Lagged= under 1024B HTTP/2 window backpressure | Hardened =ui_grpc.rs= (=MAX_BRIDGE_ARTIFACTS=64=, =MAX_BRIDGE_ARTIFACT_BYTES=16MiB=, =MAX_BRIDGE_RECORDS=256=, explicit =RecvError::Lagged= snapshot resync across all 5 broadcast streams): =ui_grpc_stability= 2/2 PASS (0.08s), static re-audit =0 findings= |
+| =marlin-agent-core= | =dev/quint/stability/MarlinSearchSyncSafetyOverlay.qnt= (100% MBT), =dev/quint/stability/MarlinHelmSearchBoxOverlay.qnt= (100% MBT) | =SM9=, =SM10= | Formal search overlays verified (=12 traces / 168 transitions= each) | =PLAN-OK= + =MBT-AUDIT-OK= via =QUINT_RESOLVE_ROOT= |
+| =marlin-agent-core= | =crates/marlin-agent-tooling/tests/unit/search_scheduler_stability.rs= | =SM9= | Live RED (0/1, 0.55s): cancelling single-flight sync leader left =in_flight=true= permanently deadlocking all subsequent followers | Hardened =search_scheduler.rs= with RAII =SyncLeaderGuard= (=impl Drop=) + pinned =notified.as_mut().enable()= before =in_flight.load()=: 2/2 PASS (0.04s, incl. 16x40 contention), =clippy -D warnings= clean, static re-audit =0 findings= |
+| =marlin-agent-core= | =crates/marlin-agent-tui/tests/unit/helm_fuzz.rs= | =SM8=, =SM10= | Live RED (0/3): =hit_test_helm_mode_tab= returned =Some(2)= for tabs clipped past narrow width=34; =ScopeDirectory= duplicated =@prefix:= leaving stale prefix parsed; multi-=#= leaked literal ='#'= into =local_tokens= (+ UTF-8 =&hex[..7]= panic hazard & unfenced =apply_dsl_result=) | Hardened =helm/{view,types,actions,overlay,editor}.rs= + =linked_ui.rs=: =marlin-agent-tui --lib helm::= **19/19 PASS** (all proptest fuzz + 4 new SM8/SM10 challenges), static re-audit on all 6 touched Helm/scheduler files =0 findings= |
+| =marlin-agent-core= | =dev/quint/stability/MarlinSearchDslMailboxOverlay.qnt= (100% MBT), =crates/marlin-agent-tui/tests/unit/linked_ui_stability.rs=, =app/asp_supervisor.rs= | =SM4=, =SM5=, =SM11= | Live RED (0/2): 128-job L2 =DusaSolver= flood accepted all 128 unboundedly (0 shed); =dusa_queue= exceeded 32 cap; =asp_supervisor.rs= used =mpsc::unbounded_channel= for progress & leaked orphan child on malformed boot JSON | Hardened =linked_ui.rs= (priority-isolated bounded channels =64/32=, =try_send= load shedding, active zombie compaction, =shrink_to=), =app/asp_supervisor.rs= + =app/state.rs= ($O(1)$ =watch= progress + RAII =SpawnedChildGuard=): =linked_ui::stability_tests= 2/2 PASS, =asp_supervisor::stability_tests= 3/3 PASS, =clippy -D warnings= clean, **83/83 Rust files in tui/search-engine/tooling = 0 findings** |
+| =marlin-agent-core= | =crates/marlin-agent-app-server/src/bin/marlin_mygo_host.rs= | =SM3c= | Live RED (0/1): 65th session permanently locked out with =Code::ResourceExhausted("host session limit reached")= | Hardened =ResidentSessionTable= with bounded LRU eviction (=MAX_RESIDENT_SESSIONS=64=) preserving durable storage rehydration & duplicate-create rejection: 128-session soak + eviction rehydration PASS, =clippy -D warnings= clean, **103/103 Rust files across all 5 core crates = 0 findings** |
+| =marlin-mygo= | =control/transport/{sidecar_pgid_stability,federation_bound}_test.go=, =control/grpcwire/resilience_budget_test.go=, =engine/contextgov/store_eviction_test.go=, =engine/composer/voice_capture.go= | =SM2=, =SM3=, =SM4=, =SM5= | Live RED (0/4): sidecar grandchild PID survived =Stop()=; =ProbeAll= spiked to 64 concurrent pings; =ContinuityCoordinator= spun 26 unbudgeted retries; =GovernanceStore= retained 4,500 entries unboundedly | Hardened =sidecar.go= (+ =Setpgid: true= & =-pid= group signal), =federation.go= (cap=16 semaphore), =resilience_sync.go= (=DefaultMaxConsecutiveSyncFailures=12= + wake reset), =contextgov/store.go= (FIFO cap=4096), =voice_capture.go= (=time.NewTimer= + =Stop=): all 4 packages =-race= PASS |
+| =marlin-mygo= | =control/grpcwire/projection_bridge_stability_test.go=, =cmd/marlin-web/ime_guard_test.go=, =examples/plugins/ts-session-radar/src/main.ts= | =SM2=, =SM12=, =SM13=, =SM14= | Live RED (0/2): =ProjectionStreamBridge.Start()= re-entry leaked 6 concurrent half-open streams & hot-swap hung stalled streams; sustained fault injection hammered 253 unbounded watch retries; =marlin-web= global =keydown= fired shortcuts during IME composition; =ts-session-radar= leaked click listener | Hardened =projection_bridge.go=, =governance_bridge.go=, =driver.go= (swap-aware per-attempt =streamCtx= retirement + =DefaultMaxConsecutiveProjectionFailures=12= circuit shedding & probe recovery), =cmd/marlin-web/{ime_guard.go,resilience_web.go}= (=isComposing \|\| keyCode==229= gate), =ts-session-radar/src/main.ts= (=AbortController= + =pagehide=): =go test -race ./control/grpcwire ./cmd/marlin-web= PASS, =GOOS=js GOARCH=wasm go vet= clean, **280/280 own Go+TS files in =marlin-mygo= = 0 findings** |
+| =marlin-agent-core= | =crates/marlin-agent-app-server/src/bin/marlin_mygo_host.rs=, =crates/marlin-gerbil-scheme/src/scheme_host_runtime.rs= | =SM4=, =SM5=, =SM5c= | Detached =tokio::spawn= UI command router silently exited on first =RecvError::Lagged=, killing live LLM model hot-switching; =scheme_host_runtime.rs= used =tokio::sync::mpsc::unbounded_channel= for =effect_tx= | Hardened =marlin_mygo_host.rs= (=run_ui_command_router_loop= explicitly surviving =RecvError::Lagged= + tracked shutdown =JoinHandle=) and =scheme_host_runtime.rs= (bounded =mpsc::channel(64)=): =marlin-mygo-host stability_tests= 2/2 PASS, =cargo check -p marlin-gerbil-scheme= clean, **154/154 Rust files across core 6 crates = 0 findings** |
+| =marlin-agent-core= | =crates/marlin-agent-tooling/tests/unit/search_scheduler_stability.rs= | =SM15= | Live RED (2/4 failed, 0.08s): cancelling single-flight query leader cascade-failed healthy followers with =Err("coalesced search query cancelled")=; 6 concurrent cold opens produced split-brain distinct =WorkspaceSearchIndex Arc= handles & unchecked root reuse across worktrees | Hardened =search_scheduler.rs= (='election: loop= re-electing surviving follower on leader watch close) and =search_tool.rs= (=open_lock= double-checked canonical =workspace_root= matching): =search_scheduler::stability_tests= 4/4 PASS (0.08s), =clippy --no-deps -D warnings= clean, **154/154 Rust files across core 6 crates = 0 findings (=SA01=–=SA80=)** |
+| =marlin-agent-core= | =crates/marlin-agent-tui/tests/unit/helm_fuzz.rs= | =SM16= | Live RED (0.03s): =PasteSelection= (=C-y=) bypassed =MAX_HELM_INPUT_BYTES=2048=, injecting 18,605 bytes from =yank_register= into single-line Helm input; =set_input= also bypassed byte cap & control-char stripping | Hardened =helm/editor.rs= (shared =sanitize_bounded_helm_input= across =insert_text=, =PasteSelection=, and =set_input= + =shrink_to= capacity reclamation): =marlin-agent-tui --no-default-features --lib helm::= **21/21 PASS** (incl. 96-case =Composer= ZWJ/CJK/combining/narrow-wrap/undo =proptest=), **154/154 Rust files across core 6 crates = 0 findings (=SA01=–=SA84=)** |
+| =marlin-agent-core= | =crates/marlin-agent-stream/tests/unit/stream_budget_stability.rs= | =SM17= | Live RED (0/4 failed, 2.01s): =WeaverModelGateway::complete= over SSE ignored =stream_output_limit= on both =Text= and hidden =Thinking= floods (96B Anthropic thinking bypassed 32B cap); =OpenAiCompatibleHttpClient::complete_text= buffered all 25,165,824 bytes (24 MiB) via =resp.bytes().await= before checking 4 MiB limit and stalled 2.002s on declared 100 MiB =Content-Length= | Hardened =gateway.rs= + =streaming.rs= (shared =check_stream_output_budget= across =stream()= and =complete()= SSE/Auto for both =Text= & =Thinking= + typed =stream_event_error=) and =openai_http.rs= (=content_length()= fail-fast + incremental =resp.chunk().await= pre-allocation 4 MiB gate): =marlin-agent-stream --lib= **2/2 PASS**, =--test unit_test stream= **20/20 PASS (0.01s)**, =clippy --no-deps -D warnings= clean, **157/157 core Rust files & 272/272 =marlin-mygo= files = 0 findings (=SA01=–=SA90=)** |
+| =deterministic-engineering= | =.github/workflows/*.yml=, =packages/quint-modules-resolver/src/mbt.ts=, =t/harness/verify-framework.ts=, =ci-cache-soundness-fuzz.test.ts= | =SM18= | Cold unsharded CI baseline: 5 workflows had 0 dependency/toolchain/Playwright/Lake/CAS caching (=setup-go cache:false=, ~170 MB Playwright + ~350 MB Lean cold download every push), =conformance.test.ts= duplicated the entire 95-model uncached fleet (=206s= on =Quint Packages=, =233s= on =Render=) | Implemented zero-hardcoding dynamic subdomain matrix (=just verify-matrix quint= -> 5 disjoint shards covering 98/98 models; =stability= -> 2 shards), shared =setup-bun-cached=, SHA-pinned =actions/cache= & =setup-go=, two-layer shard-disjoint SHA-256 CAS with hermetic engine/transitive-dep hashing + active-set GC + dedicated =LeanPoo= modules (=Engineering/{StreamingOutputBudget,CiCacheSoundness,TaskAndPoolCancellation,SubprocessPipeCapture}.lean=): live 10-model shard dropped **12,760 ms cold -> 8 ms warm CAS (1,595× speedup)**, live GitHub Actions =c4fd808= cold -> =4ecf377= warm **5/5 upgraded workflows 100% green**: =Quint Packages= **570s v1 -> 256s v2 -> 132s cold -> 60s warm (9.5×)** (=concurrency= 27 models incl. new SM19: **106s -> 28s**, =defense= 30 models: **95s -> 21s**), =Render= **Ubuntu 218s -> 35s (6.2×), macOS 266s -> 21s (12.7×)**, =Multi-Method= **Lean 4/LeanPoo 102s -> 33s, C/CBMC 46s -> 20s (wall 47s)**, =Stability Native= **60s -> 22s**, =Defense= **56s -> 44s**, =ci-cache-soundness-fuzz.test.ts= **4/4 PASS (36,805 expects)** |
+| =marlin-agent-core= | =crates/marlin-agent-hooks/tests/unit/hooks/cancellation_stability.rs=, =crates/marlin-agent-runtime/tests/unit/runtime/effect_pump.rs=, =crates/marlin-agent-storage/src/turso_backend.rs= (=sm19_pool_tests=) | =SM19= | Live RED across 3 production crates: cancelling =HookDispatcher::dispatch= detached orphan async hook tasks (even naive =AbortOnDropHandle::join= with =self.0.take().await= detached mid-await!); =execute_atomic_effect_batch= spiked unbounded =JoinSet= fan-out to **48 concurrent workers** (limit=16) and fabricated =effect-7= losing caller ID ="sha256:panic-target-7"= on worker panic; =TursoConnectionPool= used =mpsc::unbounded_channel= and =TursoConnectionLease::drop= returned dirty in-transaction connections unconditionally | Hardened =dispatcher.rs= (cancel-safe =AbortOnDropHandle= awaiting =&mut handle= before disarming), =effect_pump.rs= (=MAX_CONCURRENT_ATOMIC_EFFECTS=16= =Arc<Semaphore>= + caller-owned =caller_ids=), and =turso_backend.rs=/=turso_operations.rs= (bounded =mpsc::channel(lanes)= + =tx_active= dirty-drop discard & clean lane replenishment): =marlin-agent-hooks --test unit_test= **24/24 PASS (0.16s)**, =marlin-agent-runtime effect_pump= **2/2 PASS (0.09s)**, =marlin-agent-storage --features turso sm19_pool_tests= **1/1 PASS (0.03s)**, =clippy --no-deps -D warnings= clean across all 3 crates, **222/222 production Rust files across 9 crates & 269/269 =marlin-mygo= files = 0 findings (=SA01=–=SA96=)** |
+| =marlin-agent-core= | =crates/marlin-agent-app-server/src/atomic_effect_substrate.rs=, =crates/marlin-agent-runtime/src/process/managed.rs=, =crates/marlin-agent-tui/src/app/asp_supervisor.rs= | =SM20= | Live RED across 3 production crates: =BoundedTokioSandboxRunner= (=max_output_bytes=4096=) buffered an entire 2 MiB subprocess flood via unbounded =read_to_end(&mut bytes)= spiking =stdout.capacity()= to **4,194,304 bytes (1,024× cap!)** before post-hoc =stdout.truncate(4096)=; =spawn_managed_asp_gateway= accepted a 256 KiB single-line boot frame via unbounded =BufReader::read_line()= | Hardened =managed.rs= (=read_pipe_bounded_drain= with 8 KiB stack scratch drain-to-sink + =wait_with_bounded_output= + =DEFAULT_MAX_CAPTURED_PIPE_BYTES=16MiB=), =atomic_effect_substrate.rs= (=wait_with_bounded_output(max_bytes)=), and =asp_supervisor.rs= (=read_bounded_boot_line= with =MAX_ASP_BOOT_LINE_BYTES=64KiB=): =marlin-agent-app-server --features grpc atomic_effect_substrate= **3/3 PASS (0.08s)** (2 MiB flood exits cleanly with =stdout.capacity() <= 8192= & zero pipe deadlock), =marlin-agent-tui asp_supervisor::stability_tests= **4/4 PASS (1.02s)** (256 KiB boot frame rejected & child reaped), =clippy --no-deps -D warnings= clean, **222/222 production Rust files across 9 crates & 269/269 =marlin-mygo= files = 0 findings (=SA01=–=SA102=)** |
+| =marlin-agent-core= & =marlin-mygo= | =crates/marlin-agent-runtime/src/task_actor.rs=, =crates/marlin-agent-context/src/org/store/release_status.rs=, =crates/marlin-agent-search-engine/src/asp_http_client/patch_client.rs=, =engine/shell/atomic_persistence_stability_test.go=, =control/marketplace/atomic_persistence_stability_test.go=, =control/auth/{vault,keychain_windows}.go= | =SM21= | Live RED across BOTH Rust and Go (7 real files): =task_actor.rs::save_checkpoint_file= collided on shared =.checkpoint.tmp= crashing 7/8 concurrent writers with =ENOENT= in 0.00s; =layout_projection.go::SaveLayoutSpecFile= overwrote in-place via =os.WriteFile= causing torn JSON reads (=ErrInvalidLayoutSpec= in 0.05s); =package_store.go::writeAtomicBytes=, =vault.go=, =keychain_windows.go=, =release_status.rs=, and =patch_client.rs= collided on shared =.tmp= without =fsync= (=ENOENT= in 0.02s) | Hardened all 7 files with unique per-writer temp staging (Rust =create_new(true)= PID+atomic seq; Go =os.CreateTemp=), =sync_all()/Sync()= before atomic =rename=, parent-dir sync, and error cleanup: =marlin-agent-runtime sm21_atomic_persistence_tests= **1/1 PASS (1.76s)** (8×30 concurrent writers + live JSON reader, 0 collisions/torn/orphan temps), =marlin-agent-context= & =marlin-agent-search-engine= =clippy -D warnings= clean, =marlin-mygo= =go test -race ./engine/shell ./control/auth ./control/marketplace= **ALL PASS** + =GOOS=windows go vet ./control/auth= clean, **223/223 production Rust files across 9 core crates + release_status & 269/269 =marlin-mygo= files = 0 findings (=SA01=–=SA108=)** |
+| =marlin-agent-core= & =marlin-mygo= | =crates/marlin-agent-kernel/tests/unit/kernel/loop_program_side_effects.rs= (=sm22_adv_l4_symlink_escape_tests=), =control/marketplace/adversarial_confinement_test.go= (=TestSM22AdvL4*=) | =SM22= (=ADV-L4=, 100th Quint Model) | Hostile =ADV-L4= LIVE RED across BOTH Rust and Go (**8/8 real exploits succeeded live!**): =LoopProgramFileSandbox::resolve= (=file_write.rs:69=) suffered intermediate dir symlink escape, leaf symlink overwrite + digest leak (=TOP_SECRET_CREDENTIAL= -> =OVERWRITTEN=), dangling leaf symlink creation outside root, and multi-hop symlink chain escape (0/4 failed in 0.02s); =dev_reload.go:357= created escaped directory outside staging =tmpDir= via =entry_path="../probe/nested/escaped.wasm"=; =ts_bundle.go:51= & =publish.go:176,372= (bonus catch by =SA110= sweep!) accepted unconfined =entry_path= / =<script src>= traversal; =bundle.go:215= accepted duplicate shadowing =assets/index.html=, non-canonical =assets/./index.html= & =assets//index.html=, and split concatenated multistream gzip archives (0/4 failed in 0.84s). Live Wave-13 CI audit (=46a8538=) also caught Ubuntu 26.04 =packages.microsoft.com= 403 APT flake in =.github/actions/setup-just/action.yml= | Hardened all 6 real production files (=file_write.rs= =verify_confined_no_symlinks= + =executor.rs= TOCTOU re-verify & atomic =create_new+sync_all+rename=; =dev_reload.go=, =ts_bundle.go= & =publish.go= =confineRelativePath=; =bundle.go= =gr.Multistream(false)= + trailing unread check + =validateCanonicalArchivePath= + =seenEntries= duplicate refusal + cumulative =totalExtracted+hdr.Size > MaxBundleBytes=) and fixed =setup-just/action.yml= APT source hygiene: =marlin-agent-kernel --test unit_test= **91/91 PASS (1.20s)** + =clippy -D warnings= clean, =marlin-mygo= =go vet= clean & =go test -race -count=1 ./control/marketplace= **ALL PASS**, **233/233 production Rust files & 280/280 =marlin-mygo= files = 0 findings (=SA01=–=SA114=)** |
+| =marlin-agent-core=, =marlin-mygo= & =weaver= | =crates/marlin-agent-stream/src/openai_http.rs= (=sm23_adv_l4_*=), =control/marketplace/adversarial_http_ssrf_test.go= (=TestSM23AdvL4*=) | =SM23= (=ADV-L4=, 101st Quint Model) | Hostile =ADV-L4= LIVE RED across Rust & Go (**6/6 exploits succeeded live!**): =marlin-agent-stream/src/openai_http.rs= bypassed canonical owner =weaver-llm= with a raw =reqwest::Client::builder()= lacking =Policy::none()= -> followed 307 redirect exfiltrating prompt to internal victim, accepted remote cleartext =http://= Bearer keys, and accepted =https://api.openai.com@evil.example= userinfo smuggling (0/3 failed in 0.01s); =official_sync.go:106= & =registry.go:64= lacked =CheckRedirect= -> followed 302 HTTPS->HTTP redirects to plaintext internal victim; =registry.go:157= fetched cross-origin/downgraded =entry.DownloadURL=; =registry.go:207= =ServeCatalogHandler= used =os.Stat= leaking outside =host-secret.key= via symlink (`200 OK`, 0.89s). Meanwhile canonical owner =weaver= (=weaver-llm=) ALREADY enforced =Policy::none()=, =retry::never()=, =no_proxy()=, remote HTTPS & 4 MiB caps (236/236 Rust files = 0 findings!) | Eliminated duplicate raw =reqwest= client in =openai_http.rs= by delegating 100% directly to canonical owner =weaver_llm::Client= + =weaver_llm::Endpoint= (fixing =SM17= & =SM23= in one stroke); hardened =official_sync.go= & =registry.go= with =noRedirectMarketplaceHTTPClient=, =validateCatalogDownloadURL= (same-origin/no-downgrade/no-userinfo), =os.Lstat= symlink rejection in =ServeCatalogHandler=, =confineRelativePath= on local sync, and =tmp.Sync()= in =atomicWriteFile=: =marlin-agent-stream --lib= **5/5 PASS**, =--test unit_test= **20/20 PASS**, =clippy -D warnings= clean, =marlin-mygo= =go vet= clean & =go test -race ./control/marketplace= **13/13 PASS (3.09s)**, **3-repo sweep across 749 real production files (=233 marlin-agent-core + 280 marlin-mygo + 236 weaver=) = 0 findings (=SA01=–=SA120=)** |
+| =marlin-agent-core= & =marlin-mygo= | =crates/marlin-agent-app-server/src/{atomic_effect_substrate,ui_grpc}.rs= (=sm24_adv_l4_*=), =crates/marlin-agent-kernel/tests/unit/kernel/loop_program_side_effects.rs=, =control/marketplace/adversarial_env_scrub_test.go= (=TestSM24AdvL4*=) | =SM24= (=ADV-L4=, 102nd Quint Model) | Hostile =ADV-L4= LIVE RED across Rust & Go (**5/5 runtime exploits + 8/8 static catches across 7 real files!**): =BoundedTokioSandboxRunner= (=atomic_effect_substrate.rs:107=) leaked all 4 ambient host secrets to sandboxed child; =spawn_loop_program_tool_process= (=tool_process.rs:121=) leaked both ambient host secrets and inherited stdin; =MyGoBridgeHost::check_bearer_header= (=ui_grpc.rs:335=) used short-circuit =actual == expected= AND admitted empty =Some("")= Bearer bypass; =plugin_perf.go:456= let untrusted =src/perf.ts= steal all 4 host secrets (=OPENAI_API_KEY=, =MARLIN_BRIDGE_TOKEN=, =AWS_SECRET_ACCESS_KEY=, custom secret) via inherited =process.env=; =ts_bundle.go:176= let a real **Bun build-time macro** (=with { type: "macro" }=) bake host =OPENAI_API_KEY= straight into compiled =bundle.js=; =dev_reload.go:373=, =publish.go:299=, and =plugin_perf.go:225= forwarded raw =os.Environ()= into untrusted plugin Go builds (+ =plugin_perf.go:514= omitted =confineRelativePath=). Live Wave-15 CI audit (=77760c4=) confirmed =REUSE licensing= flipped 100% GREEN and caught Linux =SIGPIPE= (exit 141) in =scripts/verify-subtree-mirrors.sh= (=H9=) | Hardened all 7 real production files: =atomic_effect_substrate.rs= & =tool_process.rs= (=apply_scrubbed_env= with =.env_clear()= + explicit toolchain allowlist + =Stdio::null()=); =ui_grpc.rs= (fail-closed blank check + full-length =constant_time_eq= with =std::hint::black_box=); =dev_reload.go=, =ts_bundle.go=, =publish.go=, and =plugin_perf.go= (default-deny =sanitizedBuildEnv= without =os.Environ()= + =confineRelativePath= on declarative =EntryPath=); fixed =verify-subtree-mirrors.sh= =SIGPIPE= (H9 PASS): =marlin-agent-app-server --features ui-grpc --lib= **18/18 PASS**, =marlin-agent-kernel --test unit_test= **92/92 PASS**, =clippy -D warnings= clean, =marlin-mygo= =go vet= clean & entire =control/marketplace= suite **100% PASS under =-race= (59.6s)**, **0 SM24 findings across 971 production files in =marlin-agent-core= + =marlin-mygo= + =weaver=** |
+| =marlin-agent-core= | =crates/marlin-agent-app-server/src/{atomic_effect_substrate,task_actors,ui_grpc,grpc}.rs=, =crates/marlin-agent-app-server/src/bin/marlin_mygo_host.rs=, =crates/marlin-agent-kernel/src/{task_actor_executor,lib}.rs=, =crates/marlin-agent-runtime/src/task_actor.rs= | =SM25= (=ADV-L4=, 103rd Quint Model — Real-Repo AI Additive Dual-Engine Split-Brain Case) | Forensics uncovered **3 overlapping execution stacks (5,564 LOC)** inside =marlin-agent-kernel= where =GovernanceAdmissionGate= (Cedar/ASCENT/TMS) & =ExecutionCircuitBreaker= (E-Stop) were wired **ONLY onto the legacy June-2026 Loop engine** (=LoopProgramRuntimeSideEffectExecutor=, 3,618 LOC, 0 production bin callers!) while the live production GraphEngine host (=marlin_mygo_host= -> =TaskActorControlPlane= + =CompositeAtomicEffectExecutor=) & =TaskActorKernelExecutor= had **0 references** to governance! Hostile =ADV-L4= LIVE RED proved BOTH live bypasses: production =CompositeAtomicEffectExecutor= executed =/bin/sh= writing marker file to disk despite active operator E-Stop (=SandboxExited(0)=), and =TaskActorKernelExecutor= invoked step handler (=calls=1=) despite active E-Stop (+ **3/3 LIVE STATIC RED** under =SA127=–=SA129=) | Mounted shared fail-closed =Arc<GovernanceAdmissionGate>= across the entire canonical GraphEngine (=CompositeAtomicEffectExecutor= gating =SandboxRun=/=CasPut=/=LlmComplete=, =TaskActorKernelExecutor= gating =dispatch_and_reconcile*=, =TaskActorControlPlane::admit_dispatch=, =MyGoBridgeHost=, and =marlin_mygo_host= boot in both Turso & InMemory modes), added =TaskActorRuntimeError::GovernanceDenied= mapped to gRPC =PERMISSION_DENIED=, and marked all 7 legacy =LoopProgram= re-export groups =#[deprecated]= in =marlin-agent-kernel/src/lib.rs=: =marlin-agent-kernel --lib= **17/17 PASS**, =--test unit_test= **92/92 PASS**, =marlin-agent-app-server --features ui-grpc --lib= **20/20 PASS** (proving E-Stop + Cedar =forbid= + human re-arm + clean governed run), =marlin-mygo-host --features turso-host= compiles clean, **3-repo 971-file sweep = 0 SM22–SM25 findings (=SA01=–=SA132=)** |
+| =marlin-agent-core= | =crates/marlin-agent-app-server/src/{ui_grpc,grpc,bin/marlin_mygo_host}.rs=, =crates/marlin-agent-app-server/examples/mygo_bridge_server.rs=, =crates/marlin-agent-core/src/release.rs=, plus workspace =asp-rust= restoration across 29 crates | =SM26= (=ADV-L4=, 104th Quint Model — Control-Plane Entrypoint Auth, E-Stop Mediation, Release Shell Scrubbing & =asp-rust= Cycle Restoration) | Hostile =ADV-L4= LIVE RED proved **3/3 live runtime exploits + 5/5 real-file static catches** (=SA133=–=SA136=): =marlin_mygo_host.rs= & =examples/mygo_bridge_server.rs= bypassed canonical =MyGoBridgeHost::check_bearer_header= with shadow =fn check_bearer= using short-circuit === and hardcoded ="marlin-dev-token"= fallback; =ui_grpc.rs::check_bearer_header= admitted empty ="Bearer "= prefix payload; mutating control-plane RPCs in =ui_grpc.rs= (10 RPCs) & =grpc.rs= (=AppServer::stream_turn= invoked LLM gateway =calls=1=) bypassed active Operator E-Stop; =crates/marlin-agent-core/src/release.rs= (=sh -lc ... .output()=) leaked live host =OPENAI_API_KEY= + =MARLIN_BRIDGE_TOKEN= straight into =output.stdout=. Architectural audit also confirmed =marlin-agent-app-server= lacked =asp-rust= gating AND 3 local Cargo =[dev-dependencies]= cycles (=storage<->sessions=, =runtime<->test-support<->kernel=, =stream<->harness/gerbil-scheme=) had blinded =just rust-dev-gate= (=workspace_policy=) | Deleted shadow auth & ="marlin-dev-token"= fallback in favor of single-owner =MyGoBridgeHost::{resolve_bridge_auth_header,check_bearer_header}= (rejecting bare ="Bearer"= & ="Bearer "= empty payloads fail-closed), wired fail-closed =ensure_governance_live= across all 10 =ui_grpc.rs= & 4 =grpc.rs= control-plane RPCs plus shared =GovernanceAdmissionGate= in all 3 =marlin_mygo_host= modes, hardened =release.rs= (=sh -c= + =env_clear()= 17-var allowlist + =Stdio::null()= + 256 KiB concurrent pipe drain + 60s timeout), mounted =asp-rust= gate on =marlin-agent-app-server=, and broke all 3 Cargo dev-dep cycles (**29/29 crates acyclic, =cyclic_sccs=0=**) restoring =workspace_policy= (exposing =207 Warning / 337 Info=, with =marlin-agent-kernel= (82) + =marlin-agent-app-server= (54) accounting for 65.7% of all warnings!): =app-server --lib= **22/22 PASS**, =marlin-mygo-host= **6/6 PASS**, =ui_grpc_stability= HTTP/2 **2/2 PASS**, =app-server asp-rust= **1/1 PASS**, =marlin-agent-core release= **1/1 + 7/7 PASS**, =sessions= **6/6 PASS**, =stream= **20/20 PASS**, =harness runtime_repair_loop= **5/5 PASS**, =clippy -D warnings= clean, **3-repo 1,041-file sweep (=493 marlin-agent-core + 283 marlin-mygo + 265 weaver=) = 0 SM22–SM26 findings (=SA01=–=SA142=)** |
+| =marlin-agent-core= & =deterministic-engineering= | =crates/marlin-agent-app-server/src/{mygo_host,scheme_ctl,wire}/=, =crates/marlin-agent-app-server/src/bin/{marlin_mygo_host,marlin_scheme_ctl}.rs=, =crates/marlin-agent-kernel/tests/integration/*_mbt.rs=, =.github/workflows/ci.yaml=, =languages-engineering/go/concurrency/stability_soak_test.go= | =SM27= (=ADV-L4=, 105th Quint Model — Policy-Gate Blind-Spot, Dependency-Cycle Masking & Entrypoint Confinement) | Live =c98c303= CI audit confirmed 5/6 code workflows GREEN after =bun.lock= fix and caught 1 real =floor-weakening/go-test-skip= finding in =stability_soak_test.go:150= (=t.Skipf= on missing =quint=). In =marlin-agent-core=, restored =workspace_policy= (after breaking 3 dev-dep cycles) & =SA143=–=SA148= caught **207 workspace Warnings** concentrated in =marlin-agent-kernel= (82, incl. 65 in 4 fat root MBT test files) and =marlin-agent-app-server= (54, incl. 33 =RUST-MOD-R005= fat binary functions + =SM27 SA144= live hit in =marlin_scheme_ctl.rs= & 1 =RUST-MOD-R008= inline =wire.rs=) | Replaced =t.Skipf= in =stability_soak_test.go= with local =node_modules/.bin/quint= fallback + fail-closed =t.Fatalf= (G2 self-audit **5/5 = 0 findings**, =go test -race= PASS); extracted =marlin_mygo_host.rs= & =marlin_scheme_ctl.rs= into owned thin-facade library modules (=src/mygo_host/{mod,runner,config}.rs=, =src/scheme_ctl/{mod,runner,args}.rs=) leaving 10-line launchers + moved unit tests to =tests/unit/{mygo_host,scheme_ctl}.rs=, modularized =src/wire/=, moved 4 =marlin-agent-kernel= root MBT suites to =tests/integration/= via =[[test]]=, and wired =unit_test= + bin gates into =ci.yaml=: =marlin-agent-app-server= Warnings **54 -> 13 (-75.9%, 0 =RUST-MOD-R005=/=R008=/=R001=)**, =marlin-agent-kernel= Warnings **82 -> 17 (-79.3%)**, whole-workspace 29-crate Warnings **207 -> 103 (-50.2%)**, =app-server --features ui-grpc --test unit_test= **14/14 PASS (0.97s)**, =clippy -D warnings= clean, =marlin-agent-app-server= **0 SM26+SM27 findings**, **996-file =marlin-agent-core= sweep = 0 SM22–SM26 findings (=SA01=–=SA152=)** |
+| =marlin-agent-core= | =crates/marlin-agent-runtime/src/plugin/{panel_lifecycle,panel_release}.rs=, =crates/marlin-agent-runtime/tests/unit/runtime/panel_plugin.rs=, =crates/marlin-agent-app-server/src/{grpc,scheme_host_client,ui_grpc}/=, =crates/marlin-agent-app-server/tests/{unit,integration/ui_grpc,integration/ui_grpc_stability.rs}= | =SM28= (=ADV-L4=, 106th Quint Model — Plugin Grant, Anti-Rollback, Entry-Path & Bound-Lease Confinement + =app-server= 0-Warning Fail-Closed =asp-rust= Gate) | Hostile =ADV-L4= LIVE RED proved **3/3 runtime exploits + 5/5 real-file static catches** (=SA153=–=SA157=): =PanelPluginHost::enable_panel= activated panels declaring =requires = ["read_tasks"]= with ZERO operator grants (=Ok(gen=1)= vs =Err(MissingCapability)=) and =set_project_grants= never validated declared capabilities or closed revoked generations; =UnifiedPanelManifest::validate= admitted signed traversal =entry_path="../../../etc/passwd"=; =PanelPluginHost::install= blindly overwrote installed releases across versions/publishers; =find_idempotent_action= returned cached receipts on conflicting =action_name=/=args_json=; over live HTTP/2 gRPC, =MyGoBridgeHost::submit_tool_review_decision= claimed =DeviceCapability= gates (=grpc-status: 0, claimed: true=) and dispatched =DeviceInvocationRequest= during active Operator E-Stop while =BridgeState::update_device_capabilities= accepted forged =lease_id=s evicting real registered devices | Hardened =panel_release.rs= (=validate_confined_entry_path= + =has_capability=), =panel_lifecycle.rs= (grant enforcement on =enable_panel=, declared-cap validation + revocation closure in =set_project_grants=, monotonic version anti-rollback + publisher continuity in =install=, exact =(action_name, args_digest)= verification in =find_idempotent_action=, bounded settings/args/activations), and =src/ui_grpc/{state,host,workbench_gate,device_projection_app}.rs= (bound =active_leases= rejecting forged leases with =PermissionDenied= + fail-closed =ensure_governance_live= on =submit_tool_review_decision=, =submit_graph_human_decision=, and =open_device_channel=); extracted all 5 inline test modules to =tests/unit/= and decomposed =grpc/=, =scheme_host_client/=, =ui_grpc/=, and =tests/integration/ui_grpc/= into pure-reexport facades + cohesive leaves, upgrading =tests/unit/policy.rs= to fail-closed =Error=0 / Warning=0=: =marlin-agent-runtime --test unit_test= **161/161 PASS (1.04s, incl. SM28 5/5)**, =marlin-agent-app-server --features ui-grpc --test unit_test= **36/36 PASS (2.31s, fail-closed =enforce_asp_rust_gate= 0 Error / 0 Warning — down from 54 -> 13 -> 0!)**, =ui_grpc_stability= **4/4 PASS (0.11s)**, =ui_grpc= **8/8 PASS (4.82s)**, =clippy --all-targets -D warnings= clean, 29-crate =workspace_policy= Warnings **207 -> 103 -> 91 (-56.0%)**, **984-file =marlin-agent-core= sweep = 0 SM22–SM26 & 0 SM28 findings (=SA01=–=SA162=)** |
+| =marlin-agent-core= | =crates/marlin-agent-kernel/src/{governance_cedar,governance_admission,execution_breaker}.rs=, =crates/marlin-agent-kernel/tests/unit/kernel/sm29_governance_antirollback.rs=, =crates/marlin-agent-kernel/tests/integration/durable_governance_mbt.rs= | =SM29= (=ADV-L4=, 107th Quint Model — Governance Policy-Evaluation Fail-Closed, Monotonic Revision/Latch Anti-Rollback & Causal Retraction Persistence) | Hostile =ADV-L4= LIVE RED proved **5/5 live runtime exploits + 5/5 real-file static catches** (=SA163=–=SA167=): omitting =context.approval_ticket= on a Cedar =forbid ... unless= policy silently disabled the =forbid= and returned =Allow { matching_permits: ["marlin.permit.ops-export"] }=; replaying same-epoch lower =policy_revision= (=epoch=2, rev=1= after =epoch=2, rev=5=) wiped =fenced_actors= & =cedar_policies= to 0; replaying a legitimately signed pre-trip =MGV1= checkpoint at the same epoch silently cleared active Operator E-Stop (=tripped: true -> false=); =rearm_by_verified_human= wiped =retracted_derivations= allowing resurrection of permanently invalidated Bi-Temporal TM derivations; =register_derived_lease= returned =Ok(())= while breaker was tripped; and =from_canonical_bytes= compared SHA-256 tags via short-circuit =!= | Hardened =governance_cedar.rs= (effect-sensitive =unless_clauses=: =Forbid= waived ONLY on =Some(true)=; =Permit= fails closed on =None=), =governance_admission.rs= (same-epoch =policy_revision= anti-rollback & tripped un-denial refusal, atomic single-lock =restore_durable_checkpoint_bytes= with =constant_time_eq_32=, preserved =retracted_derivations= across =rearm_by_verified_human=, tripped/stale/bounded =register_derived_lease=), and =execution_breaker.rs= (same-epoch E-Stop anti-untrip & monotonic budget in =restore_durable_state= + =MAX_ACTIVE_LEASES=4096=): =marlin-agent-kernel --lib= **33/33 PASS (0.08s)**, =--test unit_test= **97/97 PASS (3.40s, incl. SM29 5/5 + =enforce_asp_rust_gate=)**, =durable_governance_mbt= **1/1 PASS (54.39s, all 12 countermodels + SM29 dual missing-key checks)**, =execution_breaker_mbt= **5/5 PASS (49.30s)**, =governance_admission_mbt= **1/1 PASS (25.83s)**, =governance_plane_mbt= **4/4 PASS (118.00s)**, =clippy --all-targets --no-deps -D warnings= clean, **32/32 =marlin-agent-kernel/src= files = 0 findings (=SA01=–=SA172=)** |
+| =marlin-agent-core= | =crates/marlin-gerbil-scheme/src/{governance_host,scheme_host_runtime}.rs=, =crates/marlin-gerbil-scheme/tests/unit/sm30_stepup_host_confinement.rs= | =SM30= (=ADV-L4=, 108th Quint Model — Step-Up MFA Attestation Integrity, Scheme Effect E-Stop/CAS Isolation, Broadcast-Lag Watcher Survival & Bounded Fact-Graph Confinement) | Hostile =ADV-L4= LIVE RED proved **4/4 live runtime exploits + 5/5 real-file static catches** (=SA173=–=SA177=): =parse_verified_step_up_actor= classified ="worker-autonomous"= & ="scheme-sandbox-worker"= as =VerifiedHuman= and admitted arbitrary weak =acr=none= / duplicate =actor== smuggling, allowing =handle_claimed_gate_decision= to **un-trip an active Operator E-Stop end-to-end**; =run_one_atomic_effect= left =LlmComplete= ungated under E-Stop and let =CasPut= overwrite reserved =checkpoint:governance*= / =*:facts= keys; =gate_watcher= & =ui_cmd_watcher= broke out permanently on =RecvError::Lagged=; =mutate_facts_and_build_request= admitted a 4,097th entry producing an un-restorable =MGF1= restart bomb (>4,096 deserialization cap) + short-circuit SHA-256 =!=; =handle_claimed_gate_decision_durable= swallowed =persist_to_cas= errors via =let _ == leaving the live breaker armed | Hardened =governance_host.rs= (=is_verified_mfa_acr= RFC 9470/NIST AAL2-3 allowlist + duplicate/unknown segment rejection + =infer_actor_roles=/=system*=/=service*= =Agent= classification, =authorize_llm_effect=, =MAX_FACT_STORE_ENTRIES=4096= write parity, =constant_time_eq_32=, fail-closed re-trip + gate rotation on =persist_to_cas= error) and =scheme_host_runtime.rs= (=is_reserved_governance_cas_key= refusal on =CasPut=, E-Stop mediation on =LlmComplete=, =Arc<Semaphore>= + =JoinSet= bounded =MAX_CONCURRENT_SCHEME_EFFECTS=16= preserving caller =effect_id= on panic, =RecvError::Lagged => continue= in both watchers): =marlin-gerbil-scheme --features app-server-host --lib= **15/15 PASS**, =--test unit_test= **138/138 PASS (incl. SM30 5/5)**, =clippy --no-deps -D warnings= clean, **51/51 =marlin-gerbil-scheme/src= files = 0 findings (=SA01=–=SA182=)** |
+| =marlin-agent-core= | =crates/marlin-agent-storage/src/{records/pagination,records/contract,records/mod,memory,turso_storage,turso_backend,context_index/store,context_index/model}.rs=, =crates/marlin-agent-sessions/src/id.rs=, =tests/unit/sm31_storage_boundary_confinement.rs= | =SM31= (=ADV-L4=, 109th Quint Model — Storage Deserialization Parity, Content-Addressed Artifact Integrity, Sync TLS Confinement, Immutable Context-Index Replay & Idempotent CAS Audit) | Hostile =ADV-L4= LIVE RED proved **6/6 live runtime exploits + 8/8 real-file SM31 static catches** (=SA183=–=SA187=, +1 =SM3= catch in =memory.rs=): derived =Deserialize= on =StoragePageLimit=, all 11 =string_id!= types & =marlin_agent_sessions::SessionId= admitted =limit=0=/=65535= and empty/blank =""= IDs; =put_artifact= accepted forged =size_bytes=0=/=u64::MAX= (-1 in SQLite) and poisoned payloads under cryptographic =sha256:<64-hex>= digests; =TursoSyncRemoteUrl::new= accepted remote plaintext =http://evil-remote.example/db= & =@= userinfo/CRLF smuggling carrying =TursoSyncAuthToken=; =TursoContextIndex::rebuild= returned =Applied= and wiped published =context_locators= on same-revision divergent cuts; repeated =compare_and_swap_artifact_pointer= conflict retries crashed with =Backend("UNIQUE constraint failed: visibility_receipts...")= instead of =ArtifactPointerConflict= | Hardened =pagination.rs= & =contract.rs= (=#[serde(try_from)]= validated deserialization + shared FIPS 180-4 SHA-256 =validate_artifact_record= with constant-time compare), =sessions/id.rs= (custom validated =Deserialize=), =memory.rs= (artifact validation + =MAX_IN_MEMORY_ARTIFACTS=65536= cap), =turso_storage.rs= & =turso_backend.rs= (checked =i64=/=u64= casts, =insert_visibility_receipt_idempotent=, loopback-only =http://= & zero userinfo/CRLF in =TursoSyncRemoteUrl=), and =context_index/{store,model}.rs= (=existing_cuts_match= =Replayed=/=Conflict= parity + =checked_add(1)= + receipt sanitization) plus P1 receipt path sync in =rfcdb_packet.toml=: =marlin-agent-storage --all-features= **--lib 1/1, --test unit_test 16/16 (SM31 4/4), context_locator_index 2/2 (SM31 1/1), integration_test 28/28 (incl. =enforce_asp_rust_gate= & =lean_proof_gate=)**, =marlin-agent-sessions= **--lib 2/2, --test unit_test 38/38 (SM31 1/1), integration_test 6/6 (incl. =enforce_asp_rust_gate=)**, =clippy --all-targets --no-deps -D warnings= clean on both crates, **25/25 files (=14 storage + 11 sessions=) = 0 findings (=SA01=–=SA192=)** |
+| =marlin-agent-core= | =crates/marlin-agent-gitops/src/{lib,read,working_copy/command_projection,working_copy/driver,working_copy/receipt}.rs=, =tests/unit/sm32_gitops_subprocess_confinement.rs= | =SM32= (=ADV-L4=, 110th Quint Model, 50th LeanPoo Module — GitOps Subprocess Env Neutralization, Fsmonitor Lockdown, Arg-Injection & Snapshot Confinement, Bounded Capture & Panic Isolation) | Hostile =ADV-L4= LIVE RED proved **5/5 live runtime exploits + 8/8 real-file SM32 static catches** (=SA193=–=SA197= across 4 files): =GIT_REPOSITORY_OVERRIDES= omitted =GIT_CONFIG_GLOBAL=/=GIT_EXEC_PATH=/=GIT_SSH_COMMAND=, letting ambient env hijack =git rev-parse= and rewrite remote URLs; hostile =.git/config= =[core] fsmonitor= executed live shell code writing =fsmonitor_pwned= to disk during =git worktree add=; =worktrunk_switch= & =git_worktree_create=/=finalize_branch= projected unvalidated dash-prefixed options (=--execute=sh -c id=, =--force=, =--orphan=, =-f=) while =plan_sweep= emitted escaping =snapshot_path=s (=/tmp/escape.patch=, =../../etc/pwn.patch=); =ProcessWorkingCopyCommandRunner::run= buffered a 1.6 MiB stdout flood unboundedly via raw =.output().await= without timeout or =kill_on_drop(true)=; =isolate_parallel= crashed the entire coordinator via =.expect()= at =driver.rs:482= on worker panic while =resolve_working_copy= accepted ="/"= & ="/copies/../etc"= Worktrunk JSON paths | Hardened =read.rs= & =lib.rs= (expanded =GIT_REPOSITORY_OVERRIDES= to 29 dangerous =GIT_*=/=SSH_ASKPASS= vars, exported =DISABLED_FSMONITOR=, pinned =GIT_CONFIG_NOSYSTEM=1= / =GIT_CONFIG_GLOBAL=/dev/null= / =GIT_TERMINAL_PROMPT=0= in =LocalExecutor=), =working_copy/command_projection.rs= (=is_valid_branch_name=/=validate_base_ref=/=validate_branch_or_id_target= rejecting dash-prefixed/control-char arguments), =working_copy/receipt.rs= (=confined_snapshot_path= failing closed on traversal/absolute/flag IDs), and =working_copy/driver.rs= (dual-layer =DISABLED_HOOKS= + =DISABLED_FSMONITOR= via =-c= & =GIT_CONFIG_PARAMETERS=, unified concurrent bounded =run_bounded_command= with 1 MiB cap / 30s timeout / =Stdio::null()= / =kill_on_drop(true)= across runner, PR verifier & probe, =JoinSet::join_next_with_id()= panic isolation into rejected receipts, confined Worktrunk path & branch validation): =marlin-agent-gitops --all-features= **--lib 9/9 PASS (3.05s), --test unit_test 36/36 PASS (1.13s, incl. SM32 5/5 live OS/Git exploits)**, =clippy --all-features --all-targets --no-deps -D warnings= clean, **19/19 =marlin-agent-gitops/src= files = 0 findings (=SA01=–=SA202=)** |
+| =marlin-agent-core= | =crates/marlin-agent-hooks/src/{config,dispatcher,dynamic_actions}.rs=, =crates/marlin-agent-protocol/src/{hook/types,sub_agent,runtime_environment,model/endpoint}.rs=, =sm33_hook_policy_confinement.rs=, =sm33_protocol_contract_confinement.rs= | =SM33= (=ADV-L4=, 111th Quint Model, 51st LeanPoo Module — Hook Policy Confinement, Anti-Shadowing Registry & Protocol Contract Validation) | Hostile =ADV-L4= LIVE RED proved **5/5 live runtime exploits + 9/9 real-file SM33 static catches** (=SA203=–=SA207= across 6 files): misspelled =[polcy]= silently downgraded =HookConfigurationEnvelope= from =EnforceTrusted= to =ObserveOnly=, malformed/traversal =GerbilScheme= extensions and >256 KiB TOML files passed unchecked; duplicate ="audit-hook"= left 2 copies in =HookRegistry= so =set_enabled(false)=/=unregister= left a ghost shadow executing while 48 concurrent =Async= hooks ran unboundedly; extension =Defer= overwrote Rust =UntrustedRejected= with =ExtensionDeferred= and 202 dynamic actions + NUL =Rewrite= ran unboundedly; =SubAgentSpawnConfigSet= admitted contradictory =read_only = true && workspace_write = true=, zero budgets, unbounded =descendant_spawn=, traversal Scheme/profile IDs & >256 KiB TOML; derived Serde =Deserialize= on =RuntimeSessionId= admitted =""=/CRLF/traversal and =ModelEndpoint::validate_contract= admitted CRLF/=?=/=#=/=@=/=\=/=..= injection | Hardened =hooks/{config,dispatcher,dynamic_actions}.rs= & =protocol/{hook/types,sub_agent,runtime_environment,model/endpoint}.rs= (=deny_unknown_fields= + 256 KiB bounded reads + validated =GerbilScheme= module/procedure; unique =hook_id= upsert via =retain= + exact receipt count + =Arc<Semaphore>= =MAX_CONCURRENT_ASYNC_HOOKS=16= + =MAX_DYNAMIC_POLICY_ACTIONS=64=; immutable =UntrustedRejected=/=ModifiedRejected= + 64 KiB / NUL-free =Rewrite=; =validate_sub_agent_policy= rejecting contradictions, zero budgets, depth > 16 or missing depth under =descendant_spawn=, traversal IDs/Scheme paths & >256 KiB TOML; custom validated =RuntimeSessionId= =Deserialize=; =has_unsafe_endpoint_chars= in =ModelEndpoint::validate_selector_boundaries=): =marlin-agent-hooks= **27/27 PASS (0.15s, SM33 3/3)**, =marlin-agent-protocol= **92/92 PASS (0.01s, SM33 2/2)**, =marlin-agent-test-support= compiles clean, =clippy --all-targets --no-deps -D warnings= clean on both crates, **37/37 files (=5 hooks + 32 protocol=) = 0 findings (=SA01=–=SA212=)** |
+| =marlin-agent-core= | =crates/marlin-agent-runtime/src/environment/{activation,resolver,state_storage}.rs=, =crates/marlin-agent-context/src/{org/store/file,governance,shared_scope,governed_bridge}.rs=, =sm34_env_activation_confinement.rs=, =sm34_context_governance_confinement.rs= | =SM34= (=ADV-L4=, 112th Quint Model, 52nd LeanPoo Module — Runtime Environment Activation Isolation, Symlink-Safe Envrc/Org Store Confinement, Monotonic Org/Channel Ledger Anti-Rollback & Recomputed Two-Zone KV-Prefix Integrity) | Hostile =ADV-L4= LIVE RED proved **5/5 live runtime exploits + 8/8 real-file SM34 static catches** (=SA213=–=SA217= across 6 files): =apply_direnv_json= admitted =LD_PRELOAD=/=DYLD_INSERT_LIBRARIES=/=BASH_ENV=, denylisted =OPENAI_API_KEY=, and malformed/NUL env entries (=status: Applied=), while =direnv_output= buffered stdout unboundedly via =wait_with_output()= and =allow= walked parent dirs; =direnv_cwd= accepted escaping/traversal/symlinked explicit =.envrc= paths, =resolve_sub_agent= admitted escaping =home_path= overrides, and =ensure_layout= followed symlinked state homes; =FileSystemOrgSourceStore= followed intermediate & leaf symlinks to exfiltrate =TOP_SECRET_CREDENTIAL= and write outside store root; =OrgGovernanceLedger::register_snapshot= allowed generation rollback (=1= after =2=) & active-lease staleness, =gov_id!= admitted blank/NUL IDs, and =SharedContextGovernanceLedger::create_channel= reset =acl_epoch= =2 -> 1= and wiped =tainted: true -> false=; =assemble_two_zone_gateway_messages= accepted forged Zone-1 =frozen_prefix= prompt injection (="IGNORE ALL PREVIOUS RULES..."=) with copied =kv_prefix_digest= while =commit_governed_org_subtree= allowed cross-task proxy commits | Hardened =runtime/environment/{activation,resolver,state_storage}.rs= & =context/{org/store/file,governance,shared_scope,governed_bridge}.rs= (loader-hijack/denylist/malformed-key refusal, 1 MiB / 4096-entry / 30s bounded =direnv= capture + =./.envrc= scoping, symlink-safe =confine_explicit_envrc=, =validate_child_home_path=, and state-home symlink refusal; =verify_confined_no_symlinks= + 16 MiB bounded read + =AtomicU64= temp seq in =FileSystemOrgSourceStore=; strict =gov_id!=, monotonic =GenerationRollback= / =ActiveLeasesPresent= / =MAX_GOVERNED_SOURCES= / 1 MiB replacement cap / lease-digest parity / atomic rebase in =OrgGovernanceLedger= + non-resetting =create_channel= in =SharedContextGovernanceLedger=; constant-time recomputed =compute_kv_prefix_digest(&envelope.frozen_prefix)= + =proposal.task_id == cursor.task_id= binding): =marlin-agent-runtime= environment **38/38 PASS (0.11s, SM34 2/2)**, =marlin-agent-context --features org-memory= **41/41 PASS (=--lib= 3/3, SM34 3/3, =org_store= 7/7, =governance= 2/2, =bridge= 1/1, =unit_test= 22/22, =shared_context_mbt= 3/3)**, =clippy --all-targets --no-deps= **0 warnings across all SM34-hardened modules & tests**, **42/42 files (=6 runtime/env + 36 context=) = 0 findings (=SA01=–=SA222=)** |
+| =marlin-agent-core= | =crates/marlin-agent-graph/src/{ids,governed_context,task_actor,planning}.rs=, =crates/marlin-agent-harness/src/{live_weaver/governance,live_weaver/config,intent_case_artifact}.rs=, =crates/marlin-agent-harness-types/src/intent_case.rs=, =sm35_graph_witness_and_routing_confinement.rs=, =sm35_artifact_confinement.rs=, =sm35_live_weaver_governance_and_config.rs= | =SM35= (=ADV-L4=, 113th Quint Model, 53rd LeanPoo Module — AgentGraph Sealed-Witness/Routing Integrity & Live Harness Cedar Governance, Artifact Confinement & Config Hygiene) | Hostile =ADV-L4= LIVE RED proved **5/5 live runtime exploits + 13/13 real-file static catches** (=11 SM35 SA223=–=SA227 + 2 SM3= across 7 files): derived =Deserialize= on =AdmittedGovernedContext=/=AdmittedMarlinDispatch=/=FencingEpoch= admitted forged JSON (=sandbox_admitted: false=, =cedar_handoff_valid: false=, =context_cut: 0=, =has_active_defeater: true= + =L0=, =BlockerActive= + =auto_archive: true=, =FencingEpoch(0)=), while =reconcile_marlin_execution_receipt= settled =Detached= scopes and saturated at =u64::MAX=; =Deterministic= & =CapabilityFirst= graph planning routed =AgentEdgeCondition::PolicyDecision("policy.require-human-escalation")= with zero policy receipt and admitted duplicate =candidate_edges=; =CompiledHarnessGovernanceGate::evaluate_tool_call= classified ="search_exec"= and caller-spoofed =declared_capability=Some("search")= on ="shell_exec"= as non-write ="search"= and matched allow/deny lists case-sensitively; =materialize_gerbil_scripted_intent_case_artifact_bundle= followed intermediate dir symlink =artifacts -> outside_victim= writing all 15 artifacts + =manifest.receipt= outside root and accepted =""=/="."= paths; =LiveWeaverTomlConfig::load= read a 300 KiB TOML file unboundedly without symlink/timeout/stream caps or =credential_env= validation | Hardened =graph/{ids,governed_context,task_actor,planning}.rs=, =harness/{live_weaver/governance,live_weaver/config,intent_case_artifact}.rs=, & =harness-types/intent_case.rs= (control-char-free IDs, custom validated =Deserialize= on =AdmittedGovernedContext=/=AdmittedMarlinDispatch=/=FencingEpoch=, =DetachedScopeCannotSettle=/=FencingEpochExhausted= reconciliation guards; receipt-gated =edge_condition_matches(..., has_policy_receipt)= + =HashSet= duplicate-edge rejection & =DuplicateCandidateEdge=; destructive-tool precedence =is_destructive_tool_name=/=is_shell_tool_name=/=is_write_capability_label= before =declared_capability= & ="search"= + case-insensitive allow/deny + compile-time empty/duplicate/contradictory policy refusal; =verify_confined_no_symlinks=, =BTreeSet= duplicate-path rejection, atomic =create_new+sync_all+rename=, & =MAX_MANIFEST_ARTIFACTS=64= across harness & harness-types; =MAX_WEAVER_CONFIG_BYTES=256KiB= non-symlink bounded read + =MAX_WEAVER_TIMEOUT_SECONDS=600= / =MAX_HARNESS_STREAM_BYTES=32MiB= + =validate_credential_env_name= blocking =PATH=/=HOME=/=LD_*=/=DYLD_*=/=BASH_ENV=/=SSH_*=/=GIT_*=): =marlin-agent-graph --test unit_test= **21/21 PASS (0.00s, SM35 2/2)**, =marlin-agent-harness-types --test unit_test= **8/8 PASS (0.00s)**, =marlin-agent-harness --test unit_test= **68/68 PASS (1.01s, SM35 1/1; 1 pre-existing live-LLM ignored)**, =marlin-agent-harness --features live-weaver= **=sm35_live_weaver_governance_and_config= 2/2 PASS (0.00s) + =live_weaver_search_eval= 1/1 PASS (22.53s, 1 pre-existing live-LLM ignored)**, =clippy --all-targets --no-deps -D warnings= **0 warnings across all 3 crates (incl. =--features live-weaver=)**, **44/44 files (=7 graph + 32 harness + 5 harness-types=) = 0 findings (=SA01=–=SA232=)** |
+
+| =marlin-agent-core= | =crates/marlin-agent-telemetry/src/{otlp,host_observer,host_watchdog}.rs=, =crates/marlin-agent-telemetry/tests/unit/sm36_telemetry_confinement.rs=, =crates/marlin-deck-runtime/src/runtime/{config,module,owner,handle}.rs=, =crates/marlin-deck-runtime/tests/unit/{runtime_queue,module_events}.rs=, =devenv.nix=, =Justfile=, =.github/workflows/defense-audit.yaml= | =SM36= (=ADV-L4=, 114th Quint Model, 54th LeanPoo Module — Telemetry OTLP/Observer/Watchdog Isolation, Deck Single-VM Capacity/Delay Confinement & Cross-Repo Static Gate Closure) | Hostile =ADV-L4= LIVE RED proved **4/4 live runtime exploits + 5/5 real-file SM36 static catches** (=SA233=–=SA236= across 526 prod Rust files, 0 FP): =OpenTelemetry::otlp_http= accepted cleartext remote =http://evil-collector.example:4318/v1/traces= and control/userinfo injection; =start_host_observer= spawned detached =Command::new(env::current_exe()).spawn()= inheriting all ambient host secrets without =.env_clear()= and followed symlinked report dir =escaped -> outside= creating =observer.jsonl= outside root; =HostObserver::attach= accepted =pid == 0= and =drain_pulses= blindly stored sender =u64::MAX= future timestamps blinding the stall watchdog indefinitely; =DeckContextModule::timer= enqueued a 365-day timer straight into the VM queue hanging callers (=Elapsed(())=) while =owner::Controls= left =modules=/=timers= unbounded. Cross-repo root-cause audit also found =marlin-agent-core= only wired G2 (=agent-defense-audit=) and had a Nix type error in =devenv.nix:142= (=excludes= string vs list) without wiring =agent-stability-audit.ts= in CI/Justfile/pre-commit | Hardened =otlp.rs= (=validate_otlp_endpoint= requiring =https://= for remote collectors and loopback-only =http://=, rejecting userinfo/control chars & malformed labels), =host_observer.rs= (=.env_clear()= minimal allowlist + =Stdio::null()= + =verify_report_path_no_symlinks= + bounded 64 KiB JSONL), =host_watchdog.rs= (=pid > 0= + fail-closed rejection of =timestamp == 0 \|\| timestamp > now= future-timestamp pulses), and =marlin-deck-runtime/src/runtime/{config,module,owner,handle}.rs= (=MAX_TIMER_DELAY_US= 24h ceiling enforced at both =module::timer= and =owner::receive=, configurable =max_active_modules=/=max_active_timers= ceilings =256/1024= default, =4096/16384= max with =Backpressure= rejection); upgraded =agent-stability-audit.ts= with =--dir/--lang/--exclude-tests= and closed cross-repo gates in =marlin-agent-core/{devenv.nix,Justfile,.github/workflows/defense-audit.yaml}= (=nix-instantiate --parse= OK): =marlin-agent-telemetry= **--test unit_test 6/6 PASS (0.08s, SM36 3/3), --test integration_test 4/4 PASS (1.37s), --test policy 1/1 PASS (0.16s, fail-closed =asp-rust=), =clippy --all-targets --no-deps -D warnings= 0 warnings**; =marlin-deck-runtime --features actor-runtime= **--lib 13/13 PASS (0.01s, SM36 2/2), --test unit_test 3/3 PASS (0.05s), --test actor_runtime_test 1/1 PASS (1.16s), --test context_text_budget_test 1/1 PASS (1.33s), =clippy --all-targets --no-deps -D warnings= 0 warnings**; =just audit-stability= & =just audit-g2= on both hardened crates **18/18 files = 0 findings**, committed-code 526-file sweep = **0 findings (=SA01=–=SA240=)** |
+
+| =marlin-agent-core= | =crates/marlin-agent-runtime/src/process/{shutdown,managed_reaper,managed,cleanup,reconcile,ledger}.rs=, =crates/marlin-agent-runtime/src/tokio_runtime/{fanout,receipt}.rs=, =crates/marlin-agent-runtime/tests/unit/runtime/process/sm37_process_signal_ledger_fanout.rs= | =SM37= (=ADV-L4=, 115th Quint Model, 55th LeanPoo Module — Process-Group Signal Confinement, Anti-PID-Reuse Orphan Reaping, Bounded Symlink-Safe Process Ledger & Bounded Fanout Drain) | Hostile =ADV-L4= LIVE RED proved **4/4 live runtime exploits + 5/5 real-file SM37 static catches** (=SA241=–=SA244= across 528 prod Rust files, 0 FP): =is_process_group_alive(0)= returned =Ok(true)= (confirming unguarded =libc::kill(-pgid_i32, ...)= admitting =pgid=0= -> =kill(0)= caller-group suicide and =pgid=1= -> =kill(-1)= user-wide OS kill, while =SysinfoRuntimeProcessController= omitted protected/self PID checks and =managed_reaper= waited on =ctx.pid= instead of =target_pgid=); =probe_persisted_process= returned =OsProcessProbeResult { leader_alive: true, group_alive: true, surviving_descendant_pids: [...] }= on an unfingerprinted =os_start_time_secs: None= entry pointing at the current host PID/PGID; =FileProcessLedgerStore::load_all= followed a leaf symlink straight to =outside/victim.json=, accepted unknown =schema_version: 999=, performed unbounded =read_to_string=, and left active/in-memory entries unbounded; =WorkingCopySubAgentFanoutRunner= spiked peak concurrency to **80 (> 64)** under =bounded(512)=, returned from =cancel_remaining_work= after =abort_all()= without awaiting sibling drain, and lost panicked =input_index= via =join_next()= | Hardened =shutdown.rs= (=validate_unix_pgid=/=validate_signalable_unix_target= enforcing =pid > 1=, =pgid > 1=, =!= host PID/PGID= before every =libc::kill=), =managed_reaper.rs=/=managed.rs= (wait on =target_pgid= + =LedgerFinalization= cleanup), =cleanup.rs= (protected/host PID refusal), =reconcile.rs= (=os_start_time_secs: None => false=, protected/host PID & PGID guards in =probe_persisted_process=/=reap_survived_entry=/=is_matching_descendant=), =ledger.rs= (=verify_ledger_path_no_symlinks= + =O_NOFOLLOW= + =MAX_LEDGER_FILE_BYTES=4MiB= + =FILE_LEDGER_SCHEMA_VERSION= check + =MAX_ACTIVE_LEDGER_ENTRIES=1024= + =MAX_IN_MEMORY_LEDGER_ENTRIES=1536= + parent-dir fsync), and =tokio_runtime/{fanout,receipt}.rs= (=MAX_WORKING_COPY_FANOUT_PARALLELISM=64=, =join_next_with_id()= exact =input_index= panic attribution, async abort-drain quiescence): =marlin-agent-runtime= **--test unit_test 167/167 PASS (1.05s, SM37 4/4 + fail-closed =asp-rust= =mode=deny=, 5 pre-existing ignored)**, =clippy --all-targets --no-deps -D warnings= **0 warnings**, =just audit-stability= & =just audit-g2= **47/47 files = 0 findings**, committed-code 527-file sweep = **0 findings (=SA01=–=SA248=)** |
+| =marlin-agent-core= | =crates/marlin-agent-kernel/src/{key_rotation_shredding,zk_selective_disclosure,supply_chain_provenance,federated_org_reciprocity,transparency_log,model_weight_attestation}.rs=, =crates/marlin-agent-kernel/tests/unit/kernel/sm38_defense_pillar_confinement.rs= | =SM38= (=ADV-L4=, 116th Quint Model, 56th committed LeanPoo Module — Defense Pillar Cryptographic & State-Machine Integrity Confinement across B9/B14/B16/B18/B20/B21) | Hostile =ADV-L4= LIVE RED proved **5/5 live runtime exploits (0/5 passed) + 10/10 real-file SM38 static catches** (=SA249=–=SA253= across 516 committed prod Rust files, 0 FP): B16 =shred_retired_epoch= tombstoned future epochs (> =active_epoch=) permanently bricking =rotate_to_epoch=, =admit_rewrap= admitted non-existent epoch 0, and =new()= accepted blank =tenant_id=; B18 =admit_disclosure= leaked forbidden secrets via ="RAW_PII"= / =" raw_pii "= and =issue_challenge_nonce= allowed blank & previously consumed nonce replay; B14 =admit_build= admitted case/whitespace single-builder spoofing (=" BUILDER-EU-NIX-01 "=), duplicate deps & replayed =release_id=, while =register_pinned_dependency= silently overwrote pins & pinned CVE-tombstoned coordinates; B20 =register_treaty= wiped active =dispute_freeze_active= and rolled back =treaty_epoch= while org checks admitted =" ORG-ALPHA "= self-reciprocity spoofing; B9 =verify_tree_head_progression= admitted forged non-empty root hashes at =tree_size == 0= and mismatched proof sizes, while B21 =compute_shard_merkle_root= suffered =CVE-2012-2459= odd-leaf duplication (=root([A,B,C]) == root([A,B,C,C])=) | Hardened all 6 defense pillar modules in =marlin-agent-kernel= (B16 =0 < epoch < active_epoch= + =checked_add(1)= + live =epoch_commitments= rewrap + non-blank =tenant_id=; B18 canonical trim+ASCII lowercase secret denylist + =consumed_challenges= anti-replay; B14 canonical 2-builder distinctness, immutable CVE-checked pinning, duplicate-dep & release-replay refusal; B20 freeze-preserving monotonic =register_treaty= + canonical anti-self-reciprocity; B9 =SHA256("")= empty-head & proof-size parity; B21 RFC 6962 =largest_power_of_two_less_than= non-duplicating =shard_mth=): =marlin-agent-kernel= **--lib 44/44 PASS (0.10s), --test unit_test 102/102 PASS (3.10s, SM38 5/5 + =asp-rust= gate, 0 ignored)**, =clippy --all-targets --no-deps -D warnings= **0 warnings**, =just audit-stability= & =just audit-g2= **37/37 files = 0 findings**, committed-code 516-file sweep = **0 findings (=SA01=–=SA258=)** |
+| =marlin-agent-core= | =crates/marlin-agent-tui/src/{config,bootstrap,app/asp_supervisor,app/runtime_probe,app/mod,app/startup}.rs=, =crates/marlin-agent-tui/tests/unit/{harness,sm39_tui_confinement}.rs= | =SM39= (=ADV-L4=, 117th Quint Model, 57th committed LeanPoo Module — TUI Config, ASP Supervisor, Diagnostic Probe & Local Scheme Bootstrap Confinement) | Hostile =ADV-L4= LIVE RED proved **4/4 live runtime exploits (0/4 passed) + 7/7 real-file SM39 static catches** (=SA259=–=SA262= across 523 tracked prod Rust files, 0 SM39 FP): =Config::load= read a 300 KiB TOML file & followed symlinks unboundedly while =catalog_with= admitted =timeout_seconds=0=/=86400= and =ModelProfile::route= exfiltrated ambient OS/loader/SSH/Git =credential_env= (=PATH=/=HOME=/=LD_PRELOAD=/=SSH_AUTH_SOCK=); =spawn_managed_asp_gateway= leaked live host secret =MARLIN_SM39_HOST_SECRET_CANARY= into child env without =.env_clear()=, accepted =@=-userinfo spoofed =http://127.0.0.1:80@evil.example=, lacked a boot-line timeout, and searched relative =PATH= entries (=./asp-gateway=); =RuntimeProbe::start= followed a leaf symlink and overwrote victim file with ="0,1,0,0\n"= without a byte cap; =bootstrap::resolve_local_scheme_prefix= let an untrusted CWD =./scheme= hijack the compiled binary's own repository prefix and followed symlinks | Hardened =config.rs= (=MAX_TUI_CONFIG_BYTES=256KiB= + =O_NOFOLLOW=/=symlink_metadata= bounded read, =validate_timeout_seconds= =1..=600=, =validate_tui_credential_env= blocking ambient OS/loader/SSH/Git/Cargo/Gerbil vars, =validate_tui_ui_package=), =app/asp_supervisor.rs= (=apply_scrubbed_asp_env= 15-var allowlist + =.env_clear()=, strict =validate_managed_asp_endpoint=, 5s =read_bounded_boot_line_with_timeout= + SM37-guarded process-group reap, absolute-only =PATH=/=MARLIN_ASP_GATEWAY_BIN= discovery), =app/runtime_probe.rs= (=open_confined_probe_file= parent/leaf symlink refusal + =O_NOFOLLOW= + =0o600= + =MAX_RUNTIME_PROBE_BYTES=4MiB= cap), and =bootstrap.rs= (executable-derived repo root checked first + non-symlink =symlink_metadata= verification): =marlin-agent-tui --no-default-features= **sm39_ 4/4 PASS, asp_supervisor 4/4 PASS, bootstrap 3/3 PASS, --lib 297/298 PASS (1 pre-existing unrelated =frame_schedule= 8ms-vs-16ms mismatch; 10 pre-existing ignored; 0 new ignored), =declarative_ui_boundary_guard= 5/5 PASS**, =clippy --no-default-features --lib --tests --no-deps= **0 warnings across all SM39 files** (1 pre-existing =render.rs:329= Rust 1.95 lint), =audit-stability= & =audit-g2= **62/62 =marlin-agent-tui/src= files = 0 findings**, full 529-file sweep = **0 SM39 findings (=SA01=–=SA266=)** |
+| =marlin-agent-core= | =crates/marlin-agent-search-engine/src/{asp_http_client/{patch_client,domain_types,transport,sync},engine,open_edb_hydrator,edb_bridge/runner}.rs=, =crates/marlin-agent-search-engine/tests/{unit_test,unit/sm40_search_engine_confinement}.rs= | =SM40= (=ADV-L4=, 118th Quint Model, 58th committed LeanPoo Module — ASP HTTP Patch Confinement, Loopback Transport Integrity, Circular Schema Anti-DoS & Search-Index Cache/Queue Isolation) | Hostile =ADV-L4= LIVE RED proved **4/4 live runtime exploits + 8/8 real-file SM40 static catches** (=SA267=–=SA270= across 20 prod Rust files in =marlin-agent-search-engine/src=, 0 SM40 FP across 541 repo Rust files): =apply_ast_patch_via_asp_http= accepted ="../outside/victim.rs"= (and absolute/symlink paths), reading & overwriting an outside victim file returning =Ok(AspHttpAstPatchReceipt { status: Applied, ... })=; =AspForwardingEndpoint::new= admitted ="http://127.0.0.1:80@evil.example"=, =HttpEndpointPath::new= & =with_control_token= admitted CRLF HTTP header smuggling, =http_loopback_request= silently truncated >16 MiB responses, and =decode_http_body= suffered unchecked =pos + size= chunked integer-overflow panic; =TargetedJsonSchemaDocument::resolve_schema_node= crashed the entire process with =fatal runtime error: stack overflow, aborting (signal 6 SIGABRT)= on circular =$ref=; =save_workspace_snapshot_atomic= & =hydrate_workspace_open_edb_org_and_cache= followed leaf/parent symlinks using =File::create=, and =package_search_dsl_worker= queued jobs on an unbounded =mpsc::channel()= | Hardened =patch_client.rs= (=confine_workspace_patch_path= rejecting absolute/traversal/symlink components + =read_bounded_non_symlink= 8 MiB cap + TOCTOU re-verify & symlink-refusing =atomic_write_file=), =domain_types.rs= (strict non-zero =u16= loopback =host:port= without =@=/path/controls, CRLF-free =with_control_token= & =HttpEndpointPath::new=, =MAX_SCHEMA_REF_DEPTH=32= + visited-pointer =resolve_schema_node_bounded=), =transport.rs= (loopback-IP-verified =connect_timeout=, fail-closed =cap + 1= response ceiling, checked =pos.checked_add(size)= & mandatory =0=-chunk CRLF terminator validation in =decode_http_body=), =sync.rs= (single-segment =projectMarkers= + non-symlink cache saves), =engine.rs= & =open_edb_hydrator.rs= (non-symlink snapshot/cache guards + =create_new(true)= + parent fsync), and =edb_bridge/runner.rs= (bounded =mpsc::sync_channel(64)= with =try_send= backpressure + non-symlink =default_marlin_scheme_dir=): =marlin-agent-search-engine= **--test unit_test 10/10 PASS (43.11s, SM40 4/4 + fail-closed =asp-rust= =mode=deny= 0 Error/0 Warning + =language_agnostic_engine_boundary_guard=, 0 ignored)**, =clippy --all-targets --no-deps -D warnings= **0 warnings**, =audit-stability= & =audit-g2= **20/20 =marlin-agent-search-engine/src= files = 0 findings**, full 541-file sweep = **0 SM40 findings (=SA01=–=SA274=)** |
+
+* Unified Verification Command
+
+#+begin_src sh
+# Run full 5-language stability & AI-defensive gate (Quint/MBT + Lean 4 / LeanPoo + C/CBMC + C++20 + Rust + Go devenv -race/synctest/runtime-soak + TS Slope Oracle + SA01-SA274 + Metamorphic/ADV-L4 Fuzz + Closed-Loop Governance):
+just check-stability
+
+# Audit current git diff or explicit files for SM2-SM5, SM7-SM9, and SM12-SM40 aging/search/cancellation/pipe/persistence/ADV-L4-confinement hazards:
+just audit-agent-stability --files languages-engineering/go/stability/aging-contrast/deterministic_steady.go
+#+end_src
+
+* Explicit Limits
+:PROPERTIES:
+:CUSTOM_ID: bench3006-limits
+:END:
+
+- Structural AST aging rules provide high-precision local pattern detection;
+  they do not perform whole-program interprocedural alias or escape analysis.
+- Compressed-budget Slope Oracles and =testing/synctest= bubbles expose logical
+  leaks, pool ratchets, GC headroom cliffs, and slow-consumer stalls in seconds;
+  long-horizon physical allocator page fragmentation (e.g., =glibc= vs.
+  =jemalloc= RSS decay under production traffic distributions) still requires
+  target-host profiling.

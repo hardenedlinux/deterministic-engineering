@@ -5,17 +5,20 @@
 import type {ElkNode} from 'elkjs/lib/elk-api';
 import type {FigureContext, FigureComposition, FigureModel} from './figure';
 import {digest} from './source/catalog';
+import {wrapDiagramText} from './text';
 export interface DiagramSpec {
   readonly graph: ElkNode;
   readonly icons?: Readonly<Record<string,string>>;
   readonly edgeLabels?: boolean;
   readonly roles?: Readonly<Record<string,string>>;
+  readonly textColumns?:number;
 }
-export type DiagramNodeComposer = (node: FigureModel['subjects'][number], context: FigureContext) => string;
-const defaultNode: DiagramNodeComposer = (node, {text,theme,evidence,model}) => {
-  const lines=[node.label ?? node.id,...(node.columns??[]).map(column=>[column.name.label,column.type.label,...(column.constraint??[])].filter(Boolean).join(' · ')),...(node.fields??[]).map(field=>`${field.visibility} ${field.name}: ${field.type}`),...(node.methods??[]).map(method=>`${method.visibility} ${method.name}: ${method.return}`)].join('\n').split('\n');
+export type DiagramNodeComposer = (node: FigureModel['subjects'][number], context: FigureContext, textColumns?:number) => string;
+const defaultNode: DiagramNodeComposer = (node, {text,theme,evidence,model}, columns) => {
+  const lines=wrapDiagramText([node.label ?? node.id,...(node.columns??[]).map(column=>[column.name.label,column.type.label,...(column.constraint??[])].filter(Boolean).join(' · ')),...(node.fields??[]).map(field=>`${field.visibility} ${field.name}: ${field.type}`),...(node.methods??[]).map(method=>`${method.visibility} ${method.name}: ${method.return}`)].join('\n'),columns);
   const observations=evidence.filter(item=>item.state!=='supported' && (item.subjectRefs.includes(node.id)||item.relationRefs.some(id=>model?.relations.some(relation=>relation.id===id&&(relation.src===node.id||relation.dst===node.id)))));
-  return `<text class="scene-node-text">${lines.map((line,index)=>`<tspan data-text-line class="${index?'scene-detail':'scene-title'}" x="0" dy="${index?theme.typography.lineHeight:'0'}">${text(line)}</tspan>`).join('')}${observations.map(item=>`<tspan data-text-line data-evidence-ref="${text(item.sourceRef)}" class="scene-detail" x="0" dy="${theme.typography.lineHeight}">${text(item.state+' · '+item.sourceRef)}</tspan>`).join('')}</text>`;
+  if(lines.every(line=>line==='')&&!observations.length)return '';
+  return `<text class="scene-node-text" xml:space="preserve">${lines.map((line,index)=>`<tspan data-text-line class="${index?'scene-detail':'scene-title'}" x="0" dy="${index?theme.typography.lineHeight:'0'}">${text(line)}</tspan>`).join('')}${observations.map(item=>wrapDiagramText(item.state+' · '+item.sourceRef,columns).map(line=>`<tspan data-text-line data-evidence-ref="${text(item.sourceRef)}" class="scene-detail" x="0" dy="${theme.typography.lineHeight}">${text(line)}</tspan>`).join('')).join('')}</text>`;
 };
 /** Project declares the ELK graph projection; labels/relations stay in the captured model. */
 export function composeDiagram(context: FigureContext, specification: DiagramSpec, nodeComposer: DiagramNodeComposer = defaultNode): FigureComposition {
@@ -39,7 +42,7 @@ export function composeDiagram(context: FigureContext, specification: DiagramSpe
     const role = specification.roles?.[node.id] ?? 'default';
     const surface = context.theme.surfaces?.[role] ?? context.theme.surfaces?.['default'];
     if (surface && (!surface.svg.trim().startsWith('<svg') || !surface.label.trim())) throw new Error('Invalid declared scene surface');
-    const content = group ? `<text class="scene-group-title">${context.text(subject.label ?? subject.id)}</text>` : nodeComposer(subject, context);
+    const content = group ? `<text class="scene-group-title" xml:space="preserve">${wrapDiagramText(subject.label ?? subject.id,specification.textColumns).map((line,i)=>`<tspan x="0" dy="${i?context.theme.typography.lineHeight:0}">${context.text(line)}</tspan>`).join('')}</text>` : nodeComposer(subject, context,specification.textColumns);
     bodies.push(`<g data-scene-node="${context.text(node.id)}" data-scene-group="${group}"${owner?` data-scene-owner="${context.text(owner)}"`:""} data-focal="${context.design?.focalSubjects.includes(node.id)??false}" data-role="${context.text(role)}"><rect class="scene-frame"${surface ? ' opacity="0" data-custom-surface' : ''}/>${surface ? `<g class="scene-surface">${surface.svg}</g>` : ''}<g class="scene-content">${icon ? `<g class="scene-glyph">${context.glyph(icon)}</g>` : ''}<g class="scene-copy" transform="translate(${icon ? 44 : 0} 18)">${content}</g></g></g>`);
     if (group) node.children!.forEach(child=>walk(child,node.id));
   };
@@ -55,7 +58,7 @@ export function composeDiagram(context: FigureContext, specification: DiagramSpe
   const edges = graph.edges.map(edge => {
     const relation = relations.find(relation => relation.id === edge.id)!;
     for(const arrow of [relation.srcArrow??'none',relation.dstArrow??'arrow'])if(!['none','arrow','triangle','unfilled-triangle'].includes(arrow))throw new Error('Unsupported SVG arrowhead: '+arrow);
-    return `<g data-scene-edge="${context.text(edge.id)}" data-source-id="${context.text(relation.src)}" data-target-id="${context.text(relation.dst)}" data-crosses-boundary="${owners.get(relation.src)!==owners.get(relation.dst)}"><path class="scene-edge" data-source-arrow="${relation.srcArrow??'none'}" data-target-arrow="${relation.dstArrow??'arrow'}"/><g class="scene-label"><rect/>${specification.edgeLabels === false ? '' : `<text>${context.text(relation.label)}</text>`}</g></g>`;
+    return `<g data-scene-edge="${context.text(edge.id)}" data-source-id="${context.text(relation.src)}" data-target-id="${context.text(relation.dst)}" data-crosses-boundary="${owners.get(relation.src)!==owners.get(relation.dst)}"><path class="scene-edge" data-source-arrow="${relation.srcArrow??'none'}" data-target-arrow="${relation.dstArrow??'arrow'}"/><g class="scene-label"><rect/>${specification.edgeLabels === false ? '' : `<text xml:space="preserve">${wrapDiagramText(relation.label,specification.textColumns).map((line,i)=>`<tspan x="0" dy="${i?context.theme.typography.lineHeight:0}">${context.text(line)}</tspan>`).join('')}</text>`}</g></g>`;
   }).join('');
   const id = 'arrow-'+digest(context.view.source+graph.id).slice(0,12);
   const encoded = context.text(JSON.stringify({graph,marker:id}));

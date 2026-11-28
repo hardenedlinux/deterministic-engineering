@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Streaming Output Budget, Pre-Allocation Cap & Thinking-Channel Accounting Envelope
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.concurrency.streaming-output-budget-envelope=
+- *Subdomain*: =quint.engineering.concurrency=
+- *Quint Module*: =concurrency_streaming_output_budget_envelope= (=[[file:StreamingOutputBudgetEnvelope.qnt][StreamingOutputBudgetEnvelope.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/concurrency/streaming-output-budget-envelope/StreamingOutputBudgetEnvelope=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Every incremental stream and HTTP/SSE aggregation path checks textBytes + thinkingBytes + delta <= budgetLimit before buffering, accounts hidden thinking deltas in the same cumulative budget, enforces peakRetainedBytes <= budgetLimit (no check-after-buffering spike), and releases buffered state immediately upon completion or overflow refusal.
+
+#+begin_src quint
+val safety = ((h.textBytes + h.thinkingBytes) <= h.budgetLimit and h.peakRetainedBytes <= h.budgetLimit and h.textBytes >= 0 and h.thinkingBytes >= 0 and (h.streamOpen or (h.textBytes == 0 and h.thinkingBytes == 0 and h.streamReleased)) and h.budgetBypassCount == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =precheck-chunk-before-buffer= | =stepCheckAfterBuffering= | =h.peakRetainedBytes > h.budgetLimit= |
+| =account-thinking-in-budget= | =stepUnaccountedThinkingFlood= | =h.thinkingBytes > h.budgetLimit= |
+| =enforce-limit-on-sse-complete= | =stepSseCompleteBudgetBypass= | =h.budgetBypassCount > 0= |
+
+* Grounded Papers & Specifications
+
+- *M. Grottke & K. S. Trivedi (IEEE Computer 2007)*: Fighting Bugs: Remove, Retry, Replicate, and Rejuvenate — cumulative output-budget accounting across streaming and aggregation paths prevents unbounded heap exhaustion.
+- *RFC 9110 / RFC 9112 (IETF 2022)*: HTTP Semantics & HTTP/1.1 — Content-Length fail-fast validation and incremental chunked body reads enforce byte caps before allocating full payloads.
+- *S. A. Crosby & D. S. Wallach (USENIX Security 2003)*: Denial of Service via Algorithmic Complexity — unaccounted hidden thinking deltas and check-after-buffering reads enable asymmetric memory exhaustion.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/concurrency/streaming-output-budget-envelope/StreamingOutputBudgetEnvelope.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/concurrency/streaming-output-budget-envelope/StreamingOutputBudgetEnvelope.qnt --main=concurrency_streaming_output_budget_envelope --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite 4-unit cumulative byte-budget abstraction; verifies pre-allocation chunk cap checks, unified text+thinking budget accounting, SSE completion path parity, and buffer release on refusal/completion, not TCP windowing or TLS record framing.

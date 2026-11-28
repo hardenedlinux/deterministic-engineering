@@ -1,0 +1,57 @@
+#+TITLE: 10.179 Four-Paradigm Cross-Consistency LeanPoo Gate and Standalone 86-Theorem CLI Release Attestation
+#+AUTHOR: hardenedlinux Linux Team and Contributors
+#+DATE: 2026-11-27
+#+STARTUP: overview
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+* Overview: Four-Paradigm Epistemic Convergence & CLI Release Gate
+:PROPERTIES:
+:CUSTOM_ID: arch10179-overview
+:END:
+
+Phase 31 lifts **four-paradigm N-version verification convergence** itself into
+a pure **Lean 4 + =LeanPoo=** module —
+[[file:../../../packages/lean-models/DeterministicEngineering/Engineering/FourParadigmConsistency.lean][FourParadigmConsistency.lean]]
+(10 theorems, bringing the =LeanPoo= library to **86 machine-checked theorems
+across 7 modules**, with **0 Mathlib** and **0 Cedar** imports) — and provides a
+standalone executable proof-carrying CLI gate
+([[file:../../../languages-engineering/ts/defense/agent-audit/leanpoo-fleet-audit.ts][leanpoo-fleet-audit.ts]],
+wired as =just audit-leanpoo-fleet=).
+
+The four orthogonal verification paradigms unified into a single fail-closed
+release attestation bundle (consumed by downstream =cedar-poo-spec= CI) are:
+1. **Quint / Apalache + 19-Model MBT SUT** (bounded symbolic proofs, countermodels, =F3= =guard-probe=, 100% action coverage).
+2. **Gerbil Scheme ASCENT Datalog** (=22 × 13= live cross-runtime fixed-point meta-audit over =B1=–=B10c=).
+3. **CBMC & 5-Language Contrast Harnesses** (C/CBMC, C++20, Rust, TypeScript, Scheme across 165 benchmark cases).
+4. **Lean 4 + =LeanPoo= Unbounded Fleet** (7 modules, **86/86 theorems** audited in one batched =#print axioms= run, 0 Mathlib, 0 Cedar, 0 =sorry=, 0 custom axioms).
+
+* Complete 86-Theorem LeanPoo Library Inventory (7 Modules, Zero Mathlib, Zero Cedar)
+:PROPERTIES:
+:CUSTOM_ID: arch10179-inventory
+:END:
+
+| # | LeanPoo Module | Theorems | Core Scope |
+|---+----------------+----------+------------|
+| 1 | [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/DurableGovernanceQuorum.lean][DurableGovernanceQuorum.lean]] | 19 | =B3=, =B6= budget, =B10/B10b/B10c= quorum/handover/slashing, =R3= |
+| 2 | [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/HostAuthorizationBridge.lean][HostAuthorizationBridge.lean]] | 11 | Dual Sovereignty, =BoundOperation=, =PolicySnapshot=, =AuthorityConsumption= |
+| 3 | [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/InformationFlowAndTms.lean][InformationFlowAndTms.lean]] | 11 | =B7= DIFC/CaMeL, =B8= Doyle/ATMS retraction & immunization |
+| 4 | [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/SagaAndSsi.lean][SagaAndSsi.lean]] | 11 | =B6= Saga pivot/compensation, =B4= AST Symbol SSI & =DE01= |
+| 5 | [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/HitlAndCoevolution.lean][HitlAndCoevolution.lean]] | 12 | =B1/B5= HITL quorum =SoD=/veto, =R1= policy co-evolution, =B2/R5= AEAD |
+| 6 | [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/LibraryExportContract.lean][LibraryExportContract.lean]] | 12 | Unified export facade & 1/2/3-step =cedar-poo-spec= host refinement |
+| 7 | [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/FourParadigmConsistency.lean][FourParadigmConsistency.lean]] | 10 | Four-paradigm epistemic convergence, =∀ N= oracle list iff, anti-silent-degradation, 2-step =LeanPoo= refinement + =Core.Transport= |
+| **Total** | **7 Modules (1 Top-Level Facade)** | **86** | **86/86 verified live in 1 batched =#print axioms= run** |
+
+* Verification Receipts (AG161-AG165)
+:PROPERTIES:
+:CUSTOM_ID: arch10179-receipts
+:END:
+
+- Lean 4 / =LeanPoo= build:
+  =(cd packages/lean-models && lake build DeterministicEngineering.Engineering.FourParadigmConsistency)=
+- Standalone proof-carrying CLI gate:
+  =just audit-leanpoo-fleet= / =bun languages-engineering/ts/defense/agent-audit/leanpoo-fleet-audit.ts --json=
+- Benchmark suite (=AG161=–=AG165=, expanding
+  [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05]]
+  to **165 cases**):
+  [[file:../../../languages-engineering/ts/defense/agent-audit/four-paradigm-consistency.test.ts][four-paradigm-consistency.test.ts]]

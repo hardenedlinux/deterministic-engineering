@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Monotonic Storage Guard & Host State-Rollback Replay
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.execution.state-rollback=
+- *Subdomain*: =quint.threat.execution=
+- *Quint Module*: =state_rollback= (=[[file:StateRollback.qnt][StateRollback.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/execution/state-rollback/StateRollback=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Monotonic storage prevents replaying a pre-handoff snapshot to emit a second effect.
+
+#+begin_src quint
+val safety = (h.sent <= MaxSends and (h.sent == 0 or (h.durable and h.unknown)))
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =durable-ack= | =stepNoDurability= | =h.sent >= 1 and not(h.durable)= |
+| =monotonic-storage= | =stepRollback= | =h.sent >= 2= |
+
+* Grounded Papers & Specifications
+
+- *B. Parno, J. R. Lorch, J. R. Douceur, J. Mickens & J. M. McCune (IEEE S&P 2011)*: Memoir: Practical State Continuity for Protected Modules — preventing host snapshot rollback attacks.
+- *R. Strackx, B. Jacobs & F. Piessens (USENIX Security 2016)*: ICE: A Passive, High-Speed, State-Continuity Scheme for Trusted Execution Environments.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/execution/state-rollback/StateRollback.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/execution/state-rollback/StateRollback.qnt --main=state_rollback --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite rollback model; does not prove physical storage atomicity or external rail deduplication.

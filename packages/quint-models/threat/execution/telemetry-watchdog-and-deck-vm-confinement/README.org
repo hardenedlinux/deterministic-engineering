@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Telemetry/Watchdog & Deck Single-VM Confinement (SM36)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.execution.telemetry-watchdog-and-deck-vm-confinement=
+- *Subdomain*: =quint.threat.execution=
+- *Quint Module*: =execution_telemetry_watchdog_and_deck_vm_confinement= (=[[file:TelemetryWatchdogAndDeckVmConfinement.qnt][TelemetryWatchdogAndDeckVmConfinement.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/execution/telemetry-watchdog-and-deck-vm-confinement/TelemetryWatchdogAndDeckVmConfinement=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+OTLP export enforces remote HTTPS with loopback-only HTTP and clean labels (otlpExfilBreaches == 0 and otlpTlsEnforced), host observer sidecars scrub ambient env via env_clear() and reject symlinked parents (observerEnvBreaches == 0 and observerEnvScrubbed), watchdog clocks reject future/zero timestamps and zero PID/timeout (watchdogBlindBreaches == 0 and watchdogClockBounded), and Deck single-VM active modules, timers, and delays remain strictly bounded (deckVmExhaustionBreaches == 0 and deckVmBoundsEnforced and activeModules >= 1 and activeModules <= 12 and activeTimers >= 0 and activeTimers <= 12).
+
+#+begin_src quint
+val safety = (h.otlpExfilBreaches == 0 and h.observerEnvBreaches == 0 and h.watchdogBlindBreaches == 0 and h.deckVmExhaustionBreaches == 0 and h.otlpTlsEnforced and h.observerEnvScrubbed and h.watchdogClockBounded and h.deckVmBoundsEnforced and h.activeModules >= 1 and h.activeModules <= 12 and h.activeTimers >= 0 and h.activeTimers <= 12 and h.stepCount <= 12)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =forbid-cleartext-remote-otlp-endpoint= | =stepCleartextOtlpExfil= | =h.otlpExfilBreaches > 0= |
+| =forbid-unscrubbed-host-observer-env-leak= | =stepObserverEnvLeak= | =h.observerEnvBreaches > 0= |
+| =forbid-watchdog-future-timestamp-blinding= | =stepWatchdogBlinding= | =h.watchdogBlindBreaches > 0= |
+| =forbid-deck-vm-unbounded-controls-or-timer-pinning= | =stepDeckVmExhaustion= | =h.deckVmExhaustionBreaches > 0= |
+
+* Grounded Papers & Specifications
+
+- *Deterministic Engineering (30.06 / 40.05)*: SM36 ADV-L4 TLS-mandatory remote OTLP endpoints with loopback-only HTTP and clean labels, env_clear()-scrubbed symlink-safe host observer sidecars, monotonic-bounded watchdog heartbeat timestamps preventing u64::MAX blinding plus non-zero PID/timeout guards, and bounded Deck single-VM active module/timer capacities with finite timer delay ceilings.
+- *Marlin Agent Core Empirical Case Study (2026)*: marlin-agent-telemetry admitted remote cleartext http:// OTLP exfiltration, unscrubbed host-observer sidecar environments, and u64::MAX watchdog future-timestamp blinding with zero-timeout attach; marlin-deck-runtime left single-VM Controls.modules and Controls.timers unbounded and accepted unbounded u64 microsecond timer delays.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/execution/telemetry-watchdog-and-deck-vm-confinement/TelemetryWatchdogAndDeckVmConfinement.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/execution/telemetry-watchdog-and-deck-vm-confinement/TelemetryWatchdogAndDeckVmConfinement.qnt --main=execution_telemetry_watchdog_and_deck_vm_confinement --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite bounded telemetry/watchdog and Deck single-VM confinement state machine (activeModules <= 12, activeTimers <= 12, stepCount <= 12); models loopback-only HTTP / remote HTTPS OTLP endpoint and label confinement, env_clear()-scrubbed non-symlink host observer sidecar spawning, monotonic-bounded watchdog heartbeat timestamps preventing u64::MAX blinding plus non-zero PID/timeout guards, and bounded Deck single-VM active module/timer capacities and finite timer delay ceilings, without modeling OS kernel kqueue internals or live network packet loss.

@@ -1,0 +1,179 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Engineering State Models: Storage, Consensus, Concurrency, Parallel, and GC
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+Beyond security and Zero Trust threat boundaries, Quint is equally effective for
+*systems-engineering determinism*: verifying finite-state protocols where crash
+reordering, distributed elections, concurrency interleavings, weak-memory
+parallel scheduling, or collector barriers can violate safety invariants.
+
+All 13 engineering models live as co-located Scheme POO AST + Quint Yuanxu units
+under =packages/quint-models/engineering/<subdomain>/<model>/=, partitioned into
+five formal subdomains corresponding to distinct runtime failure classes:
+
+| Subdomain | Yuanxu Mount | Path | Failure Classes Addressed |
+|-----------+--------------+------+---------------------------|
+| *Storage* | =Quint.Engineering.Storage= | =engineering/storage/= | WAL/ARIES page-cache write reordering, crash data loss, MVCC/SSI write skew (A5B) & lost =SIREAD= locks |
+| *Consensus* | =Quint.Engineering.Consensus= | =engineering/consensus/= | Raft §5.4.1 stale-log leader election & §5.4.2 Figure 8 overwrite; BFT =2f+1= quorum intersection & locked-block view-change safety |
+| *Concurrency* | =Quint.Engineering.Concurrency= | =engineering/concurrency/= | Backpressure permit leak / overflow, structured-cancellation orphan tasks, stale lease zombie writes, duplicate saga effects |
+| *Parallel* | =Quint.Engineering.Parallel= | =engineering/parallel/= | Lock-free EBR premature reclamation, Chase-Lev work-stealing deque lost/duplicate pop, x86-TSO hazard-pointer store-buffer UAF |
+| *GC* | =Quint.Engineering.GC= | =engineering/gc/= | Concurrent tri-color missing write barrier (lost live object), mutator/collector safepoint handshake races |
+
+* 1. Storage (=engineering/storage/=)
+
+- *=wal-crash-recovery=* (=WalCrashRecovery.qnt=): models ARIES write-ahead
+  logging with volatile page-cache writeback reordering and =fsync= ordering;
+  auto-derived countermodels drop WAL-before-page flush or commit =fsync=.
+- *=mvcc-ssi-write-skew=* (=MvccSsiWriteSkew.qnt=): models PostgreSQL/Cahill
+  Serializable Snapshot Isolation (SSI) with First-Committer-Wins, =SIREAD= lock
+  retention across commits, and read-time =rw=-antidependency detection
+  (=bound.extended-counterexample=).
+- *=atomic-persistence-fsync-envelope=* (=AtomicPersistenceFsyncEnvelope.qnt=):
+  models crash-safe atomic file persistence with unique per-writer temp staging,
+  =fsync=-before-rename ordering (OSDI'14 Pillai et al.), and atomic live file
+  replacement preventing torn reads, shared-=.tmp= collisions, and zero-length
+  post-crash files (=SM21=).
+
+* 2. Consensus (=engineering/consensus/=)
+
+- *=raft-leader-commitment=* (=RaftLeaderCommitment.qnt=): models Raft §5.4.1
+  up-to-date log election restriction and §5.4.2 Figure 8 current-term
+  commitment rule; dropping the current-term guard automatically synthesizes the
+  classic 8-step Figure 8 commit-overwrite counterexample
+  (=bound.extended-counterexample=).
+- *=bft-quorum-lock=* (=BftQuorumLock.qnt=): models PBFT / Tendermint / HotStuff
+  Byzantine Fault Tolerant consensus (=n=3f+1=, 3 honest replicas + 1
+  equivocating Byzantine replica voting for conflicting values in every round);
+  auto-derived countermodels drop =2f+1= quorum intersection, view-change lock
+  respect, or lock recording on precommit (=bound.extended-counterexample=).
+
+* 3. Concurrency (=engineering/concurrency/=)
+
+- *=backpressure-memory=* (=BackpressureOwners.qnt=): co-located declarative
+  bounded ownership conservation across =queued=, =running=, =returned=, and
+  non-abortable =cleanup= buckets; auto-derived countermodels for early permit
+  release on cancellation, admission over-capacity, and queue overflow.
+- *=structured-cancellation=* (=StructuredCancellation.qnt=): parent-child
+  cancellation quiescence preventing fire-and-forget orphan effects.
+- *=lease-fencing-token=* (=LeaseFencingToken.qnt=): monotonic fencing token
+  guard neutralizing zombie writes from GC-paused lease holders.
+- *=saga-compensation-idempotency=* (=SagaCompensationIdempotency.qnt=):
+  compensating transactions, idempotency key deduplication under reply loss, and
+  durable cancellation tombstones blocking late in-flight retries.
+- *=quiescence-resource-drain=* (=QuiescenceResourceDrain.qnt=): cyclic
+  handle/task conservation across normal, error, and cancellation exits with
+  zero-drift quiescence; auto-derived countermodels drop error-path cleanup or
+  cancellation drain release.
+- *=buffer-ratchet-reclamation=* (=BufferRatchetReclamation.qnt=): bounded
+  reusable buffer pool enforcing per-buffer retain ceilings and slot ceilings so
+  spike payloads never ratchet idle memory; auto-derived countermodels drop the
+  spike retain cap (pool poisoning) or pool slot cap.
+- *=metastable-retry-collapse=* (=MetastableRetryCollapse.qnt=): congestion-aware
+  load shedding and retry-budget admission bounds preventing transient triggers
+  from locking services in metastable overload; auto-derived countermodels drop
+  overload shedding or retry-budget capping.
+- *=slow-consumer-eviction=* (=SlowConsumerEviction.qnt=): bounded per-consumer
+  fan-out buffer with stall eviction and zero-orphan frame drainage; auto-derived
+  countermodels drop the slow-queue cap or eviction buffer drain.
+- *=ui-mainthread-rcu-snapshot=* (=UiMainThreadRcuSnapshot.qnt=): wait-free UI
+  main-thread RCU snapshot publication with off-lock staging.
+- *=fenced-coalescing-mailbox=* (=FencedCoalescingMailbox.qnt=): single-slot
+  latest-wins coalescing mailbox with monotonic generation fencing.
+- *=hybrid-webview-focus-lifecycle=* (=HybridWebViewFocusLifecycle.qnt=): async
+  WebView warmup, focus revocation on tab hide, and Tier-0/Tier-2 trust isolation.
+- *=bounded-projection-eviction=* (=BoundedProjectionEviction.qnt=): bounded
+  long-lived projection/session tables with idle-slot LRU reclaimability (preventing
+  bounded-without-eviction lockout) and cascade side-map deletion.
+- *=stream-lag-resync-coalescing=* (=StreamLagResyncCoalescing.qnt=): broadcast
+  lag snapshot-resync continuity (preventing silent lag disconnect) and coalesced
+  streaming checkpoint flushing (bounding write amplification).
+- *=ui-render-window-budget=* (=UiRenderWindowBudget.qnt=): bounded UI DOM
+  viewport virtualization, coalesced animation frames, and $O(1)$ incremental
+  block rendering preventing $O(N^2)$ streaming re-parse stalls (=SM7=).
+- *=search-query-generation-fencing=* (=SearchQueryGenerationFencing.qnt=):
+  monotonic interactive search generation cancellation, async batch/DSL epoch
+  fencing, identity-anchored selection stability, and hidden-mark pruning (=SM8=).
+- *=singleflight-cancellation-safety=* (=SingleFlightCancellationSafety.qnt=):
+  RAII drop-guard single-flight leader reset and pre-armed waiter wakeup safety (=SM9=).
+- *=search-query-metamorphic-algebra=* (=SearchQueryMetamorphicAlgebra.qnt=):
+  metamorphic search query algebraic laws across axis scoping, negation monotonicity,
+  and clipped-tab isolation (=SM10=).
+- *=priority-isolated-bounded-mailbox=* (=PriorityIsolatedBoundedMailbox.qnt=):
+  per-tier priority-isolated bounded mailbox with active cancelled-caller compaction,
+  weighted fair draining, and $O(1)$ latest-wins progress watch (=SM11=).
+- *=ipc-half-open-reconnect-idempotency=* (=IpcHalfOpenReconnectIdempotency.qnt=):
+  bidirectional IPC/gRPC half-open stream retirement, monotonic epoch frame fencing,
+  and idempotent replay deduplication (=SM12=).
+- *=ime-composition-focus-race=* (=ImeCompositionFocusRace.qnt=): interactive
+  search-box CJK/IME composition Enter gating, atomic blur preedit cancellation,
+  and global keyboard-shortcut isolation (=SM13=).
+- *=chaos-fault-injection-recovery-envelope=* (=ChaosFaultInjectionRecoveryEnvelope.qnt=):
+  compound chaos fault injection, open-circuit load shedding, typed degraded refusal,
+  and deterministic recovery probing (=SM14=).
+- *=search-index-snapshot-isolation=* (=SearchIndexSnapshotIsolation.qnt=):
+  search index cold-start serialization, multi-workspace root isolation, single-flight
+  leader-cancel follower re-election, and reader-bounded tombstone compaction (=SM15=).
+- *=search-box-input-sanitization-envelope=* (=SearchBoxInputSanitizationEnvelope.qnt=):
+  uniform input byte-cap enforcement across insert/paste/setInput, control-char/ANSI
+  stripping, grapheme-aligned cursor safety, and clear-time capacity shrinking (=SM16=).
+- *=streaming-output-budget-envelope=* (=StreamingOutputBudgetEnvelope.qnt=):
+  streaming LLM & HTTP output budget enforcement with pre-allocation chunk cap
+  checks, unified text+thinking byte accounting, SSE completion path parity,
+  and fail-closed buffer release on overflow refusal (=SM17=).
+- *=ci-cache-soundness-and-sharding=* (=CiCacheSoundnessAndSharding.qnt=):
+  scientific CI/CD two-layer content-addressed caching with hermetic
+  engine+flags+source ActionKey soundness, disjoint parallel subdomain shard
+  namespaces, and active-set cache quota garbage collection (=SM18=).
+- *=task-and-pool-cancellation-envelope=* (=TaskAndPoolCancellationEnvelope.qnt=):
+  structured async task abort-on-drop, transaction-safe pooled DB connection
+  lease hygiene, and semaphore-bounded fan-out with panic-safe caller-owned
+  correlation IDs (=SM19=).
+- *=subprocess-pipe-capture-envelope=* (=SubprocessPipeCaptureEnvelope.qnt=):
+  bounded subprocess stdout/stderr capture with pre-allocation byte capping,
+  drain-to-sink pipe deadlock freedom past kernel buffer capacity, and bounded
+  single-line framing (=SM20=).
+
+* 4. Parallel (=engineering/parallel/=)
+
+- *=epoch-reclamation=* (=EpochReclamation.qnt=): lock-free Epoch-Based
+  Reclamation (EBR) with safe grace-period calculation and premature-reclaim
+  countermodel.
+- *=work-stealing-deque=* (=WorkStealingDeque.qnt=): Chase-Lev lock-free
+  work-stealing deque with owner =push/pop= vs thief =steal= and missing
+  last-item CAS countermodel.
+- *=hazard-pointers-tso=* (=HazardPointersTso.qnt=): Michael Hazard Pointers
+  under explicit x86-TSO per-thread store-buffer reordering; omitting the
+  =mfence= before validation automatically synthesizes a 7-step emergent
+  Use-After-Free counterexample (=bound.deep-counterexample=).
+
+* 5. Garbage Collection (=engineering/gc/=)
+
+- *=tricolor-write-barrier=* (=TricolorWriteBarrier.qnt=): concurrent tri-color
+  marking with Dijkstra insertion write barrier; dropping the barrier yields a
+  swept-live-object counterexample.
+- *=safepoint-handshake=* (=SafepointHandshake.qnt=): asymmetric
+  mutator/collector safepoint handshake preventing stale barrier phases during
+  collection transitions.
+- *=gc-pacing-thrash-guard=* (=GcPacingThrashGuard.qnt=): soft-memory-limit
+  headroom shedding and GC CPU pacing window bounds preventing live-set growth
+  from triggering GC thrashing death spirals; auto-derived countermodels drop
+  headroom admission shedding or the GC CPU cycle cap.
+
+* Shared Verification Discipline
+
+Every =engineering/= model shares the exact same Yuanxu Design 165 contract as
+=threat/= models:
+
+1. Co-located Scheme POO AST (=types.ss=, =objects.ss=, =interface.ss=),
+   projected pure =.qnt= with embedded =// @quint-*= verification directives
+   (zero JSON sidecars), and auto-projected =README.org=.
+2. Emergent relational safety invariants (zero synthetic =unsafe= boolean flags)
+   backed by Band-5 monotonic =governance.mandatory-countermodels=.
+3. Every declared guard paired with an auto-derived weakened countermodel
+   refuted by Apalache =0.62.1= with an inspectable ITF predicate witness.

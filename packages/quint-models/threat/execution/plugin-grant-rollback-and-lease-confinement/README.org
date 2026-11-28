@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Plugin Grant, Anti-Rollback, Entry-Path & Bound-Lease Confinement (SM28)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.execution.plugin-grant-rollback-and-lease-confinement=
+- *Subdomain*: =quint.threat.execution=
+- *Quint Module*: =execution_plugin_grant_rollback_and_lease_confinement= (=[[file:PluginGrantRollbackAndLeaseConfinement.qnt][PluginGrantRollbackAndLeaseConfinement.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/execution/plugin-grant-rollback-and-lease-confinement/PluginGrantRollbackAndLeaseConfinement=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+No panel activation proceeds without granted required capabilities (ungrantedActivations == 0 and (activeGen == 0 or grantHeld)), no release downgrade, cross-publisher hijack, or traversal entry_path is admitted (rollbackOrHijacks == 0), no forged device lease or E-Stop device dispatch mutates state (forgedLeaseMutations == 0), and no conflicting idempotency replay returns a stale receipt (idempotencyConflicts == 0).
+
+#+begin_src quint
+val safety = (h.ungrantedActivations == 0 and h.rollbackOrHijacks == 0 and h.forgedLeaseMutations == 0 and h.idempotencyConflicts == 0 and h.installedVersion >= 1 and h.installedVersion <= 3 and h.ownerPublisher == 1 and (h.activeGen == 0 or h.grantHeld) and h.stepCount <= 12)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =forbid-ungranted-panel-activation= | =stepDecorativeGrantBypass= | =h.ungrantedActivations > 0= |
+| =forbid-release-rollback-or-publisher-hijack= | =stepReleaseRollbackOrHijack= | =h.rollbackOrHijacks > 0= |
+| =forbid-forged-device-lease-mutation= | =stepForgedLeaseMutation= | =h.forgedLeaseMutations > 0= |
+| =forbid-conflicting-idempotency-replay= | =stepConflictingIdempotencyReplay= | =h.idempotencyConflicts > 0= |
+
+* Grounded Papers & Specifications
+
+- *Deterministic Engineering (30.06 / 40.05)*: SM28 ADV-L4 capability grant enforcement, revocation closure, release anti-rollback, entry_path confinement, bound device-lease verification under E-Stop, and digest-verified idempotency replay.
+- *Marlin Agent Core Empirical Case Study (2026)*: PanelPluginHost stored project capability grants without checking them on enable_panel, blindly overwrote installed releases across versions/publishers with unvalidated entry_path, returned cached action receipts on conflicting args_json, and MyGoBridgeHost accepted forged device lease IDs evicting real devices while ApprovalGateService bypassed E-Stop.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/execution/plugin-grant-rollback-and-lease-confinement/PluginGrantRollbackAndLeaseConfinement.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/execution/plugin-grant-rollback-and-lease-confinement/PluginGrantRollbackAndLeaseConfinement.qnt --main=execution_plugin_grant_rollback_and_lease_confinement --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite bounded control-plane plugin lifecycle and device-lease state machine (installedVersion <= 3, stepCount <= 12); models capability grant enforcement and revocation closure, monotonic release version and publisher continuity with confined entry_path, bound device-lease verification under E-Stop, and digest-checked idempotent action replay, without modeling OS kernel or cryptographic primitive breaks.

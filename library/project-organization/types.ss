@@ -5,11 +5,11 @@
 ;;; Organization family consumes neutral Library declarations and native Contracts.
 (import
   :clan/poo/object
-  (only-in :clan/poo/mop Any Function Type define-type element?)
+  (only-in :clan/poo/type Any Function Type define-type element?)
   (only-in :clan/poo/type String Symbol List)
-  (only-in :clan/poo/recursive-validation closed?)
-  (only-in :clan/poo/object-contract ObjectContract. refine)
-  (only-in :yuanxu/object-types/contracts YuanxuContract. yuanxu-predicate-type)
+  (only-in :clan/poo/recursive/validation closed?)
+  (only-in :clan/poo/types/object-contract ObjectContract. refine)
+  (only-in :tao3k/yuanxu/types/contracts YuanxuContract. yuanxu-predicate-type)
   "../../types.ss")
 (export
   OrganizationDeclarationContract
@@ -142,6 +142,9 @@
             products: (List LibraryNonemptyString)
             duties: (List LibraryNonemptyString)
             required-capabilities: (List LibraryNonemptyString)
+            placements: (List (text-row 5))
+            placement-roles: (List (text-row 2))
+            package-families: (List (text-row 5))
             methods: OrganizationMethodsShape
             catalog: (.get OrganizationCatalogContract value-contract)
             mapping: (.get OrganizationMappingContract value-contract))))
@@ -185,6 +188,18 @@
            (eq? (.get mapping catalog-id) (.get catalog identity))
            (equal? (map car (.get mapping roles)) (map car roles))
            (andmap (lambda (row) (member (cadr row) (.get catalog definitions))) (.get mapping roles))
+           (pair? (.get value placements))
+           (unique? (map car (.get value placements)))
+           (andmap (lambda (row) (member (car row) (.get catalog definitions))) (.get value placements))
+           (pair? (.get value placement-roles))
+           (andmap
+            (lambda (row)
+              (and (assoc (car row) (.get value placements))
+                   (assoc (cadr row) roles)))
+            (.get value placement-roles))
+           (pair? (.get value package-families))
+           (unique? (map car (.get value package-families)))
+           (unique? (map caddr (.get value package-families)))
            (find
             (lambda (asset)
               (and

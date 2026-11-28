@@ -1,0 +1,70 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 10.186 B12 & B13 Four-Paradigm Symmetry Closure: 22 Quint/Apalache Models, 22/22 MBT SUTs & 28×16 B1-B13 ASCENT (AG201-AG205)
+#+AUTHOR: Deterministic Engineering
+#+DATE: 2026-11-27
+
+* Executive Summary
+:PROPERTIES:
+:CUSTOM_ID: arch10186-summary
+:STATUS: executed-verified
+:END:
+
+Following the 200-case grand milestone and 12-module / 136-theorem zero-Mathlib /
+zero-Cedar =LeanPoo= library in [[file:10.185-200-case-136-theorem-leanpoo-grand-milestone-and-federated-arbitration.org][10.185]], Phase 38 closes **complete four-paradigm
+symmetry across every business pillar (=B1=–=B13=)** by bringing =B12= (Controlled
+Context Distillation & Epistemic Provenance) and =B13= (Federated Multi-Agent
+Arbitration Liveness) into parity across all four orthogonal verification engines:
+
+1. **Paradigm 1 — 21st & 22nd Quint / Apalache Defense Models & 22/22 MBT SUT Refinement**:
+   - Model #21 (=context-distillation-provenance=): 3 =essential= guards
+     (=require-pinned-retained=, =require-integrity-meet=, =require-secrecy-preserved=),
+     Apalache =PLAN-OK (passed=6, skipped=0, verify=true)=, 3/3 =F3= =guard-probe=
+     proven =essential=, paired with =ContextDistillationProvenanceSUT= and
+     =BadPinnedAmnesiaSUT= in =mbt-replay.test.ts=.
+   - Model #22 (=federated-arbitration-liveness=): 3 =essential= guards
+     (=require-retry-budget=, =require-no-deadlock=, =require-non-terminal=),
+     Apalache =PLAN-OK (passed=6, skipped=0, verify=true)=, 3/3 =F3= =guard-probe=
+     proven =essential=, paired with =FederatedArbitrationLivenessSUT= and
+     =BadUnboundedRetrySUT= in =mbt-replay.test.ts=.
+2. **Paradigm 2 — Gerbil Scheme ASCENT Datalog Expanded to =28 sources × 16 outputs= (=B1=–=B13=)**:
+   - =DurableGovernanceMetaAuditProgram= in [[file:../../../library/defensive-governance/func.ss][func.ss]] adds 4 sources
+     (=context_pinned_constraint=, =distillation_retained=, =swarm_wait_edge=,
+     =swarm_session_release=), internal transitive closure =wait_reaches(S, A, B)=,
+     and 2 outputs (=distillation_amnesia_violation=, =swarm_deadlock_cycle=),
+     disqualifying releases with ="distillation-pinned-amnesia"= or ="swarm-deadlock-cycle"=.
+   - Cross-runtime N-Version bridge [[file:../../../languages-engineering/ts/defense/agent-audit/ascent-meta-audit-bridge.ts][ascent-meta-audit-bridge.ts]] projects live
+     TypeScript =B12=/=B13= artifacts into the live =gxi= ASCENT fixed-point oracle.
+3. **Paradigm 3 — 205-Case Multi-Language Contrast & Adversarial Benchmark (=AG01=–=AG205=)**:
+   - [[file:../../../languages-engineering/ts/defense/agent-audit/b12-b13-four-paradigm-symmetry.test.ts][b12-b13-four-paradigm-symmetry.test.ts]] adds =AG201=–=AG205= across live =gxi=
+     ASCENT =B12=/=B13= derivation, fail-closed N-Version override of buggy imperative TS
+     coordinators, 22-Quint CLI JSON gate, and air-gapped Ed25519 =cedar-poo-spec= admission.
+4. **Paradigm 4 — 12-Module / 136-Theorem =LeanPoo= Fleet Attestation**:
+   - [[file:../../../languages-engineering/ts/defense/agent-audit/leanpoo-fleet-audit.ts][leanpoo-fleet-audit.ts]] updates =EXPECTED_QUINT_DEFENSE_MODELS= to **22 models**
+     and enforces live presence of =distillation_amnesia_violation= and
+     =swarm_deadlock_cycle= alongside single-shot 136/136-theorem =#print axioms= verification.
+
+* Four-Paradigm Symmetry Matrix for B12 & B13
+:PROPERTIES:
+:CUSTOM_ID: arch10186-matrix
+:END:
+
+| Pillar | Quint / Apalache + F3 + MBT SUT | Gerbil Scheme ASCENT (=28×16=) | TypeScript Runtime & Benchmark | Pure Lean 4 / =LeanPoo= (0 Mathlib / 0 Cedar) |
+|--------+---------------------------------+--------------------------------+--------------------------------+-----------------------------------------------|
+| =B12= Context Distillation | #21 [[file:../../../packages/quint-models/engineering/defense/context-distillation-provenance/ContextDistillationProvenance.qnt][ContextDistillationProvenance.qnt]] (6/6 =PLAN-OK=, 3/3 =F3= essential, 21/22 MBT) | =context_pinned_constraint= & =distillation_retained= -> =distillation_amnesia_violation= -> ="distillation-pinned-amnesia"= | [[file:../../../languages-engineering/ts/defense/agent-audit/context-distillation-provenance.ts][context-distillation-provenance.ts]] (=AG186=–=AG190=, =AG201=, =AG203=, =AG205=) | [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/ContextDistillationAndProvenance.lean][ContextDistillationAndProvenance.lean]] (10 theorems) |
+| =B13= Federated Arbitration | #22 [[file:../../../packages/quint-models/engineering/defense/federated-arbitration-liveness/FederatedArbitrationLiveness.qnt][FederatedArbitrationLiveness.qnt]] (6/6 =PLAN-OK=, 3/3 =F3= essential, 22/22 MBT) | =swarm_wait_edge= -> transitive =wait_reaches= -> =swarm_deadlock_cycle= -> ="swarm-deadlock-cycle"= | [[file:../../../languages-engineering/ts/defense/agent-audit/federated-arbitration-liveness.ts][federated-arbitration-liveness.ts]] (=AG191=–=AG200=, =AG202=–=AG205=) | [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/FederatedArbitrationLiveness.lean][FederatedArbitrationLiveness.lean]] (10 theorems) |
+
+* Verification Receipts
+:PROPERTIES:
+:CUSTOM_ID: arch10186-receipts
+:STATUS: executed-verified
+:END:
+
+- Model #21 & #22 Quint Qualification: =just test-file t/yanxu/Quint.Engineering.Defense/context-distillation-provenance/qualification-test.ss= & =federated-arbitration-liveness/qualification-test.ss= -> =HARNESS-OK=.
+- Apalache Bounded Symbolic Verification: both models =PLAN-OK (passed=6, skipped=0, verify=true)=.
+- =F3= Guard Necessity Probing: all 6/6 guards across #21 and #22 proven =classification=essential counterexample=true maxSteps=10=.
+- 22-Model MBT SUT Isomorphism: =bun test languages-engineering/ts/defense/boundary-contrast/mbt-replay.test.ts= -> 22/22 pass (including =BadPinnedAmnesiaSUT= & =BadUnboundedRetrySUT= divergence).
+- Live =28×16= Gerbil Scheme ASCENT: =just test-file t/yanxu/Library/defensive-governance/governance-ascent-test.ss= -> =HARNESS-OK=.
+- Standalone 4-Paradigm CLI Gate: =just audit-leanpoo-fleet --json= -> =verdict: "Proven", quintModelCount: 22, ascentRulesPresent: true, moduleCount: 12, verifiedTheoremCount: 136, zeroMathlib: true, zeroCedar: true=.
+- Benchmark & Regression: [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05]] extended to **205 cases (=AG01=–=AG205=)** across 35 Bun test suites.

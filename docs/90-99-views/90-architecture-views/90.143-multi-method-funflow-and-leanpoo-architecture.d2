@@ -1,0 +1,104 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+# Org authority: ../../10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.org
+# Companion SysML v2: ../../10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml
+# Design projection only; rendering is not verification, execution, or approval.
+vars: {d2-config: {data: {figure: |json
+{
+  "title": "Multi-method Fun-Flow Runnable, LeanPoo 6-Core, and ASCENT MR01-MR08 / IR01-IR08 governance",
+  "purpose": "architecture",
+  "kind": "library-architecture",
+  "language": "en",
+  "width": 1500,
+  "primary": "orchestration",
+  "questions": [
+    {
+      "ref": "orchestration",
+      "text": "How do physically isolated Quint, LeanPoo, C/CBMC, and Rust/OS packages compose via Scheme Fun-Flow and ASCENT MR01-MR08 / IR01-IR08 with zero duplicated modeling?",
+      "focusRefs": [
+        "authority",
+        "sysml"
+      ],
+      "subjectRefs": [
+        "funflow",
+        "ascentGate",
+        "quintModels",
+        "leanModels",
+        "rustSubjects",
+        "runtimeAdapter"
+      ]
+    }
+  ],
+  "references": {
+    "authority": "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.org",
+    "sysml": "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml",
+    "declaration": "docs/90-99-views/90-architecture-views/90.143-multi-method-funflow-and-leanpoo-architecture.d2",
+    "organization": "docs/10-19-design/10-architecture/10.150-repository-organization-and-package-taxonomy.org",
+    "quintLibrary": "docs/10-19-design/10-architecture/10.151-quint-models-library-and-packages.org",
+    "defensiveTaxonomy": "docs/10-19-design/10-architecture/10.153-defensive-engineering-taxonomy-and-modular-organization.org",
+    "config": "config.ss",
+    "evidenceRules": "library/evidence/func.ss"
+  },
+  "basis": {
+    "captureRef": "design-candidate:90.143-multi-method-funflow-and-leanpoo-architecture",
+    "modelRefs": [
+      "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.org",
+      "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml"
+    ],
+    "obligationRefs": [
+      "MR01",
+      "MR02",
+      "MR03",
+      "MR04",
+      "MR05",
+      "MR06",
+      "MR07",
+      "MR08"
+    ],
+    "evidenceRefs": []
+  },
+  "copy": {},
+  "themes": [
+    "sketchbook",
+    "compact"
+  ],
+  "presentation": {
+    "options": {
+      "elk.direction": "DOWN",
+      "elk.layered.spacing.nodeNodeBetweenLayers": "52"
+    },
+    "edgeLabels": false
+  }
+}
+|}}}
+direction: down
+
+config: "SysML v2 Single Source of Truth (10.154-*.sysml)\n38 Zero-Glue Subjects (5 Eng + 33 AI-Security / 5 Threat Domains) | 79 Engines\nOpenSysML -validate -strict -> api-json"
+
+ascentGate: "Live ASCENT Governance (ascent-rules.ss)\nMR01-MR08 Pre-Flight | ER01-ER04 | IR01-IR08 Reuse\nAR01-AR05 AI Security + --ai-security-posture (--json/--markdown)\n93 Zero-Axiom Lean 4 Theorems (CI 18/18 AiGovernance + Self-Mod Guard)"
+
+funflow: "Fun-Flow Control Plane (library/verification-flow/)\nZero-I/O SysML->DAG Compiler + Parallel Waves\nAI-SE Patch Admission + Static Change-Impact Slicing\nEmits yuanxu.core.flow-dag-runtime-manifest.v1"
+
+quintModels: "packages/quint-models (Bun / Apalache / MBT)\nClaim: bounded-interleaving, fault-race, mbt-trace\nEngineering: ProcessTree | Backpressure | LeaseFencing\nAI-Security (33): Exec(17) | Identity(3) | ZeroTrust(6) | SupplyChain(3) | Protocol(4)"
+
+leanModels: "packages/lean-models (Lake / LeanPoo 7-Core, 0 sorryAx)\nClaim: unbounded-invariant, refinement, transport\nCore/{Conservation,Budget,Containment,Order,Transport,MetaGov,AiGov}\nThreat/{Capability,Authority,AgentIfc,CircuitBreaker,SharedContext,Wasm}"
+
+rustSubjects: "languages-engineering/{rust,c} + Source Contracts\nClaim: source-memory-ub (CBMC), api-ban-lint (Clippy)\nProcessTreeGuard (cgroup v2, setsid, Online OS MBT)\nBackpressure Tokio/Rayon | C deterministic_boundary.c"
+
+runtimeAdapter: "Parallel Contained Ops Runner\n(verification-flow-runner.ss --fleet-bundle / --verify-ai-diff)\nLive MR01-MR08 + AR01-AR05 Gate + SHA-256 + Ed25519 Fleet\n1-Command 2-File Release Gate (release-multi-method-bundle)"
+
+evidenceSession: "Unified ASCENT Evidence, AI Red-Team & Anti-Rollback DSSE v1\nGerbil + Zero-Dep Bun/TS (<100ms) ai-agent!=human-approver Role-SoD\nCold 79/0 -> Warm 0/79 Reuse | 66 CI Crypto, Role-SoD & Self-Mod Controls"
+
+config -> ascentGate
+config -> funflow
+ascentGate -> funflow: "admitted pending frontier"
+quintModels -> funflow: "runnable-flow (de-quint)"
+leanModels -> funflow: "runnable-flow (de-lean-poo)"
+rustSubjects -> funflow: "runnable-flow (de-source / de-oracle)"
+quintModels -> rustSubjects: "MR04: itf-trace"
+rustSubjects -> leanModels: "MR03: SpawnPreservesContainer"
+funflow -> runtimeAdapter: "inert DAG runtime manifest"
+runtimeAdapter -> evidenceSession: "pure runnable-admit records"
+evidenceSession -> ascentGate: "revalidation & reuse loop"

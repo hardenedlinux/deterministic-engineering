@@ -1,0 +1,66 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Quint vs. Cedar and OAuth 2.1 Authorization Threat Modeling
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Architectural Separation: Cedar vs. Quint
+
+A frequent question in security architecture is: /"If we already verify
+authorization policies with Cedar (and Cedar SymCC), why do we still need Quint
+for OAuth / authorization threat modeling?"/
+
+The answer is a strict separation of *stateless policy decision* from *stateful
+protocol lifecycle*:
+
+| Layer | Owned By | What It Proves | What It Cannot See |
+|-------+----------+----------------+--------------------|
+| *Stateless Policy Decision (PDP)* | Cedar (=cedar-poo-spec= / SymCC) | Given =(Principal, Action, Resource, Context)= at one instant, does the policy permit? Is Policy A strictly tighter than Policy B? | Multi-step OAuth code replay, PKCE omission, concurrent refresh-vs-signout races, token family reuse, or scope escalation across refreshes |
+| *Stateful Protocol & Credential Lifecycle* | Quint (=@deterministic-engineering/quint-models=) | Across asynchronous callbacks, concurrent refreshes, cancellations, and revocations, can an attacker obtain, resurrect, replay, or escalate credentials before they reach the PDP? | Fine-grained RBAC/ABAC entity hierarchies and resource-attribute policy equivalence |
+
+* How Both Layers Compose
+
+1. *Quint guards the credential & authority lifecycle* (=threat/oauth-token-lifecycle=,
+   =threat/authority-currentness=, =threat/zero-trust-pep-pdp=): guarantees that
+   the token reaching the PEP/PDP came from a single-use PKCE+nonce exchange,
+   survived no sign-out/revocation epoch bump, and did not silently escalate
+   scopes during refresh.
+2. *Cedar guards the request decision*: evaluates the verified =(Principal,
+   Scopes, Audience, Epoch)= against declarative policies for the target
+   =(Action, Resource)=.
+
+* OAuth 2.1 Threat Matrix (RFC 9700 / Fett–Küsters–Schmitz)
+
+| Threat Class | Concrete Failure Mode | Guard in =oauth-token-lifecycle= | Required Countermodel |
+|--------------+-----------------------+----------------------------------+-----------------------|
+| *Authorization Code Replay / Injection* | Reusing a consumed code or accepting callback without PKCE / nonce check | =single-use-code= + =pkceOk and nonceOk= | =stepCodeReplay= |
+| *Refresh-vs-SignOut Zombie Resurrection* | Concurrent =RefreshToken= finishes after =SignOut= and writes refreshed token back into vault | =refresh-epoch-currency= (=epochCurrent(authEpoch, refreshStartedEpoch)=) | =stepZombieRefresh= |
+| *Refresh Scope Escalation* | Token endpoint returns wider scopes on refresh than originally granted | =scope-monotonicity= (=newScope <= grantedScopeLevel=) | =stepScopeEscalation= |
+| *OIDC Nonce / Audience Confusion* | Client ignores =expectedNonce= in ID token exchange | Mandatory constant-time =nonce= verification in exchanger | Modeled in =completeCallbackAs(pkceOk, nonceOk)= |
+
+* Real-World Case: Tier-0 OAuth / OIDC Desktop Auth Engine
+
+Applying =threat/oauth-token-lifecycle=, =threat/device-authorization=, and
+=threat/oauth-revocation-recovery= directly to a production Go auth manager
+(=AuthManager= + encrypted =CredentialVault=) surfaced concrete concurrency
+and crash-recovery gaps:
+
+1. *Zombie token resurrection*: =ValidAccessToken= wrote refreshed tokens back
+   into the vault after =SignOut= deleted the account, without checking an
+   account epoch.
+2. *CancelPending & post-I/O expiry races*: in-flight =ExchangeCode=,
+   =PollDeviceToken=, or =VerifyChallenge= could admit a signed-in account
+   after =CancelPending()= or after the challenge expired during network I/O.
+3. *Refresh scope creep*: =ValidAccessToken= accepted arbitrary =refreshed.Scopes=
+   without verifying subset monotonicity against originally granted scopes.
+4. *Ignored OIDC nonce*: token exchange discarded its =expectedNonce= parameter.
+5. *Loopback state-fixation DoS*: the local callback receiver consumed its
+   single-use slot on the first GET even if =state= did not match.
+6. *Crash-recovery revocation resurrection*: calling remote RFC 7009 token
+   revocation before scrubbing the local durable vault allowed a crash during
+   sign-out to resurrect revoked credentials on restart.
+
+Each gap is eliminated and verified via race-enabled Go MBT tests driven by
+live Quint =--mbt= ITF traces alongside the upstream protocol models.

@@ -3,7 +3,7 @@
 
 ;;; Development input for real compiler/solver controls; not a product Runtime.
 (import :clan/poo/object
-        (only-in :yuanxu/module-system/source/observations
+        (only-in :tao3k/yuanxu/module-system/source/observations
                  module-source-read module-source-admit-current!
                  module-source-object-policy))
 (export SourceContractInput.)

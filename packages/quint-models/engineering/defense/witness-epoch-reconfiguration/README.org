@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Dynamic Witness Roster Reconfiguration, Dual-Quorum Handover & Forward-Secure Epoch Sealing
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.defense.witness-epoch-reconfiguration=
+- *Subdomain*: =quint.engineering.defense=
+- *Quint Module*: =witness_epoch_reconfiguration= (=[[file:WitnessEpochReconfiguration.qnt][WitnessEpochReconfiguration.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/defense/witness-epoch-reconfiguration/WitnessEpochReconfiguration=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Epoch 2 handover requires BOTH Q_old and Q_new ratification (unilateralHandoverViolations == 0), Epoch 2 checkpoint finality requires RFC 6962 anchor consistency from Epoch 1 (unanchoredEpoch2Violations == 0), and once Epoch 2 is pinned, posterior compromise of retired Epoch 1 keys cannot introduce a post-handover Epoch 1 fork (not(epoch2CleanFinalized and epoch1PostHandoverForkAccepted) and longRangeRewriteViolations == 0).
+
+#+begin_src quint
+val safety = (not((h.epoch2CleanFinalized and h.epoch1PostHandoverForkAccepted)) and h.unilateralHandoverViolations == 0 and h.unanchoredEpoch2Violations == 0 and h.longRangeRewriteViolations == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =require-dual-quorum-handover= | =stepUnilateralHandover= | =h.unilateralHandoverViolations > 0= |
+| =require-anchor-consistency-for-epoch2= | =stepUnanchoredEpoch2= | =h.unanchoredEpoch2Violations > 0= |
+| =enforce-monotonic-pinned-epoch= | =stepLongRangeFork= | =h.longRangeRewriteViolations > 0= |
+
+* Grounded Papers & Specifications
+
+- *D. Ongaro & J. Ousterhout (USENIX ATC 2014)*: In Search of an Understandable Consensus Algorithm (Raft): §6 Joint Consensus C_{old,new} dual-quorum reconfiguration.
+- *M. Bellare & S. K. Miner (CRYPTO 1999) / E. Deirmentzoglou et al. (IEEE Access 2019)*: Forward-Secure Digital Signatures and Long-Range / Posterior-Corruption Attacks in Long-Lived Ledgers.
+- *Deterministic Engineering (10.169 / 10.171)*: Dynamic BFT witness committee handover with RFC 6962 anchor continuity, R3 retired-key zeroization, and monotonic weak-subjectivity pinning.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/defense/witness-epoch-reconfiguration/WitnessEpochReconfiguration.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/defense/witness-epoch-reconfiguration/WitnessEpochReconfiguration.qnt --main=witness_epoch_reconfiguration --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Two-epoch (Epoch 1 -> Epoch 2) dynamic committee handover abstraction; assumes offline/out-of-band verifier pinning of the handover epoch (weak subjectivity) to defeat posterior corruption of retired Epoch 1 keys.

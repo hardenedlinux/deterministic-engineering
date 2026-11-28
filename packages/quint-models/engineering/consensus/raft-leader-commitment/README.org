@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Raft Leader Election & Figure 8 Current-Term Commitment
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.consensus.raft-leader-commitment=
+- *Subdomain*: =quint.engineering.consensus=
+- *Quint Module*: =consensus_raft_commitment= (=[[file:RaftLeaderCommitment.qnt][RaftLeaderCommitment.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/consensus/raft-leader-commitment/RaftLeaderCommitment=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=9=
+
+* Emergent Safety Invariant
+
+Leader Completeness: once a slot-1 entry is committed, every subsequent elected leader contains that exact committed value.
+
+#+begin_src quint
+val safety = (not(h.committed) or h.leaderId == 0 or leaderLogVal == h.committedVal)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =current-term-commit-rule= | =stepFigure8Commit= | =h.committed == true and h.leaderId > 0 and ((h.leaderId == 1 and h.n1Val != h.committedVal) or (h.leaderId == 2 and h.n2Val != h.committedVal) or (h.leaderId == 3 and h.n3Val != h.committedVal))= |
+| =election-log-up-to-date= | =stepStaleLogElection= | =h.committed == true and h.leaderId > 0 and ((h.leaderId == 1 and h.n1Val != h.committedVal) or (h.leaderId == 2 and h.n2Val != h.committedVal) or (h.leaderId == 3 and h.n3Val != h.committedVal))= |
+
+* Grounded Papers & Specifications
+
+- *D. Ongaro & J. Ousterhout (USENIX ATC 2014)*: In Search of an Understandable Consensus Algorithm (Raft): §5.4.1 Election Restriction and §5.4.2 Figure 8 Current-Term Commitment Rule.
+- *H. Howard, D. Malkhi & A. Spiegelman (OPODIS 2016)*: Flexible Paxos: Quorum Intersection Revisited for consensus leader election and commitment safety.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/consensus/raft-leader-commitment/RaftLeaderCommitment.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/consensus/raft-leader-commitment/RaftLeaderCommitment.qnt --main=consensus_raft_commitment --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite 3-node single-slot Raft election and Figure 8 commitment abstraction; does not model multi-index prefix matching, log compaction snapshots, or dynamic membership joint consensus.

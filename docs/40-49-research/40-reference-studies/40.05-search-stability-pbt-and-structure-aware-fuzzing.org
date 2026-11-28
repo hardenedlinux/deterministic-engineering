@@ -1,0 +1,210 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 40.05 Search Stability, Property-Based Testing & Structure-Aware Fuzzing Reference Study
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 40.05
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+#+FILETAGS: :research:search-stability:pbt:fuzzing:metamorphic-testing:adversarial-verification:
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:40.04-software-aging-and-steady-state-stability.org][40.04 Software Aging Study]] | [[file:../../30-39-evaluation/30-benchmarks/30.06-software-aging-and-steady-state-benchmark.org][30.06 Stability Benchmark]]
+
+* Problem Statement: Why Search & Interactive Search-Box Stability Differs from Resource Aging
+:PROPERTIES:
+:CUSTOM_ID: study4005-problem
+:STATUS: implemented-verified
+:END:
+
+Long-running resource stability ([[file:40.04-software-aging-and-steady-state-stability.org][40.04]], =SM1=–=SM7=) proves that memory,
+file descriptors, goroutines/tasks, caches, and render budgets remain conserved
+over arbitrary cycles. *Interactive search engines and live search boxes*
+(typeahead minibuffers, Emacs Consult/Orderless/Helm overlays, multi-tier
+Rust/Scheme workspace search schedulers) fail in *qualitatively different* ways
+even when steady-state heap usage is flat:
+
+1. *Asynchronous Query Racing & Selection Identity Drift (=SM8=)*:
+   Every keystroke creates a new query generation. Out-of-order RPC delivery,
+   non-monotonic cancellation (an older goroutine acquiring the lock after a
+   newer keystroke and cancelling the newer request), stale DSL results arriving
+   without epoch verification, or a higher-priority source batch inserting rows
+   above the user's cursor immediately before =Enter= causes silent wrong-item
+   execution, stale UI flashing, or suppressed Follow-Mode previews.
+2. *Single-Flight Coordinator Deadlocks Under Async Cancellation (=SM9=)*:
+   To avoid =N= concurrent agents or keystrokes triggering =N= disk-sync or
+   index-rebuild storms (Dean & Barroso tail-latency amplification), search
+   schedulers coalesce concurrent callers onto a single leader via atomic
+   =in_flight= flags and =tokio::sync::Notify= / condition variables. Under
+   async cancellation (e.g., =timeout= or future =Drop= mid-=.await=), a leader
+   without a =Drop= guard leaves =in_flight = true= permanently, deadlocking all
+   future searches. Likewise, awaiting =Notify::notified()= without calling
+   =.enable()= before double-checking =in_flight= creates a classic lost-wakeup
+   deadlock.
+3. *Metamorphic Query Algebra, Unicode & Geometry Boundary Bugs (=SM10=)*:
+   Search boxes lack a simple single-input oracle ("is this ranked list right?")
+   and accept unbounded adversarial UTF-8/DSL/qualifier strings:
+   - Axis qualifiers (=@lang:rust=, =@prefix:crates/=, =@ext:rs=) leaking into
+     literal text matchers and silently producing *zero matches*.
+   - Inconsistent case folding (=strings.ToLower= multi-rune expansion of =İ=
+     U+0130 vs. 1-to-1 =unicode.ToLower=) breaking *reflexivity* (a string fails
+     to match itself).
+   - Last-wins qualifier parsing paired with prepend-only UI scoping
+     (=@prefix:new/ @prefix:old/=) causing "Scope to Directory" to silently no-op.
+   - Multi-=#= separators injecting literal =#= as an unsatisfiable filter token,
+     unbounded clipboard pastes triggering synchronous parse/scan stalls, and
+     narrow-viewport clipped tabs still responding to phantom mouse hit-tests.
+4. *IPC Half-Open Reconnect & Duplicate Replay Storms (=SM12=)*:
+   When a long-lived gRPC/Unix-socket bridge experiences a half-open network
+   stall, reconnect loops that open a replacement stream without retiring the
+   prior socket/handle accumulate leaked zombie descriptors linearly with outage
+   count; in-flight frames from superseded epochs corrupt live state if unfenced,
+   and retrying side-effecting RPCs without an idempotency key commits duplicate
+   mutations.
+5. *Interactive Search-Box IME Composition, Focus-Loss & Shortcut Races (=SM13=)*:
+   CJK/dead-key IME input fires =Enter= to commit candidate characters while
+   =isComposing= is active (=keyCode === 229=). Unguarded =keydown= submit
+   handlers prematurely dispatch raw pinyin/preedit text; focus =blur= during an
+   active composition leaves orphaned preedit buffers that block subsequent
+   submits; and global single-key/chord shortcuts fire mid-composition and
+   corrupt the active candidate session.
+6. *Chaos Fault-Injection Recovery Envelopes & Circuit-Breaker Shedding (=SM14=)*:
+   Under sustained fault injection (latency spikes, stream resets, partial
+   outages — Basiri et al., /Chaos Engineering/, IEEE Software 2016; Nygard,
+   /Release It!/), unbounded retries amplify load into metastable collapse. A
+   bounded circuit breaker transitions =Closed -> Open -> HalfOpen -> Closed=,
+   enforcing a strict retry budget, emitting typed fast-fail refusals with zero
+   silent partial drops while open, and recovering cleanly via a single bounded
+   half-open probe once faults subside.
+
+* Literature Synthesis: Unifying MBT, Stateful PBT, Coverage-Guided Fuzzing & Metamorphic Oracles
+:PROPERTIES:
+:CUSTOM_ID: study4005-literature
+:END:
+
+Every formal model in =@deterministic-engineering/quint-models= exists as an
+*adversarial challenge generator*. Bridging four research lineages closes the
+gap between finite-state proofs and real search-box boundary bugs:
+
+| Research lineage | Primary papers | What it catches | Blind spot alone |
+|------------------+----------------+-----------------+------------------|
+| *Property-Based Testing (PBT)* | Claessen & Hughes, /QuickCheck: A Lightweight Tool for Random Testing of Haskell Programs/ (ACM ICFP 2000); Goldstein, Cutler, Pierce & Head, /Property-Based Testing in Practice/ (IEEE/ACM ICSE 2024 Distinguished Paper) | Algebraic invariants, stateful API sequences, shrinking to minimal counterexamples inside fast unit-test loops | Random generators miss sparse semantic branches and deep parser states |
+| *Coverage-Guided & Structure-Aware Fuzzing* | Lampropoulos, Hicks et al., /Coverage Guided, Property Based Testing (FuzzChick)/ (ACM OOPSLA 2019); Padhye, Lemieux, Sen, Papadakis & Le Traon, /Semantic Fuzzing with Zest & JQF/ (ACM ISSTA 2019) | Branch-coverage feedback mutates parametric/structured inputs across UTF-8, S-expressions, nested qualifiers, and narrow viewport edge cases | Traditional fuzzers only check crashes/panics without domain oracles |
+| *Metamorphic Testing (MT) for Search Engines* | Zhou, Xiang & Chen, /Metamorphic Testing for Software Quality Assessment: A Study of Search Engines/ (IEEE TSE 2016); Chen, Kuo, Liu, Poon, Towey, Tse & Zhou, /Metamorphic Testing: A Review of Challenges and Opportunities/ (ACM CSUR 2018) | Solves the search-engine oracle problem via relational laws: *Reflexivity*, *Orderless Permutation Invariance*, *Qualifier Orthogonality*, *Negation Monotonicity*, and *Scope-Replace Idempotence* | Does not explore concurrent interleavings or async cancellation deadlocks |
+| *Tail-Latency Control & Model-Based Testing (MBT)* | Dean & Barroso, /The Tail at Scale/ (CACM 2013); Lamport fencing tokens; Quint =--mbt= ITF trace replay & Apalache symbolic checking | Exhaustively refutes concurrency interleavings: non-monotonic generation cancellation, leader-drop deadlocks, lost wakeups, and batch-arrival cursor jumps | Finite-state abstractions do not test raw byte/UTF-8 slicing or UI layout arithmetic |
+
+**Unified Adversarial Challenge Architecture (=MBT + Stateful PBT + Structure-Aware Fuzzing + Metamorphic Oracles=)**:
+1. *Upstream Formal Spec (Quint + Apalache + Lean 4)*: Specify the exact safety
+   invariants and auto-derived countermodels (=SM8=–=SM10=) once in
+   =@deterministic-engineering/quint-models= and prove unbounded algebraic
+   corollaries in [[file:../../../packages/lean-models/DeterministicEngineering/Core/Stability.lean][Core/Stability.lean]].
+2. *Downstream Native Consumption (=--mbt= + =@quint-extends=)*: Each downstream
+   package (=marlin-mygo=, =marlin-agent-core=) writes domain overlays via
+   =@quint-extends= and pairs them with language-native adversarial tests:
+   - Go: =go test -race= stateful MBT + =testing.F= coverage-guided metamorphic
+     fuzzing (=FuzzConsultOrderlessMetamorphic=).
+   - Rust: =proptest= stateful & metamorphic search-box fuzzing + Tokio async
+     cancellation/timeout deadlock challenges.
+   - TypeScript: deterministic seedable metamorphic fuzz harness + 750-trial
+     structure-aware IPC/IME/chaos fuzz harness + Quint =--mbt= ITF refinement
+     across all 15 stability models.
+3. *Static Aging, Search/IME & IPC Guardrails (=SA51=–=SA76=)*: Encode the exact
+   structural traps discovered by adversarial testing back into
+   [[file:../../../languages-engineering/ts/stability/aging-contrast/aging-ast-auditor.ts][aging-ast-auditor.ts]]
+   so AI coding agents receive immediate C2 repair packets before code merges.
+
+* Taxonomy of Search, IME, IPC & Chaos Stability Mechanisms (=SM8=–=SM14=)
+:PROPERTIES:
+:CUSTOM_ID: study4005-taxonomy
+:END:
+
+| ID | Mechanism | Formal Quint Model | Unbounded Lean 4 Proof | Downstream Challenge Targets |
+|----+-----------+--------------------+------------------------+------------------------------|
+| =SM8= | Search query generation fencing, monotonic cancellation, selection-identity anchoring & mark custody | [[file:../../../packages/quint-models/engineering/concurrency/search-query-generation-fencing/SearchQueryGenerationFencing.qnt][SearchQueryGenerationFencing.qnt]] | =Core.Stability= Section 9 | =marlin-mygo= (=helm_stream.go=, =search_bridge.go=, =helm_minibuffer_view.go=); =marlin-agent-core= (=helm/overlay.rs=) |
+| =SM9= | Single-flight coordinator async cancellation-safety (=Drop= guard) & armed =Notify= wakeup freedom | [[file:../../../packages/quint-models/engineering/concurrency/singleflight-cancellation-safety/SingleFlightCancellationSafety.qnt][SingleFlightCancellationSafety.qnt]] | =Core.Stability= Section 10 | =marlin-agent-core= (=search_scheduler.rs= =DebouncedSyncCoordinator=) |
+| =SM10= | Metamorphic search query algebra (MR1–MR6), qualifier orthogonality, scope replacement & hit-test geometry | [[file:../../../packages/quint-models/engineering/concurrency/search-query-metamorphic-algebra/SearchQueryMetamorphicAlgebra.qnt][SearchQueryMetamorphicAlgebra.qnt]] | =Core.Stability= Section 11 | =marlin-mygo= (=consult_orderless.go=, =match_mask.go=); =marlin-agent-core= (=helm/types.rs=, =helm/actions.rs=, =helm/view.rs=) |
+| =SM11= | Priority-isolated bounded mailbox (SEDA/DAGOR/WFQ), active zombie compaction & $O(1)$ latest-wins =watch= progress | [[file:../../../packages/quint-models/engineering/concurrency/priority-isolated-bounded-mailbox/PriorityIsolatedBoundedMailbox.qnt][PriorityIsolatedBoundedMailbox.qnt]] | =Core.Stability= Section 12 | =marlin-agent-core= (=linked_ui.rs= =LinkedSearchDslMailbox=, =app/asp_supervisor.rs= hydration progress & child guard) |
+| =SM12= | IPC half-open stream retirement, monotonic epoch fencing & idempotent replay deduplication | [[file:../../../packages/quint-models/engineering/concurrency/ipc-half-open-reconnect-idempotency/IpcHalfOpenReconnectIdempotency.qnt][IpcHalfOpenReconnectIdempotency.qnt]] | =Core.Stability= Section 13 | =marlin-agent-core= (=ui_grpc.rs=, =marlin_mygo_host.rs=); =marlin-mygo= (=control/grpcwire=, =control/transport=) |
+| =SM13= | Interactive search-box IME composition Enter gate, atomic blur preedit cleanup & shortcut isolation | [[file:../../../packages/quint-models/engineering/concurrency/ime-composition-focus-race/ImeCompositionFocusRace.qnt][ImeCompositionFocusRace.qnt]] | =Core.Stability= Section 14 | WebView / TypeScript search UIs & =marlin-mygo= interactive minibuffer/input handlers |
+| =SM14= | Chaos fault-injection recovery envelope, circuit-breaker fast-fail shedding & bounded half-open probe recovery | [[file:../../../packages/quint-models/engineering/concurrency/chaos-fault-injection-recovery-envelope/ChaosFaultInjectionRecoveryEnvelope.qnt][ChaosFaultInjectionRecoveryEnvelope.qnt]] | =Core.Stability= Section 15 | =marlin-mygo= (=control/grpcwire/resilience_sync.go=, =projection_bridge.go=, =governance_bridge.go=, =driver.go=); =marlin-agent-core= (=ui_grpc.rs=) |
+| =SM15= | Search-index cold-open serialization, multi-workspace root isolation, single-flight leader-cancel follower re-election & reader-bounded compaction | [[file:../../../packages/quint-models/engineering/concurrency/search-index-snapshot-isolation/SearchIndexSnapshotIsolation.qnt][SearchIndexSnapshotIsolation.qnt]] | =Core.Stability= Section 16 | =marlin-agent-core= (=marlin-agent-tooling/src/{search_tool.rs,search_scheduler.rs}=) |
+| =SM16= | Search-box uniform input byte-cap sanitization across insert/paste/setInput, control/ANSI stripping, grapheme cursor safety & capacity shrink | [[file:../../../packages/quint-models/engineering/concurrency/search-box-input-sanitization-envelope/SearchBoxInputSanitizationEnvelope.qnt][SearchBoxInputSanitizationEnvelope.qnt]] | =Core.Stability= Section 17 | =marlin-agent-core= (=marlin-agent-tui/src/{helm/editor.rs,composer/editor.rs}=) |
+| =SM17= | Streaming LLM & HTTP output budget envelope: pre-allocation chunk cap checks, unified text+thinking byte accounting, SSE/HTTP path symmetry & fail-closed buffer release | [[file:../../../packages/quint-models/engineering/concurrency/streaming-output-budget-envelope/StreamingOutputBudgetEnvelope.qnt][StreamingOutputBudgetEnvelope.qnt]] | =Engineering.StreamingOutputBudget= (=LeanPoo=) | =marlin-agent-core= (=marlin-agent-stream/src/{gateway.rs,openai_http.rs,streaming.rs}=) |
+| =SM18= | CI/CD scientific content-addressed caching, hermetic engine+source ActionKey soundness, disjoint subdomain shard namespaces & active-set quota GC | [[file:../../../packages/quint-models/engineering/concurrency/ci-cache-soundness-and-sharding/CiCacheSoundnessAndSharding.qnt][CiCacheSoundnessAndSharding.qnt]] | =Engineering.CiCacheSoundness= (=LeanPoo=) | =deterministic-engineering= (=.github/workflows/*.yml=, =packages/quint-modules-resolver/src/mbt.ts=, =t/harness/verify-framework.ts=) |
+| =SM19= | Structured async task abort-on-drop, dirty-transaction DB pool lease disposal & semaphore-bounded fan-out with panic-safe correlation IDs | [[file:../../../packages/quint-models/engineering/concurrency/task-and-pool-cancellation-envelope/TaskAndPoolCancellationEnvelope.qnt][TaskAndPoolCancellationEnvelope.qnt]] | =Engineering.TaskAndPoolCancellation= (=LeanPoo=) | =marlin-agent-core= (=marlin-agent-hooks/src/dispatcher.rs=, =marlin-agent-runtime/src/effect_pump.rs=, =marlin-agent-storage/src/{turso_backend.rs,turso_operations.rs}=) |
+| =SM20= | Bounded subprocess pipe capture, drain-to-sink deadlock freedom & bounded single-line framing | [[file:../../../packages/quint-models/engineering/concurrency/subprocess-pipe-capture-envelope/SubprocessPipeCaptureEnvelope.qnt][SubprocessPipeCaptureEnvelope.qnt]] | =Engineering.SubprocessPipeCapture= (=LeanPoo=) | =marlin-agent-core= (=marlin-agent-runtime/src/process/managed.rs=, =marlin-agent-app-server/src/atomic_effect_substrate.rs=, =marlin-agent-tui/src/app/asp_supervisor.rs=) |
+| =SM21= | Crash-safe atomic file persistence, unique temp-file staging & fsync-before-rename ordering (OSDI'14 Pillai et al.) | [[file:../../../packages/quint-models/engineering/storage/atomic-persistence-fsync-envelope/AtomicPersistenceFsyncEnvelope.qnt][AtomicPersistenceFsyncEnvelope.qnt]] | =Engineering.AtomicPersistenceFsync= (=LeanPoo=) | =marlin-agent-core= (=marlin-agent-runtime/src/task_actor.rs=, =marlin-agent-context/src/org/store/release_status.rs=); =marlin-mygo= (=engine/shell/layout_projection.go=, =control/auth/vault.go=, =control/marketplace/package_store.go=) |
+| =SM22= | Hostile (=ADV-L4=) sandbox symlink confinement, untrusted manifest path-traversal containment, canonical duplicate-free archive verification & cumulative decompression budgets (100th Quint Model) | [[file:../../../packages/quint-models/threat/execution/sandbox-symlink-archive-confinement/SandboxSymlinkArchiveConfinement.qnt][SandboxSymlinkArchiveConfinement.qnt]] | =Engineering.SandboxSymlinkArchiveConfinement= (=LeanPoo=, 12 theorems incl. =AdversarialPressureTier=) | =marlin-agent-core= (=marlin-agent-kernel/src/loop_program_side_effects/{file_write.rs,executor.rs}=); =marlin-mygo= (=control/marketplace/{dev_reload.go,ts_bundle.go,publish.go,bundle.go}=) |
+| =SM23= | Hostile (=ADV-L4=) outbound HTTP redirect/SSRF confinement, remote HTTPS Bearer discipline, DownloadURL origin confinement, Lstat symlink-safe HTTP file serving & canonical transport-owner delegation (=weaver-llm=, 101st Quint Model) | [[file:../../../packages/quint-models/threat/protocol/outbound-http-redirect-ssrf-confinement/OutboundHttpRedirectSsrfConfinement.qnt][OutboundHttpRedirectSsrfConfinement.qnt]] | =Engineering.OutboundHttpRedirectSsrfConfinement= (=LeanPoo=, 12 theorems composing =AdversarialPressureTier=) | =marlin-agent-core= (=marlin-agent-stream/src/openai_http.rs= delegated to =weaver-llm=); =marlin-mygo= (=control/marketplace/{official_sync.go,registry.go}=); =weaver= (236/236 clean baseline) |
+| =SM24= | Hostile (=ADV-L4=) subprocess ambient secret environment scrubbing (default-deny toolchain allowlist across sandbox tools, Go WASI builds, Bun build-time macros & =src/perf.ts= runners) + constant-time non-blank Bearer auth verification (102nd Quint Model) | [[file:../../../packages/quint-models/threat/execution/subprocess-env-scrub-and-auth-timing/SubprocessEnvScrubAndAuthTiming.qnt][SubprocessEnvScrubAndAuthTiming.qnt]] | =Engineering.SubprocessEnvScrubAndAuthTiming= (=LeanPoo=, 12 theorems composing =AdversarialPressureTier=) | =marlin-agent-core= (=atomic_effect_substrate.rs=, =tool_process.rs=, =ui_grpc.rs=); =marlin-mygo= (=control/marketplace/{dev_reload.go,ts_bundle.go,publish.go,plugin_perf.go}=) |
+| =SM25= | Hostile (=ADV-L4=) single-owner GraphEngine execution convergence & production-reachable governance confinement defeating AI additive legacy dual-engine accretion and disconnected governance bypasses (103rd Quint Model) | [[file:../../../packages/quint-models/threat/execution/single-owner-graph-governance-confinement/SingleOwnerGraphGovernanceConfinement.qnt][SingleOwnerGraphGovernanceConfinement.qnt]] | =Engineering.SingleOwnerGraphGovernanceConfinement= (=LeanPoo=, 12 theorems composing =AdversarialPressureTier=) | =marlin-agent-core= (=atomic_effect_substrate.rs=, =task_actor_executor.rs=, =task_actors.rs=, =ui_grpc.rs=, =marlin_mygo_host.rs=, =marlin-agent-kernel/src/lib.rs=) |
+| =SM26= | Hostile (=ADV-L4=) control-plane entrypoint auth convergence, empty-Bearer prefix rejection, mutating & LLM-streaming RPC E-Stop confinement, and allowlist-scrubbed bounded release-gate execution defeating AI surface-scoped defense illusions (104th Quint Model) | [[file:../../../packages/quint-models/threat/execution/control-plane-auth-and-governance-confinement/ControlPlaneAuthAndGovernanceConfinement.qnt][ControlPlaneAuthAndGovernanceConfinement.qnt]] | =Engineering.ControlPlaneAuthAndGovernanceConfinement= (=LeanPoo=, 12 theorems composing =AdversarialPressureTier=) | =marlin-agent-core= (=marlin_mygo_host.rs=, =ui_grpc.rs=, =grpc.rs=, =crates/marlin-agent-core/src/release.rs=, =examples/mygo_bridge_server.rs=) |
+| =SM27= | Hostile (=ADV-L4=) policy-gate blind-spot, local Cargo dev-dependency cycle masking, fail-closed crate gating, thin binary/root-test entrypoint confinement, and CI policy-gate enforcement defeating silent AI architectural erosion (105th Quint Model) | [[file:../../../packages/quint-models/engineering/defense/policy-gate-blindspot-and-cycle-confinement/PolicyGateBlindspotAndCycleConfinement.qnt][PolicyGateBlindspotAndCycleConfinement.qnt]] | =Engineering.PolicyGateBlindspotAndCycleConfinement= (=LeanPoo=, 13 theorems composing =AdversarialPressureTier=) | =marlin-agent-core= (29-crate workspace DAG =cyclic_sccs=0=, =marlin-agent-app-server= thin =mygo_host=/=scheme_ctl= launchers & =asp-rust= gate, =marlin-agent-kernel= integration MBT layout, =.github/workflows/ci.yaml=); =deterministic-engineering= (=stability_soak_test.go= fail-closed Quint check) |
+| =SM28= | Hostile (=ADV-L4=) plugin capability-grant enforcement & revocation closure, signed release anti-rollback & publisher continuity, confined =entry_path=, bound device-lease verification under E-Stop, and digest-verified idempotency replay defeating AI sibling-clone defensive drift (106th Quint Model) | [[file:../../../packages/quint-models/threat/execution/plugin-grant-rollback-and-lease-confinement/PluginGrantRollbackAndLeaseConfinement.qnt][PluginGrantRollbackAndLeaseConfinement.qnt]] | =Engineering.PluginGrantRollbackAndLeaseConfinement= (=LeanPoo=, 13 theorems composing =AdversarialPressureTier=) | =marlin-agent-core= (=marlin-agent-runtime/src/plugin/{panel_lifecycle,panel_release}.rs=, =marlin-agent-app-server/src/ui_grpc/{state,host,workbench_gate,device_projection_app}.rs= + fail-closed 0-Warning =asp-rust= gate across modularized =app-server=) |
+| =SM29= | Hostile (=ADV-L4=) governance policy-evaluation fail-closed (Cedar =forbid ... unless= missing-key defense), monotonic same-epoch =policy_revision= anti-rollback, same-epoch E-Stop checkpoint anti-untrip, Bi-Temporal TM retraction persistence across human re-arm, constant-time SHA-256 checkpoint verification & bounded lease/derivation registration (107th Quint Model) | [[file:../../../packages/quint-models/threat/execution/governance-policy-and-latch-antirollback/GovernancePolicyAndLatchAntirollback.qnt][GovernancePolicyAndLatchAntirollback.qnt]] | =Engineering.GovernancePolicyAndLatchAntirollback= (=LeanPoo=, 14 theorems composing =AdversarialPressureTier=) | =marlin-agent-core= (=marlin-agent-kernel/src/{governance_cedar,governance_admission,execution_breaker}.rs= + =tests/unit/kernel/sm29_governance_antirollback.rs= + =tests/integration/durable_governance_mbt.rs=) |
+| =SM30= | Hostile (=ADV-L4=) RFC 9470 Step-Up MFA attestation integrity (allowlisted ACR URNs, unified non-human prefix & duplicate-key refusal), Scheme =LlmComplete= E-Stop mediation & reserved governance =CasPut= key isolation, broadcast-lag watcher survival, bounded effect fan-out & =MGF1= capacity-parity/constant-time verification with fail-closed durable re-arm (108th Quint Model) | [[file:../../../packages/quint-models/threat/execution/stepup-attestation-and-host-effect-confinement/StepUpAttestationAndHostEffectConfinement.qnt][StepUpAttestationAndHostEffectConfinement.qnt]] | =Engineering.StepUpAttestationAndHostEffectConfinement= (=LeanPoo=, 12 theorems composing =AdversarialPressureTier=) | =marlin-agent-core= (=marlin-gerbil-scheme/src/{governance_host,scheme_host_runtime}.rs= + =tests/unit/sm30_stepup_host_confinement.rs=) |
+| =SM31= | Hostile (=ADV-L4=) storage boundary deserialization validation parity (=StoragePageLimit=, 11 =string_id!= types & =SessionId=), =put_artifact= =size_bytes == body.len()= & cryptographic =sha256:<64-hex>= CAS integrity, TLS-mandatory remote =TursoSyncRemoteUrl= (loopback-only =http://=, zero =@= userinfo/CRLF), immutable same-revision =TursoContextIndex::rebuild= replay/conflict enforcement & idempotent CAS audit receipts (109th Quint Model) | [[file:../../../packages/quint-models/threat/execution/storage-boundary-integrity-and-sync-confinement/StorageBoundaryIntegrityAndSyncConfinement.qnt][StorageBoundaryIntegrityAndSyncConfinement.qnt]] | =Engineering.StorageBoundaryIntegrityAndSyncConfinement= (=LeanPoo=, 12 theorems composing =AdversarialPressureTier=) | =marlin-agent-core= (=marlin-agent-storage/src/{records/pagination,records/contract,memory,turso_storage,turso_backend,context_index/store,context_index/model}.rs= + =marlin-agent-sessions/src/id.rs=) |
+| =SM32= | Hostile (=ADV-L4=) GitOps subprocess environment neutralization (=GIT_CONFIG_GLOBAL=/=SYSTEM=/=EXEC_PATH=/=SSH_COMMAND= + =GIT_CONFIG_NOSYSTEM=1=), dual-layer =core.hooksPath=/dev/null= & =core.fsmonitor=false= lockdown, non-flag/non-control projection & confined retention snapshot validation, bounded concurrent stdout/stderr capture with timeout/=kill_on_drop(true)=, and =JoinSet= panic-isolated parallel receipts (110th Quint Model, 50th LeanPoo Module) | [[file:../../../packages/quint-models/threat/execution/gitops-subprocess-confinement-and-arg-injection/GitopsSubprocessConfinementAndArgInjection.qnt][GitopsSubprocessConfinementAndArgInjection.qnt]] | =Engineering.GitopsSubprocessConfinementAndArgInjection= (=LeanPoo=, 13 theorems composing =AdversarialPressureTier=) | =marlin-agent-core= (=marlin-agent-gitops/src/{lib,read,working_copy/command_projection,working_copy/driver,working_copy/receipt}.rs= + =tests/unit/sm32_gitops_subprocess_confinement.rs=) |
+| =SM33= | Hostile (=ADV-L4=) hook TOML fail-closed =deny_unknown_fields= + 256 KiB bounded reads & validated =GerbilScheme= extensions, unique =hook_id= upsert preventing sticky ghost hooks + semaphore-bounded async fan-out (<= 16), immutable Rust trust-floor rejection reasons under bounded dynamic actions/rewrites, contradiction/zero-budget/depth rejection in =SubAgentSpawnConfigSet=, validated =RuntimeSessionId= Serde =Deserialize= parity, and control/URL-meta refusal in =ModelEndpoint::validate_contract= (111th Quint Model, 51st LeanPoo Module) | [[file:../../../packages/quint-models/threat/execution/hook-policy-and-protocol-contract-confinement/HookPolicyAndProtocolContractConfinement.qnt][HookPolicyAndProtocolContractConfinement.qnt]] | =Engineering.HookPolicyAndProtocolContractConfinement= (=LeanPoo=, 12 theorems composing =AdversarialPressureTier=) | =marlin-agent-core= (=marlin-agent-hooks/src/{config,dispatcher,dynamic_actions}.rs= + =marlin-agent-protocol/src/{hook/types,sub_agent,runtime_environment,model/endpoint}.rs=) |
+| =SM34= | Hostile (=ADV-L4=) =direnv= export loader-hijack/denylist/malformed-key refusal & bounded stdout/timeout + =./.envrc= scoping, symlink-safe explicit =.envrc=/sub-agent home/state-home/=FileSystemOrgSourceStore= confinement + bounded reads & atomic sequence temp staging, monotonic =OrgGovernanceLedger= snapshot/atomic-rebase & non-resetting =SharedContextGovernanceLedger= channel epoch/taint, and recomputed Two-Zone KV-Prefix =frozen_prefix= SHA-256 + =proposal.task_id == cursor.task_id= binding (112th Quint Model, 52nd LeanPoo Module) | [[file:../../../packages/quint-models/threat/execution/runtime-env-activation-and-context-confinement/RuntimeEnvActivationAndContextConfinement.qnt][RuntimeEnvActivationAndContextConfinement.qnt]] | =Engineering.RuntimeEnvActivationAndContextConfinement= (=LeanPoo=, 12 theorems composing =AdversarialPressureTier=) | =marlin-agent-core= (=marlin-agent-runtime/src/environment/{activation,resolver,state_storage}.rs= + =marlin-agent-context/src/{org/store/file,governance,shared_scope,governed_bridge}.rs=) |
+| =SM35= | Hostile (=ADV-L4=) AgentGraph sealed-witness & fencing-epoch custom Serde =Deserialize= parity (=AdmittedGovernedContext=/=AdmittedMarlinDispatch=/=FencingEpoch=) + Detached-settlement & epoch-exhaustion reconciliation refusal, =PolicyDecision= receipt/evidence & duplicate-edge routing confinement, fail-closed harness Cedar destructive-tool classification & case-insensitive matching, symlink-safe atomic intent-case artifact materialization, and bounded non-symlink =LiveWeaverTomlConfig= loading with timeout/stream caps & safe =credential_env= hygiene (113th Quint Model, 53rd LeanPoo Module) | [[file:../../../packages/quint-models/threat/execution/graph-witness-and-harness-confinement/GraphWitnessAndHarnessConfinement.qnt][GraphWitnessAndHarnessConfinement.qnt]] | =Engineering.GraphWitnessAndHarnessConfinement= (=LeanPoo=, 12 theorems composing =AdversarialPressureTier=) | =marlin-agent-core= (=marlin-agent-graph/src/{governed_context,task_actor,planning,ids}.rs= + =marlin-agent-harness/src/{live_weaver/governance,live_weaver/config,intent_case_artifact}.rs= + =marlin-agent-harness-types/src/intent_case.rs=) |
+| =SM36= | Hostile (=ADV-L4=) TLS-mandatory remote OTLP endpoints (loopback-only =http://=, zero empty-host/=@=/=%40=/query/fragment smuggling & clean labels), =env_clear()=-scrubbed non-symlink host observer sidecar spawning with strict PID/arg bounds, monotonic-bounded watchdog heartbeat timestamps preventing =u64::MAX= blinding & non-zero PID/timeout attach guards, bounded Deck single-VM active module/timer capacities with finite =MAX_TIMER_DELAY_US= ceilings, plus cross-repo =agent-stability-audit --dir= CI/Justfile/=devenv.nix= gate closure (114th Quint Model, 54th LeanPoo Module) | [[file:../../../packages/quint-models/threat/execution/telemetry-watchdog-and-deck-vm-confinement/TelemetryWatchdogAndDeckVmConfinement.qnt][TelemetryWatchdogAndDeckVmConfinement.qnt]] | =Engineering.TelemetryWatchdogAndDeckVmConfinement= (=LeanPoo=, 12 theorems composing =AdversarialPressureTier=) | =marlin-agent-core= (=marlin-agent-telemetry/src/{otlp,host_observer,host_watchdog}.rs= + =marlin-deck-runtime/src/runtime/{config,module,owner,handle}.rs= + =devenv.nix=/=Justfile=/=.github/workflows/defense-audit.yaml=) |
+| =SM37= | Hostile (=ADV-L4=) POSIX process-group signal target confinement forbidding =pid=/=pgid <= 1= & host self-PID/PGID (=kill(0)=/=kill(-1)= prevention), fail-closed OS start-time fingerprinting for post-restart orphan reconciliation & reaping, =O_NOFOLLOW= symlink-safe byte-/schema-/capacity-bounded process ledger persistence, and hard-capped working-copy sub-agent fanout parallelism (64) with =join_next_with_id()= panic attribution & async abort-drain quiescence (115th Quint Model, 55th LeanPoo Module) | [[file:../../../packages/quint-models/threat/execution/process-signal-ledger-and-fanout-confinement/ProcessSignalLedgerAndFanoutConfinement.qnt][ProcessSignalLedgerAndFanoutConfinement.qnt]] | =Engineering.ProcessSignalLedgerAndFanoutConfinement= (=LeanPoo=, 12 theorems composing =AdversarialPressureTier=) | =marlin-agent-core= (=marlin-agent-runtime/src/process/{shutdown,managed_reaper,cleanup,reconcile,ledger}.rs= + =marlin-agent-runtime/src/tokio_runtime/{fanout,receipt}.rs=) |
+| =SM38= | Hostile (=ADV-L4=) defense-pillar cryptographic & state-machine confinement forbidding B16 future-epoch shredding DoS & epoch-0 rewrap, B18 case/whitespace secret over-disclosure & challenge nonce replay, B14 case/whitespace 2-builder spoofing, silent pin overwrite, CVE-pinning, duplicate deps & release replay, B20 treaty dispute-freeze wipeout, epoch rollback & self-reciprocity case spoofing, and B9/B21 forged empty-tree root hashes & CVE-2012-2459 odd-leaf Merkle duplication (116th Quint Model, 56th committed LeanPoo Module) | [[file:../../../packages/quint-models/threat/execution/defense-pillar-crypto-state-confinement/DefensePillarCryptoStateConfinement.qnt][DefensePillarCryptoStateConfinement.qnt]] | =Engineering.DefensePillarCryptoStateConfinement= (=LeanPoo=, 12 theorems composing =AdversarialPressureTier=) | =marlin-agent-core= (=marlin-agent-kernel/src/{key_rotation_shredding,zk_selective_disclosure,supply_chain_provenance,federated_org_reciprocity,transparency_log,model_weight_attestation}.rs= + =tests/unit/kernel/sm38_defense_pillar_confinement.rs=) |
+| =SM39= | Hostile (=ADV-L4=) TUI config, ASP supervisor, diagnostic probe & Scheme bootstrap confinement forbidding unbounded/symlinked TUI config reads, =0=/unbounded timeouts & ambient OS =credential_env= exfiltration, unscrubbed managed ASP gateway subprocesses, spoofed =@=/non-loopback boot endpoints, indefinite boot-line hangs & relative =PATH= hijacking, symlinked/unbounded diagnostic probe writes, and untrusted CWD/symlink Scheme runtime prefix hijacking (117th Quint Model, 57th committed LeanPoo Module) | [[file:../../../packages/quint-models/threat/execution/tui-config-supervisor-probe-confinement/TuiConfigSupervisorProbeConfinement.qnt][TuiConfigSupervisorProbeConfinement.qnt]] | =Engineering.TuiConfigSupervisorProbeConfinement= (=LeanPoo=, 12 theorems composing =AdversarialPressureTier=) | =marlin-agent-core= (=marlin-agent-tui/src/{config,bootstrap,app/asp_supervisor,app/runtime_probe}.rs= + =tests/unit/sm39_tui_confinement.rs=) |
+| =SM40= | Hostile (=ADV-L4=) ASP HTTP AST patch confinement, loopback HTTP/1.1 endpoint & chunked-transport integrity, circular JSON Schema =$ref= anti-DoS, and symlink-safe workspace snapshot/cache persistence with bounded Search DSL worker queueing (118th Quint Model, 58th committed LeanPoo Module) | [[file:../../../packages/quint-models/threat/execution/asp-patch-transport-schema-cache-confinement/AspPatchTransportSchemaCacheConfinement.qnt][AspPatchTransportSchemaCacheConfinement.qnt]] | =Engineering.AspPatchTransportSchemaCacheConfinement= (=LeanPoo=, 12 theorems composing =AdversarialPressureTier=) | =marlin-agent-core= (=marlin-agent-search-engine/src/{asp_http_client/{patch_client,domain_types,transport,sync},engine,open_edb_hydrator,edb_bridge/runner}.rs= + =tests/unit/sm40_search_engine_confinement.rs=) |
+
+* Mandatory Adversarial Pressure Grading Policy (=ADV-L1=–=ADV-L4=)
+:PROPERTIES:
+:CUSTOM_ID: study4005-adversarial-pressure-tiers
+:END:
+
+To eliminate "gentle happy-path theater" in AI defensive programming, every
+formal model, fuzz harness, and downstream verification suite MUST declare and
+enforce an explicit adversarial pressure tier (proven algebraically in
+[[file:../../../packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean][Engineering/SandboxSymlinkArchiveConfinement.lean]]):
+
+| Tier | Label | Pressure Characteristics | Admission Policy |
+|------+-------+--------------------------+------------------|
+| =ADV-L1= | Gentle / Happy-Path | Single well-formed input, zero faults, zero concurrency, zero malicious paths | *REJECTED* as certification evidence |
+| =ADV-L2= | Edge / Single-Fault | Isolated boundary value or single lexical error (e.g. literal =../= only) | *REJECTED* as sole certification evidence |
+| =ADV-L3= | Compound Medium-High | Multi-actor contention, mid-await cancellation, crash/restart, burst overload, non-canonical Unicode/framing | *MINIMUM ADMISSIBLE FLOOR* for stability gates |
+| =ADV-L4= | Hostile Attack / Exploit | Weaponized intermediate/leaf/dangling/chained symlinks, manifest traversal escapes, duplicate tar entry shadowing, non-canonical =./=//= aliases, concatenated multistream gzip, cumulative decompression bombs | *REQUIRED TARGET* for AI-defensive security boundaries & real-repo RED->GREEN exploits |
+
+* Metamorphic Relations Catalog for Interactive Search Boxes (=MR1=–=MR6=)
+:PROPERTIES:
+:CUSTOM_ID: study4005-metamorphic
+:END:
+
+- *MR1 (Unicode Reflexivity)*: For every non-empty printable single-token query
+  $t$ without parser sigils (=@=, =#=, =!=, =(=), $t$ MUST match itself under the
+  same case-folding semantics used for highlighting.
+- *MR2 (Orderless Permutation Invariance)*: For any positive Orderless tokens
+  $a, b$ and candidate text $x$, $\mathrm{match}(\text{"}a\ b\text{"}, x) =
+  \mathrm{match}(\text{"}b\ a\text{"}, x)$.
+- *MR3 (Qualifier Orthogonality)*: Extracting axis qualifiers (=@lang:=,
+  =@doc:=, =@prefix:=, =@ext:=, =@sym:=, =@graph:=) MUST NEVER leak qualifier
+  literals into the local text matcher; a pure qualifier query without free text
+  must match all backend-admitted candidates.
+- *MR4 (Negation Anti-Monotonicity & Separator Resilience)*: Adding a negation
+  token =!n= satisfies $M(q \cup \{\text{!}n\}) \subseteq M(q)$; repeated stage
+  separators (=a # b # c=) MUST NOT inject literal =#= into positive tokens.
+- *MR5 (Scope-Replace Determinism & S-Expr Custody)*: Applying a directory or
+  language scope action replaces any prior conflicting axis token so the newly
+  chosen scope actually takes effect, and never corrupts active S-expression DSL
+  queries.
+- *MR6 (Highlight Partition & Viewport Hit-Test Fidelity)*: Concatenating all
+  rendered highlight spans equals the exact original string on valid UTF-8
+  boundaries, and UI tab hit-testing returns =None= for any tab clipped beyond
+  viewport width.
+
+* Explicit Limits
+:PROPERTIES:
+:CUSTOM_ID: study4005-limits
+:END:
+
+- Metamorphic relations verify *structural consistency* and *ranking/filtering
+  invariants* without requiring human relevance labels; semantic retrieval
+  precision/recall (NDCG@k) still requires domain evaluation corpora.
+- Coverage-guided fuzzing in CI uses time-bounded budgets (seconds per target);
+  long-running corpus fuzzing remains complementary for deep parser internals.

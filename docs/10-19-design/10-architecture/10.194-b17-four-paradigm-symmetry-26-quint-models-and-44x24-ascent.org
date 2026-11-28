@@ -1,0 +1,53 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 10.194 B17 Four-Paradigm Symmetry Closure: 26th Quint/Apalache Model, 26/26 MBT SUTs & 44×24 B1-B17 ASCENT (AG241-AG245)
+#+AUTHOR: Deterministic Engineering
+#+DATE: 2026-11-27
+
+* Executive Summary
+:PROPERTIES:
+:CUSTOM_ID: arch10194-summary
+:STATUS: executed-verified
+:END:
+
+Following the =B17= =LeanPoo= module and Dual-AND Ed25519 + Lamport-Diffie OTS Merkle
+runtime in [[file:10.193-leanpoo-b17-post-quantum-hybrid-agility-and-176-theorem-library.org][10.193]], Phase 46 completes **full four-paradigm symmetry across all 17
+business pillars (=B1=–=B17=)** and advances the library to **26 Quint/Apalache/MBT
+models** and **245 benchmark cases (=AG01=–=AG245=)**:
+
+1. **Paradigm 1 — 26th Quint / Apalache Defense Model & 26/26 MBT SUT Refinement**:
+   - [[file:../../../packages/quint-models/engineering/defense/post-quantum-crypto-agility/PostQuantumCryptoAgility.qnt][PostQuantumCryptoAgility.qnt]] proves anti-algorithm-downgrade floor enforcement
+     (=downgradeViolations == 0=), Dual-AND classical+PQ leg verification
+     (=singleLegBypassViolations == 0=), and stateful single-use OTS leaf anti-reuse
+     (=otsReuseViolations == 0=) (=PLAN-OK passed=6, skipped=0, verify=true=), with
+     all 3/3 =F3= =guard-probe= checks proven =essential= and paired with
+     =PostQuantumCryptoAgilitySUT= + =BadDowngradeHybridSUT= in =mbt-replay.test.ts=.
+2. **Paradigm 2 — Gerbil Scheme ASCENT Expanded to =44 sources × 24 outputs= (=B1=–=B17=)**:
+   - =DurableGovernanceMetaAuditProgram= in [[file:../../../library/defensive-governance/func.ss][func.ss]] adds 4 sources
+     (=pq_allowed_suite=, =pq_deprecated_suite=, =release_pq_envelope=,
+     =pq_ots_leaf_use=) and 2 outputs (=pq_agility_violation=,
+     =pq_ots_reuse_violation=), disqualifying releases with
+     ="pq-hybrid-agility-violation"= or ="pq-ots-leaf-reuse"=.
+3. **Paradigm 3 — 245-Case Benchmark (=AG01=–=AG245=) Across 43 Bun Suites**:
+   - [[file:../../../languages-engineering/ts/defense/agent-audit/b17-four-paradigm-symmetry.test.ts][b17-four-paradigm-symmetry.test.ts]] verifies =AG241=–=AG245= across live =44×24= =gxi=
+     ASCENT, N-Version override of buggy imperative TS coordinators on PQ downgrade & OTS
+     leaf reuse, 26-Quint CLI JSON gate, and Dual-AND Ed25519+Lamport OTS + air-gapped
+     Ed25519 =cedar-poo-spec= admission.
+4. **Paradigm 4 — 16-Module / 176-Theorem =LeanPoo= Fleet Attestation**:
+   - [[file:../../../languages-engineering/ts/defense/agent-audit/leanpoo-fleet-audit.ts][leanpoo-fleet-audit.ts]] updates =EXPECTED_QUINT_DEFENSE_MODELS= to **26 models**
+     and enforces live presence of =pq_agility_violation= and =pq_ots_reuse_violation=
+     alongside single-shot 176/176-theorem =#print axioms=.
+
+* Verification Receipts
+:PROPERTIES:
+:CUSTOM_ID: arch10194-receipts
+:STATUS: executed-verified
+:END:
+
+- Model #26 Qualification: =just test-file t/yanxu/Quint.Engineering.Defense/post-quantum-crypto-agility/qualification-test.ss= -> =HARNESS-OK=.
+- Apalache + =F3=: =PLAN-OK (passed=6, skipped=0, verify=true)= and 3/3 guards =classification=essential=.
+- 26-Model MBT SUT: =bun test languages-engineering/ts/defense/boundary-contrast/mbt-replay.test.ts= -> 26/26 pass.
+- Live =44×24= Gerbil ASCENT: =just test-file t/yanxu/Library/defensive-governance/governance-ascent-test.ss= -> =HARNESS-OK=.
+- Standalone 4-Paradigm CLI Gate: =just audit-leanpoo-fleet --json= -> =verdict: "Proven", quintModelCount: 26, ascentRulesPresent: true, moduleCount: 16, verifiedTheoremCount: 176, zeroMathlib: true, zeroCedar: true=.
+- Benchmark: [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05]] extended to **245 cases (=AG01=–=AG245=)** across 43 Bun test suites.

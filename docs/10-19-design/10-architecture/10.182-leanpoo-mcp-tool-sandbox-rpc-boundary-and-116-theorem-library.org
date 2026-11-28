@@ -1,0 +1,54 @@
+#+TITLE: 10.182 LeanPoo Unbounded MCP / Tool-Sandbox & RPC Schema-Boundary Safety (B11, 10 Modules / 116 Theorems)
+#+AUTHOR: hardenedlinux Linux Team and Contributors
+#+DATE: 2026-11-27
+#+STARTUP: overview
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+* Overview: B11 MCP / Tool-Sandbox & RPC Schema-Boundary Safety
+:PROPERTIES:
+:CUSTOM_ID: arch10182-overview
+:END:
+
+Phase 34 introduces Business Extension **=B11=: Deterministic MCP / Tool-Sandbox
+& RPC Schema-Boundary Safety** — defending AI Agent tool-calling interfaces
+against the five structural supply-chain and runtime failure modes of modern
+MCP/RPC ecosystems:
+1. **Unpinned / Shadow Tool Invocation** (blocked via immutable =M1= manifest pinning).
+2. **MCP Schema Rug-Pull** (silent mutation of tool descriptions/schemas between approval and execution).
+3. **Sandbox Scope Escalation** (filesystem/egress scopes confined by both pinned manifest and the 10th =R3= non-leakable =M3= capability `ToolSandboxCapability`).
+4. **Non-Idempotent Side-Effect Replay on Ambiguous RPC Timeout** (side-effecting tools require idempotency keys; ambiguous timeouts enter `PendingUnknownEffect` and block blind retry until explicit =M1= reconciliation).
+5. **Response Overflow & Untrusted Output Laundering** (output bytes strictly bounded; every tool response is tagged `UntrustedExternal`, so =B7= CaMeL blocks it from hijacking privileged control slots).
+
+* Complete 116-Theorem LeanPoo Library Inventory (10 Modules, Zero Mathlib, Zero Cedar)
+:PROPERTIES:
+:CUSTOM_ID: arch10182-inventory
+:END:
+
+| # | LeanPoo Module | Theorems | Core Scope |
+|---+----------------+----------+------------|
+| 1 | [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/DurableGovernanceQuorum.lean][DurableGovernanceQuorum.lean]] | 19 | =B3=, =B6= budget, =B10/B10b/B10c= quorum/handover/slashing, =R3= |
+| 2 | [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/HostAuthorizationBridge.lean][HostAuthorizationBridge.lean]] | 11 | Dual Sovereignty, =BoundOperation=, =PolicySnapshot=, =AuthorityConsumption= |
+| 3 | [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/InformationFlowAndTms.lean][InformationFlowAndTms.lean]] | 11 | =B7= DIFC/CaMeL, =B8= Doyle/ATMS retraction & immunization |
+| 4 | [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/SagaAndSsi.lean][SagaAndSsi.lean]] | 11 | =B6= Saga pivot/compensation, =B4= AST Symbol SSI & =DE01= |
+| 5 | [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/HitlAndCoevolution.lean][HitlAndCoevolution.lean]] | 12 | =B1/B5= HITL quorum =SoD=/veto, =R1= policy co-evolution, =B2/R5= AEAD |
+| 6 | [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/LibraryExportContract.lean][LibraryExportContract.lean]] | 12 | Unified export facade & 1/2/3-step =cedar-poo-spec= host refinement |
+| 7 | [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/FourParadigmConsistency.lean][FourParadigmConsistency.lean]] | 10 | Four-paradigm epistemic convergence, =∀ N= oracle list iff, anti-silent-ok |
+| 8 | [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/ReleaseCertificateReplay.lean][ReleaseCertificateReplay.lean]] | 10 | Air-gapped Ed25519 + =2f+1= offline cert replay, anti-downgrade, revocation |
+| 9 | [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/MerkleConsistencyAndAsyncCut.lean][MerkleConsistencyAndAsyncCut.lean]] | 10 | =B9= append-only prefix/rollback/split-view, =R2= conflict-preserving merge, =R4= 4-axis drift |
+| 10 | [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/ToolSandboxAndRpcBoundary.lean][ToolSandboxAndRpcBoundary.lean]] | 10 | =B11= MCP schema rug-pull, shadow tool, scope escape, RPC timeout fence, response firewall, 2-step =LeanPoo= refinement + =Core.Transport= |
+| **Total** | **10 Modules (0 Mathlib, 0 Cedar)** | **116** | **116/116 verified live in 1 batched =#print axioms= run** |
+
+* Verification Receipts (AG176-AG180)
+:PROPERTIES:
+:CUSTOM_ID: arch10182-receipts
+:END:
+
+- Lean 4 / =LeanPoo= build:
+  =(cd packages/lean-models && lake build DeterministicEngineering.Engineering.ToolSandboxAndRpcBoundary)=
+- Runtime MCP/RPC sandbox engine & 10th =R3= capability:
+  [[file:../../../languages-engineering/ts/defense/agent-audit/tool-sandbox-rpc-boundary.ts][tool-sandbox-rpc-boundary.ts]]
+- Benchmark suite (=AG176=–=AG180=, expanding
+  [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05]]
+  to **180 cases** across **31 Bun test suites**):
+  [[file:../../../languages-engineering/ts/defense/agent-audit/tool-sandbox-rpc-boundary.test.ts][tool-sandbox-rpc-boundary.test.ts]]

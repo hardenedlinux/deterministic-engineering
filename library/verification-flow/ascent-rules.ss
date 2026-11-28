@@ -1,0 +1,556 @@
+;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;; SPDX-License-Identifier: LGPL-2.1-or-later
+
+;;; Pure declarative ASCENT Datalog programs for Multi-Method Verification (10.154).
+;;; Dedicated rule file: contains ONLY stratified finite `define-program` rules
+;;; (MR01-MR06 pre-flight governance and ER01-ER04 post-execution evidence admission).
+;;; Zero I/O, zero JSON parsing, zero session plumbing.
+(import
+  :gerbil-ascent/rules/func
+  (only-in :gerbil-ascent/rules/declaration rule-module-program))
+(export
+  MultiMethodGovernanceDeclaration
+  MultiMethodGovernanceProgram
+  make-multi-method-governance-program
+  VerificationEvidenceAdmissionDeclaration
+  VerificationEvidenceAdmissionProgram
+  make-verification-evidence-admission-program
+  IncrementalReuseDeclaration
+  IncrementalReuseProgram
+  make-incremental-reuse-program
+  AiSecurityGovernanceDeclaration
+  AiSecurityGovernanceProgram
+  make-ai-security-governance-program)
+
+;; ── Phase 1: Pre-Execution Multi-Method Governance Rules (MR01-MR06) ──
+(define-program
+  (make-multi-method-governance-program)
+  (sources
+   subject_obligation
+   subject_factor
+   method_allows_claim
+   flow_step
+   flow_dag_edge
+   step_produces
+   step_consumes
+   step_requires_premise
+   step_supports_premise
+   correspondence_bridge
+   stateful_quint_step
+   step_countermodel
+   declared_os_containment)
+  (outputs
+   mr_finding
+   mr01_finding
+   mr02_finding
+   mr03_open_premise
+   mr04_finding
+   mr05_finding
+   mr06_finding
+   mr07_finding
+   mr08_finding
+   artifact_edge_satisfied
+   premise_dep_reach
+   dag_reach
+   runnable_admitted)
+  (relation subject_obligation ((subject string?) (obligation string?) (claim_kind string?)))
+  (relation subject_factor ((subject string?) (factor string?)))
+  (relation method_allows_claim ((method string?) (claim_kind string?)))
+  (relation flow_step ((step string?) (subject string?) (obligation string?) (method string?) (claim_kind string?)))
+  (relation flow_dag_edge ((from_step string?) (to_step string?)))
+  (relation step_produces ((step string?) (artifact string?)))
+  (relation step_consumes ((step string?) (artifact string?)))
+  (relation step_requires_premise ((step string?) (premise string?)))
+  (relation step_supports_premise ((step string?) (premise string?)))
+  (relation correspondence_bridge ((obligation string?) (method_a string?) (method_b string?)))
+  (relation stateful_quint_step ((step string?)))
+  (relation step_countermodel ((step string?) (guard_id string?)))
+  (relation declared_os_containment ((subject string?) (platform string?) (strategy string?)))
+
+  (relation artifact_edge_satisfied ((step string?) (artifact string?)))
+  (relation premise_dep_edge ((from_step string?) (to_step string?)))
+  (relation premise_dep_reach ((from_step string?) (to_step string?)))
+  (relation dag_reach ((from_step string?) (to_step string?)))
+  (relation mr01_finding ((subject string?) (step string?) (reason string?)))
+  (relation mr02_finding ((subject string?) (obligation string?) (reason string?)))
+  (relation mr03_open_premise ((subject string?) (step string?) (premise string?)))
+  (relation mr04_finding ((subject string?) (step string?) (artifact string?)))
+  (relation mr05_finding ((subject string?) (step string?) (reason string?)))
+  (relation mr06_finding ((subject string?) (subject_id string?) (reason string?)))
+  (relation mr07_finding ((subject string?) (step string?) (reason string?)))
+  (relation mr08_finding ((subject string?) (step string?) (reason string?)))
+  (relation mr_finding ((rule string?) (subject string?) (detail string?)))
+  (relation runnable_admitted ((subject string?)))
+
+  ;; MR01: method family is not authorized for declared claim-kind.
+  ((mr01_finding S Step (lit "unauthorized-claim-kind"))
+   <--
+   (flow_step Step S O M K)
+   (not (method_allows_claim M K)))
+
+  ;; MR02: duplicate method coverage on same (obligation, claim-kind) without bridge.
+  ((mr02_finding S O (lit "duplicate-method-without-bridge"))
+   <--
+   (flow_step St1 S O M1 K)
+   (flow_step St2 S O M2 K)
+   (if (M1 M2) (not (equal? M1 M2)))
+   (not (correspondence_bridge O M1 M2))
+   (not (correspondence_bridge O M2 M1)))
+
+  ;; MR03: required premise without any supporting step stays visibly open.
+  ((mr03_open_premise S Step P)
+   <--
+   (flow_step Step S _ _ _)
+   (step_requires_premise Step P)
+   (not (step_supports_premise _ P)))
+
+  ;; MR04: consumed artifact must be produced by a predecessor in the Fun-Flow DAG.
+  ((artifact_edge_satisfied To A)
+   <--
+   (flow_dag_edge From To)
+   (step_produces From A)
+   (step_consumes To A))
+  ((mr04_finding S Step A)
+   <--
+   (flow_step Step S _ _ _)
+   (step_consumes Step A)
+   (not (artifact_edge_satisfied Step A)))
+
+  ;; MR05: stateful Quint target must declare at least one countermodel (Band-5 floor).
+  ((mr05_finding S Step (lit "missing-mandatory-countermodel"))
+   <--
+   (flow_step Step S _ _ _)
+   (stateful_quint_step Step)
+   (not (step_countermodel Step _)))
+
+  ;; MR06: owns-subprocess-tree requires declared OS containment + os-sigkill-oracle.
+  ((mr06_finding S S (lit "missing-os-containment"))
+   <--
+   (subject_factor S (lit "owns-subprocess-tree"))
+   (not (declared_os_containment S _ _)))
+  ((mr06_finding S S (lit "missing-sigkill-oracle"))
+   <--
+   (subject_factor S (lit "owns-subprocess-tree"))
+   (not (flow_step _ S _ _ (lit "os-sigkill-oracle"))))
+
+  ;; MR07: reject circular premise justification (self-justification or mutual cycles A ->+ A).
+  ((premise_dep_edge ReqStep SupStep)
+   <--
+   (step_requires_premise ReqStep P)
+   (step_supports_premise SupStep P))
+  ((premise_dep_reach A B) <-- (premise_dep_edge A B))
+  ((premise_dep_reach A C) <-- (premise_dep_edge A B) (premise_dep_reach B C))
+  ((mr07_finding S Step (lit "cyclic-premise-dependency"))
+   <--
+   (flow_step Step S _ _ _)
+   (premise_dep_reach Step Step))
+
+  ;; MR08: reject cyclic Fun-Flow DAG artifact edges (A ->+ A).
+  ((dag_reach A B) <-- (flow_dag_edge A B))
+  ((dag_reach A C) <-- (flow_dag_edge A B) (dag_reach B C))
+  ((mr08_finding S Step (lit "cyclic-flow-dag"))
+   <--
+   (flow_step Step S _ _ _)
+   (dag_reach Step Step))
+
+  ;; Unified MR finding summary.
+  ((mr_finding (lit "MR01") S Step) <-- (mr01_finding S Step _))
+  ((mr_finding (lit "MR02") S O) <-- (mr02_finding S O _))
+  ((mr_finding (lit "MR04") S Step) <-- (mr04_finding S Step _))
+  ((mr_finding (lit "MR05") S Step) <-- (mr05_finding S Step _))
+  ((mr_finding (lit "MR06") S Reason) <-- (mr06_finding S _ Reason))
+  ((mr_finding (lit "MR07") S Step) <-- (mr07_finding S Step _))
+  ((mr_finding (lit "MR08") S Step) <-- (mr08_finding S Step _))
+
+  ((runnable_admitted S)
+   <--
+   (subject_obligation S _ _)
+   (not (mr_finding _ S _)))
+  (bounds 4096 4096 4096))
+
+(def MultiMethodGovernanceDeclaration (make-multi-method-governance-program))
+(def MultiMethodGovernanceProgram (rule-module-program MultiMethodGovernanceDeclaration))
+
+;; ── Phase 2: Post-Execution Evidence Admission Rules (ER01-ER04) ──
+(define-program
+  (make-verification-evidence-admission-program)
+  (sources
+   subject_obligation
+   method_allows_claim
+   flow_step
+   step_requires_premise
+   step_supports_premise
+   step_evidence)
+  (outputs
+   obligation_passed
+   premise_verified
+   er01_missing_evidence
+   er02_failed_step
+   er03_unverified_premise
+   er04_method_mismatch
+   er_finding
+   verification_admitted)
+  (relation subject_obligation ((subject string?) (obligation string?) (claim_kind string?)))
+  (relation method_allows_claim ((method string?) (claim_kind string?)))
+  (relation flow_step ((step string?) (subject string?) (obligation string?) (method string?) (claim_kind string?)))
+  (relation step_requires_premise ((step string?) (premise string?)))
+  (relation step_supports_premise ((step string?) (premise string?)))
+  (relation step_evidence ((step string?) (obligation string?) (method string?) (claim_kind string?) (outcome string?) (detail string?)))
+
+  (relation obligation_passed ((subject string?) (obligation string?) (claim_kind string?)))
+  (relation premise_verified ((premise string?)))
+  (relation er01_missing_evidence ((subject string?) (obligation string?) (claim_kind string?)))
+  (relation er02_failed_step ((subject string?) (step string?) (outcome string?)))
+  (relation er03_unverified_premise ((subject string?) (step string?) (premise string?)))
+  (relation er04_method_mismatch ((step string?) (method string?) (claim_kind string?)))
+  (relation er_finding ((rule string?) (target string?) (detail string?)))
+  (relation verification_admitted ((subject string?)))
+
+  ((obligation_passed S O K)
+   <--
+   (subject_obligation S O K)
+   (flow_step Step S O M K)
+   (step_evidence Step O M K (lit "pass") _))
+
+  ((premise_verified P)
+   <--
+   (step_supports_premise SupStep P)
+   (step_evidence SupStep _ _ _ (lit "pass") _))
+
+  ;; ER01: declared obligation lacks passing runtime evidence from its step.
+  ((er01_missing_evidence S O K)
+   <--
+   (subject_obligation S O K)
+   (not (obligation_passed S O K)))
+
+  ;; ER02: executed step produced a non-pass outcome.
+  ((er02_failed_step S Step Outcome)
+   <--
+   (flow_step Step S _ _ _)
+   (step_evidence Step _ _ _ Outcome _)
+   (if (Outcome) (not (equal? Outcome "pass"))))
+
+  ;; ER03: required premise lacks a passing supporting step at runtime.
+  ((er03_unverified_premise S Step P)
+   <--
+   (flow_step Step S _ _ _)
+   (step_requires_premise Step P)
+   (not (premise_verified P)))
+
+  ;; ER04: observed evidence claims an unauthorized (method, claim-kind) pair.
+  ((er04_method_mismatch Step M K)
+   <--
+   (step_evidence Step _ M K _ _)
+   (not (method_allows_claim M K)))
+
+  ((er_finding (lit "ER01") S O) <-- (er01_missing_evidence S O _))
+  ((er_finding (lit "ER02") S Step) <-- (er02_failed_step S Step _))
+  ((er_finding (lit "ER03") S P) <-- (er03_unverified_premise S _ P))
+  ((er_finding (lit "ER04") Step M) <-- (er04_method_mismatch Step M _))
+
+  ((verification_admitted S)
+   <--
+   (subject_obligation S _ _)
+   (not (er_finding _ S _))
+   (not (er04_method_mismatch _ _ _)))
+  (bounds 4096 4096 4096))
+
+(def VerificationEvidenceAdmissionDeclaration (make-verification-evidence-admission-program))
+(def VerificationEvidenceAdmissionProgram (rule-module-program VerificationEvidenceAdmissionDeclaration))
+
+;; ── Phase 3: Content-Addressed & Attested Incremental Cache Reuse (IR01-IR07) ──
+;; Computes the exact pending vs reusable step frontier via stratified fixed-point
+;; over input digests, DAG artifact edges, M1/M3 mutability boundaries, live
+;; toolchain/host fingerprints (IR05), Ed25519 attestation (IR06), and optional
+;; strict cross-method premise-chain revalidation (IR07).
+(define-program
+  (make-incremental-reuse-program)
+  (sources
+   flow_step
+   flow_dag_edge
+   step_requires_premise
+   step_supports_premise
+   step_mutability
+   reuse_policy
+   step_input_digest
+   cached_witness
+   cached_witness_input
+   step_toolchain_fingerprint
+   cached_witness_toolchain
+   cached_witness_attested
+   cached_witness_expired)
+  (outputs
+   step_has_passing_cache
+   step_input_dirty
+   step_toolchain_dirty
+   step_invalidated
+   step_pending
+   step_reusable)
+  (relation flow_step ((step string?) (subject string?) (obligation string?) (method string?) (claim_kind string?)))
+  (relation flow_dag_edge ((from_step string?) (to_step string?)))
+  (relation step_requires_premise ((step string?) (premise string?)))
+  (relation step_supports_premise ((step string?) (premise string?)))
+  (relation step_mutability ((step string?) (mutability string?)))
+  (relation reuse_policy ((flag string?)))
+  (relation step_input_digest ((step string?) (input_key string?) (digest string?)))
+  (relation cached_witness ((step string?) (obligation string?) (method string?) (claim_kind string?) (outcome string?) (detail string?)))
+  (relation cached_witness_input ((step string?) (input_key string?) (digest string?)))
+  (relation step_toolchain_fingerprint ((step string?) (fingerprint string?)))
+  (relation cached_witness_toolchain ((step string?) (fingerprint string?)))
+  (relation cached_witness_attested ((step string?)))
+  (relation cached_witness_expired ((step string?)))
+
+  (relation step_has_passing_cache ((step string?)))
+  (relation input_mismatch ((step string?) (input_key string?)))
+  (relation input_missing_in_cache ((step string?) (input_key string?)))
+  (relation input_extra_in_cache ((step string?) (input_key string?)))
+  (relation step_input_dirty ((step string?)))
+  (relation toolchain_mismatch ((step string?)))
+  (relation toolchain_missing_in_cache ((step string?)))
+  (relation step_toolchain_dirty ((step string?)))
+  (relation step_invalidated ((step string?) (reason string?)))
+  (relation step_pending ((step string?)))
+  (relation step_reusable ((step string?)))
+
+  ;; A cached witness is usable only if its (step, obligation, method, claim_kind)
+  ;; matches the current flow_step and its recorded outcome is "pass".
+  ((step_has_passing_cache Step)
+   <--
+   (flow_step Step _ O M K)
+   (cached_witness Step O M K (lit "pass") _))
+
+  ;; Exact bidirectional input-closure comparison (detects edits, additions, and deletions).
+  ((input_mismatch Step Key)
+   <--
+   (step_input_digest Step Key D1)
+   (cached_witness_input Step Key D2)
+   (if (D1 D2) (not (equal? D1 D2))))
+
+  ((input_missing_in_cache Step Key)
+   <--
+   (step_input_digest Step Key _)
+   (not (cached_witness_input Step Key _)))
+
+  ((input_extra_in_cache Step Key)
+   <--
+   (cached_witness_input Step Key _)
+   (not (step_input_digest Step Key _)))
+
+  ((step_input_dirty Step) <-- (input_mismatch Step _))
+  ((step_input_dirty Step) <-- (input_missing_in_cache Step _))
+  ((step_input_dirty Step) <-- (input_extra_in_cache Step _))
+
+  ;; Exact verifier toolchain & host OS/arch comparison (IR05).
+  ((toolchain_mismatch Step)
+   <--
+   (step_toolchain_fingerprint Step F1)
+   (cached_witness_toolchain Step F2)
+   (if (F1 F2) (not (equal? F1 F2))))
+
+  ((toolchain_missing_in_cache Step)
+   <--
+   (step_toolchain_fingerprint Step _)
+   (not (cached_witness_toolchain Step _)))
+
+  ((step_toolchain_dirty Step) <-- (toolchain_mismatch Step))
+  ((step_toolchain_dirty Step) <-- (toolchain_missing_in_cache Step))
+
+  ;; IR01: missing or non-pass cached witness forces execution.
+  ((step_invalidated Step (lit "IR01-no-passing-cache"))
+   <--
+   (flow_step Step _ _ _ _)
+   (not (step_has_passing_cache Step)))
+
+  ;; IR02: any changed, added, or removed input digest invalidates the step.
+  ((step_invalidated Step (lit "IR02-input-digest-changed"))
+   <--
+   (flow_step Step _ _ _ _)
+   (step_input_dirty Step))
+
+  ;; IR03: transitive DAG invalidation across artifact-handoff edges (e.g., Quint -> Rust MBT/Oracle).
+  ((step_invalidated To (lit "IR03-upstream-dag-invalidated"))
+   <--
+   (flow_dag_edge From To)
+   (step_invalidated From _))
+
+  ;; IR04: M3 mutable-root boundary cannot claim M1 immutable cache reuse when fresh M3 policy is set.
+  ((step_invalidated Step (lit "IR04-m3-mutable-root-refresh"))
+   <--
+   (flow_step Step _ _ _ _)
+   (step_mutability Step (lit "M3-mutable-root"))
+   (reuse_policy (lit "require-fresh-m3")))
+
+  ;; IR05: verifier toolchain, compiler, or host OS/arch drift invalidates cached proofs.
+  ((step_invalidated Step (lit "IR05-toolchain-drift"))
+   <--
+   (flow_step Step _ _ _ _)
+   (step_toolchain_dirty Step))
+
+  ;; IR06: under require-signed-cache, unsigned or cryptographically tampered witnesses are rejected.
+  ((step_invalidated Step (lit "IR06-attestation-invalid"))
+   <--
+   (flow_step Step _ _ _ _)
+   (reuse_policy (lit "require-signed-cache"))
+   (not (cached_witness_attested Step)))
+
+  ;; IR07: under strict-premise-recheck policy, invalidating a premise supporter
+  ;;       transitively invalidates every consumer step requiring that premise!
+  ((step_invalidated ReqStep (lit "IR07-premise-supporter-invalidated"))
+   <--
+   (reuse_policy (lit "strict-premise-recheck"))
+   (step_requires_premise ReqStep P)
+   (step_supports_premise SupStep P)
+   (step_invalidated SupStep _))
+
+  ;; IR08: M3-mutable-root empirical witnesses expire after their bounded freshness TTL
+  ;;       (prevents replay of stale yet legitimately signed OS oracle receipts; M1 proofs are timeless).
+  ((step_invalidated Step (lit "IR08-witness-ttl-expired"))
+   <--
+   (flow_step Step _ _ _ _)
+   (step_mutability Step (lit "M3-mutable-root"))
+   (cached_witness_expired Step))
+
+  ;; Partition every declared step into exactly pending or reusable.
+  ((step_pending Step)
+   <--
+   (flow_step Step _ _ _ _)
+   (step_invalidated Step _))
+
+  ((step_reusable Step)
+   <--
+   (flow_step Step _ _ _ _)
+   (not (step_invalidated Step _)))
+  (bounds 4096 4096 4096))
+
+(def IncrementalReuseDeclaration (make-incremental-reuse-program))
+(def IncrementalReuseProgram (rule-module-program IncrementalReuseDeclaration))
+
+;; ── Phase 4: AI Security & AI-SE Governance Rules (AR01-AR05) ──
+;; Enforces deterministic non-self-certification for AI-authored changes,
+;; fail-closed tool execution confinement, multi-agent authority attenuation &
+;; revocation currentness, untrusted context integrity/IFC, and human-in-the-loop
+;; Separation of Duties (ai-agent cannot self-approve human-approver/policy-admin).
+(define-program
+  (make-ai-security-governance-program)
+  (sources
+   subject_factor
+   flow_step
+   step_countermodel
+   declared_ai_control
+   declared_role_binding
+   ai_patch_touches_dep
+   step_security_dep
+   ai_claimed_proof_reuse)
+  (outputs
+   deterministic_step
+   has_deterministic_verifier
+   has_countermodel
+   ar01_finding
+   ar02_finding
+   ar03_finding
+   ar04_finding
+   ar05_finding
+   ar_finding
+   ai_governance_admitted)
+  (relation subject_factor ((subject string?) (factor string?)))
+  (relation flow_step ((step string?) (subject string?) (obligation string?) (method string?) (claim_kind string?)))
+  (relation step_countermodel ((step string?) (guard_id string?)))
+  (relation declared_ai_control ((subject string?) (control string?)))
+  (relation declared_role_binding ((subject string?) (role string?) (authority string?)))
+  (relation ai_patch_touches_dep ((subject string?) (step string?) (dep_key string?)))
+  (relation step_security_dep ((step string?) (dep_key string?)))
+  (relation ai_claimed_proof_reuse ((subject string?) (step string?)))
+
+  (relation deterministic_step ((step string?) (subject string?)))
+  (relation has_deterministic_verifier ((subject string?)))
+  (relation has_countermodel ((subject string?)))
+  (relation ar01_finding ((subject string?) (target string?) (reason string?)))
+  (relation ar02_finding ((subject string?) (target string?) (reason string?)))
+  (relation ar03_finding ((subject string?) (target string?) (reason string?)))
+  (relation ar04_finding ((subject string?) (target string?) (reason string?)))
+  (relation ar05_finding ((subject string?) (target string?) (reason string?)))
+  (relation ar_finding ((rule string?) (subject string?) (detail string?)))
+  (relation ai_governance_admitted ((subject string?)))
+
+  ;; Only the 4 deterministic formal/source/oracle method families qualify as
+  ;; authoritative verifiers; llm-judge / ai-self-review are never deterministic.
+  ((deterministic_step Step S) <-- (flow_step Step S _ (lit "de-quint") _))
+  ((deterministic_step Step S) <-- (flow_step Step S _ (lit "de-lean-poo") _))
+  ((deterministic_step Step S) <-- (flow_step Step S _ (lit "de-source-contract") _))
+  ((deterministic_step Step S) <-- (flow_step Step S _ (lit "de-native-oracle") _))
+  ((has_deterministic_verifier S) <-- (deterministic_step _ S))
+  ((has_countermodel S) <-- (flow_step Step S _ _ _) (step_countermodel Step _))
+
+  ;; AR01: No AI self-certification / reject LLM-as-a-Judge & invalid AI-SE proof reuse.
+  ((ar01_finding S Step (lit "untrusted-non-deterministic-verifier"))
+   <--
+   (flow_step Step S _ _ _)
+   (not (deterministic_step Step S)))
+  ((ar01_finding S S (lit "ai-change-missing-deterministic-verifier"))
+   <--
+   (subject_factor S (lit "ai-authored-change"))
+   (not (has_deterministic_verifier S)))
+  ((ar01_finding S Step (lit "ai-patch-invalidates-proof-reuse"))
+   <--
+   (ai_patch_touches_dep S Step Dep)
+   (step_security_dep Step Dep)
+   (ai_claimed_proof_reuse S Step))
+
+  ;; AR02: AI tool execution requires declared tool-confinement + negative countermodels.
+  ((ar02_finding S S (lit "missing-tool-confinement"))
+   <--
+   (subject_factor S (lit "ai-executes-tools"))
+   (not (declared_ai_control S (lit "tool-confinement"))))
+  ((ar02_finding S S (lit "missing-tool-attack-countermodel"))
+   <--
+   (subject_factor S (lit "ai-executes-tools"))
+   (not (has_countermodel S)))
+
+  ;; AR03: Multi-agent authority delegation requires monotonic attenuation + revocation currentness.
+  ((ar03_finding S S (lit "missing-monotonic-attenuation"))
+   <--
+   (subject_factor S (lit "ai-delegates-authority"))
+   (not (declared_ai_control S (lit "monotonic-attenuation"))))
+  ((ar03_finding S S (lit "missing-revocation-currentness"))
+   <--
+   (subject_factor S (lit "ai-delegates-authority"))
+   (not (declared_ai_control S (lit "revocation-currentness"))))
+
+  ;; AR04: Untrusted context / prompt ingestion requires context integrity or IFC taint confinement.
+  ((ar04_finding S S (lit "missing-context-integrity-or-ifc"))
+   <--
+   (subject_factor S (lit "ai-ingests-untrusted-context"))
+   (not (declared_ai_control S (lit "context-integrity-or-ifc"))))
+
+  ;; AR05: Host/governance mutation requires human Step-Up + E-Stop and strict human-approver SoD
+  ;;       (ai-agent may never self-approve human-approver or policy-admin authorities).
+  ((ar05_finding S S (lit "missing-human-stepup-and-estop"))
+   <--
+   (subject_factor S (lit "ai-mutates-host-or-governance"))
+   (not (declared_ai_control S (lit "human-stepup-and-estop"))))
+  ((ar05_finding S (lit "human-approver") (lit "ai-agent-self-approval-forbidden"))
+   <--
+   (declared_role_binding S (lit "ai-agent") (lit "human-approver")))
+  ((ar05_finding S (lit "policy-admin") (lit "ai-agent-self-approval-forbidden"))
+   <--
+   (declared_role_binding S (lit "ai-agent") (lit "policy-admin")))
+  ((ar05_finding S S (lit "missing-human-approver-binding"))
+   <--
+   (subject_factor S (lit "ai-mutates-host-or-governance"))
+   (not (declared_role_binding S (lit "human-approver") (lit "human-approver"))))
+
+  ;; Unified AI governance finding summary & admission predicate.
+  ((ar_finding (lit "AR01") S Target) <-- (ar01_finding S Target _))
+  ((ar_finding (lit "AR02") S Target) <-- (ar02_finding S Target _))
+  ((ar_finding (lit "AR03") S Target) <-- (ar03_finding S Target _))
+  ((ar_finding (lit "AR04") S Target) <-- (ar04_finding S Target _))
+  ((ar_finding (lit "AR05") S Target) <-- (ar05_finding S Target _))
+
+  ((ai_governance_admitted S)
+   <--
+   (subject_factor S _)
+   (not (ar_finding _ S _)))
+  (bounds 4096 4096 4096))
+
+(def AiSecurityGovernanceDeclaration (make-ai-security-governance-program))
+(def AiSecurityGovernanceProgram (rule-module-program AiSecurityGovernanceDeclaration))

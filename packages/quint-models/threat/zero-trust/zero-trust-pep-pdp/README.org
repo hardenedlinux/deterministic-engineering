@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Zero Trust PEP/PDP Split & Policy-Epoch Currentness
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.zero-trust.zero-trust-pep-pdp=
+- *Subdomain*: =quint.threat.zero-trust=
+- *Quint Module*: =zero_trust_pep_pdp= (=[[file:ZeroTrustPepPdp.qnt][ZeroTrustPepPdp.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/zero-trust/zero-trust-pep-pdp/ZeroTrustPepPdp=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+PEP enforces an effect only when the PDP decision matches the current policy epoch and active non-revoked subject standing.
+
+#+begin_src quint
+val safety = (h.executed == 0 or (h.lastEnforcedEpoch == h.lastEnforcedPolicyEpoch and h.lastEnforcedAllowed and not(h.lastEnforcedRevoked)))
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =policy-epoch-currency= | =stepStalePolicy= | =h.executed >= 1 and h.lastEnforcedEpoch != h.lastEnforcedPolicyEpoch= |
+| =policy-active= | =stepIgnoreRevocation= | =h.executed >= 1 and h.lastEnforcedRevoked == true= |
+
+* Grounded Papers & Specifications
+
+- *S. Rose, O. Borchert, S. Mitchell & S. Connelly (NIST SP 800-207, 2020)*: Zero Trust Architecture: Policy Engine (PE/PDP) and Policy Enforcement Point (PEP) trust separation.
+- *R. Ward & B. Beyer (USENIX ;login: 2014)*: BeyondCorp: A New Approach to Enterprise Security — continuous policy re-evaluation without perimeter trust.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/zero-trust/zero-trust-pep-pdp/ZeroTrustPepPdp.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/zero-trust/zero-trust-pep-pdp/ZeroTrustPepPdp.qnt --main=zero_trust_pep_pdp --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite PEP/PDP policy-epoch abstraction; does not model transport cryptography, clock skew, or policy language semantics.

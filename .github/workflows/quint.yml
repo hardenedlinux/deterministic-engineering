@@ -1,0 +1,88 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+name: Deterministic Engineering Quint Packages
+on:
+  pull_request:
+    paths:
+      - 'packages/quint-models/**'
+      - 'packages/quint-modules-resolver/**'
+      - 'package.json'
+      - 'bun.lock'
+      - 't/harness/**'
+      - 'Justfile'
+      - '.github/actions/**'
+      - '.github/workflows/quint.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'packages/quint-models/**'
+      - 'packages/quint-modules-resolver/**'
+      - 'package.json'
+      - 'bun.lock'
+      - 't/harness/**'
+      - 'Justfile'
+      - '.github/actions/**'
+      - '.github/workflows/quint.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  discover-quint-shards:
+    name: Discover Quint Subdomain Shards
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: ./.github/actions/setup-just
+      - uses: ./.github/actions/setup-bun-cached
+        with:
+          install: 'false'
+      - name: Dynamically discover Quint subdomain shards (zero hardcoding)
+        id: plan
+        run: |
+          matrix=$(just verify-matrix quint --max-per-shard=24)
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "Discovered Quint subdomain matrix: $matrix"
+
+  quint-resolver-unit:
+    name: Quint Resolver Typecheck, Unit & Zero-Sidecar Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: ./.github/actions/setup-just
+      - uses: ./.github/actions/setup-bun-cached
+      - name: Typecheck & portable resolver conformance tests (fleet delegated to sharded CAS matrix)
+        env:
+          QUINT_SHARDED_FLEET: '1'
+        run: just check-quint --portable --only=typecheck,test
+
+  quint-subdomain-fleet:
+    name: "Quint Shard: ${{ matrix.label }}"
+    needs: discover-quint-shards
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover-quint-shards.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: ./.github/actions/setup-just
+      - uses: ./.github/actions/setup-bun-cached
+      - name: Restore Layer-2 shard-disjoint Quint CAS cache (SM18)
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .data/ci-cache/quint-${{ matrix.shard }}
+          key: de-quint-cas-v1-${{ runner.os }}-${{ runner.arch }}-${{ matrix.shard }}-${{ hashFiles('bun.lock', 'packages/quint-modules-resolver/src/**') }}-${{ github.sha }}
+          restore-keys: |
+            de-quint-cas-v1-${{ runner.os }}-${{ runner.arch }}-${{ matrix.shard }}-${{ hashFiles('bun.lock', 'packages/quint-modules-resolver/src/**') }}-
+      - name: Run shard run-plan + 100% MBT coverage audit with cryptographic SHA-256 CAS
+        run: just check-quint-shard "${{ matrix.domain }}" "${{ matrix.subdomains }}" ".data/ci-cache/quint-${{ matrix.shard }}"

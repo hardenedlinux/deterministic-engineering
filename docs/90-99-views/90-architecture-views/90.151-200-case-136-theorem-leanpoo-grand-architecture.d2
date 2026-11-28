@@ -1,0 +1,61 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+direction: right
+
+lib: "Reusable Library: deterministic-engineering-qnt\n(200 Cases AG01-AG200 • B1-B13 • R1-R5 • 0 Mathlib • 0 Cedar)" {
+  style.fill: "#eef6ff"
+  style.stroke: "#1d4ed8"
+
+  quint: "Paradigm 1: Quint / Apalache\n20 Defense Formal Models\n20/20 MBT SUT 100% Isomorphism\nF3 guard-probe Essential Proofs" {
+    style.fill: "#ffffff"
+  }
+  ascent: "Paradigm 2: Gerbil ASCENT Datalog\n24 Sources x 14 Outputs (B1-B11)\nLive Cross-Runtime N-Version Gate" {
+    style.fill: "#ffffff"
+  }
+  multi: "Paradigm 3: CBMC & 5-Language\nC/CBMC (50/50) • C++20 • Rust • TS • Scheme\n10/10 R3 Non-Leakable M3 Capabilities\n34 Bun Test Suites (AG01-AG200)" {
+    style.fill: "#ffffff"
+  }
+  leanpoo: "Paradigm 4: Pure Lean 4 + LeanPoo\n12 Modules • 136 Unbounded Theorems\n• DurableGovernanceQuorum (19)\n• HostAuthorizationBridge (11)\n• InformationFlowAndTms (11)\n• SagaAndSsi (11) • HitlAndCoevolution (12)\n• LibraryExportContract (12)\n• FourParadigmConsistency (10)\n• ReleaseCertificateReplay (10)\n• MerkleConsistencyAndAsyncCut (10)\n• ToolSandboxAndRpcBoundary (10)\n• ContextDistillationAndProvenance (10)\n• FederatedArbitrationLiveness (10)" {
+    style.fill: "#dbeafe"
+    style.stroke: "#1e40af"
+  }
+
+  cli: "Single-Shot Fleet Gate\njust audit-leanpoo-fleet --json\n(136/136 #print axioms • 0 sorry)" {
+    style.fill: "#bfdbfe"
+    style.stroke: "#1e3a8a"
+  }
+
+  quint -> cli: "20/20 Models"
+  ascent -> cli: "24x14 Rules"
+  multi -> cli: "8/8 Harnesses"
+  leanpoo -> cli: "136/136 Axioms"
+}
+
+airgap: "Air-Gapped M1 Release Artifact\nSignedLibraryReleaseCertificate\n• Publisher Ed25519 Signature\n• 3-of-4 Threshold Witness Cosigs\n• zeroMathlib=true • zeroCedar=true\n• Anti-Downgrade & Revocation" {
+  style.fill: "#fef3c7"
+  style.stroke: "#b45309"
+}
+
+host: "Consuming Authorization Host: cedar-poo-spec\n(Concrete Cedar Policies • Zero lake at Runtime)" {
+  style.fill: "#ecfdf5"
+  style.stroke: "#047857"
+
+  verify: "Offline Ed25519 Verifier\nPublic Keys Only\nPins M1 Verification Receipt" {
+    style.fill: "#ffffff"
+  }
+  stack: "3-Layer Monotonic LeanPoo Refinement\nCedarPooSpec.Authorization\n-> Governance (Veto / SoD / Approval)\n-> Admission & Data (BoundOp / Disclosure)" {
+    style.fill: "#d1fae5"
+    style.stroke: "#065f46"
+  }
+  dual: "Dual-Sovereign Release Gate\nLibrary Proven AND Host Permit\n(Symmetric Non-Bypassable)" {
+    style.fill: "#a7f3d0"
+    style.stroke: "#064e3b"
+  }
+
+  verify -> dual: "136-Thm Digest"
+  stack -> dual: "Forbid > Permit"
+}
+
+lib.cli -> airgap: "Ed25519 + 2f+1 Cosign"
+airgap -> host.verify: "Air-Gapped Custody"

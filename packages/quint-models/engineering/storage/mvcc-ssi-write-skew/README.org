@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Distributed MVCC & Serializable Snapshot Isolation (SSI) Write Skew
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.storage.mvcc-ssi-write-skew=
+- *Subdomain*: =quint.engineering.storage=
+- *Quint Module*: =storage_mvcc_ssi= (=[[file:MvccSsiWriteSkew.qnt][MvccSsiWriteSkew.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/storage/mvcc-ssi-write-skew/MvccSsiWriteSkew=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=9=
+
+* Emergent Safety Invariant
+
+Serializable Snapshot Isolation preserves the multi-key invariant (balX + balY >= 1) and withdrawal conservation (balX + balY + committedWithdrawals == 2) across all concurrent schedules.
+
+#+begin_src quint
+val safety = ((h.balX + h.balY) >= 1 and ((h.balX + h.balY) + h.committedWithdrawals) == 2)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =ssi-dangerous-structure= | =stepSnapshotIsolation= | =h.balX + h.balY == 0 and h.committedWithdrawals == 2= |
+| =retain-siread-after-commit= | =stepEarlySireadRelease= | =h.balX + h.balY == 0 and h.committedWithdrawals == 2= |
+| =detect-rw-on-read= | =stepMissedReadRw= | =h.balX + h.balY == 0 and h.committedWithdrawals == 2= |
+
+* Grounded Papers & Specifications
+
+- *H. Berenson et al. (ACM SIGMOD 1995)*: A Critique of ANSI SQL Isolation Levels: formalizes Snapshot Isolation and Write Skew anomaly (A5B).
+- *A. Adya, B. Liskov & P. O'Neil (ICDE 2000)*: Generalized Isolation Level Definitions: Direct Serialization Graph (DSG) rw-antidependency cycles.
+- *M. J. Cahill, U. Rohm & A. D. Fekete (ACM SIGMOD 2008 / TODS 2009)*: Serializable Isolation for Snapshot Databases: SIREAD locks and dangerous rw-structures.
+- *D. R. K. Ports & K. Grittner (PVLDB 2012)*: Serializable Snapshot Isolation in PostgreSQL: post-commit SIREAD retention (§2.2) and read-time rw detection (§3.2).
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/storage/mvcc-ssi-write-skew/MvccSsiWriteSkew.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/storage/mvcc-ssi-write-skew/MvccSsiWriteSkew.qnt --main=storage_mvcc_ssi --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite 2-transaction, 2-key MVCC/SSI abstraction verifying write skew, lost updates, persistent SIREAD locks, and read-time rw-antidependencies; does not model 3-txn read-only anomalies, predicate index page coarsening, or GC vacuuming of old SIREAD locks.

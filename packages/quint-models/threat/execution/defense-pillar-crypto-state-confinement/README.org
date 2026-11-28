@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Defense Pillar Cryptographic & State-Machine Integrity Confinement (SM38)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.execution.defense-pillar-crypto-state-confinement=
+- *Subdomain*: =quint.threat.execution=
+- *Quint Module*: =execution_defense_pillar_crypto_state_confinement= (=[[file:DefensePillarCryptoStateConfinement.qnt][DefensePillarCryptoStateConfinement.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/execution/defense-pillar-crypto-state-confinement/DefensePillarCryptoStateConfinement=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+B16 restricts shredding strictly to retired epochs (0 < epoch < activeEpoch) and rewrap strictly to live committed epochs (keyEpochBreaches == 0 and keyEpochGuarded and shreddedMaxEpoch < activeEpoch), B18 enforces canonical case/whitespace-folded secret filtering and consumed-challenge anti-replay (zkDisclosureBreaches == 0 and zkNormalizedAndFresh), B14 enforces canonical 2-builder distinctness, immutable CVE-checked dependency pinning, and non-replayed releases (supplyChainBreaches == 0 and supplyChainPinnedAndDistinct), B20 preserves active dispute freezes and monotonic treaty epochs with canonical anti-self-reciprocity (treatyReciprocityBreaches == 0 and treatyFreezeAndEpochMonotonic), and B9/B21 enforce RFC 6962 empty-root/size parity and non-duplicating domain-separated Merkle roots (merkleIntegrityBreaches == 0 and merkleNoDupAndEmptyRootChecked).
+
+#+begin_src quint
+val safety = (h.keyEpochBreaches == 0 and h.zkDisclosureBreaches == 0 and h.supplyChainBreaches == 0 and h.treatyReciprocityBreaches == 0 and h.merkleIntegrityBreaches == 0 and h.keyEpochGuarded and h.zkNormalizedAndFresh and h.supplyChainPinnedAndDistinct and h.treatyFreezeAndEpochMonotonic and h.merkleNoDupAndEmptyRootChecked and h.activeEpoch >= 1 and h.activeEpoch <= 12 and h.shreddedMaxEpoch >= 0 and h.shreddedMaxEpoch < h.activeEpoch and h.stepCount <= 12)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =forbid-future-epoch-shred-or-epoch0-rewrap= | =stepFutureEpochShredOrEpoch0Rewrap= | =h.keyEpochBreaches > 0= |
+| =forbid-zk-case-secret-leak-or-nonce-replay= | =stepZkSecretLeakOrNonceReplay= | =h.zkDisclosureBreaches > 0= |
+| =forbid-supply-chain-builder-spoof-or-pin-overwrite= | =stepSupplyChainSpoofOrPinOverwrite= | =h.supplyChainBreaches > 0= |
+| =forbid-treaty-freeze-wipe-or-self-reciprocity-spoof= | =stepTreatyFreezeWipeOrSelfSpoof= | =h.treatyReciprocityBreaches > 0= |
+| =forbid-merkle-second-preimage-or-forged-empty-head= | =stepMerkleMalleabilityOrForgedEmptyHead= | =h.merkleIntegrityBreaches > 0= |
+
+* Grounded Papers & Specifications
+
+- *Deterministic Engineering (30.06 / 40.05)*: SM38 ADV-L4 defense-pillar cryptographic and state-machine confinement forbidding B16 future-epoch shredding DoS and epoch-0 rewrap, B18 case/whitespace secret over-disclosure and challenge nonce replay, B14 case/whitespace 2-builder spoofing and silent pin overwrite/release replay, B20 treaty dispute-freeze wipeout, epoch rollback, and self-reciprocity case spoofing, and B9/B21 RFC 6962 empty-head forgery plus CVE-2012-2459 odd-leaf Merkle duplication.
+- *Marlin Agent Core Empirical Case Study (2026)*: marlin-agent-kernel B9/B14/B16/B18/B20/B21 gates admitted future-epoch tombstoning in shred_retired_epoch, raw case-sensitive forbidden secret checks and unconsumed challenge replay in ZkSelectiveDisclosureGate, case/whitespace single-builder spoofing and blind pin overwrite in SupplyChainProvenanceGate, dispute-freeze wipeout and epoch rollback on treaty re-registration in FederatedOrgReciprocityGate, forged empty-tree root hashes in verify_tree_head_progression, and odd-leaf Merkle duplication in compute_shard_merkle_root.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/execution/defense-pillar-crypto-state-confinement/DefensePillarCryptoStateConfinement.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/execution/defense-pillar-crypto-state-confinement/DefensePillarCryptoStateConfinement.qnt --main=execution_defense_pillar_crypto_state_confinement --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite bounded defense-pillar cryptographic and state-machine integrity confinement model (1 <= activeEpoch <= 12, 0 <= shreddedMaxEpoch < activeEpoch, stepCount <= 12); models fail-closed B16 retired-only epoch shredding and live-epoch rewrap, B18 canonical case/whitespace-folded forbidden secret filtering with consumed-challenge anti-replay, B14 canonical 2-builder distinctness with immutable CVE-checked dependency pinning and single-use release admission, B20 monotonic bilateral treaty epochs preserving active dispute freezes and canonical anti-self-reciprocity, and B9/B21 RFC 6962 empty-head and non-duplicating Merkle root integrity, without modeling underlying SHA-256 collision hardness or network Byzantine timing.

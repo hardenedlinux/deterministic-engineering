@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Slow-Consumer Fan-Out Isolation & Eviction Buffer Drain
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.concurrency.slow-consumer-eviction=
+- *Subdomain*: =quint.engineering.concurrency=
+- *Quint Module*: =concurrency_slow_consumer= (=[[file:SlowConsumerEviction.qnt][SlowConsumerEviction.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/concurrency/slow-consumer-eviction/SlowConsumerEviction=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Per-consumer fan-out queue never exceeds its cap and evicting a stalled consumer drains all retained frames with zero orphaned buffers.
+
+#+begin_src quint
+val safety = (h.slowBuf <= 2 and h.orphanedBuf == 0 and (h.slowConnected or h.slowBuf == 0))
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =slow-consumer-evict-cap= | =stepUnboundedSlowQueue= | =h.slowBuf > 2= |
+| =evicted-buffer-drain= | =stepEvictedBufferLeak= | =h.orphanedBuf > 0= |
+
+* Grounded Papers & Specifications
+
+- *M. Welsh, D. Culler, E. Brewer (ACM SOSP 2001)*: SEDA: An Architecture for Well-Conditioned, Scalable Internet Services — bounded per-stage queues and load conditioning.
+- *J. Dean & L. A. Barroso (CACM 2013)*: The Tail at Scale — isolating slow stragglers so fan-out services preserve tail latency.
+- *N. Bronson, A. Aghayev, A. Charapko, T. Zhu (ACM HotOS 2021)*: Metastable Failures in Distributed Systems — preventing stalled consumers from backing up shared producers.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/concurrency/slow-consumer-eviction/SlowConsumerEviction.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/concurrency/slow-consumer-eviction/SlowConsumerEviction.qnt --main=concurrency_slow_consumer --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite 2-frame slow-subscriber fan-out abstraction; models per-subscriber bounded buffering and eviction cleanup, not kernel TCP send-window dynamics or OS socket teardown latency.

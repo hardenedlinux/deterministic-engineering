@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Cross-Region Sovereign Data-Residency & Geo-Fenced Governance
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.defense.geo-residency-sovereignty=
+- *Subdomain*: =quint.engineering.defense=
+- *Quint Module*: =geo_residency_sovereignty= (=[[file:GeoResidencySovereignty.qnt][GeoResidencySovereignty.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/defense/geo-residency-sovereignty/GeoResidencySovereignty=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Sovereign placement admission requires allowed non-sanctioned target region (sanctionedPlacementViolations == 0), allowed inference endpoint region (inferenceEscapeViolations == 0), and valid cross-border adequacy/SCC permit whenever transfer crosses borders (unpermittedEgressViolations == 0).
+
+#+begin_src quint
+val safety = (h.sanctionedPlacementViolations == 0 and h.inferenceEscapeViolations == 0 and h.unpermittedEgressViolations == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =require-target-region-allowed= | =stepSanctionedRegion= | =h.sanctionedPlacementViolations > 0= |
+| =require-inference-region-allowed= | =stepInferenceEscape= | =h.inferenceEscapeViolations > 0= |
+| =require-cross-border-permit-if-needed= | =stepUnpermittedEgress= | =h.unpermittedEgressViolations > 0= |
+
+* Grounded Papers & Specifications
+
+- *EU GDPR Chapter V (Articles 44-49)*: Transfers of personal data to third countries via Adequacy Decisions and Standard Contractual Clauses.
+- *NIST SP 800-53 & EU AI Act Sovereign Compute Residency*: Jurisdictional pinning of both storage partitions and LLM inference endpoints.
+- *Deterministic Engineering (10.197 / 10.198)*: Ed25519 regional sovereignty attestations, cross-border transfer permits, and anti-P4 intra-region sufficiency.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/defense/geo-residency-sovereignty/GeoResidencySovereignty.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/defense/geo-residency-sovereignty/GeoResidencySovereignty.qnt --main=geo_residency_sovereignty --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Bounded regional residency and transfer-permit abstraction; arbitrary jurisdiction allowlists, sanctioned sets, revoked authorities, and anti-P4 intra-region sufficiency are proved unboundedly in GeoResidencyAndSovereignty.lean.

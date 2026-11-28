@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Cross-Trust-Boundary Delegation: Monotonic Capability Attenuation & Cascading Revocation
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.defense.capability-attenuation=
+- *Subdomain*: =quint.engineering.defense=
+- *Quint Module*: =capability_attenuation= (=[[file:CapabilityAttenuation.qnt][CapabilityAttenuation.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/defense/capability-attenuation/CapabilityAttenuation=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+No delegated agent executes with an escalated scope exceeding parent/root (escalationViolations == 0), no downstream delegate executes after any ancestor is revoked in M3 (revokedSubtreeExecutions == 0), and no forged chain MAC, non-delegable hop, or hop-depth overflow executes (forgedOrDepthViolations == 0).
+
+#+begin_src quint
+val safety = (h.escalationViolations == 0 and h.revokedSubtreeExecutions == 0 and h.forgedOrDepthViolations == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =enforce-monotonic-attenuation= | =stepScopeEscalation= | =h.escalationViolations > 0= |
+| =forbid-revoked-ancestor-subtree= | =stepRevokedSubtree= | =h.revokedSubtreeExecutions > 0= |
+| =require-valid-mac-and-depth= | =stepForgedOrDepth= | =h.forgedOrDepthViolations > 0= |
+
+* Grounded Papers & Specifications
+
+- *N. Hardy (ACM OSR 1988) / M. S. Miller, K.-P. Yee & J. Shapiro (2003)*: The Confused Deputy & Capability Myths Demolished: strict confinement, attenuation, and revocable caretakers.
+- *A. Birgisson et al. (NDSS 2014)*: Macaroons: Cookies with Contextual Caveats for Decentralized Authorization in the Cloud.
+- *Deterministic Engineering (10.156 / 10.160)*: Immutable M1 Merkle delegation certificates chained with live M3 root signing keys and cascading revocation.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/defense/capability-attenuation/CapabilityAttenuation.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/defense/capability-attenuation/CapabilityAttenuation.qnt --main=capability_attenuation --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite two-hop monotonic scope attenuation, chain MAC integrity, hop-depth bound, and M3 cascading revocation abstraction; does not model side-channel exfiltration by an authorized delegate or out-of-band network collusion.

@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: OAuth 2.1 Token Lifecycle, PKCE Single-Use & Refresh Epoch Currency
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.identity.oauth-token-lifecycle=
+- *Subdomain*: =quint.threat.identity=
+- *Quint Module*: =oauth_token_lifecycle= (=[[file:OAuthTokenLifecycle.qnt][OAuthTokenLifecycle.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/identity/oauth-token-lifecycle/OAuthTokenLifecycle=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Authorization codes are single-use with PKCE+nonce, refresh never resurrects a signed-out/revoked vault entry, and refreshed scopes never escalate beyond granted scopes.
+
+#+begin_src quint
+val safety = ((h.signedIn or not(h.vaultHasToken)) and h.activeScopeLevel <= h.grantedScopeLevel and h.exchanges <= 1)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =single-use-code= | =stepCodeReplay= | =h.exchanges >= 2= |
+| =refresh-epoch-currency= | =stepZombieRefresh= | =h.vaultHasToken == true and not(h.signedIn)= |
+| =scope-monotonicity= | =stepScopeEscalation= | =h.activeScopeLevel > h.grantedScopeLevel= |
+
+* Grounded Papers & Specifications
+
+- *T. Lodderstedt, J. Bradley, A. Labunets & D. Fett (IETF RFC 9700, 2025)*: Best Current Practice for OAuth 2.0 Security: PKCE, single-use authorization codes, and refresh token rotation.
+- *D. Fett, R. Küsters & G. Schmitz (ACM CCS 2016)*: A Comprehensive Formal Security Analysis of OAuth 2.0.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/identity/oauth-token-lifecycle/OAuthTokenLifecycle.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/identity/oauth-token-lifecycle/OAuthTokenLifecycle.qnt --main=oauth_token_lifecycle --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite OAuth 2.1 lifecycle abstraction; does not model TLS, JWT signature cryptography, or IdP internal storage.

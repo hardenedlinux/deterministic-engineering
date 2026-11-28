@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Hook Policy Confinement, Anti-Shadowing Registry & Protocol Contract Validation (SM33)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.execution.hook-policy-and-protocol-contract-confinement=
+- *Subdomain*: =quint.threat.execution=
+- *Quint Module*: =execution_hook_policy_and_protocol_contract_confinement= (=[[file:HookPolicyAndProtocolContractConfinement.qnt][HookPolicyAndProtocolContractConfinement.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/execution/hook-policy-and-protocol-contract-confinement/HookPolicyAndProtocolContractConfinement=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Hook TOML configuration rejects unknown fields, oversize files, and malformed GerbilScheme extensions fail-closed (configFailOpenBreaches == 0 and strictConfigEnforced), hook registry maintains unique hook_id entries with zero ghost shadows after disable/unregister and caps concurrent async hooks (hookShadowOrFanoutBreaches == 0 and uniqueHookIdsEnforced and asyncTasksRunning <= 4), dynamic extension actions never overwrite UntrustedRejected/ModifiedRejected audit reasons and stay bounded (trustMaskOrActionBreaches == 0 and trustFloorImmutable), and protocol contracts refuse contradictory SubAgent permissions, zero budgets, invalid RuntimeSessionId deserialization, and ModelEndpoint injection (protocolContractBreaches == 0 and protocolContractsEnforced).
+
+#+begin_src quint
+val safety = (h.configFailOpenBreaches == 0 and h.hookShadowOrFanoutBreaches == 0 and h.trustMaskOrActionBreaches == 0 and h.protocolContractBreaches == 0 and h.strictConfigEnforced and h.uniqueHookIdsEnforced and h.trustFloorImmutable and h.protocolContractsEnforced and h.registeredHooks >= 0 and h.registeredHooks <= 6 and h.asyncTasksRunning >= 0 and h.asyncTasksRunning <= 4 and h.validatedProfiles <= 4 and h.stepCount <= 12)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =forbid-toml-unknown-field-failopen-or-unbounded-config= | =stepConfigFailOpen= | =h.configFailOpenBreaches > 0= |
+| =forbid-duplicate-hook-shadow-or-unbounded-async-fanout= | =stepHookShadowOrFanout= | =h.hookShadowOrFanoutBreaches > 0= |
+| =forbid-trust-rejection-masking-or-dynamic-action-flood= | =stepTrustMaskOrActionFlood= | =h.trustMaskOrActionBreaches > 0= |
+| =forbid-subagent-contradiction-serde-bypass-or-endpoint-injection= | =stepProtocolContractBypass= | =h.protocolContractBreaches > 0= |
+
+* Grounded Papers & Specifications
+
+- *Deterministic Engineering (30.06 / 40.05)*: SM33 ADV-L4 deny_unknown_fields + bounded TOML config parsing with validated GerbilScheme extensions, unique hook_id registry upsert preventing sticky ghost hooks + semaphore-bounded async hook fanout, immutable Rust trust-floor rejection reasons under bounded dynamic actions/rewrites, contradiction/zero-budget/recursion-depth rejection in SubAgentSpawnConfigSet, validated RuntimeSessionId Deserialize parity, and control/URL-meta refusal in ModelEndpoint::validate_contract.
+- *Marlin Agent Core Empirical Case Study (2026)*: marlin-agent-hooks silently fell back to ObserveOnly on unknown TOML keys, allowed duplicate hook_id shadow copies to keep executing after set_enabled(false)/unregister, spawned unbounded concurrent Async hook tasks, and let extension Defer/Deny erase UntrustedRejected audit reasons; marlin-agent-protocol admitted contradictory read_only+workspace_write and zero-budget SubAgentSpawnConfigSet profiles, bypassed RuntimeSessionId::try_new via derived Deserialize, and admitted CRLF/?/#/@ injection in ModelEndpoint::validate_contract.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/execution/hook-policy-and-protocol-contract-confinement/HookPolicyAndProtocolContractConfinement.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/execution/hook-policy-and-protocol-contract-confinement/HookPolicyAndProtocolContractConfinement.qnt --main=execution_hook_policy_and_protocol_contract_confinement --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite bounded hook policy dispatch, registry uniqueness & protocol contract validation state machine (registeredHooks <= 6, asyncTasksRunning <= 4, validatedProfiles <= 4, stepCount <= 12); models deny_unknown_fields + bounded TOML config + validated GerbilScheme extension, unique hook_id upsert preventing sticky ghost hooks + semaphore-bounded async hook fanout, immutable Rust trust-floor rejections (UntrustedRejected/ModifiedRejected) + bounded dynamic policy actions/rewrites, contradictory SubAgentPermissionSet / zero-budget / recursive-depth rejection, validated RuntimeSessionId Deserialize parity, and control/URL-meta refusal in ModelEndpoint::validate_contract, without modeling OS memory pressure or cryptographic signature verification.

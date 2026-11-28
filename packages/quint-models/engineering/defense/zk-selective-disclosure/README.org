@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Zero-Knowledge Selective-Disclosure Compliance Proofs
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.defense.zk-selective-disclosure=
+- *Subdomain*: =quint.engineering.defense=
+- *Quint Module*: =zk_selective_disclosure= (=[[file:ZkSelectiveDisclosure.qnt][ZkSelectiveDisclosure.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/defense/zk-selective-disclosure/ZkSelectiveDisclosure=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Zero-knowledge selective-disclosure admission forbids confidential field over-disclosure (overDisclosureViolations == 0), requires valid Schnorr Sigma verification (forgedSigmaViolations == 0), and enforces fresh single-use nullifier consumption (nullifierReplayViolations == 0).
+
+#+begin_src quint
+val safety = (h.overDisclosureViolations == 0 and h.forgedSigmaViolations == 0 and h.nullifierReplayViolations == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =require-no-secret-exposure= | =stepOverDisclosure= | =h.overDisclosureViolations > 0= |
+| =require-valid-sigma-proof= | =stepForgedSigma= | =h.forgedSigmaViolations > 0= |
+| =require-fresh-nullifier= | =stepNullifierReplay= | =h.nullifierReplayViolations > 0= |
+
+* Grounded Papers & Specifications
+
+- *C.-P. Schnorr (CRYPTO 1989) & A. Fiat / A. Shamir (CRYPTO 1986)*: Non-interactive zero-knowledge proofs of discrete-log knowledge via Fiat-Shamir transform.
+- *IETF SD-JWT / Salted Merkle Selective Disclosure*: Privacy-preserving selective attribute opening without disclosing hidden confidential claims.
+- *Deterministic Engineering (10.195 / 10.196)*: RFC 3526 MODP-2048 Schnorr Sigma NIZK, anti-over-disclosure fencing, and nullifier anti-replay.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/defense/zk-selective-disclosure/ZkSelectiveDisclosure.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/defense/zk-selective-disclosure/ZkSelectiveDisclosure.qnt --main=zk_selective_disclosure --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Bounded selective-disclosure and single-slot nullifier freshness abstraction; unbounded forbidden/required attribute lists, challenge-nonce binding, and commitment roots are proved in ZeroKnowledgeSelectiveDisclosure.lean.

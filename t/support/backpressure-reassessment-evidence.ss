@@ -6,7 +6,7 @@
 ;;; -*- Gerbil -*-
 ;;; Actual source-changing native experiment, handed off through Core Ops.
 (import :clan/poo/object :std/encoding/json :std/misc/ports :std/list/list
-        (only-in :yuanxu/ops/process-script ProcessScript.)
+        (only-in :tao3k/yuanxu/ops/process-script ProcessScript.)
         (only-in :std/string/misc string-subst)
         :deterministic-engineering/scenarios/resource-lifecycle/review/func
         :deterministic-engineering/library/drivers/rust-resources/reassessment-oracle)

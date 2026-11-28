@@ -1,0 +1,64 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 10.164 Decentralized Information Flow Control (DIFC), CaMeL Control-Flow Integrity & Exfiltration Confinement
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.164
+#+STARTUP: overview
+#+OPTIONS: toc:3 num:nil
+#+FILETAGS: :architecture:difc:taint-tracking:camel:prompt-injection:exfiltration:governance:
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.156-orthogonal-persistence-durable-multi-agent-governance.org][10.156 Stratified OP]] | [[file:10.160-cross-trust-boundary-capability-attenuation-and-cascading-revocation.org][10.160 B3 Delegation]] | [[file:10.162-unified-durable-ai-governance-pipeline-and-architecture-synthesis.org][10.162 Unified Pipeline]] | [[file:10.163-durable-compensable-agent-sagas-and-linear-budget-conservation.org][10.163 B6 Sagas & Budget]] | [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05 90-Case Benchmark]]
+
+* Problem: Why Capabilities Alone Cannot Stop the "Lethal Trifecta"
+:PROPERTIES:
+:CUSTOM_ID: difc164-problem
+:STATUS: implemented-verified
+:END:
+
+Even when an AI Agent holds strictly attenuated capabilities (=B3=), indirect
+prompt injection exploits the *Lethal Trifecta* whenever a single agent holds
+permission to (1) read private/secret data, (2) ingest untrusted external input
+(webpages, public GitHub issues, third-party READMEs), and (3) invoke an
+external sink (HTTP POST, PR comment, Slack webhook).
+
+Capability authorization says "allowed" to both the private read and the public
+write. Closing this vulnerability requires *Information Flow Control*
+(Bell-LaPadula 1973; Biba 1977; Myers & Liskov SOSP 1997; HiStar OSDI 2006;
+Debenedetti et al. Google DeepMind CaMeL 2025).
+
+* Architecture (Scenario B7): Dual-Lattice M1 Envelopes × M3 Declassifiers
+:PROPERTIES:
+:CUSTOM_ID: difc164-architecture
+:STATUS: implemented-verified
+:END:
+
+| Governance Mechanism | Stratification & Lattice Law | Security Guarantee |
+|----------------------+------------------------------+--------------------|
+| Immutable =M1= =TaintedValue<T>= | Carries monotonic =secrecyTags= (Bell-LaPadula union) and =integrity= (Biba meet: =TrustedSystem > VerifiedInternal > UntrustedExternal=); every =deriveValue= joins parent tags mechanically | LLM summarization, paraphrasing, or Base64 encoding cannot strip confidentiality taint or launder untrusted input |
+| Sink Clearance Gate (=dispatchToToolSink=) | Enforces BOTH *No-Write-Down* (=allFlowingTags ⊆ sink.allowedSecrecyTags=) AND *CaMeL Control-Flow Integrity* (=controlArg.integrity >= sink.minControlIntegrity=) | Blocks secret exfiltration, cross-tenant leakage (=tenant:alpha -> tenant:beta=), and untrusted URL/command hijacking |
+| Non-Serializable =M3= =DeclassificationCapability= (=R3=) | Branded with =M3_NON_SERIALIZABLE_CAPABILITY=; authorized only for explicit =removableTags= + mandatory deterministic redaction sanitizer + immutable =M1= =DeclassificationAuditReceipt= | Agents cannot self-declassify or leak declassification capabilities into =M1=; only sanitized aggregates cross to public sinks |
+
+* Executable Artifacts & Verification Receipts
+:PROPERTIES:
+:CUSTOM_ID: difc164-artifacts
+:STATUS: executed-verified
+:END:
+
+| Artifact | Path | Verification Evidence |
+|----------+------+-----------------------|
+| 15th Formal Model (=difc-exfiltration-fence=) | [[file:../../../packages/quint-models/engineering/defense/difc-exfiltration-fence/DifcExfiltrationFence.qnt][DifcExfiltrationFence.qnt]] | Apalache 6/6 PASS (safety + 3 countermodels: =secret-exfiltration=, =control-hijack=, =unauthorized-declass=), =guard-probe= =essential=, 100% MBT coverage |
+| MBT SUT State-Machine Refinement | [[file:../../../languages-engineering/ts/defense/boundary-contrast/mbt-replay.test.ts][mbt-replay.test.ts]] | =DifcExfiltrationFenceSUT= isomorphic to ITF traces; rejects =BadExfiltratingAgentSUT= |
+| Executable DIFC/CaMeL Runtime (=AG86=–=AG90=) | [[file:../../../languages-engineering/ts/defense/agent-audit/difc-exfiltration-fence.ts][difc-exfiltration-fence.ts]] / [[file:../../../languages-engineering/ts/defense/agent-audit/difc-exfiltration-fence.test.ts][difc-exfiltration-fence.test.ts]] | 5/5 benchmark cases (=AG86=–=AG90=) exact gold match; dogfood =just audit-agent-patch= 0 findings |
+
+* Limits
+:PROPERTIES:
+:CUSTOM_ID: difc164-limits
+:STATUS: implemented-verified
+:END:
+
+Explicit data-flow taint envelopes eliminate direct, summarized, and encoded
+exfiltration through governed tool sinks, as well as untrusted control-flow
+hijacking. They do not eliminate low-bandwidth timing/termination covert
+channels or out-of-band exfiltration if an agent executes arbitrary unsandboxed
+native code outside the governed tool runtime.

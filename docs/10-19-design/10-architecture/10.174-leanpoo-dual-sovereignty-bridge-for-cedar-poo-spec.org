@@ -1,0 +1,64 @@
+#+TITLE: 10.174 LeanPoo Dual-Sovereignty Composition Contract Between Library (deterministic-engineering-qnt) and Authorization Host (cedar-poo-spec)
+#+AUTHOR: hardenedlinux Linux Team and Contributors
+#+DATE: 2026-11-26
+#+STARTUP: overview
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+* Architectural Boundary: Library vs. Consuming Authorization Host
+:PROPERTIES:
+:CUSTOM_ID: arch10174-boundary
+:END:
+
+In our multi-repository formal ecosystem, responsibilities are cleanly factored:
+
+- **=deterministic-engineering-qnt= (Reusable Library — Lean 4 + =LeanPoo=, zero Mathlib, zero Cedar dependency)**:
+  Owns domain-agnostic formal mechanisms, unbounded algebraic/inductive proofs,
+  cryptographic quorum finality (=B10=), dynamic handover (=B10b=), slashing
+  tombstones (=B10c=), stratified =M1/M2/M3= orthogonal persistence (=R1=–=R5=),
+  and reusable =LeanPoo= contract refinement & proof-transport combinators.
+- **=cedar-poo-spec= (Consuming Authorization Host — Lean 4 + =Cedar= + =LeanPoo=)**:
+  Owns concrete Cedar authorization policies (=Forbid=-overrides-=Permit=),
+  principal/role/tenant rules, and =CedarPooSpec.Admission.*= receipts
+  (=BoundOperation=, =OperationIdentity=, =PolicySnapshot=, =AuthorityConsumption=).
+
+Phase 26 formalizes the **Dual-Sovereignty Conjunction Bridge** connecting
+both repositories with zero policy leakage into the Library.
+
+* Machine-Checked LeanPoo Theorems (=HostAuthorizationBridge.lean=)
+:PROPERTIES:
+:CUSTOM_ID: arch10174-theorems
+:END:
+
+[[file:../../../packages/lean-models/DeterministicEngineering/Engineering/HostAuthorizationBridge.lean][HostAuthorizationBridge.lean]]
+proves **11 theorems** with zero =sorry= and zero custom axioms:
+
+1. **Canonical Host Policy Algebra**:
+   - =forbid_always_overrides_permit=
+   - =default_deny_when_no_permit=
+2. **Dual-Sovereignty Conjunction Soundness**:
+   - =cedar_permit_cannot_bypass_library_refusal= (Cedar =Permit= NEVER overrides
+     Library quorum/slashing/=R3= refusal)
+   - =library_finalized_cannot_bypass_host_forbid= (Library =Finalized= NEVER
+     overrides =cedar-poo-spec= Cedar =Forbid=)
+   - =library_finalized_cannot_bypass_host_pending= (unresolved =Pending= never
+     degrades to admission)
+   - =cross_operation_permit_replay_blocked= (=BoundOperation= anti-replay)
+   - =stale_policy_snapshot_permit_blocked= (=PolicySnapshot= drift fence)
+   - =revoked_use_time_authority_blocked= (=AuthorityConsumption= use-time TOCTOU)
+3. **=LeanPoo= Contract Refinement & =R1= Disjoint Policy Transport**:
+   - =dualSovereignBridge_preserves_library_rejection= (2-step =ObjectContract.refine=)
+   - =disjointHostPolicyEvolution_preserves_bridge_certificate= (1-line
+     =Core.Transport= proof reuse when =cedar-poo-spec= evolves an unrelated
+     domain's Cedar policy!)
+   - =weakeningBoundOperation_invalidates_reuse= (negative control)
+
+* Executable Bridge & 140-Case Milestone (AG136-AG140)
+:PROPERTIES:
+:CUSTOM_ID: arch10174-runtime
+:END:
+
+- Runtime bridge:
+  [[file:../../../languages-engineering/ts/defense/agent-audit/host-authorization-bridge.ts][host-authorization-bridge.ts]]
+- Benchmark tests (=AG136=–=AG140=, expanding [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05]] to **140 cases**):
+  [[file:../../../languages-engineering/ts/defense/agent-audit/host-authorization-bridge.test.ts][host-authorization-bridge.test.ts]]

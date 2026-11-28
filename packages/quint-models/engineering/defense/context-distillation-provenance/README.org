@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Controlled Context Distillation & Epistemic Provenance Preservation
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.defense.context-distillation-provenance=
+- *Subdomain*: =quint.engineering.defense=
+- *Quint Module*: =context_distillation_provenance= (=[[file:ContextDistillationProvenance.qnt][ContextDistillationProvenance.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/defense/context-distillation-provenance/ContextDistillationProvenance=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Context distillation retains all pinned M1 constraints (amnesiaViolations == 0), never elevates untrusted external integrity (launderingViolations == 0), and preserves all secret tags without M3 declassification (secrecyStripViolations == 0).
+
+#+begin_src quint
+val safety = (h.amnesiaViolations == 0 and h.launderingViolations == 0 and h.secrecyStripViolations == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =require-pinned-retained= | =stepPinnedAmnesia= | =h.amnesiaViolations > 0= |
+| =require-integrity-meet= | =stepIntegrityLaundering= | =h.launderingViolations > 0= |
+| =require-secrecy-preserved= | =stepSecrecyStrip= | =h.secrecyStripViolations > 0= |
+
+* Grounded Papers & Specifications
+
+- *E. Debenedetti et al. (2025)*: CaMeL: Defeating Prompt Injections by Design — monotonic integrity lattice across LLM synthesis.
+- *A. C. Myers & B. Liskov (SOSP 1997 / ACM TOSEM 2000)*: Decentralized Information Flow Control (DIFC) — no silent secrecy tag removal without declassification.
+- *Deterministic Engineering (10.184 / 10.186)*: Anti-amnesia M1 constraint retention, grounded citations, and provenance-preserving context compaction.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/defense/context-distillation-provenance/ContextDistillationProvenance.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/defense/context-distillation-provenance/ContextDistillationProvenance.qnt --main=context_distillation_provenance --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Bounded 2-distillation abstraction over pinned constraint retention, integrity meet, and secrecy propagation; unbounded multi-item DAG and citation grounding are proved in ContextDistillationAndProvenance.lean.

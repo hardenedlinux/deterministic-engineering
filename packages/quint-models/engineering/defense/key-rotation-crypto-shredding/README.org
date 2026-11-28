@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Zero-Downtime AEAD Key Rotation & Cryptographic Erasure
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.defense.key-rotation-crypto-shredding=
+- *Subdomain*: =quint.engineering.defense=
+- *Quint Module*: =key_rotation_crypto_shredding= (=[[file:KeyRotationCryptoShredding.qnt][KeyRotationCryptoShredding.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/defense/key-rotation-crypto-shredding/KeyRotationCryptoShredding=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Cryptographic envelope operations require active write epoch (staleWriteViolations == 0), non-shredded key epoch (shredReadViolations == 0), and verified plaintext digest preservation (rewrapMutationViolations == 0).
+
+#+begin_src quint
+val safety = (h.staleWriteViolations == 0 and h.shredReadViolations == 0 and h.rewrapMutationViolations == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =require-active-write-epoch= | =stepStaleWrite= | =h.staleWriteViolations > 0= |
+| =require-not-shredded= | =stepShreddedUse= | =h.shredReadViolations > 0= |
+| =require-digest-preserved= | =stepMutatedRewrap= | =h.rewrapMutationViolations > 0= |
+
+* Grounded Papers & Specifications
+
+- *M. Bellare & B. Yee (CT-RSA 2003)*: Forward-Security in Private-Key Cryptography — key-epoch evolution and zeroization.
+- *NIST SP 800-57 & GDPR Article 17 Cryptographic Erasure*: Zero-downtime envelope re-wrapping and crypto-shredding over immutable audit logs.
+- *Deterministic Engineering (10.191 / 10.192)*: Multi-epoch AES-256-GCM key rings resolving immutable Merkle audit logs vs. right-to-erasure.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/defense/key-rotation-crypto-shredding/KeyRotationCryptoShredding.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/defense/key-rotation-crypto-shredding/KeyRotationCryptoShredding.qnt --main=key_rotation_crypto_shredding --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Bounded 2-epoch rotation and erasure abstraction; arbitrary epoch numbers, tenant AAD isolation, and Merkle root preservation are proved unboundedly in KeyRotationAndCryptoShredding.lean.

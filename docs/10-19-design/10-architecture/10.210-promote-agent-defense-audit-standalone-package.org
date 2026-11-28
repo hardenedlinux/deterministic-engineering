@@ -1,0 +1,67 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#+TITLE: 10.210 Promote Agent Defense Audit to Standalone Language-Neutral Package
+#+PROPERTY: JD_ID 10.210
+
+* Architectural Decision (Zero Legacy)
+
+AI coding anti-defensive-programming governance is a cross-language platform
+concern covering TypeScript/JavaScript, C, C++, Rust, Go, and Gerbil Scheme —
+not a TypeScript-only language example. Keeping the 6-language =G2= auditor,
+closed-loop scope-fenced repair harness (=G5=), and LeanPoo fleet verifier
+inside =languages-engineering/ts/defense/agent-audit/= violated repository
+responsibility boundaries:
+
+- =languages-engineering/<lang>/= is strictly reserved for per-language contrast
+  subjects and demos (=c/=, =cpp/=, =go/=, =rust/=, =ts/defense/boundary-contrast/=).
+- Authoritative semantic SSOT remains language-neutral in Gerbil Scheme
+  POO/ASCENT (=library/defensive-boundaries/=, =library/defensive-governance/=,
+  =library/defense-profiles/=), Quint (=packages/quint-models/engineering/defense/=),
+  and Lean 4 (=packages/lean-models/=).
+- The portable, zero-dependency multi-language execution engine is promoted to a
+  first-class 5th publishable distribution package:
+  [[file:../../../packages/agent-defense-audit/package.json][packages/agent-defense-audit/]]
+  (=@deterministic-engineering/agent-defense-audit=), and the legacy directory
+  =languages-engineering/ts/defense/agent-audit/= is deleted with zero
+  compatibility shims.
+
+* Delivered Changes
+
+1. *Standalone Zero-Dependency Package (=packages/agent-defense-audit/=)*
+   - Clean =src/= (35 implementation modules + =src/index.ts= public barrel) and
+     =test/= (50 test suites) layout.
+   - Zero external runtime dependencies; exposes CLI bins =agent-defense-audit=
+     and =leanpoo-fleet-audit= plus modular exports.
+   - Bundled dual-mode =.githooks/pre-commit= (manifest/exports/bin/SPDX checks
+     + G2 self-audit on staged =src/*.ts=) and =.githooks/pre-push=.
+2. *Repository Organization & Multi-Method Discovery Parity*
+   - Registered =@deterministic-engineering/agent-defense-audit= under package
+     family =agent-governance= in [[file:../../../library/project-organization/objects.ss][library/project-organization/objects.ss]],
+     [[file:../../../library/library-formation-profiles/objects.ss][library/library-formation-profiles/objects.ss]], [[file:../../../project.sysml][project.sysml]], and
+     [[file:../../../t/support/repository-organization-facts.ss][t/support/repository-organization-facts.ss]].
+   - Declarative =keywords: ["defense"]= discovery in both
+     [[file:../../../t/harness/verify-framework.ts][t/harness/verify-framework.ts]] and [[file:../../../t/harness/funflow-exec.ss][t/harness/funflow-exec.ss]]
+     so =just check-defense= / =just verify-plan --tag=defense= /
+     =just flow-plan --tag=defense= automatically discover =pkg:agent-defense-audit/test=.
+   - Updated =Justfile=, root =package.json=, =.githooks/pre-commit= (now gating
+     all 6 languages under =languages-engineering/*/defense/**=),
+     =packages/lean-models/.githooks/pre-push=, =.github/workflows/defense-audit.yml=,
+     =.github/workflows/publish-packages.yml=, and
+     [[file:../../../scripts/verify-subtree-mirrors.sh][scripts/verify-subtree-mirrors.sh]] (5-package subtree mirror verification
+     including zero-=node_modules= standalone Go CLI check).
+
+* Verification Summary
+
+- =bun run --cwd packages/agent-defense-audit test= + =b19-four-paradigm-symmetry.test.ts=:
+  260/260 tests pass across 50 files (including =H1=--=H9= 5-package mirror &
+  hook checks).
+- =just test-file t/yanxu/Library/project-organization/repository-organization-test.ss=:
+  =HARNESS-OK= (zero =OR01=--=OR07= findings).
+- =just test-file t/yanxu/Library/library-formation-profiles/project-formation-test.ss=:
+  =HARNESS-OK=.
+- =just verify-plan --tag=defense= & =just flow-plan --tag=defense=:
+  both select =pkg:agent-defense-audit/test= cleanly (=selected=42/242=).
+- =just audit-leanpoo-fleet --json=: =verdict: "Proven"= (30 Quint, 20 LeanPoo
+  modules / 216 theorems, zero Mathlib/Cedar).
+- =just audit-agent-patch= self-audit: 4/4 files PASS, 0 findings; zero
+  remaining non-doc legacy references.

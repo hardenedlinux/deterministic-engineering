@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Process Signal, Ledger & Fanout Confinement (SM37)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.execution.process-signal-ledger-and-fanout-confinement=
+- *Subdomain*: =quint.threat.execution=
+- *Quint Module*: =execution_process_signal_ledger_and_fanout_confinement= (=[[file:ProcessSignalLedgerAndFanoutConfinement.qnt][ProcessSignalLedgerAndFanoutConfinement.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/execution/process-signal-ledger-and-fanout-confinement/ProcessSignalLedgerAndFanoutConfinement=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+POSIX signal targets reject pid/pgid <= 1 and host self-PID/PGID (signalScopeBreaches == 0 and signalTargetGuarded), orphan reconciliation and reaping fail closed without verified OS start-time fingerprints (pidReuseBreaches == 0 and startFingerprintRequired), process ledger I/O enforces symlink-free O_NOFOLLOW byte/schema/capacity confinement (ledgerIntegrityBreaches == 0 and ledgerConfinementEnforced and ledgerEntries <= 12), and sub-agent fanout enforces hard parallelism ceilings plus full abort-drain quiescence (fanoutConfinementBreaches == 0 and fanoutBoundsAndDrainEnforced and activeFanout >= 0 and activeFanout <= 12).
+
+#+begin_src quint
+val safety = (h.signalScopeBreaches == 0 and h.pidReuseBreaches == 0 and h.ledgerIntegrityBreaches == 0 and h.fanoutConfinementBreaches == 0 and h.signalTargetGuarded and h.startFingerprintRequired and h.ledgerConfinementEnforced and h.fanoutBoundsAndDrainEnforced and h.activeFanout >= 0 and h.activeFanout <= 12 and h.ledgerEntries >= 0 and h.ledgerEntries <= 12 and h.stepCount <= 12)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =forbid-protected-pid-or-pgid-kill= | =stepProtectedPidKill= | =h.signalScopeBreaches > 0= |
+| =forbid-unfingerprinted-pid-reuse-reap= | =stepPidReuseReap= | =h.pidReuseBreaches > 0= |
+| =forbid-symlink-or-unbounded-process-ledger= | =stepLedgerEscapeOrOom= | =h.ledgerIntegrityBreaches > 0= |
+| =forbid-unbounded-fanout-or-undrained-abort= | =stepFanoutExhaustion= | =h.fanoutConfinementBreaches > 0= |
+
+* Grounded Papers & Specifications
+
+- *Deterministic Engineering (30.06 / 40.05)*: SM37 ADV-L4 POSIX signal target confinement forbidding pid/pgid <= 1 and host self-PID/PGID kill(0)/kill(-1) hazards, fail-closed OS start-time fingerprinting for post-restart orphan reconciliation and reaping, O_NOFOLLOW symlink-safe byte- and entry-bounded schema-checked process ledger persistence, and hard-capped sub-agent fanout parallelism with abort-drain quiescence and exact panic index attribution.
+- *Marlin Agent Core Empirical Case Study (2026)*: marlin-agent-runtime admitted pid/pgid 0 and 1 in libc::kill(-pgid_i32, sig) (kill(0)/kill(-1)), failed open on missing os_start_time_secs during orphan reconciliation, followed symlinks and performed unbounded schema-unchecked reads in FileProcessLedgerStore, and permitted unbounded fanout parallelism with undrained abort_all() returns in WorkingCopySubAgentFanoutRunner.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/execution/process-signal-ledger-and-fanout-confinement/ProcessSignalLedgerAndFanoutConfinement.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/execution/process-signal-ledger-and-fanout-confinement/ProcessSignalLedgerAndFanoutConfinement.qnt --main=execution_process_signal_ledger_and_fanout_confinement --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite bounded runtime process-signal, orphan reconciliation, process-ledger, and sub-agent fanout confinement state machine (activeFanout <= 12, ledgerEntries <= 12, stepCount <= 12); models fail-closed POSIX PID/PGID signal guards (> 1 and != host PID/PGID preventing kill(0)/kill(-1)/self-kill), mandatory OS start-time fingerprinting for orphan reconciliation and reaping, symlink-free O_NOFOLLOW byte- and entry-bounded schema-checked process ledger persistence, and hard-capped sub-agent fanout parallelism with abort-drain quiescence, without modeling kernel PID table exhaustion or scheduler preemption timing.

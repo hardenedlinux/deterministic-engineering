@@ -1,0 +1,231 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+name: Publish Package Mirrors (git subtree)
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+      - docs/quint-threat-library
+    tags:
+      - 'render-v*'
+      - 'quint-models-v*'
+      - 'quint-modules-resolver-v*'
+      - 'lean-models-v*'
+      - 'agent-defense-audit-v*'
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Package directory under packages/ (or "all")'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - render
+          - quint-models
+          - quint-modules-resolver
+          - lean-models
+          - agent-defense-audit
+      target_branch:
+        description: 'Mirror branch to update (blank = mirror current branch; main -> main)'
+        required: false
+        default: ''
+        type: string
+      tag:
+        description: 'Optional release tag to push (single package only, e.g. render-v1.0.3)'
+        required: false
+        default: ''
+        type: string
+      dry_run:
+        description: 'Run subtree split & manifest verification without pushing to remote mirror'
+        required: false
+        default: false
+        type: boolean
+
+# Queue sequential pushes per ref so mirror commit lineage never races or drops updates.
+concurrency:
+  group: publish-package-mirrors-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      matrix: ${{ steps.resolve.outputs.matrix }}
+      has_targets: ${{ steps.resolve.outputs.has_targets }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+
+      - name: Plan affected packages and mirror branch targets
+        id: resolve
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          EVENT_BEFORE: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+          INPUT_PKG: ${{ inputs.package }}
+          INPUT_TARGET_BRANCH: ${{ inputs.target_branch }}
+          INPUT_TAG: ${{ inputs.tag }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+          import sys
+
+          SUPPORTED = {
+              "render": "package.json",
+              "quint-models": "package.json",
+              "quint-modules-resolver": "package.json",
+              "lean-models": "lakefile.toml",
+              "agent-defense-audit": "package.json",
+          }
+
+          event_name = os.environ["EVENT_NAME"]
+          ref_type = os.environ["REF_TYPE"]
+          ref_name = os.environ["REF_NAME"]
+          before_sha = os.environ.get("EVENT_BEFORE", "")
+          head_sha = os.environ["HEAD_SHA"]
+          input_pkg = os.environ.get("INPUT_PKG", "")
+          input_target_branch = os.environ.get("INPUT_TARGET_BRANCH", "").strip()
+          input_tag = os.environ.get("INPUT_TAG", "").strip()
+          dry_run = os.environ.get("INPUT_DRY_RUN", "false").lower() == "true"
+
+          targets = []
+
+          def make_entry(pkg: str, target_branch: str, tag: str) -> dict:
+              manifest = SUPPORTED[pkg]
+              prefix = f"packages/{pkg}"
+              if not os.path.isfile(os.path.join(prefix, manifest)):
+                  raise SystemExit(f"Missing required manifest: {prefix}/{manifest}")
+              return {
+                  "pkg": pkg,
+                  "prefix": prefix,
+                  "manifest": manifest,
+                  "mirror": f"hardenedlinux/deterministic-engineering-{pkg}",
+                  "target_branch": target_branch,
+                  "tag": tag,
+                  "dry_run": "true" if dry_run else "false",
+              }
+
+          if event_name == "workflow_dispatch":
+              pkgs = list(SUPPORTED.keys()) if input_pkg == "all" else [input_pkg]
+              if input_tag and len(pkgs) != 1:
+                  raise SystemExit("tag input requires selecting a single package, not 'all'")
+              resolved_branch = input_target_branch or ref_name
+              for pkg in pkgs:
+                  if pkg not in SUPPORTED:
+                      raise SystemExit(f"Unsupported package: {pkg}")
+                  targets.append(make_entry(pkg, resolved_branch, input_tag))
+          elif ref_type == "tag":
+              matched_pkg = None
+              for pkg in SUPPORTED:
+                  if ref_name.startswith(f"{pkg}-v"):
+                      matched_pkg = pkg
+                      break
+              if matched_pkg is None:
+                  raise SystemExit(f"Unsupported release tag: {ref_name}")
+              # Release tags always publish fast-forward to mirror main + release tag.
+              targets.append(make_entry(matched_pkg, "main", ref_name))
+          else:
+              # Branch push: mirror main -> mirror main; managed dev branches -> same branch name
+              # (never mutating mirror main from non-main branches).
+              zero_sha = "0" * 40
+              if before_sha and before_sha != zero_sha:
+                  diff_cmd = ["git", "diff", "--name-only", f"{before_sha}..{head_sha}", "--", "packages/"]
+              else:
+                  diff_cmd = ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "--root", head_sha, "--", "packages/"]
+              changed = subprocess.check_output(diff_cmd, text=True).splitlines()
+              changed_pkgs = sorted({
+                  line.split("/")[1]
+                  for line in changed
+                  if line.startswith("packages/") and len(line.split("/")) >= 2 and line.split("/")[1] in SUPPORTED
+              })
+              target_branch = "main" if ref_name == "main" else ref_name
+              for pkg in changed_pkgs:
+                  targets.append(make_entry(pkg, target_branch, ""))
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+              fh.write(f"matrix={json.dumps({'include': targets})}\n")
+              fh.write(f"has_targets={'true' if targets else 'false'}\n")
+          print(f"Planned {len(targets)} subtree mirror target(s): {[t['pkg'] + ':' + t['target_branch'] for t in targets]}")
+          PY
+
+  publish:
+    needs: plan
+    if: ${{ needs.plan.outputs.has_targets == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+
+      - name: Split subtree and verify standalone manifest & bundled hooks
+        id: split
+        env:
+          PKG: ${{ matrix.pkg }}
+          PREFIX: ${{ matrix.prefix }}
+          MANIFEST: ${{ matrix.manifest }}
+        run: |
+          set -euo pipefail
+          split_sha=$(git subtree split --prefix="$PREFIX" HEAD)
+          git cat-file -e "${split_sha}:${MANIFEST}"
+          if [ -f "${PREFIX}/.githooks/pre-commit" ]; then
+            git cat-file -e "${split_sha}:.githooks/pre-commit"
+          fi
+          if [ "$PKG" = "lean-models" ]; then
+            git cat-file -e "${split_sha}:lean-toolchain"
+          fi
+          if [ "$PKG" = "quint-models" ]; then
+            if git ls-tree -r --name-only "${split_sha}" | grep -Eq '(^|/)types\.ss$'; then
+              echo "10.205 violation: split quint-models mirror contains forbidden per-model types.ss" >&2
+              exit 1
+            fi
+          fi
+          echo "sha=${split_sha}" >> "$GITHUB_OUTPUT"
+          echo "Split ${PREFIX} at DE commit ${GITHUB_SHA} -> ${split_sha} (verified ${MANIFEST})"
+
+      - name: Push fast-forward split commit to read-only mirror
+        env:
+          MIRROR: ${{ matrix.mirror }}
+          SPLIT_SHA: ${{ steps.split.outputs.sha }}
+          TARGET_BRANCH: ${{ matrix.target_branch }}
+          TAG: ${{ matrix.tag }}
+          DRY_RUN: ${{ matrix.dry_run }}
+          PUSH_TOKEN: ${{ secrets.PACKAGE_MIRROR_PUSH_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "[dry-run] Would push ${SPLIT_SHA} -> ${MIRROR} refs/heads/${TARGET_BRANCH}"
+            if [ -n "$TAG" ]; then
+              echo "[dry-run] Would push tag ${SPLIT_SHA} -> ${MIRROR} refs/tags/${TAG}"
+            fi
+            exit 0
+          fi
+          if [ -z "$PUSH_TOKEN" ]; then
+            echo "PACKAGE_MIRROR_PUSH_TOKEN is not configured; refusing to push to ${MIRROR}" >&2
+            exit 1
+          fi
+          remote="https://x-access-token:${PUSH_TOKEN}@github.com/${MIRROR}.git"
+          # Always fast-forward push (never --force) to preserve deterministic consumer SHA pinning.
+          git push "$remote" "${SPLIT_SHA}:refs/heads/${TARGET_BRANCH}"
+          if [ -n "$TAG" ]; then
+            git push "$remote" "${SPLIT_SHA}:refs/tags/${TAG}"
+          fi

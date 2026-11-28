@@ -1,0 +1,48 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Lock-Free Epoch-Based Reclamation (EBR) Grace Period
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.parallel.epoch-reclamation=
+- *Subdomain*: =quint.engineering.parallel=
+- *Quint Module*: =parallel_epoch_reclamation= (=[[file:EpochReclamation.qnt][EpochReclamation.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/parallel/epoch-reclamation/EpochReclamation=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+A retired shared object is reclaimed only after all pinned workers observe an epoch strictly greater than retiredEpoch, preventing use-after-free.
+
+#+begin_src quint
+val safety = (not(h.useAfterFree) and (not(h.freed) or quiescent))
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =grace-period-quiescence= | =stepPrematureReclaim= | =h.freed == true and ((h.w1Pinned and h.w1Epoch <= h.retiredEpoch) or (h.w2Pinned and h.w2Epoch <= h.retiredEpoch))= |
+
+* Grounded Papers & Specifications
+
+- *K. Fraser (Cambridge PhD Thesis 2004)*: Practical Lock-Freedom: Epoch-Based Reclamation (EBR) pinning and grace-period quiescence.
+- *T. E. Hart, P. E. McKenney, A. D. Brown & J. Walpole (JPDC 2007)*: Performance of Memory Reclamation for Lockless Synchronization: EBR vs. QSBR vs. Hazard Pointers.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/parallel/epoch-reclamation/EpochReclamation.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/parallel/epoch-reclamation/EpochReclamation.qnt --main=parallel_epoch_reclamation --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite 2-worker single-object EBR abstraction; does not model hardware memory fences (Acquire/Release/SeqCst) or allocator reuse.

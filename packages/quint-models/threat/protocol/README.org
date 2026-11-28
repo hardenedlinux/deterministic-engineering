@@ -1,0 +1,36 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Threat / Cryptographic & Transport Protocol Models (Quint.Threat.Protocol)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+This subdomain groups co-located formal threat models for cryptographic
+binding, delegation chains, and transport anti-replay / forward-secrecy
+protocols: OAuth 2.0 DPoP sender-constrain, Macaroons multi-hop caveat
+attenuation, and TLS 1.3 / Noise 0-RTT anti-replay & ECDHE forward secrecy.
+
+* Yuanxu Selection & Reuse
+
+#+begin_src scheme
+(yuanxu!
+  :load-modules (from: :deterministic-engineering/init QuintThreatProtocolSource)
+    mode: auto
+    profile: quint.threat.protocol
+    mount: Protocol
+    :profiles (assurance.bounded-proof bound.standard governance.mandatory-countermodels)
+  (tls13-0rtt-forward-secrecy profiles: (bound.compact)))
+#+end_src
+
+* Model Matrix
+
+| Model | Failure Class | Core Papers / Specs | Emergent Invariant | Countermodels |
+|-------+---------------+---------------------+--------------------+---------------|
+| [[file:dpop-sender-constrain/README.org][dpop-sender-constrain]] | =quint.failure.replay= | RFC 9449, Fett et al. (CCS 2019 / FAPI 2.0) | Stolen token rejected & each DPoP =jti= accepted once | Stolen token misuse; DPoP proof replay |
+| [[file:macaroon-delegation-chain/README.org][macaroon-delegation-chain]] | =quint.failure.privilege-escalation= | Birgisson et al. (NDSS 2014), Miller (2006) | Executed permissions remain subset of attenuated caveat chain | Caveat stripping without HMAC verification |
+| [[file:tls13-0rtt-forward-secrecy/README.org][tls13-0rtt-forward-secrecy]] | =quint.failure.replay= | RFC 8446, RFC 8470, Cremers et al. (CCS 2017), Fischlin & Günther (EuroS&P 2017) | No non-idempotent 0-RTT, cross-edge strike conservation & ECDHE PFS | Non-idempotent 0-RTT; Cross-edge replay; PSK-only no PFS |
+| [[file:mls-ratchet-pcs/README.org][mls-ratchet-pcs]] | =quint.failure.key-compromise= | RFC 9420 MLS (2023), Alwen et al. (CRYPTO 2020), Cohn-Gordon et al. Signal (EuroS&P 2017) | Forward secrecy on epoch advance, PCS healing via fresh entropy & removed-member exclusion | Retained old key (no FS); Symmetric-only ratchet (no PCS); Removal without key rotation |
+| [[file:outbound-http-redirect-ssrf-confinement/README.org][outbound-http-redirect-ssrf-confinement]] | =quint.failure.ssrf= | OWASP SSRF / CWE-918 / CWE-601, RFC 9110/6750, CWE-59, =ADV-L4= pressure floor | Fail-closed no-redirect policy, remote HTTPS Bearer confinement, same-origin DownloadURL, userinfo rejection & Lstat symlink-safe serving | Unchecked 3xx redirect SSRF; Cleartext remote Bearer leak; Unconfined DownloadURL SSRF; Userinfo smuggling & symlink HTTP serve |

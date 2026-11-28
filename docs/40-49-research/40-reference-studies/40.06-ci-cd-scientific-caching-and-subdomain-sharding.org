@@ -1,0 +1,167 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Scientific CI/CD Content-Addressed Caching, Subdomain Sharding & Conflict-Free Ecosystem Architecture (SM18)
+#+AUTHOR: hardenedlinux deterministic-engineering team
+#+DATE: 2026-11-27
+#+OPTIONS: toc:2 num:t
+
+* Purpose & Scope
+:PROPERTIES:
+:CUSTOM_ID: study4006-purpose
+:END:
+
+Modern polyglot verification repositories combine heterogeneous toolchains
+(*Quint + Apalache MBT*, *Lean 4 / Lake*, *Gerbil Scheme / Fun-Flow*, *Rust /
+Cargo*, *Go 1.26 -race*, *C / CBMC*, *C++20*, and *TypeScript / Playwright*).
+As the model fleet grows toward hundreds or thousands of subdomains and models,
+naive CI pipelines fail in two opposite directions:
+
+1. *Cold-Rebuild Explosion*: Re-downloading package ecosystems, browser
+   binaries, and Lean toolchains on every push while running the entire model
+   fleet serially in one job stretches CI latency linearly ($O(N)$) and wastes
+   runner compute.
+2. *Unsound or Conflicting Caches*: Naive =actions/cache= configurations
+   introduce *stale false-hit poisoning* (under-specified keys omitting engine
+   or transitive dependency digests), *cross-shard write-write collisions*
+   (parallel matrix jobs racing on a shared immutable key), and *10 GiB quota
+   ratchet eviction thrashing* (append-only cache files growing unboundedly
+   until GitHub Actions LRU evicts healthy base caches).
+
+This study establishes the formal foundations (=SM18=), proves their unbounded
+invariants in Lean 4, and applies them as a **live production case study** to
+this repository's own CI/CD ecosystem (=.github/workflows/*.yml=,
+=packages/quint-modules-resolver/=, and =t/harness/verify-framework.ts=).
+
+* Theoretical Foundations & Literature
+:PROPERTIES:
+:CUSTOM_ID: study4006-literature
+:END:
+
+| Foundation | Citation | Core Engineering Law Applied |
+|------------+----------+------------------------------|
+| Constructive Traces & Sound Rebuilds | A. Mokhov, N. Mitchell & S. Peyton Jones, *Build Systems à la Carte* (ACM ICFP 2018) | A build/verification cache is sound iff every cache hit proves exact equality of =(engine, flags, transitiveInputs)=; coarse key prefixes may only serve as *transport hints*, never as *validity proofs*. |
+| Purely Functional Content-Addressing | E. Dolstra, M. de Jonge & E. Visser, *Nix: A Safe and Policy-Free System for Software Deployment* (USENIX LISA 2004) | Every ActionKey MUST hash the full transitive dependency closure (source files, =@quint-extends= base chains, local imports, compiler/resolver sources, lockfiles, and CLI parameters). |
+| Hermetic Remote Execution & Action Cache | Bazel Remote Execution API (REAPI v2) & Buck2 Action Digest Model | Separate read-mostly Layer-1 dependency/toolchain caches from immutable Layer-2 per-action SHA-256 content-addressed result stores (CAS). |
+| Immutable Cache Namespaces & Quota Dynamics | GitHub Actions Cache v2 Specification (10 GiB repo cap, 7-day LRU, immutable keys, branch-ref isolation) & M. Grottke / K. S. Trivedi (IEEE Computer 2007) | Parallel matrix jobs MUST write to strictly disjoint shard keys; cache stores MUST run active-set garbage collection on save to prevent watermark ratchets from crossing the 10 GiB eviction cliff. |
+| Supply-Chain Cache Integrity | SLSA Build Levels & CWE-345 (Insufficient Verification of Data Authenticity) | Pin third-party actions by full 40-char commit SHA; never trust mtimes across restored branch caches; never cache failing verification verdicts. |
+
+* Formal Model & Unbounded Proofs (=SM18=)
+:PROPERTIES:
+:CUSTOM_ID: study4006-formal
+:END:
+
+- *Formal Quint State Machine*:
+  [[file:../../../packages/quint-models/engineering/concurrency/ci-cache-soundness-and-sharding/CiCacheSoundnessAndSharding.qnt][CiCacheSoundnessAndSharding.qnt]]
+  (=PLAN-OK=, 100% =--mbt= coverage, 3 auto-derived countermodels):
+  1. =UnderSpecifiedKeyCountermodel=: drops =bind-engine-and-source-digest= ->
+     engine upgrade serves a stale cached verdict (=falseHitCount > 0=).
+  2. =CrossShardWriteConflictCountermodel=: drops =disjoint-shard-namespaces= ->
+     parallel shards race on a shared mutable key (=writeConflictCount > 0=).
+  3. =UnboundedCacheRatchetCountermodel=: drops =active-set-gc-on-save= ->
+     append-only cache breaches =maxCacheEntries= quota ceiling.
+- *Unbounded Lean 4 + LeanPoo Proofs*:
+  [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/CiCacheSoundness.lean][Engineering/CiCacheSoundness.lean]]
+  (dedicated objectified =LeanPoo= module: =sm18_cas_soundness_no_false_hit=,
+  =sm18_disjoint_shard_conflict_freedom=,
+  =sm18_active_set_gc_bounds_cache_watermark=,
+  =githubActionsShardedCasContract= via =ObjectContract.refine=, and
+  =LeanPoo.Proof.reuse= / =close= worker-scaling certificate transport — 0 =sorryAx=).
+
+* Two-Layer Scientific CI Cache & Zero-Hardcoding Subdomain Architecture
+:PROPERTIES:
+:CUSTOM_ID: study4006-architecture
+:END:
+
+** Layer 1: Read-Mostly Immutable Toolchain & Ecosystem Caches
+
+Layer-1 caches contain *only* external packages, compilers, and browser binaries
+keyed strictly by =(runner.os, runner.arch, toolchain/lockfile hash)=:
+
+| Ecosystem | Cached Path(s) | Exact Immutable Key | Invalidation Trigger |
+|-----------+----------------+---------------------+----------------------|
+| Bun Workspace (=.github/actions/setup-bun-cached=) | =~/.bun/install/cache= | =de-bun-v1-${os}-${arch}-1.3.11-${hash(bun.lock)}= | =bun.lock= or Bun version change |
+| Go 1.26 (=-race= / =synctest=) | =~/go/pkg/mod=, =~/.cache/go-build= | =de-go-v1-${os}-${arch}-1.26-${hash(go.mod, go.sum)}= | Go version or module graph change |
+| Rust / Cargo | =~/.cargo/registry=, =~/.cargo/git=, =.../target= | =de-cargo-v1-${os}-${arch}-${hash(Cargo.lock)}= | =Cargo.lock= change |
+| Lean 4 / Elan Toolchain | =~/.elan/toolchains= | =de-elan-v1-${os}-${arch}-${hash(lean-toolchain)}= | =lean-toolchain= version bump |
+| Playwright Chromium | =~/.cache/ms-playwright= (Linux) / =~/Library/Caches/ms-playwright= (macOS) | =de-playwright-v1-${os}-${arch}-${hash(bun.lock, packages/render/package.json)}= | Playwright version bump in lockfile |
+
+** Layer 2: Shard-Scoped Cryptographic CAS Verification & Incremental Build Caches
+
+Layer-2 caches separate *GitHub Actions transport keys* from *per-unit
+cryptographic soundness*:
+
+1. *Dynamic Zero-Hardcoding Shard Discovery*:
+   =just verify-matrix quint= (=t/harness/verify-framework.ts matrix quint=)
+   discovers every subdomain under =packages/quint-models/<domain>/<subdomain>/=
+   automatically and deterministically bin-packs them into balanced parallel
+   matrix shards (e.g., =engineering-concurrency=, =engineering-defense=,
+   =engineering-consensus-plus-3=, =threat-execution-plus-2=,
+   =threat-supply-chain-plus-1=). Adding a new subdomain requires **zero**
+   changes to =.github/workflows/quint.yml= or =Justfile=.
+2. *Strict Shard Namespace Disjointness*:
+   Every parallel shard writes exclusively to its own immutable transport key:
+   =de-quint-cas-v1-${os}-${arch}-${matrix.shard}-${engineHash}-${github.sha}=
+   with shard-scoped restore prefix
+   =de-quint-cas-v1-${os}-${arch}-${matrix.shard}-${engineHash}-=.
+   Because =${matrix.shard}= and =${github.sha}= are embedded in the key:
+   - Parallel shards **never collide** when saving caches.
+   - An upgrade to =packages/quint-modules-resolver/src/**= or =bun.lock= changes
+     =${engineHash}= and cleanly drops obsolete restore prefixes without
+     downloading stale caches.
+3. *Per-Unit SHA-256 ActionKey Verification Inside Restored Caches*:
+   Inside both =run-fleet --cache=<dir>= (=packages/quint-modules-resolver/src/mbt.ts=)
+   and =verify-framework.ts --cache=<dir>=, every model/unit computes:
+   $$\mathrm{ActionKey}(u) = \mathrm{SHA256}(\text{schema} \parallel \text{engineDigest} \parallel \text{flags} \parallel \text{transitiveClosure}(u))$$
+   - Unchanged models in a touched shard hit exact SHA-256 CAS in $O(1)$ ms.
+   - Editing 1 model invalidates *only* that model (and any overlay extending
+     it via =@quint-extends= or importing it).
+   - Failing verdicts are *never* stored.
+   - Active-set GC prunes obsolete entries on save and writes atomically via
+     temp-file + =renameSync()=.
+
+* Real Case Study: =deterministic-engineering= Repository CI/CD Transformation
+:PROPERTIES:
+:CUSTOM_ID: study4006-case-study
+:END:
+
+Applying =SM18= directly across this repository's 5 verification workflows
+(=quint.yml=, =stability-audit.yml=, =multi-method-verification.yml=,
+=render.yml=, =defense-audit.yml=):
+
+| Workflow | Baseline (Before SM18) | Hardened (After SM18) | Conflict & Poisoning Elimination |
+|----------+------------------------+-----------------------+----------------------------------|
+| =quint.yml= | 570s (v1 monolithic) -> 206s (v2 2-job); ran full 95-model fleet uncached in =conformance.test.ts= AND uncached in =mbt:quint= | Dynamic =discover-quint-shards= matrix (=just verify-matrix quint=) + fast =quint-resolver-unit= + parallel subdomain shards each running =run-plan= + 100% =--mbt-audit= with =--cache=.data/ci-cache/quint-${shard}= | Disjoint =${matrix.shard}= + =${engineHash}= keys; transitive =@quint-extends=/import SHA-256 ActionKey; active-set GC |
+| =stability-audit.yml= | Single serial job (104s), =setup-go cache: false=, zero Bun/Cargo/CAS cache | Dynamic =discover-stability-shards= (=ts-fuzz-mbt= // =native-go-rust-c-cpp=) + Layer-1 Bun/Go caches + Layer-2 shard-scoped =verify-framework.ts --cache= | Engine digest mixes =verify-framework.ts=, =bun.lock=, =go version=, =rustc --version=, =cc --version= |
+| =multi-method-verification.yml= | Cold =elan= + Lean =v4.34.0= (350 MB) + full =LeanPoo= + full =DeterministicEngineering= build + cold Cargo build every push (101s–240s) | Layer-1 =~/.elan/toolchains= + Layer-2 =.lake/build= keyed by =(lean-toolchain, lakefile.toml, lean-poo SHA)= + Cargo registry/target cache + CBMC CAS cache | Changing =lean-toolchain= or =lean-poo= HEAD SHA invalidates =.lake/build= restore prefix automatically |
+| =render.yml= | Cold Playwright Chromium download (~170 MB) on both Ubuntu and macOS every push (233s) | Layer-1 Bun cache + OS/arch/lockfile-keyed Playwright browser cache (skipping download on exact hit; Linux =install-deps= only) + Layer-2 CAS cache | Exact =hashFiles('bun.lock', 'packages/render/package.json')= key prevents browser/library version skew |
+| =defense-audit.yml= | Cold =bun install= + uncached polyglot defense suite every push (47s) | Layer-1 Bun cache + Layer-2 =verify-framework.ts --cache=.data/ci-cache/defense= + parallel =--jobs=4= | Unchanged C/C++/Rust/TS defense modules hit exact SHA-256 CAS while PR diff audit always executes live |
+
+** Measured Local Shard CAS Benchmark (=just check-quint-shard=)
+
+Running =just check-quint-shard engineering consensus,gc,parallel,storage <cas>=
+live against the 10-model =engineering/{consensus,gc,parallel,storage}= shard
+(both =run-plan= and 100% =--mbt-audit --n-traces=12 --seed=7 --min-coverage=1.0=):
+
+- *Cold run* (=cached=0/10=): =run-plan= =7,419 ms= + =mbt-audit= =5,341 ms= = **12,760 ms**
+- *Warm SHA-256 CAS run* (=cached=10/10=): =run-plan= =4 ms= + =mbt-audit= =4 ms= = **8 ms** (**1,595× speedup**)
+- *Mutation & Flag-Isolation Probe* ([[file:../../../languages-engineering/ts/stability/aging-contrast/ci-cache-soundness-fuzz.test.ts][ci-cache-soundness-fuzz.test.ts]]):
+  - Switching flags (=run-plan= -> =--mbt-audit=) produces =cached=0= (zero cross-mode poisoning) while retaining original =run-plan= entries cleanly.
+  - Mutating 1 comment byte in 1 =.qnt= file invalidates *only* that model (=cached=1/2=), leaving untouched sibling models cached.
+  - All 9 workflow & composite action YAMLs pass automated SM18 SHA-pinning + shard/engine cache-key soundness verification.
+
+* Explicit Limits
+:PROPERTIES:
+:CUSTOM_ID: study4006-limits
+:END:
+
+- Layer-1 caches accelerate dependency installation and browser/toolchain
+  bootstrapping; they do *not* bypass lockfile integrity (=bun install --frozen-lockfile=
+  still verifies exact hashes).
+- On GitHub Actions, PR branches cannot write to the default branch's cache
+  scope (security isolation by design); warm Layer-2 CAS hits across unrelated
+  PRs reach maximum efficiency after a base branch push populates the base
+  cache, while consecutive pushes on the same PR branch warm immediately.
+- PR diff auditors (=audit-agent-patch --diff-file= and
+  =audit-agent-stability --diff-file=) intentionally run uncached on every PR
+  commit so policy decisions always inspect the live diff against =origin/${base_ref}=.

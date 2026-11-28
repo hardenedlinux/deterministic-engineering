@@ -1,0 +1,48 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Guarded Exact-Effect Handoff (Prepare / Durable-Commit / Emit)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.execution.effect-handoff=
+- *Subdomain*: =quint.threat.execution=
+- *Quint Module*: =effect_handoff= (=[[file:EffectHandoff.qnt][EffectHandoff.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/execution/effect-handoff/EffectHandoff=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Prepared effects commit durably under current authority and emit at most MaxSends times while retaining unknown outcomes.
+
+#+begin_src quint
+val safety = (h.sent <= MaxSends and (h.sent == 0 or (h.durable and h.unknown)))
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =durable-ack= | =stepNoDurability= | =h.sent >= 1 and not(h.durable)= |
+
+* Grounded Papers & Specifications
+
+- *J. Gray & L. Lamport (ACM TODS 2006)*: Consensus on Transaction Commit: prepare, durable commit acknowledgment, and uncertain outcomes.
+- *P. Helland (CIDR 2007)*: Life Beyond Distributed Transactions: durable intent logging before external side-effect emission.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/execution/effect-handoff/EffectHandoff.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/execution/effect-handoff/EffectHandoff.qnt --main=effect_handoff --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite protocol abstraction; trusted bits summarize native interpreters; no cryptography, real CAS, codec correctness or Lean refinement is claimed.

@@ -1,0 +1,48 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Chase-Lev Work-Stealing Deque & Last-Item CAS Arbitration
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.parallel.work-stealing-deque=
+- *Subdomain*: =quint.engineering.parallel=
+- *Quint Module*: =parallel_work_stealing= (=[[file:WorkStealingDeque.qnt][WorkStealingDeque.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/parallel/work-stealing-deque/WorkStealingDeque=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Every pushed task is taken at most once across concurrent owner pop and thief steal operations.
+
+#+begin_src quint
+val safety = ((h.ownerPopped + h.thiefStolen) <= h.pushed and h.top <= h.bottom)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =last-item-cas= | =stepNoLastItemCas= | =h.ownerPopped + h.thiefStolen > h.pushed= |
+
+* Grounded Papers & Specifications
+
+- *D. Chase & Y. Lev (ACM SPAA 2005)*: Dynamic Circular Work-Stealing Deque: owner pop vs. thief steal CAS arbitration on the final element.
+- *N. M. Lê, A. Pop, A. Cohen & F. Zappa Nardelli (ACM PPoPP 2013)*: Correct and Efficient Work-Stealing for Weak Memory Models.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/parallel/work-stealing-deque/WorkStealingDeque.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/parallel/work-stealing-deque/WorkStealingDeque.qnt --main=parallel_work_stealing --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite 1-owner/1-thief Chase-Lev deque abstraction; does not model circular array resizing or ARMv8/TSO weak memory fences.

@@ -2,23 +2,22 @@
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 ;;; -*- Gerbil -*-
-(import (only-in :yuanxu/module-system/source/declaration .def))
+(import (only-in :clan/poo/object .def .o .get .ref)
+        "types.ss" "objects.ss" "config.ss"
+        (only-in "../backpressure-memory/interface.ss" BackpressureLibrary)
+        (only-in "../backpressure-tokio-rayon/interface.ss" TokioRayonLibrary))
+(export RustResources)
+(def Parent (.get BackpressureLibrary core exports))
+(def ModelLibrary (.get TokioRayonLibrary core exports))
 (.def RustResources
   identity: 'rust-resources
-  tags: '(engineering driver rust)
-  admissions: (.o
-                Config: (.o
-                          export-path: '(config)
-                          contract-path: '(contracts config)))
+  tags: '(engineering driver rust de.layer.method)
   core:
   (.o
-    requires: (.o
-                Parent: (.o
-                          module-id: 'backpressure-memory
-                          contract: (.get BackpressureScopeContract value-contract))
-                ModelLibrary: (.o
-                  module-id: 'backpressure-tokio-rayon
-                  contract: (.get TokioRayonScopeContract value-contract)))
+    admissions: (.o
+                  Config: (.o
+                            export-path: '(config)
+                            contract-path: '(contracts config)))
     scope-contract: (.get RustResourcesScopeContract value-contract)
     exports: (.o (:: scope)
                definitions: RustMethodDefinitions

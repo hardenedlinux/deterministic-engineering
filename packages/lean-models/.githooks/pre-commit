@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+# Dual-mode pre-commit hook for packages/lean-models (monorepo & standalone split mirror).
+# Enforces zero-Mathlib, zero-Cedar, zero-sorry/admit, lakefile.toml integrity, and SPDX headers.
+
+set -euo pipefail
+
+PKG_ROOT="$(pwd)"
+if [ "${DE_HOOK_MODE:-standalone}" = "standalone" ]; then
+  PKG_ROOT="$(git rev-parse --show-toplevel)"
+  cd "$PKG_ROOT"
+  CHANGED_FILES="$(git diff --cached --name-only --diff-filter=ACMR)"
+else
+  CHANGED_FILES="${DE_SUBTREE_CHANGED_FILES:-}"
+fi
+
+if [ ! -f "$PKG_ROOT/lakefile.toml" ]; then
+  echo "[lean-models/pre-commit] ERROR: missing lakefile.toml in $PKG_ROOT" >&2
+  exit 1
+fi
+
+if ! grep -q '^name = ' "$PKG_ROOT/lakefile.toml" || ! grep -q '^\[\[lean_lib\]\]' "$PKG_ROOT/lakefile.toml"; then
+  echo "[lean-models/pre-commit] ERROR: lakefile.toml must declare name and [[lean_lib]]" >&2
+  exit 1
+fi
+
+if [ -z "$CHANGED_FILES" ]; then
+  exit 0
+fi
+
+failed=0
+while IFS= read -r rel_path; do
+  [ -z "$rel_path" ] && continue
+  [ -f "$PKG_ROOT/$rel_path" ] || continue
+  case "$rel_path" in
+    *.lean)
+      # REUSE-IgnoreStart
+      if [ ! -f "$PKG_ROOT/${rel_path}.license" ] && ! head -n 15 "$PKG_ROOT/$rel_path" | grep -q "SPDX-License-Identifier:"; then
+        echo "[lean-models/pre-commit] ERROR: missing SPDX header in $rel_path" >&2
+        failed=1
+      fi
+      # REUSE-IgnoreEnd
+      # Strip both Lean block comments (/- ... -/) and single-line comments (-- ...)
+      # before checking forbidden imports and incomplete proof tokens.
+      if command -v python3 >/dev/null 2>&1; then
+        stripped="$(python3 - "$PKG_ROOT/$rel_path" <<'PY'
+import re, sys
+src = open(sys.argv[1], encoding="utf-8").read()
+# Handle nested Lean block comments /- ... -/ accurately.
+out = []
+i, n, depth = 0, len(src), 0
+while i < n:
+    if src[i:i+2] == "/-":
+        depth += 1
+        i += 2
+    elif depth > 0 and src[i:i+2] == "-/":
+        depth -= 1
+        i += 2
+    elif depth == 0:
+        out.append(src[i])
+        i += 1
+    else:
+        if src[i] == "\n":
+            out.append("\n")
+        i += 1
+cleaned = "".join(out)
+cleaned = re.sub(r"--[^\n]*", "", cleaned)
+sys.stdout.write(cleaned)
+PY
+)"
+      else
+        stripped="$(sed 's/--.*$//' "$PKG_ROOT/$rel_path")"
+      fi
+      if printf '%s\n' "$stripped" | grep -Eq '^[[:space:]]*import[[:space:]]+Mathlib(\.|[[:space:]]|$)'; then
+        echo "[lean-models/pre-commit] ERROR: forbidden 'import Mathlib' in $rel_path (zero-Mathlib policy)" >&2
+        failed=1
+      fi
+      if printf '%s\n' "$stripped" | grep -Eq '^[[:space:]]*import[[:space:]]+Cedar(\.|[[:space:]]|$)'; then
+        echo "[lean-models/pre-commit] ERROR: forbidden 'import Cedar' in $rel_path (zero-Cedar policy)" >&2
+        failed=1
+      fi
+      if printf '%s\n' "$stripped" | grep -Eq '(^|[^[:alnum:]_.])(sorry|admit)([^[:alnum:]_]|$)'; then
+        echo "[lean-models/pre-commit] ERROR: incomplete proof token (sorry/admit) found in $rel_path" >&2
+        failed=1
+      fi
+      ;;
+  esac
+done <<< "$CHANGED_FILES"
+
+exit "$failed"

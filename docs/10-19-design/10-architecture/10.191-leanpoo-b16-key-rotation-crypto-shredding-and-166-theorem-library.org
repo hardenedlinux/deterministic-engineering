@@ -1,0 +1,44 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 10.191 LeanPoo B16 Zero-Downtime AEAD Key Rotation, Cryptographic Erasure & 15-Module / 166-Theorem Library (AG226-AG230)
+#+AUTHOR: Deterministic Engineering
+#+DATE: 2026-11-27
+
+* Executive Summary
+:PROPERTIES:
+:CUSTOM_ID: arch10191-summary
+:STATUS: executed-verified
+:END:
+
+Following the =B15= four-paradigm symmetry closure in [[file:10.190-b15-four-paradigm-symmetry-24-quint-models-and-36x20-ascent.org][10.190]], Phase 43 introduces
+Business Extension **=B16=: Zero-Downtime AEAD Key Rotation, Lossless Forward-Secure
+Re-Wrapping & Cryptographic Erasure (Crypto-Shredding)** — resolving the classic tension
+between **immutable content-addressed =M1= Merkle audit logs** and **GDPR Article 17
+right-to-erasure**:
+
+1. **15th Pure =LeanPoo= Module (=KeyRotationAndCryptoShredding.lean=, 10 Theorems -> 166 Theorems Across 15 Modules)**:
+   - [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/KeyRotationAndCryptoShredding.lean][KeyRotationAndCryptoShredding.lean]] (ZERO Mathlib, ZERO Cedar, zero =sorry=, zero warnings)
+     proves unboundedly:
+     - =retired_key_epoch_cannot_encrypt_new_writes= (blocks stale-epoch encryption regressions)
+     - =shredded_key_epoch_permanently_unreadable= & =shredded_key_cannot_encrypt_or_rewrap=
+     - =rewrap_must_preserve_plaintext_digest= & =rewrap_must_strictly_advance_epoch=
+     - =aad_tenant_or_epoch_mismatch_refused= (cross-tenant / cross-epoch AAD transplant refusal)
+     - =crypto_shred_preserves_merkle_root_integrity= (proves GDPR erasure renders epoch =k=
+       unreadable while keeping =M1= Merkle audit root 100% intact)
+     - =keyRotationContract_preserves_rejection= (2-step =LeanPoo= =ObjectContract.refine= + =cedar-poo-spec= Data-Erasure host)
+     - =rewrapBatchSizeTuning_preserves_certificate= & =disablingCryptoShredTombstone_invalidates_reuse= (=Core.Transport=)
+2. **Real AES-256-GCM Multi-Epoch Key Ring & 13th =R3= Non-Leakable =M3= Capability**:
+   - [[file:../../../languages-engineering/ts/defense/agent-audit/key-rotation-crypto-shredding.ts][key-rotation-crypto-shredding.ts]] implements =RotatableTenantAeadKeyRing= (13th =R3= non-serializable =M3= capability), active-epoch-only encryption, lossless SHA-256-verified envelope re-wrapping, and physical =Buffer.fill(0)= key zeroization with pinned =M1= =CryptoShredTombstone=.
+3. **230-Case Benchmark (=AG226=–=AG230=) & 166-Theorem Single-Shot CLI Gate**:
+   - [[file:../../../languages-engineering/ts/defense/agent-audit/key-rotation-crypto-shredding.test.ts][key-rotation-crypto-shredding.test.ts]] verifies =AG226=–=AG230= across 13/13 =R3= non-leakable caps, GDPR erasure with live RFC 6962 Merkle consistency proof continuity, 166/166-theorem CLI JSON gate, and =cedar-poo-spec= admission.
+
+* Verification Receipts
+:PROPERTIES:
+:CUSTOM_ID: arch10191-receipts
+:STATUS: executed-verified
+:END:
+
+- Pure Lean 4 / =LeanPoo= Build: =lake build DeterministicEngineering.Engineering.KeyRotationAndCryptoShredding= -> =Build completed successfully (87 jobs)= (zero =sorry=, zero warnings, zero Mathlib/Cedar).
+- Live 166/166-Theorem Single-Shot CLI Gate: =just audit-leanpoo-fleet --json= -> =verdict: "Proven", quintModelCount: 24, ascentRulesPresent: true, moduleCount: 15, verifiedTheoremCount: 166, zeroMathlib: true, zeroCedar: true=.
+- Benchmark: [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05]] extended to **230 cases (=AG01=–=AG230=)** across 40 Bun test suites.

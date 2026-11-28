@@ -1,0 +1,87 @@
+#+TITLE: 10.171 Dynamic Witness Roster Reconfiguration, Joint-Consensus Dual-Quorum Handover and Forward-Secure Epoch Sealing (B10b)
+#+AUTHOR: hardenedlinux Linux Team and Contributors
+#+DATE: 2026-11-26
+#+STARTUP: overview
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+* Overview
+:PROPERTIES:
+:CUSTOM_ID: arch10171-overview
+:END:
+
+Phases 21–22 ([[file:10.169-proactive-threshold-witness-cosigning-and-quorum-finality.org][10.169]],
+[[file:10.170-full-b1-b10-declarative-quorum-closure-and-n-version-proof-carrying-audit.org][10.170]])
+established proactive Ed25519 threshold witness cosigning (=2f+1= of =3f+1=) and
+declarative ASCENT quorum finality over a **static** witness committee. In
+long-lived orthogonally persistent AI governance systems (=gerbil-persist=)
+operating over months or years, a static committee is operationally unsafe:
+witnesses caught equivocating (e.g., =w4-byz= in =AG116=) must be evicted, keys
+must rotate across epochs, and retired committees pose a **Long-Range /
+Posterior-Corruption** risk once departing members lose skin in the game.
+
+Business Extension **=B10b=** closes this long-horizon cryptographic frontier
+with three coupled mechanisms:
+
+1. **Joint-Consensus Dual-Quorum Handover (=Q_old ∩ Q_new=)**: Following Ongaro
+   & Ousterhout (USENIX ATC 2014, Raft §6), transitioning from =Epoch E=
+   committee =C_old= to =Epoch E+1= committee =C_new= requires a
+   =JointHandoverCertificate= signed by **BOTH** =>= t_old= distinct Ed25519
+   witnesses of =C_old= **AND** =>= t_new= distinct Ed25519 witnesses of =C_new=
+   binding exact monotonic =fromEpoch -> fromEpoch + 1=, both canonical roster
+   digests, and the RFC 6962 history anchor =(anchorTreeSize, anchorRootHashHex)=.
+2. **Forward-Secure Retired Key Zeroization (=R3= =M3= Key Evolution)**:
+   Following Bellare & Miner (CRYPTO 1999), =ForwardSecureWitnessKey= isolates
+   per-epoch Ed25519 private keys in a non-serializable =M3= capability and
+   provides irreversible =zeroizeRetiredEpochKey(epoch)= so posterior host
+   compromise cannot forge past-epoch signatures.
+3. **Offline Weak-Subjectivity Monotonic Epoch Pinning & RFC 6962 Continuity**:
+   =ForwardSealedEpochVerifier= monotonically pins the latest verified handover
+   epoch and refuses retired-epoch checkpoints, alternative retired handovers
+   (even if =>= 2f_old+1= retired keys are later bought/compromised), future
+   unhanded-over epochs, and spliced Epoch =E+1= trees failing RFC 6962
+   append-only consistency from the pinned handover anchor.
+
+* Formal Defense Model (19th Model — 56 Canonical Models Total)
+:PROPERTIES:
+:CUSTOM_ID: arch10171-formal-model
+:END:
+
+- Source model:
+  [[file:../../../packages/quint-models/engineering/defense/witness-epoch-reconfiguration/objects.ss][witness-epoch-reconfiguration/objects.ss]]
+  -> projected to
+  [[file:../../../packages/quint-models/engineering/defense/witness-epoch-reconfiguration/WitnessEpochReconfiguration.qnt][WitnessEpochReconfiguration.qnt]]
+- Qualification test:
+  [[file:../../../t/yanxu/Quint.Engineering.Defense/witness-epoch-reconfiguration/qualification-test.ss][qualification-test.ss]]
+- Emergent safety invariant verified by Apalache (=verify-depth=10=):
+  - =not(epoch2CleanFinalized and epoch1PostHandoverForkAccepted)=
+  - =unilateralHandoverViolations == 0=
+  - =unanchoredEpoch2Violations == 0=
+  - =longRangeRewriteViolations == 0=
+- 3 Countermodels (each dropping 1 essential guard, verified by Apalache + =F3= =guard-probe=):
+  - =unilateral-handover= (drops =require-dual-quorum-handover=)
+  - =unanchored-epoch2= (drops =require-anchor-consistency-for-epoch2=)
+  - =long-range-fork= (drops =enforce-monotonic-pinned-epoch=)
+
+* Executable Runtime, 19th MBT SUT & Benchmark (AG121-AG125)
+:PROPERTIES:
+:CUSTOM_ID: arch10171-runtime
+:END:
+
+- Runtime implementation:
+  [[file:../../../languages-engineering/ts/defense/agent-audit/witness-epoch-reconfiguration.ts][witness-epoch-reconfiguration.ts]]
+- Benchmark tests (=AG121=–=AG125=, expanding [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05]] to **125 cases**):
+  [[file:../../../languages-engineering/ts/defense/agent-audit/witness-epoch-reconfiguration.test.ts][witness-epoch-reconfiguration.test.ts]]
+- 19th Action-Driven MBT SUT (=WitnessEpochReconfigurationSUT= + =BadUnilateralHandoverSUT=):
+  [[file:../../../languages-engineering/ts/defense/boundary-contrast/mbt-replay.test.ts][mbt-replay.test.ts]]
+
+* Limits
+:PROPERTIES:
+:CUSTOM_ID: arch10171-limits
+:END:
+
+Weak-subjectivity epoch pinning protects all online and periodically syncing
+verifiers against posterior corruption of retired committees. A brand-new
+verifier bootstrapping from genesis after many years of complete offline
+isolation still requires an out-of-band pinned checkpoint hash (the fundamental
+weak-subjectivity bound of proof-of-stake / committee-reconfigured ledgers).

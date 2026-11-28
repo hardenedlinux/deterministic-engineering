@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Durable Memory-Poisoning Defense: Quorum Promotion & ATMS Causal Retraction
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.defense.durable-memory-tms=
+- *Subdomain*: =quint.engineering.defense=
+- *Quint Module*: =durable_memory_tms= (=[[file:DurableMemoryTms.qnt][DurableMemoryTms.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/defense/durable-memory-tms/DurableMemoryTms=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=7=
+
+* Emergent Safety Invariant
+
+No unverified or untrusted claim enters M1 verified memory (poisonedPromotionViolations == 0), no retracted poisoned claim is re-ingested (repoisoningViolations == 0), and no derived belief lacking a surviving clean justification is read after root retraction (zombieDerivedViolations == 0).
+
+#+begin_src quint
+val safety = (h.poisonedPromotionViolations == 0 and h.repoisoningViolations == 0 and h.zombieDerivedViolations == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =require-quorum-and-trusted-source= | =stepPoisonedPromotion= | =h.poisonedPromotionViolations > 0= |
+| =forbid-repoisoning-retracted= | =stepRepoisoning= | =h.repoisoningViolations > 0= |
+| =forbid-zombie-retracted-derived= | =stepZombieDerivedRead= | =h.zombieDerivedViolations > 0= |
+
+* Grounded Papers & Specifications
+
+- *J. Doyle (Artificial Intelligence 1979) / J. de Kleer (AIJ 1986)*: A Truth Maintenance System (TMS) & Assumption-Based TMS (ATMS): causal justification graphs and multi-support belief revision.
+- *D. Malkhi & M. Reiter (Distributed Computing 1998)*: Byzantine Quorum Systems for independent multi-witness fact attestation.
+- *Deterministic Engineering (10.156 / 10.165)*: Two-tier M2 provisional vs. M1 verified durable AI memory with causal retraction and poison-immunization tombstones.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/defense/durable-memory-tms/DurableMemoryTms.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/defense/durable-memory-tms/DurableMemoryTms.qnt --main=durable_memory_tms --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite single-root and single-derived ATMS belief revision abstraction; does not model probabilistic confidence calibration, contradictory belief resolution over cycles, or natural-language semantic equivalence beyond canonical claim digests.

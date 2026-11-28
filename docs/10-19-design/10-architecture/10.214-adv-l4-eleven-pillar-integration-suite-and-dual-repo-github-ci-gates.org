@@ -1,0 +1,72 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#+TITLE: 10.214 ADV-L4 11-Pillar Adversarial Integration Suite & Dual-Repo GitHub Actions G2/Quint CI Gates
+#+PROPERTY: JD_ID 10.214
+
+* Overview
+
+Following the 11-pillar kernel closure in [[file:10.213-eleven-pillar-b9-b21-closure-19-overlays-and-devenv-g2-hooks.org][10.213]], this milestone closes the
+remote CI and adversarial testing loop across all three repositories and pushes
+every production branch to GitHub:
+
+1. Added an **ADV-L4 hostile adversarial integration & 256-round mutation fuzz
+   suite** (=defense_pillars_adv_l4.rs=) for the 11-pillar
+   =UnifiedDefensePillarCoordinator= on =tao3k/marlin-agent-core= (=b872cc1a=,
+   pushed to =origin/sync/agentic-ai-lab-rust=).
+2. Added standalone **GitHub Actions CI workflows** enforcing zero-G2
+   production sweeps via sparse-checked-out
+   =@deterministic-engineering/agent-defense-audit= across both
+   =tao3k/marlin-mygo= (=3519133=, pushed to
+   =origin/feat/marlin-mygo-frontend-engine=) and =tao3k/marlin-agent-core=
+   (=b872cc1a=, additionally enforcing 19/19 Quint threat overlay =typecheck= and
+   the 47-test kernel + ADV-L4 gate).
+
+* ADV-L4 11-Pillar Adversarial Integration Suite (=marlin-agent-core@b872cc1a=)
+
+- File: =crates/marlin-agent-kernel/tests/integration/defense_pillars_adv_l4.rs=
+  (registered in =crates/marlin-agent-kernel/Cargo.toml=).
+- Three executed integration tests (**3/3 pass, 0.01s**):
+  1. =adv_l4_all_10_single_pillar_sabotages_rollback_atomically=: Sabotages
+     each of =B12..B21= individually in sequence, asserting exact typed
+     =UnifiedDefenseRejection= mapping, zero side effects on =B9= tree size,
+     =B13= case phase, =B15= key releases, =B18= nullifiers, and =B20= ops,
+     followed by clean admission with a verified =B9= RFC 6962 inclusion proof.
+  2. =adv_l4_multi_release_b9_consistency_and_replay_resistance=: Executes 8
+     sequential 11-pillar releases with mid-stream =B16= epoch rotation +
+     crypto-shredding, verifies RFC 6962 inclusion proofs for all 8 leaves and
+     consistency proofs for every historical tree head =1..7 -> 8=, and proves
+     cross-pillar replay resistance (=B13= terminal case, =B16= shredded epoch,
+     =B17= reused OTS leaf, =B18= burned nullifier).
+  3. =adv_l4_seeded_hostile_mutation_fuzz_256_rounds_never_panics_or_admits=:
+     Runs 256 deterministic SplitMix64 multi-pillar hostile mutation rounds
+     (non-empty bitmask across =B12..B21=), asserting 0/256 admissions, 0
+     panics, and =B9= tree size strictly =0=.
+- All 10 new/updated Rust files verified with =rustfmt --edition 2024 --check=
+  (=RUSTFMT_ALL_10_FILES_OK=).
+
+* Dual-Repo GitHub Actions CI Gates
+
+- =tao3k/marlin-mygo/.github/workflows/defense-audit.yml= (=3519133=):
+  - Runs =g2-defense-audit= on PRs and pushes to =main= /
+    =feat/marlin-mygo-frontend-engine= using sparse checkout of
+    =hardenedlinux/deterministic-engineering= (=packages/agent-defense-audit=)
+    and =bun ... --dir . --lang=go --exclude-tests=.
+- =tao3k/marlin-agent-core/.github/workflows/defense-audit.yaml= (=b872cc1a=):
+  - =g2-defense-audit=: Enforces 0 G2 findings across =crates= and =scheme=
+    (=--lang=rust,scheme --exclude-tests=).
+  - =quint-threat-overlays=: Typechecks all **19/19** =dev/quint/threat/*.qnt=
+    overlays against =packages/quint-models= and
+    =packages/quint-modules-resolver=.
+  - =kernel-11-pillars-adv-l4=: Runs =cargo test --locked -p marlin-agent-kernel
+    --lib= (44 tests) and =--test defense_pillars_adv_l4= (3 tests).
+
+* Verification Summary
+
+- =cargo test -p marlin-agent-kernel --lib=: **44 passed, 0 failed**.
+- =cargo test -p marlin-agent-kernel --test defense_pillars_adv_l4=: **3 passed,
+  0 failed** (including 256 hostile mutation rounds).
+- Live G2 sweeps: =marlin-mygo= **247/247 (0 findings)** + =marlin-agent-core=
+  **772/772 (0 findings)** = **1,019 real production files, 0 findings**.
+- GitHub push verification:
+  - =tao3k/marlin-mygo=: =6a3ae81..3519133= -> =origin/feat/marlin-mygo-frontend-engine=.
+  - =tao3k/marlin-agent-core=: =5d13ffe6..b872cc1a= -> =origin/sync/agentic-ai-lab-rust=.

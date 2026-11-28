@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Metastable Retry Collapse & Congestion-Aware Load Shedding
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.concurrency.metastable-retry-collapse=
+- *Subdomain*: =quint.engineering.concurrency=
+- *Quint Module*: =concurrency_metastable_retry= (=[[file:MetastableRetryCollapse.qnt][MetastableRetryCollapse.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/concurrency/metastable-retry-collapse/MetastableRetryCollapse=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Congestion-aware load shedding and an explicit retry budget keep admitted queue depth and pending retry amplification within safe recovery bounds.
+
+#+begin_src quint
+val safety = (h.queueDepth <= 2 and h.retriesPending <= 1 and h.retriesPending <= h.queueDepth)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =overload-admission-shed= | =stepNoLoadShed= | =h.queueDepth > 2= |
+| =retry-budget-cap= | =stepUnboundedRetryStorm= | =h.retriesPending > 1 or h.queueDepth > 2= |
+
+* Grounded Papers & Specifications
+
+- *N. Bronson, A. Aghayev, A. Charapko, T. Zhu (ACM HotOS 2021)*: Metastable Failures in Distributed Systems — self-sustaining degraded states sustained by retry feedback loops.
+- *L. Huang et al. (USENIX OSDI 2022)*: Metastable Failures in the Wild — empirical study of 22 production cloud outages sustained after transient triggers.
+- *H. Zhou et al. (ACM SoCC 2018)*: Overload Control for Scaling WeChat Microservices (DAGOR) — queue-delay admission & load shedding.
+- *I. Cho et al. (USENIX OSDI 2020)*: Overload Control for us-scale RPCs with Breakwater — server-driven credit admission bounds.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/concurrency/metastable-retry-collapse/MetastableRetryCollapse.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/concurrency/metastable-retry-collapse/MetastableRetryCollapse.qnt --main=concurrency_metastable_retry --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite single-stage queue and retry-budget abstraction (queue cap=2, retry budget=1); models overload amplification and recovery bounds, not continuous service-time distributions or multi-hop network propagation delays.

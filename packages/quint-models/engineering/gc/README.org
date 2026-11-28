@@ -1,0 +1,33 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Engineering / Garbage Collection Formal Models (Quint.Engineering.GC)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+This subdomain groups co-located formal models for concurrent and incremental
+garbage collection invariants: tri-color write barriers and mutator/collector
+safepoint handshakes. Each model folder is a self-contained Yuanxu Loader module
+paired with its projected pure =.qnt= specification and verified =README.org=.
+
+* Yuanxu Selection & Reuse
+
+#+begin_src scheme
+(yuanxu!
+  :load-modules (from: :deterministic-engineering/init QuintEngineeringGcSource)
+    mode: auto
+    profile: quint.engineering.gc
+    mount: GC
+    :profiles (assurance.bounded-proof bound.standard governance.mandatory-countermodels))
+#+end_src
+
+* Model Matrix
+
+| Model | Failure Class | Core Papers | Emergent Invariant | Countermodels |
+|-------+---------------+-------------+--------------------+---------------|
+| [[file:tricolor-write-barrier/README.org][tricolor-write-barrier]] | =quint.failure.live-object-sweep= | Dijkstra et al. (CACM 1978), Jones et al. (2011) | No Black->White edge during Mark & never sweep live object | Omitted Dijkstra insertion write barrier |
+| [[file:safepoint-handshake/README.org][safepoint-handshake]] | =quint.failure.barrier-bypass= | Doligez & Leroy (POPL 1993), Doligez & Gonthier (POPL 1994) | All mutators enable write barriers before Mark starts | Collector skips mutator safepoint ack |
+| [[file:gc-pacing-thrash-guard/README.org][gc-pacing-thrash-guard]] | =quint.failure.gc-thrash= | Cotroneo et al. (SRDS 2007), Knyszek Go GOMEMLIMIT (2022), Bronson et al. (HotOS 2021) | Live heap stays strictly below soft memory limit with bounded GC cycles per mutator window | Missing headroom admission shedding; Unbounded GC CPU thrash spiral |

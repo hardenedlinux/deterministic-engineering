@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: ASP HTTP Patch, Loopback Transport, Schema & Search Cache Confinement (SM40)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.execution.asp-patch-transport-schema-cache-confinement=
+- *Subdomain*: =quint.threat.execution=
+- *Quint Module*: =execution_asp_patch_transport_schema_cache_confinement= (=[[file:AspPatchTransportSchemaCacheConfinement.qnt][AspPatchTransportSchemaCacheConfinement.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/execution/asp-patch-transport-schema-cache-confinement/AspPatchTransportSchemaCacheConfinement=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+ASP HTTP AST patches enforce workspace-root confinement, non-symlink O_NOFOLLOW bounded reads, and symlink-safe atomic writes (patchEscapeBreaches == 0 and patchConfinementEnforced), loopback ASP HTTP transport enforces strict host:port endpoints, CRLF-free Bearer tokens and route paths, fail-closed response size caps, and checked chunked-transfer decoding (transportSmugglingBreaches == 0 and loopbackTransportIntegrityEnforced), JSON Schema $ref resolution enforces depth and cycle bounds preventing stack-overflow crashes (schemaCycleCrashBreaches == 0 and schemaRefCycleGuardEnforced), and workspace snapshot/cache persistence refuses symlinks while Search DSL worker dispatch enforces bounded sync_channel backpressure (cacheQueueBreaches == 0 and snapshotCacheQueueConfinementEnforced and pendingDslJobs <= 12).
+
+#+begin_src quint
+val safety = (h.patchEscapeBreaches == 0 and h.transportSmugglingBreaches == 0 and h.schemaCycleCrashBreaches == 0 and h.cacheQueueBreaches == 0 and h.patchConfinementEnforced and h.loopbackTransportIntegrityEnforced and h.schemaRefCycleGuardEnforced and h.snapshotCacheQueueConfinementEnforced and h.pendingDslJobs >= 0 and h.pendingDslJobs <= 12 and h.stepCount <= 12)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =forbid-ast-patch-traversal-symlink-or-unbounded-read= | =stepAstPatchEscapeOrUnboundedRead= | =h.patchEscapeBreaches > 0= |
+| =forbid-loopback-ssrf-crlf-or-chunked-overflow= | =stepLoopbackSsrfCrlfOrChunkOverflow= | =h.transportSmugglingBreaches > 0= |
+| =forbid-circular-json-schema-ref-stack-overflow= | =stepCircularSchemaRefOverflow= | =h.schemaCycleCrashBreaches > 0= |
+| =forbid-snapshot-cache-symlink-or-unbounded-dsl-queue= | =stepCacheSymlinkOrUnboundedDslQueue= | =h.cacheQueueBreaches > 0= |
+
+* Grounded Papers & Specifications
+
+- *Deterministic Engineering (30.06 / 40.05)*: SM40 ADV-L4 workspace-confined non-symlink bounded AST patch execution, strict loopback HTTP/1.1 endpoint validation with CRLF-free tokens/paths and checked chunked-response bounds, cycle-bounded JSON Schema $ref resolution, and non-symlink snapshot/cache persistence with bounded Search DSL worker queues.
+- *Marlin Agent Core Empirical Case Study (2026)*: marlin-agent-search-engine apply_ast_patch_via_asp_http joined untrusted relative/absolute/symlink paths onto workspace_root enabling arbitrary file read and overwrite, AspForwardingEndpoint::new and HttpEndpointPath::new admitted @-userinfo SSRF and CRLF header smuggling while decode_http_body panicked on pos + size chunk overflow and silently truncated oversize bodies, TargetedJsonSchemaDocument::resolve_schema_node stack-overflowed on circular $ref cycles, and snapshot/cache persistence followed symlinks while package_search_dsl_worker used an unbounded mpsc::channel.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/execution/asp-patch-transport-schema-cache-confinement/AspPatchTransportSchemaCacheConfinement.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/execution/asp-patch-transport-schema-cache-confinement/AspPatchTransportSchemaCacheConfinement.qnt --main=execution_asp_patch_transport_schema_cache_confinement --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite bounded ASP HTTP AST patch confinement, loopback HTTP/1.1 endpoint and chunked-response transport integrity, circular JSON Schema $ref depth bounding, and workspace snapshot/cache symlink refusal with bounded Search DSL worker queueing (pendingDslJobs <= 12, stepCount <= 12); models workspace-confined non-symlink bounded AST patch reads and atomic writes, strict loopback host:port endpoints with CRLF-free Bearer tokens/paths and checked chunked/response bounds, cycle-bounded JSON Schema $ref resolution, and O_NOFOLLOW non-symlink snapshot/cache persistence with bounded sync_channel DSL queues, without modeling TCP congestion control or OS filesystem journaling internals.

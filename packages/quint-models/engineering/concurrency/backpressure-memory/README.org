@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Bounded Backpressure & Disjoint Memory-Ownership Conservation
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.concurrency.backpressure-memory=
+- *Subdomain*: =quint.engineering.concurrency=
+- *Quint Module*: =BackpressureOwners= (=[[file:BackpressureOwners.qnt][BackpressureOwners.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/concurrency/backpressure-memory/BackpressureOwners=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Every admitted job belongs to exactly one mutually disjoint ownership state (queued, running, returned, or cleanup), total admitted permits never exceed limit, queued jobs never exceed queueLimit, and completed (done) jobs hold no active permit.
+
+#+begin_src quint
+val safety = (owners == h.admitted and size(h.admitted) <= h.limit and size(h.queued) <= h.queueLimit and size(h.queued.intersect(h.running)) == 0 and size(h.queued.intersect(h.returned)) == 0 and size(h.queued.intersect(h.cleanup)) == 0 and size(h.running.intersect(h.returned)) == 0 and size(h.running.intersect(h.cleanup)) == 0 and size(h.returned.intersect(h.cleanup)) == 0 and size(h.done.intersect(owners)) == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =cancel-retains-permit= | =stepEarlyRelease= | =size(h.cleanup) > 0 and not(subseteq(h.cleanup, h.admitted))= |
+| =admit-capacity-bound= | =stepOverAdmit= | =size(h.admitted) > h.limit= |
+| =admit-queue-bound= | =stepQueueOverflow= | =size(h.queued) > h.queueLimit= |
+| =admit-disjoint-job= | =stepDuplicateAdmit= | =size(h.queued) + size(h.running) + size(h.returned) + size(h.cleanup) > size(h.admitted) or (size(h.done) > 0 and size(h.queued) > 0)= |
+
+* Grounded Papers & Specifications
+
+- *Reactive Streams Specification (2015)*: Asynchronous stream processing with non-blocking bounded backpressure.
+- *J. Mace, R. Roelke & R. Fonseca (SOSP 2015)*: Pivot Tracing / End-to-end bounded resource ownership and queue isolation across async boundaries.
+- *Deterministic Engineering (10.25 / 10.77)*: Bounded ownership conservation across queued, running, returned, and non-abortable cleanup states.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/concurrency/backpressure-memory/BackpressureOwners.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/concurrency/backpressure-memory/BackpressureOwners.qnt --main=BackpressureOwners --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite-state bounded ownership abstraction over 4 discrete job IDs (limit=2, queueLimit=1); makes no Rust scheduler, allocator, byte-accounting, or kernel memory-reclamation claim.

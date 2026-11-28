@@ -4,10 +4,10 @@
 ;;; Complete effective Module shape; Library definitions remain a dependency.
 (import
   :clan/poo/object
-  (only-in :clan/poo/mop Any Function Type Type. define-type element? raise-type-error)
+  (only-in :clan/poo/type Any Function Type Type. define-type element? raise-type-error)
   (only-in :clan/poo/type String Symbol)
-  (only-in :clan/poo/object-contract ObjectContract.)
-  (only-in :yuanxu/object-types/contracts YuanxuContract. yuanxu-predicate-type)
+  (only-in :clan/poo/types/object-contract ObjectContract.)
+  (only-in :tao3k/yuanxu/types/contracts YuanxuContract. yuanxu-predicate-type)
   (only-in :gerbil-ascent/program/types GerbilAscentProgramContract)
   "../project-organization/types.ss")
 (export

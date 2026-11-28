@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Multi-Tenant Authorization Isolation & Tenant-Pinned Outbox Continuity
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.zero-trust.multi-tenant-isolation=
+- *Subdomain*: =quint.threat.zero-trust=
+- *Quint Module*: =multi_tenant_isolation= (=[[file:MultiTenantIsolation.qnt][MultiTenantIsolation.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/zero-trust/multi-tenant-isolation/MultiTenantIsolation=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Tenant-scoped tickets never enforce against a foreign tenant resource or after tenant membership revocation, and queued offline outbox items never flush into a different active tenant.
+
+#+begin_src quint
+val safety = (not(h.crossTenantLeak) and not(h.staleTenantUse) and not(h.crossTenantFlush))
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =tenant-resource-match= | =stepCrossTenantDeputy= | =h.crossTenantLeak == true= |
+| =tenant-membership-current= | =stepRevokedTenantUse= | =h.staleTenantUse == true= |
+| =outbox-tenant-binding= | =stepCrossTenantFlush= | =h.crossTenantFlush == true= |
+
+* Grounded Papers & Specifications
+
+- *S. Rose, O. Borchert, S. Mitchell & S. Connelly (NIST SP 800-207, 2020)*: Zero Trust Architecture: continuous per-tenant authorization, membership revocation, and resource scoping.
+- *J. W. Cutler et al. (OOPSLA 2024)*: Cedar: A Language for Expressive, Fast, Safe, and Analyzable Authorization for multi-tenant policies.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/zero-trust/multi-tenant-isolation/MultiTenantIsolation.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/zero-trust/multi-tenant-isolation/MultiTenantIsolation.qnt --main=multi_tenant_isolation --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite two-tenant authorization, revocation epoch, and offline outbox pinning abstraction; does not model database row-level security engines, tenant KMS key rotation, or side-channel microarchitectural leaks.

@@ -1,0 +1,63 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+direction: right
+
+title: {
+  label: "90.146 Orthogonal Persistence (gerbil-persist) x Durable Multi-Agent Governance (10.156)"
+  near: top-center
+  shape: text
+  style.font-size: 20
+  style.bold: true
+}
+
+agents: "Concurrent AI Agents\n(Evolve Independently Between Commits)" {
+  style.fill: "#eef2ff"
+  style.stroke: "#4f46e5"
+
+  planner: "Planner Agent"
+  coder: "Coder Agent"
+  reviewer: "Reviewer Agent"
+}
+
+precommit: "Pre-Commit Stability Hook\n(require-precommit-stable)" {
+  style.fill: "#fff7ed"
+  style.stroke: "#ea580c"
+
+  settle: "All Peers Settled\n(Rollback / Rollforward)"
+}
+
+kv_layer: "gerbil-persist Storage Layer\n(Minimal ACID KV + Row-Level Encryption)" {
+  style.fill: "#ecfdf5"
+  style.stroke: "#059669"
+
+  merkle: "M1 Immutable Content-Addressed Merkle DAG\n• GovernanceTranscript & Patch Diffs\n• Oracle Receipts & Pinned Cuts\n• Acyclic Ref-Counted GC + O(1) Fork"
+  root_cell: "Single Atomic M3 Root Cell\n(CAS: branch, version, rootHash, inFlightIntent)" {
+    style.fill: "#fef9c3"
+    style.stroke: "#ca8a04"
+  }
+}
+
+crash_resume: "Crash / Pause -> Cold Restart Boundary\n(NEVER Persist Live M3 Authority)" {
+  style.fill: "#fef2f2"
+  style.stroke: "#dc2626"
+
+  reattest: "Live M3 Re-Attestation Gate\n(require-resume-reattestation)\nBlocks Zombie Permits"
+  intent_fence: "PendingUnknownEffect Fence\n(forbid-blind-crash-replay-intent)\nBlocks Duplicate Tool Calls"
+}
+
+outcome: "Verified Execution" {
+  style.fill: "#dcfce7"
+  style.stroke: "#16a34a"
+
+  dispatch: "Safe Post-Resume Dispatch\n(New Intent Persisted)"
+}
+
+agents.planner -> precommit.settle: "stable"
+agents.coder -> precommit.settle: "evidence transcript"
+agents.reviewer -> precommit.settle: "verdict"
+precommit.settle -> kv_layer.merkle: "SHA-256 putBlob (M1)"
+kv_layer.merkle -> kv_layer.root_cell: "atomic CAS swap"
+kv_layer.root_cell -> crash_resume.reattest: "Cold Restart\n(M1 lineage verified)"
+crash_resume.reattest -> crash_resume.intent_fence: "Live M3 Authorized"
+crash_resume.intent_fence -> outcome.dispatch: "No Unresolved Intent"

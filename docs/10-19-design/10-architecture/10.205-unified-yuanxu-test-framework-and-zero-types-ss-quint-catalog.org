@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 10.205 Unified Yuanxu Testing Framework & Zero-Boilerplate Quint Catalog Contracts
+#+AUTHOR: Deterministic Engineering
+#+DATE: 2026-11-27
+
+* Executive Summary
+:PROPERTIES:
+:CUSTOM_ID: arch10205-summary
+:STATUS: executed-verified
+:END:
+
+Following the hard =.qnt=-SSOT cutover ([[file:10.204-native-qnt-ssot-sealed-schema-and-anti-bloat-gate.org][10.204]]), this ADR eliminates the
+two remaining sources of copy-pasted Scheme boilerplate across the repository
+and locks both down with unconditional pre-commit gates:
+
+1. **Zero Per-Model =types.ss= Boilerplate in =packages/quint-models/= (95 Files Deleted)**:
+   - Exported shared sealed contracts =EngineeringCatalogConfigContract= and
+     =ThreatCatalogConfigContract= directly from [[file:../../../library/quint-methods/types.ss][library/quint-methods/types.ss]].
+   - Updated all 95 tracked =packages/quint-models/**/interface.ss= descriptors
+     to import the shared contract + =library-catalog-scope-contract= directly,
+     deleted all 95 identical per-model =types.ss= files (~1,900 lines), and
+     updated [[file:../../../t/support/repository-organization-facts.ss][t/support/repository-organization-facts.ss]] accordingly.
+   - [[file:../../../packages/quint-models/.githooks/pre-commit][packages/quint-models/.githooks/pre-commit]] now unconditionally blocks
+     re-introducing per-model =types.ss= files.
+2. **Unified =:tao3k/yuanxu/testing= (=yuanxu-test-case=) & Canonical =t/support/repo-paths.ss=**:
+   - Introduced [[file:../../../t/support/repo-paths.ss][t/support/repo-paths.ss]] exporting =(resolve-repo-root)= and
+     =(repo-path rel)= as the single root-resolution helper for =t/yanxu/=.
+   - Migrated all 29 tracked =t/yanxu/**/*.ss= test suites off raw =(test-case ...)=
+     onto native =(yuanxu-test-case ...)= (gaining Yuanxu memory-watchdog and
+     execution-progress policy uniformly) and replaced all 17 manual
+     =(path-expand "../../../.." (path-directory (this-source-file)))= lines
+     with =(resolve-repo-root)=.
+   - [[file:../../../.githooks/pre-commit][.githooks/pre-commit]] now mechanically blocks raw =(test-case ...)= and
+     manual =(path-expand "../.." ...)= in any staged =t/yanxu/**/*.ss=.
+3. **Documentation Hygiene**:
+   - Updated [[file:../../../packages/quint-models/docs/threat-first-framework.org][packages/quint-models/docs/threat-first-framework.org]] to remove the
+     stale reference to deleted =library/quint-methods/ast.ss=.
+
+* Verification Receipts
+:PROPERTIES:
+:CUSTOM_ID: arch10205-receipts
+:STATUS: executed-verified
+:END:
+
+- Gerbil incremental compilation of =library/quint-methods/types= and migrated =interface.ss= modules: 0 errors.
+- Live =gxtest= verification across migrated =t/yanxu/Library/*= suites (including =quint-methods=, =quint-profiles=, =defensive-governance=, =project-organization=, =backpressure-memory=, =bounded-capacity=, =evidence=) and multi-subdomain Quint qualification suites: **all pass / 0 errors**.
+- [[file:../../../languages-engineering/ts/defense/agent-audit/subtree-git-hooks.test.ts][subtree-git-hooks.test.ts]] (=H1=–=H8=): **8 pass / 0 fail**; =G2= static audit -> **0 findings**.

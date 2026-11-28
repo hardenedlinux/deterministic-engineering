@@ -1,0 +1,65 @@
+#+TITLE: 10.178 LeanPoo Unified Library Export Contract and 76-Theorem Fleet Manifest for cedar-poo-spec
+#+AUTHOR: hardenedlinux Linux Team and Contributors
+#+DATE: 2026-11-27
+#+STARTUP: overview
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+* Overview: Single-Entry LeanPoo Library Facade (deterministic-engineering-qnt -> cedar-poo-spec)
+:PROPERTIES:
+:CUSTOM_ID: arch10178-overview
+:END:
+
+Phase 30 unifies all five specialized =LeanPoo= engineering proof modules
+([[file:10.172-unbounded-lean4-meta-theorems-for-durable-ai-governance.org][10.172]]–[[file:10.177-leanpoo-unbounded-hitl-coevolution-and-aead-isolation.org][10.177]])
+into a single reusable export facade —
+[[file:../../../packages/lean-models/DeterministicEngineering/Engineering/LibraryExportContract.lean][LibraryExportContract.lean]]
+— paired with a machine-verifiable TypeScript attestation manifest
+([[file:../../../languages-engineering/ts/defense/agent-audit/leanpoo-export-manifest.ts][leanpoo-export-manifest.ts]]).
+
+This enforces the strict **Library (=deterministic-engineering-qnt=) <->
+Consuming Authorization Host (=cedar-poo-spec=)** separation mechanically:
+- **Zero Mathlib**: Static boundary audit guarantees =0= Mathlib imports across
+  all 6 exported =LeanPoo= modules.
+- **Zero Cedar**: Static boundary audit guarantees =0= Cedar imports in this
+  reusable library; concrete organizational policies (=CedarPooSpec.Authorization=,
+  =CedarPooSpec.Governance.*=, =CedarPooSpec.Admission.*=, =CedarPooSpec.Data.*=)
+  live strictly inside =cedar-poo-spec=.
+- **Single-Entry Monotonic Refinement**: =cedar-poo-spec= imports
+  =DeterministicEngineering.Engineering.LibraryExportContract= and composes its
+  3-layer sovereignty stack (=Authorization -> Governance -> Admission=) directly
+  via `consumingHost_threeStep_full_cedar_stack_preserves_rejection`, inheriting
+  every library refusal guarantee monotonically.
+- **Single-Shot 76-Theorem Live Fleet Attestation**: `verifyLeanPooLibraryFleet`
+  verifies all **76 machine-checked theorems across 6 modules** in a single
+  =lake env lean --stdin= `#print axioms` invocation and pins a deterministic
+  =M1= Merkle receipt (`leanpoo-library-fleet-attestation`) surviving GC.
+
+* Complete 76-Theorem LeanPoo Library Export Inventory (6 Modules, Zero Mathlib, Zero Cedar)
+:PROPERTIES:
+:CUSTOM_ID: arch10178-inventory
+:END:
+
+| # | LeanPoo Export Module | Theorems | Pillar Coverage |
+|---+-----------------------+----------+-----------------|
+| 1 | [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/DurableGovernanceQuorum.lean][DurableGovernanceQuorum.lean]] | 19 | =B3=, =B6= budget, =B10=, =B10b=, =B10c=, =R3= |
+| 2 | [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/HostAuthorizationBridge.lean][HostAuthorizationBridge.lean]] | 11 | Dual Sovereignty, =BoundOperation=, =PolicySnapshot=, =AuthorityConsumption=, =R1=, =R3= |
+| 3 | [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/InformationFlowAndTms.lean][InformationFlowAndTms.lean]] | 11 | =B7= DIFC & CaMeL, =B8= Doyle & de Kleer ATMS |
+| 4 | [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/SagaAndSsi.lean][SagaAndSsi.lean]] | 11 | =B6= Saga pivot & reverse undo, =B4= AST Symbol SSI & =DE01= |
+| 5 | [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/HitlAndCoevolution.lean][HitlAndCoevolution.lean]] | 12 | =B1/B5= HITL quorum =SoD= & veto, =R1= policy co-evolution, =B2/R5= AEAD isolation |
+| 6 | [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/LibraryExportContract.lean][LibraryExportContract.lean]] | 12 | Unified export contract, 1/2/3-step =cedar-poo-spec= host refinement, disjoint host policy bundle =Core.Transport= |
+| **Total** | **6 Modules (1 Single Import Facade)** | **76** | **76/76 verified live in one batched =#print axioms= run (zero =sorryAx=, zero custom axioms)** |
+
+* Verification Receipts (AG156-AG160)
+:PROPERTIES:
+:CUSTOM_ID: arch10178-receipts
+:END:
+
+- Lean 4 / =LeanPoo= build:
+  =(cd packages/lean-models && lake build DeterministicEngineering.Engineering.LibraryExportContract)=
+- Machine-verifiable fleet manifest & single-shot 76-theorem attestation oracle:
+  [[file:../../../languages-engineering/ts/defense/agent-audit/leanpoo-export-manifest.ts][leanpoo-export-manifest.ts]]
+- Benchmark suite (=AG156=–=AG160=, expanding
+  [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05]]
+  to **160 cases**):
+  [[file:../../../languages-engineering/ts/defense/agent-audit/library-export-contract.test.ts][library-export-contract.test.ts]]

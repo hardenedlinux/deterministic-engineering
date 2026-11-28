@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+# Root pre-commit dispatcher for deterministic-engineering monorepo + subtrees.
+# Fast deterministic checks only; never performs remote/network subtree pushes.
+
+set -euo pipefail
+
+if [ "${DE_SKIP_HOOKS:-0}" = "1" ]; then
+  echo "[githooks/pre-commit] DE_SKIP_HOOKS=1 set; skipping pre-commit checks." >&2
+  exit 0
+fi
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+STAGED_FILES="$(git diff --cached --name-only --diff-filter=ACMR)"
+if [ -z "$STAGED_FILES" ]; then
+  exit 0
+fi
+
+log() {
+  if [ "${DE_HOOK_VERBOSE:-0}" = "1" ]; then
+    echo "[githooks/pre-commit] $*" >&2
+  fi
+}
+
+# 1. Verify SPDX license headers (or adjacent .license sidecars) on staged source/doc/workflow files.
+check_spdx() {
+  local missing=0
+  local file
+  while IFS= read -r file; do
+    [ -z "$file" ] && continue
+    [ -f "$file" ] || continue
+    case "$file" in
+      *.license|*/Cargo.lock|Cargo.lock|bun.lock|bun.lockb|devenv.lock|*.png|*.jpg|*.jpeg|*.webp|*.woff2|*.pdf)
+        continue
+        ;;
+      *.ts|*.tsx|*.js|*.mjs|*.cjs|*.sh|*.qnt|*.lean|*.ss|*.c|*.h|*.cpp|*.hpp|*.rs|*.go|*.org|*.yml|*.yaml|*.d2|*.sysml)
+        if [ -f "${file}.license" ]; then
+          continue
+        fi
+        # REUSE-IgnoreStart
+        if ! head -n 15 "$file" | grep -q "SPDX-License-Identifier:"; then
+          echo "[githooks/pre-commit] ERROR: missing SPDX-License-Identifier header (or ${file}.license): ${file}" >&2
+          missing=1
+        fi
+        # REUSE-IgnoreEnd
+        ;;
+    esac
+  done <<< "$STAGED_FILES"
+  return "$missing"
+}
+
+check_spdx
+
+# 1b. Enforce unified Yuanxu test framework discipline on staged t/yanxu/**/*.ss (10.205):
+#     - Must use :tao3k/yuanxu/testing `yuanxu-test-case` (never raw `(test-case `)
+#     - Must use t/support/repo-paths.ss `(repo-root)` / `(repo-path ...)` (never manual `path-expand "../..`)
+check_yuanxu_tests() {
+  local bad=0
+  local file
+  while IFS= read -r file; do
+    [ -z "$file" ] && continue
+    [ -f "$file" ] || continue
+    case "$file" in
+      t/yanxu/*.ss)
+        if sed 's/;.*$//' "$file" | grep -Eq '(^|[^[:alnum:]_-])\(test-case[[:space:]]'; then
+          echo "[githooks/pre-commit] ERROR: raw (test-case ...) forbidden in ${file}; use (yuanxu-test-case ...) from :tao3k/yuanxu/testing (10.205)" >&2
+          bad=1
+        fi
+        if sed 's/;.*$//' "$file" | grep -Eq '\(path-expand[[:space:]]+"\.\./\.\.'; then
+          echo "[githooks/pre-commit] ERROR: manual (path-expand \"../..\" ...) forbidden in ${file}; use (resolve-repo-root)/(repo-path) from t/support/repo-paths.ss (10.205)" >&2
+          bad=1
+        fi
+        ;;
+    esac
+  done <<< "$STAGED_FILES"
+  return "$bad"
+}
+
+check_yuanxu_tests
+
+# 2. Run G2 agent-defense static audit when defense source files (TS/C/C++/Rust/Go/Scheme) are staged.
+if printf '%s\n' "$STAGED_FILES" | grep -Eq '^languages-engineering/[^/]+/defense/.*\.(ts|tsx|js|mjs|cjs|c|h|cpp|cc|cxx|hpp|hh|rs|go|ss)$'; then
+  AUDIT_SCRIPT="$REPO_ROOT/packages/agent-defense-audit/src/agent-defense-audit.ts"
+  if [ -f "$AUDIT_SCRIPT" ] && command -v bun >/dev/null 2>&1; then
+    DEFENSE_FILES=()
+    while IFS= read -r file; do
+      case "$file" in
+        *bad_defensive.*|*bad-defensive.*)
+          continue
+          ;;
+        languages-engineering/*/defense/*.ts|languages-engineering/*/defense/*.tsx|languages-engineering/*/defense/*.js|languages-engineering/*/defense/*.mjs|languages-engineering/*/defense/*.cjs|languages-engineering/*/defense/*.c|languages-engineering/*/defense/*.h|languages-engineering/*/defense/*.cpp|languages-engineering/*/defense/*.cc|languages-engineering/*/defense/*.cxx|languages-engineering/*/defense/*.hpp|languages-engineering/*/defense/*.hh|languages-engineering/*/defense/*.rs|languages-engineering/*/defense/*.go|languages-engineering/*/defense/*.ss)
+          [ -f "$file" ] && DEFENSE_FILES+=("$file")
+          ;;
+      esac
+    done <<< "$STAGED_FILES"
+    if [ "${#DEFENSE_FILES[@]}" -gt 0 ]; then
+      log "Running G2 agent-defense-audit on ${#DEFENSE_FILES[@]} staged defense file(s)"
+      bun "$AUDIT_SCRIPT" --files "${DEFENSE_FILES[@]}"
+    fi
+  fi
+fi
+
+# 3. Auto-discover and dispatch matching packages/<pkg>/.githooks/pre-commit hooks.
+if [ -d "$REPO_ROOT/packages" ]; then
+  for hook in "$REPO_ROOT"/packages/*/.githooks/pre-commit; do
+    [ -f "$hook" ] || continue
+    pkg_dir="$(dirname "$(dirname "$hook")")"
+    pkg="$(basename "$pkg_dir")"
+    prefix="packages/${pkg}/"
+    pkg_files="$(printf '%s\n' "$STAGED_FILES" | grep "^${prefix}" | sed "s|^${prefix}||" || true)"
+    if [ -n "$pkg_files" ]; then
+      echo "[githooks/pre-commit] Dispatching subtree hook: packages/${pkg}/.githooks/pre-commit" >&2
+      (
+        cd "$pkg_dir"
+        DE_HOOK_MODE="monorepo" \
+        DE_REPO_ROOT="$REPO_ROOT" \
+        DE_SUBTREE_PREFIX="packages/${pkg}" \
+        DE_SUBTREE_CHANGED_FILES="$pkg_files" \
+        bash "$hook"
+      )
+    fi
+  done
+fi

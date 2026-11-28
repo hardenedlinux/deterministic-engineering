@@ -75,7 +75,7 @@
                             identity: 'ownership-model
                             owner: 'backpressure-memory
                             kind: 'quint
-                            relative-path: "../backpressure-memory/model.qnt")
+                            relative-path: "../../languages-engineering/quint/concurrency/backpressure-memory/model.qnt")
                         MethodObserverAsset))
     lean: (.o (:: @ ResourceMethod.)
               operation: 'lean
@@ -86,7 +86,7 @@
                            identity: 'budget-proof
                            owner: 'backpressure-memory
                            kind: 'lean
-                           relative-path: "../backpressure-memory/budget.lean")
+                           relative-path: "../../languages-engineering/lean/concurrency/backpressure-memory/budget.lean")
                        MethodObserverAsset))
     integration: (.o (:: @ ResourceMethod.)
                      operation: 'integration

@@ -1,0 +1,69 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 10.168 Cross-Runtime N-Version Proof-Carrying Governance Bridge (TypeScript B1-B9 <-> Gerbil Scheme ASCENT)
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.168
+#+STARTUP: overview
+#+OPTIONS: toc:3 num:nil
+#+FILETAGS: :architecture:n-version:proof-carrying:datalog:ascent:cross-runtime:governance:
+
+[[file:../../00-09-project/00-documentation/00.01-index.org][Index]] | [[file:10.162-unified-durable-ai-governance-pipeline-and-architecture-synthesis.org][10.162 Unified Pipeline]] | [[file:10.167-durable-ai-governance-research-synthesis-and-declarative-datalog-meta-audit.org][10.167 ASCENT Meta-Audit Synthesis]] | [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05 110-Case Benchmark]]
+
+* Purpose: N-Version Proof-Carrying Governance Across Imperative and Declarative Runtimes
+:PROPERTIES:
+:CUSTOM_ID: bridge168-purpose
+:STATUS: implemented-verified
+:END:
+
+In safety-critical systems (Avizienis 1985 N-Version Programming; Necula POPL
+1997 Proof-Carrying Code), relying on a single imperative coordinator risks
+silent logic bugs or subtle tampering passing unnoticed. Document [[file:10.167-durable-ai-governance-research-synthesis-and-declarative-datalog-meta-audit.org][10.167]]
+introduced the declarative Gerbil Scheme ASCENT Datalog meta-auditor
+(=DurableGovernanceMetaAuditProgram=). This document completes the live
+cross-runtime bridge ([[file:../../../languages-engineering/ts/defense/agent-audit/ascent-meta-audit-bridge.ts][ascent-meta-audit-bridge.ts]]):
+
+1. *Zero-Handwriting M1 Fact Projection*: =extractMetaAuditBundleFromLiveObjects=
+   projects live TypeScript =B1=–=B9= governance objects (=DelegationCertificate=
+   chains, =MemoryBeliefNode= graphs, =TaintedValue= derivations, Ed25519
+   =SignedTreeHead= observations, release proposals, Saga pivot flags) into an
+   immutable =M1= content-addressed =MetaAuditFactBundle= and injection-safe
+   Scheme S-expression alist.
+2. *Live Gerbil Scheme ASCENT Subprocess Oracle*: =runLiveGerbilAscentMetaAudit=
+   streams the S-expression bundle via =stdin= to the compiled Gerbil Scheme
+   runtime (=gxi=), evaluates =reason-durable-governance-meta-audit=, and parses
+   the framed JSON response.
+3. *Fail-Closed Cross-Language Agreement Gate*:
+   - If a buggy or compromised TypeScript coordinator claims =ADMIT= while the
+     independent Scheme Datalog oracle disqualifies the release, admission is
+     refused (=oracle-disagreement-fail-closed=) and a forensic receipt is pinned
+     in =M1=.
+   - If the external Gerbil binary is absent or emits malformed output, the gate
+     fails closed as =PendingMethod= / =SetupDefect= (never masking missing
+     verification as =ok: true=).
+   - Only when *both* heterogeneous engines agree =ADMIT= is an immutable =M1=
+     =DualOracleAdmissionReceipt= pinned across GC.
+
+* Executable Artifacts & Verification Receipts
+:PROPERTIES:
+:CUSTOM_ID: bridge168-artifacts
+:STATUS: executed-verified
+:END:
+
+| Artifact | Path | Verification Evidence |
+|----------+------+-----------------------|
+| Cross-Runtime Bridge Engine | [[file:../../../languages-engineering/ts/defense/agent-audit/ascent-meta-audit-bridge.ts][ascent-meta-audit-bridge.ts]] | Live =TS -> Scheme S-expr -> gxi ASCENT -> JSON= + fail-closed N-Version gate; dogfood 0 findings |
+| 5-Case Cross-Runtime Cohort (=AG106=–=AG110=) | [[file:../../../languages-engineering/ts/defense/agent-audit/ascent-meta-audit-bridge.test.ts][ascent-meta-audit-bridge.test.ts]] | 5/5 exact gold match: live 4-hop =B3->B8=/=B7=/=B9= Scheme ASCENT execution, buggy TS coordinator catch, dual-oracle GC survival, =PendingMethod=/=SetupDefect= fail-closed |
+
+* Limits
+:PROPERTIES:
+:CUSTOM_ID: bridge168-limits
+:STATUS: implemented-verified
+:END:
+
+Running the live Scheme oracle subprocess requires the compiled Gerbil runtime
+and =.gerbil/lib= artifact tree; in Bun-only environments lacking Gerbil, the
+bridge deterministically surfaces =PendingMethod= rather than silently admitting.
+Production high-throughput deployments should host the Gerbil ASCENT oracle as
+a persistent local IPC/socket sidecar rather than spawning one =gxi= process per
+release.

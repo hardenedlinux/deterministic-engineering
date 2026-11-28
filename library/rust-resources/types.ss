@@ -4,16 +4,16 @@
 ;;; -*- Gerbil -*-
 (import
   :clan/poo/object
-  (only-in :clan/poo/mop Type Type. Any Object Function define-type element? raise-type-error)
-  (only-in :clan/poo/recursive-validation close-validation closed? closed-ref)
+  (only-in :clan/poo/type Type Type. Any Object Function define-type element? raise-type-error)
+  (only-in :clan/poo/recursive/validation close-validation closed? closed-ref)
   (only-in
-   :yuanxu/object-types/contracts
+   :tao3k/yuanxu/types/contracts
    YuanxuContract.
    yuanxu-predicate-contract
    yuanxu-predicate-type)
   (only-in :clan/poo/type String Symbol List Record)
   (only-in :std/list/list duplicates)
-  (only-in :clan/poo/object-contract ObjectContract. refine)
+  (only-in :clan/poo/types/object-contract ObjectContract. refine)
   "../../types.ss"
   "../backpressure-tokio-rayon/types.ss"
   (only-in

@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+# Dual-mode pre-commit hook for packages/agent-defense-audit (monorepo & standalone mirror).
+
+set -euo pipefail
+
+PKG_ROOT="$(pwd)"
+if [ "${DE_HOOK_MODE:-standalone}" = "standalone" ]; then
+  PKG_ROOT="$(git rev-parse --show-toplevel)"
+  cd "$PKG_ROOT"
+  CHANGED_FILES="$(git diff --cached --name-only --diff-filter=ACMR)"
+else
+  CHANGED_FILES="${DE_SUBTREE_CHANGED_FILES:-}"
+fi
+
+if [ ! -f "$PKG_ROOT/package.json" ]; then
+  echo "[agent-defense-audit/pre-commit] ERROR: missing package.json in $PKG_ROOT" >&2
+  exit 1
+fi
+
+if command -v bun >/dev/null 2>&1; then
+  bun -e '
+    import { existsSync, readFileSync } from "node:fs";
+    import { resolve } from "node:path";
+    const root = process.argv[1];
+    const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
+    for (const key of ["name", "version", "license"]) {
+      if (!pkg[key] || typeof pkg[key] !== "string") {
+        console.error(`[agent-defense-audit/pre-commit] ERROR: package.json missing string field: ${key}`);
+        process.exit(1);
+      }
+    }
+    if (pkg.exports && typeof pkg.exports === "object") {
+      for (const [subpath, target] of Object.entries(pkg.exports)) {
+        if (typeof target === "string" && !target.includes("*")) {
+          if (!existsSync(resolve(root, target))) {
+            console.error(`[agent-defense-audit/pre-commit] ERROR: export "${subpath}" target missing: ${target}`);
+            process.exit(1);
+          }
+        }
+      }
+    }
+    if (pkg.bin && typeof pkg.bin === "object") {
+      for (const [cmd, target] of Object.entries(pkg.bin)) {
+        if (typeof target === "string" && !existsSync(resolve(root, target))) {
+          console.error(`[agent-defense-audit/pre-commit] ERROR: bin "${cmd}" target missing: ${target}`);
+          process.exit(1);
+        }
+      }
+    }
+  ' "$PKG_ROOT"
+fi
+
+if [ -z "$CHANGED_FILES" ]; then
+  exit 0
+fi
+
+failed=0
+SRC_TS_FILES=()
+while IFS= read -r rel_path; do
+  [ -z "$rel_path" ] && continue
+  [ -f "$PKG_ROOT/$rel_path" ] || continue
+  case "$rel_path" in
+    *.ts|*.js|*.mjs|*.sh|*.org)
+      # REUSE-IgnoreStart
+      if [ ! -f "$PKG_ROOT/${rel_path}.license" ] && ! head -n 15 "$PKG_ROOT/$rel_path" | grep -q "SPDX-License-Identifier:"; then
+        echo "[agent-defense-audit/pre-commit] ERROR: missing SPDX header in $rel_path" >&2
+        failed=1
+      fi
+      # REUSE-IgnoreEnd
+      ;;
+  esac
+  case "$rel_path" in
+    src/*.ts)
+      SRC_TS_FILES+=("$PKG_ROOT/$rel_path")
+      ;;
+  esac
+done <<< "$CHANGED_FILES"
+
+if [ "$failed" -ne 0 ]; then
+  exit 1
+fi
+
+# Self-audit staged src/*.ts files with the package's own G2 auditor.
+if [ "${#SRC_TS_FILES[@]}" -gt 0 ] && [ -f "$PKG_ROOT/src/agent-defense-audit.ts" ] && command -v bun >/dev/null 2>&1; then
+  bun "$PKG_ROOT/src/agent-defense-audit.ts" --files "${SRC_TS_FILES[@]}" >/dev/null
+fi
+
+exit 0

@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Human-in-the-Loop Durable Pause/Resume, Policy-Drift Re-Approval & Anti-Nagging Veto
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.defense.hitl-durable-approval=
+- *Subdomain*: =quint.engineering.defense=
+- *Quint Module*: =hitl_durable_approval= (=[[file:HitlDurableApproval.qnt][HitlDurableApproval.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/defense/hitl-durable-approval/HitlDurableApproval=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+No suspended agent resumes with a stale approval after baseline drift, policy upgrade, or TTL expiry (staleExecutions == 0), no human-vetoed or already-consumed approval executes (vetoOrReplayViolations == 0 and executedCount <= 1), and no execution resumes from a dirty hibernation that leaked live M3 leases (m3LeakViolations == 0).
+
+#+begin_src quint
+val safety = (h.staleExecutions == 0 and h.vetoOrReplayViolations == 0 and h.m3LeakViolations == 0 and h.executedCount <= 1)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =require-fresh-m1-binding= | =stepStaleDriftBypass= | =h.staleExecutions > 0= |
+| =forbid-vetoed-or-replayed-execution= | =stepVetoOrReplayBypass= | =h.vetoOrReplayViolations > 0= |
+| =require-cold-hibernation-clean= | =stepLeakedM3Resume= | =h.m3LeakViolations > 0= |
+
+* Grounded Papers & Specifications
+
+- *M. Atkinson & R. Morrison (VLDB J. 1995) / J. Shapiro (KeyKOS/EROS)*: Orthogonal persistence vs. non-persistent capability revocation across long-horizon hibernation.
+- *Deterministic Engineering (10.156 / 10.157 / 10.159)*: Cryptographically bound M1 human approval receipts, cold hibernation, drift revalidation, and anti-nagging veto persistence.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/defense/hitl-durable-approval/HitlDurableApproval.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/defense/hitl-durable-approval/HitlDurableApproval.qnt --main=hitl_durable_approval --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite single-proposal HITL pause/resume, baseline/policy drift, TTL expiry, and cold-hibernation abstraction; does not model multi-region quorum clock skew, interactive UI phishing outside the M1 brief, or external webhook transport encryption.

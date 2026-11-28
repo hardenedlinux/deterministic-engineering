@@ -9,7 +9,7 @@ export {compressPNG,type PNGCompression,type PNGCompressionReceipt} from './png'
 import {layoutScenes, extractSceneSVGs, type SceneLayoutReceipt} from './scene-export';
 import {getSmoothStepPath, Position} from '@xyflow/system';
 import rough from 'roughjs';
-import packageInfo from '../../../package.json' with {type: 'json'};
+import packageInfo from '../package.json' with {type: 'json'};
 import { readFile } from 'node:fs/promises';
 import type { Browser } from 'playwright';
 import type {RenderObservation} from './taste';
@@ -91,13 +91,28 @@ export async function exportFigure(figure: ComposedFigure, browser: Browser, opt
     // SVG annotation height follows the selected font's real ascent/descent.
     await page.locator('svg[data-vector-annotation]').evaluateAll(elements=>{
       for(const svg of elements){const content=svg.querySelector<SVGGElement>('[data-annotation-content]');
-        if(content){
+        const svgRect=svg.getBoundingClientRect();
+        if(content&&svgRect.width>0){
           const metric=(name:string)=>{const value=parseFloat(getComputedStyle(svg).getPropertyValue(name));if(!Number.isFinite(value)||value<0)throw new Error('Invalid heading metric: '+name);return value;};
           const gap=metric('--gap'),markerSize=metric('--markerSize'),markerPadding=metric('--markerPadding'),padding=metric('--annotationPadding');
           for(const glyph of content.querySelectorAll<SVGSVGElement>('[data-annotation-part="glyph"]>svg')){const size=parseFloat(getComputedStyle(glyph).width);glyph.setAttribute('width',String(size));glyph.setAttribute('height',String(size));}
           let cursor=0;
           for(const part of content.querySelectorAll<SVGGElement>('[data-annotation-part]')){
             if(part.dataset.annotationPart==='ordinal'){const label=part.querySelector('text')!,circle=part.querySelector('circle')!,box=label.getBBox();const radius=Math.max(markerSize/2,Math.max(box.width,box.height)/2+markerPadding);circle.setAttribute('r',String(radius));label.setAttribute('transform',`translate(${-box.x-box.width/2} ${-box.y-box.height/2})`);}
+            if(part.dataset.annotationPart==='label'){
+              const label=part.querySelector('text')!,source=label.textContent??'',available=svg.getBoundingClientRect().width-cursor-padding*2;
+              if(available<=0)throw new Error('Heading has no available reading width');
+              const scalars=Array.from(source),lines:string[]=[];
+              while(scalars.length){
+                let low=1,high=scalars.length,best=0;
+                while(low<=high){const middle=Math.floor((low+high)/2);label.textContent=scalars.slice(0,middle).join('');if(label.getComputedTextLength()<=available){best=middle;low=middle+1;}else high=middle-1;}
+                if(best===0)throw new Error('Heading scalar exceeds available width');
+                if(best<scalars.length)for(let i=best;i>Math.floor(best/2);i--)if(/\s/u.test(scalars[i-1]!)){best=i;break;}
+                lines.push(scalars.splice(0,best).join(''));
+              }
+              label.textContent='';label.setAttribute('xml:space','preserve');
+              for(const[line,index]of lines.map((line,index)=>[line,index] as const)){const span=document.createElementNS('http://www.w3.org/2000/svg','tspan');span.setAttribute('x','0');span.setAttribute('dy',index?'1.4em':'0');span.textContent=line;label.append(span);}
+            }
             const box=part.getBBox();part.setAttribute('transform',`translate(${cursor-box.x} ${-box.y-box.height/2})`);cursor+=box.width+gap;
           }
           const box=content.getBBox();content.setAttribute('transform',`translate(${-box.x} ${padding-box.y})`);svg.setAttribute('height',String(Math.ceil(box.height+padding*2)));

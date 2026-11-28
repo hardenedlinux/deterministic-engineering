@@ -1,0 +1,80 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+direction: right
+
+title: {
+  label: "220-Case B1-B15 Durable AI Governance & 14-Module / 156-Theorem LeanPoo Panoramic Architecture (10.189 / 90.152)"
+  near: top-center
+  shape: text
+  style.font-size: 20
+  style.bold: true
+}
+
+library: "Reusable Formal Library (deterministic-engineering-qnt — ZERO Mathlib, ZERO Cedar)" {
+  style.fill: "#F4F8FB"
+  style.stroke: "#2C5E8A"
+  style.stroke-width: 2
+
+  p1: "Paradigm 1: Quint / Apalache + F3 + MBT" {
+    style.fill: "#E8F1FA"
+    style.stroke: "#2C5E8A"
+    q23: "23 Defense Models\n(Apalache PLAN-OK + 100% F3 essential)\n23/23 MBT SUT State Isomorphism"
+  }
+
+  p2: "Paradigm 2: Gerbil Scheme ASCENT" {
+    style.fill: "#E9F7EF"
+    style.stroke: "#1E8449"
+    ascent: "32 Sources x 18 Outputs (B1-B14)\nLive gxi Stratified Datalog Oracle\nN-Version Disagreement Fail-Closed"
+  }
+
+  p3: "Paradigm 3: CBMC & 5-Language Harnesses" {
+    style.fill: "#FEF9E7"
+    style.stroke: "#B7950B"
+    langs: "C (CBMC 50/50) | C++20 | Rust | TS | Scheme\n220-Case Benchmark (AG01-AG220)\n12/12 R3 Non-Leakable M3 Capabilities"
+  }
+
+  p4: "Paradigm 4: Pure Lean 4 + LeanPoo (14 Modules / 156 Theorems)" {
+    style.fill: "#F5EEF8"
+    style.stroke: "#7D3C98"
+    m1_11: "Modules 1-11 (126 Theorems)\nB1-B12, R1-R5, Export, 4-Paradigm, Offline Cert"
+    m12: "Module 12: FederatedArbitrationLiveness\n(B13: 10 Theorems — Bounded Liveness & Deadlock)"
+    m13: "Module 13: SupplyChainProvenance\n(B14: 10 Theorems — SLSA, Lockfile, 2-Builder Parity)"
+    m14: "Module 14: ConfidentialEnclaveAttestation\n(B15: 10 Theorems — Hardware TEE & B14->B15 Chain)"
+    m1_11 -> m12 -> m13 -> m14
+  }
+
+  gate: "Single-Shot Fleet Gate\njust audit-leanpoo-fleet --json\n(23 Quint x 32x18 ASCENT x 156/156 Axioms)" {
+    style.fill: "#D6EAF8"
+    style.stroke: "#1B4F72"
+    style.bold: true
+  }
+
+  p1 -> gate
+  p2 -> gate
+  p3 -> gate
+  p4.m14 -> gate
+}
+
+custody: "Air-Gapped Ed25519 Release & Hardware Custody" {
+  style.fill: "#FDEDEC"
+  style.stroke: "#922B21"
+  style.stroke-width: 2
+
+  cert: "SignedLibraryReleaseCertificate\nPublisher Ed25519 + 3-of-4 Witness QC\n(0 Lake, 0 Network Offline Verify)"
+  tee: "B14 -> B15 Hardware TEE Enclave\nMRENCLAVE == Reproduced Artifact\nDebug Lockout + TCB SVN Floor + Nonce"
+  cert -> tee: "Binds Verified Binary -> Running Enclave"
+}
+
+host: "Consuming Authorization Host (cedar-poo-spec)" {
+  style.fill: "#EAFAF1"
+  style.stroke: "#145A32"
+  style.stroke-width: 2
+
+  dual: "Dual-Sovereign Release Gate\nLibrary Finality AND Host Policy Permit\n(Monotonic LeanPoo ObjectContract.refine)"
+  policies: "CedarPooSpec.{Authorization,Governance,Admission,Data}\nStrict Library <-> Host Separation (0 Cedar in Library)"
+  dual -> policies
+}
+
+library.gate -> custody.cert: "M1 Pinned Attestation Digest"
+custody.tee -> host.dual: "Verified Offline Cert + Enclave Receipt"

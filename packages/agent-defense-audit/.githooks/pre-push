@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+# Dual-mode pre-push hook for packages/agent-defense-audit (monorepo & standalone mirror).
+
+set -euo pipefail
+
+PKG_ROOT="$(pwd)"
+if [ "${DE_HOOK_MODE:-standalone}" = "standalone" ]; then
+  PKG_ROOT="$(git rev-parse --show-toplevel)"
+  cd "$PKG_ROOT"
+fi
+
+if command -v bun >/dev/null 2>&1 && [ -f "$PKG_ROOT/test/agent-defense-audit.test.ts" ]; then
+  echo "[agent-defense-audit/pre-push] Running core G2 & governance-harness test gate..." >&2
+  (
+    cd "$PKG_ROOT"
+    bun test ./test/agent-defense-audit.test.ts ./test/governance-harness.test.ts
+  )
+fi

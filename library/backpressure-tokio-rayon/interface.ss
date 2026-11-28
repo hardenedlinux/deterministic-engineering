@@ -2,14 +2,17 @@
 ;; SPDX-License-Identifier: LGPL-2.1-or-later
 
 ;;; Authored specialization is an atomic native Module, separate from execution.
-(import (only-in :yuanxu/module-system/source/declaration .def))
+(import (only-in :clan/poo/object .def .o .get)
+        "types.ss" "objects.ss" "config.ss"
+        (only-in "../backpressure-memory/interface.ss" BackpressureLibrary))
+(export TokioRayonLibrary)
+(def Parent (.get BackpressureLibrary core exports))
 (.def TokioRayonLibrary
   identity: 'backpressure-tokio-rayon
-  tags: '(engineering domain rust concurrency)
-  admissions: (.o
-    Config: (.o export-path: '(config) contract-path: '(contracts config)))
+  tags: '(engineering domain rust concurrency de.layer.domain)
   core: (.o
-    requires: (.o Parent: (.o module-id: 'backpressure-memory contract: (.get BackpressureScopeContract value-contract)))
+    admissions: (.o
+      Config: (.o export-path: '(config) contract-path: '(contracts config)))
     scope-contract: (.get TokioRayonScopeContract value-contract)
     exports: (.o
       config: Config

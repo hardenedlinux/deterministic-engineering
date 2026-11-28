@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Zero Trust Microsegmentation & Cross-Tenant Egress Mediation
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.zero-trust.microsegmentation-egress=
+- *Subdomain*: =quint.threat.zero-trust=
+- *Quint Module*: =microsegmentation_egress= (=[[file:MicrosegmentationEgress.qnt][MicrosegmentationEgress.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/zero-trust/microsegmentation-egress/MicrosegmentationEgress=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Active egress flows require attested non-quarantined sidecar mediation and explicit cross-tenant authorization when crossing tenant boundaries.
+
+#+begin_src quint
+val safety = (h.activeFlowDest == 0 or (h.sidecarAttested and not(h.quarantined) and (h.activeFlowDest == h.tenantId or h.crossTenantAllowed)))
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =sidecar-attestation= | =stepBypassSidecar= | =h.activeFlowDest > 0 and (h.quarantined == true or not(h.sidecarAttested))= |
+| =tenant-policy= | =stepBypassTenantPolicy= | =h.activeFlowDest > 0 and h.activeFlowDest != h.tenantId and not(h.crossTenantAllowed)= |
+
+* Grounded Papers & Specifications
+
+- *S. Rose, O. Borchert, S. Mitchell & S. Connelly (NIST SP 800-207, 2020)*: Zero Trust Architecture: micro-perimeter sidecar PEP mediation and assume-breach containment.
+- *R. Chandramouli (NIST SP 800-204A / 204B, 2020-2021)*: Building Secure Microservices-based Applications Using Service-Mesh Architecture.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/zero-trust/microsegmentation-egress/MicrosegmentationEgress.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/zero-trust/microsegmentation-egress/MicrosegmentationEgress.qnt --main=microsegmentation_egress --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite 2-tenant egress mediation abstraction; does not model L3/L4 packet filtering, DNS tunneling, or kernel namespace escapes.

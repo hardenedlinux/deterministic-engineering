@@ -1,0 +1,68 @@
+#+TITLE: 10.173 Evidence-Driven Witness Equivocation Slashing Tombstones and Anti-Reentry Governance (B10c)
+#+AUTHOR: hardenedlinux Linux Team and Contributors
+#+DATE: 2026-11-26
+#+STARTUP: overview
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+* Overview
+:PROPERTIES:
+:CUSTOM_ID: arch10173-overview
+:END:
+
+Phases 21–24 established proactive threshold witness cosigning (=B10=,
+[[file:10.169-proactive-threshold-witness-cosigning-and-quorum-finality.org][10.169]]),
+declarative ASCENT quorum finality
+([[file:10.170-full-b1-b10-declarative-quorum-closure-and-n-version-proof-carrying-audit.org][10.170]]),
+dynamic Joint-Consensus committee rotation (=B10b=,
+[[file:10.171-dynamic-witness-roster-reconfiguration-and-forward-secure-epoch-handover.org][10.171]]),
+and =LeanPoo=-centric unbounded meta-theorems
+([[file:10.172-unbounded-lean4-meta-theorems-for-durable-ai-governance.org][10.172]]).
+
+Business Extension **=B10c=** closes the final seam between equivocation
+detection (=B10=) and dynamic committee reconfiguration (=B10b=), strictly
+respecting the **Library (=deterministic-engineering-qnt= + =LeanPoo=) ↔
+Consuming Authorization Host (=cedar-poo-spec=)** boundary:
+
+1. **Pure Cryptographic Self-Authenticating Slash Proof**:
+   =WitnessEquivocationSlashProof= in
+   [[file:../../../languages-engineering/ts/defense/agent-audit/witness-epoch-reconfiguration.ts][witness-epoch-reconfiguration.ts]]
+   verifies offline that a witness signed two distinct roots at the same
+   =(logId, epoch, treeSize)= under its Ed25519 public key — guaranteeing zero
+   false-positive framing of honest witnesses.
+2. **Monotonic =M1= Slash Tombstones & Sybil Pubkey Anti-Reentry**:
+   =ForwardSealedEpochVerifier.recordVerifiedSlashProof= pins an immutable =M1=
+   slash tombstone recording BOTH =witnessId= AND =sha256(witnessPublicKeyPem)=,
+   refusing checkpoints relying on slashed cosigners and rejecting any future
+   Joint-Consensus handover that attempts to re-admit the slashed witness either
+   by ID (=slashed-witness-reentry-refused=) OR under a rebranded Sybil alias
+   reusing its slashed public key (=slashed-pubkey-sybil-reentry-refused=).
+3. **Declarative ASCENT Datalog Anti-Reentry (=22 sources × 13 outputs=)**:
+   [[file:../../../library/defensive-governance/func.ss][library/defensive-governance/func.ss]]
+   derives =effectively_slashed= from either explicit =M1= =slashed_witness=
+   tombstones or live =byzantine_witness_equivocation=, flagging any
+   =next_epoch_roster= re-admission as =slashed_witness_reentry_violation= and
+   blocking release admission via =slashed-witness-reentry=.
+4. **Unbounded =LeanPoo= Theorems & 3rd-Step Host-Refinement Preservation**:
+   Section 8 of
+   [[file:../../../packages/lean-models/DeterministicEngineering/Engineering/DurableGovernanceQuorum.lean][DurableGovernanceQuorum.lean]]
+   machine-checks 4 new theorems (19 total, zero =sorry=, zero custom axioms):
+   - =slashed_witness_is_byzantine= (zero false-positive slashing)
+   - =slashed_witness_never_reenters_future_epochs= (=∀ k= future reconfigurations)
+   - =hostPolicyOverSlashing_preserves_library_rejection= (3rd-step =LeanPoo=
+     refinement preserving all library rejections under arbitrary =cedar-poo-spec=
+     authorization extensions)
+   - =droppingSlashReentryGuard_invalidates_reuse= (=Core.Transport= negative control)
+
+* Verification Receipts (AG131-AG135)
+:PROPERTIES:
+:CUSTOM_ID: arch10173-receipts
+:END:
+
+- Benchmark suite (=AG131=–=AG135=, 135-case milestone in
+  [[file:../../30-39-evaluation/30-benchmarks/30.05-agent-defensive-coding-benchmark.org][30.05]]):
+  [[file:../../../languages-engineering/ts/defense/agent-audit/witness-slashing-reentry.test.ts][witness-slashing-reentry.test.ts]]
+- Gerbil ASCENT qualification:
+  [[file:../../../t/yanxu/Library/defensive-governance/governance-ascent-test.ss][governance-ascent-test.ss]]
+- Lean 4 / =LeanPoo= build & live =#print axioms=:
+  =(cd packages/lean-models && lake build DeterministicEngineering.Engineering.DurableGovernanceQuorum)=

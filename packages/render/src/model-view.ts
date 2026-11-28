@@ -6,6 +6,7 @@ import type {ElkNode} from 'elkjs/lib/elk-api';
 import {composeHeading} from './heading';
 import {composeDiagram} from './diagram';
 import type {FigureComposer,FigureModel} from './figure';
+import {wrapDiagramText} from './text';
 
 /** Pure hierarchy projection. Model ownership stays with D2/OpenSysML. */
 export function graphFromModel(model:FigureModel,options:ElkNode['layoutOptions']={}):ElkNode {
@@ -48,7 +49,8 @@ export function modelDiagram(model:FigureModel,valueInput:unknown):import('./dia
  const graph=data.graph===undefined?graphFromModel(model,options):structuredClone(data.graph) as ElkNode;
  if(!graph||typeof graph!=='object'||Array.isArray(graph))throw new Error('Invalid declared ELK graph');
  graph.layoutOptions={...options,...graph.layoutOptions};
- return {graph,roles,icons:select(data.icons),edgeLabels:data.edgeLabels!==false};
+ if(data.textColumns!==undefined){if(typeof data.textColumns!=='number')throw new Error('Invalid declared text columns');wrapDiagramText('',data.textColumns);}
+ return {graph,roles,icons:select(data.icons),edgeLabels:data.edgeLabels!==false,textColumns:data.textColumns as number|undefined};
 }
 export const composeModelView:FigureComposer=context=>{
  if(!context.model)throw new Error('Model view requires captured model semantics');

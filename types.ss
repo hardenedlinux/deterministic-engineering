@@ -5,11 +5,11 @@
 ;;; Shared Library declaration vocabulary. Types only: no objects, IO or Engine.
 (import
   :clan/poo/object
-  (only-in :clan/poo/mop Type Type. Object define-type element? raise-type-error)
+  (only-in :clan/poo/type Type Type. Object define-type element? raise-type-error)
   (only-in :clan/poo/type Symbol String List Record Pair Exactly)
-  (only-in :clan/poo/recursive-validation close-validation closed? closed-ref)
-  (only-in :clan/poo/object-contract ObjectContract. refine)
-  (only-in :yuanxu/object-types/contracts YuanxuContract. yuanxu-predicate-type))
+  (only-in :clan/poo/recursive/validation close-validation closed? closed-ref)
+  (only-in :clan/poo/types/object-contract ObjectContract. refine)
+  (only-in :tao3k/yuanxu/types/contracts YuanxuContract. yuanxu-predicate-type))
 (export
   LibraryDeclarationContract
   LibraryDeclarationShape

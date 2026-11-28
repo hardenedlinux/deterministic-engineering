@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Multi-Party Shared Context Governance, Scope Lattice, and Taint Isolation
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.zero-trust.shared-context-governance=
+- *Subdomain*: =quint.threat.zero-trust=
+- *Quint Module*: =shared_context_governance= (=[[file:SharedContextGovernance.qnt][SharedContextGovernance.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/zero-trust/shared-context-governance/SharedContextGovernance=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Private context never leaks to peer principals, only owners with explicit declassification may widen private scope, revoked members never read via stale handles, and tainted multi-party shared context never drives tool execution without human gate approval.
+
+#+begin_src quint
+val safety = (not(h.privateLeak) and not(h.unauthorizedPromote) and not(h.revokedReadLeak) and not(h.taintedToolHijack))
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =private-scope-isolation= | =stepPrivateContextLeak= | =h.privateLeak == true= |
+| =owner-only-scope-promotion= | =stepUnauthorizedPromotion= | =h.unauthorizedPromote == true= |
+| =share-membership-current= | =stepRevokedMemberRead= | =h.revokedReadLeak == true= |
+| =multi-party-taint-gate= | =stepMultiPartyTaintHijack= | =h.taintedToolHijack == true= |
+
+* Grounded Papers & Specifications
+
+- *D. E. Denning (CACM 1976)*: A Lattice Model of Secure Information Flow: scoped confidentiality boundaries and explicit declassification.
+- *E. Debenedetti et al. (2025)*: Defeating Prompt Injections by Design (CaMeL): preventing untrusted shared-context taint from hijacking privileged tools.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/zero-trust/shared-context-governance/SharedContextGovernance.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/zero-trust/shared-context-governance/SharedContextGovernance.qnt --main=shared_context_governance --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite two-principal scope-promotion, ACL-epoch revocation, and multi-party taint abstraction; does not model vector-embedding semantic leakage, encrypted group key agreement, or side-channel cache timing.

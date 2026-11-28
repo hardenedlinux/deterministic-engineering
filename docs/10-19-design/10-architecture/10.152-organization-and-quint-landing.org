@@ -1,0 +1,80 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: 10.152 Organization and Quint Models Landing
+#+LANGUAGE: en
+#+PROPERTY: JD_ID 10.152
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Scope
+:PROPERTIES:
+:CUSTOM_ID: land152-scope
+:STATUS: landed-verified
+:END:
+
+This item orders and records the implementation of
+[[file:10.150-repository-organization-and-package-taxonomy.org][10.150]] and
+[[file:10.151-quint-models-library-and-packages.org][10.151]]. Organization
+landed first (L0–L3), followed by the Quint model library and downstream
+migration (L4–L5), and then full architectural closure (L6: 34 co-located
+Scheme+Quint models across 10 symmetric Yuanxu subdomains, typed AST DSL with
+auto-derived countermodels, 3-axis orthogonal Profile Namespace, pure modular
+imports, and zero JSON sidecars).
+
+* Stages
+:PROPERTIES:
+:CUSTOM_ID: land152-stages
+:END:
+
+| Stage | Products | Passing condition | Refusal condition |
+|-------+----------+-------------------+-------------------|
+| L0 Documents | 10.150–10.152, companion SysML, views 90.141 and 90.142, index rows | Review accepted; view exports verify pixel equality and source digests | A view references an absent source |
+| L1 Organization declaration | Placement definitions and package families in =project-organization=; instances in =library-formation-profiles=; rules OR01–OR06 in =project-formation= | D1–D6 each reported as a finding; =render= emits placement parts in =project.sysml= | Any debt row passes silently |
+| L2 Organization repair | Workspace root; render manifest under =packages/render/=; D2–D5 repairs | Zero findings; native build and current tests unchanged; render example exports pass | A forwarding file or compatibility manifest remains |
+| L3 Publication channel | Three read-only mirrors; subtree split publication CI; mirror sync | Mirrors consume standalone =git subtree split= commits cleanly via bun | Mirror split lacks standalone =package.json= |
+| L4 Quint models & resolver | Initial threat domain modules, =quint-methods=, =packages/quint-models=, =packages/quint-modules-resolver= | Every projection typechecks; same-commit reprojection matches; resolver conformance & Apalache verify pass | A plan without its required counterexample is accepted; unknown prototype projects |
+| L5 Downstream migration | =cedar-poo-spec= installs both Quint mirror packages | All 37 deterministic controls, 4 positive depth-12 checks, 5 broken-boundary countermodels and 2 false-claim witnesses retained | Any result differs from the hand-written baseline; a forwarding model remains |
+| L6 Co-located 34-model architecture & 3-axis profiles | All 34 models co-located across 10 Yuanxu subdomains (=engineering/*= × 5, =threat/*= × 5), typed AST DSL + auto-derived countermodels, =library/quint-profiles/= (=assurance.*=, =bound.*=, =governance.*=), pure =.qnt= directives (zero JSON sidecars), =t/yanxu/= layout gate, OR02 co-location/modular-import rules, refreshed docs & 90.141/90.142 views | =just build= compiles all 154 modules; =test-de-layout= admits all 44 owners across 11 mounts; all 38 Quint qualification/convergence suites pass; =repository-organization-test= zero findings; =just check-quint= + live Apalache differential & =BackpressureOwners= proofs pass; =reuse lint= 100% compliant; downstream =cedar-poo-spec= 24/24 passes on updated mirror SHAs | Any orphan =.qnt=, JSON sidecar, cross-module relative =../= Scheme import, weakened Band-5 floor, or projection drift passes |
+
+* Downstream baseline
+:PROPERTIES:
+:CUSTOM_ID: land152-baseline
+:END:
+
+L5 and L6 verify against the =cedar-poo-spec= financial threat gate:
+=WalletSigning.qnt=, =WalletContainment.qnt=, =WalletHost.qnt=, and
+=WalletReplay.qnt= consuming =@deterministic-engineering/quint-models= via bare
+3-level package specifiers (=threat/execution/capabilities/Capabilities=,
+=threat/zero-trust/authority-currentness/AuthorityCurrentness=,
+=threat/execution/state-rollback/StateRollback=), Quint =0.33.0=, Apalache
+=0.62.1=, seed =7=, positive depth =12= and negative depth =4=, each command
+under a 120-second deadline.
+
+* Resolved decisions
+:PROPERTIES:
+:CUSTOM_ID: land152-open
+:END:
+
+| Decision | Resolution |
+|----------+------------|
+| Mirror repository names and creator | Three public read-only mirrors under =hardenedlinux/deterministic-engineering-{render,quint-models,quint-modules-resolver}=; issues and wiki disabled; populated via =git subtree split= |
+| =quint-modules-resolver= as a separate package | Separate package, reusable by any Quint model library |
+| Status of =observation/= | Historical evidence relocated to =t/fixtures/historical-backpressure-observation/= |
+| Co-location of Scheme POO declarations and Quint models | Option A+: all 34 models co-locate ={types,objects,interface}.ss=, =<Model>.qnt=, and =README.org= directly in =packages/quint-models/<domain>/<subdomain>/<model>/= across 10 symmetric Yuanxu mounts |
+| Profile namespace and verification directives | Replaced monolithic =threat-model-profiles= with 3-axis =library/quint-profiles/= (=assurance.*=, =bound.*=, =governance.*=) on Yuanxu Design 165; replaced JSON sidecars (=plan.json=/=receipt.json=) with embedded =// @quint-*= headers |
+
+* Observed results
+:PROPERTIES:
+:CUSTOM_ID: land152-observed
+:END:
+
+| Stage | Result |
+|-------+--------|
+| L0 | Documents, SysML model and views drafted; views exported through =packages/render/examples/library-boundary.ts= with decoded PNG/WebP pixels equal; example tests pass; REUSE lint compliant |
+| L1 | Added 9 placements, =placement-roles=, 3 package families, =OrganizationPlacementProgram= (=OR01=–=OR06=) and =render-formation-model-with-placements=; live debts D1, D3, D4, D5, D6 reported and D2 locked as =OR05= negative control |
+| L2 | Converted root =package.json= to private bun workspace; moved =@deterministic-engineering/render= manifest into =packages/render/package.json=; relocated =model.qnt= and =budget.lean= under =languages-engineering/=; relocated =observation/= to =t/fixtures/historical-backpressure-observation/=; removed retired =project-intake=; regenerated =project.sysml= with =part 'placements'=; =OR01=–=OR06= zero findings |
+| L3 | Added =.github/workflows/publish-packages.yml= (=git subtree split= to read-only mirrors) and =.github/workflows/render.yml= local subtree split verification; synced =quint-models= and =quint-modules-resolver= mirrors |
+| L4 | Implemented typed Quint projection (=quint-methods=), =packages/quint-models/=, and =packages/quint-modules-resolver/= with conformance, =run-plan=, =compose=, =verify-deps=, and Apalache =0.62.1= bounded proof & ITF counterexample verification |
+| L5 | Migrated =cedar-poo-spec= to consume =@deterministic-engineering/quint-models= and =@deterministic-engineering/quint-modules-resolver= (removed hand-written =Capabilities.qnt=, reduced =WalletHost.qnt= to 5-line instantiation of =state_rollback(MaxSends = 1)=); =python3 dev/qnt/check.py= passed 24/24 checks identically to baseline (37 deterministic traces, 4 positive depth-12 checks, 5 broken-boundary countermodels, 2 false-claim witnesses) |
+| L6 | Expanded library to 37 co-located Scheme POO AST + pure =.qnt= models (13 engineering + 24 threat, including co-located =backpressure-memory=, =bft-quorum-lock=, =slsa-hermetic-provenance=, =mls-ratchet-pcs=) across 10 symmetric Yuanxu mounts (=init.ss= 11 windows total), 3-axis orthogonal Profile Namespace (=library/quint-profiles/= on Yuanxu Design 165 with Band-5 monotonic =governance-floor= and zero-recompilation runtime overlay), canonical =:deterministic-engineering/...= modular imports, dynamic Yuanxu graph projection (=t/support/project-quint-models.ss= with zero hardcoded model lists), =OR02= enforcement of co-location and modular imports, lean Option A resolver extensions (transparent single-parent =@quint-extends= + =@quint-const=, =expand=, =mbt-audit=, concurrent =run-fleet=), refreshed 10.150–10.152 docs and re-rendered 90.140–90.142 views; downstream =cedar-poo-spec= updated to 3-level paths and verified 24/24 green |

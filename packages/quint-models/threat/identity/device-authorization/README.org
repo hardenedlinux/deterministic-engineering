@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: RFC 8628 Device Authorization & Multi-Account Token Binding
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.identity.device-authorization=
+- *Subdomain*: =quint.threat.identity=
+- *Quint Module*: =device_authorization= (=[[file:DeviceAuthorization.qnt][DeviceAuthorization.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/identity/device-authorization/DeviceAuthorization=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Device authorization never admits a cancelled or expired flow, and Bearer token attachment strictly binds to the authorized ticket account even across active-account switches.
+
+#+begin_src quint
+val safety = ((not(h.admitted) or (not(h.deviceCancelled) and not(h.deviceExpired))) and (h.attachedTokenAccount == 0 or h.attachedTokenAccount == h.ticketAccount))
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =device-flow-epoch-currency= | =stepCancelledDeviceAdmit= | =h.admitted == true and h.deviceCancelled == true= |
+| =device-code-freshness= | =stepExpiredDeviceAdmit= | =h.admitted == true and h.deviceExpired == true= |
+| =ticket-account-binding= | =stepCrossAccountBind= | =h.attachedTokenAccount > 0 and h.attachedTokenAccount != h.ticketAccount= |
+
+* Grounded Papers & Specifications
+
+- *W. Denniss, J. Bradley, M. Jones & H. Tschofenig (IETF RFC 8628, 2019)*: OAuth 2.0 Device Authorization Grant: polling cancellation, expiry, and device-code isolation.
+- *T. Lodderstedt et al. (IETF RFC 9700, 2025)*: Best Current Practice for OAuth 2.0 Security: multi-account token confusion prevention.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/identity/device-authorization/DeviceAuthorization.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/identity/device-authorization/DeviceAuthorization.qnt --main=device_authorization --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite RFC 8628 device authorization and two-account binding abstraction; does not model network polling backoff intervals or TLS transport.

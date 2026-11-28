@@ -1,0 +1,204 @@
+;; SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+;; SPDX-License-Identifier: LGPL-2.1-or-later
+
+;;; Cross-Domain Threat LeanPoo Subject (`delegated-agent-authz`) & Standalone
+;;; Offline JSON Ed25519 Trust-Store Verifier CLI Test (10.154).
+;;;
+;;; Verifies:
+;;; 1. Zero-glue compilation & parallel execution of the 6th SysML v2 subject
+;;;    `delegated-agent-authz` (Threat domain): Quint/Apalache (`DelegatedAgentAuthz.qnt`,
+;;;    4 countermodels + 10 MBT traces) || Lean 4/LeanPoo (`Threat.CapabilityContainment`
+;;;    reusing the exact same `Core.Containment` + `Core.Order` + `Core.Transport`).
+;;; 2. Portable JSON Multi-Key Ed25519 Trust Store (`de.attestation.ed25519-trust-store.v1`)
+;;;    serialization, reload, keyId-spoof rejection, and standalone CLI `--verify-report`:
+;;;    - Authentic unrevoked key -> CLI exits 0 (`MULTI-METHOD-VERIFY-REPORT-OK`)
+;;;    - Revoked key in JSON trust store -> CLI exits non-zero
+;;;    - Tampered report.json -> CLI exits non-zero
+(import :std/test
+        (only-in "../../../support/repo-paths.ss" resolve-repo-root)
+        (only-in :tao3k/yuanxu/testing
+                 yuanxu-test-case/with
+                 yuanxu-test-checkpoint
+                 yuanxu-testing-case-profile-prototype)
+        :std/encoding/json
+        :std/misc/ports
+        :std/misc/process
+        :clan/poo/object
+        (only-in :std/source this-source-file)
+        (only-in :tao3k/agentic-ai-lab/modules/funflow/control-plane/api
+                 replay-report-valid?)
+        :deterministic-engineering/library/verification-flow/sysml-compiler
+        "../../../support/verification-flow-runner.ss")
+(export verification-flow-threat-capability-and-offline-verifier-test)
+
+(def repo-root
+  (resolve-repo-root))
+
+(def (rm-rf! path)
+  (when (file-exists? path)
+    (run-process (list "rm" "-rf" path))))
+
+(def (run-verify-cli report-path store-path (air-gapped? #f) (mode "--verify-report"))
+  (let* ((airgap-setup
+          (if air-gapped?
+            (string-append
+              "GERBIL_REAL=\"$(command -v gerbil)\"\n"
+              "GXI_REAL=\"$(command -v gxi)\"\n"
+              "OPENSSL_BIN=\"$(command -v openssl)\"\n"
+              "AIRGAP_BIN=\"$(mktemp -d)\"\n"
+              "trap 'rm -rf \"$AIRGAP_BIN\"' EXIT\n"
+              "ln -s \"$GERBIL_REAL\" \"$AIRGAP_BIN/gerbil\"\n"
+              "ln -s \"$GXI_REAL\" \"$AIRGAP_BIN/gxi\"\n"
+              "ln -s \"$OPENSSL_BIN\" \"$AIRGAP_BIN/openssl\"\n"
+              "export PATH=\"$AIRGAP_BIN:/usr/bin:/bin\"\n"
+              "if command -v sysml >/dev/null 2>&1; then echo 'ERROR: sysml leaked into airgap PATH' >&2; exit 99; fi\n")
+            ""))
+         (cmd (string-append
+                "cd \"" repo-root "\"\n"
+                "export GERBIL_PATH=\"$PWD/.gerbil\"\n"
+                airgap-setup
+                "gxi -:max-heap=2G,debug=q "
+                "t/support/offline-attestation-verifier.ss " mode " "
+                "\"" report-path "\" \"" store-path "\""))
+         (proc (open-process
+                 (list path: "/bin/bash"
+                       arguments: (list "-euo" "pipefail" "-c" cmd)
+                       stdin-redirection: #f
+                       stdout-redirection: #t
+                       stderr-redirection: #t)))
+         (out (read-all-as-string proc))
+         (status (process-status proc)))
+    (close-port proc)
+    (values status out)))
+
+(.def (FormalProverBudget @ yuanxu-testing-case-profile-prototype)
+  max-idle-milliseconds: 240000
+  max-duration-milliseconds: 540000
+  sample-interval-milliseconds: 1000
+  collect-before-sample?: #t)
+
+(def verification-flow-threat-capability-and-offline-verifier-test
+  (test-suite "Cross-domain Threat LeanPoo subject (delegated-agent-authz) & offline JSON trust-store CLI verifier"
+    (yuanxu-test-case/with FormalProverBudget "delegated-agent-authz runs zero-glue Quint || LeanPoo and offline --verify-report enforces JSON trust store + revocation"
+      (def work-dir (path-expand ".data/test-runs/m5-threat-offline-cli" repo-root))
+      (rm-rf! work-dir)
+      (create-directory* work-dir)
+
+      (def cache-dir (path-expand "cache" work-dir))
+      (def out-dir (path-expand "out-threat" work-dir))
+      (def k1 (ensure-cache-signing-keypair! (path-expand "keys-k1" work-dir)))
+      (def ts-valid (make-ed25519-trust-store (list (.get k1 public-key))))
+      (def ts-valid-json (path-expand "trust-store-valid.json" work-dir))
+      (write-ed25519-trust-store-json ts-valid ts-valid-json)
+
+      ;; 1. Live zero-glue execution of 6th subject (Threat domain: Quint || LeanPoo).
+      (def report-path
+        (let ((r1
+               (run-multi-method-verification-pipeline repo-root
+                 subject-key: 'delegated-agent-authz
+                 output-dir: out-dir
+                 cache-dir: cache-dir
+                 signing-keypair: k1
+                 trust-store: ts-valid
+                 request-id: "req-threat-da-1")))
+          (check-equal? (replay-report-valid? (.get r1 replay-report)) #t)
+          (check-equal? ((.ref (.get r1 er-result) 'rows-of) 'er_finding) '())
+          (check-equal? ((.ref (.get r1 er-result) 'rows-of) 'verification_admitted)
+                        '(("threat.identity.delegated-agent-authz")))
+          (check-equal? (length (.get (.get r1 cache-summary) executed)) 2)
+          (check-equal? (length (.get (.get r1 cache-summary) reused)) 0)
+          (.get r1 report-path)))
+      (##gc)
+      (yuanxu-test-checkpoint 'after-cold-threat-run)
+
+      ;; 2. Reload portable JSON trust store and verify in-process + via AIR-GAPPED standalone CLI!
+      ;;    Hostile minimal PATH strips `sysml`, `shasum`, `quint`, `lean`, `lake`, `cargo`, `cbmc`, `bun`:
+      ;;    proves `offline-attestation-verifier.ss` needs ONLY Gerbil + OpenSSL (zero Fun-Flow/SysML)!
+      (def ts-reloaded (load-ed25519-trust-store-json ts-valid-json))
+      (check-equal? (verify-report-with-trust-store report-path ts-reloaded) #t)
+      (let-values (((st out) (run-verify-cli report-path ts-valid-json #t "--verify-report")))
+        (check-equal? st 0)
+        (check (and (string-contains out "MULTI-METHOD-VERIFY-REPORT-OK") #t) => #t)
+        (check (not (string-contains out "RDF conversion")) => #t))
+      ;; Also verify the signed proof cache offline under the same air-gapped minimal PATH!
+      (def cache-file (path-expand "verification-cache.v1.json" cache-dir))
+      (let-values (((st out) (run-verify-cli cache-file ts-valid-json #t "--verify-cache")))
+        (check-equal? st 0)
+        (check (and (string-contains out "MULTI-METHOD-VERIFY-CACHE-OK") #t) => #t)
+        (check (and (string-contains out "entries=2") #t) => #t))
+
+      ;; 3. Negative control A: Revoke K1 in trust-store JSON -> standalone CLI MUST reject BOTH report & cache!
+      (def ts-revoked
+        (make-ed25519-trust-store (list (.get k1 public-key))
+                                  (list (.get k1 key-id))))
+      (def ts-revoked-json (path-expand "trust-store-revoked.json" work-dir))
+      (write-ed25519-trust-store-json ts-revoked ts-revoked-json)
+      (let-values (((st _out) (run-verify-cli report-path ts-revoked-json #t "--verify-report")))
+        (check (not (= st 0)) => #t))
+      (let-values (((st _out) (run-verify-cli cache-file ts-revoked-json #t "--verify-cache")))
+        (check (not (= st 0)) => #t))
+
+      ;; 4. Negative control B: Tamper with requestId in report.json -> standalone CLI MUST reject!
+      (def tampered-report (path-expand "tampered-report.json" work-dir))
+      (def rdoc (call-with-input-file report-path (cut read-json <> object-as-hash: #t)))
+      (hash-put! rdoc "requestId" "forged-threat-request")
+      (call-with-output-file tampered-report
+        (lambda (p) (write-json p rdoc) (newline p)))
+      (let-values (((st _out) (run-verify-cli tampered-report ts-valid-json)))
+        (check (not (= st 0)) => #t))
+      (yuanxu-test-checkpoint 'after-offline-cli-checks)
+
+      ;; 5. Warm cache hit on Threat subject: 0 executed, 2/2 Ed25519-verified reuse!
+      (##gc)
+      (let ((r2 (run-multi-method-verification-pipeline repo-root
+                  subject-key: 'delegated-agent-authz
+                  cache-dir: cache-dir
+                  signing-keypair: k1
+                  trust-store: ts-valid
+                  request-id: "req-threat-da-2")))
+        (check-equal? (length (.get (.get r2 cache-summary) executed)) 0)
+        (check-equal? (length (.get (.get r2 cache-summary) reused)) 2))
+      (##gc)
+      (yuanxu-test-checkpoint 'after-warm-threat-run)
+
+      ;; 6. End-to-end Runner Inline-PEM Trust Bundle parity: export single-file inline-PEM bundles
+      ;;    (valid + revoked + spoofed), physically delete `keys-k1/` so ZERO `.pub.pem` files exist,
+      ;;    and verify `verification-flow-runner.ss` in-process Trust Store loader, report verifier,
+      ;;    and proof-cache attestation verifier work identically without external PEM files!
+      (def ts-inline-valid-json (path-expand "trust-store-inline-valid.json" work-dir))
+      (def ts-inline-revoked-json (path-expand "trust-store-inline-revoked.json" work-dir))
+      (write-ed25519-trust-store-json ts-valid ts-inline-valid-json inline-pem?: #t)
+      (write-ed25519-trust-store-json ts-revoked ts-inline-revoked-json inline-pem?: #t)
+      (def k1-pem-str (call-with-input-file (.get k1 public-key) read-all-as-string))
+      (def ts-inline-spoof-json (path-expand "trust-store-inline-spoof.json" work-dir))
+      (let ((tk-spoof (make-hash-table)))
+        (hash-put! tk-spoof "0000000000000000" k1-pem-str)
+        (call-with-output-file ts-inline-spoof-json
+          (lambda (p)
+            (write-json p (hash ("schema" "de.attestation.ed25519-trust-store.v1")
+                                ("trustedKeys" tk-spoof)
+                                ("revokedKeyIds" '())))
+            (newline p))))
+      (rm-rf! (path-expand "keys-k1" work-dir))
+      (check-equal? (file-exists? (.get k1 public-key)) #f)
+      (def ts-inline-loaded (load-ed25519-trust-store-json ts-inline-valid-json))
+      (def ts-inline-rev-loaded (load-ed25519-trust-store-json ts-inline-revoked-json))
+      (check-equal? (verify-report-with-trust-store report-path ts-inline-loaded) #t)
+      (check-equal? (verify-report-with-trust-store report-path ts-inline-rev-loaded) #f)
+      (let-values (((_w _i _tc attested _iss _by) (load-verification-cache cache-file ts-inline-loaded)))
+        (check-equal? (length attested) 2))
+      (let-values (((_w _i _tc attested _iss _by) (load-verification-cache cache-file ts-inline-rev-loaded)))
+        (check-equal? attested '()))
+      (check-equal?
+        (with-catch (lambda (_) #t)
+          (lambda () (load-ed25519-trust-store-json ts-inline-spoof-json) #f))
+        #t)
+
+      (rm-rf! work-dir))
+    (yuanxu-test-case/with FormalProverBudget "static air-gapped mutability constants match live SysML v2 projection"
+      (##gc)
+      (let ((compiled (load-compiled-sysml-subjects repo-root)))
+        (check-equal? default-process-tree-step-mutability
+                      (.get (cdr (assq 'process-tree-reclamation compiled)) mutability))
+        (check-equal? default-backpressure-step-mutability
+                      (.get (cdr (assq 'backpressure-memory compiled)) mutability))))))

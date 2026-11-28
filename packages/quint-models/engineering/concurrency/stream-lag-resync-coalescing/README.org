@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Broadcast Lag Snapshot-Resync & Coalesced Checkpoint Flush
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.concurrency.stream-lag-resync-coalescing=
+- *Subdomain*: =quint.engineering.concurrency=
+- *Quint Module*: =concurrency_stream_lag_resync= (=[[file:StreamLagResyncCoalescing.qnt][StreamLagResyncCoalescing.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/concurrency/stream-lag-resync-coalescing/StreamLagResyncCoalescing=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Lagged broadcast subscribers recover cleanly via generation-fenced full-snapshot resync instead of silently terminating the stream, and streaming projection persistence coalesces dirty tokens to prevent per-token write amplification.
+
+#+begin_src quint
+val safety = (h.streamAlive and h.clientGen <= h.serverGen and h.dirtyBatch <= 2 and h.uncoalescedFlushes == 0 and (h.lagged or (h.serverGen - h.clientGen) <= 2))
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =resync-snapshot-on-lag= | =stepSilentLagDisconnect= | =h.streamAlive == false= |
+| =coalesce-batch-flush= | =stepPerTokenWriteAmp= | =h.uncoalescedFlushes > 0= |
+
+* Grounded Papers & Specifications
+
+- *Reactive Streams Specification (2015)*: Bounded non-blocking backpressure and demand-driven coalesced updates across async boundaries.
+- *M. Welsh, D. Culler, E. Brewer (ACM SOSP 2001)*: SEDA: Well-Conditioned Internet Services — batching and graceful state resynchronization under consumer lag.
+- *M. Rosenblum & J. K. Ousterhout (ACM TOCS 1992)*: The Design and Implementation of a Log-Structured File System — bounding write amplification via coalesced flushes.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/concurrency/stream-lag-resync-coalescing/StreamLagResyncCoalescing.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/concurrency/stream-lag-resync-coalescing/StreamLagResyncCoalescing.qnt --main=concurrency_stream_lag_resync --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite 6-generation broadcast-lag and 2-token batch-flush abstraction; models snapshot resync continuity and write-amplification coalescing, not kernel TCP flow control or filesystem fsync latency.

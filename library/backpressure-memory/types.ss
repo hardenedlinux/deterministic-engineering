@@ -4,11 +4,11 @@
 ;;; Generic family Types consume neutral Library Types, never child objects.
 (import
   :clan/poo/object
-  (only-in :clan/poo/mop Type define-type element?)
+  (only-in :clan/poo/type Type define-type element?)
   (only-in :clan/poo/type List)
-  (only-in :clan/poo/recursive-validation closed?)
-  (only-in :clan/poo/object-contract ObjectContract. refine)
-  (only-in :yuanxu/object-types/contracts YuanxuContract. yuanxu-predicate-type)
+  (only-in :clan/poo/recursive/validation closed?)
+  (only-in :clan/poo/types/object-contract ObjectContract. refine)
+  (only-in :tao3k/yuanxu/types/contracts YuanxuContract. yuanxu-predicate-type)
   "../../types.ss")
 (export
   BackpressureDeclarationContract

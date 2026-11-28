@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Confidential Compute / Hardware TEE Enclave Attestation & Key-Release
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.defense.confidential-enclave-attestation=
+- *Subdomain*: =quint.engineering.defense=
+- *Quint Module*: =confidential_enclave_attestation= (=[[file:ConfidentialEnclaveAttestation.qnt][ConfidentialEnclaveAttestation.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/defense/confidential-enclave-attestation/ConfidentialEnclaveAttestation=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Production M3 key release requires debug-mode lockout (debugLeakViolations == 0), measured binary parity (measurementViolations == 0), and TCB SVN floor plus fresh challenge nonce (tcbOrNonceViolations == 0).
+
+#+begin_src quint
+val safety = (h.debugLeakViolations == 0 and h.measurementViolations == 0 and h.tcbOrNonceViolations == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =require-debug-disabled= | =stepDebugEnclave= | =h.debugLeakViolations > 0= |
+| =require-measurement-matched= | =stepUnmeasuredEnclave= | =h.measurementViolations > 0= |
+| =require-tcb-and-nonce= | =stepStaleTcbNonce= | =h.tcbOrNonceViolations > 0= |
+
+* Grounded Papers & Specifications
+
+- *V. Costan & S. Devadas (IACR ePrint 2016/086)*: Intel SGX Explained — remote attestation quotes, debug-mode lockout, and TCB SVN anti-rollback.
+- *AMD SEV-SNP & Intel TDX Architecture Specifications*: Hardware-measured launch digests and challenge-nonce remote attestation for zero-trust key release.
+- *Deterministic Engineering (10.189 / 10.190)*: End-to-end B14 reproducible artifact to B15 measured TEE enclave key-release boundary.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/defense/confidential-enclave-attestation/ConfidentialEnclaveAttestation.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/defense/confidential-enclave-attestation/ConfidentialEnclaveAttestation.qnt --main=confidential_enclave_attestation --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Bounded 2-key-release abstraction over debug lockout, measurement pinning, TCB floor, and nonce freshness; unbounded B14->B15 composition and arbitrary TCB SVN floors are proved in ConfidentialEnclaveAttestation.lean.

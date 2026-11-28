@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: OAuth PAR Binding & Crash-Safe Durable Revocation Recovery
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.identity.oauth-revocation-recovery=
+- *Subdomain*: =quint.threat.identity=
+- *Quint Module*: =oauth_revocation_recovery= (=[[file:OAuthRevocationRecovery.qnt][OAuthRevocationRecovery.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/identity/oauth-revocation-recovery/OAuthRevocationRecovery=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Token admission requires PAR binding, and once revocation intent is requested, crash-recovery never restores an active session.
+
+#+begin_src quint
+val safety = (not(h.sessionActive) or (h.parRegistered and not(h.revokeRequested)))
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =durable-revoke-intent= | =stepCrashDropsRevocation= | =h.sessionActive == true and h.revokeRequested == true= |
+| =par-request-binding= | =stepUnboundPar= | =h.sessionActive == true and not(h.parRegistered)= |
+
+* Grounded Papers & Specifications
+
+- *T. Lodderstedt, B. Campbell, N. Sakimura, D. Tonge & F. Skokan (IETF RFC 9126, 2021)*: OAuth 2.0 Pushed Authorization Requests (PAR): authenticated pre-registration of authorization parameters.
+- *T. Lodderstedt, S. Dronia & M. Scurtescu (IETF RFC 7009, 2013)*: OAuth 2.0 Token Revocation: durable sign-out intent across host crashes.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/identity/oauth-revocation-recovery/OAuthRevocationRecovery.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/identity/oauth-revocation-recovery/OAuthRevocationRecovery.qnt --main=oauth_revocation_recovery --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite PAR and crash-recovery state abstraction; does not model network partitions to RFC 7009 endpoints or filesystem fsync internals.

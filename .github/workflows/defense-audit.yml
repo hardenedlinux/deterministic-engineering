@@ -1,0 +1,58 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+name: Defensive Engineering & AI Agent PR Audit
+on:
+  pull_request:
+    paths:
+      - 'languages-engineering/**'
+      - 'library/**'
+      - 'packages/agent-defense-audit/**'
+      - 'packages/quint-models/**'
+      - 'packages/quint-modules-resolver/**'
+      - 't/harness/**'
+      - 'Justfile'
+      - '.github/actions/**'
+      - '.github/workflows/defense-audit.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'languages-engineering/*/defense/**'
+      - 'packages/agent-defense-audit/**'
+      - 'packages/quint-models/engineering/defense/**'
+      - 't/harness/**'
+      - 'Justfile'
+      - '.github/actions/**'
+      - '.github/workflows/defense-audit.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  defense-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-just
+      - uses: ./.github/actions/setup-bun-cached
+      - name: Restore Layer-2 Defense CAS cache (SM18)
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .data/ci-cache/defense
+          key: de-defense-cas-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('bun.lock', 't/harness/verify-framework.ts') }}-${{ github.sha }}
+          restore-keys: |
+            de-defense-cas-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('bun.lock', 't/harness/verify-framework.ts') }}-
+      - name: Auto-discovered defense verification gate (TS + C + C++20 + Rust)
+        run: just check-defense --skip=cbmc,scheme --jobs=4 --cache=.data/ci-cache/defense
+      - name: PR diff AI Agent defensive-hallucination gate (TS/C/C++/Rust/Go/Scheme)
+        if: github.event_name == 'pull_request'
+        run: |
+          git diff -U0 "origin/${{ github.base_ref }}...HEAD" > /tmp/pr-defense.patch
+          just audit-agent-patch --exclude-negative-fixtures --diff-file /tmp/pr-defense.patch

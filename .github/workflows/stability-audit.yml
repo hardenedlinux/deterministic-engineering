@@ -1,0 +1,110 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+name: Cross-Language Stability & Search Fuzzing Audit
+on:
+  pull_request:
+    paths:
+      - 'languages-engineering/*/stability/**'
+      - 'languages-engineering/go/**'
+      - 'packages/quint-models/engineering/concurrency/**'
+      - 'packages/quint-models/engineering/gc/**'
+      - 't/harness/**'
+      - 'Justfile'
+      - '.github/actions/**'
+      - '.github/workflows/stability-audit.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'languages-engineering/*/stability/**'
+      - 'languages-engineering/go/**'
+      - 'packages/quint-models/engineering/concurrency/**'
+      - 'packages/quint-models/engineering/gc/**'
+      - 't/harness/**'
+      - 'Justfile'
+      - '.github/actions/**'
+      - '.github/workflows/stability-audit.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  discover-stability-shards:
+    name: Discover Stability Profile Shards
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: ./.github/actions/setup-just
+      - uses: ./.github/actions/setup-bun-cached
+        with:
+          install: 'false'
+      - name: Dynamically discover stability verification profile shards
+        id: plan
+        run: |
+          matrix=$(just verify-matrix stability)
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "Discovered stability profile matrix: $matrix"
+
+  stability-shard:
+    name: "Stability Shard: ${{ matrix.label }}"
+    needs: discover-stability-shards
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover-stability-shards.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: ./.github/actions/setup-just
+      - uses: ./.github/actions/setup-bun-cached
+      - name: Setup Go 1.26 for native concurrency/stability shard
+        if: matrix.shard == 'native-go-rust-c-cpp'
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: '1.26.x'
+          cache: false
+      - name: Restore Layer-1 Go module & build cache
+        if: matrix.shard == 'native-go-rust-c-cpp'
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: de-go-v1-${{ runner.os }}-${{ runner.arch }}-1.26-${{ hashFiles('languages-engineering/go/**/go.mod', 'languages-engineering/go/**/go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            de-go-v1-${{ runner.os }}-${{ runner.arch }}-1.26-${{ hashFiles('languages-engineering/go/**/go.mod', 'languages-engineering/go/**/go.sum') }}-
+            de-go-v1-${{ runner.os }}-${{ runner.arch }}-1.26-
+      - name: Restore Layer-2 shard-disjoint Stability CAS cache (SM18)
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .data/ci-cache/stability-${{ matrix.shard }}
+          key: de-stability-cas-v1-${{ runner.os }}-${{ runner.arch }}-${{ matrix.shard }}-${{ hashFiles('bun.lock', 't/harness/verify-framework.ts', 'packages/quint-modules-resolver/src/**') }}-${{ github.sha }}
+          restore-keys: |
+            de-stability-cas-v1-${{ runner.os }}-${{ runner.arch }}-${{ matrix.shard }}-${{ hashFiles('bun.lock', 't/harness/verify-framework.ts', 'packages/quint-modules-resolver/src/**') }}-
+      - name: Run shard stability & fuzzing gate with SHA-256 CAS
+        run: just check-stability --lang=${{ matrix.langs }} --skip=cbmc,lean,scheme --jobs=4 --cache=.data/ci-cache/stability-${{ matrix.shard }}
+
+  pr-stability-diff-audit:
+    name: PR Diff AI Agent Software-Aging Audit (Live)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-just
+      - uses: ./.github/actions/setup-bun-cached
+        with:
+          install: 'false'
+      - name: PR diff AI Agent software-aging gate (Go/Rust/TS/C/C++)
+        run: |
+          git diff -U0 "origin/${{ github.base_ref }}...HEAD" > /tmp/pr-stability.patch
+          just audit-agent-stability --diff-file /tmp/pr-stability.patch

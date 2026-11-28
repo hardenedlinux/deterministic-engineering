@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Deterministic Model-Weight Pinning & Reproducible Inference Attestation
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.defense.model-weight-inference-attestation=
+- *Subdomain*: =quint.engineering.defense=
+- *Quint Module*: =model_weight_inference_attestation= (=[[file:ModelWeightInferenceAttestation.qnt][ModelWeightInferenceAttestation.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/defense/model-weight-inference-attestation/ModelWeightInferenceAttestation=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Regulated AI inference admission requires a pinned base-weight Merkle root (unpinnedWeightViolations == 0), allowlisted LoRA/PEFT adapters (stealthLoraViolations == 0), and deterministic sampling on a non-revoked model (nondetSamplingViolations == 0).
+
+#+begin_src quint
+val safety = (h.unpinnedWeightViolations == 0 and h.stealthLoraViolations == 0 and h.nondetSamplingViolations == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =require-weight-root-pinned= | =stepUnpinnedWeight= | =h.unpinnedWeightViolations > 0= |
+| =require-adapters-allowlisted= | =stepStealthLora= | =h.stealthLoraViolations > 0= |
+| =require-deterministic-nonrevoked= | =stepNondetOrRevoked= | =h.nondetSamplingViolations > 0= |
+
+* Grounded Papers & Specifications
+
+- *SLSA / Model Transparency & Tensor Shard Merkle Pinning*: Cryptographic binding of safetensors/GGUF base-model shards against silent weight substitution.
+- *LoRA / PEFT Supply-Chain Governance*: Explicit adapter allowlisting to block stealth trojan LoRA injection while admitting zero-adapter base models.
+- *Deterministic Engineering (10.202 / 10.203)*: Unbounded LeanPoo proofs (=ModelWeightAndInferenceAttestation.lean=), air-gapped Ed25519 inference trace attestation, and 60x32 ASCENT Datalog verification.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/defense/model-weight-inference-attestation/ModelWeightInferenceAttestation.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/defense/model-weight-inference-attestation/ModelWeightInferenceAttestation.qnt --main=model_weight_inference_attestation --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Bounded deterministic model-weight pinning, LoRA adapter allowlist, and reproducible sampling state machine; arbitrary shard Merkle trees, temperature bounds, explicit PRNG seeds, and Ed25519 serving attestations are proved unboundedly in ModelWeightAndInferenceAttestation.lean.

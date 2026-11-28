@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: AI Agent Patch Admission & Bounded Anti-Evasion Repair Loop
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.defense.agent-patch-governance=
+- *Subdomain*: =quint.engineering.defense=
+- *Quint Module*: =agent_patch_governance= (=[[file:AgentPatchGovernance.qnt][AgentPatchGovernance.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/defense/agent-patch-governance/AgentPatchGovernance=
+- *Bounded Verification Envelope*: safety =max-steps=10=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Repair attempts stay within bound (repairAttempts <= 2), and no AI Agent patch reaches Admitted (decision == 1) without independent mechanical audit, intact Band-5 floors (not floorWeakened), and preserved or explicitly replaced verification obligations.
+
+#+begin_src quint
+val safety = (h.repairAttempts <= 2 and (h.decision != 1 or (h.independentAuditPassed and not(h.floorWeakened) and (not(h.obligationDeleted) or h.replacementAdmitted))))
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =require-independent-audit= | =stepSelfCertified= | =h.decision == 1 and not(h.independentAuditPassed)= |
+| =forbid-unwitnessed-obligation-deletion= | =stepDeletedObligation= | =h.decision == 1 and h.obligationDeleted and not(h.replacementAdmitted)= |
+| =forbid-floor-weakening-on-retry= | =stepFloorWeakening= | =h.decision == 1 and h.floorWeakened= |
+
+* Grounded Papers & Specifications
+
+- *Deterministic Engineering (10.18 / 10.153 / 10.155)*: Agent prose claims are assertions, never evidence; independent audit, obligation preservation, monotonic floors, and bounded human escalation.
+- *Deterministic Engineering (30.05)*: Thirty-two-case five-language AI Agent defensive hallucination and anti-evasion benchmark.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/defense/agent-patch-governance/AgentPatchGovernance.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/defense/agent-patch-governance/AgentPatchGovernance.qnt --main=agent_patch_governance --invariant=safety --mbt --max-steps=10 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite single-patch governance loop with bounded retry budget (max 2 retries); does not model multi-PR merge conflicts, compromised CI runners, or adversarial oracle poisoning.

@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Search-Box Input Sanitization, Bounded Paste Cap & Grapheme Cursor Envelope
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =engineering.concurrency.search-box-input-sanitization-envelope=
+- *Subdomain*: =quint.engineering.concurrency=
+- *Quint Module*: =concurrency_search_box_input_sanitization_envelope= (=[[file:SearchBoxInputSanitizationEnvelope.qnt][SearchBoxInputSanitizationEnvelope.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/engineering/concurrency/search-box-input-sanitization-envelope/SearchBoxInputSanitizationEnvelope=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+Every search-box mutation path (insertText, pasteYank, setInput) enforces inputBytes <= maxBytes, strips control/ANSI characters (controlLeakCount == 0), keeps editor and query buffer synchronized on valid grapheme cursor boundaries (cursorAligned == true and cursor <= inputBytes), and reclaims oversized buffer capacity on clear.
+
+#+begin_src quint
+val safety = (h.inputBytes <= h.maxBytes and h.cursor <= h.inputBytes and h.cursor >= 0 and h.cursorAligned and h.editorSynced and h.capBypassCount == 0 and h.controlLeakCount == 0)
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =cap-yank-paste-bytes= | =stepPasteCapBypass= | =h.capBypassCount > 0= |
+| =strip-control-chars-on-set= | =stepControlCharInjection= | =h.controlLeakCount > 0= |
+| =align-cursor-grapheme-boundary= | =stepCursorMidGraphemeSplit= | =not(h.cursorAligned)= |
+
+* Grounded Papers & Specifications
+
+- *K. Claessen & J. Hughes (ACM ICFP 2000)*: QuickCheck — stateful property-based testing of text-buffer invariants across arbitrary edit, paste, and undo sequences.
+- *Unicode Consortium (UAX #29, 2024)*: Unicode Text Segmentation — extended grapheme cluster boundaries prevent mid-codepoint and ZWJ cursor corruption.
+- *R. Padhye et al. (ACM ISSTA 2019)*: Semantic Fuzzing with Zest — structure-aware fuzzing exposes cap bypasses and control-sequence leaks across alternate input paths.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/engineering/concurrency/search-box-input-sanitization-envelope/SearchBoxInputSanitizationEnvelope.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/engineering/concurrency/search-box-input-sanitization-envelope/SearchBoxInputSanitizationEnvelope.qnt --main=concurrency_search_box_input_sanitization_envelope --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite 4-unit byte-cap and cursor-alignment abstraction; verifies uniform cap enforcement across insert/paste/set paths, control-character sanitization, and grapheme boundary alignment, not full Unicode bidi layout or terminal font shaping.

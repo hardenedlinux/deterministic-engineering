@@ -1,0 +1,34 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Engineering / Parallelism Formal Models (Quint.Engineering.Parallel)
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+This subdomain groups co-located formal models for lock-free memory reclamation,
+work-stealing scheduling, and weak memory-model synchronization under x86-TSO.
+Each model folder is a self-contained Yuanxu Loader module paired with its
+projected pure =.qnt= specification and verified =README.org=.
+
+* Yuanxu Selection & Reuse
+
+#+begin_src scheme
+(yuanxu!
+  :load-modules (from: :deterministic-engineering/init QuintEngineeringParallelSource)
+    mode: auto
+    profile: quint.engineering.parallel
+    mount: Parallel
+    :profiles (assurance.bounded-proof bound.standard governance.mandatory-countermodels)
+  (hazard-pointers-tso profiles: (bound.deep-counterexample)))
+#+end_src
+
+* Model Matrix
+
+| Model | Failure Class | Core Papers | Emergent Invariant | Countermodels |
+|-------+---------------+-------------+--------------------+---------------|
+| [[file:epoch-reclamation/README.org][epoch-reclamation]] | =quint.failure.use-after-free= | Fraser (2004), Hart et al. (JPDC 2007) | Retired object reclaimed only after grace-period quiescence | Premature reclaim while pinned worker remains in old epoch |
+| [[file:work-stealing-deque/README.org][work-stealing-deque]] | =quint.failure.double-take= | Chase & Lev (SPAA 2005), Lê et al. (PPoPP 2013) | =ownerPopped + thiefStolen <= pushed= & =top <= bottom= | Missing last-item CAS double-take |
+| [[file:hazard-pointers-tso/README.org][hazard-pointers-tso]] | =quint.failure.use-after-free= | Michael (IEEE TPDS 2004), Sewell et al. (CACM 2010) | Reader never dereferences a freed node under x86-TSO | Missing store-load MFENCE UAF |

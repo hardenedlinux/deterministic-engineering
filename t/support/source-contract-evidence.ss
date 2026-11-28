@@ -4,7 +4,7 @@
 ;;; Retained real-tool evidence, using the same selected owners as the tests.
 (import "source-contracts.ss" :clan/poo/object :std/encoding/json :gerbil-ascent/program/session
         (only-in :std/source this-source-file)
-                    (only-in :yuanxu/module-system/interface yuanxu-load-modules))
+                    (only-in :tao3k/yuanxu/module-system/interface yuanxu-load-modules))
 (export main)
 
 (def (wire rows)

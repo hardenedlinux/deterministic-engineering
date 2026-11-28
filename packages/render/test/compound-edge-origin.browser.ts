@@ -45,3 +45,27 @@ test('cross-boundary relationships may leave a scope and remain explicitly disti
  expect(image.receipt.observation.subjects.find(subject=>subject.id==='inside')!.owner).toBe('scope');
  expect(image.receipt.observation.relations).toContain('selected');
 });
+
+test('stacked components retain relation labels and compound ownership',async({browser})=>{
+ const model:NonNullable<FigureInput['model']>={
+  subjects:[{id:'note',type:'rectangle',label:'Independent evidence'},{id:'scope',type:'rectangle',label:'Source owner'},{id:'inside',type:'rectangle',label:'Existing intent'},{id:'outside',type:'rectangle',label:'Final effect'}],
+  relations:[{id:'join',src:'inside',dst:'outside',label:'Recheck current scope'}],
+ };
+ const figure=composeFigure({...input,model},context=>{
+  const scene=composeDiagram(context,{graph:{id:'root',children:[{id:'note'},{id:'scope',children:[{id:'inside'}]},{id:'outside'}],layoutOptions:{'render.componentPacking':'stack'}}});
+  return {markup:'<section data-question="q">'+scene.markup+'</section>',css:scene.css};
+ });
+ const image=await exportFigure(figure,browser);
+ expect(image.receipt.observation.subjects.find(subject=>subject.id==='inside')?.owner).toBe('scope');
+ const page=await browser.newPage();
+ try{
+  await page.setContent(image.svg[0]!);
+  const evidence=page.locator('[data-scene-node="note"]');
+  const scope=page.locator('[data-scene-node="scope"]');
+  const label=page.locator('[data-scene-edge="join"] .scene-label text');
+  const [noteBox,scopeBox,labelBox]=await Promise.all([evidence.boundingBox(),scope.boundingBox(),label.boundingBox()]);
+  expect(noteBox!.y+noteBox!.height).toBeLessThan(scopeBox!.y);
+  expect(labelBox!.y).toBeGreaterThan(noteBox!.y+noteBox!.height);
+  await expect(label).toHaveText('Recheck current scope');
+ }finally{await page.close();}
+});

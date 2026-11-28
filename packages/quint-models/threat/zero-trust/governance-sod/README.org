@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+#+TITLE: Governance Separation of Duties (SoD) & Forbid-Veto Precedence
+#+LANGUAGE: en
+#+STARTUP: overview
+#+OPTIONS: toc:2 num:nil
+
+* Overview
+
+- *Model Identity*: =threat.zero-trust.governance-sod=
+- *Subdomain*: =quint.threat.zero-trust=
+- *Quint Module*: =governance_sod= (=[[file:GovernanceSod.qnt][GovernanceSod.qnt]]=)
+- *Package Import*: =@deterministic-engineering/quint-models/threat/zero-trust/governance-sod/GovernanceSod=
+- *Bounded Verification Envelope*: safety =max-steps=12=, countermodels =max-steps=6=
+
+* Emergent Safety Invariant
+
+An action executes only with a distinct approver (approver != proposer) and zero active forbid vetoes.
+
+#+begin_src quint
+val safety = (not(h.executed) or (h.proposer > 0 and h.approver > 0 and h.approver != h.proposer and not(h.vetoed)))
+#+end_src
+
+* Protocol Guards & Auto-Derived Countermodels
+
+| Guard ID | Weakened Step Action | Expected ITF Counterexample Predicate |
+|----------+----------------------+---------------------------------------|
+| =sod-distinct-actor= | =stepSelfApproval= | =h.executed == true and h.approver == h.proposer= |
+| =veto-precedence= | =stepVetoOverride= | =h.executed == true and h.vetoed == true= |
+
+* Grounded Papers & Specifications
+
+- *D. D. Clark & D. R. Wilson (IEEE S&P 1987)*: A Comparison of Commercial and Military Computer Security Policies: dual-control Separation of Duties.
+- *R. Simon & M. E. Zurko (IEEE CSFW 1997)*: Separation of Duty in Role-Based Environments: dynamic history-based SoD and deny-overrides precedence.
+
+* Verification & Model-Based Testing
+
+#+begin_src sh
+# Full bounded Apalache verification (safety + all weakened countermodels):
+quint-modules-resolver run-plan packages/quint-models/threat/zero-trust/governance-sod/GovernanceSod.qnt --verify
+
+# Emit --mbt ITF traces for downstream implementation refinement:
+quint-modules-resolver run packages/quint-models/threat/zero-trust/governance-sod/GovernanceSod.qnt --main=governance_sod --invariant=safety --mbt --max-steps=12 --seed=7 --out-itf=trace.itf.json
+#+end_src
+
+* Explicit Limits
+
+Finite two-principal governance abstraction; does not model cryptographic identity attestation or multi-quorum threshold committees.
