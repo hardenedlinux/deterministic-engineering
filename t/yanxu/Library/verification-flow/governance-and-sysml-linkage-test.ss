@@ -269,4 +269,6 @@
       (check (and (member '("threat.execution.wasm-sandbox-confinement") admitted-subjs) #t) => #t)
       (check (and (member '("threat.supply-chain.slsa-hermetic-provenance") admitted-subjs) #t) => #t)
       (check (and (member '("threat.protocol.outbound-http-redirect-ssrf-confinement") admitted-subjs) #t) => #t)
-      (check-equal? (length (.get projected subject-specs)) 26))))
+      (check (and (member '("threat.zero-trust.governance-sod") admitted-subjs) #t) => #t)
+      (check (and (member '("threat.protocol.chatroom-ingress-governance") admitted-subjs) #t) => #t)
+      (check-equal? (length (.get projected subject-specs)) 28))))

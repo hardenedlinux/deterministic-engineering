@@ -1264,6 +1264,72 @@ package MultiMethodFunFlowArchitecture {
                 attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Engineering/SandboxSymlinkArchiveConfinement.lean,packages/lean-models/DeterministicEngineering/Engineering/OutboundHttpRedirectSsrfConfinement.lean";
             }
         }
+
+        // Twenty-Seventh Zero-Glue Subject (Twenty-Second AI-Security Threat Subject — Zero-Trust Domain: Governance SoD & Durable BFT Quorum)
+        part governanceSod {
+            attribute subjectKey : String = "governance-sod";
+            attribute identity : String = "threat.zero-trust.governance-sod";
+            attribute tags : String = "threat,zero-trust,ai-security,governance-sod,bft-quorum,defense.mutability.immutable-proof,hazard.ai-self-approval-veto-override";
+            attribute factors : String = "governance-sod,ai-mutates-host-or-governance";
+            attribute aiControls : String = "human-stepup-and-estop";
+            attribute aiRoleBindings : String = "human-approver:human-approver,ai-agent:ai-proposer";
+
+            part gsodQuintTarget {
+                attribute modelId : String = "threat.zero-trust.governance-sod";
+                attribute quintFile : String = "packages/quint-models/threat/zero-trust/governance-sod/GovernanceSod.qnt";
+                attribute quintMain : String = "governance_sod";
+                attribute itfSubdir : String = "governance-sod";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "sod-distinct-actor,veto-precedence";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/zero-trust/governance-sod/GovernanceSod.qnt,packages/quint-models/threat/zero-trust/governance-sod/objects.ss,packages/quint-models/threat/zero-trust/governance-sod/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part gsodLeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.DurableGovernanceQuorum";
+                attribute refinesCore : String = "DeterministicEngineering.Core.Order,DeterministicEngineering.Core.Transport";
+                attribute transportContract : String = "ObjectContract.refine+Patch.frame+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Engineering.DurableGovernanceQuorum.bft_quorum_intersection_honest_witness,DeterministicEngineering.Engineering.DurableGovernanceQuorum.bft_no_conflicting_finality,DeterministicEngineering.Engineering.DurableGovernanceQuorum.handover_chain_rejects_all_retired_epochs,DeterministicEngineering.Engineering.DurableGovernanceQuorum.m3_leak_always_refused,DeterministicEngineering.Engineering.DurableGovernanceQuorum.ancestor_revocation_invalidates_chain,DeterministicEngineering.Engineering.DurableGovernanceQuorum.durableQuorumContract_preserves_rejection,DeterministicEngineering.Engineering.DurableGovernanceQuorum.baselineQuorumCertified,DeterministicEngineering.Engineering.DurableGovernanceQuorum.gossipTuning_preserves_quorum_certificate,DeterministicEngineering.Engineering.DurableGovernanceQuorum.droppingExternalPolicyHost_invalidates_reuse,DeterministicEngineering.Engineering.DurableGovernanceQuorum.slashed_witness_never_reenters_future_epochs";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Order.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Engineering/DurableGovernanceQuorum.lean";
+            }
+        }
+
+        // Twenty-Eighth Zero-Glue Subject (Twenty-Third AI-Security Threat Subject — Protocol Domain: Multi-Role AI Chatroom Ingress & Context Distillation Provenance)
+        part chatroomIngressGovernance {
+            attribute subjectKey : String = "chatroom-ingress-governance";
+            attribute identity : String = "threat.protocol.chatroom-ingress-governance";
+            attribute tags : String = "threat,protocol,ai-security,chatroom-ingress,context-distillation,defense.mutability.immutable-proof,hazard.tainted-tool-bypass-context-laundering";
+            attribute factors : String = "chatroom-ingress-governance,ai-ingests-untrusted-context,ai-executes-tools,ai-mutates-host-or-governance";
+            attribute aiControls : String = "context-integrity-or-ifc,tool-confinement,human-stepup-and-estop";
+            attribute aiRoleBindings : String = "human-approver:human-approver,ai-agent:ai-proposer";
+
+            part chatQuintTarget {
+                attribute modelId : String = "threat.protocol.chatroom-ingress-governance";
+                attribute quintFile : String = "packages/quint-models/threat/protocol/chatroom-ingress-governance/ChatroomIngressGovernance.qnt";
+                attribute quintMain : String = "chatroom_ingress_governance";
+                attribute itfSubdir : String = "chatroom-ingress-governance";
+                attribute verifyMode : String = "apalache";
+                attribute nTraces : String = "10";
+                attribute maxSamples : String = "30";
+                attribute maxSteps : String = "12";
+                attribute countermodels : String = "ingress-origin-provenance,channel-thread-affinity,gate-oneshot-pending,matter-gate-lock,tainted-tool-human-gate";
+                attribute producesArtifact : String = "itf-trace";
+                attribute inputFiles : String = "packages/quint-models/threat/protocol/chatroom-ingress-governance/ChatroomIngressGovernance.qnt,packages/quint-models/threat/protocol/chatroom-ingress-governance/objects.ss,packages/quint-models/threat/protocol/chatroom-ingress-governance/interface.ss";
+                port traceOut : ArtifactHandoffPort;
+            }
+
+            part chatLeanPooTarget {
+                attribute module : String = "DeterministicEngineering.Engineering.ContextDistillationAndProvenance";
+                attribute refinesCore : String = "DeterministicEngineering.Core.Transport";
+                attribute transportContract : String = "ObjectContract.refine+Proof.reuse";
+                attribute theorems : String = "DeterministicEngineering.Engineering.ContextDistillationAndProvenance.dropping_pinned_m1_constraint_always_refused,DeterministicEngineering.Engineering.ContextDistillationAndProvenance.hallucinated_citation_always_refused,DeterministicEngineering.Engineering.ContextDistillationAndProvenance.secrecy_tag_stripping_by_summarizer_refused,DeterministicEngineering.Engineering.ContextDistillationAndProvenance.integrity_laundering_untrusted_to_trusted_refused,DeterministicEngineering.Engineering.ContextDistillationAndProvenance.distilled_context_exceeding_token_budget_refused,DeterministicEngineering.Engineering.ContextDistillationAndProvenance.empty_sources_with_zero_citations_and_budget_admitted,DeterministicEngineering.Engineering.ContextDistillationAndProvenance.retained_pinned_subset_monotonic_under_append,DeterministicEngineering.Engineering.ContextDistillationAndProvenance.distillationContract_preserves_rejection,DeterministicEngineering.Engineering.ContextDistillationAndProvenance.baselineDistillationCertified,DeterministicEngineering.Engineering.ContextDistillationAndProvenance.summaryPromptVersionTuning_preserves_distillation_certificate,DeterministicEngineering.Engineering.ContextDistillationAndProvenance.disablingPinnedRetention_invalidates_reuse";
+                attribute inputFiles : String = "packages/lean-models/lean-toolchain,packages/lean-models/lakefile.toml,packages/lean-models/DeterministicEngineering.lean,packages/lean-models/DeterministicEngineering/Core/Transport.lean,packages/lean-models/DeterministicEngineering/Engineering/ContextDistillationAndProvenance.lean";
+            }
+        }
     }
 
     // ── 12. Architectural, Cross-Method, and Requirement Dependencies ──
@@ -1377,6 +1443,15 @@ package MultiMethodFunFlowArchitecture {
 
     dependency 'sm23-quint-source' from system::outboundHttpRedirectSsrfConfinement::sm23QuintTarget to system::quintModels;
     dependency 'sm23-lean-source' from system::outboundHttpRedirectSsrfConfinement::sm23LeanPooTarget to system::leanModels;
+
+    dependency 'gsod-quint-source' from system::governanceSod::gsodQuintTarget to system::quintModels;
+    dependency 'gsod-lean-source' from system::governanceSod::gsodLeanPooTarget to system::leanModels;
+    dependency 'gsod-lean-refines-order' from system::governanceSod::gsodLeanPooTarget to system::leanModels::core::order;
+    dependency 'gsod-lean-refines-transport' from system::governanceSod::gsodLeanPooTarget to system::leanModels::core::transport;
+
+    dependency 'chat-quint-source' from system::chatroomIngressGovernance::chatQuintTarget to system::quintModels;
+    dependency 'chat-lean-source' from system::chatroomIngressGovernance::chatLeanPooTarget to system::leanModels;
+    dependency 'chat-lean-refines-transport' from system::chatroomIngressGovernance::chatLeanPooTarget to system::leanModels::core::transport;
 
     // Cross-method edges enforced by MR03 & MR04 (zero model duplication)
     dependency 'pt-mbt-itf-edge' from system::processTreeReclamation::rustOracleTarget::traceIn to system::processTreeReclamation::quintTarget::traceOut;

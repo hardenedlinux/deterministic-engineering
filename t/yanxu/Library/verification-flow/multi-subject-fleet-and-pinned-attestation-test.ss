@@ -51,7 +51,7 @@
 
 (def verification-flow-multi-subject-fleet-and-pinned-attestation-test
   (test-suite "Multi-subject Fleet orchestration and 2-level Merkle pinned-key Ed25519 attestation"
-    (yuanxu-test-case "live 26-subject Fleet passes Cold (55/0) -> Warm (0/55), 2-file release bundle & in-toto statement, and rejects rogue-key, revocation & child-tamper attacks"
+    (yuanxu-test-case "live 28-subject Fleet passes Cold (59/0) -> Warm (0/59), 2-file release bundle & in-toto statement, and rejects rogue-key, revocation & child-tamper attacks"
       (def tmp-parent (path-expand ".data/test-runs" repo-root))
       (create-directory* tmp-parent)
       (def cache-dir (path-expand "m5-fleet-cache-test" tmp-parent))
@@ -62,21 +62,21 @@
       (run-process (list "rm" "-rf" cache-dir cold-dir warm-dir rogue-key-dir tamper-copy-dir))
       (create-directory* cache-dir)
 
-      ;; Phase 0 — Dry-run Change-Impact Predictor before Cold Fleet: 55 pending, 0 reusable!
+      ;; Phase 0 — Dry-run Change-Impact Predictor before Cold Fleet: 59 pending, 0 reusable!
       (let ((p0 (predict-fleet-reuse-plan repo-root cache-dir: cache-dir)))
-        (check-equal? (length (.get p0 subjects)) 26)
-        (check-equal? (.get p0 total-pending) 55)
+        (check-equal? (length (.get p0 subjects)) 28)
+        (check-equal? (.get p0 total-pending) 59)
         (check-equal? (.get p0 total-reusable) 0))
 
-      ;; Phase 1 — Cold Fleet across all 26 SysML v2 subjects (4 + 4 + 2 + 2 + 1 + 2*21 = 55 engines,
-      ;;           covering Quint/Apalache, LeanPoo across 5 Engineering + 21 AI-Security Threat subjects,
+      ;; Phase 1 — Cold Fleet across all 28 SysML v2 subjects (4 + 4 + 2 + 2 + 1 + 2*23 = 59 engines,
+      ;;           covering Quint/Apalache, LeanPoo across 5 Engineering + 23 AI-Security Threat subjects,
       ;;           Clippy, CBMC 6.11, and Rust OS/MBT Oracles!).
       (let ((f1 (run-multi-method-fleet repo-root cold-dir cache-dir: cache-dir fleet-id: "fleet-test-cold")))
         (def frpath (.get f1 fleet-report-path))
         (def trusted-pub (.get f1 public-key-path))
-        (check-equal? (length (.get f1 subject-keys)) 26)
+        (check-equal? (length (.get f1 subject-keys)) 28)
         (check-equal? (.get f1 all-admitted?) #t)
-        (check-equal? (.get f1 total-executed) 55)
+        (check-equal? (.get f1 total-executed) 59)
         (check-equal? (.get f1 total-reused) 0)
 
         ;; Genuine Fleet + all 6 child reports verify cleanly against externally pinned public key
@@ -118,52 +118,52 @@
             (check (not (= st 0)) => #t))))
       (##gc)
 
-      ;; Phase 1.5 — Dry-run Change-Impact Predictor after Cold Fleet: 0 pending, 55 reusable (<1s)!
+      ;; Phase 1.5 — Dry-run Change-Impact Predictor after Cold Fleet: 0 pending, 59 reusable (<1s)!
       (let ((p1 (predict-fleet-reuse-plan repo-root cache-dir: cache-dir)))
         (check-equal? (.get p1 total-pending) 0)
-        (check-equal? (.get p1 total-reusable) 55))
+        (check-equal? (.get p1 total-reusable) 59))
 
-      ;; Phase 2 — Warm Fleet with `emit-bundles?: #t`: 0 engines executed, 55/55 verified Ed25519 cache hits
-      ;; across all 26 subjects + live 2-file air-gapped release bundle & in-toto v1 statement cross-audit!
+      ;; Phase 2 — Warm Fleet with `emit-bundles?: #t`: 0 engines executed, 59/59 verified Ed25519 cache hits
+      ;; across all 28 subjects + live 2-file air-gapped release bundle & in-toto v1 statement cross-audit!
       (let ((f2 (run-multi-method-fleet repo-root warm-dir cache-dir: cache-dir
                   fleet-id: "fleet-test-warm" emit-bundles?: #t)))
         (def fb-path (.get f2 fleet-bundle-path))
         (def tb-path (.get f2 trust-bundle-path))
         (def sysml-sha (.get f2 sysml-sha256))
         (def stmt-path (path-expand "verification-summary.intoto.json" warm-dir))
-        (check-equal? (length (.get f2 subject-keys)) 26)
+        (check-equal? (length (.get f2 subject-keys)) 28)
         (check-equal? (.get f2 all-admitted?) #t)
         (check-equal? (.get f2 total-executed) 0)
-        (check-equal? (.get f2 total-reused) 55)
+        (check-equal? (.get f2 total-reused) 59)
         (check-equal? (verify-fleet-report-with-pinned-key
                         (.get f2 fleet-report-path)
                         (.get f2 public-key-path))
                       #t)
         (check-equal? (file-exists? fb-path) #t)
         (check-equal? (file-exists? tb-path) #t)
-        ;; Independent Gerbil 2-file air-gapped audit with spec pinning + 26-subject coverage:
+        ;; Independent Gerbil 2-file air-gapped audit with spec pinning + 28-subject coverage:
         (let ((tp (load-trust-store-json-lite tb-path)))
           (check-equal?
             (verify-fleet-bundle-offline fb-path tp
               expected-sysml-sha256: sysml-sha
-              expected-subject-count: 26
+              expected-subject-count: 28
               required-subjects: '("meta-governance-soundness"
                                    "agent-ifc-capability"
                                    "agent-tool-circuit-breaker"
-                                   "slsa-hermetic-provenance"
-                                   "outbound-http-redirect-ssrf-confinement"))
+                                   "governance-sod"
+                                   "chatroom-ingress-governance"))
             #t))
         ;; Independent zero-dependency Bun/TS (<100ms) audit + in-toto v1 statement export:
         (let* ((cmd (string-append
                       "cd \"" repo-root "\" && bun t/harness/offline-attestation-verifier.ts "
                       "--json --verify-fleet-bundle "
                       "--expected-sysml-sha256 \"" sysml-sha "\" "
-                      "--expected-subject-count 26 "
+                      "--expected-subject-count 28 "
                       "--require-subject meta-governance-soundness "
                       "--require-subject agent-ifc-capability "
                       "--require-subject agent-tool-circuit-breaker "
-                      "--require-subject slsa-hermetic-provenance "
-                      "--require-subject outbound-http-redirect-ssrf-confinement "
+                      "--require-subject governance-sod "
+                      "--require-subject chatroom-ingress-governance "
                       "--emit-statement \"" stmt-path "\" "
                       "\"" fb-path "\" \"" tb-path "\""))
                (proc (open-process
@@ -177,7 +177,7 @@
           (close-port proc)
           (check-equal? st 0)
           (check (and (string-contains out "\"ok\":true") #t) => #t)
-          (check (and (string-contains out "\"subjectCount\":26") #t) => #t)
+          (check (and (string-contains out "\"subjectCount\":28") #t) => #t)
           (let ((sdoc (call-with-input-file stmt-path (cut read-json <> object-as-hash: #t))))
             (check-equal? (hash-get sdoc "_type") "https://in-toto.io/Statement/v1")
-            (check-equal? (hash-get (hash-get sdoc "predicate") "subjectCount") 26)))))))
+            (check-equal? (hash-get (hash-get sdoc "predicate") "subjectCount") 28)))))))
