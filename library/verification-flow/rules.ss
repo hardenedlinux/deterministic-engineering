@@ -28,6 +28,8 @@
   make-ai-security-governance-program
   reason-ai-security-governance
   evaluate-ai-patch-admission
+  governance-core-path?
+  evaluate-ai-changeset-admission
   build-incremental-reuse-sources
   reuse-result->plan
   governance+evidence->admission-sources
@@ -128,6 +130,81 @@
       affected-steps: affected-steps
       reusable-steps: (if admitted? unaffected-steps '())
       requires-human-stepup?: requires-human-stepup?))
+
+(def (string-prefix? prefix s)
+  (and (string? prefix) (string? s)
+       (>= (string-length s) (string-length prefix))
+       (equal? (substring s 0 (string-length prefix)) prefix)))
+
+;; Pure AI Self-Modification Guard predicate: returns #t whenever a changed path
+;; touches the governance control plane, SysML v2 single source of truth, Lean
+;; meta/AI-governance cores, CI gate workflow, or offline verifiers.
+(def (governance-core-path? raw-path)
+  (def p
+    (if (and (string? raw-path) (>= (string-length raw-path) 2)
+             (equal? (substring raw-path 0 2) "./"))
+      (substring raw-path 2 (string-length raw-path))
+      raw-path))
+  (or (string-prefix? "library/verification-flow/" p)
+      (equal? p "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml")
+      (equal? p "packages/lean-models/DeterministicEngineering/Core/AiGovernance.lean")
+      (equal? p "packages/lean-models/DeterministicEngineering/Core/MetaGovernance.lean")
+      (equal? p ".github/workflows/multi-method-verification.yml")
+      (equal? p "t/harness/offline-attestation-verifier.ts")
+      (equal? p "t/support/offline-attestation-verifier.ss")))
+
+;; Pure Multi-Subject AI-SE Change-Set Admission Gate (10.154):
+;; Automatically slices a changed-file set across ALL SysML v2 subjects, runs
+;; `evaluate-ai-patch-admission` on every affected subject, enforces the AI
+;; Self-Modification Guard (`touched-governance-core?` -> mandatory human Step-Up),
+;; and returns an aggregated fail-closed verdict. Zero I/O.
+(def (evaluate-ai-changeset-admission
+       projected
+       changed-files
+       extra-role-bindings: (extra-role-bindings '())
+       extra-flow-steps: (extra-flow-steps '()))
+  (def touched-gov-core? (and (ormap governance-core-path? changed-files) #t))
+  (def impacts (changed-files->affected-frontier projected changed-files))
+  (def affected-impacts (filter (lambda (imp) (pair? (.get imp affected-steps))) impacts))
+  (def subject-verdicts
+    (map (lambda (imp)
+           (def sid (sym->str (.get imp identity)))
+           (def skey (sym->str (.get imp subject-key)))
+           (def sub-roles (filter (lambda (r) (equal? (car r) sid)) extra-role-bindings))
+           (def sub-steps (filter (lambda (r) (equal? (cadr r) sid)) extra-flow-steps))
+           (def v
+             (evaluate-ai-patch-admission
+               projected sid changed-files
+               extra-role-bindings: sub-roles
+               extra-flow-steps: sub-steps))
+           (.o bind-these: #f
+               subject-key: skey
+               subject-id: sid
+               admitted?: (.get v admitted?)
+               ar-findings: (.get v ar-findings)
+               affected-steps: (.get v affected-steps)
+               reusable-steps: (.get v reusable-steps)
+               requires-human-stepup?: (.get v requires-human-stepup?)))
+         affected-impacts))
+  (def all-admitted? (andmap (lambda (sv) (.get sv admitted?)) subject-verdicts))
+  (def any-stepup?
+    (or touched-gov-core?
+        (not all-admitted?)
+        (and (ormap (lambda (sv) (.get sv requires-human-stepup?)) subject-verdicts) #t)))
+  (def total-affected
+    (apply + (map (lambda (sv) (length (.get sv affected-steps))) subject-verdicts)))
+  (def total-reusable
+    (if all-admitted?
+      (apply + (map (lambda (sv) (length (.get sv reusable-steps))) subject-verdicts))
+      0))
+  (.o bind-these: #f
+      admitted?: all-admitted?
+      touched-governance-core?: touched-gov-core?
+      requires-human-stepup?: any-stepup?
+      changed-files: changed-files
+      subject-verdicts: subject-verdicts
+      total-affected-steps: total-affected
+      total-reusable-steps: total-reusable))
 
 ;; Pure projector assembling IR01-IR06 ASCENT sources from governance sources,
 ;; mutability annotations, policy flags, current input digests, cached witnesses,

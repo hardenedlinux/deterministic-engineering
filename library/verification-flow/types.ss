@@ -143,6 +143,7 @@
             ai-governance-program: [Object]
             reason-ai-governance: [(Function (list Any) (list Object))]
             evaluate-ai-patch: [Any]
+            evaluate-ai-changeset: [Any]
             reuse-sources: [Any]
             reuse-plan: [(Function (list Object) (list Object))]
             project-sysml-json: [(Function (list Any) (list Object))]

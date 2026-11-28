@@ -493,4 +493,78 @@
         (check-equal? (hash-get doc-c "reusableSteps") '())
         (check-equal? (hash-get doc-d "ok") #f)
         (check-equal? (hash-get doc-d "admitted") #t)
-        (check-equal? (hash-get doc-d "requiresHumanStepUp") #t)))))
+        (check-equal? (hash-get doc-d "requiresHumanStepUp") #t)))
+
+    (yuanxu-test-case/with
+      (.o (:: @ yuanxu-testing-case-profile-prototype)
+          max-idle-milliseconds: 120000
+          max-duration-milliseconds: 240000
+          sample-interval-milliseconds: 500
+          collect-before-sample?: #t)
+      "Multi-Subject AI Git-Diff Admission (--check-ai-diff) and AI Self-Modification Step-Up Guard"
+      ;; 1. Multi-subject benign AI diff touching IFC + SM32 Quint files -> discovers ONLY 2 subjects,
+      ;;    2 affected steps, 2 reusable steps, touchedGovernanceCore=#f, requiresHumanStepUp=#f!
+      (let* ((r1 (run-check-ai-diff-verdict repo-root
+                   '("--json" "--require-no-stepup"
+                     "--file" "packages/quint-models/threat/execution/agent-ifc-capability/AgentIfcCapability.qnt"
+                     "--file" "packages/quint-models/threat/execution/gitops-subprocess-confinement-and-arg-injection/GitopsSubprocessConfinementAndArgInjection.qnt")))
+             (doc (.get r1 json-doc)))
+        (check-equal? (hash-get doc "schema") "de.ai-se.changeset-admission-verdict.v1")
+        (check-equal? (hash-get doc "ok") #t)
+        (check-equal? (hash-get doc "admitted") #t)
+        (check-equal? (hash-get doc "touchedGovernanceCore") #f)
+        (check-equal? (hash-get doc "requiresHumanStepUp") #f)
+        (check-equal? (hash-get doc "affectedSubjectCount") 2)
+        (check-equal? (hash-get doc "totalAffectedSteps") 2)
+        (check-equal? (hash-get doc "totalReusableSteps") 2))
+
+      ;; 2. AI Self-Modification Guard: touching `ascent-rules.ss` or `10.154-*.sysml` forces
+      ;;    `touchedGovernanceCore=#t` and `requiresHumanStepUp=#t` (blocks `--require-no-stepup`)!
+      (let* ((r2a (run-check-ai-diff-verdict repo-root
+                    '("--json" "--require-no-stepup"
+                      "--file" "library/verification-flow/ascent-rules.ss")))
+             (doc2a (.get r2a json-doc))
+             (r2b (run-check-ai-diff-verdict repo-root
+                    '("--json" "--require-no-stepup"
+                      "--file" "docs/10-19-design/10-architecture/10.154-multi-method-funflow-runnable-and-leanpoo-architecture.sysml")))
+             (doc2b (.get r2b json-doc)))
+        (check-equal? (hash-get doc2a "touchedGovernanceCore") #t)
+        (check-equal? (hash-get doc2a "requiresHumanStepUp") #t)
+        (check-equal? (hash-get doc2a "ok") #f)
+        (check-equal? (hash-get doc2b "touchedGovernanceCore") #t)
+        (check-equal? (hash-get doc2b "requiresHumanStepUp") #t)
+        (check-equal? (hash-get doc2b "ok") #f))
+
+      ;; 3. Host-mutating E-Stop diff automatically escalates `requiresHumanStepUp=#t`!
+      (let* ((r3 (run-check-ai-diff-verdict repo-root
+                   '("--json" "--require-no-stepup"
+                     "--file" "packages/quint-models/threat/execution/agent-tool-circuit-breaker/AgentToolCircuitBreaker.qnt")))
+             (doc3 (.get r3 json-doc)))
+        (check-equal? (hash-get doc3 "admitted") #t)
+        (check-equal? (hash-get doc3 "requiresHumanStepUp") #t)
+        (check-equal? (hash-get doc3 "ok") #f))
+
+      ;; 4. Live subprocess `--check-ai-diff --json`: hostile `llm-judge` on any affected subject
+      ;;    refuses the entire changeset fail-closed (non-zero exit, ok=#f, totalReusableSteps=0)!
+      (yuanxu-test-checkpoint 'before-ai-diff-cli)
+      (let* ((cmd (string-append
+                    "cd \"" repo-root "\" && GERBIL_PATH=\"$PWD/.gerbil\" "
+                    "gxi -:max-heap=2G,debug=q t/support/verification-flow-runner.ss "
+                    "--check-ai-diff --json "
+                    "--file packages/quint-models/threat/execution/agent-ifc-capability/AgentIfcCapability.qnt "
+                    "--extra-step threat.execution.agent-ifc-capability:llm-hack:safety:llm-judge:bounded-interleaving"))
+             (proc (open-process
+                     (list path: "/bin/bash"
+                           arguments: (list "-euo" "pipefail" "-c" cmd)
+                           stdin-redirection: #f
+                           stdout-redirection: #t
+                           stderr-redirection: #f)))
+             (out (read-all-as-string proc))
+             (st (process-status proc)))
+        (close-port proc)
+        (yuanxu-test-checkpoint 'after-ai-diff-cli)
+        (check (not (= st 0)) => #t)
+        (let ((doc4 (call-with-input-string out (cut read-json <> object-as-hash: #t))))
+          (check-equal? (hash-get doc4 "ok") #f)
+          (check-equal? (hash-get doc4 "admitted") #f)
+          (check-equal? (hash-get doc4 "totalReusableSteps") 0))))))

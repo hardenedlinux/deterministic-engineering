@@ -225,6 +225,9 @@ check-ai-governance:
 check-ai-patch subject *args:
     t/harness/run-gxtest.sh script none t/support/verification-flow-runner.ss --check-ai-patch "{{subject}}" {{args}}
 
+check-ai-diff *args:
+    t/harness/run-gxtest.sh script none t/support/verification-flow-runner.ss --check-ai-diff {{args}}
+
 verify-multi-method-report report trust_store:
     t/harness/run-gxtest.sh script none t/support/offline-attestation-verifier.ss --verify-report "{{report}}" "{{trust_store}}"
 

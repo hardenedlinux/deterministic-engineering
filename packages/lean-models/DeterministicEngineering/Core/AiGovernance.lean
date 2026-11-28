@@ -656,4 +656,94 @@ theorem aiChangeAdmission_reusable_sound
       · rw [hT] at hReuse; cases hReuse
     · rw [hAff] at hReuse; cases hReuse
 
+/-! ## 7. Multi-Subject AI Change-Set & Self-Modification Guard (Theorems 16–18) -/
+
+/-- All affected subjects in a multi-subject AI diff pass `AR01`–`AR05`. -/
+def allPosturesAdmitted : List AiGovernancePosture → Bool
+  | [] => true
+  | p :: rest =>
+    match aiGovernanceAdmitted p with
+    | false => false
+    | true => allPosturesAdmitted rest
+
+/-- True iff at least one affected subject requires human step-up (`aiMutatesHostOrGovernance`
+    or touched security dep or failed admission). -/
+def anyPostureRequiresStepUp : List AiGovernancePosture → Bool
+  | [] => false
+  | p :: rest =>
+    match (evaluateAiChangeAdmission p true).requiresHumanStepUp with
+    | true => true
+    | false => anyPostureRequiresStepUp rest
+
+/-- Multi-subject AI-SE changeset verdict (mirrors `evaluate-ai-changeset-admission`). -/
+structure AiChangesetVerdict where
+  admitted : Bool
+  requiresHumanStepUp : Bool
+  deriving DecidableEq, Repr
+
+def evaluateAiChangesetAdmission
+    (touchedGovernanceCore : Bool)
+    (affectedPostures : List AiGovernancePosture) : AiChangesetVerdict :=
+  let allAdm := allPosturesAdmitted affectedPostures
+  let stepUp :=
+    match touchedGovernanceCore with
+    | true => true
+    | false =>
+      match allAdm with
+      | false => true
+      | true => anyPostureRequiresStepUp affectedPostures
+  { admitted := allAdm, requiresHumanStepUp := stepUp }
+
+/-- Theorem 16 (AI Self-Modification Guard): Any AI changeset modifying the governance
+    control plane, SysML v2 spec, or offline verifiers unconditionally requires human Step-Up. -/
+theorem aiChangeset_governanceCoreTouch_forces_humanStepUp
+    (postures : List AiGovernancePosture) :
+    (evaluateAiChangesetAdmission true postures).requiresHumanStepUp = true :=
+  rfl
+
+/-- Theorem 17 (Fail-Closed Multi-Subject Refusal): If the head affected subject fails
+    `AR01`–`AR05`, the entire multi-subject AI changeset is rejected and forces human Step-Up. -/
+theorem aiChangeset_anySubjectRejected_refuses_changeset_and_forces_stepUp
+    (touchedGov : Bool) (p : AiGovernancePosture) (rest : List AiGovernancePosture)
+    (hRej : aiGovernanceAdmitted p = false) :
+    (evaluateAiChangesetAdmission touchedGov (p :: rest)).admitted = false ∧
+    (evaluateAiChangesetAdmission touchedGov (p :: rest)).requiresHumanStepUp = true := by
+  have hAll : allPosturesAdmitted (p :: rest) = false := by
+    unfold allPosturesAdmitted
+    rw [hRej]
+  refine ⟨?_, ?_⟩
+  · unfold evaluateAiChangesetAdmission; exact hAll
+  · unfold evaluateAiChangesetAdmission
+    cases touchedGov
+    · rw [hAll]
+    · rfl
+
+/-- Pure structural membership over `List AiGovernancePosture` (zero axioms). -/
+inductive InPostureList (x : AiGovernancePosture) : List AiGovernancePosture → Prop where
+  | head (rest : List AiGovernancePosture) : InPostureList x (x :: rest)
+  | tail {y : AiGovernancePosture} {rest : List AiGovernancePosture} :
+      InPostureList x rest → InPostureList x (y :: rest)
+
+/-- Theorem 18 (Multi-Subject Changeset Soundness): Whenever a multi-subject AI changeset
+    is admitted, EVERY affected subject in the changeset satisfies `aiGovernanceAdmitted = true`. -/
+theorem aiChangeset_admitted_implies_every_affectedSubject_admitted
+    (touchedGov : Bool) (postures : List AiGovernancePosture) (p : AiGovernancePosture)
+    (hAdm : (evaluateAiChangesetAdmission touchedGov postures).admitted = true)
+    (hIn : InPostureList p postures) :
+    aiGovernanceAdmitted p = true := by
+  have hAll : allPosturesAdmitted postures = true := hAdm
+  clear hAdm
+  induction hIn with
+  | head rest =>
+    unfold allPosturesAdmitted at hAll
+    cases hP : aiGovernanceAdmitted p
+    · rw [hP] at hAll; cases hAll
+    · rfl
+  | @tail y rest hSub ih =>
+    unfold allPosturesAdmitted at hAll
+    cases hY : aiGovernanceAdmitted y
+    · rw [hY] at hAll; cases hAll
+    · rw [hY] at hAll
+      exact ih hAll
+
 end DeterministicEngineering.Core.AiGovernance

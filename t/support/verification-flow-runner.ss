@@ -75,6 +75,7 @@
   run-impacted-multi-method-fleet
   predict-fleet-reuse-plan
   run-check-ai-patch-verdict
+  run-check-ai-diff-verdict
   main)
 
 ;; ── Zero-Glue SysML v2 -> Fun-Flow DAG Compilation (Single Source of Truth) ──
@@ -1801,9 +1802,123 @@
         reusable-steps: reusable
         json-doc: doc)))
 
+(def (parse-check-ai-diff-args raw-args)
+  (let loop ((xs raw-args)
+             (json? #f)
+             (require-no-stepup? #f)
+             (base-ref "HEAD")
+             (files '())
+             (role-bindings '())
+             (extra-steps '()))
+    (cond
+     ((null? xs)
+      (.o bind-these: #f
+          json?: json?
+          require-no-stepup?: require-no-stepup?
+          base-ref: base-ref
+          files: (reverse files)
+          role-bindings: (reverse role-bindings)
+          extra-steps: (reverse extra-steps)))
+     ((equal? (car xs) "--json")
+      (loop (cdr xs) #t require-no-stepup? base-ref files role-bindings extra-steps))
+     ((equal? (car xs) "--require-no-stepup")
+      (loop (cdr xs) json? #t base-ref files role-bindings extra-steps))
+     ((and (equal? (car xs) "--base") (pair? (cdr xs)))
+      (loop (cddr xs) json? require-no-stepup? (cadr xs) files role-bindings extra-steps))
+     ((and (equal? (car xs) "--file") (pair? (cdr xs)))
+      (loop (cddr xs) json? require-no-stepup? base-ref
+            (cons (cadr xs) files) role-bindings extra-steps))
+     ((and (equal? (car xs) "--role-binding") (pair? (cdr xs)))
+      (loop (cddr xs) json? require-no-stepup? base-ref files
+            (cons (split-colon-parts (cadr xs) 3 "--role-binding") role-bindings) extra-steps))
+     ((and (equal? (car xs) "--extra-step") (pair? (cdr xs)))
+      (loop (cddr xs) json? require-no-stepup? base-ref files role-bindings
+            (cons (split-colon-parts (cadr xs) 5 "--extra-step") extra-steps)))
+     (else
+      (error "unknown or incomplete --check-ai-diff argument" (car xs))))))
+
+(def (run-check-ai-diff-verdict repo-root raw-args)
+  (validate-sysml-strict-cached repo-root)
+  (let* ((opts (parse-check-ai-diff-args raw-args))
+         (projected (project-sysml-model repo-root))
+         (changed-files
+           (if (pair? (.get opts files))
+             (.get opts files)
+             (filter (lambda (ln) (> (string-length ln) 0))
+                     (string-split
+                       (run-process (list "git" "diff" "--name-only" (.get opts base-ref))
+                                    directory: repo-root)
+                       #\newline))))
+         (extra-steps-rows
+           (map (lambda (p) (list (cadr p) (car p) (caddr p) (cadddr p) (list-ref p 4)))
+                (.get opts extra-steps)))
+         (verdict
+           (evaluate-ai-changeset-admission
+             projected
+             changed-files
+             extra-role-bindings: (.get opts role-bindings)
+             extra-flow-steps: extra-steps-rows))
+         (admitted? (.get verdict admitted?))
+         (stepup? (.get verdict requires-human-stepup?))
+         (gov-core? (.get verdict touched-governance-core?))
+         (ok? (and admitted? (or (not (.get opts require-no-stepup?)) (not stepup?))))
+         (sub-verdicts (.get verdict subject-verdicts))
+         (doc (make-hash-table)))
+    (hash-put! doc "schema" "de.ai-se.changeset-admission-verdict.v1")
+    (hash-put! doc "ok" ok?)
+    (hash-put! doc "admitted" admitted?)
+    (hash-put! doc "touchedGovernanceCore" gov-core?)
+    (hash-put! doc "requiresHumanStepUp" stepup?)
+    (hash-put! doc "changedFiles" changed-files)
+    (hash-put! doc "affectedSubjectCount" (length sub-verdicts))
+    (hash-put! doc "totalAffectedSteps" (.get verdict total-affected-steps))
+    (hash-put! doc "totalReusableSteps" (.get verdict total-reusable-steps))
+    (hash-put! doc "subjects"
+               (map (lambda (sv)
+                      (let ((s (make-hash-table)))
+                        (hash-put! s "subjectKey" (.get sv subject-key))
+                        (hash-put! s "subjectId" (.get sv subject-id))
+                        (hash-put! s "admitted" (.get sv admitted?))
+                        (hash-put! s "requiresHumanStepUp" (.get sv requires-human-stepup?))
+                        (hash-put! s "affectedSteps" (.get sv affected-steps))
+                        (hash-put! s "reusableSteps" (.get sv reusable-steps))
+                        (hash-put! s "arFindings"
+                                   (map (lambda (r)
+                                          (let ((f (make-hash-table)))
+                                            (hash-put! f "rule" (car r))
+                                            (hash-put! f "subject" (cadr r))
+                                            (hash-put! f "target" (caddr r))
+                                            f))
+                                        (.get sv ar-findings)))
+                        s))
+                    sub-verdicts))
+    (.o bind-these: #f
+        opts: opts
+        ok?: ok?
+        admitted?: admitted?
+        touched-governance-core?: gov-core?
+        requires-human-stepup?: stepup?
+        subject-verdicts: sub-verdicts
+        json-doc: doc)))
+
 (def (main mode-or-output . rest)
   (def repo-root (path-normalize (path-expand "../.." (path-directory (this-source-file)))))
   (cond
+   ((equal? mode-or-output "--check-ai-diff")
+    (let* ((res (run-check-ai-diff-verdict repo-root rest))
+           (opts (.get res opts))
+           (ok? (.get res ok?)))
+      (if (.get opts json?)
+        (begin
+          (write-json (current-output-port) (.get res json-doc))
+          (newline))
+        (displayln (if ok? "AI-DIFF-ADMISSION-OK " "AI-DIFF-ADMISSION-REFUSED ")
+                   "admitted=" (.get res admitted?)
+                   " touchedGovernanceCore=" (.get res touched-governance-core?)
+                   " requiresHumanStepUp=" (.get res requires-human-stepup?)
+                   " affectedSubjects=" (length (.get res subject-verdicts))))
+      (unless ok?
+        (exit 1))))
    ((equal? mode-or-output "--check-ai-patch")
     (unless (pair? rest)
       (error "usage: --check-ai-patch <subject-key|identity> [--json] [--require-no-stepup] [--file <path>]... [--touch-dep <step>:<dep>]... [--sec-dep <step>:<dep>]... [--claim-reuse <step>]... [--role-binding <role>:<auth>]... [--extra-step <step>:<obl>:<method>:<claim>]..."))

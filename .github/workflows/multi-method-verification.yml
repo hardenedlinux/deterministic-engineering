@@ -148,7 +148,7 @@ jobs:
             de-lean-build-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('packages/lean-models/lean-toolchain', 'packages/lean-models/lakefile.toml', 't/harness/verify-framework.ts') }}-${{ steps.leanpoo.outputs.sha }}-
       - name: Auto-discovered Lean 4 build & dynamic #print axioms audit
         run: just check-lean --cache=.data/ci-cache/lean
-      - name: Enforce strictly zero-axiom Core.AiGovernance kernel gate (15/15 AR01-AR05 & AI-SE theorems)
+      - name: Enforce strictly zero-axiom Core.AiGovernance kernel gate (18/18 AR01-AR05, AI-SE & Changeset theorems)
         run: |
           cd packages/lean-models
           OUT="$(lake env lean --stdin <<'EOF'
@@ -169,11 +169,14 @@ jobs:
           #print axioms aiChangeAdmission_securityDepTouch_blocks_reuse_and_requires_humanStepUp
           #print axioms aiChangeAdmission_hostMutation_always_requires_humanStepUp
           #print axioms aiChangeAdmission_reusable_sound
+          #print axioms aiChangeset_governanceCoreTouch_forces_humanStepUp
+          #print axioms aiChangeset_anySubjectRejected_refuses_changeset_and_forces_stepUp
+          #print axioms aiChangeset_admitted_implies_every_affectedSubject_admitted
           EOF
           )"
           echo "$OUT"
           COUNT="$(echo "$OUT" | grep -c "does not depend on any axioms")"
-          test "$COUNT" -eq 15
+          test "$COUNT" -eq 18
           ! echo "$OUT" | grep -q "depends on axioms:"
 
   airgapped-offline-verifier-adversarial:
